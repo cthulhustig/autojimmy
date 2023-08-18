@@ -1,0 +1,19 @@
+* text=auto
+
+*.py text
+*.pyw text
+*.md text
+*.txt text
+*.json text
+*.sec text
+
+*.htm text
+*.html text
+*.css text
+*.js text
+
+*.bat text eol=crlf
+*.sh text eol=lf
+
+*.ico binary
+*.png binary

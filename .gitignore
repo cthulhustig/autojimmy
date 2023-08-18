@@ -1,0 +1,12 @@
+# Python stuff
+*.pyc
+__pycache__/
+
+# Installer build stuff
+/*.spec
+/build/
+/installer/
+/dist/
+
+# VS Code stuff
+/.VSCodeCounter/
