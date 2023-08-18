@@ -1,0 +1,177 @@
+{
+    "name": "Jimmy's Rifle",
+    "techLevel": 12,
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BattleRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "AccurisedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BetterMaterialsExtremeLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ArmouredFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 4
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardConventionalMagazineQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ExtendedConventionalMagazineQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            },
+                            {
+                                "id": "CapacityIncrease",
+                                "value": 50
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "LowIntelligentWeaponFeature",
+                "options": []
+            },
+            {
+                "type": "StabilisationWeaponFeature",
+                "options": []
+            },
+            {
+                "type": "IntegratedSightingSystemAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Detached"
+                    }
+                ]
+            },
+            {
+                "type": "ReflexSightAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Attached"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"\""
+}

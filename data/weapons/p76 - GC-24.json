@@ -1,0 +1,91 @@
+{
+    "name": "p76 - GC-24",
+    "techLevel": 13,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SmallGaussCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BurstCapableMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "VeryCompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "ShortBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the correct receiver cost modifiers listed but it looks like the total receiver cost has just been calculated incorrectly, it should be Cr1212.75\\n- The manifest in the book has a base ammo capacity of 40 but I think it should be 30. A base 10 for a handgun receiver (table on p31) multiplied by 3 for gauss calibre (table on p31) then minus 50% for the very compact feature (p35). This would also affect the magazine cost in the table.\\n- The manifest in the book doesn't give a Physical Signature but I think it should be High, a base of Normal then +1 for a short barrel\\n- The description in the book mentions a special compact magazine which I assume is why the magazine cost in the table doesn't match\\n\""
+}

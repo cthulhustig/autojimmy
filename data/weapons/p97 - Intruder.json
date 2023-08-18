@@ -1,0 +1,153 @@
+{
+    "name": "p97 - Intruder",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IntermediateRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "QuickdrawFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "CarbineBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardSmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SecondaryMount",
+                        "options": [
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": -1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "LaserPointerAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Attached"
+                    }
+                ]
+            },
+            {
+                "type": "ReflexSightAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the 20% receiver weight reduction for intermediate rifle calibre (p37). This would also mean the magazine cost is wrong as the cost of a standard magazine is 1% of the weapon purchase price (p45)\\n- The manifest in the book doesn't have the Damage -1 modifier for a carbine barrel (p42)\\n- The manifest in the book doesn't give enough details of the secondary weapon (receiver type, mechanism, feed etc) to know how the cost & weight are calculated. It does say it's a complete receiver so it should have it's own components.\\n\""
+}

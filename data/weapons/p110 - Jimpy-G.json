@@ -1,0 +1,83 @@
+{
+    "name": "p110 - Jimpy-G",
+    "techLevel": 6,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LightSupportReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BattleRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "SlowLoaderFeature",
+                        "options": [
+                            {
+                                "id": "Score",
+                                "value": 4
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "BipodAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the base capacity as 40 for a light support receiver with battle rifle calibre but I think it should be 50, a base of 50 for the light support receiver (p31) minus 20% for battle rifle calibre (p37).\\n- The manifest in the book has a 25% Range increase for a Long barrel but the rules say it should be a 10% increase (p42)\\n- The manifest in the book doesn't have the x2 barrel cost multiplier for a heavy barrel (p43). It does have the weight multiplier. This also has the knock on effect of making the magazine cost in the table incorrect as the cost of a standard magazine is 1% of the weapon purchase price (p45)\\n- The manifest in the book doesn't have the Quickdraw -1 modifier for a heavy barrel (p43)\\n- The manifest in the book has a Quickdraw -2 modifier for a bipod accessory but the rules say it's -4 if the weapon isn't already on target (p43)\\n- The manifest in the book has Quickdraw -2 for the bipod accessory but the rules (p43) say it should be -4 and only when the weapon is no already on target. As the modifier doesn't apply in all circumstances Auto-Jimmy shows it in the notes section with details of when it's applied rather than include it in the weapons standard Quickdraw score.\\n\\n\""
+}

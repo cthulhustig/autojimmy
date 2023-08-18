@@ -1,0 +1,74 @@
+{
+    "name": "p79 - Liberator",
+    "techLevel": 7,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavyHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "PartialMultiBarrelSetup",
+                        "options": [
+                            {
+                                "id": "Count",
+                                "value": 4
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "MinimalBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The description in the book would suggest this type of weapon would have a fixed magazine feed but the manifest doesn't mention it or the 10% cost and weight reduction that would go with it (p45)\\n- The table in the book doesn't have the Bulky trait for being an uncompensated weapon weighing under 2kg that uses  heavy handgun ammo (p36)\\n- The table in the book has Slow Loader 4 but I can't find the rule that causes that\\n- The table in the book has the magazine cost as Cr40 for distraction ammo but I think it should be Cr16, a base of Cr1 per round, multiplied by 4 for distraction ammo (p50) and finally multiplied by the capacity of 4\\n- The table in the book has the magazine cost as Cr40 for explosive ammo but I think it should be Cr24, a base of Cr1 per round, multiplied by 6 for explosive ammo (p50) and finally multiplied by the capacity of 4\\n\""
+}

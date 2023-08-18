@@ -1,0 +1,68 @@
+{
+    "name": "p121 - Advanced Squad Support Weapon",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "GrenadeLauncherWeapon",
+                "components": [
+                    {
+                        "type": "StandardSemiAutomaticLauncherReceiver",
+                        "options": [
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedDrumMagazineFeed",
+                        "options": [
+                            {
+                                "id": "CapacityIncrease",
+                                "value": 100
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the Bulky trait for a semi-automatic standard cartridge grenade receiver but I think it should be Very Bulky (table on p58)\\n- The manifest in the book has a total receiver cost of Cr6500 but it should be Cr650. The result of this is the rest of the calculations based on receiver cost are incorrect\\n- The manifest in the book doesn't have Inaccurate -1 and Hazardous -1 modifiers for a fixed drum magazine (p45)\\n- The table in the book has Blast 3 for fragmentation grenades but the rules say it should be 9 (p57)\\n\""
+}

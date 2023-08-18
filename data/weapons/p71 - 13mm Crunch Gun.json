@@ -1,0 +1,92 @@
+{
+    "name": "p71 - 13mm Crunch Gun",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LightSupportReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "AntiMaterialRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "DecreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 5
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "VeryLongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            },
+            {
+                "type": "BipodAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the base ammo capacity for a light support receiver as 30 but the rules say it should be 50 (table on p31). This results in the example having the final ammo capacity as 3 when it should be 5. This also means the magazine costs in the table are wrong.\\n- The manifest in the book doesn't have Quickdraw -2 for the scope accessory (p46)\\n- The Quickdraw -4 modifier for a Bipod doesn't apply in all circumstances, as such Auto-Jimmy shows this modifier in the notes section with details of when it's applied rather than include it in the weapons standard Quickdraw score.\\n- The table in the book has Lo-Pen 2 for incendiary ammo but the rules don't say that ammo type has a Penetration modifier\\n- The table in the book has a Damage of 6D for explosive ammo but it should be 7D. The description of explosive ammo (p51) says it adds 1D plus an additional 1D for every 3 full dice of damage. The base damage of the weapon is 5D so explosive ammo should add an additional 2D for a total of 7D.\\n- The table in the book has AP 3 for advanced armour piercing ammo but this doesn't seem correct. The table on p18 says \\\"AP 1 plus 1 per full dice of damage, -1 damage per 2 full dice of damage\\\". With a Base Damage of 5D I would expect it to be AP 6 and the final damage to be 5D-2\\n\\n\""
+}

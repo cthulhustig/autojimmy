@@ -1,0 +1,91 @@
+{
+    "name": "p108 - Reliant",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LightSupportReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IntermediateRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "CompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "CarbineBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FoldingStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the 20% receiver weight reduction for intermediate rifle calibre (p37).\\n- The manifest in the book doesn't have the damage -1 modifier for a carbine barrel (p42)\\n- The manifest in the book doesn't have the x2 barrel cost and weight multiplier for a heavy barrel (p43).\\n\""
+}

@@ -1,0 +1,77 @@
+{
+    "name": "p111 - MF-61",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ProjectorWeapon",
+                "components": [
+                    {
+                        "type": "CompactProjectorReceiver",
+                        "options": [
+                            {
+                                "id": "FuelWeight",
+                                "value": 4.0
+                            },
+                            {
+                                "id": "PropellantWeight",
+                                "value": 0.4
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GeneratedGasPropellantType",
+                        "options": []
+                    },
+                    {
+                        "type": "ArmouredFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 3
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't list a stock however the picture of the weapon clearly shows one. The weapon here is configured as stockless to most closely match the manifest in the book.\\n- The table in the book has Extreme for the Emission Signature but I can't find any rules that cover Emission Signature for a projector\\n- The table in the book doesn't give a value for the Incendiary. The Damage and Burn trait would suggest advanced fuel is being used which would make the Incendiary value 1D3 + 1 (p61)\\n- The description in the book mentions reloading using special fuel modules for reloading, I assume this is why the magazine cost is different\\n\""
+}

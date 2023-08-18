@@ -1,0 +1,104 @@
+{
+    "name": "p82 - Standardised Personal Weapon",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "CompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "CarbineBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has +20% receiver cost for the bullpup feature but the rules say it's +25% (p33)\\n- The manifest in the book has Normal as the Physical Signature for light rifle calibre but the rule say Low (p39)\\n- The manifest in the book doesn't have the Damage -1 modifier for carbine barrel (p42)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for the scope accessory (p46)\\n- The table in the book has a magazine cost of Cr30 but I think it should be Cr33.8. A base of Cr0.4 per round, multiplied by an ammo capacity of 27 finally adding 1% of the weapons base cost as the cost of a standard magazine its self.\\nThere is possibly a rules ambiguity around how much a standard magazine without the ammo costs. The rules say it's 1% of the weapons purchase price (p45) but it's not clear if the weapon purchase price includes other weapon accessories. I'd assume that it doesn't as I can't see why the magazine cost would be affected by if the weapon had a silencer fitted.\\n\""
+}

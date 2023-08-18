@@ -1,0 +1,65 @@
+{
+    "name": "p72 - Jazail",
+    "techLevel": 3,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ArchaicRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SingleShotMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base receiver weight of 3kg for a longarm receiver when the rules say it should be 2.5kg (table on p31)\\n- The manifest has a base range of 125m for a Black Powder Rifle. I assume this is an Archaic Rifle Calibre which should have a range of 150m (p39).\\n- The table in the book has a damage of 3D-2 but the rules say it should be 3D-3 (p39)\\n- I would have thought a single shot black powder weapon would have a fixed magazine feed but the manifest doesn't mention it or the 10% cost and weight reduction that would go with it (p45)\\n\""
+}

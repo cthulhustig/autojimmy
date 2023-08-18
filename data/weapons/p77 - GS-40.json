@@ -1,0 +1,65 @@
+{
+    "name": "p77 - GS-40",
+    "techLevel": 13,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SmallGaussCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BurstCapableMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base ammo capacity of 40 but I think it should be 30, base 10 for a handgun receiver (table on p31) * 3 for Gauss (table on p31) then -50% for the very compact feature (p35). This would also make the magazine cost in the table wrong.\\n- The manifest in the book doesn't give a Physical Signature, I assume it should be the base Normal\\n- The table in the book has a damage of 3D for the Navy variant but following the rules it would be 3D-1. The Navy variant suffers no Penetration reduction due to barrel type so has a score of 2. The rules (p18) say the AP increase causes a damage reduction of 1 per 2 full dice of damage. With a base damage of 3D this would result in a modified damage of 3D-1.\\n- The table in the book has Quickdraw 4 for the Navy variant but I think it should be 6, a base 4 for handgun receiver then +2 for assault barrel\\n\""
+}

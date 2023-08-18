@@ -1,0 +1,135 @@
+{
+    "name": "p112 - Combat Cryojet",
+    "techLevel": 10,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ProjectorWeapon",
+                "components": [
+                    {
+                        "type": "LargeProjectorReceiver",
+                        "options": [
+                            {
+                                "id": "FuelWeight",
+                                "value": 9.0
+                            },
+                            {
+                                "id": "PropellantWeight",
+                                "value": 1.0
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "GeneratedGasPropellantType",
+                        "options": []
+                    },
+                    {
+                        "type": "ArmouredFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    }
+                ]
+            },
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavySmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SecondaryMount",
+                        "options": [
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": -1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the Cr500 for 1kg of generated gas machinery (p61)\\n- The manifest in the book doesn't have the -25% cost and +20% weight modifiers for the secondary receiver due to heavy smoothbore calibre (p37)\\n- The manifest in the book doesn't have the Quickdraw -1 modifier for the additional barrel introduced by the secondary weapon (p40). This could be a rules ambiguity, it's not clear if the Quickdraw -1 modifier applies to a secondary weapons or if it's just complete multi-barrel weapons\\n- The manifest in the book has a base capacity of 5 for the secondary weapon due to a longarm receiver but going by the rules I think it should be 8, base 10 for a longarm receiver using smoothbore Ammo (p36) the minus 20% for heavy smoothbore ammo (p37)\\n- The manifest in the book doesn't take into account the 10% of the secondary weapons cost and weight required for mounting a secondary weapon (p40)\\n- The manifest in the book doesn't list a stock however the picture of the weapon clearly shows one. The weapon here is configured as stockless to most closely match the manifest in the book.\\n- The manifest in the book doesn't mention what mechanism or feed the secondary weapon is using. I've assumed it's some form of pump action shotgun, which would mean a repeater with a fixed magazine.\\n- The table in the book has Burn D3+1 and Incendiary for cryogenic fuel which seems wrong and I cant see anything like that in the rules (p62)\\n- The table in the book has a magazine cost of Cr2200 for the projector but I think should be Cr900, a base of Cr100 per kg for cryogenic fuel (p62) multiplied by 9 for the propellant capacity.\\n- The description in the book of the breaker ammo makes it sound unlike any of the ammo listed in rest of the rules, I assume this is why the magazine cost is different\\n\""
+}

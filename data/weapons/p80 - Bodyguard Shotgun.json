@@ -1,0 +1,74 @@
+{
+    "name": "p80 - Bodyguard Shotgun",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardSmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "LaserPointerAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Attached"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The description in the book says this is a standard pump action shotgun which would suggest it would have a fixed magazine feed but the manifest doesn't mention it or the 10% cost and weight reduction that would go with it (p45)\\n- The manifest in the book has the base ammo capacity as 6 for standard smoothbore calibre in a longarm receiver but the rules say it should be 10 (p36)\\n- The manifest in the book has Inaccurate -1 for standard smoothbore but the table on p39 says -2\\n- The manifest in the book has Cr50 for a laser pointer but the rule say it's Cr200 (p46)\\n- The table in the book has Normal as the Physical Signature where as the manifest (correctly) has High (p39)\\n- The table in the book has the ammo capacity and magazine cost of the Pointguard variant as half the Bodyguard variant but I'm not sure why, if it's just a shorter barrel as suggested by the description then that wouldn't affect ammo capacity\\n\""
+}

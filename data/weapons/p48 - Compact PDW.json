@@ -1,0 +1,87 @@
+{
+    "name": "p48 - Compact PDW",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "CompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "type": "DecreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 3
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base weight of 1kg for an assault receiver but the rules say it's 2kg (p31)\\n- The manifest in the book doesn't have the 20% receiver cost reduction for light handgun calibre (p36)\\n- The manifest in the book has a 20% receiver weight reduction for light handgun calibre but the rules say it's 25% (p36)\\n- The manifest in the book has a 20% ammo capacity reduction for the compact feature but the rules say it's 25% (p33), the result is the final ammo capacity is given as 13 when it should be 12\\n- The manifest in the book doesn't have the Quickdraw +2 modifier for an assault weapon with no stock (p43)\\n- The weapon description in the book says that the magazine cost is calculated differently to the standard rules as it uses commercially available magazines.\\n\\n\""
+}

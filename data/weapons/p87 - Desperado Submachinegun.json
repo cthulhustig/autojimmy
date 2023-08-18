@@ -1,0 +1,60 @@
+{
+    "name": "p87 - Desperado Submachinegun",
+    "techLevel": 6,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "MediumHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the wrong value for the total receiver cost, Cr300 + 20% should be Cr360 not Cr330\\n- The table in the book has Inaccurate 1 but that seems to be incorrect. I suspect this is meant to be from the description of the Desperado (p87), but that says it should be Inaccurate -2. If needed the Inaccurate trait can be added by adding the Low Quality receiver feature.\""
+}

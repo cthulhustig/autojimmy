@@ -1,0 +1,147 @@
+{
+    "name": "p107 - Solo",
+    "techLevel": 14,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "EnhancedGaussCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "VeryCompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "AccurisedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "HighQualityFeature",
+                        "options": [
+                            {
+                                "id": "CostIncrease",
+                                "value": 100.0
+                            },
+                            {
+                                "id": "RangeModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageDiceModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageConstantModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "RecoilModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PenetrationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "HeatDissipationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "OverheatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DangerHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DisasterHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PhysicalSignatureModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "EmissionsSignatureModifier",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "HolographicSightAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has the Emission Signature as Low for enhanced gauss calibre but the rules say it's High (p39)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for the scope accessory (p46)\\n- The magazine cost in the book is slightly different as the example is using the final weapon cost (with other accessories) where as Auto-Jimmy uses the base cost (without accessories). Including the cost of accessories seems wrong as why would something that can be added/removed after the weapons purchase affect the cost of a magazine for that weapon. It would also mean you could effectively get into a logical infinite loop as the rules treat magazines as accessories, this would mean purchasing one would increase the cost of the weapon which would in turn increase the cost of magazine its self, this in turn would increase the cost of the weapon.\\n\""
+}

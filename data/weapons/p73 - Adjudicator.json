@@ -1,0 +1,65 @@
+{
+    "name": "p73 - Adjudicator",
+    "techLevel": 7,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SmallSmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have a receiver weight reduction for small smoothbore calibre the rules say it reduces it by 40% (p37)\\n- The manifest in the book has a base ammo capacity of 4 but I think it should be 5. The base ammo capacity for handguns using smoothbore ammo is 4 (p36) but  using small smoothbore ammo increases ammo capacity by 40% (p37).\\n- The manifest in the book has Inaccurate -1 for small smoothbore calibre but the rules say it should be -2 (p39)\\n- The manifest in the book has Penetration -1 for smoothbore calibre but not -1 for handgun barrel (p42). This causes all the Low-Pen scores in the table to be incorrect\\n- I would have thought a revolver like this would have a fixed magazine feed but the manifest doesn't mention it or the 10% cost and weight reduction that would go with it (p45)\\n- The table in the book has the Physical Signatures one level higher than they should be\\n- The table in the book has Spread 5 for pellet and flechette ammo however the table on p51 says it's 4 for a handgun barrel\\n- The table in the book has a range of 5m when using pellet ammo but the rules would suggest it should be 3. The description of smoothbore ammo (p36) suggest range is reduced by 75% when using pellet ammo.\\n- The table in the book has a damage of 3D+1 for pellet ammo compared to 3D-2 for standard, but the rules don't mention pellet ammo increasing damage\\n- The table in the book has a range of 5m for flechette ammo but the rules (p50) say it reduces the weapon range to 10m.\\n- The table in the book has the same Low-Pen 5 for flechette ammo but the rules (p50) don't say it reduces Penetration\\n- The table in the book has a damage of 3D3+1 for flechette ammo but the rules only say D6s are reduced to D3 (p50). That would mean a base damage of 3D-2 would be reduced to 3D3-2\\n- The table in the book has a damage of 5D+1 for explosive ammo but the rules say it adds 1D + 1D for every 3 full dice of damage (p50). That would mean a base damage of 3D-2 would be increased to 5D-2\\n\""
+}

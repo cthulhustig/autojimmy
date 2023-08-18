@@ -1,0 +1,119 @@
+{
+    "name": "Jimmy's Machine Pistol",
+    "techLevel": 12,
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "MediumHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsExtremeLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "QuickdrawFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 5
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardConventionalMagazineQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ExtendedConventionalMagazineQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            },
+                            {
+                                "id": "CapacityIncrease",
+                                "value": 50
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"\""
+}

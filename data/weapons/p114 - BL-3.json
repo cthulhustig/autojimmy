@@ -1,0 +1,77 @@
+{
+    "name": "p114 - BL-3",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "EnergyCartridgeWeapon",
+                "components": [
+                    {
+                        "type": "MinimalEnergyCartridgeReceiver",
+                        "options": [
+                            {
+                                "id": "BaseCapacity",
+                                "value": 3
+                            },
+                            {
+                                "id": "DamageDice",
+                                "value": 2
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": [
+                            {
+                                "id": "CartridgeEject",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "MinimalBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The description of the weapon (p114) would suggest that it has a fixed magazine however the manifest doesn't mention it or the cost/weight reduction it would give.\\n- The manifest in the book has Quickdraw +2 for a minimal barrel but the rules say it should be +8 (p42). This would make the final Quickdraw 12.\\n- The manifest in the book doesn't have the Physical Signature +2 for a minimal barrel (p42). This means the final Physical Signature should be Very High not Normal\\n\""
+}

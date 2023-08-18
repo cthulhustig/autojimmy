@@ -1,0 +1,97 @@
+{
+    "name": "Jimmy's Body Pistol",
+    "techLevel": 12,
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "MediumHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "QuickdrawFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ExtremeStealthFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardSuppressorAccessory",
+                        "options": [
+                            {
+                                "id": "Attachment",
+                                "value": "Attached"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardConventionalMagazineQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"\""
+}

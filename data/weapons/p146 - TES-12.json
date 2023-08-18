@@ -1,0 +1,107 @@
+{
+    "name": "p146 - TES-12",
+    "techLevel": 12,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "PowerPackWeapon",
+                "components": [
+                    {
+                        "type": "LargePowerPackReceiver",
+                        "options": [
+                            {
+                                "id": "DamageDice",
+                                "value": 8
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "EfficientBeamGeneratorFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ImprovedBeamFocusFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "InternalPowerPackFeature",
+                        "options": [
+                            {
+                                "id": "Weight",
+                                "value": 1.0
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavyInternalPowerPackLoaded",
+                        "options": []
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            },
+            {
+                "type": "BipodAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            },
+            {
+                "type": "LaserDesignatorAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Attached"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a Quickdraw -1 for a long barrel but I can't see that in the rules (p42)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for the scope Accessory (p46)\\n- The table in the book has the Range for the TES-12 as 626m but it should be 687.5m. The values in the manifest are correct, they've just been applied incorrectly, it looks like the +10% increase for a long barrel hasn't been applied\\n- The table in the book has the Damage for the TES-12 as 8D but that doesn't take into account the +3 for Improved Beam Focus\\n- The table in the book has the Range for the TEA-12 as 450m but I think it should be 562.5, a base of 500 for a large laser plus 25% for the efficient beam generator feature and finally minus 10% for a carbine barrel \\n- The table in the book has the Damage for the TEA-12 as 8D but that doesn't seem to take into account the fact that the max damage of a carbine barrel is 4D (p64) or the +3 for the improved beam focus feature\\n- The table in the book has Quickdraw -4 for the TEA-12 but I think it should be -10\\n- The cost in the book for the TEA-12 appears to be incorrect, I don't think it's taking into account the fact a bipod wouldn't be compatible with a carbine barrel (p43) so wouldn't be included in the cost\""
+}

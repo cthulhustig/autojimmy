@@ -1,0 +1,5 @@
+PyQt5>=5.11
+PyQtWebEngine>=5.11
+pyqtgraph>=0.13.1
+darkdetect>=0.7.1
+reportlab>=3.6.12

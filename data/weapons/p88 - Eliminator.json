@@ -1,0 +1,86 @@
+{
+    "name": "p88 - Eliminator",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "type": "CompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RecoilCompensationFeature",
+                        "options": [
+                            {
+                                "id": "CompensationLevel",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FoldingStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the -20% cost and -25% weight modifiers for light handgun calibre (p36)\\n- The manifest in the book has a Physical Signature of Normal for light handgun calibre but the rules say Low (p39)\\n- The table in the book hasn't taken the 25% ammo capacity reduction due to the compact feature into account, I think the capacity should be 18. This would also make the magazine cost in the table wrong.\\nIt could be it's using an extended magazine, one is mentioned in the weapon description, but then there should be a Quickdraw -2 modifier (p45)\\n- The table in the book has a damage of 2D-3 for advanced AP ammo but I think it should be 2D-4. The advanced AP ammo increases gives the weapon an AP score of 2 which the rules (p18) say decreases damage by 1 for every 2 full dice of damage.\""
+}

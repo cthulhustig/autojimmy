@@ -1,0 +1,95 @@
+{
+    "name": "p95 - Advanced Infantary Weapon System",
+    "techLevel": 11,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IntermediateRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ModularisationWeaponFeature",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for a scope accessory (p46)\\n- The table in the book has the capacity of the rifle, carbine and assault variants as 42 but I think it should actually be 43, a base of 30 for intermediate rifle calibre, plus 20% for the high capacity feature and finally plus 20% for the capacity increase. This would also make the magazine costs slightly different but the rounding that's applied to them probably makes it irrelevant.\\n- The Assault variant in the book has a range of 125m but I think it should be 156m, a base range of 250m for intermediate rifle calibre (p39) plus 25% for the advanced projectile weapon feature (p33)\\n\""
+}

@@ -1,0 +1,65 @@
+{
+    "name": "p83 - Mk 1 Semi-Automatic Pistol",
+    "techLevel": 6,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavyHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has +15% receiver weight for heavy handgun calibre but the rules say the weight is reduced by 15% (p36). In this case I think it's actually the rules that is wrong as weight reduction seems odd for heavy ammo\\n- The manifest in the book doesn't have the Penetration -1 modifier for a handgun barrel (p42)\\n- The table in the book doesn't have the Range reduction or Inaccurate -1 modifier for the suppressor accessory (p44)\\n- The table in the book doesn't have the Bulky trait for being an uncompensated weapon weighing under 2kg that uses  heavy handgun ammo (p36)\\n- I think the suppressed variant is using a standard suppressor but that would mean the cost of Cr415 is incorrect, I think it should be Cr451\\n\""
+}

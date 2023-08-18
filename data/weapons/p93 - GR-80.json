@@ -1,0 +1,83 @@
+{
+    "name": "p93 - GR-80",
+    "techLevel": 13,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardGaussCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "CarbineBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "MultispectralScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base cost of Cr75 for the standard gauss calibre but the rules (p39) say it's Cr50.\\n- The manifest in the book has an Emissions signature of Low for standard gauss calibre but the rules (p39) say it should be Normal.\\n- The manifest in the book doesn't have the Damage -2 modifier for a carbine barrel (p42)\\n- The table in the book has an AP 3 but I think it should be 5. Penetration +2 for standard gauss calibre would mean AP 1 plus 1 per full dice of damage, -1 damage per 2 full dice of damage (p18). With a damage of 4D this would mean an AP of 5 and Damage -2 modifier\\n- It's not clear what configuration the Support Weapon variant has. The description mentions a longer, heavier barrel. The range of 600m would suggest a Rifle barrel but in that case the Damage, Weight, Cost, Magazine and Quickdraw values in the book are wrong\\n\""
+}

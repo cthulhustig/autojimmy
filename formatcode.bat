@@ -1,0 +1,1 @@
+autopep8 -a -a -a --select E10,E11,E121,E122,E124,E125,E126,E127,E128,E129,E13,E21,E22,E23,E25,E301,E303,E304,E305,E306,E401,W2,W3 --in-place --recursive --verbose .

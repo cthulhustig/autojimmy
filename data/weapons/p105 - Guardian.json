@@ -1,0 +1,78 @@
+{
+    "name": "p105 - Guardian",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LightSupportReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavyRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": true
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "VacuumFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base capacity of 30 rounds but I think it should be 18, a base of 50 for light support weapon (p31) minus 40% for heavy rifle calibre (p39) then minus 40% for rocket propelled.\\nThis could be an ambiguity in the rules, is the 40% ammo capacity reduction for rocket propelled ammo instead of or as well as any reduction the non-rocket propelled ammo would have. I think it make sense for it to be as well as, otherwise the capacity reduction for rocket propelled anti-material ammo would be lower than that of the non-rocket propelled version.\\n- The manifest in the book doesn't have the 50% receiver & barrel weight reduction for rocket propelled (p38)\\n- The manifest in the book has a cost of Cr200 and weight of 0.1kg for the scope accessory but the rules say Cr50 and 0.2kg (p46). It's possible this was meant to be a laser pointer as the values would be correct for that\\n- The manifest in the book doesn't have the Quickdraw -2 or Scope trait for the scope accessory (p46)\\n- The table in the book has a range of 275m for ball ammo but I think this is just a typo and should be 250m as is the case for explosive and HEAP ammo.\\n- The table in the book doesn't take into account the Physical Signature +1 modifier for explosive ammo (p50)\\n- The table in the book has an AP 4 for HEAP ammo but I think it should be 5. HEAP ammo would give the weapon a Penetration of 2 which the rules (p18) say results in AP 1 plus 1 per full dice of damage, -1 damage per 2 full dice of damage (p18). With a damage of 4D this would result in AP 5 and a Damage -2 modifier\\n\""
+}

@@ -1,0 +1,72 @@
+{
+    "name": "p120 - Light Munition Launcher",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "GrenadeLauncherWeapon",
+                "components": [
+                    {
+                        "type": "LightSemiAutomaticLauncherReceiver",
+                        "options": [
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a cost of Cr112.5 for an assault barrel but I think it should be Cr150, 20% of the Cr750 receiver cost (p42)\\n- The manifest in the book shows the correct range of 100m when due to the assault barrel, however the table shows the range as 200m\\n- The table in the book has light cartridges listed as TL 7, but they don't become available until TL 8. Standard cartridge grenades are based on hand grenades and become available at TL 6. Light cartridge grenades are based on mini-grenades, which become available 2 TLs after their hand grenade counterpart. Following the same logic, light incapacitant gas, light baton and light distraction cartridge grenades don't become available until TL 9.\\n- The table in the book has an entry for incapacitant gas but it isn't available in a light/mini form factor (p55)\\n- The table in the book has Low-Pen 3 for light baton grenades but I can't see that in the rules (p54 & p57)\\n- The table in the book has a cost of Cr30 for a single light distraction grenade but I think it should be Cr62.5, a base of Cr25 for mini distraction grenades (p57) multiplied by 2.5 for them being cartridge grenades (p53)\\n\""
+}

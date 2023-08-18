@@ -1,0 +1,38 @@
+{
+    "cSpell.words": [
+        "Accurised",
+        "Astrometrics",
+        "Autopistol",
+        "Bipod",
+        "Brogan",
+        "Bullpup",
+        "Combi",
+        "dialog",
+        "Flashlight",
+        "Flechette",
+        "Gravitic",
+        "Hydrographics",
+        "incapacitant",
+        "Longarm",
+        "Quickdraw",
+        "Radioactives",
+        "Smoothbore",
+        "Sophont",
+        "Sophonts",
+        "Speedloader",
+        "Stockless",
+        "subsector",
+        "subsectors",
+        "Traveller",
+        "travellermap",
+        "unnessicary"
+    ],
+    "cSpell.language": "en-GB",
+    "search.exclude": {
+        "**/.svn": true,
+        "**/.VSCodeCounter": true,
+        "**/build": true,
+        "**/dist": true,
+        "**/data": true
+    },
+}

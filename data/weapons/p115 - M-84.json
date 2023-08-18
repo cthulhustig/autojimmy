@@ -1,0 +1,79 @@
+{
+    "name": "p115 - M-84",
+    "techLevel": 11,
+    "components": {
+        "sequences": [
+            {
+                "type": "PowerPackWeapon",
+                "components": [
+                    {
+                        "type": "MediumPowerPackReceiver",
+                        "options": [
+                            {
+                                "id": "DamageDice",
+                                "value": 5
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "EfficientBeamGeneratorFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ImprovedBeamFocusFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "InternalPowerPackFeature",
+                        "options": [
+                            {
+                                "id": "Weight",
+                                "value": 0.1
+                            }                            
+                        ]
+                    },                    
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "CarbineBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardInternalPowerPackLoaded",
+                        "options": []
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FoldingStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a weight of 1.125kg for a folding stock but I think it should be 0.113kg, 5% of the 2.25kg receiver weight (p43). There could be a rules ambiguity here. The folding stock description says it adds 5% to the weight of the weapon (rather than receiver). It's not clear if it means receiver or if it also includes barrel weight (and possibly accessory weight). No mater which interpretation you use the current value of 1.125kg seems wrong.\\n\""
+}

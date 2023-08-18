@@ -1,0 +1,174 @@
+{
+    "name": "p144 - MDS-15",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HeavyWeaponReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            },
+                            {
+                                "id": "Recoil",
+                                "value": -10
+                            }
+                        ]
+                    },
+                    {
+                        "type": "AntiMaterialRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "CompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RecoilCompensationFeature",
+                        "options": [
+                            {
+                                "id": "CompensationLevel",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "AccurisedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "HighQualityFeature",
+                        "options": [
+                            {
+                                "id": "CostIncrease",
+                                "value": 100.0
+                            },
+                            {
+                                "id": "RangeModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageDiceModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageConstantModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "RecoilModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PenetrationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "HeatDissipationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "OverheatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DangerHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DisasterHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PhysicalSignatureModifier",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    {
+                        "type": "DecreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 5
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            },
+            {
+                "type": "BipodAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the 150% cost and 50% weight increase for anti-material rifle calibre (p37). This also has the knock on effect of making the magazine cost in the table incorrect as the cost of a standard magazine is 1% of the weapon purchase price (p45)\\n- The manifest in the book has the base range as 500m for anti-material rifle calibre but the rules say it's 1000 (p39)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for the scope Accessory (p46)\\n- The manifest in the book has a Quickdraw -1 for a Long barrel but I can't see that in the rules (p42). Is it maybe meant to be heavy, that would give a Quickdraw -1? If it is then I don't think the barrel cost and weight are taking the x2 multiplier for a heavy barrel into account (p43)\\n- The table in the book doesn't seem to take the -1D damage modifier that an assault barrel into account. The modifier would reduce the base damage of the weapon to 4D-3. The result of this is the damage would be 6D-3 when using explosive ammo would be 4D-3 when using pellet ammo.\\n\""
+}

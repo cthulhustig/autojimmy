@@ -1,0 +1,58 @@
+{
+    "name": "p117 - Nefertem",
+    "techLevel": 9,
+    "components": {
+        "sequences": [
+            {
+                "type": "PowerPackWeapon",
+                "components": [
+                    {
+                        "type": "SmallPowerPackReceiver",
+                        "options": [
+                            {
+                                "id": "DamageDice",
+                                "value": 3
+                            },
+                            {
+                                "id": "PhysicalSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EmissionsSignature",
+                                "value": "Normal"
+                            },
+                            {
+                                "id": "EnableBaseHeat",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SemiAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The table in the book has the weight as 2.6+1 but I think it should be 1.95+1 to show the base weight plus power pack weight\\n\""
+}

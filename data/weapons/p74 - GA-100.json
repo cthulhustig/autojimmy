@@ -1,0 +1,86 @@
+{
+    "name": "p74 - GA-100",
+    "techLevel": 13,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "AssaultReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ShotgunGaussCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "QuickdrawFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 3
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "AssaultBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a Spread of 3 for gauss shotgun calibre but I can't find the rule that say that should be the case\\n- The manifest in the book doesn't give a Physical Signature, I assume it should be the base Normal\\n- The table in the book has Auto 2 but the manifest (correctly) has Auto 3 for a fully-automatic mechanism\\n- The table in the book has a magazine cost of Cr55 for ball ammo but I think it should be Cr67. A base of Cr1.5 per round, multiplied by 23 for the capacity of the gauss shotgun, multiplied by 4 for the fact that each of the effective round is actually 4 gauss rounds and finally adding 1% of the weapons base cost as the cost of a standard magazine its self.\\nThe part about each effective round is actually 4 physical gauss rounds is implied from the fact the rules say the capacity of a gauss shotgun is effectively reduced by 75% (p40).\\nThere is possibly a rules ambiguity around how much a standard magazine without the ammo costs. The rules say it's 1% of the weapons purchase price (p45) but it's not clear if the weapon purchase price includes other weapon accessories. I'd assume that it doesn't as I can't see why the magazine cost would be affected by an accessory such as silencer that could easily be added after the initial purchase of the weapon. It would also mean you could effectively get into a logical infinite loop as the rules treat magazines as accessories (it's in that section), this would mean purchasing one would increase the cost of the weapon, which would mean the magazine cost would increase, which again would increase the cost of the weapon ad infinitum.\\n\""
+}

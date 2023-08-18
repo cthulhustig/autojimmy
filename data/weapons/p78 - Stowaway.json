@@ -1,0 +1,76 @@
+{
+    "name": "p78 - Stowaway",
+    "techLevel": 12,
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 3
+                            }
+                        ]
+                    },
+                    {
+                        "type": "VeryCompactFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ExtremeStealthFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "ShortBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base ammo cost of 100 for light handgun calibre but the rules say its 60 (p36)\\n- The manifest in the book doesn't have Physical Signature +1 for short barrel (table on p43)\\n- The table in the book has Auto 2 but I think it should be 6, a base 3 for full-auto mechanism them +3 for the level 3 increased rate of fire feature\\n- The description in the book mentions a special pre-loaded magazine which I assume is why the magazine cost in the table doesn't match\\n\""
+}

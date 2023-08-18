@@ -1,0 +1,172 @@
+{
+    "name": "Jimmy's Revolver",
+    "techLevel": 12,
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "MediumHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "AccurisedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "BetterMaterialsExtremeLightweightFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "QuickdrawFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "ArmouredFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BulwarkedFeature",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HighQualityFeature",
+                        "options": [
+                            {
+                                "id": "CostIncrease",
+                                "value": 50
+                            },
+                            {
+                                "id": "RangeModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageDiceModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DamageConstantModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "RecoilModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PenetrationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "HeatDissipationModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "OverheatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DangerHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "DisasterHeatThresholdModifier",
+                                "value": 0
+                            },
+                            {
+                                "id": "PhysicalSignatureModifier",
+                                "value": 0
+                            }
+                        ]
+                    },
+                    {
+                        "type": "DesiredCapacityModification",
+                        "options": [
+                            {
+                                "id": "Capacity",
+                                "value": 6
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SpeedLoaderQuantity",
+                        "options": [
+                            {
+                                "id": "Quantity",
+                                "value": 10
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": []
+            },
+            {
+                "type": "ModularisationWeaponFeature",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"\""
+}

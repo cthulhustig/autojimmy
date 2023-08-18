@@ -1,0 +1,91 @@
+{
+    "name": "p86 - Crewmate",
+    "techLevel": 7,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IntermediateRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "BullpupFeature",
+                        "options": [
+                            {
+                                "id": "Setup",
+                                "value": "RightHanded"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "IncreasedFireRateFeature",
+                        "options": [
+                            {
+                                "id": "AutoIncrease",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RuggedFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a semi-bullpup feature but I can't find anything in the rules about the \\\"semi\\\" part\\n- The manifest in the book doesn't have a stock but the rules say a bullpup weapon must have a stock (p33). I assume this is something to do with it being semi-bullpup.\\n- The manifest in the book has a different cost modifier for semi-bullpup feature compared to the bullpup feature, I'm not sure if that's intentional\\n- The manifest in the book has a Base Ammo Capacity of 30 for intermediate rifle calibre and handgun receiver. I think it should be 10, base 10 for handgun receiver (p31) and no modifier for intermediate rifle ammo (p39). This would also make the magazine cost in the table wrong.\\nIt's possible this is some kind of extended magazine as the description for the magazine mentions a smaller 10 round magazine, however a capacity increase from 10 to 30 is more than the max 50% increase you can get for an extended magazine (p45).\\n- The manifest in the book doesn't have the Quickdraw +4 modifier or Penetration -1 for a handgun barrel (p42)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier or Scope trait for the scope accessory (p46)\\n\""
+}

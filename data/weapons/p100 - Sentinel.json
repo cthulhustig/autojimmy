@@ -1,0 +1,82 @@
+{
+    "name": "p100 - Sentinel",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "HeavyHandgunCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": true
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "VacuumFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "IncreaseCapacityModification",
+                        "options": [
+                            {
+                                "id": "Levels",
+                                "value": 4
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "HandgunBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the 20% receiver cost and 15% receiver weight increase for heavy handgun calibre (p36). The rules actually say it's a 15% weight decrease but that seems wrong and other examples have it as an increase.\\n- The manifest has the base ammo capacity for rocket propelled heavy handgun ammo as 5 but I think it should be 4. A base of 10 for handgun receiver (p31), minus 20% for heavy handgun calibre (p36) and finally minus 40% for rocket propelled ammo (p39). This would give 4.8 which going by other examples you would round down to 4, this would also make logical sense for a situation where the limitation is the number of rounds you can fit into a physical space.\\nThis has the knock on effect that the final capacity, after modifiers for the mechanism and features have been applied, is also wrong. What value it should be isn't exactly clear, it's either 2 or 3 depending on if the ammo capacity should be rounded down every time a capacity modifier is applied or if it's just when calculating the final receiver capacity.\\n- The manifest in the book has a base range of 50m for rocket propelled heavy handgun calibre but the rules say it should be 250m, the weapon ammo table correctly has it as 250m.\\n- The manifest in the book has a base damage of 3D-3 for heavy handgun calibre but the rules say it's 3D-1 (p36)\\n- The table in the book doesn't take the Physical Signature +1 modifier for Explosive Ammo into account (p50)\\n- The table in the book doesn't have the Bulky trait for being an uncompensated weapon weighing under 2kg that uses  heavy handgun ammo (p36). This is possibly related to the weapon having the Zero-G trait, however I can't find anything in the Field Catalogue or Core Rules that says the Zero-G trait removes the Bulky trait.\\n\""
+}

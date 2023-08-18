@@ -1,0 +1,74 @@
+{
+    "name": "p70 - Civilian Shotgun",
+    "techLevel": 6,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "LongarmReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightSmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "PartialMultiBarrelSetup",
+                        "options": [
+                            {
+                                "id": "Count",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SingleShotMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "RifleBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "FullStock",
+                "options": []
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base receiver weight of 3kg for a longarm but the rules say it should be 2.5kg (p31)\\n- The manifest in the book has Quickdraw -1 and half weight for additional partial-multi-barrels when the rules read like that's only for complete multi-barrel weapons (p40)\\n- The manifest in the book has a Physical Signature of Normal for light smoothbore calibre but the rules say it should be High (p39)\\n- The manifest in the book has Inaccurate -1 for light smoothbore but the rules say it should be -2 (p39)\\n- The description in the book would suggest this type of weapon would have a fixed magazine feed but the manifest doesn't mention it or the 10% cost and weight reduction that would go with it (p45)\\n- The table in the book has Cr Varies for the Sawed-Off variant using explosive ammo. It's not clear why it would vary and not just be Cr15 for explosive ammo, calculated as base Cr1.25 per round, multiplied by 6 for explosive ammo and multiplied by the capacity of 2\\n\\n\\n\\n\""
+}

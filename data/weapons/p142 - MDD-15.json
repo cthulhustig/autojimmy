@@ -1,0 +1,78 @@
+{
+    "name": "p142 - MDD-15",
+    "techLevel": 8,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HeavyWeaponReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            },
+                            {
+                                "id": "Recoil",
+                                "value": -10
+                            }
+                        ]
+                    },
+                    {
+                        "type": "AntiMaterialRifleCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "FullyAutomaticMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "RemovableMagazineFeed",
+                        "options": [
+                            {
+                                "id": "FeedAssist",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "LongBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "SupportMountAccessory",
+                "options": []
+            },
+            {
+                "type": "ScopeAccessory",
+                "options": [
+                    {
+                        "id": "Attachment",
+                        "value": "Fixed"
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book doesn't have the 150% cost and 50% weight increase for anti-material rifle calibre (p37). This also has the knock on effect of making the magazine cost in the table incorrect as the cost of a standard magazine is 1% of the weapon purchase price (p45)\\n- The manifest in the book has the base range as 500m for anti-material rifle calibre but the rules say it's 1000 (p39)\\n- The manifest in the book doesn't have the Quickdraw -2 modifier for the scope Accessory (p46)\\n- The manifest in the book doesn't show what feed it's using, the description says it's belt fed which would mean additional Quickdraw -8 and Inaccurate -1 modifiers (p45)\\n- The table in the book has a damage of 7D for the twin chain gun variant but I think it should be 6D. I'm assuming the increase in damage over the single chain gun variant comes from the fact multi-mounting gives the weapon the RF classification. However the rules for RF (p32) say it gives an additional 1D of damage per 3 full dice of damage. As the weapon has 5D of damage before the RF upgrade that would mean it would gain an additional 1D.\""
+}

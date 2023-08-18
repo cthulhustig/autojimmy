@@ -1,0 +1,126 @@
+{
+    "name": "p104 - Ten-Six Snub Revolver",
+    "techLevel": 9,
+    "rules": [],
+    "components": {
+        "sequences": [
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LowRecoilCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "RepeaterMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "AdvancedProjectileWeaponFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "HighCapacityFeature",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "ShortBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "ConventionalWeapon",
+                "components": [
+                    {
+                        "type": "HandgunReceiver",
+                        "options": [
+                            {
+                                "id": "EmissionsSignature",
+                                "value": null
+                            }
+                        ]
+                    },
+                    {
+                        "type": "LightSmoothboreCalibre",
+                        "options": [
+                            {
+                                "id": "Rocket",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SingleShotMechanism",
+                        "options": []
+                    },
+                    {
+                        "type": "FixedMagazineFeed",
+                        "options": []
+                    },
+                    {
+                        "type": "StandardFireRate",
+                        "options": []
+                    },
+                    {
+                        "type": "ShortBarrel",
+                        "options": [
+                            {
+                                "id": "Heavy",
+                                "value": false
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SecondaryMount",
+                        "options": [
+                            {
+                                "id": "QuickdrawModifier",
+                                "value": -1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "common": [
+            {
+                "type": "StocklessStock",
+                "options": [
+                    {
+                        "id": "UseAttackModifier",
+                        "value": true
+                    }
+                ]
+            }
+        ]
+    },
+    "notes": "\"Why the generated weapon doesn't match the example in the Field Catalogue\\n\\n- The manifest in the book has a base weight of 0.75kg for a handgun receiver but the rules say 0.8kg (p31)\\n- The manifest in the book has a base ammo Cost of Cr200 for low-recoil calibre but the rules say Cr150 (p39)\\n- The manifest in the book doesn't have the 20% ammo capacity reduction due to low-recoil calibre (p39). This means all the magazine capacities in the variants table are wrong.\\n- The description text in the book says it uses speed loaders for reloading which would suggest a fixed magazine feed but the manifest doesn't mention it or the 10% receiver cost & weight (p45) for the primary or secondary weapon \\n- The manifest in the book doesn't have the Quckdraw +6 for a short barrel (p42)\\n- The cost and weight of the secondary receiver appears to be incorrect, meaning the cost and weight of the secondary barrel is then also incorrect. The fact it's said to be a Secondary Receiver would suggest it should include the cost for another receiver, however it doesn't say what type of receiver that is. If you assume it's the same as the primary weapon the cost would be a base of Cr175 for a handgun receiver (p31), minus 25% for light smoothbore (p37), minus 75% for single shot (p31) and finally minus 10% for fixed magazine, giving a total of Cr29.52. The receiver weight would be a base 0.8kg for a handgun receiver (p31), minus 20% for light smoothbore (p31) and finally minus 10% for a fixed magazine, giving a total of 0.58kg. The cost and weight of a short barrel for that receiver would be then be Cr2.952 and 0.058kg. This would make the cost and weight of the secondary weapon Cr32.47 and 0.64kg. There is then the secondary weapon mounting which is equal to 10% of the cost and weight of the secondary weapon (p40), which would bring the total cost and weight of adding the secondary weapon to the primary weapon to Cr35.72 and 0.7kg.\\n- The table in the book doesn't show the Very Bulky trait for the secondary weapon caused by using light smoothbore ammo with a handgun receiver (p36).\\n- The table in the book has a Spread score of 4 for the secondary weapon when using pellet ammo but the rules (p51) say a short barrel gives a Spread of 5.\\n\""
+}
