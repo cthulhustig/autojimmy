@@ -68,6 +68,14 @@ Before you begin, ensure that you have the following prerequisites installed:
 
 ## Common Issues
 
+### Windows: Microsoft Defender SmartScreen prevents the installer from running
+This happens because the installer executable isn't digitally signed so Windows doesn't
+know who created it. Auto-Jimmy is just a passion project, so it doesn't really make sense
+for me to purchase the digital certificate that would allow me to sign it.
+If you do want to make Windows run the installer
+1. Click the "More info" link directly under the warning text
+2. Click "Run anyway"
+
 ### Windows: Running Auto-Jimmy from the command line opens the Windows app store
 By default, Microsoft have made Windows use a fake Python executable that redirects to the app
 store in an effort to get you to use it to install Python. If you install Python 3 manually
@@ -92,11 +100,11 @@ sudo apt install python3-pyqt5.qtwebengine
 ```
 
 ### macOS: World information tool tips aren't showing tile images from Traveller Map
-This issue can be caused be caused by an HTTPS certificate failure. After installing a versions of
+This issue can be caused by an HTTPS certificate failure. After installing a versions of
 Python downloaded from www.python.org on macOS, you need to manually install the Python
 certificates.
 1. From the main toolbar select *Go > Applications*
-2. Find the application directory for Python 3.x an open it
+2. Find the application directory for Python 3.x and open it
 3. Click on "Install Certificates.command" and select *Open*
 
 ## Useful Links
