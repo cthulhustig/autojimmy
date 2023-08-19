@@ -72,7 +72,7 @@ Before you begin, ensure that you have the following prerequisites installed:
 This happens because the installer executable isn't digitally signed so Windows doesn't
 know who created it. Auto-Jimmy is just a passion project, so it doesn't really make sense
 for me to purchase the digital certificate that would allow me to sign it.
-If you do want to make Windows run the installer
+If you want to make Windows run the installer, you can do the following:
 1. Click the "More info" link directly under the warning text
 2. Click "Run anyway"
 
