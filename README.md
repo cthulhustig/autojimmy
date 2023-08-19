@@ -70,8 +70,9 @@ Before you begin, ensure that you have the following prerequisites installed:
 
 ### Windows: Microsoft Defender SmartScreen prevents the installer from running
 This happens because the installer executable isn't digitally signed so Windows doesn't
-know who created it. Auto-Jimmy is just a passion project, so it doesn't really make sense
-for me to purchase the digital certificate that would allow me to sign it.
+know who created it and therefore doesn't automatically trust it. Auto-Jimmy is just a
+passion project, so it doesn't really make sense for me to purchase the digital
+certificate that would allow me to sign it.
 If you want to make Windows run the installer, you can do the following:
 1. Click the "More info" link directly under the warning text
 2. Click "Run anyway"
