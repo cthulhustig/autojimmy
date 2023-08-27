@@ -28,7 +28,7 @@ Python and can be run on Windows, Linux and macOS.
     and best case dice roles at each point in the trading process
 
 ## Installing
-Windows can use an installer available [here](https://github.com/cthulhustig/autojimmy/releases).
+For Windows users, an installer is available [here](https://github.com/cthulhustig/autojimmy/releases).
 The installer allows Auto-Jimmy to be run without requiring Python and dependencies to be
 manually installed. Note that the installer isn't digitally signed, so Windows may warn you about
 running it. If you have problems, check out the [Common Issues](#Common-Issues) section.
