@@ -1,7 +1,8 @@
 # Auto-Jimmy
 Auto-Jimmy is a collection of tools for the Traveller RPG. It's primarily aimed at Mongoose 1e and
 2e Traveller, but much of the functionality can be used with other rule systems. It can be used
-offline, but can also integrate with Traveller Map (internet connection required).
+offline, but can also integrate with Traveller Map (internet connection required). It's written in
+Python and can be run on Windows, Linux and macOS.
 
 ## Feature Highlights
 * Rule system agnostic jump route calculation
@@ -27,28 +28,35 @@ offline, but can also integrate with Traveller Map (internet connection required
     and best case dice roles at each point in the trading process
 
 ## Installing
-Windows users are recommended to use the installer available [here](https://github.com/cthulhustig/autojimmy/releases).
-The installer allows Auto-Jimmy to be run without requiring Python and required libraries to be
-manually installed.
+Windows can use an installer available [here](https://github.com/cthulhustig/autojimmy/releases).
+The installer allows Auto-Jimmy to be run without requiring Python and dependencies to be
+manually installed. Note that the installer isn't digitally signed, so Windows may warn you about
+running it. If you have problems, check out the [Common Issues](#Common-Issues) section.
 
-For Linux, macOS and more adventurous Windows users, the instructions below cover how to clone the
-Auto-Jimmy repository and run the application.
+For Linux, macOS and more adventurous Windows users, the instructions below cover how to download
+Auto-Jimmy, install dependencies and run the application.
 
 ### Prerequisites
 Before you begin, ensure that you have the following prerequisites installed:
 * Python 3.11+ (3.8+ _should_ be ok, ymmv)
 * Pip (Python package installer)
 
-### Step 1: Clone the Auto-Jimmy Repository
+### Step 1: Download the Auto-Jimmy Source Code
+Downloading the source code can be done either by cloning the repo with git or downloading a zip archive.
+
+#### Option 1: Clone the Auto-Jimmy Repository
 1. Open a terminal or command prompt.
 2. Execute the following command to clone the Auto-Jimmy repository:
    ```
    git clone https://github.com/cthulhustig/autojimmy.git
    ```
+#### Option 2: Download Source Code Zip File
+1. Download https://github.com/cthulhustig/autojimmy/archive/refs/heads/main.zip
+2. Extract the downloaded zip file
 
 ### Step 2: Install Python Dependencies
 1. Open a terminal or command prompt.
-2. Navigate to the clone of the Auto-Jimmy repository
+2. Navigate to the directory containing the Auto-Jimmy source code
 3. Execute the following command to install the required Python dependencies:
    ```
    pip3 install -r requirements.txt
@@ -60,7 +68,7 @@ Before you begin, ensure that you have the following prerequisites installed:
 
 ### Step 3: Running Auto-Jimmy
 1. Open a terminal or command prompt.
-2. Navigate to the clone of the Auto-Jimmy repository
+2. Navigate to the directory containing the Auto-Jimmy source code
 3. Execute the following command to run the application:
    ```
    python3 autojimmy.py
