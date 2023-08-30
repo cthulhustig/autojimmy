@@ -28,7 +28,7 @@ class LocalBrokerWidget(gui.TogglableSpinBox):
             self.setToolTip(gui.Mgt2022LocalBrokerToolTip)
             self.hideSpinBox()
 
-    def value(self, rawValue: bool = False) -> int | None:
+    def value(self, rawValue: bool = False) -> typing.Optional[int]:
         if app.Config.instance().rules() == traveller.Rules.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None
