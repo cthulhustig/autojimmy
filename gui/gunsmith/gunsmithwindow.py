@@ -49,6 +49,9 @@ class _PDFExportSettingsDialog(gui.DialogEx):
         self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include editable fields')
         self._includeEditableFieldsCheckBox.setChecked(True)
 
+        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include manifest table')
+        self._includeManifestTableCheckBox.setChecked(True)
+
         self._includeAmmoTableCheckBox = gui.CheckBoxEx(
             'Include magazine && ammo table(s)') # Double & for escaping to prevent interpretation as hotkey char
         self._includeAmmoTableCheckBox.setChecked(True)
@@ -84,6 +87,7 @@ class _PDFExportSettingsDialog(gui.DialogEx):
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._includeEditableFieldsCheckBox)
+        windowLayout.addWidget(self._includeManifestTableCheckBox)
         windowLayout.addWidget(self._includeAmmoTableCheckBox)
         if self._usePurchasedMagazinesCheckBox:
             windowLayout.addWidget(self._usePurchasedMagazinesCheckBox)
@@ -100,6 +104,9 @@ class _PDFExportSettingsDialog(gui.DialogEx):
 
     def isIncludeEditableFieldsChecked(self) -> bool:
         return self._includeEditableFieldsCheckBox.isChecked()
+    
+    def isIncludeManifestTableChecked(self) -> bool:
+        return self._includeManifestTableCheckBox.isChecked()
 
     def isIncludeAmmoTableChecked(self) -> bool:
         return self._includeAmmoTableCheckBox.isChecked()
@@ -131,6 +138,13 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             type=QtCore.QByteArray)
         if storedValue:
             self._includeEditableFieldsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeManifestTable',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeManifestTableCheckBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -167,6 +181,7 @@ class _PDFExportSettingsDialog(gui.DialogEx):
     def accept(self) -> None:
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('IncludeEditableFields', self._includeEditableFieldsCheckBox.saveState())
+        self._settings.setValue('IncludeManifestTable', self._includeManifestTableCheckBox.saveState())
         self._settings.setValue('IncludeAmmoTable', self._includeAmmoTableCheckBox.saveState())
         if self._usePurchasedMagazinesCheckBox:
             self._settings.setValue('UsePurchasedMagazines', self._usePurchasedMagazinesCheckBox.saveState())
@@ -703,6 +718,7 @@ class GunsmithWindow(gui.WindowWidget):
                     weapon=weapon,
                     filePath=path,
                     includeEditableFields=dlg.isIncludeEditableFieldsChecked(),
+                    includeManifestTable=dlg.isIncludeManifestTableChecked(),
                     includeAmmoTable=dlg.isIncludeAmmoTableChecked(),
                     usePurchasedMagazines=dlg.isUsePurchasedMagazinesChecked(),
                     usePurchasedAmmo=dlg.isUsePurchasedAmmoChecked(),
