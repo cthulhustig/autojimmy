@@ -13,6 +13,7 @@ class ExportWeaponJob(QtCore.QThread):
             parent: QtCore.QObject,
             weapon: gunsmith.Weapon,
             filePath: str,
+            colour: bool,
             includeEditableFields: bool,
             includeAmmoTable: bool,
             usePurchasedMagazines: bool,
@@ -25,6 +26,7 @@ class ExportWeaponJob(QtCore.QThread):
         # Create a copy of the weapon to avoid issues if the passed in one is modified
         self._weapon = copy.deepcopy(weapon)
         self._filePath = filePath
+        self._colour = colour
         self._includeEditableFields = includeEditableFields
         self._includeAmmoTable = includeAmmoTable
         self._usePurchasedMagazines = usePurchasedMagazines
@@ -40,9 +42,11 @@ class ExportWeaponJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            gunsmith.exportToPDF(
+            exporter = gunsmith.PdfExporter()
+            exporter.export(
                 weapon=self._weapon,
                 filePath=self._filePath,
+                colour=self._colour,
                 includeEditableFields=self._includeEditableFields,
                 includeAmmoTable=self._includeAmmoTable,
                 usePurchasedMagazines=self._usePurchasedMagazines,
