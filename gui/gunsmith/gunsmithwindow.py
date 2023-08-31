@@ -66,6 +66,9 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             self._usePurchasedAmmoCheckBox.setEnabled(hasAmmoQuantities)
             self._usePurchasedAmmoCheckBox.setChecked(hasAmmoQuantities)
 
+        self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')
+        self._blackAndWhiteCheckBox.setChecked(False)
+
         self._okButton = QtWidgets.QPushButton('OK')
         self._okButton.setDefault(True)
         self._okButton.clicked.connect(self.accept)
@@ -86,6 +89,7 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             windowLayout.addWidget(self._usePurchasedMagazinesCheckBox)
         if self._usePurchasedAmmoCheckBox:
             windowLayout.addWidget(self._usePurchasedAmmoCheckBox)
+        windowLayout.addWidget(self._blackAndWhiteCheckBox)
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
@@ -111,6 +115,9 @@ class _PDFExportSettingsDialog(gui.DialogEx):
                 not self._usePurchasedAmmoCheckBox.isEnabled():
             return False
         return self._usePurchasedAmmoCheckBox.isChecked()
+
+    def isBlackAndWhiteChecked(self) -> bool:
+        return self._blackAndWhiteCheckBox.isChecked()
 
     # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
     def loadSettings(self) -> None:
@@ -148,6 +155,13 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             if storedValue:
                 self._usePurchasedAmmoCheckBox.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='BlackAndWhite',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._blackAndWhiteCheckBox.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def accept(self) -> None:
@@ -158,6 +172,7 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             self._settings.setValue('UsePurchasedMagazines', self._usePurchasedMagazinesCheckBox.saveState())
         if self._usePurchasedAmmoCheckBox:
             self._settings.setValue('UsePurchasedAmmo', self._usePurchasedAmmoCheckBox.saveState())
+        self._settings.setValue('BlackAndWhite', self._blackAndWhiteCheckBox.saveState())
         self._settings.endGroup()
 
         super().accept()
@@ -691,6 +706,7 @@ class GunsmithWindow(gui.WindowWidget):
                     includeAmmoTable=dlg.isIncludeAmmoTableChecked(),
                     usePurchasedMagazines=dlg.isUsePurchasedMagazinesChecked(),
                     usePurchasedAmmo=dlg.isUsePurchasedAmmoChecked(),
+                    colour=not dlg.isBlackAndWhiteChecked(),
                     progressCallback=self._progressDlg.update,
                     finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))
 
