@@ -337,6 +337,9 @@ class GunsmithWindow(gui.WindowWidget):
         self._weaponsListToolbar = QtWidgets.QToolBar("Weapons Toolbar")
         self._weaponsListToolbar.setIconSize(QtCore.QSize(32, 32))
         self._weaponsListToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
+        self._weaponsListToolbar.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
 
         self._newWeaponAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.NewFile), 'New', self)
         self._newWeaponAction.triggered.connect(self._newWeaponClicked)
