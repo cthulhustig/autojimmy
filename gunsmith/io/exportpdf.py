@@ -180,6 +180,7 @@ class PdfExporter(object):
             filePath: str,
             colour: bool = True,
             includeEditableFields: bool = True,
+            includeManifestTable: bool = True,
             includeAmmoTable: bool = True,
             usePurchasedMagazines: bool = False,
             usePurchasedAmmo: bool = False,
@@ -194,6 +195,7 @@ class PdfExporter(object):
             self._layoutDocument(
                 weapon=weapon,
                 includeEditableFields=includeEditableFields,
+                includeManifestTable=includeManifestTable,
                 includeAmmoTable=includeAmmoTable,
                 usePurchasedMagazines=usePurchasedMagazines,
                 usePurchasedAmmo=usePurchasedAmmo,
@@ -209,6 +211,7 @@ class PdfExporter(object):
         self._layoutDocument(
             weapon=weapon,
             includeEditableFields=includeEditableFields,
+            includeManifestTable=includeManifestTable,
             includeAmmoTable=includeAmmoTable,
             usePurchasedMagazines=usePurchasedMagazines,
             usePurchasedAmmo=usePurchasedAmmo,
@@ -238,13 +241,15 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             includeEditableFields: bool,
+            includeManifestTable: bool,
             includeAmmoTable: bool,
             usePurchasedMagazines: bool,
             usePurchasedAmmo: bool,
             layout: typing.Optional[typing.List[Flowable]],
             progressCallback: typing.Optional[typing.Callable[[], None]],
             ) -> None:
-        # Create a copy of the passed in weapon as it will be modified during the export
+        # Create a copy of the passed in weapon as it will be modified during the export.
+        # This doesn't need done when performing a dry run.
         if layout != None:
             weapon = self._createExportWeapon(originalWeapon=weapon)
         if progressCallback:
@@ -261,10 +266,11 @@ class PdfExporter(object):
                 layout=layout,
                 progressCallback=progressCallback)
 
-        self._addManifest(
-            weapon=weapon,
-            layout=layout,
-            progressCallback=progressCallback)
+        if includeManifestTable:
+            self._addManifest(
+                weapon=weapon,
+                layout=layout,
+                progressCallback=progressCallback)
 
         self._addInformation(
             weapon=weapon,

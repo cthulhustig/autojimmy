@@ -15,6 +15,7 @@ class ExportWeaponJob(QtCore.QThread):
             filePath: str,
             colour: bool,
             includeEditableFields: bool,
+            includeManifestTable: bool,
             includeAmmoTable: bool,
             usePurchasedMagazines: bool,
             usePurchasedAmmo: bool,
@@ -28,6 +29,7 @@ class ExportWeaponJob(QtCore.QThread):
         self._filePath = filePath
         self._colour = colour
         self._includeEditableFields = includeEditableFields
+        self._includeManifestTable = includeManifestTable
         self._includeAmmoTable = includeAmmoTable
         self._usePurchasedMagazines = usePurchasedMagazines
         self._usePurchasedAmmo = usePurchasedAmmo
@@ -48,6 +50,7 @@ class ExportWeaponJob(QtCore.QThread):
                 filePath=self._filePath,
                 colour=self._colour,
                 includeEditableFields=self._includeEditableFields,
+                includeManifestTable=self._includeManifestTable,
                 includeAmmoTable=self._includeAmmoTable,
                 usePurchasedMagazines=self._usePurchasedMagazines,
                 usePurchasedAmmo=self._usePurchasedAmmo,
