@@ -120,6 +120,13 @@ rm -rf <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 ```
 
+### Debian/Ubuntu: The world search edit box on Traveller Map windows keeps resetting as I type
+This seems to be an issue with Wayland on Ubuntu 23.04. It can be fixed by running the
+following command before running Auto-Jimmy ([source](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/288))
+```
+XDG_SESSION_TYPE=x11
+```
+
 ### macOS: World information tool tips aren't showing tile images from Traveller Map
 This issue can be caused by an HTTPS certificate failure. After installing a versions of
 Python downloaded from www.python.org on macOS, you need to manually install the Python
