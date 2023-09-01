@@ -102,10 +102,22 @@ sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-
 ```
 
 ### Debian/Ubuntu: Integrated Traveller Map view is blank
-This issue can be resolved by executing the following commands ([source](https://stackoverflow.com/questions/73868174/pyqtwebengine-dontt-show-nothing))
+IMPORTANT: If using venv to run Python, it's recommended to create a new virtual
+environment specifically for running Auto-Jimmy the repeat [Install Python Dependencies]
+for that environment before continuing with this fix.
+
+The issue can be resolved by executing the following commands ([source](https://stackoverflow.com/questions/73868174/pyqtwebengine-dontt-show-nothing)).
 ```
 pip3 uninstall PyQt5 PyQt5-Qt5 PyQt5-sip PyQtWebEngine PyQtWebEngine-Qt5
 sudo apt install python3-pyqt5.qtwebengine
+```
+If you're using venv, you will also need to run the following commands to symlink the
+system PyQt5 install into your venv site-packages, replacing <VENV_PATH> with the path
+to the venv being used and <PYTHON_VERSION> with the version of python being used (e.g.
+python3.11).
+```
+rm -rf <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
+ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 ```
 
 ### macOS: World information tool tips aren't showing tile images from Traveller Map
