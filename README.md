@@ -103,7 +103,7 @@ sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-
 
 ### Debian/Ubuntu: Integrated Traveller Map view is blank
 IMPORTANT: If using venv to run Python, it's recommended to create a new virtual
-environment specifically for running Auto-Jimmy the repeat [Install Python Dependencies]
+environment specifically for running Auto-Jimmy, then repeat [Install Python Dependencies]
 for that environment before continuing with this fix.
 
 The issue can be resolved by executing the following commands ([source](https://stackoverflow.com/questions/73868174/pyqtwebengine-dontt-show-nothing)).
