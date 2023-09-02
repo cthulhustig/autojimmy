@@ -77,10 +77,18 @@ class CheapestRouteCostCalculator(object):
             currentWorld: traveller.World,
             nextWorld: traveller.World
             ) -> typing.Union[int, float]:
-        # Start with per jump overhead
-        jumpCost = self._perJumpOverheads
+        # For the route finder algorithm to work the cost for a jump can't be 0. To avoid this the
+        # jump has a default cost of 1, this is the case even when the calculated cost for the
+        # jump wouldn't have been 0. This is done so that it doesn't adversely effect what is seen
+        # as the optimal route as all potential jumps are skewed by the same amount. A desirable
+        # side effect of this is, in the case where there are multiple routes that have the same
+        # lowest cost, then the route finder will choose the one with the lowest number of jumps.
+        jumpCost = 1
 
-        # Add refuelling costs
+        # Always add with per jump overhead (but it may be 0)
+        jumpCost += self._perJumpOverheads
+
+        # Add refuelling costs if applicable
         refuellingType = logic.selectRefuellingType(currentWorld, self._refuellingStrategy)
         if refuellingType == logic.RefuellingType.Refined or \
                 refuellingType == logic.RefuellingType.Unrefined:

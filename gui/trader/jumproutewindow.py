@@ -869,12 +869,6 @@ class JumpRouteWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.ShortestTime:
             costCalculator = logic.ShortestTimeCostCalculator()
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
-            if self._perJumpOverheadsSpinBox.value() == 0:
-                gui.MessageBoxEx.information(
-                    parent=self,
-                    text='You must specify per jump overheads in order to calculate the cheapest route.')
-                return
-
             costCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
