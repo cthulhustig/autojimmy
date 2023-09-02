@@ -85,7 +85,7 @@ class CheapestRouteCostCalculator(object):
         # lowest cost, then the route finder will choose the one with the lowest number of jumps.
         jumpCost = 1
 
-        # Always add with per jump overhead (but it may be 0)
+        # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
 
         # Add refuelling costs if applicable
