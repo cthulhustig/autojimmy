@@ -7,6 +7,18 @@ class Downloader(object):
     class _CancelledException(Exception):
         pass
 
+    _RetryHttpCodes = [
+        408, # Request timeout
+        409, # Conflict (not sure about this one)
+        425, # Too early
+        429, # Too many requests
+        500, # Internal Server Error
+        502, # Bad Gateway
+        503, # Service Unavailable
+        504, # Gateway Timeout
+        509 # Bandwidth limit exceeded
+    ]
+
     _initialRetryDelaySeconds = 5
 
     def __init__(self):
@@ -38,7 +50,7 @@ class Downloader(object):
                 return
             except urllib.error.HTTPError as ex:
                 isRetrying = False
-                if ex.code == 429 or ex.code == 503:
+                if ex.code in Downloader._RetryHttpCodes:
                     if retryCount > 0:
                         logging.warning(f'Downloading {url} failed, retrying in {retryDelay} seconds', exc_info=ex)
                         time.sleep(retryDelay)
