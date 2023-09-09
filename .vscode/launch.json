@@ -19,6 +19,7 @@
             "type": "python",
             "request": "launch",
             "program": "autojimmy.py",
+            "args": ["--no-singleton"],
             "console": "integratedTerminal",
             "justMyCode": false,
             // The following line fixes breakpoints in QThread

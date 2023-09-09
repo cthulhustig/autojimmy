@@ -51,6 +51,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
@@ -96,6 +97,16 @@ class Trader(object):
             shipStartingFuel = common.ScalarCalculation(
                 value=shipStartingFuel,
                 name='Ship Starting Fuel')
+
+        if not shipFuelPerParsec:
+            shipFuelPerParsec = traveller.calculateFuelRequiredForJump(
+                jumpDistance=1,
+                shipTonnage=shipTonnage)
+        elif not isinstance(shipFuelPerParsec, common.ScalarCalculation):
+            assert(isinstance(shipFuelPerParsec, (int, float)))
+            shipFuelPerParsec = common.ScalarCalculation(
+                value=shipFuelPerParsec,
+                name='Ship Fuel Per Parsec')
 
         if not isinstance(perJumpOverheads, common.ScalarCalculation):
             assert(isinstance(perJumpOverheads, int))
@@ -155,6 +166,7 @@ class Trader(object):
             shipCargoCapacity=shipCargoCapacity,
             shipFuelCapacity=shipFuelCapacity,
             shipStartingFuel=shipStartingFuel,
+            shipFuelPerParsec=shipFuelPerParsec,
             perJumpOverheads=perJumpOverheads,
             refuellingStrategy=refuellingStrategy,
             refuellingStrategyOptional=refuellingStrategyOptional,
@@ -185,6 +197,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             useLocalPurchaseBroker: bool = False,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
             useLocalSaleBroker: bool = False,
@@ -232,6 +245,16 @@ class Trader(object):
             shipStartingFuel = common.ScalarCalculation(
                 value=shipStartingFuel,
                 name='Ship Starting Fuel')
+
+        if not shipFuelPerParsec:
+            shipFuelPerParsec = traveller.calculateFuelRequiredForJump(
+                jumpDistance=1,
+                shipTonnage=shipTonnage)
+        elif not isinstance(shipFuelPerParsec, common.ScalarCalculation):
+            assert(isinstance(shipFuelPerParsec, (int, float)))
+            shipFuelPerParsec = common.ScalarCalculation(
+                value=shipFuelPerParsec,
+                name='Ship Fuel Per Parsec')
 
         if not isinstance(perJumpOverheads, common.ScalarCalculation):
             assert(isinstance(perJumpOverheads, int))
@@ -332,6 +355,7 @@ class Trader(object):
                 shipCargoCapacity=shipCargoCapacity,
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
+                shipFuelPerParsec=shipFuelPerParsec,
                 perJumpOverheads=perJumpOverheads,
                 refuellingStrategy=refuellingStrategy,
                 refuellingStrategyOptional=refuellingStrategyOptional,
@@ -357,6 +381,7 @@ class Trader(object):
             shipCargoCapacity: common.ScalarCalculation,
             shipFuelCapacity: common.ScalarCalculation,
             shipStartingFuel: common.ScalarCalculation,
+            shipFuelPerParsec: common.ScalarCalculation,
             perJumpOverheads: common.ScalarCalculation,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
@@ -407,6 +432,7 @@ class Trader(object):
                 shipTonnage=shipTonnage,
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
+                shipFuelPerParsec=shipFuelPerParsec,
                 perJumpOverheads=perJumpOverheads,
                 refuellingStrategy=refuellingStrategy,
                 refuellingStrategyOptional=refuellingStrategyOptional,
@@ -461,8 +487,8 @@ class Trader(object):
                         buyerDm=buyerDm,
                         useableFunds=useableFunds,
                         refuellingStrategy=refuellingStrategy,
-                        shipTonnage=shipTonnage,
                         shipCargoCapacity=None, # Cargo capacity doesn't apply for current cargo
+                        shipFuelPerParsec=shipFuelPerParsec,
                         useLocalSaleBroker=useLocalSaleBroker,
                         localSaleBrokerDm=localSaleBrokerDm,
                         includeUnprofitableTrades=includeUnprofitableTrades)
@@ -482,8 +508,8 @@ class Trader(object):
                         buyerDm=buyerDm,
                         useableFunds=useableFunds,
                         refuellingStrategy=refuellingStrategy,
-                        shipTonnage=shipTonnage,
                         shipCargoCapacity=shipCargoCapacity,
+                        shipFuelPerParsec=shipFuelPerParsec,
                         useLocalSaleBroker=useLocalSaleBroker,
                         localSaleBrokerDm=localSaleBrokerDm,
                         includeUnprofitableTrades=includeUnprofitableTrades)
@@ -516,8 +542,8 @@ class Trader(object):
             buyerDm: typing.Union[common.ScalarCalculation, common.RangeCalculation],
             useableFunds: common.ScalarCalculation,
             refuellingStrategy: logic.RefuellingStrategy,
-            shipTonnage: common.ScalarCalculation,
             shipCargoCapacity: typing.Optional[common.ScalarCalculation], # Only applies if alreadyOwned is False
+            shipFuelPerParsec: common.ScalarCalculation,
             useLocalSaleBroker: bool,
             localSaleBrokerDm: typing.Optional[common.ScalarCalculation], # Only used for 1e & 2e
             includeUnprofitableTrades: bool
@@ -598,7 +624,7 @@ class Trader(object):
 
         tradeOption = self._generateTradeOptionNotes(
             tradeOption=tradeOption,
-            shipTonnage=shipTonnage,
+            shipFuelPerParsec=shipFuelPerParsec,
             refuellingStrategy=refuellingStrategy)
 
         if self._tradeOptionCallback:
@@ -663,7 +689,7 @@ class Trader(object):
     @staticmethod
     def _generateTradeOptionNotes(
             tradeOption: logic.TradeOption,
-            shipTonnage: common.ScalarCalculation,
+            shipFuelPerParsec: common.ScalarCalculation,
             refuellingStrategy: logic.RefuellingStrategy
             ) -> logic.TradeOption:
         purchaseWorld = tradeOption.purchaseWorld()
@@ -692,14 +718,11 @@ class Trader(object):
 
         if saleWorldRefuellingType == logic.RefuellingType.Refined or \
                 saleWorldRefuellingType == logic.RefuellingType.Unrefined:
-            fuelForJumpOne = traveller.calculateFuelRequiredForJump(
-                jumpDistance=1,
-                shipTonnage=shipTonnage)
             fuelCostPerTon = traveller.starPortFuelCostPerTon(
                 world=saleWorld,
                 refinedFuel=saleWorldRefuellingType == logic.RefuellingType.Refined)
             assert(fuelCostPerTon)
-            fuelCostToGetOffWorld = fuelForJumpOne.value() * fuelCostPerTon.averageCaseValue()
+            fuelCostToGetOffWorld = shipFuelPerParsec.value() * fuelCostPerTon.averageCaseValue()
             if netProfit.averageCaseValue() > 0 and fuelCostToGetOffWorld > 0:
                 percentageOfProfit = math.ceil((fuelCostToGetOffWorld / netProfit.averageCaseValue()) * 100)
                 notes.append(f'On the sale world the cost of buying the fuel for jump-1 will be Cr{fuelCostToGetOffWorld}. With average dice rolls, this will be {percentageOfProfit}% of the profits from the trade.')

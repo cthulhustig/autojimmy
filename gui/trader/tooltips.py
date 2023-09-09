@@ -44,6 +44,11 @@ ShipCurrentFuelToolTip = createStringToolTip(
     'It\'s recommended to set this value to less than the actual current fuel level to allow for'
     'this.</p>',
     escape=False)
+ShipFuelPerParsecToolTip = createStringToolTip(
+    '<p>Fuel consumed for each parsec jumped.</p>'
+    '<p>Enabling this option allows the specified value to be used instead of the default of 10% '
+    'of total ship tonnage.</p>',
+    escape=False)
 FreeCargoSpaceToolTip = createStringToolTip(
     '<p>Free cargo space available for purchased trade cargo</p>',
     escape=False)

@@ -114,6 +114,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool,
@@ -146,6 +147,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._refuellingStrategy = refuellingStrategy
         self._refuellingStrategyOptional = refuellingStrategyOptional
@@ -181,6 +183,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipCargoCapacity=self._shipCargoCapacity,
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
+                shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 refuellingStrategy=self._refuellingStrategy,
                 refuellingStrategyOptional=self._refuellingStrategyOptional,
@@ -219,6 +222,7 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool,
@@ -252,6 +256,7 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
         self._shipStartingFuel = shipStartingFuel
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._refuellingStrategy = refuellingStrategy
         self._refuellingStrategyOptional = refuellingStrategyOptional
@@ -290,6 +295,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipCargoCapacity=self._shipCargoCapacity,
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipStartingFuel=self._shipStartingFuel,
+                shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 refuellingStrategy=self._refuellingStrategy,
                 refuellingStrategyOptional=self._refuellingStrategyOptional,

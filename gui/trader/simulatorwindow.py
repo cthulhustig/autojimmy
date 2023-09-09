@@ -233,6 +233,13 @@ class SimulatorWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ShipFuelPerParsec',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._shipFuelPerParsecSpinBox.restoreState(storedValue)            
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='PerJumpOverheadsState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -304,6 +311,7 @@ class SimulatorWindow(gui.WindowWidget):
         self._settings.setValue('ShipJumpRatingState', self._shipJumpRatingSpinBox.saveState())
         self._settings.setValue('ShipCargoCapacityState', self._shipCargoCapacitySpinBox.saveState())
         self._settings.setValue('ShipFuelCapacityState', self._shipFuelCapacitySpinBox.saveState())
+        self._settings.setValue('ShipFuelPerParsec', self._shipFuelPerParsecSpinBox.saveState())
         self._settings.setValue('PerJumpOverheadsState', self._perJumpOverheadsSpinBox.saveState())
         self._settings.setValue('RefuellingStrategyState', self._refuellingStrategyComboBox.saveState())
         self._settings.setValue('RouteOptimisationState', self._routeOptimisationComboBox.saveState())
@@ -395,6 +403,12 @@ class SimulatorWindow(gui.WindowWidget):
         self._shipFuelCapacitySpinBox.setValue(23)
         self._shipFuelCapacitySpinBox.setToolTip(gui.ShipFuelCapacityToolTip)
 
+        self._shipFuelPerParsecSpinBox = gui.TogglableDoubleSpinBox()
+        self._shipFuelPerParsecSpinBox.setRange(1.0, app.MaxPossibleShipTonnage)
+        self._shipFuelPerParsecSpinBox.setValue(10.0)
+        self._shipFuelPerParsecSpinBox.setChecked(False)
+        self._shipFuelPerParsecSpinBox.setToolTip(gui.ShipFuelPerParsecToolTip)
+
         self._refuellingStrategyComboBox = gui.EnumComboBox(
             type=logic.RefuellingStrategy,
             value=logic.RefuellingStrategy.WildernessPreferred)
@@ -422,6 +436,7 @@ class SimulatorWindow(gui.WindowWidget):
         rightLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         rightLayout.addRow('Ship Cargo Capacity:', self._shipCargoCapacitySpinBox)
         rightLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
+        rightLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
@@ -521,16 +536,6 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
-        fuelForMaxJump = traveller.calculateFuelRequiredForJump(
-            jumpDistance=self._shipJumpRatingSpinBox.value(),
-            shipTonnage=self._shipTonnageSpinBox.value())
-        if self._shipFuelCapacitySpinBox.value() < fuelForMaxJump.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'With a fuel capacity of {self._shipFuelCapacitySpinBox.value()} tons your ship can\'t carry ' + \
-                f'the {fuelForMaxJump.value()} tons required for Jump-{self._shipJumpRatingSpinBox.value()}')
-            return
-
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -539,6 +544,7 @@ class SimulatorWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -563,6 +569,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipCargoCapacity=self._shipCargoCapacitySpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 searchRadius=self._searchRadiusSpinBox.value(),

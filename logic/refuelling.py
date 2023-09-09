@@ -309,6 +309,9 @@ class _WorldContext(object):
         return refuellingCost
 
 class _CalculationContext:
+    _WorldSequenceDataType = 'I'
+    _FuelSequenceDataType = 'd'
+
     def __init__(
             self,
             fuelCapacity: int,
@@ -318,8 +321,8 @@ class _CalculationContext:
         self._worldContexts = worldContexts
 
         worldCount = len(self._worldContexts)
-        self._worldSequence = array.array('I', [0] * worldCount)
-        self._fuelSequence = array.array('I', [0] * worldCount)
+        self._worldSequence = array.array(_CalculationContext._WorldSequenceDataType, [0] * worldCount)
+        self._fuelSequence = array.array(_CalculationContext._FuelSequenceDataType, [0] * worldCount)
         self._sequenceLength = 0
 
         self._bestCost = None
@@ -375,8 +378,12 @@ class _CalculationContext:
 
         if isBetter:
             self._bestCost = finalCost
-            self._bestWorldSequence = array.array('I', itertools.islice(self._worldSequence, 0, self._sequenceLength))
-            self._bestFuelSequence = array.array('I', itertools.islice(self._fuelSequence, 0, self._sequenceLength))
+            self._bestWorldSequence = array.array(
+                _CalculationContext._WorldSequenceDataType,
+                itertools.islice(self._worldSequence, 0, self._sequenceLength))
+            self._bestFuelSequence = array.array(
+                _CalculationContext._FuelSequenceDataType,
+                itertools.islice(self._fuelSequence, 0, self._sequenceLength))
         return isBetter
 
 def calculateRefuellingPlan(
@@ -386,6 +393,7 @@ def calculateRefuellingPlan(
         shipStartingFuel: typing.Union[int, common.ScalarCalculation],
         refuellingStrategy: RefuellingStrategy,
         refuellingStrategyOptional: bool = False,
+        shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated refuelling plan should include refuelling costs. If not included the
@@ -415,24 +423,29 @@ def calculateRefuellingPlan(
     if shipStartingFuel > shipFuelCapacity:
         raise ValueError('Ship\'s starting fuel can\'t be larger than its fuel capacity')
 
-    fuelPerParsec = traveller.calculateFuelRequiredForJump(
-        jumpDistance=1,
-        shipTonnage=shipTonnage)
-    fuelPerParsec = fuelPerParsec.value()
+    if not shipFuelPerParsec:
+        shipFuelPerParsec = traveller.calculateFuelRequiredForJump(
+            jumpDistance=1,
+            shipTonnage=shipTonnage)
+    if isinstance(shipFuelPerParsec, common.ScalarCalculation):
+        shipFuelPerParsec = shipFuelPerParsec.value()
 
-    if shipFuelCapacity < fuelPerParsec:
+    if shipFuelPerParsec <= 0:
+        raise ValueError('Fuel per parsec must be greater than 0')
+
+    if shipFuelCapacity < shipFuelPerParsec:
         raise ValueError(
             f'With a fuel capacity of {shipFuelCapacity} tons your ship can\'t carry ' + \
-            f'the {fuelPerParsec} tons required to jump')
+            f'the {shipFuelPerParsec} tons required to jump')
 
-    parsecsWithoutRefuelling = int(shipFuelCapacity // fuelPerParsec)
+    parsecsWithoutRefuelling = int(shipFuelCapacity // shipFuelPerParsec)
     assert(parsecsWithoutRefuelling > 0)
 
     calculationContext = _processRoute(
         jumpRoute=jumpRoute,
         shipFuelCapacity=shipFuelCapacity,
         shipStartingFuel=shipStartingFuel,
-        fuelPerParsec=fuelPerParsec,
+        shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
         desiredRefuellingStrategy=refuellingStrategy,
         overrideRefuellingStrategies=None,
@@ -452,7 +465,7 @@ def calculateRefuellingPlan(
                 jumpRoute=jumpRoute,
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
-                fuelPerParsec=fuelPerParsec,
+                shipFuelPerParsec=shipFuelPerParsec,
                 parsecsWithoutRefuelling=parsecsWithoutRefuelling,
                 desiredRefuellingStrategy=refuellingStrategy,
                 overrideRefuellingStrategies=overrideStrategies,
@@ -464,7 +477,7 @@ def calculateRefuellingPlan(
                 jumpRoute=jumpRoute,
                 shipFuelCapacity=shipFuelCapacity,
                 shipStartingFuel=shipStartingFuel,
-                fuelPerParsec=fuelPerParsec,
+                shipFuelPerParsec=shipFuelPerParsec,
                 parsecsWithoutRefuelling=parsecsWithoutRefuelling,
                 desiredRefuellingStrategy=refuellingStrategy,
                 overrideRefuellingStrategies=overrideStrategies,
@@ -479,7 +492,7 @@ def _processRoute(
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[int, common.ScalarCalculation],
-        fuelPerParsec: int,
+        shipFuelPerParsec: typing.Union[int, float],
         parsecsWithoutRefuelling: int,
         desiredRefuellingStrategy: RefuellingStrategy,
         overrideRefuellingStrategies: typing.Optional[typing.List[RefuellingStrategy]],
@@ -487,7 +500,7 @@ def _processRoute(
         ) -> _CalculationContext:
     jumpWorldCount = jumpRoute.worldCount()
     finishWorldIndex = jumpWorldCount - 1
-    fuelToFinish = jumpRoute.totalParsecs() * fuelPerParsec
+    fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
@@ -529,7 +542,7 @@ def _processRoute(
             if totalParsecs > parsecsWithoutRefuelling:
                 break
 
-            reachableWorlds.append((reachableWorldIndex, totalParsecs * fuelPerParsec))
+            reachableWorlds.append((reachableWorldIndex, totalParsecs * shipFuelPerParsec))
 
             reachableWorldIndex += 1
 
@@ -543,8 +556,7 @@ def _processRoute(
             fuelToFinish=fuelToFinish))
 
         if parsecsToNextWorld:
-            fuelToFinish -= parsecsToNextWorld * fuelPerParsec
-    assert(fuelToFinish == 0)
+            fuelToFinish -= parsecsToNextWorld * shipFuelPerParsec
 
     calculationContext = _CalculationContext(
         fuelCapacity=shipFuelCapacity,

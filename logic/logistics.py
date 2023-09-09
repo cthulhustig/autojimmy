@@ -82,6 +82,7 @@ def calculateRouteLogistics(
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         refuellingStrategy: typing.Union[int, common.ScalarCalculation],
         refuellingStrategyOptional: bool = False,
+        shipFuelPerParsec: typing.Union[int, float, common.ScalarCalculation] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated route logistics will include refuelling costs. If not included the
@@ -97,6 +98,7 @@ def calculateRouteLogistics(
             shipTonnage=shipTonnage,
             shipFuelCapacity=shipFuelCapacity,
             shipStartingFuel=shipStartingFuel,
+            shipFuelPerParsec=shipFuelPerParsec,
             refuellingStrategy=refuellingStrategy,
             refuellingStrategyOptional=refuellingStrategyOptional,
             requiredBerthingIndices=requiredBerthingIndices,

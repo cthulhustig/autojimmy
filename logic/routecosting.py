@@ -66,11 +66,19 @@ class CheapestRouteCostCalculator(object):
             self,
             shipTonnage: int,
             refuellingStrategy: logic.RefuellingStrategy,
-            perJumpOverheads: int
+            perJumpOverheads: int,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float]] = None
             ) -> None:
         self._shipTonnage = shipTonnage
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._refuellingStrategy = refuellingStrategy
         self._perJumpOverheads = perJumpOverheads
+
+        if not self._shipFuelPerParsec:
+            self._shipFuelPerParsec = traveller.calculateFuelRequiredForJump(
+                jumpDistance=1,
+                shipTonnage=self._shipTonnage)
+            self._shipFuelPerParsec = self._shipFuelPerParsec.value()
 
     def calculate(
             self,
@@ -97,16 +105,14 @@ class CheapestRouteCostCalculator(object):
                 absoluteY1=currentWorld.absoluteY(),
                 absoluteX2=nextWorld.absoluteX(),
                 absoluteY2=nextWorld.absoluteY())
-            fuelRequired = traveller.calculateFuelRequiredForJump(
-                jumpDistance=jumpDistance,
-                shipTonnage=self._shipTonnage)
+            fuelRequired = jumpDistance * self._shipFuelPerParsec
 
             # Add cost of buying fuel to jump to the next world
             fuelCostPerTon = traveller.starPortFuelCostPerTon(
                 world=currentWorld,
                 refinedFuel=refuellingType == logic.RefuellingType.Refined)
             assert(fuelCostPerTon != None) # World filter should prevent this
-            jumpCost += fuelCostPerTon.value() * fuelRequired.value()
+            jumpCost += fuelCostPerTon.value() * fuelRequired
 
             # Add cost of berthing to buy the fuel
             berthingCost = traveller.starPortBerthingCost(currentWorld)

@@ -70,7 +70,7 @@ class RecentWorlds(object):
                     RecentWorlds._history.append(world)
             except TypeError as ex:
                 logging.error(
-                    f'Failed to read SectorHex from "{self._settings.group()} in "{self._settings.fileName()}"  (value is not a {type.__name__})')
+                    f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"  (value is not a {type.__name__})')
             except Exception as ex:
                 logging.error(
                     f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"',

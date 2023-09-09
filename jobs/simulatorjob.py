@@ -21,6 +21,7 @@ class SimulatorJob(QtCore.QThread):
             shipJumpRating: int,
             shipCargoCapacity: int,
             shipFuelCapacity: int,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float]],
             refuellingStrategy: logic.RefuellingStrategy,
             perJumpOverheads: int,
             searchRadius: int,
@@ -50,6 +51,7 @@ class SimulatorJob(QtCore.QThread):
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._refuellingStrategy = refuellingStrategy
         self._perJumpOverheads = perJumpOverheads
         self._searchRadius = searchRadius
@@ -101,6 +103,7 @@ class SimulatorJob(QtCore.QThread):
                 shipJumpRating=self._shipJumpRating,
                 shipCargoCapacity=self._shipCargoCapacity,
                 shipFuelCapacity=self._shipFuelCapacity,
+                shipFuelPerParsec=self._shipFuelPerParsec,
                 refuellingStrategy=self._refuellingStrategy,
                 perJumpOverheads=self._perJumpOverheads,
                 searchRadius=self._searchRadius,

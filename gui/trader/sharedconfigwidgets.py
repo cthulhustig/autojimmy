@@ -101,6 +101,55 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
     def _saveValue(self, enabled: bool, value: int) -> None:
         raise RuntimeError('The _saveValue method should be overridden by derived _TogglableSpinBoxUpdater')
 
+class _TogglableDoubleSpinBoxUpdater(QtCore.QObject):
+    def __init__(self) -> None:
+        super().__init__(None)
+
+        self._widgets: typing.Set[gui.TogglableDoubleSpinBox] = set()
+        self._ignoreNotifications = False
+
+    def attach(self, widget: gui.TogglableDoubleSpinBox) -> None:
+        enabled, value = self._loadValue()
+        widget.setConfig(enabled, value)
+        widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
+        widget.destroyed.connect(self.detach)
+        self._widgets.add(widget)
+
+    def detach(self, widget: gui.TogglableDoubleSpinBox) -> None:
+        if widget in self._widgets:
+            self._widgets.remove(widget)
+        widget.destroyed.disconnect(self.detach)
+
+    def _valueChanged(
+            self,
+            widget: gui.TogglableDoubleSpinBox,
+            value: typing.Optional[float]
+            ) -> None:
+        if self._ignoreNotifications:
+            return # Events are currently being ignored so nothing to do
+
+        # Retrieve the raw config from the widget. This gets that set value even if the widget
+        # is disabled
+        enabled, value = widget.config()
+        self._saveValue(enabled, value)
+
+        # Push new value to other attached widgets. Blocking signals can't be used as we want
+        # the widget being updated to still notify other observers
+        self._ignoreNotifications = True
+
+        try:
+            for other in self._widgets:
+                if other != widget:
+                    other.setConfig(enabled, value)
+        finally:
+            self._ignoreNotifications = False
+
+    def _loadValue(self) -> typing.Tuple[bool, float]:
+        raise RuntimeError('The _loadValue method should be overridden by derived _TogglableDoubleSpinBoxUpdater')
+
+    def _saveValue(self, enabled: bool, value: float) -> None:
+        raise RuntimeError('The _saveValue method should be overridden by derived _TogglableDoubleSpinBoxUpdater')
+
 class _EnumComboBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
@@ -290,6 +339,29 @@ class _SharedTogglableSpinBox(gui.TogglableSpinBox):
             self._updaterMap[type(self)] = updater
         updater.attach(self)
 
+class _SharedTogglableDoubleSpinBox(gui.TogglableDoubleSpinBox):
+    _updaterMap: typing.Dict[typing.Type[gui.TogglableDoubleSpinBox], _TogglableDoubleSpinBoxUpdater] = {}
+
+    def __init__(
+            self,
+            updaterType: typing.Type[_TogglableDoubleSpinBoxUpdater],
+            minValue: float,
+            maxValue: float,
+            toolTip: str,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self.setRange(minValue, maxValue)
+        self.setToolTip(toolTip)
+
+        # Create shared setting updater if it doesn't exist and attach this widget to it
+        updater = self._updaterMap.get(type(self))
+        if not updater:
+            updater = updaterType()
+            self._updaterMap[type(self)] = updater
+        updater.attach(self)
+
 class _SharedEnumComboBox(gui.EnumComboBox):
     _updaterMap: typing.Dict[typing.Type[gui.EnumComboBox], _EnumComboBoxUpdater] = {}
 
@@ -434,6 +506,24 @@ class SharedCurrentFuelSpinBox(_SharedSpinBox):
             minValue=0,
             maxValue=app.MaxPossibleShipTonnage,
             toolTip=gui.ShipCurrentFuelToolTip,
+            parent=parent)
+
+class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
+    class _SettingUpdater(_TogglableDoubleSpinBoxUpdater):
+        def _loadValue(self) -> typing.Tuple[bool, float]:
+            return (app.Config.instance().useShipFuelPerParsec(),
+                    app.Config.instance().shipFuelPerParsec())
+
+        def _saveValue(self, enabled: bool, value: float) -> None:
+            app.Config.instance().setUseShipFuelPerParsec(enabled)
+            app.Config.instance().setShipFuelPerParsec(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedFuelPerParsecSpinBox._SettingUpdater,
+            minValue=1.0,
+            maxValue=app.MaxPossibleShipTonnage,
+            toolTip=gui.ShipFuelPerParsecToolTip,
             parent=parent)
 
 class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):

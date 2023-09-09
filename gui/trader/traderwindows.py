@@ -122,6 +122,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
+        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
         self._freeCargoSpaceSpinBox = gui.SharedFreeCargoSpaceSpinBox()
 
         self._centerOptionsLayout = gui.FormLayoutEx()
@@ -130,6 +131,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._centerOptionsLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         self._centerOptionsLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         self._centerOptionsLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        self._centerOptionsLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
         self._centerOptionsLayout.addRow('Free Cargo Space:', self._freeCargoSpaceSpinBox)
 
         # Right column of controls
@@ -1737,16 +1739,6 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        fuelForMaxJump = traveller.calculateFuelRequiredForJump(
-            jumpDistance=self._shipJumpRatingSpinBox.value(),
-            shipTonnage=self._shipTonnageSpinBox.value())
-        if self._shipFuelCapacitySpinBox.value() < fuelForMaxJump.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'With a fuel capacity of {self._shipFuelCapacitySpinBox.value()} tons your ship can\'t carry ' + \
-                f'the {fuelForMaxJump.value()} tons required for Jump-{self._shipJumpRatingSpinBox.value()}')
-            return
-
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -1755,6 +1747,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -1783,6 +1776,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
@@ -2369,6 +2363,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -2399,6 +2394,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),

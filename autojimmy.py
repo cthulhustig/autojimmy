@@ -11,7 +11,10 @@ import pathlib
 import sys
 import traveller
 import travellermap
+import uuid
 from PyQt5 import QtWidgets, QtGui, QtCore
+
+_SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
 
 _WelcomeMessage = """
     <html>
@@ -201,8 +204,12 @@ def main() -> None:
     # Currently disabled as multiprocessing isn't being used at the moment.
     # multiprocessing.freeze_support()
 
+    appId = _SingletonAppId
+    if '--no-singleton' in sys.argv:
+        appId = str(uuid.uuid4())
+
     application = gui.SingletonApplication(
-        appId='d2b192d8-4007-4588-bb80-8bd9721e9bcc',
+        appId=appId,
         argv=sys.argv)
     if application.isAlreadyRunning():
         print(f'{app.AppName} is already running.')

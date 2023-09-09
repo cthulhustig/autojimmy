@@ -623,6 +623,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
+        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
@@ -630,6 +631,7 @@ class JumpRouteWindow(gui.WindowWidget):
         leftLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         leftLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         leftLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        leftLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
 
         # Center column of options
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
@@ -847,16 +849,6 @@ class JumpRouteWindow(gui.WindowWidget):
             gui.MessageBoxEx.information(parent=self, text=message)
             return
 
-        fuelForMaxJump = traveller.calculateFuelRequiredForJump(
-            jumpDistance=self._shipJumpRatingSpinBox.value(),
-            shipTonnage=self._shipTonnageSpinBox.value())
-        if self._shipFuelCapacitySpinBox.value() < fuelForMaxJump.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'With a fuel capacity of {self._shipFuelCapacitySpinBox.value()} tons your ship can\'t carry ' + \
-                f'the {fuelForMaxJump.value()} tons required for Jump-{self._shipJumpRatingSpinBox.value()}')
-            return
-
         self._clearJumpRoute()
 
         worldList = [startWorld]
@@ -871,6 +863,7 @@ class JumpRouteWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             costCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -1406,6 +1399,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 refuellingStrategyOptional=self._refuellingStrategyOptionalCheckBox.isChecked(),

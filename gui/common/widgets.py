@@ -402,7 +402,6 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
             self._emitValueChanged()
 
     def _emitValueChanged(self) -> None:
-        print(f'Emit {self.value()}')
         self.valueChanged.emit(self.value())
 
 class OptionalSpinBox(_BaseOptionalSpinBox):

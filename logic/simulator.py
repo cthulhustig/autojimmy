@@ -83,6 +83,7 @@ class Simulator(object):
             playerBrokerDm: typing.Optional[int],
             playerStreetwiseDm: typing.Optional[int] = None,
             playerAdminDm: typing.Optional[int] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float]] = None,
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None, # Length in simulated hours
             jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None
@@ -91,6 +92,7 @@ class Simulator(object):
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._refuellingStrategy = refuellingStrategy
         self._searchRadius = searchRadius
@@ -307,7 +309,8 @@ class Simulator(object):
             shipJumpRating=self._shipJumpRating,
             shipCargoCapacity=self._shipCargoCapacity,
             shipFuelCapacity=self._shipFuelCapacity,
-            shipStartingFuel=0,
+            shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
+            shipFuelPerParsec=self._shipFuelPerParsec,
             refuellingStrategy=self._refuellingStrategy,
             refuellingStrategyOptional=True, # Force selected refuelling strategy
             perJumpOverheads=self._perJumpOverheads,
