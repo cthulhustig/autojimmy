@@ -116,6 +116,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool,
             useLocalSaleBroker: bool,
@@ -124,7 +125,6 @@ class SingleWorldTraderJob(_TraderJobBase):
             includeSaleWorldBerthing: bool,
             includeLogisticsCosts: bool,
             includeUnprofitableTrades: bool,
-            jumpCostCallback: typing.Callable[[traveller.World, traveller.World], int],
             tradeOptionCallback: typing.Callable[[typing.List[logic.TradeOption]], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             tradeInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -149,6 +149,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
+        self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
         self._refuellingStrategyOptional = refuellingStrategyOptional
         self._useLocalSaleBroker = useLocalSaleBroker
@@ -157,7 +158,6 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._includeSaleWorldBerthing = includeSaleWorldBerthing
         self._includeLogisticsCosts = includeLogisticsCosts
         self._includeUnprofitableTrades = includeUnprofitableTrades
-        self._jumpCostCallback = jumpCostCallback
 
         super().__init__(
             parent=parent,
@@ -185,6 +185,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
+                jumpCostCalculator=self._jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategy,
                 refuellingStrategyOptional=self._refuellingStrategyOptional,
                 useLocalSaleBroker=self._useLocalSaleBroker,
@@ -192,8 +193,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
                 includeSaleWorldBerthing=self._includeSaleWorldBerthing,
                 includeLogisticsCosts=self._includeLogisticsCosts,
-                includeUnprofitableTrades=self._includeUnprofitableTrades,
-                jumpCostCallback=self._jumpCostCallback)
+                includeUnprofitableTrades=self._includeUnprofitableTrades)
 
             self._emitTradeOptions()
             self._emitTradeInfo()
@@ -224,6 +224,7 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool,
             useLocalPurchaseBroker: bool,
@@ -234,7 +235,6 @@ class MultiWorldTraderJob(_TraderJobBase):
             includeSaleWorldBerthing: bool,
             includeLogisticsCosts: bool,
             includeUnprofitableTrades: bool,
-            jumpCostCallback: typing.Callable[[traveller.World, traveller.World], int],
             tradeOptionCallback: typing.Callable[[logic.TradeOption], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             tradeInfoCallback: typing.Optional[typing.Callable[[str], typing.Any]] = None,
@@ -258,6 +258,7 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipStartingFuel = shipStartingFuel
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
+        self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
         self._refuellingStrategyOptional = refuellingStrategyOptional
         self._useLocalPurchaseBroker = useLocalPurchaseBroker
@@ -268,7 +269,6 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._includeSaleWorldBerthing = includeSaleWorldBerthing
         self._includeLogisticsCosts = includeLogisticsCosts
         self._includeUnprofitableTrades = includeUnprofitableTrades
-        self._jumpCostCallback = jumpCostCallback
 
         super().__init__(
             parent=parent,
@@ -297,6 +297,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipStartingFuel=self._shipStartingFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
+                jumpCostCalculator=self._jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategy,
                 refuellingStrategyOptional=self._refuellingStrategyOptional,
                 useLocalPurchaseBroker=self._useLocalPurchaseBroker,
@@ -306,8 +307,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
                 includeSaleWorldBerthing=self._includeSaleWorldBerthing,
                 includeLogisticsCosts=self._includeLogisticsCosts,
-                includeUnprofitableTrades=self._includeUnprofitableTrades,
-                jumpCostCallback=self._jumpCostCallback)
+                includeUnprofitableTrades=self._includeUnprofitableTrades)
 
             self._emitTradeOptions()
             self._emitTradeInfo()

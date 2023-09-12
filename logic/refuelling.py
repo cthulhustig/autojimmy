@@ -24,7 +24,7 @@ class RefuellingStrategy(enum.Enum):
 def selectRefuellingType(
         world: traveller.World,
         refuellingStrategy: RefuellingStrategy
-        ) -> RefuellingType:
+        ) -> typing.Optional[RefuellingType]:
     if refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
         return RefuellingType.Refined if world.hasStarPortRefuelling(refinedFuelOnly=True) else None
 
@@ -57,6 +57,9 @@ def selectRefuellingType(
 
     assert(False) # Check I've not missed an enum
     return None
+
+def isStarPortRefuellingType(refuellingType: RefuellingType):
+    return refuellingType == RefuellingType.Refined or refuellingType == RefuellingType.Unrefined
 
 class PitStop(object):
     def __init__(

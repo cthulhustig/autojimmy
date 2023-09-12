@@ -236,7 +236,7 @@ class SimulatorWindow(gui.WindowWidget):
             key='ShipFuelPerParsec',
             type=QtCore.QByteArray)
         if storedValue:
-            self._shipFuelPerParsecSpinBox.restoreState(storedValue)            
+            self._shipFuelPerParsecSpinBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -544,6 +544,8 @@ class SimulatorWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=0, # Simulator doesn't support starting fuel
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
@@ -571,6 +573,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 searchRadius=self._searchRadiusSpinBox.value(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
@@ -582,7 +585,6 @@ class SimulatorWindow(gui.WindowWidget):
                 maxBuyerDm=self._buyerDmRangeWidget.upperValue(),
                 randomSeed=self._randomSeedWidget.number(),
                 simulationLength=None,
-                jumpCostCallback=jumpCostCalculator.calculate,
                 eventCallback=self._simulationEvent,
                 finishedCallback=self._simulationFinished)
         except Exception as ex:

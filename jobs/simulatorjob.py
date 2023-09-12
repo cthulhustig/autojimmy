@@ -22,6 +22,7 @@ class SimulatorJob(QtCore.QThread):
             shipCargoCapacity: int,
             shipFuelCapacity: int,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float]],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             perJumpOverheads: int,
             searchRadius: int,
@@ -35,7 +36,6 @@ class SimulatorJob(QtCore.QThread):
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None, # Length in simulated hours
             stepInterval: float = 2.0, # In seconds
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
             eventCallback: typing.Optional[typing.Callable[[logic.Simulator.Event], typing.Any]] = None,
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any] = None
             ) -> None:
@@ -52,6 +52,7 @@ class SimulatorJob(QtCore.QThread):
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
         self._shipFuelPerParsec = shipFuelPerParsec
+        self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
         self._perJumpOverheads = perJumpOverheads
         self._searchRadius = searchRadius
@@ -65,7 +66,6 @@ class SimulatorJob(QtCore.QThread):
         self._randomSeed = randomSeed
         self._simulationLength = simulationLength
         self._stepInterval = stepInterval
-        self._jumpCostCallback = jumpCostCallback
 
         self._simulator = logic.Simulator(
             rules=rules,
@@ -104,6 +104,7 @@ class SimulatorJob(QtCore.QThread):
                 shipCargoCapacity=self._shipCargoCapacity,
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipFuelPerParsec=self._shipFuelPerParsec,
+                jumpCostCalculator=self._jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategy,
                 perJumpOverheads=self._perJumpOverheads,
                 searchRadius=self._searchRadius,
@@ -115,8 +116,7 @@ class SimulatorJob(QtCore.QThread):
                 minBuyerDm=self._minBuyerDm,
                 maxBuyerDm=self._maxBuyerDm,
                 randomSeed=self._randomSeed,
-                simulationLength=self._simulationLength,
-                jumpCostCallback=self._jumpCostCallback)
+                simulationLength=self._simulationLength)
 
             self._finishedSignal[str].emit('Finished')
         except Exception as ex:

@@ -74,13 +74,10 @@ def _formatBerthingTypeString(
 class _WorldFilter(object):
     def __init__(
             self,
-            refuellingStrategy: logic.RefuellingStrategy,
             avoidWorlds: typing.List[traveller.World],
             avoidFilters: typing.List[traveller.World],
             avoidFilterLogic: logic.FilterLogic
             ) -> None:
-        self._refuellingStrategy = refuellingStrategy
-
         if avoidWorlds:
             # Copy avoid worlds into a set for quick lookup
             self._avoidWorlds = set()
@@ -98,10 +95,6 @@ class _WorldFilter(object):
 
     # IMPORTANT: This will be called from the route planner job thread
     def filter(self, world : traveller.World) -> bool:
-        if not logic.selectRefuellingType(world, self._refuellingStrategy):
-            # Filter out worlds that don't match the refuelling strategy.
-            return False
-
         if self._avoidWorlds and world in self._avoidWorlds:
             # Filter out worlds on the avoid list
             return False
@@ -863,6 +856,8 @@ class JumpRouteWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             costCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
@@ -870,7 +865,6 @@ class JumpRouteWindow(gui.WindowWidget):
             assert(False) # I've missed an enum
 
         worldFilter = _WorldFilter(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             avoidWorlds=self._avoidWorldsWidget.worlds(),
             avoidFilters=self._avoidWorldsFilterWidget.filters(),
             avoidFilterLogic=self._avoidWorldsFilterWidget.filterLogic())
@@ -879,8 +873,13 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob = jobs.RoutePlannerJob(
                 parent=self,
                 worldSequence=worldList,
-                jumpRating=self._shipJumpRatingSpinBox.value(),
-                jumpCostCallback=costCalculator.calculate,
+                shipTonnage=self._shipTonnageSpinBox.value(),
+                shipJumpRating=self._shipJumpRatingSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                jumpCostCalculator=costCalculator,
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 worldFilterCallback=worldFilter.filter,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
@@ -1079,6 +1078,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 text='Use World as Finish World',
                 callback=lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld),
                 enabled=clickedWorld != None
+            ),
+            gui.MenuItem(
+                text='Swap Start && Finish Worlds',
+                callback=lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld),
+                enabled=(startWorld != None) and (finishWorld != None)
             ),
             None, # Separator
             gui.MenuItem(

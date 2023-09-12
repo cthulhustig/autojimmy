@@ -10,28 +10,43 @@ class _RouteNode(object):
             world: traveller.World,
             gScore: int,
             fScore: int,
+            isFuelWorld: bool,
+            maxFuelRemaining: float,
+            costContext: typing.Any,
             parent: typing.Optional['_RouteNode'] = None,
             ) -> None:
         self._world = world
         self._gScore = gScore
         self._fScore = fScore
+        self._isFuelWorld = isFuelWorld
+        self._maxFuelRemaining = maxFuelRemaining
+        self._costContext = costContext
         self._parent = parent
 
     def world(self) -> traveller.World:
         return self._world
 
-    def gScore(self) -> typing.Union[int, float]:
+    def gScore(self) -> float:
         return self._gScore
 
-    def fScore(self) -> typing.Union[int, float]:
+    def fScore(self) -> float:
         return self._fScore
+
+    def isFuelWorld(self) -> bool:
+        return self._isFuelWorld
+
+    def maxFuelRemaining(self) -> int:
+        return self._maxFuelRemaining
+
+    def costContext(self) -> typing.Any:
+        return self._costContext
 
     def parent(self) -> '_RouteNode':
         return self._parent
 
     def __lt__(self, other: '_RouteNode') -> bool:
-        # Order by fScore as that is it gives the best estimate of what the total
-        # cost will start to finish
+        # Order by fScore rather than gScore so that, in the case where two system have the same
+        # gScore the system closest to the finish world will be processed first
         return self._fScore < other._fScore
 
 class _ProgressTracker(object):
@@ -55,13 +70,31 @@ class _ProgressTracker(object):
         if self._progressCallback:
             self._progressCallback(self._totalProgress, True)
 
+class JumpCostCalculatorInterface(object):
+    def initialise(
+            startWorld: traveller.World
+            ) -> typing.Any:
+        raise RuntimeError('The initialise method should be overridden by classes derived from JumpCostCalculator')
+
+    def calculate(
+            currentWorld: traveller.World,
+            nextWorld: traveller.World,
+            costContext: typing.Any
+            ) -> typing.Tuple[typing.Optional[float], typing.Any]: # (Jump Cost, New Cost Context)
+        raise RuntimeError('The calculate method should be overridden by classes derived from JumpCostCalculator')
+
 class RoutePlanner(object):
     def calculateDirectRoute(
             self,
             startWorld: traveller.World,
             finishWorld: traveller.World,
-            jumpRating: typing.Union[int, common.ScalarCalculation],
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
+            shipTonnage: typing.Union[int, common.ScalarCalculation],
+            shipJumpRating: typing.Union[int, common.ScalarCalculation],
+            shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: JumpCostCalculatorInterface,
+            refuellingStrategy: logic.RefuellingStrategy,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
@@ -69,8 +102,13 @@ class RoutePlanner(object):
         worldList = self._calculateRoute(
             startWorld=startWorld,
             finishWorld=finishWorld,
-            jumpRating=jumpRating,
-            jumpCostCallback=jumpCostCallback,
+            shipTonnage=shipTonnage,
+            shipJumpRating=shipJumpRating,
+            shipFuelCapacity=shipFuelCapacity,
+            shipCurrentFuel=shipCurrentFuel,
+            shipFuelPerParsec=shipFuelPerParsec,
+            jumpCostCalculator=jumpCostCalculator,
+            refuellingStrategy=refuellingStrategy,
             worldFilterCallback=worldFilterCallback,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
@@ -82,8 +120,13 @@ class RoutePlanner(object):
     def calculateSequenceRoute(
             self,
             worldSequence: typing.List[traveller.World],
-            jumpRating: typing.Union[int, common.ScalarCalculation],
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
+            shipTonnage: typing.Union[int, common.ScalarCalculation],
+            shipJumpRating: typing.Union[int, common.ScalarCalculation],
+            shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: JumpCostCalculatorInterface,
+            refuellingStrategy: logic.RefuellingStrategy,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
@@ -108,8 +151,13 @@ class RoutePlanner(object):
             worldList = self._calculateRoute(
                 startWorld=startWorld,
                 finishWorld=finishWorld,
-                jumpRating=jumpRating,
-                jumpCostCallback=jumpCostCallback,
+                shipTonnage=shipTonnage,
+                shipJumpRating=shipJumpRating,
+                shipFuelCapacity=shipFuelCapacity,
+                shipFuelPerParsec=shipFuelPerParsec,
+                shipCurrentFuel=shipCurrentFuel if i == 0 else 0, # TODO: Not sure how jumps after the first should be handled
+                jumpCostCalculator=jumpCostCalculator,
+                refuellingStrategy=refuellingStrategy,
                 worldFilterCallback=worldFilterCallback,
                 progressCallback=onStageProgress,
                 isCancelledCallback=isCancelledCallback)
@@ -136,22 +184,38 @@ class RoutePlanner(object):
             self,
             startWorld: traveller.World,
             finishWorld: traveller.World,
-            jumpRating: typing.Union[int, common.ScalarCalculation],
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
+            shipTonnage: typing.Union[int, common.ScalarCalculation],
+            shipJumpRating: typing.Union[int, common.ScalarCalculation],
+            shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: JumpCostCalculatorInterface,
+            refuellingStrategy: logic.RefuellingStrategy,
+            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.List[traveller.World]:
         # If the jump rating is a calculation covert it to it's raw value as we don't need to
         # track calculations here
-        if isinstance(jumpRating, common.ScalarCalculation):
-            jumpRating = jumpRating.value()
+        if isinstance(shipJumpRating, common.ScalarCalculation):
+            shipJumpRating = shipJumpRating.value()
 
-        # Default jump cost function to the one that will use the least fuel
-        defaultCostCalculator = None
-        if not jumpCostCallback:
-            defaultCostCalculator = logic.ShortestDistanceCostCalculator()
-            jumpCostCallback = defaultCostCalculator.calculate
+        if isinstance(shipFuelCapacity, common.ScalarCalculation):
+            shipFuelCapacity = shipFuelCapacity.value()
+
+        if isinstance(shipCurrentFuel, common.ScalarCalculation):
+            shipCurrentFuel = shipCurrentFuel.value()
+
+        if not shipFuelPerParsec:
+            shipFuelPerParsec = traveller.calculateFuelRequiredForJump(
+                jumpDistance=1,
+                shipTonnage=shipTonnage)
+        if isinstance(shipFuelPerParsec, common.ScalarCalculation):
+            shipFuelPerParsec = shipFuelPerParsec.value()
+
+        parsecsWithoutRefuelling = int(shipFuelCapacity // shipFuelPerParsec)
+        if parsecsWithoutRefuelling < 1:
+            raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
         # A _LOT_ of the time we're asked to calculate a route the finish world is actually within
         # one jump of the start world (as finished worlds tend to come from nearby world searches).
@@ -162,17 +226,35 @@ class RoutePlanner(object):
             startWorld.absoluteY(),
             finishWorld.absoluteX(),
             finishWorld.absoluteY())
-        if distance <= jumpRating:
+        if distance <= shipJumpRating:
             if startWorld == finishWorld:
                 return [startWorld]
             return [startWorld, finishWorld]
 
         # add the starting node to the open list
         openQueue: typing.List[_RouteNode] = []
-        gScores: typing.Dict[traveller.World, typing.Union[int, float]] = {}
+        gScores: typing.Dict[traveller.World, float] = {}
         excludedWorlds: typing.Set[traveller.World] = set()
 
-        startNode = _RouteNode(world=startWorld, gScore=0, fScore=0, parent=None)
+        isFuelWorld = logic.selectRefuellingType(
+            world=startWorld,
+            refuellingStrategy=refuellingStrategy) != None
+        if isFuelWorld:
+            maxFuelRemaining = shipFuelCapacity
+        else:
+            # TODO: For now assume you can always refuel on the start world
+            #maxFuelRemaining = shipCurrentFuel
+            maxFuelRemaining = shipFuelCapacity
+            isFuelWorld = True
+
+        startNode = _RouteNode(
+            world=startWorld,
+            gScore=0,
+            fScore=0,
+            isFuelWorld=isFuelWorld,
+            maxFuelRemaining=maxFuelRemaining,
+            costContext=jumpCostCalculator.initialise(startWorld=startWorld),
+            parent=None)
         heapq.heappush(openQueue, startNode)
         gScores[startWorld] = 0
 
@@ -214,13 +296,6 @@ class RoutePlanner(object):
 
                 return path
 
-            # This node has already been surpassed by a better route to this world, no point taking
-            # it any further. This check is needed as it's not possible to remove an entry from a
-            # heapq or change the cost of an entry.
-            bestScore = gScores.get(currentWorld)
-            if (bestScore != None) and (currentNode.gScore() > bestScore):
-                continue
-
             if progressCallback:
                 # We haven't actually finished processing the world yet but notifying here makes it
                 # easier with the various continues that are later in the function (and it doesn't
@@ -229,6 +304,22 @@ class RoutePlanner(object):
                     len(gScores) + 1,
                     False) # Search isn't finished
 
+            # TODO: Need an option for no refuelling strategy to allow for routing in places like Foreven
+            # TODO: Comment explaining this
+            if currentNode.isFuelWorld():
+                searchRadius = shipJumpRating
+            else:
+                searchRadius = min(
+                    shipJumpRating,
+                    int(currentNode.maxFuelRemaining() // shipFuelPerParsec))
+
+            # Clamp the search radius to the max parsecs without refuelling. This is required for
+            # ships that don't have the fuel capacity to perform their max jump. Not sure when
+            # this would actually happen but it should be handled
+            searchRadius = min(searchRadius, parsecsWithoutRefuelling)
+
+            assert(searchRadius >= 0)
+
             # examine each node adjacent to the current node. The world filter isn't passed in
             # as it's quicker to use the open and closed set to filter out large numbers of
             # them before calling the more expensive world filter
@@ -236,7 +327,7 @@ class RoutePlanner(object):
                 sectorName=currentWorld.sectorName(),
                 worldX=currentWorld.x(),
                 worldY=currentWorld.y(),
-                searchRadius=jumpRating)
+                searchRadius=searchRadius)
             if not adjacent:
                 continue
 
@@ -252,8 +343,23 @@ class RoutePlanner(object):
                 if adjacentWorld in excludedWorlds:
                     continue
 
-                tentativeScore = gScores[currentWorld] + jumpCostCallback(currentWorld, adjacentWorld)
+                jumpCost, costContext = jumpCostCalculator.calculate(
+                    currentWorld,
+                    adjacentWorld,
+                    currentNode.costContext())
+                if jumpCost == None:
+                    continue
+
+                tentativeScore = gScores[currentWorld] + jumpCost
                 bestScore = gScores.get(adjacentWorld)
+
+                # TODO: Remove debug code
+                #print(f'{currentWorld.name()}->{adjacentWorld.name()} {jumpCost} {tentativeScore} {bestScore}')
+
+                isFuelWorld = logic.selectRefuellingType(
+                    world=adjacentWorld,
+                    refuellingStrategy=refuellingStrategy) != None
+
                 if (bestScore == None) or (tentativeScore < bestScore):
                     gScores[adjacentWorld] = tentativeScore
 
@@ -261,15 +367,29 @@ class RoutePlanner(object):
                         excludedWorlds.add(adjacentWorld)
                         continue
 
+                    jumpDistance = traveller.hexDistance(
+                        currentWorld.absoluteX(),
+                        currentWorld.absoluteY(),
+                        adjacentWorld.absoluteX(),
+                        adjacentWorld.absoluteY())
+                    fuelForJump = jumpDistance * shipFuelPerParsec
+                    if currentNode.isFuelWorld():
+                        maxFuelRemaining = shipFuelCapacity - fuelForJump
+                    else:
+                        maxFuelRemaining = currentNode.maxFuelRemaining() - fuelForJump
+
                     jumpsToFinish = traveller.hexDistance(
                         absoluteX1=adjacentWorld.absoluteX(),
                         absoluteY1=adjacentWorld.absoluteY(),
                         absoluteX2=finishWorld.absoluteX(),
-                        absoluteY2=finishWorld.absoluteY()) / jumpRating
+                        absoluteY2=finishWorld.absoluteY()) / parsecsWithoutRefuelling
                     newNode = _RouteNode(
                         world=adjacentWorld,
                         gScore=tentativeScore,
                         fScore=tentativeScore + jumpsToFinish,
+                        isFuelWorld=isFuelWorld,
+                        maxFuelRemaining=maxFuelRemaining,
+                        costContext=costContext,
                         parent=currentNode)
                     heapq.heappush(openQueue, newNode)
 

@@ -5,18 +5,6 @@ import traveller
 import typing
 
 class Trader(object):
-    class WorldFilter(object):
-        def __init__(
-                self,
-                refuellingStrategy: logic.RefuellingStrategy
-                ) -> None:
-            self._refuellingStrategy = refuellingStrategy
-
-        def filter(self, world : traveller.World) -> bool:
-            # Filter out the world if it doesn't meet the specified refuelling strategy.
-            # At this point we don't care how it meets the strategy
-            return logic.selectRefuellingType(world, self._refuellingStrategy)
-
     def __init__(
             self,
             rules: traveller.Rules,
@@ -49,6 +37,7 @@ class Trader(object):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
@@ -57,8 +46,7 @@ class Trader(object):
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
             includeSaleWorldBerthing: bool = True, # Assume we'll have to berth on the sale world to complete the trade
             includeLogisticsCosts: bool = True,
-            includeUnprofitableTrades: bool = False,
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
+            includeUnprofitableTrades: bool = False
             ) -> None:
         # Convert arguments used directly but this class to calculations if needed. Arguments that
         # are just passed on will be converted by the function they are passed to if required.
@@ -168,6 +156,7 @@ class Trader(object):
             shipStartingFuel=shipStartingFuel,
             shipFuelPerParsec=shipFuelPerParsec,
             perJumpOverheads=perJumpOverheads,
+            jumpCostCalculator=jumpCostCalculator,
             refuellingStrategy=refuellingStrategy,
             refuellingStrategyOptional=refuellingStrategyOptional,
             useLocalSaleBroker=useLocalSaleBroker,
@@ -175,8 +164,7 @@ class Trader(object):
             includePurchaseWorldBerthing=includePurchaseWorldBerthing,
             includeSaleWorldBerthing=includeSaleWorldBerthing,
             includeLogisticsCosts=includeLogisticsCosts,
-            includeUnprofitableTrades=includeUnprofitableTrades,
-            jumpCostCallback=jumpCostCallback)
+            includeUnprofitableTrades=includeUnprofitableTrades)
 
     def calculateTradeOptionsForMultipleWorlds(
             self,
@@ -195,6 +183,7 @@ class Trader(object):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipStartingFuel: typing.Union[int, common.ScalarCalculation],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
@@ -205,8 +194,7 @@ class Trader(object):
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
             includeSaleWorldBerthing: bool = True, # Assume we'll have to berth on the sale world to complete the trade
             includeLogisticsCosts: bool = True,
-            includeUnprofitableTrades: bool = False,
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None
+            includeUnprofitableTrades: bool = False
             ) -> None:
         # Convert arguments used directly but this class to calculations if needed. Arguments that
         # are just passed on will be converted by the function they are passed to if required.
@@ -357,6 +345,7 @@ class Trader(object):
                 shipStartingFuel=shipStartingFuel,
                 shipFuelPerParsec=shipFuelPerParsec,
                 perJumpOverheads=perJumpOverheads,
+                jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=refuellingStrategy,
                 refuellingStrategyOptional=refuellingStrategyOptional,
                 useLocalSaleBroker=useLocalSaleBroker,
@@ -364,8 +353,7 @@ class Trader(object):
                 includePurchaseWorldBerthing=includePurchaseWorldBerthing,
                 includeSaleWorldBerthing=includeSaleWorldBerthing,
                 includeLogisticsCosts=includeLogisticsCosts,
-                includeUnprofitableTrades=includeUnprofitableTrades,
-                jumpCostCallback=jumpCostCallback)
+                includeUnprofitableTrades=includeUnprofitableTrades)
 
     def _calculateTradeOptions(
             self,
@@ -383,6 +371,7 @@ class Trader(object):
             shipStartingFuel: common.ScalarCalculation,
             shipFuelPerParsec: common.ScalarCalculation,
             perJumpOverheads: common.ScalarCalculation,
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             refuellingStrategyOptional: bool = False,
             useLocalSaleBroker: bool = False,
@@ -390,19 +379,22 @@ class Trader(object):
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
             includeSaleWorldBerthing: bool = True, # Assume we'll have to berth on the sale world to complete the trade
             includeLogisticsCosts: bool = True,
-            includeUnprofitableTrades: bool = False,
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None,
+            includeUnprofitableTrades: bool = False
             ) -> None:
-        worldFilter = Trader.WorldFilter(refuellingStrategy)
         routePlanner = logic.RoutePlanner()
 
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
                 startWorld=purchaseWorld,
                 finishWorld=saleWorld,
-                jumpRating=shipJumpRating,
-                jumpCostCallback=jumpCostCallback,
-                worldFilterCallback=worldFilter.filter,
+                shipTonnage=shipTonnage,
+                shipJumpRating=shipJumpRating,
+                shipFuelCapacity=shipFuelCapacity,
+                shipFuelPerParsec=shipFuelPerParsec,
+                shipCurrentFuel=shipStartingFuel,
+                jumpCostCalculator=jumpCostCalculator,
+                refuellingStrategy=refuellingStrategy,
+                worldFilterCallback=None,
                 isCancelledCallback=self._isCancelledCallback)
             if not jumpRoute:
                 if self._isCancelledCallback and self._isCancelledCallback():
