@@ -218,14 +218,16 @@ class _WorldContext(object):
             self,
             index: int,
             world: traveller.World,
+            isFinishWorld: bool,
             berthingRequired: bool,
             refuellingType: RefuellingType,
             strategyOverridden: bool,
-            reachableWorlds: typing.Iterable[typing.Tuple[int, int]],
-            fuelToFinish: int
+            reachableWorlds: typing.Iterable[typing.Tuple[int, float]],
+            fuelToFinish: float
             ) -> None:
         self._index = index
         self._world = world
+        self._isFinishWorld = isFinishWorld
         self._berthingRequired = berthingRequired
         self._refuellingType = refuellingType
         self._strategyOverridden = strategyOverridden
@@ -251,6 +253,9 @@ class _WorldContext(object):
 
     def world(self) -> traveller.World:
         return self._world
+    
+    def isFinishWorld(self) -> bool:
+        return self._isFinishWorld    
 
     def isBerthingRequired(self) -> bool:
         return self._berthingRequired
@@ -261,31 +266,28 @@ class _WorldContext(object):
     def isStrategyOverridden(self) -> bool:
         return self._strategyOverridden
 
-    def isFinishWorld(self) -> bool:
-        return not self._reachableWorlds
-
-    def reachableWorlds(self) -> typing.Iterable[typing.Tuple[int, int]]:
+    def reachableWorlds(self) -> typing.Iterable[typing.Tuple[int, float]]:
         return self._reachableWorlds
 
-    def fuelToFinish(self) -> int:
+    def fuelToFinish(self) -> float:
         return self._fuelToFinish
 
-    def bestFinalCost(self) -> typing.Optional[int]:
+    def bestFinalCost(self) -> typing.Optional[float]:
         return self._bestFinalCost
 
     def isViableOption(
             self,
-            costSoFar: int,
-            fuelSoFar: int
+            costSoFar: float,
+            fuelSoFar: float
             ) -> bool:
         return ((self._bestCostSoFar == None) or (costSoFar < self._bestCostSoFar)) or \
             ((self._bestFuelSoFar == None) or (fuelSoFar > self._bestFuelSoFar))
 
     def checkForBetterFinalCost(
             self,
-            finalCost: int,
-            costSoFar: int,
-            fuelSoFar: int
+            finalCost: float,
+            costSoFar: float,
+            fuelSoFar: float
             ) -> None:
         if (self._bestFinalCost == None) or (finalCost < self._bestFinalCost):
             self._bestFinalCost = finalCost
@@ -294,8 +296,8 @@ class _WorldContext(object):
 
     def calculateRefuellingCosts(
             self,
-            tonsOfFuel: int
-            ) -> typing.Optional[int]:
+            tonsOfFuel: float
+            ) -> typing.Optional[float]:
         if not self._refuellingType:
             return None
 
@@ -347,7 +349,7 @@ class _CalculationContext:
     def pushRefuelling(
             self,
             worldIndex: int,
-            fuelAmount: int
+            fuelAmount: float
             ) -> None:
         self._worldSequence[self._sequenceLength] = worldIndex
         self._fuelSequence[self._sequenceLength] = fuelAmount
@@ -360,7 +362,7 @@ class _CalculationContext:
     def hasBestSequence(self) -> bool:
         return self._bestCost != None
 
-    def bestCost(self) -> typing.Optional[int]:
+    def bestCost(self) -> typing.Optional[float]:
         return self._bestCost
 
     def bestWorldSequence(self) -> typing.Optional[array.array]:
@@ -371,7 +373,7 @@ class _CalculationContext:
 
     def checkForBetterSequence(
             self,
-            finalCost: int
+            finalCost: float
             ) -> bool:
         isBetter = False
         if self._bestCost == None or finalCost < self._bestCost:
@@ -388,6 +390,45 @@ class _CalculationContext:
                 _CalculationContext._FuelSequenceDataType,
                 itertools.islice(self._fuelSequence, 0, self._sequenceLength))
         return isBetter
+    
+class _RefuellingTypeCache(object):
+    def __init__(
+            self,
+            desiredStrategy: RefuellingStrategy,
+            overrideStrategies: typing.Iterable[RefuellingStrategy]
+            ) -> None:
+        self._desiredStrategy = desiredStrategy
+        self._overrideStrategies = overrideStrategies
+        self._cache: typing.Dict[traveller.World, typing.Tuple[RefuellingType, bool]] = {}
+
+    def selectRefuellingType(
+            self,
+            world: traveller.World
+            ) -> typing.Tuple[RefuellingType, bool]:
+        result = self._cache.get(world, None)
+        if result:
+            return result
+
+        # Determine the refuelling type to be used for this world
+        strategyOverridden = False
+        refuellingType = selectRefuellingType(
+            world=world,
+            refuellingStrategy=self._desiredStrategy)
+        if not refuellingType and self._overrideStrategies:
+            # The world doesn't allow for the desired refuelling strategy but override
+            # strategies have been supplied. The list of strategies is expected to be
+            # in priority order so just iterate over it until we find a match
+            for overrideStrategy in self._overrideStrategies:
+                refuellingType = selectRefuellingType(
+                    world=world,
+                    refuellingStrategy=overrideStrategy)
+                if refuellingType:
+                    strategyOverridden = True
+                    break
+        
+        result = (refuellingType, strategyOverridden)
+        self._cache[world] = result
+        return result
 
 def calculateRefuellingPlan(
         jumpRoute: logic.JumpRoute,
@@ -505,28 +546,20 @@ def _processRoute(
     finishWorldIndex = jumpWorldCount - 1
     fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
+    refuellingTypeCache = _RefuellingTypeCache(
+        desiredStrategy=desiredRefuellingStrategy,
+        overrideStrategies=overrideRefuellingStrategies)
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
         world = jumpRoute[worldIndex]
 
         # Determine the refuelling type to be used for this world
-        refuellingStrategyOverridden = False
-        refuellingType = selectRefuellingType(
-            world=world,
-            refuellingStrategy=desiredRefuellingStrategy)
-        if not refuellingType and overrideRefuellingStrategies:
-            # The world doesn't allow for the desired refuelling strategy but override
-            # strategies have been supplied. The list of strategies is expected to be
-            # in priority order so just iterate over it until we find a match
-            for overrideStrategy in overrideRefuellingStrategies:
-                refuellingType = selectRefuellingType(
-                    world=world,
-                    refuellingStrategy=overrideStrategy)
-                if refuellingType:
-                    refuellingStrategyOverridden = True
-                    break
+        refuellingType, refuellingStrategyOverridden = \
+            refuellingTypeCache.selectRefuellingType(world=world)
 
-        # Find the worlds that are reachable from the current world without refuelling
+        # Find the worlds that match the refuelling strategy and are reachable from the current
+        # world without refuelling. Worlds that don't match the refuelling strategy are ignored as
+        # they don't affect where refuelling can take place (only how much fuel needs taken on)
         reachableWorlds = []
         totalParsecs = 0
         parsecsToNextWorld = None
@@ -545,13 +578,18 @@ def _processRoute(
             if totalParsecs > parsecsWithoutRefuelling:
                 break
 
-            reachableWorlds.append((reachableWorldIndex, totalParsecs * shipFuelPerParsec))
+            toWorldRefuellingType, _ = \
+                refuellingTypeCache.selectRefuellingType(world=toWorld)
+
+            if toWorldRefuellingType or (reachableWorldIndex == finishWorldIndex):
+                reachableWorlds.append((reachableWorldIndex, totalParsecs * shipFuelPerParsec))
 
             reachableWorldIndex += 1
 
         worldContexts.append(_WorldContext(
             index=worldIndex,
             world=world,
+            isFinishWorld=worldIndex == finishWorldIndex,
             berthingRequired=(requiredBerthingIndices != None) and (worldIndex in requiredBerthingIndices),
             refuellingType=refuellingType,
             strategyOverridden=refuellingStrategyOverridden,
@@ -577,9 +615,9 @@ def _processRoute(
 def _processWorld(
         calculationContext: _CalculationContext,
         fromWorldContext: _WorldContext,
-        currentCost: typing.Union[int, float],
-        currentFuel: int
-        ) -> int:
+        currentCost: float,
+        currentFuel: float
+        ) -> float:
     if fromWorldContext.isFinishWorld():
         # We've hit the finish world
         calculationContext.checkForBetterSequence(finalCost=currentCost)
