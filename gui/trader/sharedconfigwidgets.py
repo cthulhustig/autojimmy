@@ -574,6 +574,20 @@ class SharedAvailableFundsSpinBox(_SharedSpinBox):
             maxValue=app.MaxPossibleCredits,
             toolTip=gui.AvailableFundsToolTip,
             parent=parent)
+        
+class SharedFuelBasedRoutingCheckBox(_SharedCheckBox):
+    class _SettingUpdater(_CheckBoxUpdater):
+        def _loadValue(self) -> bool:
+            return app.Config.instance().fuelBasedRouting()
+
+        def _saveValue(self, value: bool) -> None:
+            return app.Config.instance().setFuelBasedRouting(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedFuelBasedRoutingCheckBox._SettingUpdater,
+            toolTip=gui.FuelBasedRoutingToolTip,
+            parent=parent)
 
 class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):

@@ -90,8 +90,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             shipTonnage: int,
             shipFuelCapacity: int,
             shipCurrentFuel: int,
-            refuellingStrategy: logic.RefuellingStrategy,
             perJumpOverheads: int,
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float]] = None
             ) -> None:
         self._shipTonnage = shipTonnage
@@ -113,6 +113,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             startWorld: traveller.World
             ) -> typing.Any:
+        if not self._refuellingStrategy:
+            # Fuel based route calculation is disabled so the context isn't used
+            return None
+
         refuellingType = logic.selectRefuellingType(
             world=startWorld,
             refuellingStrategy=self._refuellingStrategy)
@@ -134,6 +138,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         # Reset ship current fuel so it won't be re-used when the same object
         # is used to calculate more routes (i.e. when using waypoints)
+        # TODO: I suspect this is a bit broken as it won't take into account fuel remaining from the previous segment
+        # The main route planning code was updated but this wasn't
         self._shipCurrentFuel = 0
 
         return costContext
@@ -144,8 +150,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        assert(isinstance(costContext, CheapestRouteCostCalculator._CostContext))
-
         # For the route finder algorithm to work the cost for a jump can't be 0. To avoid this the
         # jump has a default cost of 1, this is the case even when the calculated cost for the
         # jump wouldn't have been 0. This is done so that it doesn't adversely effect what is seen
@@ -156,6 +160,12 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
+
+        if not self._refuellingStrategy:
+            # Fuel based route calculation is disabled
+            return (jumpCost, None)
+
+        assert(isinstance(costContext, CheapestRouteCostCalculator._CostContext))
 
         currentFuel = costContext.currentFuel()
 

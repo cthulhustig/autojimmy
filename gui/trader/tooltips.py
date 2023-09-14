@@ -64,6 +64,10 @@ RouteOptimisationToolTip = createStringToolTip(
     'guaranteed to find the absolute lowest cost route but it\'s generally pretty good.</li>'
     '</ul>',
     escape=False)
+# TODO: Need a more descriptive tool tip
+FuelBasedRoutingToolTip = createStringToolTip(
+    '<p>Turn fuel based route calculation on/off</p>',
+    escape=False)
 RefuellingStrategyToolTip = createStringToolTip(
     '<p>Type of refuelling that\'s desired. When calculating jump routes only worlds that allow the '
     'selected type of refuelling will be considered. The selected refuelling type is also used when '

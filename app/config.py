@@ -45,6 +45,7 @@ class Config(object):
     _UseSaleBrokerKeyName = 'Game/UseSaleBroker'
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
+    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting'
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
     _IncludeStartBerthingKeyName = 'Game/IncludeStartBerthing'
     _IncludeFinishBerthingKeyName = 'Game/IncludeFinishBerthing'
@@ -426,6 +427,15 @@ class Config(object):
 
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
         return self._refuellingStrategy
+    
+    def fuelBasedRouting(self) -> bool:
+        return self._fuelBasedRouting
+
+    def setFuelBasedRouting(self, enable: bool) -> None:
+        # This setting can be modified live so update the internal and disk copy
+        self._fuelBasedRouting = enable
+        self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
+        return False # No restart required
 
     def setRefuellingStrategy(self, strategy: logic.RefuellingStrategy) -> None:
         # This setting can be modified live so update the internal and disk copy
@@ -1059,6 +1069,9 @@ class Config(object):
             key=Config._RouteOptimisationKeyName,
             default=logic.RouteOptimisation.ShortestDistance,
             members=logic.RouteOptimisation.__members__)
+        self._fuelBasedRouting = self._loadBoolSetting(
+            key=Config._FuelBasedRoutingKeyName,
+            default=True)
         self._refuellingStrategy = self._loadEnumSetting(
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,

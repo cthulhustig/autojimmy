@@ -93,7 +93,7 @@ class RoutePlanner(object):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
@@ -125,7 +125,7 @@ class RoutePlanner(object):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
@@ -189,7 +189,7 @@ class RoutePlanner(object):
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
@@ -217,13 +217,20 @@ class RoutePlanner(object):
         if parsecsWithoutRefuelling < 1:
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
         
-        isFuelWorld = logic.selectRefuellingType(
-            world=startWorld,
-            refuellingStrategy=refuellingStrategy) != None
-        if isFuelWorld:
-            maxStartingFuel = shipFuelCapacity
+        if refuellingStrategy:
+            isFuelWorld = logic.selectRefuellingType(
+                world=startWorld,
+                refuellingStrategy=refuellingStrategy) != None
+            if isFuelWorld:
+                maxStartingFuel = shipFuelCapacity
+            else:
+                maxStartingFuel = shipCurrentFuel
         else:
-            maxStartingFuel = shipCurrentFuel
+            # Fuel based route calculation is disabled so use the max capacity as the max starting
+            # fuel. The intended effect is to have it possible to jump to any world within jump
+            # range (fuel capacity allowing).
+            isFuelWorld = False
+            maxStartingFuel = shipFuelCapacity
 
         # Handle corner case
         if startWorld == finishWorld:
@@ -311,14 +318,18 @@ class RoutePlanner(object):
                     len(gScores) + 1,
                     False) # Search isn't finished
 
-            # TODO: Need an option for no refuelling strategy to allow for routing in places like Foreven
             # TODO: Comment explaining this
-            if currentNode.isFuelWorld():
-                searchRadius = shipJumpRating
+            if refuellingStrategy:
+                if currentNode.isFuelWorld():
+                    searchRadius = shipJumpRating
+                else:
+                    searchRadius = min(
+                        shipJumpRating,
+                        int(currentNode.maxFuelRemaining() // shipFuelPerParsec))
             else:
-                searchRadius = min(
-                    shipJumpRating,
-                    int(currentNode.maxFuelRemaining() // shipFuelPerParsec))
+                # Fuel based route calculation is disabled so always search for the full ship jump
+                # rating
+                searchRadius = shipJumpRating
 
             # Clamp the search radius to the max parsecs without refuelling. This is required for
             # ships that don't have the fuel capacity to perform their max jump. Not sure when
@@ -363,10 +374,6 @@ class RoutePlanner(object):
                 # TODO: Remove debug code
                 #print(f'{currentWorld.name()}->{adjacentWorld.name()} {jumpCost} {tentativeScore} {bestScore}')
 
-                isFuelWorld = logic.selectRefuellingType(
-                    world=adjacentWorld,
-                    refuellingStrategy=refuellingStrategy) != None
-
                 if (bestScore == None) or (tentativeScore < bestScore):
                     gScores[adjacentWorld] = tentativeScore
 
@@ -374,16 +381,27 @@ class RoutePlanner(object):
                         excludedWorlds.add(adjacentWorld)
                         continue
 
-                    jumpDistance = traveller.hexDistance(
-                        currentWorld.absoluteX(),
-                        currentWorld.absoluteY(),
-                        adjacentWorld.absoluteX(),
-                        adjacentWorld.absoluteY())
-                    fuelForJump = jumpDistance * shipFuelPerParsec
-                    if currentNode.isFuelWorld():
-                        maxFuelRemaining = shipFuelCapacity - fuelForJump
+                    if refuellingStrategy:
+                        isFuelWorld = logic.selectRefuellingType(
+                            world=adjacentWorld,
+                            refuellingStrategy=refuellingStrategy) != None
+
+                        # Calculate max remaining fuel after jump to adjacent world
+                        jumpDistance = traveller.hexDistance(
+                            currentWorld.absoluteX(),
+                            currentWorld.absoluteY(),
+                            adjacentWorld.absoluteX(),
+                            adjacentWorld.absoluteY())
+                        fuelForJump = jumpDistance * shipFuelPerParsec
+                        if currentNode.isFuelWorld():
+                            maxFuelRemaining = shipFuelCapacity - fuelForJump
+                        else:
+                            maxFuelRemaining = currentNode.maxFuelRemaining() - fuelForJump
                     else:
-                        maxFuelRemaining = currentNode.maxFuelRemaining() - fuelForJump
+                        # Fuel based route calculation is disabled. These values have no effect but
+                        # must be set to something
+                        isFuelWorld = False
+                        maxFuelRemaining = shipFuelCapacity
 
                     jumpsToFinish = traveller.hexDistance(
                         absoluteX1=adjacentWorld.absoluteX(),

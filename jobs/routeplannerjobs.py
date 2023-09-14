@@ -22,7 +22,7 @@ class RoutePlannerJob(QtCore.QThread):
             shipCurrentFuel: int,
             shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
-            refuellingStrategy: logic.RefuellingStrategy,
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy],
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None,
