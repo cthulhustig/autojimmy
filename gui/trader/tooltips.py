@@ -87,9 +87,6 @@ RefuellingStrategyToolTip = createStringToolTip(
     'calculations.</li>'
     '</ul>',
     escape=False)
-RefuellingStrategyOptionalToolTip = createStringToolTip(
-    '<p>Allow the refuelling plan calculator to ignore the specified refuelling strategy if '
-    'it\'s not possible to generate a plan that follows it.</p>')
 IncludeStartBerthingToolTip = createStringToolTip(
     '<p>Include start world berthing cost in logistics calculations</p>')
 IncludeFinishBerthingToolTip = createStringToolTip(
@@ -577,11 +574,6 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
             if tonsOfFuel:
                 toolTip += f'<li><span>Refuelling:<span></li>'
                 toolTip += f'<ul style="{_IndentListStyle}">'
-                if pitStop.isRefuellingStrategyOverridden():
-                    tagColour = app.tagColour(app.TagLevel.Danger)
-                    assert(tagColour)
-                    style = f'background-color:{tagColour}'
-                    toolTip += f'<li><span style="{style}">Strategy: Refuelling strategy overridden<span></li>'
                 if pitStop.refuellingType() == logic.RefuellingType.Refined:
                     toolTip += f'<li><span>Type: Star Port (Refined)<span></li>'
                 elif pitStop.refuellingType() == logic.RefuellingType.Unrefined:

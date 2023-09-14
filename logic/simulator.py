@@ -157,9 +157,6 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
-                if pitStop.isRefuellingStrategyOverridden():
-                    self._logMessage(f'Refuelling strategy overridden on {self._currentWorld.name(includeSubsector=True)}')
-
                 if pitStop.berthingCost():
                     # Roll dice to calculate actual berthing cost on this world
                     berthingCost = traveller.starPortBerthingCost(
@@ -313,7 +310,6 @@ class Simulator(object):
             shipFuelPerParsec=self._shipFuelPerParsec,
             jumpCostCalculator=self._jumpCostCalculator,
             refuellingStrategy=self._refuellingStrategy,
-            refuellingStrategyOptional=False, # Force selected refuelling strategy
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)

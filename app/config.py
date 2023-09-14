@@ -46,7 +46,6 @@ class Config(object):
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
-    _RefuellingStrategyOptionalKeyName = 'Game/RefuellingStrategyOptional'
     _IncludeStartBerthingKeyName = 'Game/IncludeStartBerthing'
     _IncludeFinishBerthingKeyName = 'Game/IncludeFinishBerthing'
     _IncludeLogisticsCostsKeyName = 'Game/IncludeLogisticsCosts'
@@ -432,15 +431,6 @@ class Config(object):
         # This setting can be modified live so update the internal and disk copy
         self._refuellingStrategy = strategy
         self._settings.setValue(Config._RefuellingStrategyKeyName, strategy.name)
-        return False # No restart required
-
-    def refuellingStrategyOptional(self) -> bool:
-        return self._refuellingStrategyOptional
-
-    def setRefuellingStrategyOptional(self, optional: bool) -> None:
-        # This setting can be modified live so update the internal and disk copy
-        self._refuellingStrategyOptional = optional
-        self._settings.setValue(Config._RefuellingStrategyOptionalKeyName, optional)
         return False # No restart required
 
     def includeStartBerthing(self) -> bool:
@@ -1073,9 +1063,6 @@ class Config(object):
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,
             members=logic.RefuellingStrategy.__members__)
-        self._refuellingStrategyOptional = self._loadBoolSetting(
-            key=Config._RefuellingStrategyOptionalKeyName,
-            default=False)
         self._includeStartBerthing = self._loadBoolSetting(
             key=Config._IncludeStartBerthingKeyName,
             default=False)

@@ -51,14 +51,6 @@ class RouteLogistics(object):
     def refuellingPlan(self) -> typing.Optional[logic.RefuellingPlan]:
         return self._refuellingPlan
 
-    def isRefuellingStrategyOverridden(self) -> bool:
-        if not self._refuellingPlan:
-            # Should only happen when there is no jump route (i.e. start and finish worlds are the
-            # same and there are no waypoints)
-            assert(self.jumpCount() == 0)
-            return False
-        return self._refuellingPlan.isRefuellingStrategyOverridden()
-
     def totalOverheads(self) -> typing.Optional[typing.Union[common.ScalarCalculation, common.RangeCalculation]]:
         return self._totalOverheads
 
@@ -81,7 +73,6 @@ def calculateRouteLogistics(
         shipStartingFuel: typing.Union[int, common.ScalarCalculation],
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         refuellingStrategy: typing.Union[int, common.ScalarCalculation],
-        refuellingStrategyOptional: bool = False,
         shipFuelPerParsec: typing.Union[int, float, common.ScalarCalculation] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -100,7 +91,6 @@ def calculateRouteLogistics(
             shipStartingFuel=shipStartingFuel,
             shipFuelPerParsec=shipFuelPerParsec,
             refuellingStrategy=refuellingStrategy,
-            refuellingStrategyOptional=refuellingStrategyOptional,
             requiredBerthingIndices=requiredBerthingIndices,
             includeRefuellingCosts=includeLogisticsCosts,
             diceRoller=diceRoller)
@@ -134,8 +124,7 @@ def calculateRouteLogistics(
                 refuellingType=None, # No refuelling
                 tonsOfFuel=None,
                 fuelCost=None,
-                berthingCost=reportedBerthingCost,
-                refuellingStrategyOverridden=False) # No refuelling so strategy isn't overridden
+                berthingCost=reportedBerthingCost)
             refuellingPlan = logic.RefuellingPlan([pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads

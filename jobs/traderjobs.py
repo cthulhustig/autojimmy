@@ -118,7 +118,6 @@ class SingleWorldTraderJob(_TraderJobBase):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            refuellingStrategyOptional: bool,
             useLocalSaleBroker: bool,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             includePurchaseWorldBerthing: bool,
@@ -151,7 +150,6 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
-        self._refuellingStrategyOptional = refuellingStrategyOptional
         self._useLocalSaleBroker = useLocalSaleBroker
         self._localSaleBrokerDm = localSaleBrokerDm
         self._includePurchaseWorldBerthing = includePurchaseWorldBerthing
@@ -187,7 +185,6 @@ class SingleWorldTraderJob(_TraderJobBase):
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategy,
-                refuellingStrategyOptional=self._refuellingStrategyOptional,
                 useLocalSaleBroker=self._useLocalSaleBroker,
                 localSaleBrokerDm=self._localSaleBrokerDm,
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
@@ -226,7 +223,6 @@ class MultiWorldTraderJob(_TraderJobBase):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            refuellingStrategyOptional: bool,
             useLocalPurchaseBroker: bool,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             useLocalSaleBroker: bool,
@@ -260,7 +256,6 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
-        self._refuellingStrategyOptional = refuellingStrategyOptional
         self._useLocalPurchaseBroker = useLocalPurchaseBroker
         self._localPurchaseBrokerDm = localPurchaseBrokerDm
         self._useLocalSaleBroker = useLocalSaleBroker
@@ -299,7 +294,6 @@ class MultiWorldTraderJob(_TraderJobBase):
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategy,
-                refuellingStrategyOptional=self._refuellingStrategyOptional,
                 useLocalPurchaseBroker=self._useLocalPurchaseBroker,
                 localPurchaseBrokerDm=self._localPurchaseBrokerDm,
                 useLocalSaleBroker=self._useLocalSaleBroker,

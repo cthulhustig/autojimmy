@@ -508,6 +508,7 @@ class SharedCurrentFuelSpinBox(_SharedSpinBox):
             toolTip=gui.ShipCurrentFuelToolTip,
             parent=parent)
 
+# TODO: Need to be VERY sure I want this to be a float
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     class _SettingUpdater(_TogglableDoubleSpinBoxUpdater):
         def _loadValue(self) -> typing.Tuple[bool, float]:
@@ -602,20 +603,6 @@ class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
             updaterType=SharedRouteOptimisationComboBox._SettingUpdater,
             enumType=logic.RouteOptimisation,
             toolTip=gui.RouteOptimisationToolTip,
-            parent=parent)
-
-class SharedRefuellingStrategyOptionalCheckBox(_SharedCheckBox):
-    class _SettingUpdater(_CheckBoxUpdater):
-        def _loadValue(self) -> bool:
-            return app.Config.instance().refuellingStrategyOptional()
-
-        def _saveValue(self, value: bool) -> None:
-            return app.Config.instance().setRefuellingStrategyOptional(value)
-
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(
-            updaterType=SharedRefuellingStrategyOptionalCheckBox._SettingUpdater,
-            toolTip=gui.RefuellingStrategyOptionalToolTip,
             parent=parent)
 
 class SharedIncludeStartBerthingCheckBox(_SharedCheckBox):

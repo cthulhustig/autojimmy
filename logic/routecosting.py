@@ -166,8 +166,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             absoluteY2=nextWorld.absoluteY())
         jumpFuel = jumpDistance * self._shipFuelPerParsec
         fuelDeficit = 0 if (jumpFuel < currentFuel) else (jumpFuel - currentFuel)
-        # TODO: Not sure if fuel deficit should be rounded UP to a full number of tons. The rules
-        # just give cost for full tons, not sure if you can purchase part tons
 
         refuellingType = logic.selectRefuellingType(
             world=currentWorld,

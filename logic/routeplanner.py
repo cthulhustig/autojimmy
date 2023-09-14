@@ -99,7 +99,7 @@ class RoutePlanner(object):
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
-        worldList = self._calculateRoute(
+        worldList, _ = self._calculateRoute(
             startWorld=startWorld,
             finishWorld=finishWorld,
             shipTonnage=shipTonnage,
@@ -148,14 +148,14 @@ class RoutePlanner(object):
             startWorld = worldSequence[i]
             finishWorld = worldSequence[i + 1]
 
-            worldList = self._calculateRoute(
+            worldList, shipCurrentFuel = self._calculateRoute(
                 startWorld=startWorld,
                 finishWorld=finishWorld,
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
                 shipFuelCapacity=shipFuelCapacity,
                 shipFuelPerParsec=shipFuelPerParsec,
-                shipCurrentFuel=shipCurrentFuel if i == 0 else 0, # TODO: Not sure how jumps after the first should be handled
+                shipCurrentFuel=shipCurrentFuel,
                 jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=refuellingStrategy,
                 worldFilterCallback=worldFilterCallback,
@@ -194,7 +194,7 @@ class RoutePlanner(object):
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
-            ) -> typing.List[traveller.World]:
+            ) -> typing.Tuple[typing.Optional[typing.List[traveller.World]], typing.Optional[float]]: # Route, Max Fuel Remaining At Finish
         # If the jump rating is a calculation covert it to it's raw value as we don't need to
         # track calculations here
         if isinstance(shipJumpRating, common.ScalarCalculation):
@@ -216,43 +216,50 @@ class RoutePlanner(object):
         parsecsWithoutRefuelling = int(shipFuelCapacity // shipFuelPerParsec)
         if parsecsWithoutRefuelling < 1:
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
+        
+        isFuelWorld = logic.selectRefuellingType(
+            world=startWorld,
+            refuellingStrategy=refuellingStrategy) != None
+        if isFuelWorld:
+            maxStartingFuel = shipFuelCapacity
+        else:
+            maxStartingFuel = shipCurrentFuel
+
+        # Handle corner case
+        if startWorld == finishWorld:
+            return ([startWorld], maxStartingFuel)                 
 
         # A _LOT_ of the time we're asked to calculate a route the finish world is actually within
         # one jump of the start world (as finished worlds tend to come from nearby world searches).
         # Do a quick check for this case, if it's true we known the shortest distance/shortest time
         # and lowest cost route is a single direct jump.
+        # This check is only done if the world can be reached with the max starting fuel. This means
+        # either the world meets the refuelling strategy or there is enough fuel in the tank to reach
+        # it. If not a full route check is performed as it may be possible to find a better route
+        # depending on the costing function (i.e. lowest cost). I suspect there may be some corner
+        # cases where this doesn't hold but until I know they actually exist I'm going to go with the
+        # performance increase
         distance = traveller.hexDistance(
             startWorld.absoluteX(),
             startWorld.absoluteY(),
             finishWorld.absoluteX(),
             finishWorld.absoluteY())
         if distance <= shipJumpRating:
-            if startWorld == finishWorld:
-                return [startWorld]
-            return [startWorld, finishWorld]
+            fuelToFinish = distance * shipFuelPerParsec
+            if fuelToFinish <= maxStartingFuel:
+                return ([startWorld, finishWorld], maxStartingFuel - fuelToFinish)
 
         # add the starting node to the open list
         openQueue: typing.List[_RouteNode] = []
         gScores: typing.Dict[traveller.World, float] = {}
         excludedWorlds: typing.Set[traveller.World] = set()
 
-        isFuelWorld = logic.selectRefuellingType(
-            world=startWorld,
-            refuellingStrategy=refuellingStrategy) != None
-        if isFuelWorld:
-            maxFuelRemaining = shipFuelCapacity
-        else:
-            # TODO: For now assume you can always refuel on the start world
-            #maxFuelRemaining = shipCurrentFuel
-            maxFuelRemaining = shipFuelCapacity
-            isFuelWorld = True
-
         startNode = _RouteNode(
             world=startWorld,
             gScore=0,
             fScore=0,
             isFuelWorld=isFuelWorld,
-            maxFuelRemaining=maxFuelRemaining,
+            maxFuelRemaining=maxStartingFuel,
             costContext=jumpCostCalculator.initialise(startWorld=startWorld),
             parent=None)
         heapq.heappush(openQueue, startNode)
@@ -271,7 +278,7 @@ class RoutePlanner(object):
         # while the open list is not empty
         while openQueue:
             if isCancelledCallback and isCancelledCallback():
-                return None
+                return (None, None)
 
             # current node = node from open list with the lowest cost
             currentNode: _RouteNode = heapq.heappop(openQueue)
@@ -294,7 +301,7 @@ class RoutePlanner(object):
                         len(gScores) + 1,
                         True) # Search is finished
 
-                return path
+                return (path, currentNode.maxFuelRemaining())
 
             if progressCallback:
                 # We haven't actually finished processing the world yet but notifying here makes it
@@ -393,4 +400,4 @@ class RoutePlanner(object):
                         parent=currentNode)
                     heapq.heappush(openQueue, newNode)
 
-        return None # No route found
+        return (None, None) # No route found

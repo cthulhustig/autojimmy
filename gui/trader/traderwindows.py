@@ -1738,7 +1738,22 @@ class WorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
+        
+        # Flag cases where the purchase world doesn't match the refuelling strategy. No options will be
+        # generated unless the ship has enough current fuel
+        if not logic.selectRefuellingType(
+                world=self._purchaseWorldWidget.world(),
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+            message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
+                'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'  
 
+            answer = gui.MessageBoxEx.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?') 
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return        
+
+        # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -1783,13 +1798,6 @@ class WorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                # Make the refuelling strategy optional. If the strategy was mandatory no trade options
-                # will be found if the purchase world doesn't support the refuelling strategy AND the
-                # ship doesn't have enough fuel to reach a world on the jump route calculated for the
-                # trade option that does support the refuelling strategy. It wouldn't be clear to the
-                # user why no options were found. If the purchase world doesn't support the refuelling
-                # strategy a note will be attached to the trade option so the user should know.
-                refuellingStrategyOptional=True,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
@@ -2350,7 +2358,31 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
+        
+        # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
+        # generated for those worlds unless the ship has enough current fuel
+        fuelIssueWorldStrings = []
+        for world in self._purchaseWorldsWidget.worlds():
+            if not logic.selectRefuellingType(
+                    world=world,
+                    refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+                fuelIssueWorldStrings.append(world.name())
 
+        if fuelIssueWorldStrings:
+            worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
+            if len(fuelIssueWorldStrings) == 1:
+                message = f'Waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
+            else:
+                message = f'Waypoints {worldListString} don\'t support the selected refuelling strategy. '
+            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'  
+
+            answer = gui.MessageBoxEx.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?')
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
+            
+        # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -2403,13 +2435,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                # Make the refuelling strategy optional. If the strategy was mandatory no trade options
-                # will be found if the purchase world doesn't support the refuelling strategy AND the
-                # ship doesn't have enough fuel to reach a world on the jump route calculated for the
-                # trade option that does support the refuelling strategy. It wouldn't be clear to the
-                # user why no options were found. If the purchase world doesn't support the refuelling
-                # strategy a note will be attached to the trade option so the user should know.
-                refuellingStrategyOptional=True,
                 includeIllegal=self._includeIllegalTradeGoodsCheckBox.isChecked(),
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),

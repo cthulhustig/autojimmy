@@ -39,7 +39,6 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            refuellingStrategyOptional: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
@@ -158,7 +157,6 @@ class Trader(object):
             perJumpOverheads=perJumpOverheads,
             jumpCostCalculator=jumpCostCalculator,
             refuellingStrategy=refuellingStrategy,
-            refuellingStrategyOptional=refuellingStrategyOptional,
             useLocalSaleBroker=useLocalSaleBroker,
             localSaleBrokerDm=localSaleBrokerDm,
             includePurchaseWorldBerthing=includePurchaseWorldBerthing,
@@ -185,7 +183,6 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            refuellingStrategyOptional: bool = False,
             shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
             useLocalPurchaseBroker: bool = False,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
@@ -347,7 +344,6 @@ class Trader(object):
                 perJumpOverheads=perJumpOverheads,
                 jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=refuellingStrategy,
-                refuellingStrategyOptional=refuellingStrategyOptional,
                 useLocalSaleBroker=useLocalSaleBroker,
                 localSaleBrokerDm=localSaleBrokerDm,
                 includePurchaseWorldBerthing=includePurchaseWorldBerthing,
@@ -373,7 +369,6 @@ class Trader(object):
             perJumpOverheads: common.ScalarCalculation,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            refuellingStrategyOptional: bool = False,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[common.ScalarCalculation] = None, # Only used for 1e & 2e
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
@@ -427,7 +422,6 @@ class Trader(object):
                 shipFuelPerParsec=shipFuelPerParsec,
                 perJumpOverheads=perJumpOverheads,
                 refuellingStrategy=refuellingStrategy,
-                refuellingStrategyOptional=refuellingStrategyOptional,
                 requiredBerthingIndices=requiredBerthingIndices,
                 includeLogisticsCosts=includeLogisticsCosts)
             if not routeLogistics:
