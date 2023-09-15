@@ -173,11 +173,13 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             refuellingStrategy=self._refuellingStrategy)
         fuelWorld = currentWorld
         fuelCostPerTon = 0
+        lastFuelParsecs = 0
 
         if refuellingType == None:
             refuellingType = costContext.lastFuelType()
             fuelWorld = costContext.lastFuelWorld()
             fuelCostPerTon = costContext.lastFuelCost()
+            lastFuelParsecs = costContext.lastFuelParsecs()
         elif logic.isStarPortRefuellingType(refuellingType):
             fuelCostPerTon = traveller.starPortFuelCostPerTon(
                 world=currentWorld,
@@ -186,7 +188,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             fuelCostPerTon = fuelCostPerTon.value()
 
         if fuelDeficit > 0:
-            if costContext.lastFuelParsecs() > self._parsecsWithoutRefuelling:
+            if lastFuelParsecs > self._parsecsWithoutRefuelling:
                 # It's not possible to take on enough fuel to reach the world
                 return (None, None)
 
@@ -200,20 +202,11 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
                 berthingCost = traveller.starPortBerthingCost(fuelWorld)
                 jumpCost += berthingCost.worstCaseValue()
 
-        if refuellingType:
-            lastFuelParsecs = jumpParsecs
-            lastFuelType = refuellingType
-            lastFuelCost = fuelCostPerTon
-        else:
-            lastFuelParsecs = costContext.lastFuelParsecs() + jumpParsecs
-            lastFuelType = costContext.lastFuelType()
-            lastFuelCost = costContext.lastFuelCost()
-
         newCostContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=currentFuel - jumpFuel,
             lastFuelWorld=fuelWorld,
-            lastFuelParsecs=lastFuelParsecs,
-            lastFuelType=lastFuelType,
-            lastFuelCost=lastFuelCost)
+            lastFuelParsecs=lastFuelParsecs + jumpParsecs,
+            lastFuelType=refuellingType,
+            lastFuelCost=fuelCostPerTon)
 
         return (jumpCost, newCostContext)
