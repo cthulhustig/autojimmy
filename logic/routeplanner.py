@@ -227,7 +227,7 @@ class RoutePlanner(object):
             # and lowest cost route is a single direct jump.
             # This check is only done if the world can be reached with the max starting fuel. This means
             # either the world meets the refuelling strategy or there is enough fuel in the tank to reach
-            # it. If not a full route check is performed as it may be possible to find a better route
+            # it. If not, a full route check is performed as it may be possible to find a better route
             # depending on the costing function (i.e. lowest cost). I suspect there may be some corner
             # cases where this doesn't hold but until I know they actually exist I'm going to go with the
             # performance increase
@@ -299,24 +299,22 @@ class RoutePlanner(object):
                 # We've reached the current target for the node but there are still more worlds
                 # in the sequence. Increment the target index, skipping runs of the same target
                 # world, then continue to processing this node.
-                while targetIndex < finishWorldIndex:
+                while True:
                     targetIndex += 1
                     newTargetWorld = worldSequence[targetIndex]
                     if newTargetWorld != targetWorld:
                         targetWorld = newTargetWorld
                         break
 
-                # Because runs of the same world are skipped, it means that we might have actually
-                # reached the finish world. This means the check for if the finish world has been
-                # reached needs to be a separate check performed after this one
-                # TODO: This doesn't work, it breaks waypoint routes
-                """
-                if targetIndex == finishWorldIndex:
-                    return self._finaliseRoute(
-                        finishNode=currentNode,
-                        progressCount=progressCount,
-                        progressCallback=progressCallback)
-                """
+                    # There is a run of waypoints for the target world. If we've reached the end
+                    # of the world sequence then we're done and the current route is the lowest
+                    # cost route. If we've not reached the end of the world sequence then just
+                    # loop in order to skip this world
+                    if targetIndex >= finishWorldIndex:
+                        return self._finaliseRoute(
+                            finishNode=currentNode,
+                            progressCount=progressCount,
+                            progressCallback=progressCallback)
 
                 # Set the new target for the current node
                 currentNode.setTargetIndex(targetIndex)
