@@ -1738,20 +1738,20 @@ class WorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
-        
+
         # Flag cases where the purchase world doesn't match the refuelling strategy. No options will be
         # generated unless the ship has enough current fuel
         if not logic.selectRefuellingType(
                 world=self._purchaseWorldWidget.world(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
             message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
-                'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'  
+                'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
             answer = gui.MessageBoxEx.question(
                 parent=self,
-                text=message + '\n\nDo you want to continue?') 
+                text=message + '\n\nDo you want to continue?')
             if answer == QtWidgets.QMessageBox.StandardButton.No:
-                return        
+                return
 
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -2358,7 +2358,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 parent=self,
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
-        
+
         # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
         # generated for those worlds unless the ship has enough current fuel
         fuelIssueWorldStrings = []
@@ -2374,14 +2374,14 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 message = f'Waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
             else:
                 message = f'Waypoints {worldListString} don\'t support the selected refuelling strategy. '
-            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'  
+            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
             answer = gui.MessageBoxEx.question(
                 parent=self,
                 text=message + '\n\nDo you want to continue?')
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
-            
+
         # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:

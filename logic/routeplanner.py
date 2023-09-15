@@ -385,7 +385,7 @@ class RoutePlanner(object):
                     currentWorld.absoluteX(),
                     currentWorld.absoluteY(),
                     adjacentWorld.absoluteX(),
-                    adjacentWorld.absoluteY())                          
+                    adjacentWorld.absoluteY())
 
                 # Calculate the cost of jumping to the adjacent world
                 jumpCost, costContext = jumpCostCalculator.calculate(

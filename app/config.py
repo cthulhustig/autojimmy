@@ -427,7 +427,7 @@ class Config(object):
 
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
         return self._refuellingStrategy
-    
+
     def fuelBasedRouting(self) -> bool:
         return self._fuelBasedRouting
 

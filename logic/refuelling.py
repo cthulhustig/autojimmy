@@ -261,9 +261,9 @@ class _WorldContext(object):
 
     def world(self) -> traveller.World:
         return self._world
-    
+
     def isFinishWorld(self) -> bool:
-        return self._isFinishWorld    
+        return self._isFinishWorld
 
     def isBerthingRequired(self) -> bool:
         return self._berthingRequired

@@ -837,12 +837,12 @@ class JumpRouteWindow(gui.WindowWidget):
                 message = 'You need to select a finish world before calculating a route.'
             gui.MessageBoxEx.information(parent=self, text=message)
             return
-        
+
         # Fuel based route calculation
         refuellingStrategy = None
         if self._fuelBasedRoutingCheckBox.isChecked():
             refuellingStrategy = self._refuellingStrategyComboBox.currentEnum()
-                
+
             # Highlight cases where start world or waypoints don't support the refuelling strategy
             if not logic.selectRefuellingType(
                     world=startWorld,
@@ -852,14 +852,14 @@ class JumpRouteWindow(gui.WindowWidget):
                     message += 'A route can\'t be calculated until you specify the amount of fuel the ship currently has.'
                     gui.MessageBoxEx.information(parent=self, text=message)
                     return
-                
+
                 message += 'The ability to generate a route and/or refuelling plan will be limited by the the amount of fuel the ship currently has.\n\nDo you want to continue?'
                 answer = gui.MessageBoxEx.question(
                     parent=self,
                     text=message)
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
-                
+
             fuelIssueWorldStrings = []
             for waypointWorld in self._waypointWorldsWidget.worlds():
                 if not logic.selectRefuellingType(
@@ -873,7 +873,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     message = f'Fuel based route calculation is enabled but waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
                 else:
                     message = f'Fuel based route calculation is enabled but waypoints {worldListString} don\'t support the selected refuelling strategy. '
-                message += 'This may prevent the generation of a route and/or refuelling plan.'  
+                message += 'This may prevent the generation of a route and/or refuelling plan.'
 
                 answer = gui.MessageBoxEx.question(
                     parent=self,
@@ -881,7 +881,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
-        
         self._clearJumpRoute()
 
         worldList = [startWorld]
@@ -1371,7 +1370,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 zoomToArea=self._zoomToJumpRoute,
                 clearOverlays=False,
                 pitStopRadius=0.4)
-            
+
     def _fuelBasedRoutingToggled(self) -> None:
         self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
 

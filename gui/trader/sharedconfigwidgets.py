@@ -574,7 +574,7 @@ class SharedAvailableFundsSpinBox(_SharedSpinBox):
             maxValue=app.MaxPossibleCredits,
             toolTip=gui.AvailableFundsToolTip,
             parent=parent)
-        
+
 class SharedFuelBasedRoutingCheckBox(_SharedCheckBox):
     class _SettingUpdater(_CheckBoxUpdater):
         def _loadValue(self) -> bool:

@@ -166,12 +166,12 @@ def humanFriendlyListString(strings: typing.Sequence[str]) -> str:
         return ''
     if count == 1:
         return strings[0]
-    
+
     result = ''
     for index in range(count - 1):
         if result:
             result += ', '
         result += strings[index]
-    
+
     result += ' & ' + strings[count - 1]
     return result
