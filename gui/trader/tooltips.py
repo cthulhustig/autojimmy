@@ -59,19 +59,30 @@ RouteOptimisationToolTip = createStringToolTip(
     'distance and therefore uses the least fuel.</li>'
     '<li><b>Shortest Time</b> - A search that finds the route that has the lowest number of jumps '
     'and therefore requires the shortest time spent in jump space.</li>'
-    '<li><b>Lowest cost</b> - A search that takes per jump overheads and fuel & berthing '
-    'costs into account to try and find a route with the lowest logistics costs. It\'s not '
-    'guaranteed to find the absolute lowest cost route but it\'s generally pretty good.</li>'
+    '<li><b>Lowest cost</b> - A search that attempts to find the route with the lowest logistics '
+    'costs. It\'s not guaranteed to find the absolute lowest cost route but it\'s generally pretty '
+    'good.</li>'
     '</ul>',
     escape=False)
-# TODO: Need a more descriptive tool tip
 FuelBasedRoutingToolTip = createStringToolTip(
-    '<p>Turn fuel based route calculation on/off</p>',
+    '<p>Turn fuel based route calculation on/off</p>'
+    '<p>When fuel based route calculation is enabled, the jump route calculator will use ship '
+    'jump/fuel details and world information to generate a route that can be completed using the '
+    'type of refuelling specified by the selected refuelling strategy. Fuel based routing allows '
+    'for the generation of a refuelling plan that details where along the route to take on fuel '
+    'and how much to take on in order to complete the route with the minimum cost. It also allows '
+    'the route calculator generate more optimised routes for ships that can travel more parsecs '
+    'than their jump rating without refuelling.</p>'
+    '<p>When fuel based route calculation is disabled, the jump route calculator only uses the '
+    'ships jump rating to calculate the route. This method of route calculation can be significantly '
+    'faster than fuel based routing, however it\'s not guaranteed that it would be possible to take '
+    'on enough fuel along the route to complete it. If you have specific refuelling requirements, '
+    'avoid world filters can be used to limit the route to specific types of worlds.</p>'
+    '<p>The primary reason to disable fuel based route calculation is when you need to create a '
+    'route in a sector such as Foreven where world information isn\'t know.</p>',
     escape=False)
 RefuellingStrategyToolTip = createStringToolTip(
-    '<p>Type of refuelling that\'s desired. When calculating jump routes only worlds that allow the '
-    'selected type of refuelling will be considered. The selected refuelling type is also used when '
-    'calculating logistics cost.</p>'
+    '<p>Type of refuelling that\'s desired</p>'
     '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
     '<li><b>Refined fuel only</b> - Only refuel at star ports with refined fuel</li>'
     '<li><b>Unrefined only</b> - Only refuel at star ports with unrefined fuel</li>'
