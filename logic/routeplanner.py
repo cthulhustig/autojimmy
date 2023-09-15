@@ -72,6 +72,7 @@ class JumpCostCalculatorInterface(object):
     def calculate(
             currentWorld: traveller.World,
             nextWorld: traveller.World,
+            jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]: # (Jump Cost, New Cost Context)
         raise RuntimeError('The calculate method should be overridden by classes derived from JumpCostCalculator')
@@ -378,21 +379,22 @@ class RoutePlanner(object):
                     continue
                 if worldFilter and not worldFilter(adjacentWorld):
                     excludedWorlds.add(adjacentWorld)
-                    continue                
-
-                # Calculate the cost of jumping to the adjacent world
-                jumpCost, costContext = jumpCostCalculator.calculate(
-                    currentWorld,
-                    adjacentWorld,
-                    currentNode.costContext())
-                if jumpCost == None:
                     continue
 
                 jumpDistance = traveller.hexDistance(
                     currentWorld.absoluteX(),
                     currentWorld.absoluteY(),
                     adjacentWorld.absoluteX(),
-                    adjacentWorld.absoluteY())
+                    adjacentWorld.absoluteY())                          
+
+                # Calculate the cost of jumping to the adjacent world
+                jumpCost, costContext = jumpCostCalculator.calculate(
+                    currentWorld,
+                    adjacentWorld,
+                    jumpDistance,
+                    currentNode.costContext())
+                if jumpCost == None:
+                    continue
 
                 if refuellingStrategy:
                     isFuelWorld = refuellingTypeCache.selectRefuellingType(

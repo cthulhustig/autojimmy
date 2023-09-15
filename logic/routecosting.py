@@ -31,14 +31,10 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
+            jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        jumpDistance = traveller.hexDistance(
-            absoluteX1=currentWorld.absoluteX(),
-            absoluteY1=currentWorld.absoluteY(),
-            absoluteX2=nextWorld.absoluteX(),
-            absoluteY2=nextWorld.absoluteY())
-        return (jumpDistance + ShortestDistanceCostCalculator._PerJumpConstant, None)
+        return (jumpParsecs + ShortestDistanceCostCalculator._PerJumpConstant, None)
 
 # This cost function finds the route with fewest jumps but not necessarily the shortest distance.
 # The fewest jumps route is important as it takes the shortest time.
@@ -53,6 +49,7 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
+            jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
         return (1, None)
@@ -147,6 +144,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
+            jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
         # For the route finder algorithm to work the cost for a jump can't be 0. To avoid this the
@@ -167,13 +165,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         assert(isinstance(costContext, CheapestRouteCostCalculator._CostContext))
 
         currentFuel = costContext.currentFuel()
-
-        jumpDistance = traveller.hexDistance(
-            absoluteX1=currentWorld.absoluteX(),
-            absoluteY1=currentWorld.absoluteY(),
-            absoluteX2=nextWorld.absoluteX(),
-            absoluteY2=nextWorld.absoluteY())
-        jumpFuel = jumpDistance * self._shipFuelPerParsec
+        jumpFuel = jumpParsecs * self._shipFuelPerParsec
         fuelDeficit = 0 if (jumpFuel < currentFuel) else (jumpFuel - currentFuel)
 
         refuellingType = logic.selectRefuellingType(
@@ -208,11 +200,11 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
                 jumpCost += berthingCost.worstCaseValue()
 
         if refuellingType:
-            lastFuelParsecs = jumpDistance
+            lastFuelParsecs = jumpParsecs
             lastFuelType = refuellingType
             lastFuelCost = fuelCostPerTon
         else:
-            lastFuelParsecs = costContext.lastFuelParsecs() + jumpDistance
+            lastFuelParsecs = costContext.lastFuelParsecs() + jumpParsecs
             if lastFuelParsecs <= self._parsecsWithoutRefuelling:
                 lastFuelType = costContext.lastFuelType()
                 lastFuelCost = costContext.lastFuelCost()
