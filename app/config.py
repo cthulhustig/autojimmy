@@ -425,9 +425,6 @@ class Config(object):
         self._settings.setValue(Config._RouteOptimisationKeyName, optimisation.name)
         return False # No restart required
 
-    def refuellingStrategy(self) -> logic.RefuellingStrategy:
-        return self._refuellingStrategy
-
     def fuelBasedRouting(self) -> bool:
         return self._fuelBasedRouting
 
@@ -436,6 +433,9 @@ class Config(object):
         self._fuelBasedRouting = enable
         self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
         return False # No restart required
+    
+    def refuellingStrategy(self) -> logic.RefuellingStrategy:
+        return self._refuellingStrategy
 
     def setRefuellingStrategy(self, strategy: logic.RefuellingStrategy) -> None:
         # This setting can be modified live so update the internal and disk copy
