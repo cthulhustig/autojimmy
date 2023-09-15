@@ -2389,12 +2389,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         elif routeOptimisation == logic.RouteOptimisation.ShortestTime:
             jumpCostCalculator = logic.ShortestTimeCostCalculator()
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
-            if self._perJumpOverheadsSpinBox.value() == 0:
-                gui.MessageBoxEx.information(
-                    parent=self,
-                    text='You must specify per jump overheads in order to calculate the cheapest route.')
-                return
-
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),

@@ -61,6 +61,28 @@ def selectRefuellingType(
 def isStarPortRefuellingType(refuellingType: RefuellingType):
     return refuellingType == RefuellingType.Refined or refuellingType == RefuellingType.Unrefined
 
+class RefuellingTypeCache(object):
+    def __init__(
+            self,
+            refuellingStrategy: RefuellingStrategy
+            ) -> None:
+        self._refuellingStrategy = refuellingStrategy
+        self._cache: typing.Dict[traveller.World, RefuellingType] = {}
+
+    def selectRefuellingType(
+            self,
+            world: traveller.World
+            ) -> typing.Optional[RefuellingType]:
+        if world in self._cache:
+            return self._cache[world]
+
+        refuellingType = selectRefuellingType(
+            world=world,
+            refuellingStrategy=self._refuellingStrategy)
+
+        self._cache[world] = refuellingType
+        return refuellingType
+
 class PitStop(object):
     def __init__(
             self,
@@ -373,28 +395,6 @@ class _CalculationContext:
                 _CalculationContext._FuelSequenceDataType,
                 itertools.islice(self._fuelSequence, 0, self._sequenceLength))
         return isBetter
-    
-class _RefuellingTypeCache(object):
-    def __init__(
-            self,
-            refuellingStrategy: RefuellingStrategy
-            ) -> None:
-        self._refuellingStrategy = refuellingStrategy
-        self._cache: typing.Dict[traveller.World, RefuellingType] = {}
-
-    def selectRefuellingType(
-            self,
-            world: traveller.World
-            ) -> typing.Optional[RefuellingType]:
-        if world in self._cache:
-            return self._cache[world]
-
-        refuellingType = selectRefuellingType(
-            world=world,
-            refuellingStrategy=self._refuellingStrategy)
-        
-        self._cache[world] = refuellingType
-        return refuellingType
 
 def calculateRefuellingPlan(
         jumpRoute: logic.JumpRoute,
@@ -479,7 +479,7 @@ def _processRoute(
     finishWorldIndex = jumpWorldCount - 1
     fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
-    refuellingTypeCache = _RefuellingTypeCache(refuellingStrategy=desiredRefuellingStrategy)
+    refuellingTypeCache = RefuellingTypeCache(refuellingStrategy=desiredRefuellingStrategy)
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
         world = jumpRoute[worldIndex]

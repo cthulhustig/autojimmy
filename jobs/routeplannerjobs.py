@@ -26,7 +26,7 @@ class RoutePlannerJob(QtCore.QThread):
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None,
-            progressInterval: int = 100,
+            progressInterval: int = 500,
             ) -> None:
         super().__init__(parent=parent)
 

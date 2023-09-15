@@ -9,8 +9,18 @@ class RouteOptimisation(enum.Enum):
     LowestCost = 'Lowest Cost'
 
 # This cost function finds the route that covers the shortest distance but not necessarily the
-# fewest number of jumps. The shortest distance route is important as uses the least fuel.
+# fewest number of jumps. The shortest distance route is important as uses the least fuel (although
+# not necessarily the cheapest fuel).
 class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
+    # A per jump constant is added to the jump distance to calculated the cost. This is done to
+    # cause the algorithm to prefer routes with the lowest number of jumps when there are multiple
+    # with the same distance. This constant needs to be small enough that it doesn't skew the
+    # length of one route compared to another, as that could introduce spurious jumps, but large
+    # enough that it doesn't get lost due to the inaccuracies of floating point math. The current
+    # value should allow for routes up to 10000 parsecs without running the risk of introducing a
+    # spurious jump
+    _PerJumpConstant = 0.0001
+
     def initialise(
             self,
             startWorld: traveller.World
@@ -23,15 +33,15 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        jumpCost = traveller.hexDistance(
-            currentWorld.absoluteX(),
-            currentWorld.absoluteY(),
-            nextWorld.absoluteX(),
-            nextWorld.absoluteY())
-        return (jumpCost, None)
+        jumpDistance = traveller.hexDistance(
+            absoluteX1=currentWorld.absoluteX(),
+            absoluteY1=currentWorld.absoluteY(),
+            absoluteX2=nextWorld.absoluteX(),
+            absoluteY2=nextWorld.absoluteY())
+        return (jumpDistance + ShortestDistanceCostCalculator._PerJumpConstant, None)
 
-# This cost function finds the route with fewest jumps but not necessarily the shortest distance. The
-# fewest jumps route is important as it takes the shortest time.
+# This cost function finds the route with fewest jumps but not necessarily the shortest distance.
+# The fewest jumps route is important as it takes the shortest time.
 class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
     def initialise(
             self,
@@ -45,15 +55,10 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        # Note this assumes next world is within jump range of the current world.
         return (1, None)
 
-# This cost function finds the route with the lowest cost. It works on the
-# assumption that you're going to have to buy fuel on the world you jump to so
-# the cost value is the price of buying one jumps worth of fuel on that world.
-# Note that, if using a refuelling strategy that includes any type of wilderness
-# refuelling, you may get unnecessarily long routes if the per jump cost is 0.
-# This happens because the
+# This cost function finds the route with the lowest cost. It tracks the amount of fuel in the ship
+# and the last world that fuel could have been taken on.
 class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
     class _CostContext(object):
         def __init__(
@@ -131,16 +136,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         costContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=self._shipCurrentFuel,
-            lastFuelWorld=startWorld,
-            lastFuelParsecs=0, # TODO: This seems wrong if current world doesn't support refuelling type
+            lastFuelWorld=startWorld if refuellingType else None,
+            lastFuelParsecs=0 if refuellingType else (self._parsecsWithoutRefuelling + 1),
             lastFuelType=refuellingType,
             lastFuelCost=fuelCostPerTon)
-
-        # Reset ship current fuel so it won't be re-used when the same object
-        # is used to calculate more routes (i.e. when using waypoints)
-        # TODO: I suspect this is a bit broken as it won't take into account fuel remaining from the previous segment
-        # The main route planning code was updated but this wasn't
-        self._shipCurrentFuel = 0
 
         return costContext
 
@@ -196,7 +195,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         if fuelDeficit > 0:
             if fuelCostPerTon == None:
-                assert(False) # TODO: Can this happen?
                 return (None, None)
 
             jumpCost += fuelCostPerTon * fuelDeficit
@@ -219,7 +217,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
                 lastFuelType = costContext.lastFuelType()
                 lastFuelCost = costContext.lastFuelCost()
             else:
-                assert(False) # TODO: Can this happen?
                 fuelWorld = None
                 lastFuelParsecs = None
                 lastFuelType = None
@@ -231,21 +228,5 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             lastFuelParsecs=lastFuelParsecs,
             lastFuelType=lastFuelType,
             lastFuelCost=lastFuelCost)
-
-        # If the next world doesn't meet the refuelling strategy then add the cost of the fuel
-        # to the last fuel system to the jump cost. This is a bit of a hack so, if the same,
-        # world is reachable by multiple routes, how close it is to fuel and therefore how far
-        # we will be able to continue without refuelling is taken into account. This is needed
-        # so that, if the routes to reach the world have the same base cost, routes with the
-        # potential for more onward travel will have a lower cost.
-        refuellingType = logic.selectRefuellingType(
-            world=nextWorld,
-            refuellingStrategy=self._refuellingStrategy)
-        if not refuellingType:
-            if not lastFuelParsecs:
-                assert(False) # TODO: Can this happen?
-                return (None, None)
-
-            jumpCost += lastFuelParsecs * fuelCostPerTon
 
         return (jumpCost, newCostContext)
