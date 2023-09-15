@@ -186,7 +186,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             fuelCostPerTon = fuelCostPerTon.value()
 
         if fuelDeficit > 0:
-            if fuelCostPerTon == None:
+            if costContext.lastFuelParsecs() > self._parsecsWithoutRefuelling:
+                # It's not possible to take on enough fuel to reach the world
                 return (None, None)
 
             jumpCost += fuelCostPerTon * fuelDeficit
@@ -205,14 +206,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             lastFuelCost = fuelCostPerTon
         else:
             lastFuelParsecs = costContext.lastFuelParsecs() + jumpParsecs
-            if lastFuelParsecs <= self._parsecsWithoutRefuelling:
-                lastFuelType = costContext.lastFuelType()
-                lastFuelCost = costContext.lastFuelCost()
-            else:
-                fuelWorld = None
-                lastFuelParsecs = None
-                lastFuelType = None
-                lastFuelCost = None
+            lastFuelType = costContext.lastFuelType()
+            lastFuelCost = costContext.lastFuelCost()
 
         newCostContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=currentFuel - jumpFuel,
