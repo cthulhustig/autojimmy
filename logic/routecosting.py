@@ -4,9 +4,27 @@ import traveller
 import typing
 
 class RouteOptimisation(enum.Enum):
-    ShortestDistance = 'Shortest Distance'
     ShortestTime = 'Shortest Time'
+    ShortestDistance = 'Shortest Distance'
     LowestCost = 'Lowest Cost'
+
+# This cost function finds the route with fewest jumps but not necessarily the shortest distance.
+# The fewest jumps route is important as it takes the shortest time.
+class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
+    def initialise(
+            self,
+            startWorld: traveller.World
+            ) -> typing.Any:
+        return None
+
+    def calculate(
+            self,
+            currentWorld: traveller.World,
+            nextWorld: traveller.World,
+            jumpParsecs: int,
+            costContext: typing.Any
+            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
+        return (1, None)
 
 # This cost function finds the route that covers the shortest distance but not necessarily the
 # fewest number of jumps. The shortest distance route is important as uses the least fuel (although
@@ -35,24 +53,6 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
         return (jumpParsecs + ShortestDistanceCostCalculator._PerJumpConstant, None)
-
-# This cost function finds the route with fewest jumps but not necessarily the shortest distance.
-# The fewest jumps route is important as it takes the shortest time.
-class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
-    def initialise(
-            self,
-            startWorld: traveller.World
-            ) -> typing.Any:
-        return None
-
-    def calculate(
-            self,
-            currentWorld: traveller.World,
-            nextWorld: traveller.World,
-            jumpParsecs: int,
-            costContext: typing.Any
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        return (1, None)
 
 # This cost function finds the route with the lowest cost. It tracks the amount of fuel in the ship
 # and the last world that fuel could have been taken on.

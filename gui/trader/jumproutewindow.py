@@ -69,7 +69,7 @@ def _formatBerthingTypeString(
         starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
     else:
-        return 'Unknown Berthing'
+        return 'No Star Port'
 
 class _WorldFilter(object):
     def __init__(
@@ -826,6 +826,8 @@ class JumpRouteWindow(gui.WindowWidget):
             # A trade option job is already running so cancel it
             self._jumpRouteJob.cancel()
             return
+        
+        self._clearJumpRoute()
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
         if not startWorld or not finishWorld:
@@ -849,7 +851,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     refuellingStrategy=refuellingStrategy):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy. '
                 if not self._shipCurrentFuelSpinBox.value():
-                    message += 'A route can\'t be calculated until you specify the amount of fuel the ship currently has.'
+                    message += 'In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
                     gui.MessageBoxEx.information(parent=self, text=message)
                     return
 
@@ -880,8 +882,6 @@ class JumpRouteWindow(gui.WindowWidget):
                     text=message + '\n\nDo you want to continue?')
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
-
-        self._clearJumpRoute()
 
         worldList = [startWorld]
         worldList.extend(self._waypointWorldsWidget.worlds())
