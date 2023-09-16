@@ -456,7 +456,7 @@ def calculateRefuellingPlan(
         shipStartingFuel=shipStartingFuel,
         shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
-        desiredRefuellingStrategy=refuellingStrategy,
+        refuellingStrategy=refuellingStrategy,
         requiredBerthingIndices=requiredBerthingIndices)
     if not calculationContext.hasBestSequence():
         return None
@@ -472,14 +472,14 @@ def _processRoute(
         shipStartingFuel: typing.Union[int, common.ScalarCalculation],
         shipFuelPerParsec: typing.Union[int, float],
         parsecsWithoutRefuelling: int,
-        desiredRefuellingStrategy: RefuellingStrategy,
+        refuellingStrategy: RefuellingStrategy,
         requiredBerthingIndices: typing.Optional[typing.Set[int]],
         ) -> _CalculationContext:
     jumpWorldCount = jumpRoute.worldCount()
     finishWorldIndex = jumpWorldCount - 1
     fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
-    refuellingTypeCache = RefuellingTypeCache(refuellingStrategy=desiredRefuellingStrategy)
+    refuellingTypeCache = RefuellingTypeCache(refuellingStrategy=refuellingStrategy)
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
         world = jumpRoute[worldIndex]
