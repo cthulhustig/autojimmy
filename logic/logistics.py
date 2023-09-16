@@ -70,7 +70,7 @@ def calculateRouteLogistics(
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-        shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+        shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
         refuellingStrategy: typing.Union[int, common.ScalarCalculation],
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,

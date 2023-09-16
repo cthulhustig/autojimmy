@@ -91,7 +91,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             shipTonnage: int,
             shipFuelCapacity: int,
-            shipCurrentFuel: int,
+            shipCurrentFuel: float,
             perJumpOverheads: int,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
             shipFuelPerParsec: typing.Optional[float] = None

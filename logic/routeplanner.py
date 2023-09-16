@@ -85,7 +85,7 @@ class RoutePlanner(object):
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
@@ -116,7 +116,7 @@ class RoutePlanner(object):
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
@@ -162,7 +162,7 @@ class RoutePlanner(object):
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-            shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
+            shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,

@@ -35,7 +35,7 @@ class Trader(object):
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-            shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+            shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
@@ -80,7 +80,7 @@ class Trader(object):
                 name='Ship Fuel Capacity')
 
         if not isinstance(shipStartingFuel, common.ScalarCalculation):
-            assert(isinstance(shipStartingFuel, int))
+            assert(isinstance(shipStartingFuel, (int, float)))
             shipStartingFuel = common.ScalarCalculation(
                 value=shipStartingFuel,
                 name='Ship Starting Fuel')
@@ -179,7 +179,7 @@ class Trader(object):
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipCargoCapacity: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-            shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+            shipStartingFuel: typing.Union[float, common.ScalarCalculation],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
@@ -226,7 +226,7 @@ class Trader(object):
                 name='Ship Fuel Capacity')
 
         if not isinstance(shipStartingFuel, common.ScalarCalculation):
-            assert(isinstance(shipStartingFuel, int))
+            assert(isinstance(shipStartingFuel, (int, float)))
             shipStartingFuel = common.ScalarCalculation(
                 value=shipStartingFuel,
                 name='Ship Starting Fuel')

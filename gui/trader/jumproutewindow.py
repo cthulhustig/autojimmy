@@ -526,7 +526,7 @@ class JumpRouteWindow(gui.WindowWidget):
             shipTonnage: typing.Optional[int] = None,
             shipJumpRating: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             routeOptimisation: typing.Optional[logic.RouteOptimisation] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
@@ -556,7 +556,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if refuellingStrategy != None:
             self._refuellingStrategyComboBox.setCurrentEnum(refuellingStrategy)
         if routeOptimisation != None:
@@ -850,7 +850,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     world=startWorld,
                     refuellingStrategy=refuellingStrategy):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy. '
-                if not self._shipCurrentFuelSpinBox.value():
+                if self._shipCurrentFuelSpinBox.value() <= 0:
                     message += 'In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
                     gui.MessageBoxEx.information(parent=self, text=message)
                     return

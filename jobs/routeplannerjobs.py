@@ -19,7 +19,7 @@ class RoutePlannerJob(QtCore.QThread):
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,
-            shipCurrentFuel: int,
+            shipCurrentFuel: float,
             shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy],

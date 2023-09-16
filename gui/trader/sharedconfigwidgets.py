@@ -10,24 +10,24 @@ class _SpinBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
 
-        self._widgets: typing.Set[gui.SpinBoxEx] = set()
+        self._widgets: typing.Set[typing.Union[gui.SpinBoxEx, gui.DoubleSpinBoxEx]] = set()
         self._ignoreNotifications = False
 
-    def attach(self, widget: gui.SpinBoxEx) -> None:
+    def attach(self, widget: typing.Union[gui.SpinBoxEx, gui.DoubleSpinBoxEx]) -> None:
         widget.setValue(self._loadValue())
         widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
         widget.destroyed.connect(self.detach)
         self._widgets.add(widget)
 
-    def detach(self, widget: gui.SpinBoxEx) -> None:
+    def detach(self, widget: typing.Union[gui.SpinBoxEx, gui.DoubleSpinBoxEx]) -> None:
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
 
     def _valueChanged(
             self,
-            widget: gui.SpinBoxEx,
-            value: int
+            widget: typing.Union[gui.SpinBoxEx, gui.DoubleSpinBoxEx],
+            value: typing.Union[int, float]
             ) -> None:
         if self._ignoreNotifications:
             return # Events are currently being ignored so nothing to do
@@ -56,25 +56,25 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__(None)
 
-        self._widgets: typing.Set[gui.TogglableSpinBox] = set()
+        self._widgets: typing.Set[typing.Union[gui.TogglableSpinBox, gui.TogglableDoubleSpinBox]] = set()
         self._ignoreNotifications = False
 
-    def attach(self, widget: gui.TogglableSpinBox) -> None:
+    def attach(self, widget: typing.Union[gui.TogglableSpinBox, gui.TogglableDoubleSpinBox]) -> None:
         enabled, value = self._loadValue()
         widget.setConfig(enabled, value)
         widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
         widget.destroyed.connect(self.detach)
         self._widgets.add(widget)
 
-    def detach(self, widget: gui.TogglableSpinBox) -> None:
+    def detach(self, widget: typing.Union[gui.TogglableSpinBox, gui.TogglableDoubleSpinBox]) -> None:
         if widget in self._widgets:
             self._widgets.remove(widget)
         widget.destroyed.disconnect(self.detach)
 
     def _valueChanged(
             self,
-            widget: gui.TogglableSpinBox,
-            value: typing.Optional[int]
+            widget: typing.Union[gui.TogglableSpinBox, gui.TogglableDoubleSpinBox],
+            value: typing.Optional[typing.Union[int, float]]
             ) -> None:
         if self._ignoreNotifications:
             return # Events are currently being ignored so nothing to do
@@ -100,55 +100,6 @@ class _TogglableSpinBoxUpdater(QtCore.QObject):
 
     def _saveValue(self, enabled: bool, value: int) -> None:
         raise RuntimeError('The _saveValue method should be overridden by derived _TogglableSpinBoxUpdater')
-
-class _TogglableDoubleSpinBoxUpdater(QtCore.QObject):
-    def __init__(self) -> None:
-        super().__init__(None)
-
-        self._widgets: typing.Set[gui.TogglableDoubleSpinBox] = set()
-        self._ignoreNotifications = False
-
-    def attach(self, widget: gui.TogglableDoubleSpinBox) -> None:
-        enabled, value = self._loadValue()
-        widget.setConfig(enabled, value)
-        widget.valueChanged.connect(lambda value: self._valueChanged(widget, value))
-        widget.destroyed.connect(self.detach)
-        self._widgets.add(widget)
-
-    def detach(self, widget: gui.TogglableDoubleSpinBox) -> None:
-        if widget in self._widgets:
-            self._widgets.remove(widget)
-        widget.destroyed.disconnect(self.detach)
-
-    def _valueChanged(
-            self,
-            widget: gui.TogglableDoubleSpinBox,
-            value: typing.Optional[float]
-            ) -> None:
-        if self._ignoreNotifications:
-            return # Events are currently being ignored so nothing to do
-
-        # Retrieve the raw config from the widget. This gets that set value even if the widget
-        # is disabled
-        enabled, value = widget.config()
-        self._saveValue(enabled, value)
-
-        # Push new value to other attached widgets. Blocking signals can't be used as we want
-        # the widget being updated to still notify other observers
-        self._ignoreNotifications = True
-
-        try:
-            for other in self._widgets:
-                if other != widget:
-                    other.setConfig(enabled, value)
-        finally:
-            self._ignoreNotifications = False
-
-    def _loadValue(self) -> typing.Tuple[bool, float]:
-        raise RuntimeError('The _loadValue method should be overridden by derived _TogglableDoubleSpinBoxUpdater')
-
-    def _saveValue(self, enabled: bool, value: float) -> None:
-        raise RuntimeError('The _saveValue method should be overridden by derived _TogglableDoubleSpinBoxUpdater')
 
 class _EnumComboBoxUpdater(QtCore.QObject):
     def __init__(self) -> None:
@@ -316,6 +267,29 @@ class _SharedSpinBox(gui.SpinBoxEx):
             self._updaterMap[type(self)] = updater
         updater.attach(self)
 
+class _SharedDoubleSpinBox(gui.DoubleSpinBoxEx):
+    _updaterMap: typing.Dict[typing.Type[gui.DoubleSpinBoxEx], _SpinBoxUpdater] = {}
+
+    def __init__(
+            self,
+            updaterType: typing.Type[_SpinBoxUpdater],
+            minValue: float,
+            maxValue: float,
+            toolTip: str,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self.setRange(minValue, maxValue)
+        self.setToolTip(toolTip)
+
+        # Create shared setting updater if it doesn't exist and attach this widget to it
+        updater = self._updaterMap.get(type(self))
+        if not updater:
+            updater = updaterType()
+            self._updaterMap[type(self)] = updater
+        updater.attach(self)
+
 class _SharedTogglableSpinBox(gui.TogglableSpinBox):
     _updaterMap: typing.Dict[typing.Type[gui.TogglableSpinBox], _TogglableSpinBoxUpdater] = {}
 
@@ -340,11 +314,11 @@ class _SharedTogglableSpinBox(gui.TogglableSpinBox):
         updater.attach(self)
 
 class _SharedTogglableDoubleSpinBox(gui.TogglableDoubleSpinBox):
-    _updaterMap: typing.Dict[typing.Type[gui.TogglableDoubleSpinBox], _TogglableDoubleSpinBoxUpdater] = {}
+    _updaterMap: typing.Dict[typing.Type[gui.TogglableDoubleSpinBox], _TogglableSpinBoxUpdater] = {}
 
     def __init__(
             self,
-            updaterType: typing.Type[_TogglableDoubleSpinBoxUpdater],
+            updaterType: typing.Type[_TogglableSpinBoxUpdater],
             minValue: float,
             maxValue: float,
             toolTip: str,
@@ -431,7 +405,7 @@ class _SharedRangeWidget(gui.RangeSpinBoxWidget):
 class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().playerBrokerDm())
+            return app.Config.instance().playerBrokerDm()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setPlayerBrokerDm(value)
@@ -447,7 +421,7 @@ class SharedPlayerBrokerDMSpinBox(_SharedSpinBox):
 class SharedShipTonnageSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().shipTonnage())
+            return app.Config.instance().shipTonnage()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setShipTonnage(value)
@@ -463,7 +437,7 @@ class SharedShipTonnageSpinBox(_SharedSpinBox):
 class SharedJumpRatingSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().shipJumpRating())
+            return app.Config.instance().shipJumpRating()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setShipJumpRating(value)
@@ -479,7 +453,7 @@ class SharedJumpRatingSpinBox(_SharedSpinBox):
 class SharedFuelCapacitySpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().shipFuelCapacity())
+            return app.Config.instance().shipFuelCapacity()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setShipFuelCapacity(value)
@@ -492,12 +466,12 @@ class SharedFuelCapacitySpinBox(_SharedSpinBox):
             toolTip=gui.ShipFuelCapacityToolTip,
             parent=parent)
 
-class SharedCurrentFuelSpinBox(_SharedSpinBox):
+class SharedCurrentFuelSpinBox(_SharedDoubleSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
-        def _loadValue(self) -> int:
-            return int(app.Config.instance().shipCurrentFuel())
+        def _loadValue(self) -> float:
+            return app.Config.instance().shipCurrentFuel()
 
-        def _saveValue(self, value: int) -> None:
+        def _saveValue(self, value: float) -> None:
             return app.Config.instance().setShipCurrentFuel(value)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
@@ -509,7 +483,7 @@ class SharedCurrentFuelSpinBox(_SharedSpinBox):
             parent=parent)
 
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
-    class _SettingUpdater(_TogglableDoubleSpinBoxUpdater):
+    class _SettingUpdater(_TogglableSpinBoxUpdater):
         def _loadValue(self) -> typing.Tuple[bool, float]:
             return (app.Config.instance().useShipFuelPerParsec(),
                     app.Config.instance().shipFuelPerParsec())
@@ -529,7 +503,7 @@ class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
 class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().shipCargoCapacity())
+            return app.Config.instance().shipCargoCapacity()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setShipCargoCapacity(value)
@@ -545,7 +519,7 @@ class SharedFreeCargoSpaceSpinBox(_SharedSpinBox):
 class SharedJumpOverheadSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().perJumpOverheads())
+            return app.Config.instance().perJumpOverheads()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setPerJumpOverheads(value)
@@ -561,7 +535,7 @@ class SharedJumpOverheadSpinBox(_SharedSpinBox):
 class SharedAvailableFundsSpinBox(_SharedSpinBox):
     class _SettingUpdater(_SpinBoxUpdater):
         def _loadValue(self) -> int:
-            return int(app.Config.instance().availableFunds())
+            return app.Config.instance().availableFunds()
 
         def _saveValue(self, value: int) -> None:
             return app.Config.instance().setAvailableFunds(value)

@@ -587,7 +587,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             shipJumpRating: typing.Optional[int] = None,
             freeCargoSpace: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
             speculativeCargo: typing.Optional[typing.Iterable[logic.CargoRecord]] = None,
@@ -631,7 +631,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if freeCargoSpace != None:
             self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
         if refuellingStrategy != None:
@@ -1991,7 +1991,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             shipJumpRating: typing.Optional[int] = None,
             freeCargoSpace: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None
             ) -> None:
@@ -2017,7 +2017,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if freeCargoSpace != None:
             self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
         if refuellingStrategy != None:

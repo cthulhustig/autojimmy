@@ -317,10 +317,10 @@ class Config(object):
         self._settings.setValue(Config._ShipFuelCapacityKeyName, tonnage)
         return False # No restart required
 
-    def shipCurrentFuel(self) -> int:
+    def shipCurrentFuel(self) -> float:
         return self._shipCurrentFuel
 
-    def setShipCurrentFuel(self, tonnage: int) -> bool:
+    def setShipCurrentFuel(self, tonnage: float) -> bool:
         # This setting can be modified live so update the internal and disk copy
         self._shipCurrentFuel = tonnage
         self._settings.setValue(Config._ShipCurrentFuelKeyName, tonnage)
@@ -1021,7 +1021,7 @@ class Config(object):
             key=Config._ShipFuelCapacityKeyName,
             default=23,
             minValue=0)
-        self._shipCurrentFuel = self._loadIntSetting(
+        self._shipCurrentFuel = self._loadFloatSetting(
             key=Config._ShipCurrentFuelKeyName,
             default=0,
             maxValue=self._shipFuelCapacity)

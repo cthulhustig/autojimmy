@@ -400,7 +400,7 @@ def calculateRefuellingPlan(
         jumpRoute: logic.JumpRoute,
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-        shipStartingFuel: typing.Union[int, common.ScalarCalculation],
+        shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         refuellingStrategy: RefuellingStrategy,
         shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
@@ -425,7 +425,7 @@ def calculateRefuellingPlan(
 
     if isinstance(shipStartingFuel, common.ScalarCalculation):
         shipStartingFuel = shipStartingFuel.value()
-    assert(isinstance(shipStartingFuel, int))
+    assert(isinstance(shipStartingFuel, (int, float)))
 
     if shipFuelCapacity > shipTonnage:
         raise ValueError('Ship\'s fuel capacity can\'t be larger than its total tonnage')
@@ -469,8 +469,8 @@ def calculateRefuellingPlan(
 def _processRoute(
         jumpRoute: logic.JumpRoute,
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
-        shipStartingFuel: typing.Union[int, common.ScalarCalculation],
-        shipFuelPerParsec: typing.Union[int, float],
+        shipStartingFuel: typing.Union[float, common.ScalarCalculation],
+        shipFuelPerParsec: float,
         parsecsWithoutRefuelling: int,
         refuellingStrategy: RefuellingStrategy,
         requiredBerthingIndices: typing.Optional[typing.Set[int]],
