@@ -402,7 +402,7 @@ def calculateRefuellingPlan(
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[int, common.ScalarCalculation],
         refuellingStrategy: RefuellingStrategy,
-        shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+        shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
         # Specify if generated refuelling plan should include refuelling costs. If not included the

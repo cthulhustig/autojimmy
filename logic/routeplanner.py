@@ -88,7 +88,7 @@ class RoutePlanner(object):
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
@@ -119,7 +119,7 @@ class RoutePlanner(object):
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
@@ -165,7 +165,7 @@ class RoutePlanner(object):
             shipCurrentFuel: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: JumpCostCalculatorInterface,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None, # None disables fuel based route calculation
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None

@@ -84,7 +84,7 @@ class Simulator(object):
             playerBrokerDm: typing.Optional[int],
             playerStreetwiseDm: typing.Optional[int] = None,
             playerAdminDm: typing.Optional[int] = None,
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float]] = None,
+            shipFuelPerParsec: typing.Optional[float] = None,
             randomSeed: typing.Optional[int] = None,
             simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:

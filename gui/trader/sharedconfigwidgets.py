@@ -508,7 +508,6 @@ class SharedCurrentFuelSpinBox(_SharedSpinBox):
             toolTip=gui.ShipCurrentFuelToolTip,
             parent=parent)
 
-# TODO: Need to be VERY sure I want this to be a float
 class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     class _SettingUpdater(_TogglableDoubleSpinBoxUpdater):
         def _loadValue(self) -> typing.Tuple[bool, float]:

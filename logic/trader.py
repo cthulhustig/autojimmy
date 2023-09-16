@@ -39,7 +39,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             useLocalSaleBroker: bool = False,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
             includePurchaseWorldBerthing: bool = False, # Assume we're already berthed on the purchase world
@@ -183,7 +183,7 @@ class Trader(object):
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,
+            shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             useLocalPurchaseBroker: bool = False,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None, # Only used for 1e & 2e
             useLocalSaleBroker: bool = False,

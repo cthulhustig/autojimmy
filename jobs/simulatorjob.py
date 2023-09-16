@@ -21,7 +21,7 @@ class SimulatorJob(QtCore.QThread):
             shipJumpRating: int,
             shipCargoCapacity: int,
             shipFuelCapacity: int,
-            shipFuelPerParsec: typing.Optional[typing.Union[int, float]],
+            shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             perJumpOverheads: int,
