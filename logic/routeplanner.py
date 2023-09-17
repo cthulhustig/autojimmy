@@ -238,11 +238,11 @@ class RoutePlanner(object):
                 if fuelToFinish <= maxStartingFuel:
                     return [startWorld, finishWorld]
 
-        # add the starting node to the open list
         openQueue: typing.List[_RouteNode] = []
         bestValues: typing.Dict[int, typing.Dict[traveller.World, typing.Tuple[float, int]]] = {}
         excludedWorlds: typing.Set[traveller.World] = set()
 
+        # Add the starting node to the open list
         fuelParsecs = int(maxStartingFuel // shipFuelPerParsec)
         startNode = _RouteNode(
             targetIndex=1,
@@ -256,13 +256,6 @@ class RoutePlanner(object):
         heapq.heappush(openQueue, startNode)
         bestValues[1] = {}
         bestValues[1][startWorld] = (0, fuelParsecs) # Best gScore, Best Max Jump Parsecs
-
-        # If a world filter was passed in wrap it in a lambda that prevents worlds that are explicitly in
-        # the sequence being filtered out
-        worldFilter = None
-        if worldFilterCallback:
-            mandatoryWorlds = set(worldSequence)
-            worldFilter = lambda world: True if (world in mandatoryWorlds) else worldFilterCallback(world)
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
         worldManager = traveller.WorldManager.instance()
@@ -377,14 +370,32 @@ class RoutePlanner(object):
                 if adjacentWorld == currentWorld:
                     continue
 
-                # Check to see if this world has is excluded. A set of previously excluded worlds is
-                # maintained to avoid running the potentially expensive world filter multiple times
-                # for the same world
-                if adjacentWorld in excludedWorlds:
-                    continue
-                if worldFilter and not worldFilter(adjacentWorld):
-                    excludedWorlds.add(adjacentWorld)
-                    continue
+                # Check if the adjacent world can be used for refuelling
+                if refuellingStrategy:
+                    isFuelWorld = refuellingTypeCache.selectRefuellingType(
+                        world=adjacentWorld) != None
+                else:
+                    isFuelWorld = False
+
+                # If the adjacent world isn't the current target world, check if it's been excluded
+                if adjacentWorld != targetWorld:
+                    if adjacentWorld in excludedWorlds:
+                        continue # World has already been excluded
+
+                    # When fuel based route calculation is enabled, non-fuel worlds are only considered
+                    # if the ship can travel more parsecs than its jump rating without refuelling. Non-fuel
+                    # worlds are only worth considering when jumping via them could allow the ship to
+                    # reach a fuel (or target) world that it couldn't jump to directly. If the ships tank
+                    # can't hold more fuel than it's jump rating then this will never be possible.
+                    if refuellingStrategy and (not isFuelWorld) and (shipParsecsWithoutRefuelling <= shipJumpRating):
+                        excludedWorlds.add(adjacentWorld)
+                        continue
+
+                    # Apply custom world filter. This may be expensive so should be applied after lower
+                    # cost filters.
+                    if worldFilterCallback and not worldFilterCallback(adjacentWorld):
+                        excludedWorlds.add(adjacentWorld)
+                        continue
 
                 jumpDistance = traveller.hexDistance(
                     currentWorld.absoluteX(),
@@ -401,10 +412,9 @@ class RoutePlanner(object):
                 if jumpCost == None:
                     continue
 
+                # Work out the max amount of fuel the ship can have in the tank after completing
+                # the jump from the current world to the adjacent world.
                 if refuellingStrategy:
-                    isFuelWorld = refuellingTypeCache.selectRefuellingType(
-                        world=adjacentWorld) != None
-
                     if currentNode.isFuelWorld():
                         fuelParsecs = shipParsecsWithoutRefuelling - jumpDistance
                     else:
@@ -417,7 +427,6 @@ class RoutePlanner(object):
                 else:
                     # Fuel based route calculation is disabled. These values have no effect but
                     # must be set to something
-                    isFuelWorld = False
                     fuelParsecs = shipJumpRating
 
                 tentativeScore = currentNode.gScore() + jumpCost
@@ -445,6 +454,7 @@ class RoutePlanner(object):
                         absoluteY1=adjacentWorld.absoluteY(),
                         absoluteX2=finishWorld.absoluteX(),
                         absoluteY2=finishWorld.absoluteY()) / shipJumpRating
+
                     newNode = _RouteNode(
                         targetIndex=targetIndex,
                         world=adjacentWorld,
