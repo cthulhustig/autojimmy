@@ -73,6 +73,7 @@ class Simulator(object):
             shipJumpRating: int,
             shipCargoCapacity: int,
             shipFuelCapacity: int,
+            jumpCostCalculator: logic.JumpCostCalculatorInterface,
             refuellingStrategy: logic.RefuellingStrategy,
             perJumpOverheads: int,
             searchRadius: int,
@@ -83,15 +84,17 @@ class Simulator(object):
             playerBrokerDm: typing.Optional[int],
             playerStreetwiseDm: typing.Optional[int] = None,
             playerAdminDm: typing.Optional[int] = None,
+            shipFuelPerParsec: typing.Optional[float] = None,
             randomSeed: typing.Optional[int] = None,
-            simulationLength: typing.Optional[int] = None, # Length in simulated hours
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None
+            simulationLength: typing.Optional[int] = None # Length in simulated hours
             ) -> None:
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipCargoCapacity = shipCargoCapacity
         self._shipFuelCapacity = shipFuelCapacity
+        self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
+        self._jumpCostCalculator = jumpCostCalculator
         self._refuellingStrategy = refuellingStrategy
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
@@ -102,7 +105,6 @@ class Simulator(object):
         self._minBuyerDm = minBuyerDm
         self._maxBuyerDm = maxBuyerDm
         self._randomGenerator = random.Random(randomSeed) if randomSeed != None else random
-        self._jumpCostCallback = jumpCostCallback
 
         self._simulationTime = 0
 
@@ -155,9 +157,6 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
-                if pitStop.isRefuellingStrategyOverridden():
-                    self._logMessage(f'Refuelling strategy overridden on {self._currentWorld.name(includeSubsector=True)}')
-
                 if pitStop.berthingCost():
                     # Roll dice to calculate actual berthing cost on this world
                     berthingCost = traveller.starPortBerthingCost(
@@ -307,13 +306,13 @@ class Simulator(object):
             shipJumpRating=self._shipJumpRating,
             shipCargoCapacity=self._shipCargoCapacity,
             shipFuelCapacity=self._shipFuelCapacity,
-            shipStartingFuel=0,
+            shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
+            shipFuelPerParsec=self._shipFuelPerParsec,
+            jumpCostCalculator=self._jumpCostCalculator,
             refuellingStrategy=self._refuellingStrategy,
-            refuellingStrategyOptional=True, # Force selected refuelling strategy
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
-            includeSaleWorldBerthing=True,
-            jumpCostCallback=self._jumpCostCallback)
+            includeSaleWorldBerthing=True)
 
         if not tradeOptions:
             self._logMessage(f'No profitable sale options, looking for another seller')

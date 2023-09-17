@@ -32,6 +32,8 @@ class Config(object):
     _ShipCargoCapacityKeyName = 'Game/ShipCargoCapacity'
     _ShipFuelCapacityKeyName = 'Game/ShipFuelCapacity'
     _ShipCurrentFuelKeyName = 'Game/ShipCurrentFuel'
+    _UseShipFuelPerParsecKeyName = 'Game/UseShipFuelPerParsec'
+    _ShipFuelPerParsecKeyName = 'Game/ShipFuelPerParsec'
     _PerJumpOverheadKeyName = 'Game/PerJumpOverhead'
     _AvailableFundsKeyName = 'Game/AvailableFunds'
     _MinSellerDmKeyName = 'Game/MinSellerDM'
@@ -43,8 +45,8 @@ class Config(object):
     _UseSaleBrokerKeyName = 'Game/UseSaleBroker'
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
+    _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting'
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
-    _RefuellingStrategyOptionalKeyName = 'Game/RefuellingStrategyOptional'
     _IncludeStartBerthingKeyName = 'Game/IncludeStartBerthing'
     _IncludeFinishBerthingKeyName = 'Game/IncludeFinishBerthing'
     _IncludeLogisticsCostsKeyName = 'Game/IncludeLogisticsCosts'
@@ -315,13 +317,29 @@ class Config(object):
         self._settings.setValue(Config._ShipFuelCapacityKeyName, tonnage)
         return False # No restart required
 
-    def shipCurrentFuel(self) -> int:
+    def shipCurrentFuel(self) -> float:
         return self._shipCurrentFuel
 
-    def setShipCurrentFuel(self, tonnage: int) -> bool:
+    def setShipCurrentFuel(self, tonnage: float) -> bool:
         # This setting can be modified live so update the internal and disk copy
         self._shipCurrentFuel = tonnage
         self._settings.setValue(Config._ShipCurrentFuelKeyName, tonnage)
+        return False # No restart required
+
+    def useShipFuelPerParsec(self) -> bool:
+        return self._useShipFuelPerParsec
+
+    def setUseShipFuelPerParsec(self, enable: bool) -> bool:
+        self._useShipFuelPerParsec = enable
+        self._settings.setValue(Config._UseShipFuelPerParsecKeyName, enable)
+        return False # No restart required
+
+    def shipFuelPerParsec(self) -> float:
+        return self._shipFuelPerParsec
+
+    def setShipFuelPerParsec(self, value: float) -> bool:
+        self._shipFuelPerParsec = value
+        self._settings.setValue(Config._ShipFuelPerParsecKeyName, value)
         return False # No restart required
 
     def perJumpOverheads(self) -> int:
@@ -407,6 +425,15 @@ class Config(object):
         self._settings.setValue(Config._RouteOptimisationKeyName, optimisation.name)
         return False # No restart required
 
+    def fuelBasedRouting(self) -> bool:
+        return self._fuelBasedRouting
+
+    def setFuelBasedRouting(self, enable: bool) -> None:
+        # This setting can be modified live so update the internal and disk copy
+        self._fuelBasedRouting = enable
+        self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
+        return False # No restart required
+    
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
         return self._refuellingStrategy
 
@@ -414,15 +441,6 @@ class Config(object):
         # This setting can be modified live so update the internal and disk copy
         self._refuellingStrategy = strategy
         self._settings.setValue(Config._RefuellingStrategyKeyName, strategy.name)
-        return False # No restart required
-
-    def refuellingStrategyOptional(self) -> bool:
-        return self._refuellingStrategyOptional
-
-    def setRefuellingStrategyOptional(self, optional: bool) -> None:
-        # This setting can be modified live so update the internal and disk copy
-        self._refuellingStrategyOptional = optional
-        self._settings.setValue(Config._RefuellingStrategyOptionalKeyName, optional)
         return False # No restart required
 
     def includeStartBerthing(self) -> bool:
@@ -1003,10 +1021,16 @@ class Config(object):
             key=Config._ShipFuelCapacityKeyName,
             default=23,
             minValue=0)
-        self._shipCurrentFuel = self._loadIntSetting(
+        self._shipCurrentFuel = self._loadFloatSetting(
             key=Config._ShipCurrentFuelKeyName,
             default=0,
             maxValue=self._shipFuelCapacity)
+        self._useShipFuelPerParsec = self._loadBoolSetting(
+            key=Config._UseShipFuelPerParsecKeyName,
+            default=False)
+        self._shipFuelPerParsec = self._loadFloatSetting(
+            key=Config._ShipFuelPerParsecKeyName,
+            default=self._shipTonnage * 0.1) # 10% of ship tonnage
         self._perJumpOverheads = self._loadIntSetting(
             key=Config._PerJumpOverheadKeyName,
             default=0,
@@ -1045,13 +1069,13 @@ class Config(object):
             key=Config._RouteOptimisationKeyName,
             default=logic.RouteOptimisation.ShortestDistance,
             members=logic.RouteOptimisation.__members__)
+        self._fuelBasedRouting = self._loadBoolSetting(
+            key=Config._FuelBasedRoutingKeyName,
+            default=True)
         self._refuellingStrategy = self._loadEnumSetting(
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,
             members=logic.RefuellingStrategy.__members__)
-        self._refuellingStrategyOptional = self._loadBoolSetting(
-            key=Config._RefuellingStrategyOptionalKeyName,
-            default=False)
         self._includeStartBerthing = self._loadBoolSetting(
             key=Config._IncludeStartBerthingKeyName,
             default=False)
@@ -1311,9 +1335,15 @@ class Config(object):
             type: type
             ) -> typing.Any:
         try:
+            # Explicitly check for key not being present and use default if it's not. This is
+            # preferable to relying on value() as it can have some unexpected behaviour (e.g.
+            # a default of None when reading a float will return 0.0 rather than None)
+            if not self._settings.contains(key):
+                return default
+
             return self._settings.value(key, defaultValue=default, type=type)
         except TypeError as ex:
-            logging.error(f'Failed to read "{key}" from "{self._settings.group()} in "{self._settings.fileName()}""  (value is not a {type.__name__})')
+            logging.error(f'Failed to read "{key}" from "{self._settings.group()}" in "{self._settings.fileName()}""  (value is not a {type.__name__})')
             return default
         except Exception as ex:
             logging.error(f'Failed to read "{key}" from "{self._settings.group()}" in "{self._settings.fileName()}"', exc_info=ex)
@@ -1350,13 +1380,37 @@ class Config(object):
             key=key,
             default=default,
             type=int)
-        if (minValue and (value < minValue)) or (maxValue and (value > maxValue)):
-            if minValue and maxValue:
+        if ((minValue != None) and (value < minValue)) or ((maxValue != None) and (value > maxValue)):
+            if (minValue != None) and (maxValue != None):
                 reason = f'{value} is not in the range {minValue} - {maxValue}'
-            elif minValue:
+            elif minValue != None:
                 reason = f'{value} is not greater than or equal to {minValue}'
             else:
-                assert(maxValue)
+                assert(maxValue != None)
+                reason = f'{value} is not less than or equal to {maxValue}'
+
+            logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')
+            return default
+        return value
+
+    def _loadFloatSetting(
+            self,
+            key: str,
+            default: float,
+            minValue: typing.Optional[float] = None,
+            maxValue: typing.Optional[float] = None
+            ) -> float:
+        value = self._loadSetting(
+            key=key,
+            default=default,
+            type=float)
+        if ((minValue != None) and (value < minValue)) or ((maxValue != None) and (value > maxValue)):
+            if (minValue != None) and (maxValue != None):
+                reason = f'{value} is not in the range {minValue} - {maxValue}'
+            elif minValue != None:
+                reason = f'{value} is not greater than or equal to {minValue}'
+            else:
+                assert(maxValue != None)
                 reason = f'{value} is not less than or equal to {maxValue}'
 
             logging.warning(f'Ignoring {key} from {self._settings.group()} ({reason})')

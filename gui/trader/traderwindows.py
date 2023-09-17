@@ -122,6 +122,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
+        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
         self._freeCargoSpaceSpinBox = gui.SharedFreeCargoSpaceSpinBox()
 
         self._centerOptionsLayout = gui.FormLayoutEx()
@@ -130,6 +131,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._centerOptionsLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         self._centerOptionsLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         self._centerOptionsLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        self._centerOptionsLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
         self._centerOptionsLayout.addRow('Free Cargo Space:', self._freeCargoSpaceSpinBox)
 
         # Right column of controls
@@ -585,7 +587,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             shipJumpRating: typing.Optional[int] = None,
             freeCargoSpace: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
             speculativeCargo: typing.Optional[typing.Iterable[logic.CargoRecord]] = None,
@@ -629,7 +631,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if freeCargoSpace != None:
             self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
         if refuellingStrategy != None:
@@ -1737,16 +1739,21 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        fuelForMaxJump = traveller.calculateFuelRequiredForJump(
-            jumpDistance=self._shipJumpRatingSpinBox.value(),
-            shipTonnage=self._shipTonnageSpinBox.value())
-        if self._shipFuelCapacitySpinBox.value() < fuelForMaxJump.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'With a fuel capacity of {self._shipFuelCapacitySpinBox.value()} tons your ship can\'t carry ' + \
-                f'the {fuelForMaxJump.value()} tons required for Jump-{self._shipJumpRatingSpinBox.value()}')
-            return
+        # Flag cases where the purchase world doesn't match the refuelling strategy. No options will be
+        # generated unless the ship has enough current fuel
+        if not logic.selectRefuellingType(
+                world=self._purchaseWorldWidget.world(),
+                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+            message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
+                'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
+            answer = gui.MessageBoxEx.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?')
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
+
+        # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -1755,6 +1762,9 @@ class WorldTraderWindow(_BaseTraderWindow):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -1783,21 +1793,15 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                # Make the refuelling strategy optional. If the strategy was mandatory no trade options
-                # will be found if the purchase world doesn't support the refuelling strategy AND the
-                # ship doesn't have enough fuel to reach a world on the jump route calculated for the
-                # trade option that does support the refuelling strategy. It wouldn't be clear to the
-                # user why no options were found. If the purchase world doesn't support the refuelling
-                # strategy a note will be attached to the trade option so the user should know.
-                refuellingStrategyOptional=True,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
                 includeLogisticsCosts=self._includeLogisticsCostsCheckBox.isChecked(),
-                jumpCostCallback=jumpCostCalculator.calculate,
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,
@@ -1987,7 +1991,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             shipJumpRating: typing.Optional[int] = None,
             freeCargoSpace: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None
             ) -> None:
@@ -2013,7 +2017,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if freeCargoSpace != None:
             self._freeCargoSpaceSpinBox.setValue(int(freeCargoSpace))
         if refuellingStrategy != None:
@@ -2355,20 +2359,41 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
+        # generated for those worlds unless the ship has enough current fuel
+        fuelIssueWorldStrings = []
+        for world in self._purchaseWorldsWidget.worlds():
+            if not logic.selectRefuellingType(
+                    world=world,
+                    refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+                fuelIssueWorldStrings.append(world.name())
+
+        if fuelIssueWorldStrings:
+            worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
+            if len(fuelIssueWorldStrings) == 1:
+                message = f'Waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
+            else:
+                message = f'Waypoints {worldListString} don\'t support the selected refuelling strategy. '
+            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
+
+            answer = gui.MessageBoxEx.question(
+                parent=self,
+                text=message + '\n\nDo you want to continue?')
+            if answer == QtWidgets.QMessageBox.StandardButton.No:
+                return
+
+        # Create a jump cost calculator for the selected route optimisation
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
         elif routeOptimisation == logic.RouteOptimisation.ShortestTime:
             jumpCostCalculator = logic.ShortestTimeCostCalculator()
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
-            if self._perJumpOverheadsSpinBox.value() == 0:
-                gui.MessageBoxEx.information(
-                    parent=self,
-                    text='You must specify per jump overheads in order to calculate the cheapest route.')
-                return
-
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
@@ -2399,22 +2424,16 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                jumpCostCalculator=jumpCostCalculator,
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                # Make the refuelling strategy optional. If the strategy was mandatory no trade options
-                # will be found if the purchase world doesn't support the refuelling strategy AND the
-                # ship doesn't have enough fuel to reach a world on the jump route calculated for the
-                # trade option that does support the refuelling strategy. It wouldn't be clear to the
-                # user why no options were found. If the purchase world doesn't support the refuelling
-                # strategy a note will be attached to the trade option so the user should know.
-                refuellingStrategyOptional=True,
                 includeIllegal=self._includeIllegalTradeGoodsCheckBox.isChecked(),
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
                 includeLogisticsCosts=self._includeLogisticsCostsCheckBox.isChecked(),
-                jumpCostCallback=jumpCostCalculator.calculate,
                 tradeOptionCallback=self._addTradeOptions,
                 tradeInfoCallback=self._addTraderInfo,
                 progressCallback=self._updateTraderProgress,

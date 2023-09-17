@@ -69,18 +69,15 @@ def _formatBerthingTypeString(
         starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
     else:
-        return 'Unknown Berthing'
+        return 'No Star Port'
 
 class _WorldFilter(object):
     def __init__(
             self,
-            refuellingStrategy: logic.RefuellingStrategy,
             avoidWorlds: typing.List[traveller.World],
             avoidFilters: typing.List[traveller.World],
             avoidFilterLogic: logic.FilterLogic
             ) -> None:
-        self._refuellingStrategy = refuellingStrategy
-
         if avoidWorlds:
             # Copy avoid worlds into a set for quick lookup
             self._avoidWorlds = set()
@@ -98,10 +95,6 @@ class _WorldFilter(object):
 
     # IMPORTANT: This will be called from the route planner job thread
     def filter(self, world : traveller.World) -> bool:
-        if not logic.selectRefuellingType(world, self._refuellingStrategy):
-            # Filter out worlds that don't match the refuelling strategy.
-            return False
-
         if self._avoidWorlds and world in self._avoidWorlds:
             # Filter out worlds on the avoid list
             return False
@@ -231,9 +224,6 @@ class _RefuellingPlanTable(gui.WorldTable):
         if columnType == _RefuellingPlanTableColumnType.RefuellingType:
             if item.row() not in self._pitStopMap:
                 return None
-            pitStop = self._pitStopMap[item.row()]
-            if pitStop.isRefuellingStrategyOverridden():
-                return gui.createStringToolTip('Refuelling strategy was overridden')
 
         return super()._createToolTip(item=item)
 
@@ -536,11 +526,10 @@ class JumpRouteWindow(gui.WindowWidget):
             shipTonnage: typing.Optional[int] = None,
             shipJumpRating: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[int] = None,
+            shipCurrentFuel: typing.Optional[float] = None,
             routeOptimisation: typing.Optional[logic.RouteOptimisation] = None,
             perJumpOverheads: typing.Optional[int] = None,
             refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
-            refuellingStrategyOptional: typing.Optional[bool] = None,
             includeStartWorldBerthingCosts: typing.Optional[bool] = None,
             includeFinishWorldBerthingCosts: typing.Optional[bool] = None,
             ) -> None:
@@ -567,11 +556,9 @@ class JumpRouteWindow(gui.WindowWidget):
         if shipFuelCapacity != None:
             self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
         if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(int(shipCurrentFuel))
+            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
         if refuellingStrategy != None:
             self._refuellingStrategyComboBox.setCurrentEnum(refuellingStrategy)
-        if refuellingStrategyOptional != None:
-            self._refuellingStrategyOptionalCheckBox.setChecked(refuellingStrategyOptional)
         if routeOptimisation != None:
             self._routeOptimisationComboBox.setCurrentEnum(routeOptimisation)
         if perJumpOverheads != None:
@@ -623,6 +610,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
+        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
 
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
@@ -630,11 +618,14 @@ class JumpRouteWindow(gui.WindowWidget):
         leftLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         leftLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         leftLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        leftLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
 
         # Center column of options
-        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._refuellingStrategyOptionalCheckBox = gui.SharedRefuellingStrategyOptionalCheckBox()
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
+        self._fuelBasedRoutingCheckBox = gui.SharedFuelBasedRoutingCheckBox()
+        self._fuelBasedRoutingCheckBox.stateChanged.connect(self._fuelBasedRoutingToggled)
+        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
+        self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
@@ -642,8 +633,8 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout = gui.FormLayoutEx()
         rightLayout.setContentsMargins(0, 0, 0, 0)
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
+        rightLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
-        rightLayout.addRow('Strategy Optional:', self._refuellingStrategyOptionalCheckBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         rightLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         rightLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
@@ -835,6 +826,8 @@ class JumpRouteWindow(gui.WindowWidget):
             # A trade option job is already running so cancel it
             self._jumpRouteJob.cancel()
             return
+        
+        self._clearJumpRoute()
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
         if not startWorld or not finishWorld:
@@ -847,17 +840,48 @@ class JumpRouteWindow(gui.WindowWidget):
             gui.MessageBoxEx.information(parent=self, text=message)
             return
 
-        fuelForMaxJump = traveller.calculateFuelRequiredForJump(
-            jumpDistance=self._shipJumpRatingSpinBox.value(),
-            shipTonnage=self._shipTonnageSpinBox.value())
-        if self._shipFuelCapacitySpinBox.value() < fuelForMaxJump.value():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'With a fuel capacity of {self._shipFuelCapacitySpinBox.value()} tons your ship can\'t carry ' + \
-                f'the {fuelForMaxJump.value()} tons required for Jump-{self._shipJumpRatingSpinBox.value()}')
-            return
+        # Fuel based route calculation
+        refuellingStrategy = None
+        if self._fuelBasedRoutingCheckBox.isChecked():
+            refuellingStrategy = self._refuellingStrategyComboBox.currentEnum()
 
-        self._clearJumpRoute()
+            # Highlight cases where start world or waypoints don't support the refuelling strategy
+            if not logic.selectRefuellingType(
+                    world=startWorld,
+                    refuellingStrategy=refuellingStrategy):
+                message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy. '
+                if self._shipCurrentFuelSpinBox.value() <= 0:
+                    message += 'In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
+                    gui.MessageBoxEx.information(parent=self, text=message)
+                    return
+
+                message += 'The ability to generate a route and/or refuelling plan will be limited by the the amount of fuel the ship currently has.\n\nDo you want to continue?'
+                answer = gui.MessageBoxEx.question(
+                    parent=self,
+                    text=message)
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
+
+            fuelIssueWorldStrings = []
+            for waypointWorld in self._waypointWorldsWidget.worlds():
+                if not logic.selectRefuellingType(
+                        world=waypointWorld,
+                        refuellingStrategy=refuellingStrategy):
+                    fuelIssueWorldStrings.append(waypointWorld.name())
+
+            if fuelIssueWorldStrings:
+                worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
+                if len(fuelIssueWorldStrings) == 1:
+                    message = f'Fuel based route calculation is enabled but waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
+                else:
+                    message = f'Fuel based route calculation is enabled but waypoints {worldListString} don\'t support the selected refuelling strategy. '
+                message += 'This may prevent the generation of a route and/or refuelling plan.'
+
+                answer = gui.MessageBoxEx.question(
+                    parent=self,
+                    text=message + '\n\nDo you want to continue?')
+                if answer == QtWidgets.QMessageBox.StandardButton.No:
+                    return
 
         worldList = [startWorld]
         worldList.extend(self._waypointWorldsWidget.worlds())
@@ -871,13 +895,15 @@ class JumpRouteWindow(gui.WindowWidget):
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             costCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                refuellingStrategy=refuellingStrategy,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
 
         worldFilter = _WorldFilter(
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             avoidWorlds=self._avoidWorldsWidget.worlds(),
             avoidFilters=self._avoidWorldsFilterWidget.filters(),
             avoidFilterLogic=self._avoidWorldsFilterWidget.filterLogic())
@@ -886,8 +912,13 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteJob = jobs.RoutePlannerJob(
                 parent=self,
                 worldSequence=worldList,
-                jumpRating=self._shipJumpRatingSpinBox.value(),
-                jumpCostCallback=costCalculator.calculate,
+                shipTonnage=self._shipTonnageSpinBox.value(),
+                shipJumpRating=self._shipJumpRatingSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                jumpCostCalculator=costCalculator,
+                refuellingStrategy=refuellingStrategy,
                 worldFilterCallback=worldFilter.filter,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
@@ -1086,6 +1117,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 text='Use World as Finish World',
                 callback=lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld),
                 enabled=clickedWorld != None
+            ),
+            gui.MenuItem(
+                text='Swap Start && Finish Worlds',
+                callback=lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld),
+                enabled=(startWorld != None) and (finishWorld != None)
             ),
             None, # Separator
             gui.MenuItem(
@@ -1335,6 +1371,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 clearOverlays=False,
                 pitStopRadius=0.4)
 
+    def _fuelBasedRoutingToggled(self) -> None:
+        self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
+
     def _enableDisableControls(self) -> None:
         # Disable configuration controls while jump route job is running
         disable = self._jumpRouteJob != None
@@ -1400,45 +1439,44 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
         self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
 
-        try:
-            self._routeLogistics = logic.calculateRouteLogistics(
-                jumpRoute=self._jumpRoute,
-                shipTonnage=self._shipTonnageSpinBox.value(),
-                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
-                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                refuellingStrategyOptional=self._refuellingStrategyOptionalCheckBox.isChecked(),
-                requiredBerthingIndices=self._generateRequiredBerthingIndices(),
-                includeLogisticsCosts=True) # Always include logistics costs
-            if not self._routeLogistics:
-                gui.MessageBoxEx.information(
+        # Only calculate logistics if fuel based routing is enabled. If it's disabled the route will
+        # most likely contain worlds that don't match the refuelling strategy
+        if self._fuelBasedRoutingCheckBox.isChecked():
+            try:
+                self._routeLogistics = logic.calculateRouteLogistics(
+                    jumpRoute=self._jumpRoute,
+                    shipTonnage=self._shipTonnageSpinBox.value(),
+                    shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                    shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                    shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                    perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                    refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                    requiredBerthingIndices=self._generateRequiredBerthingIndices(),
+                    includeLogisticsCosts=True) # Always include logistics costs
+                if not self._routeLogistics:
+                    gui.MessageBoxEx.information(
+                        parent=self,
+                        text='Unable to calculate logistics for jump route')
+            except Exception as ex:
+                startWorld = self._jumpRoute.startWorld()
+                finishWorld = self._jumpRoute.finishWorld()
+                message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
+                    start=startWorld.name(includeSubsector=True),
+                    finish=finishWorld.name(includeSubsector=True))
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
                     parent=self,
-                    text='Unable to calculate logistics for jump route')
-            elif self._routeLogistics.isRefuellingStrategyOverridden():
-                gui.MessageBoxEx.information(
-                    parent=self,
-                    text='In order to calculate a refuelling plan for the jump route it\nwas necessary to override the selected refuelling strategy')
-        except Exception as ex:
-            startWorld = self._jumpRoute.startWorld()
-            finishWorld = self._jumpRoute.finishWorld()
-            message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                start=startWorld.name(includeSubsector=True),
-                finish=finishWorld.name(includeSubsector=True))
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
+                    text=message,
+                    exception=ex)
 
-        if self._routeLogistics:
-            self._refuellingPlanTable.setRoute(
-                jumpRoute=self._jumpRoute,
-                pitStops=self._routeLogistics.refuellingPlan())
-            routeCost = self._routeLogistics.totalCosts()
-            self._avgRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.averageCaseValue()))
-            self._minRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.bestCaseValue()))
-            self._maxRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.worstCaseValue()))
+            if self._routeLogistics:
+                self._refuellingPlanTable.setRoute(
+                    jumpRoute=self._jumpRoute,
+                    pitStops=self._routeLogistics.refuellingPlan())
+                routeCost = self._routeLogistics.totalCosts()
+                self._avgRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.averageCaseValue()))
+                self._minRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.bestCaseValue()))
+                self._maxRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.worstCaseValue()))
 
         self._updateTravellerMapOverlay()
 

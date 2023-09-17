@@ -16,12 +16,17 @@ class RoutePlannerJob(QtCore.QThread):
             self,
             parent: QtCore.QObject,
             worldSequence: typing.List[traveller.World],
-            jumpRating: int,
-            jumpCostCallback: typing.Optional[typing.Callable[[traveller.World, traveller.World], int]] = None, # This will be called from the worker thread
+            shipTonnage: int,
+            shipJumpRating: int,
+            shipFuelCapacity: int,
+            shipCurrentFuel: float,
+            shipFuelPerParsec: typing.Optional[float],
+            jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
+            refuellingStrategy: typing.Optional[logic.RefuellingStrategy],
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None,
-            progressInterval: int = 100,
+            progressInterval: int = 500,
             ) -> None:
         super().__init__(parent=parent)
 
@@ -30,8 +35,13 @@ class RoutePlannerJob(QtCore.QThread):
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
         self._worldSequence = worldSequence.copy()
-        self._jumpRating = jumpRating
-        self._jumpCostCallback = jumpCostCallback
+        self._shipTonnage = shipTonnage
+        self._shipJumpRating = shipJumpRating
+        self._shipFuelCapacity = shipFuelCapacity
+        self._shipCurrentFuel = shipCurrentFuel
+        self._shipFuelPerParsec = shipFuelPerParsec
+        self._jumpCostCalculator = jumpCostCalculator
+        self._refuellingStrategy = refuellingStrategy
         self._worldFilterCallback = worldFilterCallback
         self._progressInterval = progressInterval
 
@@ -67,8 +77,13 @@ class RoutePlannerJob(QtCore.QThread):
         try:
             jumpRoute = self._planner.calculateSequenceRoute(
                 worldSequence=self._worldSequence,
-                jumpRating=self._jumpRating,
-                jumpCostCallback=self._jumpCostCallback,
+                shipTonnage=self._shipTonnage,
+                shipJumpRating=self._shipJumpRating,
+                shipFuelCapacity=self._shipFuelCapacity,
+                shipCurrentFuel=self._shipCurrentFuel,
+                shipFuelPerParsec=self._shipFuelPerParsec,
+                jumpCostCalculator=self._jumpCostCalculator,
+                refuellingStrategy=self._refuellingStrategy,
                 worldFilterCallback=self._worldFilterCallback,
                 progressCallback=self._handleProgress,
                 isCancelledCallback=self.isCancelled)
