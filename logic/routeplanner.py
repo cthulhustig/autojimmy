@@ -28,9 +28,6 @@ class _RouteNode(object):
     def targetIndex(self) -> int:
         return self._targetIndex
 
-    def setTargetIndex(self, index: int) -> None:
-        self._targetIndex = index
-
     def world(self) -> traveller.World:
         return self._world
 
@@ -305,9 +302,6 @@ class RoutePlanner(object):
                             finishNode=currentNode,
                             progressCount=progressCount,
                             progressCallback=progressCallback)
-
-                # Set the new target for the current node
-                currentNode.setTargetIndex(targetIndex)
 
                 # Add a score map for the new target index if one doesn't exist already
                 bestValuesForTarget = bestValues.get(targetIndex)
