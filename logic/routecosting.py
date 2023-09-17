@@ -166,7 +166,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         currentFuel = costContext.currentFuel()
         jumpFuel = jumpParsecs * self._shipFuelPerParsec
-        fuelDeficit = 0 if (jumpFuel < currentFuel) else (jumpFuel - currentFuel)
+        fuelDeficit = 0 if (jumpFuel <= currentFuel) else (jumpFuel - currentFuel)
 
         refuellingType = logic.selectRefuellingType(
             world=currentWorld,
