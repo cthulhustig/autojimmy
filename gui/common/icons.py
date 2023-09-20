@@ -3,23 +3,27 @@ import enum
 import gui
 import os
 import typing
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore, QtWidgets, QtSvg, QtXml
 
 class Icon(enum.Enum):
-    FrozenColumn = 'frozen_column'
-    UnfrozenColumn = 'unfrozen_column'
-    CloseTab = 'close_tab'
-    NewFile = 'new_file'
-    SaveFile = 'save_file'
-    DeleteFile = 'delete_file'
-    CopyFile = 'copy_file'
-    RenameFile = 'rename_file'
-    RevertFile = 'revert_file'
-    ImportFile = 'import_file'
-    ExportFile = 'export_file'
-    Search = 'search'
-    Info = 'info'
+    FrozenColumn = 'frozen_column.svg'
+    UnfrozenColumn = 'unfrozen_column.svg'
+    CloseTab = 'close_tab.svg'
+    NewFile = 'new_file.svg'
+    SaveFile = 'save_file.svg'
+    DeleteFile = 'delete_file.svg'
+    CopyFile = 'copy_file.svg'
+    RenameFile = 'rename_file.svg'
+    RevertFile = 'revert_file.svg'
+    ImportFile = 'import_file.svg'
+    ExportFile = 'export_file.svg'
+    Search = 'search.svg'
+    Info = 'info.svg'
 
+
+_IconColourMap: typing.Dict[Icon, QtGui.QColor] = {
+    Icon.FrozenColumn: QtGui.QColor('#1084FE')
+}
 
 _IconMap: typing.Dict[str, QtGui.QIcon] = {}
 
@@ -27,24 +31,89 @@ class IconTheme(enum.Enum):
     DarkMode = 0
     LightMode = 1
 
-def loadIcon(
-        icon: Icon,
-        theme: typing.Optional[IconTheme] = None
+def setSvgColour(
+        svgData: QtCore.QByteArray,
+        colour: QtGui.QColor
+        ) -> QtCore.QByteArray:
+    doc = None
+    doc = QtXml.QDomDocument()
+    doc.setContent(svgData)
+    root = doc.firstChildElement()
+    if root:
+        # TODO: May also need to set stroke-width on high dpi monitors
+        root.setAttribute(
+            'stroke',
+            gui.colourToString(colour, includeAlpha=False)) # TODO: Retest alpha
+    return doc.toByteArray() if doc else None
+
+# https://falsinsoft.blogspot.com/2016/04/qt-snippet-render-svg-to-qpixmap-for.html
+def svgToPixmap(
+        svgData: QtCore.QByteArray,
+        pixmapSize: QtCore.QSize) -> QtGui.QPixmap:
+    pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
+    svgRenderer = QtSvg.QSvgRenderer(svgData)
+
+    pixmap = QtGui.QPixmap(pixmapSize * pixelRatio)
+    pixmap.fill(QtCore.Qt.GlobalColor.transparent)
+
+    painter = QtGui.QPainter()
+    painter.begin(pixmap)
+    svgRenderer.render(painter)
+    painter.end()
+
+    pixmap.setDevicePixelRatio(pixelRatio)
+
+    return pixmap
+
+def svgToIcon(
+        svgPath: str,
+        colour: typing.Optional[QtGui.QColor] = None
         ) -> QtGui.QIcon:
-    if not theme:
-        theme = IconTheme.DarkMode if gui.isDarkModeEnabled() else IconTheme.LightMode
+    file = QtCore.QFile(svgPath)
+    try:
+        file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text)
+        doc = QtXml.QDomDocument()
+        doc.setContent(file)
+    finally:
+        file.close()
+    svgData = doc.toByteArray()
 
-    baseFileName = f'{icon.value}_{"dark" if theme == IconTheme.DarkMode else "light"}'
-    iconFileName = baseFileName + '.png'
-    icon = _IconMap.get(iconFileName)
+    iconSizes = [16, 24, 32, 48, 64]
+    icon = QtGui.QIcon()
+
+    if not colour:
+        colour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.WindowText)
+    disabledColour = QtWidgets.QApplication.palette().color(
+        QtGui.QPalette.ColorGroup.Disabled,
+        QtGui.QPalette.ColorRole.WindowText)
+
+    for size in iconSizes:
+        pixmapSize = QtCore.QSize(size, size)
+        svgData = setSvgColour(svgData=svgData, colour=colour)
+        pixmap = svgToPixmap(
+            svgData=svgData,
+            pixmapSize=pixmapSize)
+        icon.addPixmap(pixmap, mode=QtGui.QIcon.Mode.Normal)
+
+        svgData = setSvgColour(
+            svgData=svgData,
+            colour=disabledColour)
+        pixmap = svgToPixmap(
+            svgData=svgData,
+            pixmapSize=pixmapSize)
+        icon.addPixmap(pixmap, mode=QtGui.QIcon.Mode.Disabled)
+
+    return icon
+
+def loadIcon(id: Icon) -> QtGui.QIcon:
+    iconPath = os.path.join(
+        app.Config.instance().installDir(),
+        'icons',
+        id.value)
+    icon = _IconMap.get(iconPath)
     if not icon:
-        iconDir = os.path.join(app.Config.instance().installDir(), 'icons')
-        normalIconPath = os.path.join(iconDir, iconFileName)
-        icon = QtGui.QIcon(QtGui.QPixmap(normalIconPath))
-
-        disabledIconPath = os.path.join(iconDir, baseFileName + '_disabled.png')
-        if os.path.exists(disabledIconPath):
-            icon.addPixmap(QtGui.QPixmap(disabledIconPath), QtGui.QIcon.Mode.Disabled)
-
-        _IconMap[iconFileName] = icon
+        icon = svgToIcon(
+            svgPath=iconPath,
+            colour=_IconColourMap.get(id))
+        _IconMap[iconPath] = icon
     return icon

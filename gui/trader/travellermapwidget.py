@@ -34,10 +34,6 @@ class _SearchComboBox(gui.WorldSearchComboBox):
         self.view().setStyleSheet(_SearchComboBox._formatListStyle())
         self.enableAutoComplete(True)
 
-    def sizeHint(self) -> QtCore.QSize:
-        hint = super().sizeHint()
-        return QtCore.QSize(hint.width(), 30)
-
     @staticmethod
     def _formatComboStyle() -> str:
         return 'border: {borderWidth}px solid {borderColour}; color:{textColour}; background-color:{bkColour}'.format(
@@ -57,17 +53,15 @@ class _IconButton(QtWidgets.QPushButton):
     def __init__(
             self,
             icon: QtGui.QIcon,
+            width: int,
+            height: int,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self.setIcon(icon)
-
-        iconSizes = icon.availableSizes()
-        if iconSizes:
-            size = iconSizes[0]
-            self.setFixedSize(QtCore.QSize(size.width() - 2, size.height() - 2))
-            self.setIconSize(QtCore.QSize(size.width() - 6, size.height() - 6))
+        self.setFixedSize(QtCore.QSize(width, height))
+        self.setIconSize(QtCore.QSize(width - 6, height - 6))
 
         self.setStyleSheet(
             'border: {borderWidth}px solid {borderColour}; background-color:{bkColour}'.format(
@@ -130,7 +124,7 @@ class _GripperWidget(QtWidgets.QWidget):
         rect = QtCore.QRectF(event.rect())
         rect.setLeft(rect.left() - rect.width())
         path = QtGui.QPainterPath()
-        path.addRoundedRect(rect, rect.width() / 2, rect.width() / 2);
+        path.addRoundedRect(rect, rect.width() / 2, rect.width() / 2)
         painter.drawPath(path)
 
 class _InfoWidget(QtWidgets.QWidget):
@@ -152,13 +146,21 @@ class _InfoWidget(QtWidgets.QWidget):
         self._world = None
 
         self._label = QtWidgets.QLabel()
+        self._label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         self._label.setWordWrap(True)
         self._label.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._label.setMinimumHeight(0)
         self._label.setMaximumHeight(100000)
-        self._label.setStyleSheet(f'font-size:10pt; background-color:#00000000')
+        self._label.setStyleSheet(f'background-color:#00000000')
+
+        # Force a min font size of 10pt. That was the default before I added font
+        # scaling and the change to a user not using scaling is quite jarring
+        font = self._label.font()
+        if font.pointSize() < 10:
+            font.setPointSize(10)
+            self._label.setFont(font)
 
         self._scroller = _CustomScrollArea()
         self._scroller.setWidgetResizable(True)
@@ -323,22 +325,28 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self._infoWorld = None
 
+        fontMetrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
+        controlHeights = int(fontMetrics.lineSpacing() * 2)
+        searchWidth = fontMetrics.width('_' * 40)
+
         # For reasons I don't understand this needs to be done after load has been called on the map.
         # If it's not then the search control is drawn under the map widget. Using stackUnder doesn't
         # seem to work either.
         self._searchWidget = _SearchComboBox(self)
-        self._searchWidget.setFixedWidth(200)
+        self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
         self._searchWidget.editTextChanged.connect(self._searchWorldTextEdited)
         self._searchWidget.worldChanged.connect(self._searchWorldSelected)
 
         self._searchButton = _IconButton(
-            icon=gui.loadIcon(icon=gui.Icon.Search),
+            icon=gui.loadIcon(id=gui.Icon.Search),
+            width=controlHeights,
+            height=controlHeights,
             parent=self)
         self._searchButton.installEventFilter(self)
         self._searchButton.clicked.connect(self._searchButtonClicked)
 
-        searchIcon = gui.loadIcon(icon=gui.Icon.Info)
+        searchIcon = gui.loadIcon(id=gui.Icon.Info)
         infoButtonIcon = QtGui.QIcon()
         infoButtonIcon.addPixmap(
             searchIcon.pixmap(QtCore.QSize(32, 32), QtGui.QIcon.Mode.Normal),
@@ -350,6 +358,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             QtGui.QIcon.State.Off)
         self._infoButton = _IconButton(
             icon=infoButtonIcon,
+            width=controlHeights,
+            height=controlHeights,
             parent=self)
         self._infoButton.setCheckable(True)
         self._infoButton.setChecked(True)
@@ -498,7 +508,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             self._infoButton.pos(),
             self._infoButton.size())
 
-        # The info widget can be resized so use it's current position and min sizes to calculate its
+        # The info widget can be resized so use its current position and min sizes to calculate its
         # min bounding rect
         minInfoWidgetRect = QtCore.QRect(
             self._infoWidget.pos(),

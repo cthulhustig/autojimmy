@@ -294,7 +294,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     def _checkBoxChanged(
             self,
-            widget: QtWidgets.QCheckBox,
+            widget: gui.CheckBoxEx,
             option: gunsmith.BooleanComponentOption
             ) -> None:
         try:
@@ -1014,7 +1014,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         for rule in gunsmith.RuleId:
-            ruleCheckBox = QtWidgets.QCheckBox()
+            ruleCheckBox = gui.CheckBoxEx()
             # Note the slightly odd way this lambda is specified is to work around the issue of connecting
             # lambdas to events in a loop (https://www.xingyulei.com/post/qt-signal-in-for-loop/index.html)
             ruleCheckBox.stateChanged.connect(lambda state, r=rule: self._ruleStateChanged(state, r))
@@ -1061,7 +1061,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
         for rule, ruleWidget in self._ruleWidgets.items():
             assert(isinstance(rule, gunsmith.RuleId))
-            assert(isinstance(ruleWidget, QtWidgets.QCheckBox))
+            assert(isinstance(ruleWidget, gui.CheckBoxEx))
             with gui.SignalBlocker(widget=ruleWidget):
                 ruleWidget.setChecked(self._weapon.isRuleEnabled(rule=rule))
 

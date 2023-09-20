@@ -6,15 +6,14 @@ import logging
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class DownloadProgressDialog(gui.DialogEx):
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class DownloadProgressDialog(QtWidgets.QDialog):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__(
-            title='Downloading',
-            configSection='DownloadProgressDialog',
-            parent=parent)
+        super().__init__(parent=parent)
 
         self._downloadJob = None
 
@@ -30,11 +29,17 @@ class DownloadProgressDialog(gui.DialogEx):
         windowLayout.addWidget(self._progressBar)
         windowLayout.addWidget(self._cancelButton)
 
+        self.setWindowTitle('Downloading')
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
         self.setFixedWidth(400)
         self.setSizeGripEnabled(False)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
 
     def exec(self) -> int:
         try:
@@ -55,6 +60,15 @@ class DownloadProgressDialog(gui.DialogEx):
             QtCore.QTimer.singleShot(0, self.close)
 
         return super().exec()
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
 
     def _cancelDownload(self) -> None:
         if self._downloadJob:

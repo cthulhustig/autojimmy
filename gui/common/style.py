@@ -3,6 +3,7 @@ import common
 import darkdetect
 import gui
 import logging
+import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 if common.isWindows():
@@ -56,6 +57,13 @@ def configureWindowTitleBar(widget: QtWidgets.QWidget) -> bool:
         logging.warning('Failed to set Windows ImmersionDarkMode attribute', exc_info=ex)
         return False
 
+# This is INCREDIBLY hacky but I can't find a better way to do it
+def defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
+    tempWidget = type()
+    sizeHint = tempWidget.sizeHint()
+    tempWidget.destroy()
+    return sizeHint
+
 def configureAppStyle(application: QtWidgets.QApplication):
     darkModeEnabled = isDarkModeEnabled()
 
@@ -101,6 +109,19 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     style = ''
 
+    fontScale = app.Config.instance().fontScale()
+    if fontScale != 1.0:
+        # Scale radio buttons and check boxes with the font
+        size = defaultWidgetSize(QtWidgets.QRadioButton)
+        style += 'QRadioButton::indicator {{width: {width}px; height: {height}px;}}\n'.format(
+            width=int(round(size.width() * fontScale)),
+            height=int(round(size.height() * fontScale)))
+
+        size = defaultWidgetSize(QtWidgets.QCheckBox)
+        style += 'QCheckBox::indicator {{width: {width}px; height: {height}px;}}\n'.format(
+            width=int(round(size.width() * fontScale)),
+            height=int(round(size.height() * fontScale)))
+
     # For some reason tool tip text and background colours need set as a style sheet in order to work.
     # Most likely because I'm using html tool tips.
     textColour = gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.ToolTipText))
@@ -115,3 +136,11 @@ def configureAppStyle(application: QtWidgets.QApplication):
     style += f'QTabBar::tab:selected {{font-weight: bold; {darkTabStyle}}}\n'
 
     application.setStyleSheet(style)
+
+    # For reasons I don't understand, this needs to be done AFTER the style sheet is set. If it's
+    # not, then menus, tables (and possibly more) don't automatically pick up the application font
+    fontScale = app.Config.instance().fontScale()
+    if fontScale != 1.0:
+        font = application.font()
+        font.setPointSizeF(font.pointSizeF() * fontScale)
+        application.setFont(font)

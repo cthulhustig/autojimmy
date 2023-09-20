@@ -10,7 +10,7 @@ import traveller
 import travellermap
 import typing
 import urllib
-from PyQt5 import  QtCore
+from PyQt5 import QtCore
 
 class ColourTheme(enum.Enum):
     DarkMode = 'Dark Mode'
@@ -53,6 +53,7 @@ class Config(object):
     _IncludeUnprofitableTradesKeyName = 'Game/IncludeUnprofitableTrades'
 
     _ColourThemeKeyName = 'GUI/ColourTheme'
+    _FontScaleKeyName = 'GUI/FontScale'
     _ShowToolTipImagesKeyName = 'GUI/ShowToolTipImages'
     _AverageCaseColourKeyName = 'GUI/AverageCaseColour'
     _WorstCaseColourKeyName = 'GUI/WorstCaseColour'
@@ -433,7 +434,7 @@ class Config(object):
         self._fuelBasedRouting = enable
         self._settings.setValue(Config._FuelBasedRoutingKeyName, enable)
         return False # No restart required
-    
+
     def refuellingStrategy(self) -> logic.RefuellingStrategy:
         return self._refuellingStrategy
 
@@ -926,6 +927,17 @@ class Config(object):
         self._settings.setValue(Config._ColourThemeKeyName, theme.name)
         return True # Restart required
 
+    def fontScale(self) -> float:
+        return self._fontScale
+
+    def setFontScale(self, scale: float) -> bool:
+        if scale == self._fontScale:
+            return False # Nothing changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._FontScaleKeyName, scale)
+        return True # Restart required
+
     def showToolTipImages(self) -> bool:
         return self._showToolTipImages
 
@@ -1094,6 +1106,11 @@ class Config(object):
             key=Config._ColourThemeKeyName,
             default=ColourTheme.DarkMode,
             members=ColourTheme.__members__)
+        self._fontScale = self._loadFloatSetting(
+            key=Config._FontScaleKeyName,
+            default=1.0,
+            minValue=1.0,
+            maxValue=4.0)
         self._showToolTipImages = self._loadSetting(
             key=Config._ShowToolTipImagesKeyName,
             default=True,

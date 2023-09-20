@@ -316,6 +316,11 @@ class ConfigDialog(gui.DialogEx):
             f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>',
             escape=False))
 
+        self._fontScaleSpinBox = gui.SpinBoxEx()
+        self._fontScaleSpinBox.setRange(100, 400)
+        self._fontScaleSpinBox.setValue(int(app.Config.instance().fontScale() * 100))
+        self._fontScaleSpinBox.setToolTip(gui.createStringToolTip('TODO')) # TODO: Tooltip
+
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
         self._showToolTipImagesCheckBox.setChecked(app.Config.instance().showToolTipImages())
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
@@ -343,6 +348,7 @@ class ConfigDialog(gui.DialogEx):
 
         guiLayout = gui.FormLayoutEx()
         guiLayout.addRow('Colour Theme:', self._colourThemeComboBox)
+        guiLayout.addRow('Font Scale (%):', self._fontScaleSpinBox)
         guiLayout.addRow('Show World Image in Tool Tips:', self._showToolTipImagesCheckBox)
         guiLayout.addRow('Average Case Highlight Colour:', self._averageCaseColourButton)
         guiLayout.addRow('Worst Case Highlight Colour:', self._worstCaseColourButton)
@@ -665,6 +671,7 @@ class ConfigDialog(gui.DialogEx):
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
+            checker.update(config.setFontScale(self._fontScaleSpinBox.value() / 100))
             checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
             checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
             checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))

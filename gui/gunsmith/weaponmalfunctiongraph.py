@@ -49,9 +49,8 @@ class WeaponMalfunctionGraph(QtWidgets.QWidget):
 
         self._graph.setBackground(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Base))
 
-        styles = {
-            'color': gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Text)),
-            'font-size': '20px'}
+        font = QtWidgets.QApplication.font()
+        styles = {'color': gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Text))}
         self._graph.setLabel('left', 'Malfunction Probability (%)', **styles)
         self._graph.setLabel('bottom', 'Current Heat', **styles)
         self._graph.setYRange(0, 100)
@@ -63,6 +62,7 @@ class WeaponMalfunctionGraph(QtWidgets.QWidget):
         self._graph.hideButtons()
 
         self._legend: pyqtgraph.LegendItem = self._graph.addLegend()
+        self._legend.setLabelTextSize(str(font.pointSizeF()))
 
         self._highlightLine = pyqtgraph.InfiniteLine(
             angle=90,
