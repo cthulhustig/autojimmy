@@ -19,10 +19,11 @@ class _NoFocusDelegate(QtWidgets.QStyledItemDelegate):
 class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
     def __init__(
             self,
-            style: QtWidgets.QStyle,
             iconSize: QtCore.QSize
             ) -> None:
-        super().__init__(style)
+        # Not sure why I can't pass the QStyle from the table in and use that. If I do I get a crash
+        # inside Qt when closing the config dialog.
+        super().__init__('fusion')
         self._iconSize = iconSize
 
     def setIconSize(self, size: QtCore.QSize) -> None:
@@ -83,9 +84,7 @@ class ListTable(QtWidgets.QTableWidget):
         super().__init__(parent)
         self._columnWidths = {}
         self._headerIconClickIndex = None
-        self._headerStyle = _SizeableIconHeaderStyle(
-            style=self.style(),
-            iconSize=self.iconSize())
+        self._headerStyle = _SizeableIconHeaderStyle(iconSize=self.iconSize())
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
