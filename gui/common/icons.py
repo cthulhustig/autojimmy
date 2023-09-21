@@ -40,10 +40,9 @@ def setSvgColour(
     doc.setContent(svgData)
     root = doc.firstChildElement()
     if root:
-        # TODO: May also need to set stroke-width on high dpi monitors
         root.setAttribute(
             'stroke',
-            gui.colourToString(colour, includeAlpha=False)) # TODO: Retest alpha
+            gui.colourToString(colour, includeAlpha=False))
     return doc.toByteArray() if doc else None
 
 # https://falsinsoft.blogspot.com/2016/04/qt-snippet-render-svg-to-qpixmap-for.html

@@ -53,7 +53,7 @@ class Config(object):
     _IncludeUnprofitableTradesKeyName = 'Game/IncludeUnprofitableTrades'
 
     _ColourThemeKeyName = 'GUI/ColourTheme'
-    _FontScaleKeyName = 'GUI/FontScale'
+    _InterfaceScaleKeyName = 'GUI/InterfaceScale'
     _ShowToolTipImagesKeyName = 'GUI/ShowToolTipImages'
     _AverageCaseColourKeyName = 'GUI/AverageCaseColour'
     _WorstCaseColourKeyName = 'GUI/WorstCaseColour'
@@ -927,15 +927,15 @@ class Config(object):
         self._settings.setValue(Config._ColourThemeKeyName, theme.name)
         return True # Restart required
 
-    def fontScale(self) -> float:
-        return self._fontScale
+    def interfaceScale(self) -> float:
+        return self._interfaceScale
 
-    def setFontScale(self, scale: float) -> bool:
-        if scale == self._fontScale:
+    def setInterfaceScale(self, scale: float) -> bool:
+        if scale == self._interfaceScale:
             return False # Nothing changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._FontScaleKeyName, scale)
+        self._settings.setValue(Config._InterfaceScaleKeyName, scale)
         return True # Restart required
 
     def showToolTipImages(self) -> bool:
@@ -1106,8 +1106,8 @@ class Config(object):
             key=Config._ColourThemeKeyName,
             default=ColourTheme.DarkMode,
             members=ColourTheme.__members__)
-        self._fontScale = self._loadFloatSetting(
-            key=Config._FontScaleKeyName,
+        self._interfaceScale = self._loadFloatSetting(
+            key=Config._InterfaceScaleKeyName,
             default=1.0,
             minValue=1.0,
             maxValue=4.0)

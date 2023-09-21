@@ -109,18 +109,18 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     style = ''
 
-    fontScale = app.Config.instance().fontScale()
-    if fontScale != 1.0:
-        # Scale radio buttons and check boxes with the font
+    interfaceScale = app.Config.instance().interfaceScale()
+    if interfaceScale != 1.0:
+        # Scale radio buttons and check boxes as they don't auto scale with the font
         size = defaultWidgetSize(QtWidgets.QRadioButton)
         style += 'QRadioButton::indicator {{width: {width}px; height: {height}px;}}\n'.format(
-            width=int(round(size.width() * fontScale)),
-            height=int(round(size.height() * fontScale)))
+            width=int(round(size.width() * interfaceScale)),
+            height=int(round(size.height() * interfaceScale)))
 
         size = defaultWidgetSize(QtWidgets.QCheckBox)
         style += 'QCheckBox::indicator {{width: {width}px; height: {height}px;}}\n'.format(
-            width=int(round(size.width() * fontScale)),
-            height=int(round(size.height() * fontScale)))
+            width=int(round(size.width() * interfaceScale)),
+            height=int(round(size.height() * interfaceScale)))
 
     # For some reason tool tip text and background colours need set as a style sheet in order to work.
     # Most likely because I'm using html tool tips.
@@ -139,8 +139,8 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     # For reasons I don't understand, this needs to be done AFTER the style sheet is set. If it's
     # not, then menus, tables (and possibly more) don't automatically pick up the application font
-    fontScale = app.Config.instance().fontScale()
-    if fontScale != 1.0:
+    interfaceScale = app.Config.instance().interfaceScale()
+    if interfaceScale != 1.0:
         font = application.font()
-        font.setPointSizeF(font.pointSizeF() * fontScale)
+        font.setPointSizeF(font.pointSizeF() * interfaceScale)
         application.setFont(font)

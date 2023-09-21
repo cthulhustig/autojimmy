@@ -206,7 +206,6 @@ def main() -> None:
     # Currently disabled as multiprocessing isn't being used at the moment.
     # multiprocessing.freeze_support()
 
-    # TODO: Is this needed?????
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
 

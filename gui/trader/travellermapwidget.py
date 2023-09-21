@@ -53,15 +53,14 @@ class _IconButton(QtWidgets.QPushButton):
     def __init__(
             self,
             icon: QtGui.QIcon,
-            width: int,
-            height: int,
+            size: QtCore.QSize,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
         self.setIcon(icon)
-        self.setFixedSize(QtCore.QSize(width, height))
-        self.setIconSize(QtCore.QSize(width - 6, height - 6))
+        self.setFixedSize(size)
+        self.setIconSize(QtCore.QSize(size.width() - 6, size.height() - 6))
 
         self.setStyleSheet(
             'border: {borderWidth}px solid {borderColour}; background-color:{bkColour}'.format(
@@ -328,6 +327,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         fontMetrics = QtGui.QFontMetrics(QtWidgets.QApplication.font())
         controlHeights = int(fontMetrics.lineSpacing() * 2)
         searchWidth = fontMetrics.width('_' * 40)
+        buttonSize = QtCore.QSize(controlHeights, controlHeights)
 
         # For reasons I don't understand this needs to be done after load has been called on the map.
         # If it's not then the search control is drawn under the map widget. Using stackUnder doesn't
@@ -340,26 +340,25 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self._searchButton = _IconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
-            width=controlHeights,
-            height=controlHeights,
+            size=buttonSize,
             parent=self)
         self._searchButton.installEventFilter(self)
         self._searchButton.clicked.connect(self._searchButtonClicked)
 
         searchIcon = gui.loadIcon(id=gui.Icon.Info)
         infoButtonIcon = QtGui.QIcon()
-        infoButtonIcon.addPixmap(
-            searchIcon.pixmap(QtCore.QSize(32, 32), QtGui.QIcon.Mode.Normal),
-            QtGui.QIcon.Mode.Normal,
-            QtGui.QIcon.State.On)
-        infoButtonIcon.addPixmap(
-            searchIcon.pixmap(QtCore.QSize(32, 32), QtGui.QIcon.Mode.Disabled),
-            QtGui.QIcon.Mode.Normal,
-            QtGui.QIcon.State.Off)
+        for availableSize in searchIcon.availableSizes():
+            infoButtonIcon.addPixmap(
+                searchIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.On)
+            infoButtonIcon.addPixmap(
+                searchIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.Off)
         self._infoButton = _IconButton(
             icon=infoButtonIcon,
-            width=controlHeights,
-            height=controlHeights,
+            size=buttonSize,
             parent=self)
         self._infoButton.setCheckable(True)
         self._infoButton.setChecked(True)
