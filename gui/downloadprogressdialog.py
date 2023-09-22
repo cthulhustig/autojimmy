@@ -30,6 +30,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._cancelButton)
 
         self.setWindowTitle('Downloading')
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
@@ -110,4 +111,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         else:
             self.accept()
 
+        # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
+        # and a crash on Linux
+        self._downloadJob.wait()
         self._downloadJob = None

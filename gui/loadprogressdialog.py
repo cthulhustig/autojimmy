@@ -23,6 +23,7 @@ class LoadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._progressBar)
 
         self.setWindowTitle('Loading')
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
@@ -85,4 +86,7 @@ class LoadProgressDialog(QtWidgets.QDialog):
         else:
             self.accept()
 
+        # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
+        # and a crash on Linux
+        self._loadJob.wait()
         self._loadJob = None
