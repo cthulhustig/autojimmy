@@ -65,12 +65,12 @@ class ScalarCargoDetailsDialog(gui.DialogEx):
         self._quantitySpinBox.valueChanged.connect(self._quantityChanged)
         self._quantitySpinBox.setDisabled(lockQuantity)
 
-        self._perTonPriceRadioButton = QtWidgets.QRadioButton('Price per ton (Cr):')
+        self._perTonPriceRadioButton = gui.RadioButtonEx('Price per ton (Cr):')
         self._perTonPriceRadioButton.setChecked(True)
         self._perTonPriceRadioButton.toggled.connect(self._syncControls)
         self._perTonPriceRadioButton.setDisabled(lockPrice)
 
-        self._totalPriceRadioButton = QtWidgets.QRadioButton('Total price (Cr):')
+        self._totalPriceRadioButton = gui.RadioButtonEx('Total price (Cr):')
         self._totalPriceRadioButton.toggled.connect(self._syncControls)
         self._totalPriceRadioButton.setDisabled(lockPrice)
 

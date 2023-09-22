@@ -482,44 +482,8 @@ class OptionalDoubleSpinBox(_BaseOptionalSpinBox):
         return super().minimum()
 
 class TextEditEx(QtWidgets.QTextEdit):
-    _StateVersion = 'TextEditEx_v1'
-
     def isEmpty(self) -> bool:
         return self.document().isEmpty()
-
-    def fontSize(self) -> int:
-        font = self.font()
-        return font.pointSize()
-
-    def setFontSize(self, size: int) -> None:
-        if size <= 0:
-            defaultFont = QtWidgets.QApplication.font()
-            size = defaultFont.pointSize()
-
-        font = self.font()
-        font.setPointSize(size)
-        self.setFont(font)
-
-    def saveState(self) -> QtCore.QByteArray:
-        state = QtCore.QByteArray()
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(TextEditEx._StateVersion)
-        stream.writeInt32(self.fontSize())
-        return state
-
-    def restoreState(
-            self,
-            state: QtCore.QByteArray
-            ) -> bool:
-        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
-        version = stream.readQString()
-        if version != TextEditEx._StateVersion:
-            # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore TextEditEx state (Incorrect version)')
-            return False
-
-        self.setFontSize(stream.readInt32())
-        return True
 
 class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)

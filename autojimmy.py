@@ -115,7 +115,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         widget = QtWidgets.QWidget()
         widget.setLayout(windowLayout)
-        self.setFixedSize(300, windowLayout.sizeHint().height())
+        self.setFixedSize(
+            max(windowLayout.sizeHint().width(), 300),
+            windowLayout.sizeHint().height())
         self.setCentralWidget(widget)
 
         self._settings = gui.globalWindowSettings()
@@ -203,6 +205,9 @@ def main() -> None:
     # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
     # Currently disabled as multiprocessing isn't being used at the moment.
     # multiprocessing.freeze_support()
+
+    QtWidgets.QApplication.setAttribute(
+        QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
 
     appId = _SingletonAppId
     if '--no-singleton' in sys.argv:

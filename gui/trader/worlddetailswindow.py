@@ -99,27 +99,6 @@ class WorldDetailsWindow(gui.WindowWidget):
         for world in worlds:
             self.addWorld(world=world)
 
-    def loadSettings(self) -> None:
-        self._settings.beginGroup(self._configSection)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='WorldDetailsState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._worldDetails.restoreState(storedValue)
-
-        self._settings.endGroup()
-
-        return super().loadSettings()
-
-    def saveSettings(self) -> None:
-        self._settings.beginGroup(self._configSection)
-        self._settings.setValue('WorldDetailsState', self._worldDetails.saveState())
-        self._settings.endGroup()
-
-        return super().saveSettings()
-
     def _tabChanged(self) -> None:
         index = self._tabBar.currentIndex()
         if index < 0:

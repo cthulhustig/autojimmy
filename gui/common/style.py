@@ -3,6 +3,7 @@ import common
 import darkdetect
 import gui
 import logging
+import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 if common.isWindows():
@@ -12,6 +13,15 @@ if common.isWindows():
     except Exception as ex:
         logging.warning('Failed to initialise Windows DwmSetWindowAttribute', exc_info=ex)
         _SetWindowAttribute = None
+
+
+# This is INCREDIBLY hacky but I can't find a better way to do it
+def _defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
+    tempWidget = type()
+    sizeHint = tempWidget.sizeHint()
+    tempWidget.destroy()
+    return sizeHint
+
 
 _CachedDarkDetectResult = None
 def isDarkModeEnabled() -> bool:
@@ -101,6 +111,19 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     style = ''
 
+    interfaceScale = app.Config.instance().interfaceScale()
+    if interfaceScale != 1.0:
+        # Scale radio buttons and check boxes as they don't auto scale with the font
+        size = _defaultWidgetSize(QtWidgets.QRadioButton)
+        style += 'QRadioButton::indicator {{width: {width}px; height: {height}px;}}\n'.format(
+            width=int(round(size.width() * interfaceScale)),
+            height=int(round(size.height() * interfaceScale)))
+
+        size = _defaultWidgetSize(QtWidgets.QCheckBox)
+        style += 'QCheckBox::indicator {{width: {width}px; height: {height}px;}}\n'.format(
+            width=int(round(size.width() * interfaceScale)),
+            height=int(round(size.height() * interfaceScale)))
+
     # For some reason tool tip text and background colours need set as a style sheet in order to work.
     # Most likely because I'm using html tool tips.
     textColour = gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.ToolTipText))
@@ -115,3 +138,10 @@ def configureAppStyle(application: QtWidgets.QApplication):
     style += f'QTabBar::tab:selected {{font-weight: bold; {darkTabStyle}}}\n'
 
     application.setStyleSheet(style)
+
+    # For reasons I don't understand, this needs to be done AFTER the style sheet is set. If it's
+    # not, then menus, tables (and possibly more) don't automatically pick up the application font
+    if interfaceScale != 1.0:
+        font = application.font()
+        font.setPointSizeF(font.pointSizeF() * interfaceScale)
+        application.setFont(font)

@@ -62,8 +62,14 @@ def safeLoadSetting(
         logging.error(f'Exception occurred while reading "{key}" from "{settings.group()}" in "{settings.fileName()}"', exc_info=ex)
         return default
 
-def colourToString(colour: QtGui.QColor) -> str:
-    return f'#{colour.alpha():02X}{colour.red():02X}{colour.green():02X}{colour.blue():02X}'
+def colourToString(
+        colour: QtGui.QColor,
+        includeAlpha: bool = True
+        ) -> str:
+    if includeAlpha:
+        return f'#{colour.alpha():02X}{colour.red():02X}{colour.green():02X}{colour.blue():02X}'
+    else:
+        return f'#{colour.red():02X}{colour.green():02X}{colour.blue():02X}'
 
 def isShiftKeyDown():
     modifiers = QtWidgets.QApplication.keyboardModifiers()

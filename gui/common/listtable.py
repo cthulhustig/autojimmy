@@ -1,6 +1,7 @@
 import enum
 import gui
 import logging
+import math
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -11,6 +12,67 @@ class _NoFocusDelegate(QtWidgets.QStyledItemDelegate):
         if option.state & QtWidgets.QStyle.StateFlag.State_HasFocus:
             itemOption.state = itemOption.state ^ QtWidgets.QStyle.StateFlag.State_HasFocus
         super().paint(painter, itemOption, index)
+
+# This QProxyStyle is intended to work around what appears to be a bug in Qt that means the icon
+# size set for the table isn't applied to the header
+# https://bugreports.qt.io/browse/QTBUG-61559
+class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
+    def __init__(
+            self,
+            iconSize: QtCore.QSize
+            ) -> None:
+        # Not sure why I can't pass the QStyle from the table in and use that. If I do I get a crash
+        # inside Qt when closing the config dialog.
+        super().__init__('fusion')
+        self._iconSize = iconSize
+
+    def setIconSize(self, size: QtCore.QSize) -> None:
+        self._iconSize = size
+
+    def iconRect(
+            self,
+            sectionRect: QtCore.QRect
+            ) -> QtCore.QRect:
+        return QtCore.QRect(
+            sectionRect.left(),
+            int(sectionRect.top() + (sectionRect.height() - self._iconSize.height()) / 2 ),
+            self._iconSize.width(),
+            self._iconSize.height())
+
+    def drawControl(
+            self,
+            element: QtWidgets.QStyle.ControlElement,
+            option: QtWidgets.QStyleOption,
+            painter: QtGui.QPainter,
+            widget: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        if element != QtWidgets.QStyle.ControlElement.CE_HeaderLabel:
+            return super().drawControl(element, option, painter, widget)
+
+        assert(isinstance(option, QtWidgets.QStyleOptionHeader))
+
+        if option.icon == None:
+            return super().drawControl(element, option, painter, widget)
+
+        assert(isinstance(option.icon, QtGui.QIcon))
+        pixmap = option.icon.pixmap(self._iconSize, QtGui.QIcon.Mode.Normal)
+        if not pixmap:
+            return super().drawControl(element, option, painter, widget)
+
+        drawRect = option.rect
+        iconRect = self.iconRect(drawRect)
+
+        textRect = QtCore.QRect(
+            drawRect.left() + self._iconSize.width(),
+            drawRect.top(),
+            drawRect.width() - self._iconSize.width(),
+            drawRect.height())
+
+        painter.drawPixmap(iconRect, pixmap)
+        painter.drawText(
+            textRect,
+            int(option.textAlignment), # Older versions of PyQt require explicit cast
+            option.text)
 
 class ListTable(QtWidgets.QTableWidget):
     keyPressed = QtCore.pyqtSignal(int)
@@ -24,11 +86,11 @@ class ListTable(QtWidgets.QTableWidget):
             ) -> None:
         super().__init__(parent)
         self._columnWidths = {}
-        self._globalHeaderIcon = None
-        self._headerIconClickedEnabled = False
         self._headerIconClickIndex = None
+        self._headerStyle = _SizeableIconHeaderStyle(iconSize=self.iconSize())
 
         header = self.horizontalHeader()
+        header.setStyle(self._headerStyle)
         header.viewport().setMouseTracking(True)
         header.viewport().installEventFilter(self)
         header.setSectionsClickable(True)
@@ -196,30 +258,6 @@ class ListTable(QtWidgets.QTableWidget):
             font.setBold(bold)
             item.setFont(font)
 
-    def setHeaderIconClickedEnabled(
-            self,
-            enabled: bool
-            ) -> None:
-        self._headerIconClickedEnabled = enabled
-
-    def setGlobalHeaderIcon(
-            self,
-            icon
-            ) -> None:
-        self._globalHeaderIcon = icon
-        self._setHeaderGlobalIcons()
-
-    def setHorizontalHeaderLabels(self, labels: typing.Iterable[str]) -> None:
-        result = super().setHorizontalHeaderLabels(labels)
-        if self._globalHeaderIcon:
-            self._setHeaderGlobalIcons()
-        return result
-
-    def setHorizontalHeaderItem(self, column: int, item: QtWidgets.QTableWidgetItem) -> None:
-        if self._globalHeaderIcon:
-            self._setGlobalItemIcon(item)
-        return super().setHorizontalHeaderItem(column, item)
-
     def setColumnsMoveable(self, enable: bool) -> None:
         self.horizontalHeader().setSectionsMovable(enable)
 
@@ -234,6 +272,14 @@ class ListTable(QtWidgets.QTableWidget):
         columnIndex = self.columnHeaderIndex(header)
         if columnIndex >= 0:
             self.sortByColumn(columnIndex, order)
+
+    def setIconSize(self, size: QtCore.QSize) -> None:
+        self._headerStyle.setIconSize(size)
+        super().setIconSize(size)
+
+    def setStyle(self, style: QtWidgets.QStyle) -> None:
+        self._headerStyle.setBaseStyle(style)
+        super().setStyle(style)
 
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
@@ -264,19 +310,19 @@ class ListTable(QtWidgets.QTableWidget):
             # and drop
             if event.type() == QtCore.QEvent.Type.MouseButtonPress:
                 assert(isinstance(event, QtGui.QMouseEvent))
-                if self._headerIconClickedEnabled:
-                    iconIndex = self._checkForHeaderIconClick(event.pos())
-                    if iconIndex >= 0:
-                        self._headerIconClickIndex = iconIndex
+                iconIndex = self._checkForHeaderIconClick(event.pos())
+                if iconIndex >= 0:
+                    self._headerIconClickIndex = iconIndex
             elif event.type() == QtCore.QEvent.Type.MouseButtonRelease:
                 assert(isinstance(event, QtGui.QMouseEvent))
-                if self._headerIconClickedEnabled:
-                    iconIndex = self._checkForHeaderIconClick(event.pos())
-                    if iconIndex >= 0 and iconIndex == self._headerIconClickIndex:
-                        self.iconClicked.emit(iconIndex)
-                        self._headerIconClickIndex = None
-                        return True
+                iconIndex = self._checkForHeaderIconClick(event.pos())
+                if iconIndex >= 0 and iconIndex == self._headerIconClickIndex:
+                    self.iconClicked.emit(iconIndex)
                     self._headerIconClickIndex = None
+                    # Return True so event isn't processed any further. This is important to prevent
+                    # clicking the icon also causing the sort column to change
+                    return True
+                self._headerIconClickIndex = None
 
         return super().eventFilter(object, event)
 
@@ -355,17 +401,6 @@ class ListTable(QtWidgets.QTableWidget):
 
         return swappedRows
 
-    def _setHeaderGlobalIcons(self) -> None:
-        for column in range(self.horizontalHeader().count()):
-            item = self.horizontalHeaderItem(column)
-            self._setGlobalItemIcon(item)
-
-    def _setGlobalItemIcon(
-            self,
-            item: QtWidgets.QTableWidgetItem
-            ) -> None:
-        item.setData(QtCore.Qt.ItemDataRole.DecorationRole, self._globalHeaderIcon)
-
     def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
         for column in range(self.columnCount()):
@@ -383,12 +418,7 @@ class ListTable(QtWidgets.QTableWidget):
                 0,
                 header.sectionSize(column),
                 header.height())
-
-            # The size of the icon rect is hard coded as I've not been able to work out how you
-            # calculate how big the decoration icon will be drawn.
-            iconRect = QtCore.QRect(0, 0, 16, 16)
-            iconRect.moveCenter(sectionRect.center())
-            iconRect.moveLeft(sectionRect.left())
+            iconRect = self._headerStyle.iconRect(sectionRect)
 
             # Check if the click position is inside the icon rect. Don't include the edges of the
             # rect as I was finding i was getting false clicks when resizing columns
@@ -423,18 +453,21 @@ class FrozenColumnListTable(ListTable):
         self._frozenColumnVisualIndex = None
         self._restoreColumnMovable = None
         self._signalLoopBlock = False
-        super().__init__(parent)
+        super().__init__(parent=parent)
 
-        self.setGlobalHeaderIcon(gui.loadIcon(gui.Icon.UnfrozenColumn))
-        self.setHeaderIconClickedEnabled(True)
+        fontMetrics = QtGui.QFontMetrics(self.font())
+        lineSpacing = fontMetrics.lineSpacing()
+        iconDim = max(math.ceil(lineSpacing * 0.75), 16)
+        iconSize = QtCore.QSize(iconDim, iconDim)
+
+        self.setIconSize(iconSize)
         self.iconClicked.connect(self._headerIconClicked)
         self.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self._frozenColumnWidget = ListTable(self)
+        self._frozenColumnWidget = ListTable(parent=self)
         self._frozenColumnWidget.setColumnsMoveable(False)
-        self._frozenColumnWidget.setGlobalHeaderIcon(gui.loadIcon(gui.Icon.FrozenColumn))
-        self._frozenColumnWidget.setHeaderIconClickedEnabled(True)
+        self._frozenColumnWidget.setIconSize(iconSize)
         self._frozenColumnWidget.iconClicked.connect(self._headerIconClicked)
         self._frozenColumnWidget.setEditTriggers(QtWidgets.QTableWidget.EditTrigger.NoEditTriggers)
         self._frozenColumnWidget.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
@@ -595,11 +628,26 @@ class FrozenColumnListTable(ListTable):
 
     def setHorizontalHeaderLabels(self, labels: typing.Iterable[str]) -> None:
         self._frozenColumnWidget.setHorizontalHeaderLabels(labels)
-        return super().setHorizontalHeaderLabels(labels)
+        super().setHorizontalHeaderLabels(labels)
+
+        unfrozenIcon = gui.loadIcon(gui.Icon.UnfrozenColumn)
+        frozenIcon = gui.loadIcon(gui.Icon.FrozenColumn)
+        for column in range(self.horizontalHeader().count()):
+            item = self.horizontalHeaderItem(column)
+            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, unfrozenIcon)
+
+            item = self._frozenColumnWidget.horizontalHeaderItem(column)
+            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, frozenIcon)
 
     def setHorizontalHeaderItem(self, column: int, item: QtWidgets.QTableWidgetItem) -> None:
-        self._frozenColumnWidget.setHorizontalHeaderItem(column, item.clone() if item else None)
-        return super().setHorizontalHeaderItem(column, item)
+        frozenItem = None
+        if item:
+            frozenItem = item.clone()
+            item.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.UnfrozenColumn))
+            frozenItem.setData(QtCore.Qt.ItemDataRole.DecorationRole, gui.loadIcon(gui.Icon.FrozenColumn))
+
+        self._frozenColumnWidget.setHorizontalHeaderItem(column, frozenItem)
+        super().setHorizontalHeaderItem(column, item)
 
     def setColumnWidth(self, column: int, width: int) -> None:
         self._frozenColumnWidget.setColumnWidth(column, width)
@@ -735,6 +783,21 @@ class FrozenColumnListTable(ListTable):
             self._frozenColumnWidget.setItemDelegateForRow(row, delegate)
         return super().setItemDelegateForRow(row, delegate)
 
+    def setIconSize(self, size: QtCore.QSize) -> None:
+        if self._frozenColumnWidget:
+            self._frozenColumnWidget.setIconSize(size)
+        return super().setIconSize(size)
+
+    def setStyle(self, style: QtWidgets.QStyle) -> None:
+        if self._frozenColumnWidget:
+            self._frozenColumnWidget.setStyle(style)
+        return super().setStyle(style)
+
+    def setStyleSheet(self, styleSheet: str) -> None:
+        if self._frozenColumnWidget:
+            self._frozenColumnWidget.setStyleSheet(styleSheet)
+        super().setStyleSheet(styleSheet)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if event.type() == QtCore.QEvent.Type.ToolTip:
             assert(isinstance(event, QtGui.QHelpEvent))
@@ -802,11 +865,11 @@ class FrozenColumnListTable(ListTable):
 
     # The code below needs to copy item data from the main table to the frozen table. Unfortunately
     # I've not been able to figure out how to iterate over all the values in QtCore.Qt.ItemDataRole.
-    # Rather than storing a list of all the entries it is possible to iterate over the values from
-    # QtCore.Qt.ItemDataRole.DisplayRole and QtCore.Qt.ItemDataRole.UserRole as they're converted to
-    # ints (there some weird magic going on in PyQt that I don't understand). The issue with doing
-    # this is there are gaps in the range with UserRole having a value of 256, this would mean
-    # iterating over 256 values for each item in the table rather than just the 18 required.
+    # Rather than storing a list of all the entries, it would be possible to iterate over the values
+    # from QtCore.Qt.ItemDataRole.DisplayRole and QtCore.Qt.ItemDataRole.UserRole as they're
+    # converted to ints (there some weird magic going on in PyQt that I don't understand). The issue
+    # with doing this is there are gaps in the range with UserRole having a value of 256, this would
+    # mean iterating over 256 values for each item in the table rather than just the 18 required.
     _AllDataRoles = [
         QtCore.Qt.ItemDataRole.DisplayRole,
         QtCore.Qt.ItemDataRole.DecorationRole,

@@ -282,22 +282,24 @@ class ConfigDialog(gui.DialogEx):
     def _setupGeneralTab(self) -> None:
         ColourButtonWidth = 75
 
+        restartRequiredText = f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
+
         # Game widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),
             textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The milieu to use when determining sector and world information</p>' \
-            f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>',
+            '<p>The milieu to use when determining sector and world information</p>' +
+            restartRequiredText,
             escape=False))
 
         self._rulesComboBox = gui.EnumComboBox(
             type=traveller.Rules,
             value=app.Config.instance().rules())
         self._rulesComboBox.setToolTip(gui.createStringToolTip(
-            '<p>The rules used for trade calculations</p>' \
-            f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>',
+            '<p>The rules used for trade calculations</p>' +
+            restartRequiredText,
             escape=False))
 
         gameLayout = gui.FormLayoutEx()
@@ -312,8 +314,18 @@ class ConfigDialog(gui.DialogEx):
             type=app.ColourTheme,
             value=app.Config.instance().colourTheme())
         self._colourThemeComboBox.setToolTip(gui.createStringToolTip(
-            '<p>Select the colour theme.</p>' \
-            f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>',
+            '<p>Select the colour theme.</p>' +
+            restartRequiredText,
+            escape=False))
+
+        # Note that this displays the interface scale as an integer percentage increase but it's
+        # actually stored as a float scalar
+        self._interfaceScaleSpinBox = gui.SpinBoxEx()
+        self._interfaceScaleSpinBox.setRange(100, 400)
+        self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
+        self._interfaceScaleSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Scale the UI up to make things easier to read</p>' +
+            restartRequiredText,
             escape=False))
 
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
@@ -343,6 +355,7 @@ class ConfigDialog(gui.DialogEx):
 
         guiLayout = gui.FormLayoutEx()
         guiLayout.addRow('Colour Theme:', self._colourThemeComboBox)
+        guiLayout.addRow('Scale (%):', self._interfaceScaleSpinBox)
         guiLayout.addRow('Show World Image in Tool Tips:', self._showToolTipImagesCheckBox)
         guiLayout.addRow('Average Case Highlight Colour:', self._averageCaseColourButton)
         guiLayout.addRow('Worst Case Highlight Colour:', self._worstCaseColourButton)
@@ -665,6 +678,7 @@ class ConfigDialog(gui.DialogEx):
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
+            checker.update(config.setInterfaceScale(self._interfaceScaleSpinBox.value() / 100))
             checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
             checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
             checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))

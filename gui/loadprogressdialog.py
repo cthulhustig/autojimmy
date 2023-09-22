@@ -1,18 +1,18 @@
+import app
 import gui
 import jobs
 import logging
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class LoadProgressDialog(gui.DialogEx):
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class LoadProgressDialog(QtWidgets.QDialog):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__(
-            title='Loading',
-            configSection='LoadProgressDialog',
-            parent=parent)
+        super().__init__(parent=parent)
 
         self._loadJob = None
 
@@ -23,11 +23,18 @@ class LoadProgressDialog(gui.DialogEx):
         windowLayout.addWidget(self._textLabel)
         windowLayout.addWidget(self._progressBar)
 
+        self.setWindowTitle('Loading')
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
-        self.setFixedWidth(300)
+        self.setFixedWidth(int(300 * app.Config.instance().interfaceScale()))
         self.setSizeGripEnabled(False)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
 
     def exec(self) -> int:
         try:
@@ -45,6 +52,15 @@ class LoadProgressDialog(gui.DialogEx):
             self.close()
 
         return super().exec()
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
 
     def _updateProgress(
             self,
@@ -71,4 +87,7 @@ class LoadProgressDialog(gui.DialogEx):
         else:
             self.accept()
 
+        # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
+        # and a crash on Linux
+        self._loadJob.wait()
         self._loadJob = None
