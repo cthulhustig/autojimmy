@@ -318,7 +318,7 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
 
-        # Note that this displays the interface scale as an integer percentage increase when it's
+        # Note that this displays the interface scale as an integer percentage increase but it's
         # actually stored as a float scalar
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)

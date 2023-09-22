@@ -792,7 +792,7 @@ class FrozenColumnListTable(ListTable):
         if self._frozenColumnWidget:
             self._frozenColumnWidget.setStyle(style)
         return super().setStyle(style)
-    
+
     def setStyleSheet(self, styleSheet: str) -> None:
         if self._frozenColumnWidget:
             self._frozenColumnWidget.setStyleSheet(styleSheet)

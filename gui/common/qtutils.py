@@ -64,7 +64,8 @@ def safeLoadSetting(
 
 def colourToString(
         colour: QtGui.QColor,
-        includeAlpha: bool = True) -> str:
+        includeAlpha: bool = True
+        ) -> str:
     if includeAlpha:
         return f'#{colour.alpha():02X}{colour.red():02X}{colour.green():02X}{colour.blue():02X}'
     else:

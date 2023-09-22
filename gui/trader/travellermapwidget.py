@@ -345,15 +345,15 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchButton.installEventFilter(self)
         self._searchButton.clicked.connect(self._searchButtonClicked)
 
-        searchIcon = gui.loadIcon(id=gui.Icon.Info)
+        baseInfoIcon = gui.loadIcon(id=gui.Icon.Info)
         infoButtonIcon = QtGui.QIcon()
-        for availableSize in searchIcon.availableSizes():
+        for availableSize in baseInfoIcon.availableSizes():
             infoButtonIcon.addPixmap(
-                searchIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+                baseInfoIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
                 QtGui.QIcon.Mode.Normal,
                 QtGui.QIcon.State.On)
             infoButtonIcon.addPixmap(
-                searchIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+                baseInfoIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
                 QtGui.QIcon.Mode.Normal,
                 QtGui.QIcon.State.Off)
         self._infoButton = _IconButton(

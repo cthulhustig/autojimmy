@@ -21,6 +21,8 @@ class Icon(enum.Enum):
     Info = 'info.svg'
 
 
+# Mapping to override colour used for Normal mode variant of the icon. If no override
+# is specified, WindowText colour is used
 _IconColourMap: typing.Dict[Icon, QtGui.QColor] = {
     Icon.FrozenColumn: QtGui.QColor('#1084FE')
 }
@@ -35,7 +37,6 @@ def setSvgColour(
         svgData: QtCore.QByteArray,
         colour: QtGui.QColor
         ) -> QtCore.QByteArray:
-    doc = None
     doc = QtXml.QDomDocument()
     doc.setContent(svgData)
     root = doc.firstChildElement()

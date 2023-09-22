@@ -14,6 +14,15 @@ if common.isWindows():
         logging.warning('Failed to initialise Windows DwmSetWindowAttribute', exc_info=ex)
         _SetWindowAttribute = None
 
+
+# This is INCREDIBLY hacky but I can't find a better way to do it
+def _defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
+    tempWidget = type()
+    sizeHint = tempWidget.sizeHint()
+    tempWidget.destroy()
+    return sizeHint
+
+
 _CachedDarkDetectResult = None
 def isDarkModeEnabled() -> bool:
     theme = app.Config.instance().colourTheme()
@@ -56,13 +65,6 @@ def configureWindowTitleBar(widget: QtWidgets.QWidget) -> bool:
     except Exception as ex:
         logging.warning('Failed to set Windows ImmersionDarkMode attribute', exc_info=ex)
         return False
-
-# This is INCREDIBLY hacky but I can't find a better way to do it
-def defaultWidgetSize(type: typing.Type[QtWidgets.QWidget]) -> QtCore.QSize:
-    tempWidget = type()
-    sizeHint = tempWidget.sizeHint()
-    tempWidget.destroy()
-    return sizeHint
 
 def configureAppStyle(application: QtWidgets.QApplication):
     darkModeEnabled = isDarkModeEnabled()
@@ -112,12 +114,12 @@ def configureAppStyle(application: QtWidgets.QApplication):
     interfaceScale = app.Config.instance().interfaceScale()
     if interfaceScale != 1.0:
         # Scale radio buttons and check boxes as they don't auto scale with the font
-        size = defaultWidgetSize(QtWidgets.QRadioButton)
+        size = _defaultWidgetSize(QtWidgets.QRadioButton)
         style += 'QRadioButton::indicator {{width: {width}px; height: {height}px;}}\n'.format(
             width=int(round(size.width() * interfaceScale)),
             height=int(round(size.height() * interfaceScale)))
 
-        size = defaultWidgetSize(QtWidgets.QCheckBox)
+        size = _defaultWidgetSize(QtWidgets.QCheckBox)
         style += 'QCheckBox::indicator {{width: {width}px; height: {height}px;}}\n'.format(
             width=int(round(size.width() * interfaceScale)),
             height=int(round(size.height() * interfaceScale)))
@@ -139,7 +141,6 @@ def configureAppStyle(application: QtWidgets.QApplication):
 
     # For reasons I don't understand, this needs to be done AFTER the style sheet is set. If it's
     # not, then menus, tables (and possibly more) don't automatically pick up the application font
-    interfaceScale = app.Config.instance().interfaceScale()
     if interfaceScale != 1.0:
         font = application.font()
         font.setPointSizeF(font.pointSizeF() * interfaceScale)
