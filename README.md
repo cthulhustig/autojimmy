@@ -109,7 +109,7 @@ for that environment before continuing with this fix.
 The issue can be resolved by executing the following commands ([source](https://stackoverflow.com/questions/73868174/pyqtwebengine-dontt-show-nothing)).
 ```
 pip3 uninstall PyQt5 PyQt5-Qt5 PyQt5-sip PyQtWebEngine PyQtWebEngine-Qt5
-sudo apt install python3-pyqt5.qtwebengine
+sudo apt install python3-pyqt5.qtwebengine python3-pyqt5.qtsvg
 ```
 If you're using venv, you will also need to run the following commands to symlink the
 system PyQt5 install into your venv site-packages, replacing <VENV_PATH> with the path
