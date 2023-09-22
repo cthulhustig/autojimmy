@@ -69,7 +69,10 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             drawRect.height())
 
         painter.drawPixmap(iconRect, pixmap)
-        painter.drawText(textRect, option.textAlignment, option.text)
+        painter.drawText(
+            textRect,
+            int(option.textAlignment), # Older versions of PyQt require explicit cast
+            option.text)
 
 class ListTable(QtWidgets.QTableWidget):
     keyPressed = QtCore.pyqtSignal(int)
