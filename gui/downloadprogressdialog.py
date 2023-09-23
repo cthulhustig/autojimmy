@@ -1,8 +1,8 @@
 import app
-import datetime
 import gui
 import jobs
 import logging
+import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -16,25 +16,24 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         super().__init__(parent=parent)
 
         self._downloadJob = None
-
-        self._sectorNameLabel = QtWidgets.QLabel()
-        self._remainingTimeLabel = QtWidgets.QLabel()
+        
+        self._stageLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
+        self._progressBar.setMaximum(100)
         self._cancelButton = QtWidgets.QPushButton('Cancel')
         self._cancelButton.clicked.connect(self._cancelDownload)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._sectorNameLabel)
-        windowLayout.addWidget(self._remainingTimeLabel)
+        windowLayout.addWidget(self._stageLabel)
         windowLayout.addWidget(self._progressBar)
         windowLayout.addWidget(self._cancelButton)
 
-        self.setWindowTitle('Downloading')
+        self.setWindowTitle('Update Universe Data')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
             ((self.windowFlags() | QtCore.Qt.WindowType.CustomizeWindowHint | QtCore.Qt.WindowType.FramelessWindowHint) & ~QtCore.Qt.WindowType.WindowCloseButtonHint))
-        self.setFixedWidth(int(400 * app.Config.instance().interfaceScale()))
+        self.setFixedWidth(int(300 * app.Config.instance().interfaceScale()))
         self.setSizeGripEnabled(False)
 
         # Setting up the title bar needs to be done before the window is show to take effect. It
@@ -46,7 +45,6 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         try:
             self._downloadJob = jobs.DataDownloadJob(
                 parent=self,
-                travellerMapUrl=app.Config.instance().travellerMapUrl(),
                 progressCallback=self._updateProgress,
                 finishedCallback=self._downloadFinished)
         except Exception as ex:
@@ -77,22 +75,14 @@ class DownloadProgressDialog(QtWidgets.QDialog):
 
     def _updateProgress(
             self,
-            item: str,
-            current: int,
-            total: int,
-            remainingTime: typing.Optional[datetime.timedelta] = None
+            stage: travellermap.DataStore.UpdateStage,
+            percentage: int
             ) -> None:
-        self._sectorNameLabel.setText(f'Downloading: {current}/{total} - {item}')
-
-        if remainingTime:
-            # Convert remaining time to a string without microseconds
-            remainingTime = str(remainingTime).split(".")[0]
-        else:
-            remainingTime = 'Unknown'
-        self._remainingTimeLabel.setText(f'Estimated Time: {remainingTime}')
-
-        self._progressBar.setMaximum(int(total))
-        self._progressBar.setValue(int(current))
+        self._stageLabel.setText(
+            'Downloading Universe Data'
+            if stage == travellermap.DataStore.UpdateStage.DownloadStage else
+            'Extracting Universe Data')
+        self._progressBar.setValue(int(percentage))
 
     def _downloadFinished(
             self,

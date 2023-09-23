@@ -165,29 +165,6 @@ class MainWindow(QtWidgets.QMainWindow):
         configDialog.exec()
 
     def _downloadUniverse(self) -> None:
-        lastDownloadTime = travellermap.DataStore.instance().lastDownloadTime()
-        if lastDownloadTime:
-            lastDownloadTime = lastDownloadTime.astimezone()
-            lastDownloadTime = lastDownloadTime.strftime('%c')
-        else:
-            lastDownloadTime = 'UNKNOWN TIME'
-        answer = gui.MessageBoxEx.question(
-            parent=self,
-            text='This will download the latest universe data from Traveller Map.\n' +
-            'This can take several minutes and send a large number of requests to Traveller Map. ' +
-            'As universe data changes very infrequently, PLEASE don\'t do this more often than ' +
-            'you really need.\n\n' +
-            'Your current universe data is from ' + lastDownloadTime + '.\n' +
-            'Do you want to continue?')
-        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-
-        answer = gui.MessageBoxEx.question(
-            parent=self,
-            text='Are you REALLY sure?')
-        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-
         downloadProgress = gui.DownloadProgressDialog()
         if downloadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -266,6 +243,21 @@ def main() -> None:
             exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         gui.configureAppStyle(application)
+
+        # Check if there is new universe data available BEFORE the app loads the local snapshot so it
+        # can be updated without restarting
+        if travellermap.DataStore.instance().checkForNewSnapshot():
+            # TODO: At some point in the future I can remove the note about it being faster
+            # TODO: This dialog probably needs a don't ask again check box
+            answer = gui.MessageBoxEx.question(
+                text='New universe data is available. Do you want to update?\nDon\'t worry, updating is a LOT faster than it used to be.')
+            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
+                updateProgress = gui.DownloadProgressDialog()
+                updateProgress.exec()
+                # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+                # when exec is called on the application
+                # https://doc.qt.io/qt-6/qobject.html#deleteLater
+                updateProgress.deleteLater()
 
         loadProgress = gui.LoadProgressDialog()
         if loadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
