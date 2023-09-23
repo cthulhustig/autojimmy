@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 
 class AutoSelectMessageBox(object):
     _SettingSection = 'AutoSelectMessageBox'
-    _CheckBoxText = 'Don\'t show this again'
+    _CheckBoxText = 'Don\'t show again'
 
     class _NoShowAgainStateCapture(object):
         def __init__(self) -> None:
