@@ -79,9 +79,9 @@ class DownloadProgressDialog(QtWidgets.QDialog):
             percentage: int
             ) -> None:
         self._stageLabel.setText(
-            'Downloading Universe Data'
+            'Downloading updated universe data...'
             if stage == travellermap.DataStore.UpdateStage.DownloadStage else
-            'Extracting Universe Data')
+            'Extracting updated universe data...')
         self._progressBar.setValue(int(percentage))
 
     def _downloadFinished(

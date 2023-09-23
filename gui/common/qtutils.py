@@ -93,3 +93,32 @@ class SignalBlocker():
 
     def __exit__(self, type, value, traceback):
         self._widget.blockSignals(self._old)
+
+# This generates a list of values for a PyQt enum. For example, to get all values for
+# QtWidgets.QMessageBox.StandardButton:
+# pyQtEnumValues(QtWidgets.QMessageBox, QtWidgets.QMessageBox.StandardButton)
+def pyQtEnumValues(
+        cls: typing.Type,
+        enum: typing.Type
+        ) -> typing.Collection[int]:
+    values = []
+    for key in dir(cls):
+        value = getattr(cls, key)
+        if isinstance(value, enum):
+            values.append(value)
+    return values
+
+# This generates a mapping for a PyQt enum that maps to/from the string name of the enum and the int
+# it represents. For example, to get a mapping for QtWidgets.QMessageBox.StandardButton:
+# pyQtEnumMapping(QtWidgets.QMessageBox, QtWidgets.QMessageBox.StandardButton)
+def pyQtEnumMapping(
+        cls: typing.Type,
+        enum: typing.Type
+        ) -> typing.Mapping[typing.Union[str, int], typing.Union[str, int]]:
+    mapping = {}
+    for key in dir(cls):
+        value = getattr(cls, key)
+        if isinstance(value, enum):
+            mapping[key] = value
+            mapping[value] = key
+    return mapping
