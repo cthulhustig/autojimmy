@@ -165,7 +165,7 @@ class DataStore(object):
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         with self._lock:
-            logging.info('Downloading universe data archive')
+            logging.debug('Downloading universe data archive')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.DownloadStage, 0)
 
@@ -192,7 +192,7 @@ class DataStore(object):
                             DataStore.UpdateStage.DownloadStage,
                             int((downloaded / length) * 100))
 
-            logging.info('Extracting universe data archive')
+            logging.debug('Extracting universe data archive')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.ExtractStage, 0) 
 
@@ -225,7 +225,7 @@ class DataStore(object):
                 with open(targetPath, 'wb') as outputFile:
                     outputFile.write(zipData.read(fileInfo.filename))
 
-            logging.info('Replacing old universe data')
+            logging.debug('Replacing old universe data')
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
@@ -291,7 +291,7 @@ class DataStore(object):
             # The install copy of the sectors is older than the overlay copy so there is nothing to do
             return
 
-        logging.info(f'Deleting out of date overlay directory "{self._overlayDir}"')
+        logging.debug(f'Deleting out of date overlay directory "{self._overlayDir}"')
         try:
             shutil.rmtree(self._overlayDir)
         except Exception as ex:
