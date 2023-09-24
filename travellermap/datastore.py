@@ -1,5 +1,7 @@
 import common
 import datetime
+import enum
+import io
 import json
 import logging
 import os
@@ -10,6 +12,7 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 
 class SectorInfo(object):
     def __init__(
@@ -48,6 +51,21 @@ class SectorInfo(object):
 
 
 class DataStore(object):
+    class UpdateStage(enum.Enum):
+        DownloadStage = 0,
+        ExtractStage = 1
+
+    _MilieuBaseDir = 'milieu'
+    _UniverseFileName = 'universe.json'
+    _SophontsFileName = 'sophonts.json'
+    _AllegiancesFileName = 'allegiances.json'
+    _TimestampFileName = 'timestamp.txt'
+    _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
+    _DataArchiveUrl = 'https://github.com/cthulhustig/autojimmy-data/archive/refs/heads/main.zip'
+    _DataArchiveMapPath = 'autojimmy-data-main/map/'
+    _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
+    _TimestampCheckTimeout = 3 # Seconds
+
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _installDir = None
@@ -55,13 +73,6 @@ class DataStore(object):
     _userDir = None
     _milieuMap = None
     _downloader = common.Downloader()
-
-    _milieuBaseDir = 'milieu'
-    _universeFileName = 'universe.json'
-    _sophontsFileName = 'sophonts.json'
-    _allegiancesFileName = 'allegiances.json'
-    _timestampFileName = 'timestamp.txt'
-    _timestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -123,95 +134,98 @@ class DataStore(object):
 
     def sophontsData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
-            relativeFilePath=self._sophontsFileName))
+            relativeFilePath=self._SophontsFileName))
 
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
-            relativeFilePath=self._allegiancesFileName))
+            relativeFilePath=self._AllegiancesFileName))
 
-    def lastDownloadTime(self) -> datetime.datetime:
+    def snapshotTimestamp(self) -> datetime.datetime:
         try:
-            timestampContent = self._readFile(relativeFilePath=self._timestampFileName)
+            return DataStore._parseSnapshotTimestamp(
+                data=self._readFile(relativeFilePath=self._TimestampFileName))
         except Exception:
             return None
-
-        return datetime.datetime.strptime(
-            DataStore._bytesToString(timestampContent),
-            DataStore._timestampFormat)
-
-    def downloadData(
+    
+    def checkForNewSnapshot(self) -> bool:
+        currentTimestamp = self.snapshotTimestamp()
+        try:
+            response = urllib.request.urlopen(
+                DataStore._TimestampUrl,
+                timeout=DataStore._TimestampCheckTimeout)
+            repoTimestamp = DataStore._parseSnapshotTimestamp(data=response.read())
+        except Exception as ex:
+            return False
+        
+        return (not currentTimestamp) or (repoTimestamp > currentTimestamp)
+        
+    def downloadSnapshot(
             self,
-            travellerMapUrl: str,
-            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None,
+            progressCallback: typing.Optional[typing.Callable[[UpdateStage, int], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         with self._lock:
-            downloadTimestamp = datetime.datetime.utcnow().strftime(self._timestampFormat)
+            logging.debug('Downloading universe data archive')
+            if progressCallback:
+                progressCallback(DataStore.UpdateStage.DownloadStage, 0)
 
-            workingDirPath = self._makeWorkingDir(
-                baseDirPath=self._overlayDir,
-                timestamp=downloadTimestamp)
+            dataBuffer = io.BytesIO()
+            with urllib.request.urlopen(DataStore._DataArchiveUrl) as response:
+                length = response.getheader('content-length')
+                blockSize = 1000000  # default value
 
-            downloadQueue = []
+                if length:
+                    length = int(length)
+                    blockSize = max(4096, length // 20)
 
-            downloadQueue.append((
-                f'{travellerMapUrl}/t5ss/sophonts',
-                os.path.join(workingDirPath, self._sophontsFileName),
-                None))
+                downloaded = 0
+                while True:
+                    if isCancelledCallback and isCancelledCallback():
+                        return # Operation cancelled
+                    chunk = response.read(blockSize)
+                    if not chunk:
+                        break
+                    dataBuffer.write(chunk)
+                    downloaded += len(chunk)
+                    if length:
+                        progressCallback(
+                            DataStore.UpdateStage.DownloadStage,
+                            int((downloaded / length) * 100))
 
-            downloadQueue.append((
-                f'{travellerMapUrl}/t5ss/allegiances',
-                os.path.join(workingDirPath, self._allegiancesFileName),
-                None))
+            logging.debug('Extracting universe data archive')
+            if progressCallback:
+                progressCallback(DataStore.UpdateStage.ExtractStage, 0) 
 
-            for milieu in travellermap.Milieu:
-                downloadQueue.append((
-                    f'{travellerMapUrl}/api/universe?milieu={urllib.parse.quote(milieu.value)}&requireData=1',
-                    os.path.join(*[workingDirPath, self._milieuBaseDir, milieu.value, self._universeFileName]),
-                    milieu))
-
-            downloadCount = 0
-            while downloadQueue:
+            workingDirPath = self._makeWorkingDir(overlayDirPath=self._overlayDir)
+            zipData = zipfile.ZipFile(dataBuffer)
+            fileInfoList = zipData.infolist()
+            extractIndex = 0
+            for fileInfo in fileInfoList:
                 if isCancelledCallback and isCancelledCallback():
-                    return
-
-                downloadInfo = downloadQueue.pop(0)
-
-                url = downloadInfo[0]
-                filePath = downloadInfo[1]
-                milieu = downloadInfo[2]
-
-                dirPath = os.path.dirname(filePath)
-                if not os.path.exists(dirPath):
-                    os.makedirs(dirPath)
-
+                    return # Operation cancelled
+                
+                extractIndex += 1
                 if progressCallback:
                     progressCallback(
-                        os.path.relpath(filePath, workingDirPath),
-                        downloadCount,
-                        downloadCount + len(downloadQueue))
+                        DataStore.UpdateStage.ExtractStage,
+                        int((extractIndex / len(fileInfoList)) * 100))
+                                    
+                if fileInfo.is_dir():
+                    continue # Skip directories
+                if not fileInfo.filename.startswith(DataStore._DataArchiveMapPath):
+                    continue # Skip files not in the map directory
 
-                self._downloader.downloadToFile(
-                    url=url,
-                    filePath=filePath,
-                    isCancelledCallback=isCancelledCallback)
-                if isCancelledCallback and isCancelledCallback():
-                    return
-                downloadCount += 1
+                subPath = fileInfo.filename[len(DataStore._DataArchiveMapPath):]
+                targetPath = os.path.join(workingDirPath, subPath)
 
-                if milieu:
-                    # If there was a milieu specified it means this is a universe file that was downloaded
-                    # so we want to add the sectors
-                    with open(filePath, 'rb') as file:
-                        fileContent = file.read()
-                    sectors = self._parseUniverseData(universeData=fileContent)
-                    for sector in sectors:
-                        escapedFileName = common.encodeFileName(rawFileName=sector.canonicalName()) + '.sec'
-                        downloadQueue.append((
-                            f'{travellerMapUrl}/api/sec?sector={urllib.parse.quote(sector.canonicalName())}&milieu={urllib.parse.quote(milieu.value)}&type=SecondSurvey',
-                            os.path.join(dirPath, escapedFileName),
-                            None))
+                logging.debug(f'Extracting {subPath}')
+                directoryHierarchy = os.path.dirname(targetPath)
+                if not os.path.exists(directoryHierarchy):
+                    os.makedirs(directoryHierarchy, exist_ok=True)
+                with open(targetPath, 'wb') as outputFile:
+                    outputFile.write(zipData.read(fileInfo.filename))
 
+            logging.debug('Replacing old universe data')
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
@@ -230,7 +244,7 @@ class DataStore(object):
             for milieu in travellermap.Milieu:
                 sectors = self._parseUniverseData(
                     universeData=self._readMilieuFile(
-                        fileName=self._universeFileName,
+                        fileName=self._UniverseFileName,
                         milieu=milieu))
                 sectorMap = {}
                 for sector in sectors:
@@ -243,13 +257,13 @@ class DataStore(object):
         if not os.path.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
-        overlayTimestampPath = os.path.join(self._overlayDir, self._timestampFileName)
+        overlayTimestampPath = os.path.join(self._overlayDir, self._TimestampFileName)
         if not os.path.exists(overlayTimestampPath):
             # Overlay timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Overlay timestamp file "{overlayTimestampPath}" not found')
             return
 
-        installTimestampPath = os.path.join(self._installDir, self._timestampFileName)
+        installTimestampPath = os.path.join(self._installDir, self._TimestampFileName)
         if not os.path.exists(installTimestampPath):
             # Install timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Install timestamp file "{installTimestampPath}" not found')
@@ -257,9 +271,7 @@ class DataStore(object):
 
         try:
             with open(overlayTimestampPath, 'rb') as file:
-                overlayTimestamp = datetime.datetime.strptime(
-                    DataStore._bytesToString(file.read()),
-                    DataStore._timestampFormat)
+                overlayTimestamp = DataStore._parseSnapshotTimestamp(data=file.read())
         except Exception as ex:
             logging.error(
                 f'Failed to load overlay timestamp from "{overlayTimestampPath}"',
@@ -268,9 +280,7 @@ class DataStore(object):
 
         try:
             with open(installTimestampPath, 'rb') as file:
-                installTimestamp = datetime.datetime.strptime(
-                    DataStore._bytesToString(file.read()),
-                    DataStore._timestampFormat)
+                installTimestamp = DataStore._parseSnapshotTimestamp(data=file.read())
         except Exception as ex:
             logging.error(
                 f'Failed to load install timestamp from "{installTimestampPath}"',
@@ -281,7 +291,7 @@ class DataStore(object):
             # The install copy of the sectors is older than the overlay copy so there is nothing to do
             return
 
-        logging.info(f'Deleting out of date overlay directory "{self._overlayDir}"')
+        logging.debug(f'Deleting out of date overlay directory "{self._overlayDir}"')
         try:
             shutil.rmtree(self._overlayDir)
         except Exception as ex:
@@ -293,13 +303,13 @@ class DataStore(object):
             self,
             relativeFilePath: str
             ) -> bytes:
+        # If a FILE exists in the user dir use it over anything else. If it doesn't, read it
+        # from the overlay if that DIRECTORY exists, if not read it from the install directory
         filePath = os.path.join(self._userDir, relativeFilePath)
         if not os.path.exists(filePath):
-            filePath = os.path.join(self._overlayDir, relativeFilePath)
-            if not os.path.exists(filePath):
-                filePath = os.path.join(self._installDir, relativeFilePath)
-                if not os.path.exists(filePath):
-                    raise RuntimeError(f'Couldn\'t find "{relativeFilePath}"')
+            filePath = os.path.join(
+                self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
+                relativeFilePath)
 
         with open(filePath, 'rb') as file:
             return file.read()
@@ -310,22 +320,15 @@ class DataStore(object):
             milieu: travellermap.Milieu
             ) -> bytes:
         return self._readFile(
-            relativeFilePath=os.path.join(os.path.join(self._milieuBaseDir, milieu.value), fileName))
+            relativeFilePath=os.path.join(os.path.join(self._MilieuBaseDir, milieu.value), fileName))
 
     @staticmethod
-    def _makeWorkingDir(
-            baseDirPath: str,
-            timestamp: datetime.datetime
-            ) -> str:
-        workingDir = baseDirPath + '_working'
+    def _makeWorkingDir(overlayDirPath: str) -> str:
+        workingDir = overlayDirPath + '_working'
         if os.path.exists(workingDir):
+            # Delete any previous working directory that may have been left kicking about
             shutil.rmtree(workingDir)
         os.makedirs(workingDir)
-
-        timestampFilePath = os.path.join(workingDir, DataStore._timestampFileName)
-        with open(timestampFilePath, 'wb') as file:
-            file.write(str(timestamp).encode('ascii'))
-
         return workingDir
 
     @staticmethod
@@ -350,6 +353,12 @@ class DataStore(object):
     @staticmethod
     def _bytesToString(bytes: bytes) -> str:
         return bytes.decode('utf-8')
+    
+    @staticmethod
+    def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
+        return datetime.datetime.strptime(
+            DataStore._bytesToString(data),
+            DataStore._TimestampFormat)    
 
     @staticmethod
     def _parseUniverseData(

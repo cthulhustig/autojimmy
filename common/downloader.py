@@ -31,7 +31,7 @@ class Downloader(object):
             retryCount=3,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
-        logging.info(f'Downloading {url}')
+        logging.debug(f'Downloading {url}')
 
         progressLambda = None
         if isCancelledCallback:

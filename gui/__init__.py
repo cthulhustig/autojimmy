@@ -9,6 +9,7 @@ from .common.dialogex import *
 from .common.htmlcombobox import *
 from .common.prefixlabel import *
 from .common.messageboxex import *
+from .common.autoselectmessagebox import *
 from .common.inputdialogex import *
 from .common.textwindow import *
 from .common.listtable import *

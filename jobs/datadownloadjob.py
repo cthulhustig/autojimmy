@@ -1,4 +1,3 @@
-import datetime
 import travellermap
 import typing
 from PyQt5 import QtCore
@@ -7,7 +6,7 @@ class DataDownloadJob(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
-    _progressSignal = QtCore.pyqtSignal([str, int, int], [str, int, int, datetime.timedelta])
+    _progressSignal = QtCore.pyqtSignal([travellermap.DataStore.UpdateStage, int])
     _finishedSignal = QtCore.pyqtSignal([str], [Exception])
 
     _remainingTimeSmoothingFactor = 0.05
@@ -15,17 +14,13 @@ class DataDownloadJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            travellerMapUrl: str,
-            progressCallback: typing.Callable[[str, int, int, typing.Optional[datetime.timedelta]], typing.Any],
+            progressCallback: typing.Callable[[travellermap.DataStore.UpdateStage, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
         super().__init__(parent=parent)
 
-        self._travellerMapUrl = travellerMapUrl
-
         if progressCallback:
-            self._progressSignal[str, int, int].connect(progressCallback)
-            self._progressSignal[str, int, int, datetime.timedelta].connect(progressCallback)
+            self._progressSignal[travellermap.DataStore.UpdateStage, int].connect(progressCallback)
         if finishedCallback:
             self._finishedSignal[str].connect(finishedCallback)
             self._finishedSignal[Exception].connect(finishedCallback)
@@ -47,8 +42,7 @@ class DataDownloadJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            travellermap.DataStore.instance().downloadData(
-                travellerMapUrl=self._travellerMapUrl,
+            travellermap.DataStore.instance().downloadSnapshot(
                 progressCallback=self._handleProgressUpdate,
                 isCancelledCallback=self.isCancelled)
 
@@ -58,25 +52,7 @@ class DataDownloadJob(QtCore.QThread):
 
     def _handleProgressUpdate(
             self,
-            filePath: str,
-            current: int,
-            total: int
+            stage: travellermap.DataStore.UpdateStage,
+            percentage: int
             ) -> None:
-        now = datetime.datetime.utcnow()
-        remainingTime = None
-        if self._lastProgressTime:
-            timeForLastFile = now - self._lastProgressTime
-            if self._avgFileDownloadTime:
-                self._avgFileDownloadTime = (self._remainingTimeSmoothingFactor * timeForLastFile) + \
-                    ((1.0 - self._remainingTimeSmoothingFactor) * self._avgFileDownloadTime)
-            else:
-                self._avgFileDownloadTime = timeForLastFile
-
-            remainingFiles = (total - current) + 1
-            remainingTime = self._avgFileDownloadTime * remainingFiles
-        self._lastProgressTime = now
-
-        if remainingTime:
-            self._progressSignal[str, int, int, datetime.timedelta].emit(filePath, current, total, remainingTime)
-        else:
-            self._progressSignal[str, int, int].emit(filePath, current, total)
+        self._progressSignal[travellermap.DataStore.UpdateStage, int].emit(stage, percentage)

@@ -8,7 +8,7 @@ class MessageBoxEx(QtWidgets.QMessageBox):
             icon: QtWidgets.QMessageBox.Icon,
             title: str,
             text: str,
-            buttons: QtWidgets.QMessageBox.StandardButton,
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton],
             parent: typing.Optional[QtWidgets.QWidget] = None,
             flags: QtCore.Qt.WindowType = QtCore.Qt.WindowType.Dialog | QtCore.Qt.WindowType.MSWindowsFixedSizeDialogHint
             ) -> None:
@@ -20,10 +20,18 @@ class MessageBoxEx(QtWidgets.QMessageBox):
             text: str,
             title: str = 'Information',
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            buttons: QtWidgets.QMessageBox.StandardButton = QtWidgets.QMessageBox.StandardButton.Ok,
-            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.Ok,
+            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
+            checkBox: typing.Optional[QtWidgets.QCheckBox] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return MessageBoxEx.showMessageBox(parent, MessageBoxEx.Icon.Information, title, text, buttons, defaultButton)
+        return MessageBoxEx.showMessageBox(
+            parent,
+            MessageBoxEx.Icon.Information,
+            title,
+            text,
+            buttons,
+            defaultButton,
+            checkBox)
 
     @staticmethod
     def critical(
@@ -31,35 +39,59 @@ class MessageBoxEx(QtWidgets.QMessageBox):
             title: str = 'Error',
             parent: typing.Optional[QtWidgets.QWidget] = None,
             exception: typing.Optional[Exception] = None,
-            buttons: QtWidgets.QMessageBox.StandardButton = QtWidgets.QMessageBox.StandardButton.Ok,
-            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.Ok,
+            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
+            checkBox: typing.Optional[QtWidgets.QCheckBox] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
         if exception:
             if text:
                 text += '\n\n' + str(exception)
             else:
                 text = str(exception)
-        return MessageBoxEx.showMessageBox(parent, MessageBoxEx.Icon.Critical, title, text, buttons, defaultButton)
+        return MessageBoxEx.showMessageBox(
+            parent,
+            MessageBoxEx.Icon.Critical,
+            title,
+            text,
+            buttons,
+            defaultButton,
+            checkBox)
 
     @staticmethod
     def warning(
             text: str,
             title: str = 'Warning',
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            buttons: QtWidgets.QMessageBox.StandardButton = QtWidgets.QMessageBox.StandardButton.Ok,
-            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.Ok,
+            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
+            checkBox: typing.Optional[QtWidgets.QCheckBox] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return MessageBoxEx.showMessageBox(parent, MessageBoxEx.Icon.Warning, title, text, buttons, defaultButton)
+        return MessageBoxEx.showMessageBox(
+            parent,
+            MessageBoxEx.Icon.Warning,
+            title,
+            text,
+            buttons,
+            defaultButton,
+            checkBox)
 
     @staticmethod
     def question(
             text: str,
             title: str = 'Prompt',
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            buttons: QtWidgets.QMessageBox.StandardButton = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
+            checkBox: typing.Optional[QtWidgets.QCheckBox] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return MessageBoxEx.showMessageBox(parent, MessageBoxEx.Icon.Question, title, text, buttons, defaultButton)
+        return MessageBoxEx.showMessageBox(
+            parent,
+            MessageBoxEx.Icon.Question,
+            title,
+            text,
+            buttons,
+            defaultButton,
+            checkBox)
 
     # Reimplementation of the the underlying C++ QMessageBox but using my MessageBoxEx class instead
     # of QtWidgets.QMessageBox
@@ -70,8 +102,9 @@ class MessageBoxEx(QtWidgets.QMessageBox):
             icon: QtWidgets.QMessageBox.Icon,
             title: str,
             text: str,
-            buttons: QtWidgets.QMessageBox.StandardButton,
-            defaultButton: QtWidgets.QMessageBox.StandardButton
+            buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton],
+            defaultButton: QtWidgets.QMessageBox.StandardButton,
+            checkBox: typing.Optional[QtWidgets.QCheckBox]
             ) -> QtWidgets.QMessageBox.StandardButton:
         msgBox = MessageBoxEx(icon, title, text, QtWidgets.QMessageBox.StandardButton.NoButton, parent)
         buttonBox: QtWidgets.QDialogButtonBox = msgBox.findChild(QtWidgets.QDialogButtonBox)
@@ -91,6 +124,10 @@ class MessageBoxEx(QtWidgets.QMessageBox):
                 (defaultButton != QtWidgets.QMessageBox.StandardButton.NoButton and \
                  standardButton == defaultButton):
                 msgBox.setDefaultButton(button)
+
+        if checkBox:
+            msgBox.setCheckBox(checkBox)
+
         if msgBox.exec() == -1:
             return QtWidgets.QMessageBox.StandardButton.Cancel
         return msgBox.standardButton(msgBox.clickedButton())
