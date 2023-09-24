@@ -445,6 +445,12 @@ class ListTable(QtWidgets.QTableWidget):
 class FrozenColumnListTable(ListTable):
     _StateVersion = 'FrozenColumnListTable_v1'
 
+    # Create a de-duplicated & sorted list of the int values of all possible roles. De-duplication
+    # is needed as, at least for Qt5, some role "enums" map to the same int value
+    # e.g. BackgroundColorRole == BackgroundRole and ForegroundRole == TextColorRole
+    _DataRoleValues = list(set(gui.pyQtEnumValues(QtCore.Qt, QtCore.Qt.ItemDataRole)))
+    _DataRoleValues.sort()
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -863,41 +869,13 @@ class FrozenColumnListTable(ListTable):
         finally:
             self._signalLoopBlock = False
 
-    # The code below needs to copy item data from the main table to the frozen table. Unfortunately
-    # I've not been able to figure out how to iterate over all the values in QtCore.Qt.ItemDataRole.
-    # Rather than storing a list of all the entries, it would be possible to iterate over the values
-    # from QtCore.Qt.ItemDataRole.DisplayRole and QtCore.Qt.ItemDataRole.UserRole as they're
-    # converted to ints (there some weird magic going on in PyQt that I don't understand). The issue
-    # with doing this is there are gaps in the range with UserRole having a value of 256, this would
-    # mean iterating over 256 values for each item in the table rather than just the 18 required.
-    _AllDataRoles = [
-        QtCore.Qt.ItemDataRole.DisplayRole,
-        QtCore.Qt.ItemDataRole.DecorationRole,
-        QtCore.Qt.ItemDataRole.EditRole,
-        QtCore.Qt.ItemDataRole.ToolTipRole,
-        QtCore.Qt.ItemDataRole.StatusTipRole,
-        QtCore.Qt.ItemDataRole.WhatsThisRole,
-        QtCore.Qt.ItemDataRole.FontRole,
-        QtCore.Qt.ItemDataRole.TextAlignmentRole,
-        QtCore.Qt.ItemDataRole.BackgroundRole,
-        QtCore.Qt.ItemDataRole.BackgroundColorRole,
-        QtCore.Qt.ItemDataRole.ForegroundRole,
-        QtCore.Qt.ItemDataRole.TextColorRole,
-        QtCore.Qt.ItemDataRole.CheckStateRole,
-        QtCore.Qt.ItemDataRole.AccessibleTextRole,
-        QtCore.Qt.ItemDataRole.AccessibleDescriptionRole,
-        QtCore.Qt.ItemDataRole.SizeHintRole,
-        QtCore.Qt.ItemDataRole.InitialSortOrderRole,
-        QtCore.Qt.ItemDataRole.UserRole
-    ]
-
     def _itemChanged(self, item: QtWidgets.QTableWidgetItem) -> None:
         # Copy data for each role only if its changed. It's important to do this rather than just
         # cloning a new copy of the item and inserting into the frozen table as that causes sorting.
         # This can then mean the tables can get out of sync if sorting by columns that contain the
         # same value.
         frozenItem = self._frozenColumnWidget.item(item.row(), item.column())
-        for role in FrozenColumnListTable._AllDataRoles:
+        for role in FrozenColumnListTable._DataRoleValues:
             oldData = frozenItem.data(role)
             newData = item.data(role)
             if oldData != newData:
