@@ -103,9 +103,11 @@ RefuellingStrategyToolTip = createStringToolTip(
     '</ul>',
     escape=False)
 IncludeStartBerthingToolTip = createStringToolTip(
-    '<p>Include start world berthing cost in logistics calculations</p>')
+    '<p>Include start world berthing cost in logistics calculations</p>',
+    escape=False)
 IncludeFinishBerthingToolTip = createStringToolTip(
-    '<p>Include finish world berthing cost in logistics calculations</p>')
+    '<p>Include finish world berthing cost in logistics calculations</p>',
+    escape=False)
 IncludeLogisticsCostsToolTip = createStringToolTip(
     '<p>Include logistics costs in trade option calculations</p>'
     '<p>The logistics costs of a trade only really come into play in cases where the only reason '
