@@ -318,7 +318,7 @@ class WorldManager(object):
             subsectorMap[code] = f'{sectorName} Subsector {code}'
 
         worlds = []
-        for columnIndex, line in enumerate(sectorData.splitlines()):
+        for lineIndex, line in enumerate(sectorData.splitlines()):
             if not line:
                 # Ignore empty lines
                 continue
@@ -351,7 +351,7 @@ class WorldManager(object):
                     # broken comments that don't start with #. This gets logged at a low level so
                     # we don't spam the logs every time we start
                     logging.debug(
-                        f'Skipping bogus header on line {columnIndex} in data for sector {sectorName}')
+                        f'Skipping bogus header on line {lineIndex} in data for sector {sectorName}')
                     columnNames = None
                     continue
 
@@ -390,7 +390,7 @@ class WorldManager(object):
                 startIndex = finishIndex + 1
             if finishIndex != lineLength:
                 logging.warning(
-                    f'Skipping incorrect length line on {columnIndex} in data for sector {sectorName}')
+                    f'Skipping incorrect length line on {lineIndex} in data for sector {sectorName}')
                 continue
 
             try:
@@ -437,7 +437,7 @@ class WorldManager(object):
                 worlds.append(world)
             except Exception as ex:
                 logging.warning(
-                    f'Failed to process world entry on line {columnIndex} in data for sector {sectorName}',
+                    f'Failed to process world entry on line {lineIndex} in data for sector {sectorName}',
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
