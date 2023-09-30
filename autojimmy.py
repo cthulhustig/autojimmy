@@ -6,12 +6,14 @@ import gui
 import gunsmith
 import locale
 import logging
+import multiprocessing
 import os
 import pathlib
 import sys
 import traveller
 import travellermap
 import uuid
+import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
@@ -37,6 +39,12 @@ _WelcomeMessage = """
 # Works on the assumption the main file is in the root of the code/data hierarchy
 def _installDirectory() -> str:
     return os.path.dirname(os.path.realpath(__file__))
+
+def _applicationDirectory() -> str:
+    if os.name == 'nt':
+        return os.path.join(os.getenv('APPDATA'), app.AppName)
+    else:
+        return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -181,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
 def main() -> None:
     # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
     # Currently disabled as multiprocessing isn't being used at the moment.
-    # multiprocessing.freeze_support()
+    multiprocessing.freeze_support()
 
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
@@ -202,10 +210,7 @@ def main() -> None:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
 
-        if os.name == 'nt':
-            appDirectory = os.path.join(os.getenv('APPDATA'), app.AppName)
-        else:
-            appDirectory = os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
+        appDirectory = _applicationDirectory()
         os.makedirs(appDirectory, exist_ok=True)
 
         logDirectory = os.path.join(appDirectory, 'logs')
@@ -231,10 +236,21 @@ def main() -> None:
 
         common.RequestCache.setCacheDir(cacheDirectory)
 
+        installMapDir = os.path.join(installDir, 'data', 'map')
+        overlayMapDir = os.path.join(appDirectory, 'map')
+        customMapDir = os.path.join(appDirectory, 'my_map') # TODO: Change the directory to custom_maps or something
         travellermap.DataStore.setSectorDirs(
-            installDir=os.path.join(installDir, 'data', 'map'),
-            overlayDir=os.path.join(appDirectory, 'map'),
-            userDir=os.path.join(appDirectory, 'my_map'))
+            installDir=installMapDir,
+            overlayDir=overlayMapDir,
+            customDir=customMapDir)
+
+        # TODO: I think when this is done might be important as I think a copy is made of the current processes memory
+        # TODO: Ephemeral (possibly random) port number?. Might be best to not use a random port as
+        # it will bypass any persisted caching done by the web widget
+        tileProxy = travellermap.TileProxy(
+            port=8002,
+            customMapDir=customMapDir)
+        tileProxy.run()
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 

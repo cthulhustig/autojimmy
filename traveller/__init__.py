@@ -1,6 +1,6 @@
 from .rules import *
-from .astrometrics import *
 from .ehex import *
+from .sectorhex import *
 from .zone import *
 from .uwp import *
 from .pbg import *

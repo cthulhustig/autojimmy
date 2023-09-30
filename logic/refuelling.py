@@ -4,6 +4,7 @@ import enum
 import itertools
 import logic
 import traveller
+import travellermap
 import typing
 
 class RefuellingType(enum.Enum):
@@ -497,7 +498,7 @@ def _processRoute(
         while reachableWorldIndex <= finishWorldIndex:
             fromWorld = jumpRoute[reachableWorldIndex - 1]
             toWorld = jumpRoute[reachableWorldIndex]
-            parsecs = traveller.hexDistance(
+            parsecs = travellermap.hexDistance(
                 absoluteX1=fromWorld.absoluteX(),
                 absoluteY1=fromWorld.absoluteY(),
                 absoluteX2=toWorld.absoluteX(),

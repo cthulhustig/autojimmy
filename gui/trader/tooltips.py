@@ -239,13 +239,13 @@ def createWorldToolTip(
             app.Config.instance().showToolTipImages() and \
             not _DisableWorldToolTipImages:
         try:
-            tileBytes = travellermap.TileStore.instance().tile(
+            tileBytes = travellermap.TileClient.instance().tile(
                 travellerMapUrl=app.Config.instance().travellerMapUrl(),
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                worldX=world.absoluteX(),
-                worldY=world.absoluteY(),
+                absoluteX=world.absoluteX(),
+                absoluteY=world.absoluteY(),
                 width=256,
                 height=256,
                 timeout=3)

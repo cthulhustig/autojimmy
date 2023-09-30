@@ -1,5 +1,6 @@
 import math
 import traveller
+import travellermap
 import typing
 
 class World(object):
@@ -48,7 +49,7 @@ class World(object):
         self._y = int(self._hex[-2:])
         self._sectorX = sectorX
         self._sectorY = sectorY
-        self._absoluteX, self._absoluteY = traveller.relativeHexToAbsoluteHex(
+        self._absoluteX, self._absoluteY = travellermap.relativeHexToAbsoluteHex(
             sectorX=self._sectorX,
             sectorY=self._sectorY,
             worldX=self._x,

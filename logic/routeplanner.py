@@ -2,6 +2,7 @@ import common
 import heapq
 import logic
 import traveller
+import travellermap
 import typing
 
 class _RouteNode(object):
@@ -225,7 +226,7 @@ class RoutePlanner(object):
             # depending on the costing function (i.e. lowest cost). I suspect there may be some corner
             # cases where this doesn't hold but until I know they actually exist I'm going to go with the
             # performance increase
-            distance = traveller.hexDistance(
+            distance = travellermap.hexDistance(
                 startWorld.absoluteX(),
                 startWorld.absoluteY(),
                 finishWorld.absoluteX(),
@@ -391,7 +392,7 @@ class RoutePlanner(object):
                         excludedWorlds.add(adjacentWorld)
                         continue
 
-                jumpDistance = traveller.hexDistance(
+                jumpDistance = travellermap.hexDistance(
                     currentWorld.absoluteX(),
                     currentWorld.absoluteY(),
                     adjacentWorld.absoluteX(),
@@ -443,7 +444,7 @@ class RoutePlanner(object):
                     # Use number of jumps between adjacent world and finish world as fScore
                     # modifier. In the case that two worlds have the same gScore this will cause
                     # the one that is closer to the finish world to be processed first
-                    fScoreModifier = traveller.hexDistance(
+                    fScoreModifier = travellermap.hexDistance(
                         absoluteX1=adjacentWorld.absoluteX(),
                         absoluteY1=adjacentWorld.absoluteY(),
                         absoluteX2=finishWorld.absoluteX(),

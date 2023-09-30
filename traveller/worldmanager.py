@@ -209,7 +209,7 @@ class WorldManager(object):
         sectorX = sector.x()
         sectorY = sector.y()
 
-        centerX, centerY = traveller.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
+        centerX, centerY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         minX = centerX - (searchRadius + 1)
         maxX = centerX + (searchRadius + 1)
         minY = centerY - (searchRadius + 1)
@@ -218,10 +218,10 @@ class WorldManager(object):
         worlds = []
         for y in range(minY, maxY + 1):
             for x in range(minX, maxX + 1):
-                if traveller.hexDistance(centerX, centerY, x, y) > searchRadius:
+                if travellermap.hexDistance(centerX, centerY, x, y) > searchRadius:
                     continue
 
-                sectorX, sectorY, worldX, worldY = traveller.absoluteHexToRelativeHex(x, y)
+                sectorX, sectorY, worldX, worldY = travellermap.absoluteHexToRelativeHex(x, y)
                 sector: traveller.Sector = self._sectorPositionMap.get((sectorX, sectorY))
                 if not sector:
                     # No sector with this position (we've hit the edge of the map)

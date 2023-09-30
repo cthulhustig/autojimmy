@@ -7,6 +7,7 @@ import logic
 import math
 import random
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -612,7 +613,7 @@ class SimulatorWindow(gui.WindowWidget):
             # Data is the new world object
             world: traveller.World = event.data()
             if self._currentWorld and self._currentWorld != world:
-                self._parsecsTravelled += traveller.hexDistance(
+                self._parsecsTravelled += travellermap.hexDistance(
                     self._currentWorld.absoluteX(),
                     self._currentWorld.absoluteY(),
                     world.absoluteX(),

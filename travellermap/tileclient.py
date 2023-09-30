@@ -1,13 +1,9 @@
 import common
-import math
 import threading
 import travellermap
 import typing
 
-class TileStore(object):
-    _ParsecScaleX = math.cos(math.pi / 6) # cosine 30°
-    _ParsecScaleY = 1
-
+class TileClient(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
 
@@ -29,17 +25,17 @@ class TileStore(object):
             travellerMapUrl: str,
             milieu: travellermap.Milieu,
             style: travellermap.Style,
-            worldX: int,
-            worldY: int,
+            absoluteX: int,
+            absoluteY: int,
             options: typing.Iterable[travellermap.Option],
             linearScale: float = 64,
             width: int = 256,
             height: int = 256,
             timeout: typing.Optional[typing.Union[int, float]] = None,
             ) -> bytes:
-        mapX, mapY = TileStore._worldSpaceToMapSpace(
-            worldX=worldX,
-            worldY=worldY)
+        mapX, mapY = travellermap.absoluteHexToMapSpace(
+            absoluteX=absoluteX,
+            absoluteY=absoluteY)
 
         # Calculate position to center tile on map position
         position = travellermap.TilePosition(
@@ -47,8 +43,10 @@ class TileStore(object):
             tileY=(-mapY * linearScale - (height / 2)) / height,
             linearScale=linearScale)
 
+        # TODO: This should be pointed at the local proxy so tool tips also show custom sectors
         url = travellermap.formatMapUrl(
-            baseUrl=f'{travellerMapUrl}/api/tile',
+            #baseUrl=f'{travellerMapUrl}/api/tile',
+            baseUrl='http://127.0.0.1:8002/', # TODO: Do this better
             milieu=milieu,
             style=style,
             options=options,
@@ -59,14 +57,3 @@ class TileStore(object):
             url=url,
             timeout=timeout,
             cacheInMemory=True)
-
-    @staticmethod
-    def _worldSpaceToMapSpace(
-            worldX: int,
-            worldY: int
-            ) -> typing.Tuple[float, float]:
-        ix = worldX - 0.5
-        iy = worldY - 0.5 if (worldX % 2) == 0 else worldY
-        x = ix * TileStore._ParsecScaleX
-        y = iy * -TileStore._ParsecScaleY
-        return x, y

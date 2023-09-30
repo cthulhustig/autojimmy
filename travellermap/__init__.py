@@ -2,5 +2,8 @@ from .milieu import *
 from .options import *
 from .style import *
 from .url import *
+from .astrometrics import *
 from .datastore import *
-from .tilestore import *
+from .compositor import *
+from .tileproxy import *
+from .tileclient import *

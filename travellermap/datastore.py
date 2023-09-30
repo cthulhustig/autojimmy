@@ -70,7 +70,7 @@ class DataStore(object):
     _lock = threading.Lock()
     _installDir = None
     _overlayDir = None
-    _userDir = None
+    _customDir = None
     _milieuMap = None
     _downloader = common.Downloader()
 
@@ -94,13 +94,13 @@ class DataStore(object):
     def setSectorDirs(
             installDir: str,
             overlayDir: str,
-            userDir: str
+            customDir: str
             ) -> None:
         if DataStore._instance:
             raise RuntimeError('You can\'t set the data store directories after the singleton has been initialised')
         DataStore._installDir = installDir
         DataStore._overlayDir = overlayDir
-        DataStore._userDir = userDir
+        DataStore._customDir = customDir
 
     def sectorCount(
             self,
@@ -146,7 +146,7 @@ class DataStore(object):
                 data=self._readFile(relativeFilePath=self._TimestampFileName))
         except Exception:
             return None
-    
+
     def checkForNewSnapshot(self) -> bool:
         currentTimestamp = self.snapshotTimestamp()
         try:
@@ -156,9 +156,9 @@ class DataStore(object):
             repoTimestamp = DataStore._parseSnapshotTimestamp(data=response.read())
         except Exception as ex:
             return False
-        
+
         return (not currentTimestamp) or (repoTimestamp > currentTimestamp)
-        
+
     def downloadSnapshot(
             self,
             progressCallback: typing.Optional[typing.Callable[[UpdateStage, int], typing.Any]] = None,
@@ -194,7 +194,7 @@ class DataStore(object):
 
             logging.debug('Extracting universe data archive')
             if progressCallback:
-                progressCallback(DataStore.UpdateStage.ExtractStage, 0) 
+                progressCallback(DataStore.UpdateStage.ExtractStage, 0)
 
             workingDirPath = self._makeWorkingDir(overlayDirPath=self._overlayDir)
             zipData = zipfile.ZipFile(dataBuffer)
@@ -203,13 +203,13 @@ class DataStore(object):
             for fileInfo in fileInfoList:
                 if isCancelledCallback and isCancelledCallback():
                     return # Operation cancelled
-                
+
                 extractIndex += 1
                 if progressCallback:
                     progressCallback(
                         DataStore.UpdateStage.ExtractStage,
                         int((extractIndex / len(fileInfoList)) * 100))
-                                    
+
                 if fileInfo.is_dir():
                     continue # Skip directories
                 if not fileInfo.filename.startswith(DataStore._DataArchiveMapPath):
@@ -305,7 +305,7 @@ class DataStore(object):
             ) -> bytes:
         # If a FILE exists in the user dir use it over anything else. If it doesn't, read it
         # from the overlay if that DIRECTORY exists, if not read it from the install directory
-        filePath = os.path.join(self._userDir, relativeFilePath)
+        filePath = os.path.join(self._customDir, relativeFilePath)
         if not os.path.exists(filePath):
             filePath = os.path.join(
                 self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
@@ -353,12 +353,12 @@ class DataStore(object):
     @staticmethod
     def _bytesToString(bytes: bytes) -> str:
         return bytes.decode('utf-8')
-    
+
     @staticmethod
     def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
         return datetime.datetime.strptime(
             DataStore._bytesToString(data),
-            DataStore._TimestampFormat)    
+            DataStore._TimestampFormat)
 
     @staticmethod
     def _parseUniverseData(

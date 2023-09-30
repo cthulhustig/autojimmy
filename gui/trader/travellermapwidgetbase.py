@@ -9,7 +9,7 @@ import re
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
+from PyQt5 import QtWebEngineCore, QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
 
 class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     # Massive Hack: This message is expected as a local snapshot of the Traveller Map web interface
@@ -131,6 +131,13 @@ class _HexOverlay(object):
     def colour(self) -> str:
         return self._colour
 
+class _CustomUrlInterceptor(QtWebEngineCore.QWebEngineUrlRequestInterceptor):
+    def interceptRequest(self, info: QtWebEngineCore.QWebEngineUrlRequestInfo) -> None:
+        url = info.requestUrl()
+        if url.path() == '/api/tile':
+            redirectUrl = QtCore.QUrl(f'http://127.0.0.1:8002/?{url.query()}')
+            info.redirect(QtCore.QUrl(redirectUrl))
+
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor
     leftClicked = QtCore.pyqtSignal([str], [type(None)])
@@ -149,6 +156,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     # persist cookies under Qt6. To avoid potential future issues I'm just using a custom shared
     # profile from the get go.
     _sharedProfile = None
+
+    _sharedRequestInterceptor = None
 
     # Next script id (used for debugging)
     _nextScriptId = 1
@@ -197,6 +206,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 QtWebEngineWidgets.QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
             TravellerMapWidgetBase._sharedProfile.setPersistentStoragePath(
                 os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
+
+            TravellerMapWidgetBase._sharedRequestInterceptor = _CustomUrlInterceptor()
+            TravellerMapWidgetBase._sharedProfile.setUrlRequestInterceptor(
+                TravellerMapWidgetBase._sharedRequestInterceptor)
 
         page = _CustomWebEnginePage(TravellerMapWidgetBase._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
@@ -405,7 +418,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        absoluteX, absoluteY = traveller.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
+        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         overlay = _HexOverlay(
             absoluteX=absoluteX,
             absoluteY=absoluteY,
@@ -433,7 +446,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             worldX: int,
             worldY: int
             ) -> None:
-        absoluteX, absoluteY = traveller.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
+        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         self._overlays = [overlay for overlay in self._overlays if (overlay.absoluteX() != absoluteX or overlay.absoluteY() != absoluteY)]
 
         if self._loaded:
