@@ -207,9 +207,16 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             TravellerMapWidgetBase._sharedProfile.setPersistentStoragePath(
                 os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
 
+            # setRequestInterceptor is deprecated (and not thread safe) so it's preferable to use
+            # setUrlRequestInterceptor, however it doesn't seem to be available in older versions of
+            # PyQt5
             TravellerMapWidgetBase._sharedRequestInterceptor = _CustomUrlInterceptor()
-            TravellerMapWidgetBase._sharedProfile.setUrlRequestInterceptor(
-                TravellerMapWidgetBase._sharedRequestInterceptor)
+            if getattr(TravellerMapWidgetBase._sharedProfile, 'setUrlRequestInterceptor', None):
+                TravellerMapWidgetBase._sharedProfile.setUrlRequestInterceptor(
+                    TravellerMapWidgetBase._sharedRequestInterceptor)
+            else:
+                TravellerMapWidgetBase._sharedProfile.setRequestInterceptor(
+                    TravellerMapWidgetBase._sharedRequestInterceptor)
 
         page = _CustomWebEnginePage(TravellerMapWidgetBase._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
