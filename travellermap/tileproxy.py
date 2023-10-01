@@ -13,7 +13,7 @@ import urllib.request
 import typing
 
 # TODO: Make sure threaded server is enabled
-_MultiThreaded = False
+_MultiThreaded = True
 
 if _MultiThreaded:
     class _HTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -43,16 +43,22 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsedUrl = urllib.parse.urlparse(self.path)
 
-        # TODO: Need to ask Joshua if I can get a flag added to the poster api that doesn't
-        # add any padding around the generated image (basically disable the "Account for
-        # jagged hexes" code in the poster handler).
-
         data = self._tileCache.get(parsedUrl.query)
         if data == None:
             #requestUrl = f'https://travellermap.com/api/tile?{parsed.query}'
             requestUrl = f'http://localhost:50103/api/tile?{parsedUrl.query}' # TODO: Remove local Traveller Map instance
             with urllib.request.urlopen(requestUrl) as response:
                 data = response.read()
+
+            # TODO: Remove debug code
+            """
+            with PIL.Image.open(data if isinstance(data, io.BytesIO) else io.BytesIO(data)) as image:
+                draw = PIL.ImageDraw.Draw(image)
+                draw.rectangle([(0, 0), (255, 255)], fill="green", width=0)
+                data = io.BytesIO()
+                image.save(data, format='PNG')
+                data.seek(0)                
+            """
 
             parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
             tileX = float(parsedQuery['x'][0])
@@ -79,6 +85,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # TODO: Do something better
                 print(ex)
 
+            # TODO: Need to put some kind of limit on the size of this cache (but should be high)
             self._tileCache[parsedUrl.query] = data
 
         # TODO: Remove debug tile highlight

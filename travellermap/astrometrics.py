@@ -41,7 +41,6 @@ def absoluteHexToRelativeHex(
     worldY = absoluteY - (sectorY * _SectorHeight) + 1
     return (sectorX, sectorY, worldX, worldY)
 
-# TODO: This probably makes more sense in TravellerMap rather than Traveller sub dir
 def absoluteHexToMapSpace(
         absoluteX: int,
         absoluteY: int

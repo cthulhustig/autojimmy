@@ -35,7 +35,7 @@ class MipLevel(object):
 
     def __lt__(self, other: 'MipLevel') -> bool:
         if self.__class__ is other.__class__:
-            return self.scale() < other.scale() # TODO: Check this is the correct order
+            return self.scale() > other.scale() # TODO: Check this is the correct order
         return NotImplemented
 
 class CustomSector(object):
@@ -69,24 +69,15 @@ class CustomSector(object):
             self,
             scale: float
             ) -> typing.Optional[MipLevel]:
-        """
         bestLevel = None
-        bestDiff = float('inf')
+        for level in self._mipLevels:
+            if bestLevel and scale > level.scale():
+                # We've got a possible best level and the one currently being looked at is for a
+                # lower scale so use the current best. This works on the assumption that list is
+                # ordered highest scale to lowest scale
+                break
+            bestLevel = level
 
-        for level in self._mipLevels:
-            diff = abs(level.scale() - scale)
-            if diff > bestDiff:
-                # Mip levels are sorted be scale so we can bail if we ever start seeing
-                # the diff getting worse (as we're getting further away)
-                break
-            bestLevel = level
-            bestDiff = diff
-        """
-        bestLevel = None
-        for level in self._mipLevels:
-            bestLevel = level
-            if level.scale() >= scale:
-                break
         return bestLevel
 
 class Compositor(object):
@@ -126,10 +117,6 @@ class Compositor(object):
         if not mipLevel:
             return tileData
 
-        # TODO: Update to use mip level. Need to switch to having intersect done in map space with
-        # CustomSector storing the sector rect in map space. Tile will need converted to map space.
-        # I think pretty much everything should be possible in map space (more y flipping fun)
-
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -163,12 +150,11 @@ class Compositor(object):
             round(intersection.height() * scale))
         tgtPixelOffset = (
             math.ceil((intersection.left() * scale) - (float(tileX) * tileWidth)),
-            -math.ceil((intersection.bottom() * scale) + (float(tileY) * tileHeight)))
+            -math.ceil((intersection.bottom() * scale) + (float(tileY) * tileHeight))) # TODO: The fact this is negated and has the heigh added doesn't seem right
 
-        # TODO: I think the bytes need to be converted to an image each time as things
-        # like crop aren't thread safe so the image can't be shared
+        # Convert the mip level bytes to an image each time. The Image can't be shared between
+        # threads as things like crop aren't thread safe
         # https://github.com/python-pillow/Pillow/issues/4848
-        # TODO: Do I need to call close on this???
         srcImage = PIL.Image.frombytes(
             mipLevel.mode(),
             mipLevel.size(),
@@ -178,15 +164,10 @@ class Compositor(object):
             srcImage.close()
             srcImage = cropImage
 
-            # TODO: This shouldn't use nearest (as it looks crap) but doing it for speed as when zoomed
-            # way out resizing the entire custom sector image down to the size of a tile takes multiple
-            # seconds. The better thing to do would be have lower res versions of the custom sector image,
-            # ideally independently generate posters but possibly could just pre-process the high res
-            # image to pre-create smaller versions at a few different lower resolutions
+            # Scale the source image if required
             if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
                 resizedImage = srcImage.resize(
                     tgtPixelDim,
-                    #resample=PIL.Image.Resampling.NEAREST)
                     resample=PIL.Image.Resampling.BICUBIC)
                 srcImage.close()
                 srcImage = resizedImage
@@ -199,11 +180,12 @@ class Compositor(object):
             # maximal bounds (what it currently returns) or the minimal bounds (where it
             # shrinks and offsets the rect)
 
-            with PIL.Image.open(tileData if isinstance(tileData, io.BytesIO) else io.BytesIO(tileData)) as tgtImage:
+            with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
                 tgtImage.paste(srcImage, tgtPixelOffset, srcImage)
                 tileData = io.BytesIO()
                 tgtImage.save(tileData, format='png')
                 tileData.seek(0)
+                tileData = tileData.read()
         finally:
             srcImage.close()
 

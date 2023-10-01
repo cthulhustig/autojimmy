@@ -43,7 +43,6 @@ class TileClient(object):
             tileY=(-mapY * linearScale - (height / 2)) / height,
             linearScale=linearScale)
 
-        # TODO: This should be pointed at the local proxy so tool tips also show custom sectors
         url = travellermap.formatMapUrl(
             #baseUrl=f'{travellerMapUrl}/api/tile',
             baseUrl='http://127.0.0.1:8002/', # TODO: Do this better
