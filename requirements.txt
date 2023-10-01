@@ -3,3 +3,4 @@ PyQtWebEngine>=5.11
 pyqtgraph>=0.13.1
 darkdetect>=0.7.1
 reportlab>=3.6.12
+Pillow>=9.5.0
