@@ -206,6 +206,7 @@ def main() -> None:
         return
 
     exitCode = None
+    tileProxy = None
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -293,6 +294,9 @@ def main() -> None:
             text=message,
             exception=ex)
         exitCode = 1
+    finally:
+        if tileProxy:
+            tileProxy.shutdown()
 
     sys.exit(exitCode)
 

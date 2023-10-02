@@ -106,17 +106,7 @@ class Compositor(object):
             # This seems to be the point where things stop being that visible
             # and Traveller Map starts showing the galaxy overlay
             return tileData
-
-        # TODO: Need to handle multiple custom sectors overlapping the same tile
-        customSectors = self._milieuSectorMap.get(milieu)
-        if not customSectors:
-            return tileData
-        sector = customSectors[0]
-
-        mipLevel = sector.findMipLevel(scale=scale)
-        if not mipLevel:
-            return tileData
-
+        
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -129,65 +119,81 @@ class Compositor(object):
             tileMapUL[0], # Left
             tileMapUL[1], # Top
             tileMapBR[0] - tileMapUL[0], # Width
-            tileMapBR[1] - tileMapUL[1]) # Height
+            tileMapBR[1] - tileMapUL[1]) # Height        
 
-        sectorMapRect = sector.mapSpaceRect()
-        intersection = sectorMapRect.intersected(tileMapRect)
-        if intersection.isEmpty():
-            return tileData # No intersection so just use base tile data
+        # TODO: There is an annoying graphics issue that can occur if two custom sectors
+        # are horizontally next to each other. If the name of one of the edge worlds from
+        # the first sector processed overlaps the hex from the adjacent sector. When the
+        # adjacent sector is overlayed on the tile will be overwritten. The only solution 
+        # I can see to that problem is switching so the custom sector mip levels have a
+        # completely transparent background. However this introduces a load more problems
+        # that are worse, such as issues with the * placeholders and things like trade
+        # routes being rendered on the tile by Traveller Map and not overwritten
+        # (especially if a custom sector was dropped over an existing populated sector).
+        sectorList = self._milieuSectorMap.get(milieu)
+        for sector in sectorList:
+            sectorMapRect = sector.mapSpaceRect()
+            intersection = sectorMapRect.intersected(tileMapRect)
 
-        # The custom sector overlaps the tile so copy the section that overlaps to
-        # the tile
+            if intersection.isEmpty():
+                continue # No intersection so just use base tile data
+            
+            # The custom sector overlaps the tile so copy the section that overlaps to
+            # the tile
 
-        srcPixelRect = (
-            round((intersection.left() - sectorMapRect.left()) * mipLevel.scale()), # Left
-            -round((intersection.bottom() - sectorMapRect.bottom()) * mipLevel.scale()), # Upper
-            round((intersection.right() - sectorMapRect.left()) * mipLevel.scale()), # Right
-            -round((intersection.top() - sectorMapRect.bottom()) * mipLevel.scale())) # Lower
+            mipLevel = sector.findMipLevel(scale=scale)
+            if not mipLevel:
+                continue
 
-        tgtPixelDim = (
-            round(intersection.width() * scale),
-            round(intersection.height() * scale))
-        tgtPixelOffset = (
-            math.ceil((intersection.left() * scale) - (float(tileX) * tileWidth)),
-            -math.ceil((intersection.bottom() * scale) + (float(tileY) * tileHeight))) # TODO: The fact this is negated and has the heigh added doesn't seem right
+            srcPixelRect = (
+                round((intersection.left() - sectorMapRect.left()) * mipLevel.scale()), # Left
+                -round((intersection.bottom() - sectorMapRect.bottom()) * mipLevel.scale()), # Upper
+                round((intersection.right() - sectorMapRect.left()) * mipLevel.scale()), # Right
+                -round((intersection.top() - sectorMapRect.bottom()) * mipLevel.scale())) # Lower
 
-        # Convert the mip level bytes to an image each time. The Image can't be shared between
-        # threads as things like crop aren't thread safe
-        # https://github.com/python-pillow/Pillow/issues/4848
-        srcImage = PIL.Image.frombytes(
-            mipLevel.mode(),
-            mipLevel.size(),
-            mipLevel.pixels())
-        try:
-            cropImage = srcImage.crop(srcPixelRect)
-            srcImage.close()
-            srcImage = cropImage
+            tgtPixelDim = (
+                round(intersection.width() * scale),
+                round(intersection.height() * scale))
+            tgtPixelOffset = (
+                math.ceil((intersection.left() * scale) - (float(tileX) * tileWidth)),
+                -math.ceil((intersection.bottom() * scale) + (float(tileY) * tileHeight))) # TODO: The fact this is negated and has the heigh added doesn't seem right
 
-            # Scale the source image if required
-            if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
-                resizedImage = srcImage.resize(
-                    tgtPixelDim,
-                    resample=PIL.Image.Resampling.BICUBIC)
+            # Convert the mip level bytes to an image each time. The Image can't be shared between
+            # threads as things like crop aren't thread safe
+            # https://github.com/python-pillow/Pillow/issues/4848
+            srcImage = PIL.Image.frombytes(
+                mipLevel.mode(),
+                mipLevel.size(),
+                mipLevel.pixels())
+            try:
+                cropImage = srcImage.crop(srcPixelRect)
                 srcImage.close()
-                srcImage = resizedImage
+                srcImage = cropImage
 
-            # TODO: There is an optimisation here but care has to be taken. If the tile is
-            # completely within the portion of the custom sector that doesn't contain any
-            # masked out hexs from adjacent sectors then there is srcImage can be used to
-            # generate tileData without the need to open the original tile. The best way
-            # I can think to do this is to sectorBoundingRect so it can either return the
-            # maximal bounds (what it currently returns) or the minimal bounds (where it
-            # shrinks and offsets the rect)
+                # Scale the source image if required
+                if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
+                    resizedImage = srcImage.resize(
+                        tgtPixelDim,
+                        resample=PIL.Image.Resampling.BICUBIC)
+                    srcImage.close()
+                    srcImage = resizedImage
 
-            with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
-                tgtImage.paste(srcImage, tgtPixelOffset, srcImage)
-                tileData = io.BytesIO()
-                tgtImage.save(tileData, format='png')
-                tileData.seek(0)
-                tileData = tileData.read()
-        finally:
-            srcImage.close()
+                # TODO: There is an optimisation here but care has to be taken. If the tile is
+                # completely within the portion of the custom sector that doesn't contain any
+                # masked out hexs from adjacent sectors then there is srcImage can be used to
+                # generate tileData without the need to open the original tile. The best way
+                # I can think to do this is to sectorBoundingRect so it can either return the
+                # maximal bounds (what it currently returns) or the minimal bounds (where it
+                # shrinks and offsets the rect)
+
+                with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
+                    tgtImage.paste(srcImage, tgtPixelOffset, srcImage)
+                    tileData = io.BytesIO()
+                    tgtImage.save(tileData, format='png')
+                    tileData.seek(0)
+                    tileData = tileData.read()
+            finally:
+                srcImage.close()
 
         return tileData
 
@@ -195,6 +201,9 @@ class Compositor(object):
         self._milieuSectorMap.clear()
 
         manifestFilePath = os.path.join(self._customMapsDir, Compositor._ManifestFileName)
+        if not os.path.isfile(manifestFilePath):
+            return # Nothing to do
+
         with open(manifestFilePath, 'r') as file:
             data: typing.Mapping[str, typing.Any] = json.load(file)
             universeData = data.get('Universe')
@@ -275,9 +284,12 @@ class Compositor(object):
             ) -> typing.List[MipLevel]:
         levels = []
         for mipLevelData in mipLevelsData:
-            levels.append(self._loadMipLevel(
-                mipPath=mipPath,
-                mipLevelData=mipLevelData))
+            try:
+                levels.append(self._loadMipLevel(
+                    mipPath=mipPath,
+                    mipLevelData=mipLevelData))
+            except Exception as ex:
+                print(ex) # TODO: Log and continue
         return levels
 
     def _loadMipLevel(
