@@ -240,7 +240,7 @@ def main() -> None:
 
         installMapDir = os.path.join(installDir, 'data', 'map')
         overlayMapDir = os.path.join(appDirectory, 'map')
-        customMapDir = os.path.join(appDirectory, 'my_map') # TODO: Change the directory to custom_maps or something
+        customMapDir = os.path.join(appDirectory, 'custom_map')
         travellermap.DataStore.setSectorDirs(
             installDir=installMapDir,
             overlayDir=overlayMapDir,
