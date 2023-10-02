@@ -1,5 +1,6 @@
 import app
 import collections
+import enum
 import functools
 import http.server
 import io
@@ -198,6 +199,12 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         return '&'.join(options)
 
 class TileProxy(object):
+    class ServerStatus(enum.Enum):
+        Stopped = 0
+        Starting = 1
+        Started = 2
+        Error = 3
+
     def __init__(
             self,
             port: int,
@@ -211,19 +218,30 @@ class TileProxy(object):
         self._logLevel = logLevel
         self._service = None
         self._shutdownEvent = None
+        self._currentState = TileProxy.ServerStatus.Stopped
+        self._statusQueue = multiprocessing.Queue()
 
     def run(self) -> None:
-        self._shutdownEvent = multiprocessing.Event()
-        self._service = multiprocessing.Process(
-            target=TileProxy._serviceCallback,
-            args=[
-                self._port,
-                self._customMapsDir,
-                self._logDir,
-                self._logLevel,
-                self._shutdownEvent])
-        self._service.daemon = True
-        self._service.start()
+        if self._service:
+            self.shutdown()
+
+        self._currentState = TileProxy.ServerStatus.Starting
+        try:
+            self._shutdownEvent = multiprocessing.Event()
+            self._service = multiprocessing.Process(
+                target=TileProxy._serviceCallback,
+                args=[
+                    self._port,
+                    self._customMapsDir,
+                    self._logDir,
+                    self._logLevel,
+                    self._shutdownEvent,
+                    self._statusQueue])
+            self._service.daemon = True
+            self._service.start()
+        except Exception:
+            self._currentState = TileProxy.ServerStatus.Error
+            raise
 
     def shutdown(self) -> None:
         if not self._service:
@@ -232,6 +250,12 @@ class TileProxy(object):
         self._service.join()
         self._service = None
         self._shutdownEvent = None
+        self._currentState =  TileProxy.ServerStatus.Stopped
+
+    def status(self) -> 'TileProxy.ServerStatus':
+        while not self._statusQueue.empty():
+            self._currentState = self._statusQueue.get(block=False)
+        return self._currentState
 
     # NOTE: This runs in a separate process
     @staticmethod
@@ -240,7 +264,8 @@ class TileProxy(object):
             customMapsDir: str,
             logDir: str,
             logLevel: int,
-            shutdownEvent: multiprocessing.Event
+            shutdownEvent: multiprocessing.Event,
+            statusQueue: multiprocessing.Queue
             ) -> None:
         try:
             app.setupLogger(logDir=logDir, logFile='tileproxy.log')
@@ -271,9 +296,12 @@ class TileProxy(object):
                 requestHandlerClass=handler,
                 shutdownEvent=shutdownEvent)
             httpd.allow_reuse_address = True
+
+            statusQueue.put(TileProxy.ServerStatus.Started)
             httpd.serve_forever(poll_interval=0.5)
 
+            statusQueue.put(TileProxy.ServerStatus.Stopped)
             logging.debug('Tile proxy shutdown complete')
         except Exception as ex:
-            # TODO: Need to somehow pass this back to main process so an error can be displayed
             logging.error('Exception occurred while running tile proxy', exc_info=ex)
+            statusQueue.put(TileProxy.ServerStatus.Error)

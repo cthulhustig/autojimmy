@@ -45,7 +45,39 @@ def _applicationDirectory() -> str:
         return os.path.join(os.getenv('APPDATA'), app.AppName)
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
+    
+class _TileProxyMonitor(QtCore.QObject):
+    error = QtCore.pyqtSignal()
 
+    _PollIntervalMs = 5000
+
+    def __init__(
+            self,
+            tileProxy: travellermap.TileProxy,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(parent)
+        self._tileProxy = tileProxy
+        self._status = None
+        self._timer = QtCore.QTimer()
+        self._timer.timeout.connect(self._checkStatus)
+
+    def start(self) -> None:
+        self._timer.start(_TileProxyMonitor._PollIntervalMs)
+
+    def stop(self) -> None:
+        self._timer.stop()
+
+    def _checkStatus(self) -> None:
+        newStatus = self._tileProxy.status()
+        isError = newStatus == travellermap.TileProxy.ServerStatus.Error
+        wasError = self._status == travellermap.TileProxy.ServerStatus.Error
+
+        if isError and not wasError:
+            self.error.emit()
+
+        self._status = newStatus
+    
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -207,6 +239,7 @@ def main() -> None:
 
     exitCode = None
     tileProxy = None
+    tileProxyMonitor = None
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -287,6 +320,14 @@ def main() -> None:
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
         loadProgress.deleteLater()
 
+        # Start monitoring the tile proxy after everything has loaded. If it does fail, this prevents
+        # an error popup being displayed while loading (it will be displayed when the monitor first
+        # polls the proxy)
+        tileProxyMonitor = _TileProxyMonitor(tileProxy=tileProxy)
+        tileProxyMonitor.error.connect(
+            lambda: gui.MessageBoxEx.critical('The tile proxy has failed. Check logs for further details.'))
+        tileProxyMonitor.start()
+
         window = MainWindow()
         exitCode = application.exec()
     except Exception as ex:
@@ -298,6 +339,9 @@ def main() -> None:
             exception=ex)
         exitCode = 1
     finally:
+        if tileProxyMonitor:
+            tileProxyMonitor.stop()
+
         if tileProxy:
             tileProxy.shutdown()
 
