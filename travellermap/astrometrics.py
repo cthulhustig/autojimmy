@@ -81,12 +81,8 @@ def sectorBoundingRect(
 
     # Adjust to completely contain all hexes in the sector
     height += 0.5
-    left -= _HexEdgePadding
+    left += 0.5 - _HexEdgePadding
     width += _HexEdgePadding * 2
-
-    # TODO: Why do I need this?????. It might be an even/odd sector index thing.
-    # Need to test with sectors that have even/odd x & y values
-    left += 0.5
 
     return (left, bottom, width, height) # Height
 
