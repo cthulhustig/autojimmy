@@ -1,14 +1,32 @@
 import io
 import json
+import logging
 import math
 import os
 import PIL.Image
 import PIL.ImageDraw
 import travellermap
 import typing
-from PyQt5 import QtCore # TODO: Need to do something to remove this dependency
 
-class MipLevel(object):
+# Rect format is (left, top, right, bottom)
+# NOTE: This assumes that rects are valid (i.e. rect1.left <= rect1.right)
+def _calculateIntersection(
+        rect1: typing.Tuple[float, float, float, float],
+        rect2: typing.Tuple[float, float, float, float]
+        ) -> typing.Optional[typing.Tuple[float, float, float, float]]:
+    left = max(rect1[0], rect2[0])
+    right = min(rect1[2], rect2[2])
+    if left >= right:
+        return None
+
+    top = max(rect1[1], rect2[1])
+    bottom = min(rect1[3], rect2[3])
+    if top >= bottom:
+        return None
+    
+    return (left, top, right, bottom)
+
+class _MipLevel(object):
     def __init__(
             self,
             filePath: str,
@@ -30,20 +48,20 @@ class MipLevel(object):
     def size(self) -> typing.Tuple[int, int]:
         return self._size
 
-    def mode(self): # TODO: Figure out what type this should return
+    def mode(self) -> str:
         return self._mode
 
-    def __lt__(self, other: 'MipLevel') -> bool:
+    def __lt__(self, other: '_MipLevel') -> bool:
         if self.__class__ is other.__class__:
-            return self.scale() > other.scale() # TODO: Check this is the correct order
+            return self.scale() > other.scale()
         return NotImplemented
 
-class CustomSector(object):
+class _CustomSector(object):
     def __init__(
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mipLevels: typing.Iterable[MipLevel]
+            mipLevels: typing.Iterable[_MipLevel]
             ) -> None:
         self._name = name
         self._position = position
@@ -56,19 +74,20 @@ class CustomSector(object):
         mapSpaceBR = travellermap.absoluteHexToMapSpace(
             absoluteRect[0] + absoluteRect[2],
             absoluteRect[1])
-        self._mapSpaceRect = QtCore.QRectF(
+        self._mapSpaceRect = (
             mapSpaceUL[0], # Left
             mapSpaceUL[1], # Top
-            mapSpaceBR[0] - mapSpaceUL[0], # Width
-            mapSpaceBR[1] - mapSpaceUL[1]) # Height
+            mapSpaceBR[0], # Right
+            mapSpaceBR[1]) # Bottom
 
-    def mapSpaceRect(self) -> QtCore.QRectF:
+    # Returned rect is (left, top, right, bottom)
+    def mapSpaceRect(self) -> typing.Tuple[float, float, float, float]:
         return self._mapSpaceRect
 
     def findMipLevel(
             self,
             scale: float
-            ) -> typing.Optional[MipLevel]:
+            ) -> typing.Optional[_MipLevel]:
         bestLevel = None
         for level in self._mipLevels:
             if bestLevel and scale > level.scale():
@@ -83,12 +102,17 @@ class CustomSector(object):
 class Compositor(object):
     _ManifestFileName = 'manifest.json'
 
+    # This seems to be the point where things stop being that visible and Traveller Map starts showing
+    # the galaxy overlay. If the requested tile has a scale lower than this then there isn't any point
+    # in compositing.
+    _MinCompositionScale = 1.4
+
     def __init__(
             self,
             customMapsDir: str
             ) -> None:
         self._customMapsDir = customMapsDir
-        self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[CustomSector]] = {}
+        self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
 
         self._loadCustomUniverse()
 
@@ -99,27 +123,25 @@ class Compositor(object):
             tileY: float,
             tileWidth: int,
             tileHeight: int,
-            scale: float,
+            tileScale: float,
             milieu: travellermap.Milieu
             ) -> bytes:
-        if scale < 1.4: # TODO: Pull this out as a constant
-            # This seems to be the point where things stop being that visible
-            # and Traveller Map starts showing the galaxy overlay
+        if tileScale < Compositor._MinCompositionScale:
             return tileData
         
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
-            scale=scale)
+            scale=tileScale)
         tileMapBR = travellermap.tileSpaceToMapSpace(
             tileX=tileX + 1,
             tileY=tileY,
-            scale=scale)
-        tileMapRect = QtCore.QRectF(
+            scale=tileScale)
+        tileMapRect = (
             tileMapUL[0], # Left
             tileMapUL[1], # Top
-            tileMapBR[0] - tileMapUL[0], # Width
-            tileMapBR[1] - tileMapUL[1]) # Height        
+            tileMapBR[0], # Right
+            tileMapBR[1]) # Bottom        
 
         # TODO: There is an annoying graphics issue that can occur if two custom sectors
         # are horizontally next to each other. If the name of one of the edge worlds from
@@ -133,30 +155,31 @@ class Compositor(object):
         sectorList = self._milieuSectorMap.get(milieu)
         for sector in sectorList:
             sectorMapRect = sector.mapSpaceRect()
-            intersection = sectorMapRect.intersected(tileMapRect)
-
-            if intersection.isEmpty():
+            intersection = _calculateIntersection(sectorMapRect, tileMapRect)
+            if not intersection:
                 continue # No intersection so just use base tile data
             
             # The custom sector overlaps the tile so copy the section that overlaps to
             # the tile
 
-            mipLevel = sector.findMipLevel(scale=scale)
+            mipLevel = sector.findMipLevel(scale=tileScale)
             if not mipLevel:
                 continue
 
+            # NOTE: Y-axis is flipped due to map space having a negative Y compared to other
+            # coordinate systems
             srcPixelRect = (
-                round((intersection.left() - sectorMapRect.left()) * mipLevel.scale()), # Left
-                -round((intersection.bottom() - sectorMapRect.bottom()) * mipLevel.scale()), # Upper
-                round((intersection.right() - sectorMapRect.left()) * mipLevel.scale()), # Right
-                -round((intersection.top() - sectorMapRect.bottom()) * mipLevel.scale())) # Lower
+                round((intersection[0] - sectorMapRect[0]) * mipLevel.scale()), # Left
+                -round((intersection[3] - sectorMapRect[3]) * mipLevel.scale()), # Upper
+                round((intersection[2] - sectorMapRect[0]) * mipLevel.scale()), # Right
+                -round((intersection[1] - sectorMapRect[3]) * mipLevel.scale())) # Lower
 
             tgtPixelDim = (
-                round(intersection.width() * scale),
-                round(intersection.height() * scale))
+                round((intersection[2] - intersection[0]) * tileScale),
+                round((intersection[3] - intersection[1]) * tileScale))
             tgtPixelOffset = (
-                math.ceil((intersection.left() * scale) - (float(tileX) * tileWidth)),
-                -math.ceil((intersection.bottom() * scale) + (float(tileY) * tileHeight))) # TODO: The fact this is negated and has the heigh added doesn't seem right
+                math.ceil((intersection[0] * tileScale) - (float(tileX) * tileWidth)),
+                -math.ceil((intersection[3] * tileScale) + (float(tileY) * tileHeight)))
 
             # Convert the mip level bytes to an image each time. The Image can't be shared between
             # threads as things like crop aren't thread safe
@@ -167,7 +190,7 @@ class Compositor(object):
                 mipLevel.pixels())
             try:
                 cropImage = srcImage.crop(srcPixelRect)
-                srcImage.close()
+                del srcImage
                 srcImage = cropImage
 
                 # Scale the source image if required
@@ -175,7 +198,7 @@ class Compositor(object):
                     resizedImage = srcImage.resize(
                         tgtPixelDim,
                         resample=PIL.Image.Resampling.BICUBIC)
-                    srcImage.close()
+                    del srcImage
                     srcImage = resizedImage
 
                 # TODO: There is an optimisation here but care has to be taken. If the tile is
@@ -193,7 +216,7 @@ class Compositor(object):
                     tileData.seek(0)
                     tileData = tileData.read()
             finally:
-                srcImage.close()
+                del srcImage
 
         return tileData
 
@@ -211,7 +234,11 @@ class Compositor(object):
                 return # Nothing to do
 
             for milieuData in universeData:
-                self._loadMilieu(milieuData=milieuData)
+                try:
+                    self._loadMilieu(milieuData=milieuData)
+                except Exception as ex:
+                    logging.warning(f'Compositor skipping milieu due to parsing error')
+
 
     def _loadMilieu(
             self,
@@ -226,87 +253,98 @@ class Compositor(object):
 
         sectors = milieuData.get('Sectors')
         if not sectors:
-            # TODO: Could log a warning at this as it's an indication of a mistake
-            return # No sectors so nothing to do
+            logging.warning(f'Compositor skipping milieu {milieu.value} as it has no sectors')
+            return
 
         self._milieuSectorMap[milieu] = self._loadSectors(
-            mipPath=os.path.join(self._customMapsDir, 'milieu', milieu.value),
-            sectorsData=sectors)
+            sectorsData=sectors,
+            milieu=milieu)
 
     def _loadSectors(
             self,
-            mipPath: str,
-            sectorsData: typing.Iterable[typing.Mapping[str, typing.Any]]
-            ) -> typing.List[CustomSector]:
+            sectorsData: typing.Iterable[typing.Mapping[str, typing.Any]],
+            milieu: travellermap.Milieu
+            ) -> typing.List[_CustomSector]:
         sectors = []
         for sectorData in sectorsData:
-            sectors.append(self._loadSector(
-                mipPath=mipPath,
-                sectorData=sectorData))
+            try:
+                sectors.append(self._loadSector(
+                    sectorData=sectorData,
+                    milieu=milieu))
+            except Exception as ex:
+                logging.warning(
+                    f'Compositor skipping sector from {milieu.value} due to parsing error',
+                    exc_info=ex)
         return sectors
 
     def _loadSector(
             self,
-            mipPath: str,
-            sectorData: typing.Mapping[str, typing.Any]
-            ) -> typing.Optional[CustomSector]:
+            sectorData: typing.Mapping[str, typing.Any],
+            milieu: travellermap.Milieu     
+            ) -> typing.Optional[_CustomSector]:
         name = sectorData.get('Name')
         if name == None:
-            raise RuntimeError('Sector data is missing the Name element')
+            raise RuntimeError(f'Sector data from {milieu.value} is missing the Name element')
 
         sectorX = sectorData.get('SectorX')
         if sectorX == None:
-            raise RuntimeError('Sector data is missing the SectorX element')
+            raise RuntimeError(f'Sector data for {name} from {milieu.value} is missing the SectorX element')
         if not isinstance(sectorX, int):
-            raise RuntimeError('SectorX element has non integer value')
+            raise RuntimeError(f'SectorX element for {name} from {milieu.value} has non integer value')
 
         sectorY = sectorData.get('SectorY')
         if sectorY == None:
-            raise RuntimeError('Sector data is missing the SectorY element')
+            raise RuntimeError(f'Sector data for {name} from {milieu.value} is missing the SectorY element')
         if not isinstance(sectorY, int):
-            raise RuntimeError('SectorY element has non integer value')
+            raise RuntimeError(f'SectorY element for {name} from {milieu.value} has non integer value')
 
         mipLevels = sectorData.get('MipLevels')
         if not mipLevels:
-            raise RuntimeError('Sector data is missing the MipLevels element')
+            raise RuntimeError(f'Sector data  for {name} from {milieu.value} is missing the MipLevels element')
 
-        return CustomSector(
+        return _CustomSector(
             name=name,
             position=(sectorX, sectorY),
             mipLevels=self._loadMipLevels(
-                mipPath=mipPath,
-                mipLevelsData=mipLevels))
+                mipLevelsData=mipLevels,
+                milieu=milieu,
+                sectorName=name))
 
     def _loadMipLevels(
             self,
-            mipPath: str,
-            mipLevelsData: typing.Iterable[typing.Mapping[str, typing.Any]]
-            ) -> typing.List[MipLevel]:
+            mipLevelsData: typing.Iterable[typing.Mapping[str, typing.Any]],
+            milieu: travellermap.Milieu,
+            sectorName: str
+            ) -> typing.List[_MipLevel]:
         levels = []
         for mipLevelData in mipLevelsData:
             try:
                 levels.append(self._loadMipLevel(
-                    mipPath=mipPath,
-                    mipLevelData=mipLevelData))
+                    mipLevelData=mipLevelData,
+                    milieu=milieu,
+                    sectorName=sectorName))
             except Exception as ex:
-                print(ex) # TODO: Log and continue
+                logging.warning(
+                    f'Compositor skipping mip level for {sectorName} from {milieu.value} due to parsing error',
+                    exc_info=ex)
         return levels
 
     def _loadMipLevel(
             self,
-            mipPath: str,
-            mipLevelData: typing.Mapping[str, typing.Any]
-            ) -> MipLevel:
+            mipLevelData: typing.Mapping[str, typing.Any],
+            milieu: travellermap.Milieu,
+            sectorName: str
+            ) -> _MipLevel:
         fileName = mipLevelData.get('FileName')
         if fileName == None:
-            raise RuntimeError('MipLevel data is missing the FileName element')
+            raise RuntimeError(f'MipLevel data for {sectorName} from {milieu.value} is missing the FileName element')
 
         scale = mipLevelData.get('Scale')
         if scale == None:
-            raise RuntimeError('MipLevel data is missing the Scale element')
+            raise RuntimeError(f'MipLevel data for {sectorName} from {milieu.value} is missing the Scale element')
         if not isinstance(scale, (int, float)):
-            raise RuntimeError('SectorY element has non numeric value')
+            raise RuntimeError(f'MipLevel element for {sectorName} from {milieu.value}  has non numeric value')
 
-        return MipLevel(
-            filePath=os.path.join(mipPath, fileName),
+        return _MipLevel(
+            filePath=os.path.join(self._customMapsDir, 'milieu', milieu.value, fileName),
             scale=scale)

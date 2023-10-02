@@ -230,8 +230,9 @@ def main() -> None:
             appDir=appDirectory)
 
         # Set configured log level immediately after configuration has been setup
+        logLevel = app.Config.instance().logLevel()
         try:
-            app.setLogLevel(app.Config.instance().logLevel())
+            app.setLogLevel(logLevel)
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
@@ -250,7 +251,9 @@ def main() -> None:
         # it will bypass any persisted caching done by the web widget
         tileProxy = travellermap.TileProxy(
             port=8002,
-            customMapDir=customMapDir)
+            customMapDir=customMapDir,
+            logDir=logDirectory,
+            logLevel=logLevel)
         tileProxy.run()
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())

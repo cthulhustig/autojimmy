@@ -1,3 +1,4 @@
+import app
 import collections
 import functools
 import http.server
@@ -31,11 +32,19 @@ class _TileCache(object):
     def add(self, key: str, data: bytes) -> None:
         with self._lock:
             size = len(data)
+
+            startingBytes = self._currentBytes
+            evictionCount = 0
             while self._cache and ((self._currentBytes + size) > self._maxBytes):
                 # The item at the start of the cache is the one that was used longest ago
                 oldKey, oldData = self._cache.popitem(last=False)
+                evictionCount += 1
                 self._currentBytes -= len(oldData)
                 assert(self._currentBytes > 0)
+
+            if evictionCount:
+                evictionBytes = startingBytes - self._currentBytes
+                logging.debug(f'Tile cache evicted {evictionCount} tiles for {evictionBytes} bytes')
 
             # Add the data to the cache, this will automatically add it at the end of the cache
             # to indicate it's the most recently used
@@ -72,6 +81,7 @@ class _HTTPServer(_HTTPServerBase):
     def service_actions(self) -> None:
         super().service_actions()
         if self._shutdownEvent.is_set():
+            logging.debug('Tile proxy shutdown event received')
             # https://stackoverflow.com/questions/10085996/shutdown-socketserver-serve-forever-in-one-thread-python-application
             self._BaseServer__shutdown_request = True
 
@@ -90,16 +100,28 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         # So we have to call super().__init__ after setting attributes.
         super().__init__(*args, **kwargs)
 
+    def log_error(self, format: str, *args: typing.Any) -> None:
+        logging.error('{address}: {message}'.format(
+            address=self.address_string(),
+            message=format%args))
+
     def log_message(self, format, *args):
-        # TODO: This should be a debug level option
-        pass # Don't write requests to terminal
+        logging.debug('{address}: {message}'.format(
+            address=self.address_string(),
+            message=format%args))
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
     def do_GET(self):
         parsedUrl = urllib.parse.urlparse(self.path)
 
-        data = self._tileCache.lookup(key=parsedUrl.query)
+        parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
+        cacheKey = self._generateCacheKey(queryMap=parsedQuery)
+
+        # TODO: Remove debug code
+        assert(''.join(sorted(cacheKey)) == ''.join(sorted(parsedUrl.query)))
+
+        data = self._tileCache.lookup(key=cacheKey)
         if data == None:
             #requestUrl = f'https://travellermap.com/api/tile?{parsed.query}'
             requestUrl = f'http://localhost:50103/api/tile?{parsedUrl.query}' # TODO: Remove local Traveller Map instance
@@ -118,10 +140,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             """
 
             if self._compositor:
-                parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
                 tileX = float(parsedQuery['x'][0])
                 tileY = float(parsedQuery['y'][0])
-                scale = float(parsedQuery['scale'][0])
+                tileScale = float(parsedQuery['scale'][0])
                 tileWidth = int(parsedQuery.get('w', [256])[0])
                 tileHeight = int(parsedQuery.get('h', [256])[0])
                 milieu = str(parsedQuery.get('milieu', ['M1105'])[0])
@@ -137,15 +158,14 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                         tileY=tileY,
                         tileWidth=tileWidth,
                         tileHeight=tileHeight,
-                        scale=scale,
+                        tileScale=tileScale,
                         milieu=milieu)
                 except Exception as ex:
-                    # TODO: Do something better
-                    print(str(ex))
+                    logging.error('Failed to create compositor', exc_info=ex)
 
-            self._tileCache.add(parsedUrl.query, data)
+            self._tileCache.add(key=cacheKey, data=data)
 
-        # TODO: Remove debug tile highlight
+        # Enable this to add a red boundary to all tiles in order to highlight where they are
         """
         with PIL.Image.open(data if isinstance(data, io.BytesIO) else io.BytesIO(data)) as image:
             draw = PIL.ImageDraw.Draw(image)
@@ -161,17 +181,34 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.end_headers()
-        # send the body of the response
         self.wfile.write(data.read() if isinstance(data, io.BytesIO) else data)
+
+    # The key used for the tile cache is based on the request options. Rather than just use the raw
+    # request string, a new string is generated with the parameters arranged in alphabetic order.
+    # This is done so that the order the options are specified in the URL don't mater when it comes
+    # to checking for a cache hit. This makes the assumption the parameter order doesn't mater make
+    # a difference to the response that is being cached. This is the case for the Traveller Map API.
+    @staticmethod
+    def _generateCacheKey(queryMap: typing.Dict[str, typing.List[str]]) -> str:
+        options = []
+        for key, values in queryMap.items():
+            for value in values:
+                options.append(key + '=' + value)
+        options.sort()
+        return '&'.join(options)
 
 class TileProxy(object):
     def __init__(
             self,
             port: int,
-            customMapDir: str
+            customMapDir: str,
+            logDir: str,
+            logLevel: int
             ) -> None:
         self._port = port
         self._customMapsDir = customMapDir
+        self._logDir = logDir
+        self._logLevel = logLevel
         self._service = None
         self._shutdownEvent = None
 
@@ -179,7 +216,12 @@ class TileProxy(object):
         self._shutdownEvent = multiprocessing.Event()
         self._service = multiprocessing.Process(
             target=TileProxy._serviceCallback,
-            args=[self._port, self._customMapsDir, self._shutdownEvent])
+            args=[
+                self._port,
+                self._customMapsDir,
+                self._logDir,
+                self._logLevel,
+                self._shutdownEvent])
         self._service.daemon = True
         self._service.start()
 
@@ -196,8 +238,18 @@ class TileProxy(object):
     def _serviceCallback(
             port: int,
             customMapsDir: str,
+            logDir: str,
+            logLevel: int,
             shutdownEvent: multiprocessing.Event
             ) -> None:
+        try:
+            app.setupLogger(logDir=logDir, logFile='tileproxy.log')
+            app.setLogLevel(logLevel=logLevel)
+        except Exception as ex:
+            logging.error('Failed to set up tile proxy logging', exc_info=ex)
+
+        logging.debug('Tile proxy starting')
+
         try:
             tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
 
@@ -208,7 +260,7 @@ class TileProxy(object):
             try:
                 compositor = travellermap.Compositor(customMapsDir=customMapsDir)
             except Exception as ex:
-                print(ex) # TODO: Log something
+                logging.error('Exception occurred while compositing tile', exc_info=ex)
 
             handler = functools.partial(_HttpGetRequestHandler, tileCache, compositor)
 
@@ -221,7 +273,7 @@ class TileProxy(object):
             httpd.allow_reuse_address = True
             httpd.serve_forever(poll_interval=0.5)
 
-            print('Proxy Shutdown Complete') # TODO: Should log something at info level
+            logging.debug('Tile proxy shutdown complete')
         except Exception as ex:
             # TODO: Need to somehow pass this back to main process so an error can be displayed
-            logging.error('Exception occurred while running web server', exc_info=ex)
+            logging.error('Exception occurred while running tile proxy', exc_info=ex)
