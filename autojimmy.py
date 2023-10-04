@@ -218,7 +218,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def main() -> None:
     # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
-    # Currently disabled as multiprocessing isn't being used at the moment.
     multiprocessing.freeze_support()
 
     QtWidgets.QApplication.setAttribute(
