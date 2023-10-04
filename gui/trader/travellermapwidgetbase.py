@@ -132,11 +132,34 @@ class _HexOverlay(object):
         return self._colour
 
 class _CustomUrlInterceptor(QtWebEngineCore.QWebEngineUrlRequestInterceptor):
+    _CanonicalMapUrl = QtCore.QUrl(travellermap.TravellerMapBaseUrl)
+
+    # NOTE: If a redirect is performed, this function will be called again for the URL that the
+    # original was redirected too. Care must be taken not to get into a loop where that URL is
+    # then redirected as it will cause the app to exit (with no error)
     def interceptRequest(self, info: QtWebEngineCore.QWebEngineUrlRequestInfo) -> None:
         url = info.requestUrl()
-        if url.path() == '/api/tile':
-            redirectUrl = QtCore.QUrl(f'http://127.0.0.1:8002/?{url.query()}')
-            info.redirect(QtCore.QUrl(redirectUrl))
+        if url.scheme() == 'file':
+            return # No redirect for files
+        
+        if url.authority() != _CustomUrlInterceptor._CanonicalMapUrl.authority():
+            return # No redirect for URLs not directed at Traveller Map
+
+        tileProxyPort = travellermap.TileProxy.instance().port()
+        configuredMapUrl = QtCore.QUrl(app.Config.instance().travellerMapUrl())
+        redirectUrl = None
+        if tileProxyPort and url.path() == '/api/tile':
+            redirectUrl = QtCore.QUrl(f'http://127.0.0.1:{tileProxyPort}/?{url.query()}')
+        elif configuredMapUrl.scheme() != _CustomUrlInterceptor._CanonicalMapUrl.scheme() or \
+            configuredMapUrl.authority() != _CustomUrlInterceptor._CanonicalMapUrl.authority():
+            # A non-default Traveller Map URL is configured so redirect to it
+            redirectUrl = QtCore.QUrl(url)
+            redirectUrl.setScheme(configuredMapUrl.scheme())
+            redirectUrl.setAuthority(configuredMapUrl.authority())
+
+        if redirectUrl:
+            logging.debug(f'Redirecting {str(url)} to {str(redirectUrl)}')
+            info.redirect(redirectUrl)
 
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor

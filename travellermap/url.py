@@ -3,6 +3,8 @@ import travellermap
 import typing
 from urllib import parse
 
+TravellerMapBaseUrl = 'https://travellermap.com'
+
 _SectorGridOption = 0x0001
 _SubsectorGridOption = 0x0002
 _GridMaskOption = 0x0003

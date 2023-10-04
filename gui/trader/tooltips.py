@@ -240,7 +240,6 @@ def createWorldToolTip(
             not _DisableWorldToolTipImages:
         try:
             tileBytes = travellermap.TileClient.instance().tile(
-                travellerMapUrl=app.Config.instance().travellerMapUrl(),
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),

@@ -53,11 +53,9 @@ class _TileProxyMonitor(QtCore.QObject):
 
     def __init__(
             self,
-            tileProxy: travellermap.TileProxy,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
         super().__init__(parent)
-        self._tileProxy = tileProxy
         self._status = None
         self._timer = QtCore.QTimer()
         self._timer.timeout.connect(self._checkStatus)
@@ -69,7 +67,7 @@ class _TileProxyMonitor(QtCore.QObject):
         self._timer.stop()
 
     def _checkStatus(self) -> None:
-        newStatus = self._tileProxy.status()
+        newStatus = travellermap.TileProxy.instance().status()
         isError = newStatus == travellermap.TileProxy.ServerStatus.Error
         wasError = self._status == travellermap.TileProxy.ServerStatus.Error
 
@@ -238,7 +236,6 @@ def main() -> None:
         return
 
     exitCode = None
-    tileProxy = None
     tileProxyMonitor = None
     try:
         installDir = _installDirectory()
@@ -251,6 +248,7 @@ def main() -> None:
         cacheDirectory = os.path.join(appDirectory, 'cache')
 
         app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
+        # Log version before setting log level as it should always be logged
         logging.info(f'{app.AppName} v{app.AppVersion}')
 
         try:
@@ -278,16 +276,17 @@ def main() -> None:
             installDir=installMapDir,
             overlayDir=overlayMapDir,
             customDir=customMapDir)
-
-        # TODO: I think when this is done might be important as I think a copy is made of the current processes memory
-        # TODO: Ephemeral (possibly random) port number?. Might be best to not use a random port as
-        # it will bypass any persisted caching done by the web widget
-        tileProxy = travellermap.TileProxy(
-            port=8002,
-            customMapDir=customMapDir,
+        
+        # Set up tile proxy now to give it time to start its child process while data is being loaded
+        travellermap.TileProxy.configure(
+            travellerMapUrl=app.Config.instance().travellerMapUrl(),
+            customMapsDir=customMapDir,
             logDir=logDirectory,
-            logLevel=logLevel)
-        tileProxy.run()
+            logLevel=logLevel)            
+        travellermap.TileProxy.instance().run()
+
+        travellermap.TileClient.configure(
+            travellerMapBaseUrl=app.Config.instance().travellerMapUrl())
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
@@ -323,7 +322,7 @@ def main() -> None:
         # Start monitoring the tile proxy after everything has loaded. If it does fail, this prevents
         # an error popup being displayed while loading (it will be displayed when the monitor first
         # polls the proxy)
-        tileProxyMonitor = _TileProxyMonitor(tileProxy=tileProxy)
+        tileProxyMonitor = _TileProxyMonitor()
         tileProxyMonitor.error.connect(
             lambda: gui.MessageBoxEx.critical('The tile proxy has failed. Check logs for further details.'))
         tileProxyMonitor.start()
@@ -342,8 +341,7 @@ def main() -> None:
         if tileProxyMonitor:
             tileProxyMonitor.stop()
 
-        if tileProxy:
-            tileProxy.shutdown()
+        travellermap.TileProxy.instance().shutdown()
 
     sys.exit(exitCode)
 

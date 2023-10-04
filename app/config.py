@@ -984,11 +984,11 @@ class Config(object):
 
         self._logLevel = self._loadLogLevelSetting(
             key=Config._LogLevelKeyName,
-            default=logging.INFO)
+            default=logging.WARNING)
 
         self._travellerMapUrl = self._loadUrlSetting(
             key=Config._TravellerMapUrlKeyName,
-            default='https://travellermap.com')
+            default=travellermap.TravellerMapBaseUrl)
         self._milieu = self._loadEnumSetting(
             key=Config._MilieuKeyName,
             default=travellermap.Milieu.M1105,

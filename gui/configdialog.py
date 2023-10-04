@@ -78,6 +78,8 @@ class ConfigDialog(gui.DialogEx):
         super().firstShowEvent(e)
 
     def accept(self) -> None:
+        if not self._validateConfig():
+            return
         self._saveConfig()
         super().accept()
 
@@ -284,7 +286,14 @@ class ConfigDialog(gui.DialogEx):
 
         restartRequiredText = f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
 
-        # Game widgets
+        # Traveller widgets
+        self._mapUrlLineEdit = gui.LineEditEx()
+        self._mapUrlLineEdit.setText(app.Config.instance().travellerMapUrl())
+        self._mapUrlLineEdit.setToolTip(gui.createStringToolTip(
+            '<p>If you run your own copy of Traveller Map, you can specify it\'s URL here.</p>' +
+            restartRequiredText,
+            escape=False))
+        
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),
@@ -302,12 +311,13 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
 
-        gameLayout = gui.FormLayoutEx()
-        gameLayout.addRow('Milieu:', self._milieuComboBox)
-        gameLayout.addRow('Rules:', self._rulesComboBox)
+        travellerLayout = gui.FormLayoutEx()
+        travellerLayout.addRow('Traveller Map Url:', self._mapUrlLineEdit)
+        travellerLayout.addRow('Milieu:', self._milieuComboBox)
+        travellerLayout.addRow('Rules:', self._rulesComboBox)
 
-        gameGroupBox = QtWidgets.QGroupBox('Game')
-        gameGroupBox.setLayout(gameLayout)
+        gameGroupBox = QtWidgets.QGroupBox('Traveller')
+        gameGroupBox.setLayout(travellerLayout)
 
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
@@ -659,6 +669,17 @@ class ConfigDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._okButton)
         self._buttonLayout.addWidget(self._cancelButton)
 
+    def _validateConfig(self) -> bool:
+        mapUrl = QtCore.QUrl(self._mapUrlLineEdit.text())
+        # Map URL must have a scheme but no path or options
+        if mapUrl.scheme() != 'http' and mapUrl.scheme() != 'https':
+            gui.MessageBoxEx.critical('The Traveller Map URL must use http or https')
+            return False
+        if (mapUrl.path() != '' and mapUrl.path() != '/') or mapUrl.query():
+            gui.MessageBoxEx.critical('The Traveller Map URL can\'t have a path or query')
+            return False
+        return True
+
     def _saveConfig(self) -> None:
         class RestartChecker(object):
             def __init__(self) -> None:
@@ -675,6 +696,7 @@ class ConfigDialog(gui.DialogEx):
 
         try:
             config = app.Config.instance()
+            checker.update(config.setTravellerMapUrl(self._mapUrlLineEdit.text()))
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))

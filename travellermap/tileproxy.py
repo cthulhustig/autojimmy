@@ -89,11 +89,13 @@ class _HTTPServer(_HTTPServerBase):
 class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(
             self,
+            travellerMapUrl: str,
             tileCache: _TileCache,
             compositor: typing.Optional[travellermap.Compositor],
             *args,
             **kwargs
             ) -> None:
+        self._travellerMapUrl = travellerMapUrl
         self._tileCache = tileCache
         self._compositor = compositor
 
@@ -105,9 +107,22 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         logging.error('{address}: {message}'.format(
             address=self.address_string(),
             message=format%args))
+        
+    def log_request(
+            self,
+            code: typing.Union[int, str, http.HTTPStatus] = "-",
+            size: typing.Union[int, str] = "-"
+            ) -> None:
+        if isinstance(code, http.HTTPStatus):
+            code = code.value
+        logging.debug('{address}: "{request}" {code} {size}'.format(
+            address=self.address_string(),
+            request=self.requestline,
+            code=str(code),
+            size=str(size)))
 
     def log_message(self, format, *args):
-        logging.debug('{address}: {message}'.format(
+        logging.info('{address}: {message}'.format(
             address=self.address_string(),
             message=format%args))
 
@@ -124,8 +139,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         data = self._tileCache.lookup(key=cacheKey)
         if data == None:
-            #requestUrl = f'https://travellermap.com/api/tile?{parsed.query}'
-            requestUrl = f'http://localhost:50103/api/tile?{parsedUrl.query}' # TODO: Remove local Traveller Map instance
+            requestUrl = urllib.parse.urljoin(self._travellerMapUrl, '/api/tile?' + parsedUrl.query)
             with urllib.request.urlopen(requestUrl) as response:
                 data = response.read()
 
@@ -205,21 +219,44 @@ class TileProxy(object):
         Started = 2
         Error = 3
 
-    def __init__(
-            self,
-            port: int,
-            customMapDir: str,
+    _instance = None # Singleton instance
+    _lock = threading.Lock()
+    _travellerMapUrl = None  
+    _customMapsDir = None
+    _logDir = None
+    _logLevel = logging.INFO
+    _service = None
+    _shutdownEvent = None
+    _currentState = ServerStatus.Stopped
+    _messageQueue = multiprocessing.Queue()
+    _port = None
+
+    def __init__(self) -> None:
+        raise RuntimeError('Call instance() instead')
+
+    @classmethod
+    def instance(cls):
+        if not cls._instance:
+            with cls._lock:
+                # Recheck instance as another thread could have created it between the
+                # first check adn the lock
+                if not cls._instance:
+                    cls._instance = cls.__new__(cls)
+        return cls._instance
+
+    @staticmethod
+    def configure(
+            travellerMapUrl: str,
+            customMapsDir: str,
             logDir: str,
             logLevel: int
             ) -> None:
-        self._port = port
-        self._customMapsDir = customMapDir
-        self._logDir = logDir
-        self._logLevel = logLevel
-        self._service = None
-        self._shutdownEvent = None
-        self._currentState = TileProxy.ServerStatus.Stopped
-        self._statusQueue = multiprocessing.Queue()
+        if TileProxy._instance:
+            raise RuntimeError('You can\'t configure tile proxy after the singleton has been initialised')
+        TileProxy._travellerMapUrl = travellerMapUrl
+        TileProxy._customMapsDir = customMapsDir
+        TileProxy._logDir = logDir
+        TileProxy._logLevel = logLevel         
 
     def run(self) -> None:
         if self._service:
@@ -231,12 +268,12 @@ class TileProxy(object):
             self._service = multiprocessing.Process(
                 target=TileProxy._serviceCallback,
                 args=[
-                    self._port,
+                    self._travellerMapUrl,
                     self._customMapsDir,
                     self._logDir,
                     self._logLevel,
                     self._shutdownEvent,
-                    self._statusQueue])
+                    self._messageQueue])
             self._service.daemon = True
             self._service.start()
         except Exception:
@@ -251,21 +288,40 @@ class TileProxy(object):
         self._service = None
         self._shutdownEvent = None
         self._currentState =  TileProxy.ServerStatus.Stopped
+        self._port = None
+
+    def port(self) -> typing.Optional[int]:
+        self._updateState()
+        return self._port
 
     def status(self) -> 'TileProxy.ServerStatus':
-        while not self._statusQueue.empty():
-            self._currentState = self._statusQueue.get(block=False)
+        self._updateState()
         return self._currentState
+    
+    def _updateState(self) -> None:
+        while not self._messageQueue.empty():
+            message = self._messageQueue.get(block=False)
+            if message and (len(message) == 2):
+                status = message[0]
+                data = message[1]
+                assert(isinstance(status, TileProxy.ServerStatus))
+                self._currentState = status
+
+                if self._currentState == TileProxy.ServerStatus.Started:
+                    assert(isinstance(data, int))
+                    self._port = data
+                elif self._currentState == TileProxy.ServerStatus.Error:
+                    self._port = None
 
     # NOTE: This runs in a separate process
     @staticmethod
     def _serviceCallback(
-            port: int,
+            travellerMapUrl: str,
             customMapsDir: str,
             logDir: str,
             logLevel: int,
             shutdownEvent: multiprocessing.Event,
-            statusQueue: multiprocessing.Queue
+            messageQueue: multiprocessing.Queue
             ) -> None:
         try:
             app.setupLogger(logDir=logDir, logFile='tileproxy.log')
@@ -273,7 +329,7 @@ class TileProxy(object):
         except Exception as ex:
             logging.error('Failed to set up tile proxy logging', exc_info=ex)
 
-        logging.debug('Tile proxy starting')
+        logging.info('Tile proxy starting')
 
         try:
             tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
@@ -287,21 +343,21 @@ class TileProxy(object):
             except Exception as ex:
                 logging.error('Exception occurred while compositing tile', exc_info=ex)
 
-            handler = functools.partial(_HttpGetRequestHandler, tileCache, compositor)
+            handler = functools.partial(_HttpGetRequestHandler, travellerMapUrl, tileCache, compositor)
 
             # Only listen on loopback for security. Allow address reuse to prevent issues if the
             # app is restarted
             httpd = _HTTPServer(
-                serverAddress=('127.0.0.1', port),
+                serverAddress=('127.0.0.1', 0),
                 requestHandlerClass=handler,
                 shutdownEvent=shutdownEvent)
             httpd.allow_reuse_address = True
 
-            statusQueue.put(TileProxy.ServerStatus.Started)
+            messageQueue.put((TileProxy.ServerStatus.Started, httpd.server_port))
             httpd.serve_forever(poll_interval=0.5)
 
-            statusQueue.put(TileProxy.ServerStatus.Stopped)
-            logging.debug('Tile proxy shutdown complete')
+            messageQueue.put((TileProxy.ServerStatus.Stopped, None))
+            logging.info('Tile proxy shutdown complete')
         except Exception as ex:
             logging.error('Exception occurred while running tile proxy', exc_info=ex)
-            statusQueue.put(TileProxy.ServerStatus.Error)
+            messageQueue.put((TileProxy.ServerStatus.Error, str(ex)))
