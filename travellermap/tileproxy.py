@@ -6,6 +6,9 @@ import http.server
 import io
 import logging
 import multiprocessing
+import os
+import PIL.Image
+import PIL.ImageDraw
 import socketserver
 import travellermap
 import urllib.error
@@ -19,6 +22,40 @@ _MultiThreaded = True
 
 # TODO: This should be configurable
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
+
+_ExtensionToContentTypeMap = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css'
+}
+
+# This is an extremely crude in memory cache of all the locally served files. It assumes
+# files don't change during run time and doesn't support files in sub-directories
+class _LocalFileStore(object):
+    def __init__(
+            self,
+            localFileDir: str
+            ) -> None:
+        self._lock = threading.Lock()
+        self._cache = {}
+
+        for fileName in os.listdir(localFileDir):
+            filePath = os.path.join(localFileDir, fileName)
+            if not os.path.isfile(filePath):
+                continue
+            try:
+                with open(filePath, 'rb') as file:
+                    data = file.read()
+            except Exception as ex:
+                logging.error(f'Local file store failed to load {filePath}', exc_info=ex)
+                continue
+
+            logging.debug(f'Local file store loaded {filePath}')
+            self._cache['/' + fileName] = data # Add '/' to the key for easier mapping later
+
+    def lookup(self, filePath: str) -> bytes:
+        with self._lock:
+            return self._cache.get(filePath)
 
 class _TileCache(object):
     def __init__(
@@ -90,12 +127,14 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(
             self,
             travellerMapUrl: str,
+            localFileStore: _LocalFileStore,
             tileCache: _TileCache,
             compositor: typing.Optional[travellermap.Compositor],
             *args,
             **kwargs
             ) -> None:
         self._travellerMapUrl = travellerMapUrl
+        self._localFileStore = localFileStore
         self._tileCache = tileCache
         self._compositor = compositor
 
@@ -129,16 +168,69 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
     def do_GET(self):
-        parsedUrl = urllib.parse.urlparse(self.path)
+        try:
+            parsedUrl = urllib.parse.urlparse(self.path)
 
+            path = parsedUrl.path
+            if path == '' or path == '/':
+                path = '/index.html'
+
+            localFileData = self._localFileStore.lookup(path)
+            if localFileData:
+                self._handleLocalFileRequest(
+                    filePath=path,
+                    fileData=localFileData)
+            elif path == '/api/tile':
+                self._handleTileRequest(parsedUrl=parsedUrl)
+            else:
+                # Act as a proxy for all other requests, pulling data from the configured
+                # Traveller Map instance
+                self._handleProxyRequest(parsedUrl=parsedUrl)
+        except urllib.error.HTTPError as ex:
+            logging.error(f'HTTP Error {ex.code} when handling request for {self.path}')
+            self.send_response(ex.code)
+            self.end_headers()
+        except urllib.error.URLError as ex:
+            logging.error(f'URL Error {ex.reason} when handling request for {self.path}')
+            if hasattr(ex, 'code'):
+                code = ex.code
+            else:
+                code = 500
+            self.send_response(code)
+            self.end_headers()
+        except Exception as ex:
+            logging.error(f'Exception occurred when handling request for {self.path}', exc_info=ex)
+            self.send_response(500)
+            self.end_headers()
+
+    def _handleLocalFileRequest(
+            self,
+            filePath: urllib.parse.ParseResult,
+            fileData: str
+            ) -> None:
+        logging.debug(f'Serving local data for {filePath}')
+
+        _, extension = os.path.splitext(filePath)
+        contentType = _ExtensionToContentTypeMap.get(extension)
+
+        self.send_response(200)
+        if contentType:
+            self.send_header('Content-Type', contentType)
+        self.send_header('Content-Length', len(fileData))
+        self.end_headers()
+        self.wfile.write(fileData)
+
+    def _handleTileRequest(
+            self,
+            parsedUrl: urllib.parse.ParseResult
+            ) -> None:
         parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
         cacheKey = self._generateCacheKey(queryMap=parsedQuery)
 
-        # TODO: Remove debug code
-        assert(''.join(sorted(cacheKey)) == ''.join(sorted(parsedUrl.query)))
-
         data = self._tileCache.lookup(key=cacheKey)
         if data == None:
+            logging.debug(f'Proxying request for tile {parsedUrl.query}')
+
             requestUrl = urllib.parse.urljoin(self._travellerMapUrl, '/api/tile?' + parsedUrl.query)
             with urllib.request.urlopen(requestUrl) as response:
                 data = response.read()
@@ -176,9 +268,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                         tileScale=tileScale,
                         milieu=milieu)
                 except Exception as ex:
-                    logging.error('Failed to create compositor', exc_info=ex)
+                    logging.error('Failed to composite tile', exc_info=ex)
 
             self._tileCache.add(key=cacheKey, data=data)
+        else:
+            logging.debug(f'Serving cached response for tile {parsedUrl.query}')
 
         # Enable this to add a red boundary to all tiles in order to highlight where they are
         """
@@ -195,8 +289,32 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         """
 
         self.send_response(200)
+        self.send_header('Content-Type', 'image/png')
+        self.send_header('Content-Length', len(data))
+        # This is copied from Traveller Map (public not local). Worth pointing
+        # out that this proxy is ignoring the max-age request
+        self.send_header('Cache-Control', 'public, max-age=3600')
         self.end_headers()
         self.wfile.write(data.read() if isinstance(data, io.BytesIO) else data)
+
+    def _handleProxyRequest(
+            self,
+            parsedUrl: urllib.parse.ParseResult
+            ) -> None:
+        requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
+        logging.debug(f'Proxying request to {requestUrl}')
+
+        if parsedUrl.query:
+            requestUrl += '?' + parsedUrl.query
+        with urllib.request.urlopen(requestUrl) as response:
+            info = response.info()
+            data = response.read()
+
+        self.send_response(200)
+        for header, value in info.items():
+            self.send_header(header, value)
+        self.end_headers()
+        self.wfile.write(data)            
 
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
@@ -212,6 +330,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         options.sort()
         return '&'.join(options)
 
+# TODO: Rename this to MapProxy
 class TileProxy(object):
     class ServerStatus(enum.Enum):
         Stopped = 0
@@ -221,7 +340,8 @@ class TileProxy(object):
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _travellerMapUrl = None  
+    _travellerMapUrl = None
+    _localFilesDir = None
     _customMapsDir = None
     _logDir = None
     _logLevel = logging.INFO
@@ -247,6 +367,7 @@ class TileProxy(object):
     @staticmethod
     def configure(
             travellerMapUrl: str,
+            localFilesDir: str,
             customMapsDir: str,
             logDir: str,
             logLevel: int
@@ -254,6 +375,7 @@ class TileProxy(object):
         if TileProxy._instance:
             raise RuntimeError('You can\'t configure tile proxy after the singleton has been initialised')
         TileProxy._travellerMapUrl = travellerMapUrl
+        TileProxy._localFilesDir = localFilesDir
         TileProxy._customMapsDir = customMapsDir
         TileProxy._logDir = logDir
         TileProxy._logLevel = logLevel         
@@ -269,6 +391,7 @@ class TileProxy(object):
                 target=TileProxy._serviceCallback,
                 args=[
                     self._travellerMapUrl,
+                    self._localFilesDir,
                     self._customMapsDir,
                     self._logDir,
                     self._logLevel,
@@ -317,6 +440,7 @@ class TileProxy(object):
     @staticmethod
     def _serviceCallback(
             travellerMapUrl: str,
+            localFilesDir: str,
             customMapsDir: str,
             logDir: str,
             logLevel: int,
@@ -332,6 +456,7 @@ class TileProxy(object):
         logging.info('Tile proxy starting')
 
         try:
+            localFileStore = _LocalFileStore(localFileDir=localFilesDir)
             tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
 
             # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
@@ -343,7 +468,12 @@ class TileProxy(object):
             except Exception as ex:
                 logging.error('Exception occurred while compositing tile', exc_info=ex)
 
-            handler = functools.partial(_HttpGetRequestHandler, travellerMapUrl, tileCache, compositor)
+            handler = functools.partial(
+                _HttpGetRequestHandler,
+                travellerMapUrl,
+                localFileStore,
+                tileCache,
+                compositor)
 
             # Only listen on loopback for security. Allow address reuse to prevent issues if the
             # app is restarted
@@ -353,6 +483,7 @@ class TileProxy(object):
                 shutdownEvent=shutdownEvent)
             httpd.allow_reuse_address = True
 
+            logging.info(f'Tile proxy listening on port {httpd.server_port}')
             messageQueue.put((TileProxy.ServerStatus.Started, httpd.server_port))
             httpd.serve_forever(poll_interval=0.5)
 

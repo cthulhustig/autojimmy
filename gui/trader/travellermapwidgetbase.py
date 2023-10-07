@@ -131,36 +131,6 @@ class _HexOverlay(object):
     def colour(self) -> str:
         return self._colour
 
-class _CustomUrlInterceptor(QtWebEngineCore.QWebEngineUrlRequestInterceptor):
-    _CanonicalMapUrl = QtCore.QUrl(travellermap.TravellerMapBaseUrl)
-
-    # NOTE: If a redirect is performed, this function will be called again for the URL that the
-    # original was redirected too. Care must be taken not to get into a loop where that URL is
-    # then redirected as it will cause the app to exit (with no error)
-    def interceptRequest(self, info: QtWebEngineCore.QWebEngineUrlRequestInfo) -> None:
-        url = info.requestUrl()
-        if url.scheme() == 'file':
-            return # No redirect for files
-        
-        if url.authority() != _CustomUrlInterceptor._CanonicalMapUrl.authority():
-            return # No redirect for URLs not directed at Traveller Map
-
-        tileProxyPort = travellermap.TileProxy.instance().port()
-        configuredMapUrl = QtCore.QUrl(app.Config.instance().travellerMapUrl())
-        redirectUrl = None
-        if tileProxyPort and url.path() == '/api/tile':
-            redirectUrl = QtCore.QUrl(f'http://127.0.0.1:{tileProxyPort}/?{url.query()}')
-        elif configuredMapUrl.scheme() != _CustomUrlInterceptor._CanonicalMapUrl.scheme() or \
-            configuredMapUrl.authority() != _CustomUrlInterceptor._CanonicalMapUrl.authority():
-            # A non-default Traveller Map URL is configured so redirect to it
-            redirectUrl = QtCore.QUrl(url)
-            redirectUrl.setScheme(configuredMapUrl.scheme())
-            redirectUrl.setAuthority(configuredMapUrl.authority())
-
-        if redirectUrl:
-            logging.debug(f'Redirecting {str(url)} to {str(redirectUrl)}')
-            info.redirect(redirectUrl)
-
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor
     leftClicked = QtCore.pyqtSignal([str], [type(None)])
@@ -229,17 +199,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 QtWebEngineWidgets.QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
             TravellerMapWidgetBase._sharedProfile.setPersistentStoragePath(
                 os.path.join(app.Config.instance().appDir(), 'webwidget', 'persist'))
-
-            # setRequestInterceptor is deprecated (and not thread safe) so it's preferable to use
-            # setUrlRequestInterceptor, however it doesn't seem to be available in older versions of
-            # PyQt5
-            TravellerMapWidgetBase._sharedRequestInterceptor = _CustomUrlInterceptor()
-            if getattr(TravellerMapWidgetBase._sharedProfile, 'setUrlRequestInterceptor', None):
-                TravellerMapWidgetBase._sharedProfile.setUrlRequestInterceptor(
-                    TravellerMapWidgetBase._sharedRequestInterceptor)
-            else:
-                TravellerMapWidgetBase._sharedProfile.setRequestInterceptor(
-                    TravellerMapWidgetBase._sharedRequestInterceptor)
 
         page = _CustomWebEnginePage(TravellerMapWidgetBase._sharedProfile, self)
         self._mapWidget = QtWebEngineWidgets.QWebEngineView()
@@ -676,7 +635,14 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        indexUrl = f'file:///{rootPath}/data/web/index.html'
+        tileProxyPort = travellermap.TileProxy.instance().port()
+        if tileProxyPort:
+            # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
+            # using localhost causes the web widget to be incredibly slow to update tiles
+            # as you zoom in and out.
+            indexUrl = f'http://127.0.0.1:{tileProxyPort}/index.html'
+        else:
+            indexUrl = f'file:///{rootPath}/data/web/index.html'
 
         options = set(app.Config.instance().mapOptions())
         options.add(travellermap.Option.HideUI) # Always hide the UI

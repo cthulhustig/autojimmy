@@ -279,6 +279,7 @@ def main() -> None:
         # Set up tile proxy now to give it time to start its child process while data is being loaded
         travellermap.TileProxy.configure(
             travellerMapUrl=app.Config.instance().travellerMapUrl(),
+            localFilesDir=os.path.join(installDir, 'data', 'web'),
             customMapsDir=customMapDir,
             logDir=logDirectory,
             logLevel=logLevel)            

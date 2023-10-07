@@ -54,7 +54,7 @@ class TileClient(object):
         tileProxyPort = travellermap.TileProxy.instance().port()
         if tileProxyPort:
             assert(isinstance(tileProxyPort, int))
-            baseUrl = f'http://127.0.0.1:{tileProxyPort}/'
+            baseUrl = f'http://127.0.0.1:{tileProxyPort}/api/tile'
         else:
             baseUrl = urllib.parse.urljoin(self._travellerMapBaseUrl, '/api/tile')
             
