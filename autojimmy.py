@@ -46,7 +46,7 @@ def _applicationDirectory() -> str:
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
     
-class _TileProxyMonitor(QtCore.QObject):
+class _MapProxyMonitor(QtCore.QObject):
     error = QtCore.pyqtSignal()
 
     _PollIntervalMs = 5000
@@ -61,15 +61,15 @@ class _TileProxyMonitor(QtCore.QObject):
         self._timer.timeout.connect(self._checkStatus)
 
     def start(self) -> None:
-        self._timer.start(_TileProxyMonitor._PollIntervalMs)
+        self._timer.start(_MapProxyMonitor._PollIntervalMs)
 
     def stop(self) -> None:
         self._timer.stop()
 
     def _checkStatus(self) -> None:
-        newStatus = travellermap.TileProxy.instance().status()
-        isError = newStatus == travellermap.TileProxy.ServerStatus.Error
-        wasError = self._status == travellermap.TileProxy.ServerStatus.Error
+        newStatus = travellermap.MapProxy.instance().status()
+        isError = newStatus == travellermap.MapProxy.ServerStatus.Error
+        wasError = self._status == travellermap.MapProxy.ServerStatus.Error
 
         if isError and not wasError:
             self.error.emit()
@@ -235,7 +235,7 @@ def main() -> None:
         return
 
     exitCode = None
-    tileProxyMonitor = None
+    mapProxyMonitor = None
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -276,14 +276,14 @@ def main() -> None:
             overlayDir=overlayMapDir,
             customDir=customMapDir)
         
-        # Set up tile proxy now to give it time to start its child process while data is being loaded
-        travellermap.TileProxy.configure(
+        # Set up map proxy now to give it time to start its child process while data is being loaded
+        travellermap.MapProxy.configure(
             travellerMapUrl=app.Config.instance().travellerMapUrl(),
             localFilesDir=os.path.join(installDir, 'data', 'web'),
             customMapsDir=customMapDir,
             logDir=logDirectory,
             logLevel=logLevel)            
-        travellermap.TileProxy.instance().run()
+        travellermap.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
             travellerMapBaseUrl=app.Config.instance().travellerMapUrl())
@@ -319,13 +319,13 @@ def main() -> None:
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
         loadProgress.deleteLater()
 
-        # Start monitoring the tile proxy after everything has loaded. If it does fail, this prevents
+        # Start monitoring the map proxy after everything has loaded. If it does fail, this prevents
         # an error popup being displayed while loading (it will be displayed when the monitor first
         # polls the proxy)
-        tileProxyMonitor = _TileProxyMonitor()
-        tileProxyMonitor.error.connect(
-            lambda: gui.MessageBoxEx.critical('The tile proxy has failed. Check logs for further details.'))
-        tileProxyMonitor.start()
+        mapProxyMonitor = _MapProxyMonitor()
+        mapProxyMonitor.error.connect(
+            lambda: gui.MessageBoxEx.critical('The map proxy has failed. Check logs for further details.'))
+        mapProxyMonitor.start()
 
         window = MainWindow()
         exitCode = application.exec()
@@ -338,10 +338,10 @@ def main() -> None:
             exception=ex)
         exitCode = 1
     finally:
-        if tileProxyMonitor:
-            tileProxyMonitor.stop()
+        if mapProxyMonitor:
+            mapProxyMonitor.stop()
 
-        travellermap.TileProxy.instance().shutdown()
+        travellermap.MapProxy.instance().shutdown()
 
     sys.exit(exitCode)
 

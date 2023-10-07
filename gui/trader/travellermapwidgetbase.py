@@ -635,12 +635,12 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        tileProxyPort = travellermap.TileProxy.instance().port()
-        if tileProxyPort:
+        mapProxyPort = travellermap.MapProxy.instance().port()
+        if mapProxyPort:
             # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
             # using localhost causes the web widget to be incredibly slow to update tiles
             # as you zoom in and out.
-            indexUrl = f'http://127.0.0.1:{tileProxyPort}/index.html'
+            indexUrl = f'http://127.0.0.1:{mapProxyPort}/index.html'
         else:
             indexUrl = f'file:///{rootPath}/data/web/index.html'
 

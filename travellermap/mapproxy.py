@@ -119,7 +119,7 @@ class _HTTPServer(_HTTPServerBase):
     def service_actions(self) -> None:
         super().service_actions()
         if self._shutdownEvent.is_set():
-            logging.debug('Tile proxy shutdown event received')
+            logging.debug('Tile map shutdown event received')
             # https://stackoverflow.com/questions/10085996/shutdown-socketserver-serve-forever-in-one-thread-python-application
             self._BaseServer__shutdown_request = True
 
@@ -331,7 +331,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         return '&'.join(options)
 
 # TODO: Rename this to MapProxy
-class TileProxy(object):
+class MapProxy(object):
     class ServerStatus(enum.Enum):
         Stopped = 0
         Starting = 1
@@ -372,23 +372,23 @@ class TileProxy(object):
             logDir: str,
             logLevel: int
             ) -> None:
-        if TileProxy._instance:
-            raise RuntimeError('You can\'t configure tile proxy after the singleton has been initialised')
-        TileProxy._travellerMapUrl = travellerMapUrl
-        TileProxy._localFilesDir = localFilesDir
-        TileProxy._customMapsDir = customMapsDir
-        TileProxy._logDir = logDir
-        TileProxy._logLevel = logLevel         
+        if MapProxy._instance:
+            raise RuntimeError('You can\'t configure map proxy after the singleton has been initialised')
+        MapProxy._travellerMapUrl = travellerMapUrl
+        MapProxy._localFilesDir = localFilesDir
+        MapProxy._customMapsDir = customMapsDir
+        MapProxy._logDir = logDir
+        MapProxy._logLevel = logLevel         
 
     def run(self) -> None:
         if self._service:
             self.shutdown()
 
-        self._currentState = TileProxy.ServerStatus.Starting
+        self._currentState = MapProxy.ServerStatus.Starting
         try:
             self._shutdownEvent = multiprocessing.Event()
             self._service = multiprocessing.Process(
-                target=TileProxy._serviceCallback,
+                target=MapProxy._serviceCallback,
                 args=[
                     self._travellerMapUrl,
                     self._localFilesDir,
@@ -400,7 +400,7 @@ class TileProxy(object):
             self._service.daemon = True
             self._service.start()
         except Exception:
-            self._currentState = TileProxy.ServerStatus.Error
+            self._currentState = MapProxy.ServerStatus.Error
             raise
 
     def shutdown(self) -> None:
@@ -410,14 +410,14 @@ class TileProxy(object):
         self._service.join()
         self._service = None
         self._shutdownEvent = None
-        self._currentState =  TileProxy.ServerStatus.Stopped
+        self._currentState =  MapProxy.ServerStatus.Stopped
         self._port = None
 
     def port(self) -> typing.Optional[int]:
         self._updateState()
         return self._port
 
-    def status(self) -> 'TileProxy.ServerStatus':
+    def status(self) -> 'MapProxy.ServerStatus':
         self._updateState()
         return self._currentState
     
@@ -427,13 +427,13 @@ class TileProxy(object):
             if message and (len(message) == 2):
                 status = message[0]
                 data = message[1]
-                assert(isinstance(status, TileProxy.ServerStatus))
+                assert(isinstance(status, MapProxy.ServerStatus))
                 self._currentState = status
 
-                if self._currentState == TileProxy.ServerStatus.Started:
+                if self._currentState == MapProxy.ServerStatus.Started:
                     assert(isinstance(data, int))
                     self._port = data
-                elif self._currentState == TileProxy.ServerStatus.Error:
+                elif self._currentState == MapProxy.ServerStatus.Error:
                     self._port = None
 
     # NOTE: This runs in a separate process
@@ -448,12 +448,12 @@ class TileProxy(object):
             messageQueue: multiprocessing.Queue
             ) -> None:
         try:
-            app.setupLogger(logDir=logDir, logFile='tileproxy.log')
+            app.setupLogger(logDir=logDir, logFile='mapproxy.log')
             app.setLogLevel(logLevel=logLevel)
         except Exception as ex:
-            logging.error('Failed to set up tile proxy logging', exc_info=ex)
+            logging.error('Failed to set up map proxy logging', exc_info=ex)
 
-        logging.info('Tile proxy starting')
+        logging.info('Map proxy starting')
 
         try:
             localFileStore = _LocalFileStore(localFileDir=localFilesDir)
@@ -483,12 +483,12 @@ class TileProxy(object):
                 shutdownEvent=shutdownEvent)
             httpd.allow_reuse_address = True
 
-            logging.info(f'Tile proxy listening on port {httpd.server_port}')
-            messageQueue.put((TileProxy.ServerStatus.Started, httpd.server_port))
+            logging.info(f'Map proxy listening on port {httpd.server_port}')
+            messageQueue.put((MapProxy.ServerStatus.Started, httpd.server_port))
             httpd.serve_forever(poll_interval=0.5)
 
-            messageQueue.put((TileProxy.ServerStatus.Stopped, None))
-            logging.info('Tile proxy shutdown complete')
+            messageQueue.put((MapProxy.ServerStatus.Stopped, None))
+            logging.info('Map proxy shutdown complete')
         except Exception as ex:
-            logging.error('Exception occurred while running tile proxy', exc_info=ex)
-            messageQueue.put((TileProxy.ServerStatus.Error, str(ex)))
+            logging.error('Exception occurred while running map proxy', exc_info=ex)
+            messageQueue.put((MapProxy.ServerStatus.Error, str(ex)))

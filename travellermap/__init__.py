@@ -5,5 +5,5 @@ from .url import *
 from .astrometrics import *
 from .datastore import *
 from .compositor import *
-from .tileproxy import *
+from .mapproxy import *
 from .tileclient import *
