@@ -294,6 +294,30 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
         
+        self._mapProxyPortSpinBox = gui.SpinBoxEx()
+        self._mapProxyPortSpinBox.setRange(0, 65535)
+        self._mapProxyPortSpinBox.setValue(app.Config.instance().mapProxyPort())
+        self._mapProxyPortSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the port the local Traveller Map proxy will listen on.</p>' +
+            f'<p>By default {app.AppName} uses a local proxy to access Traveller Map. ' +
+            'Using this proxy has two main benefits:</p>' +
+            '<ul style="margin-left:15px; -qt-list-indent:0;">' +
+            f'<li>It allows {app.AppName} to overlay custom sectors on tiles returned by ' +
+            'Traveller Map, in order to have them rendered in the integrated map views.</li>' +
+            '<li>It allocates more memory to be used for caching tiles in order to ' +
+            'improve performance when doing a lot of scrolling & zooming.</li>' +
+            '</ul>' +
+            '<p>For increased security, this proxy only listens on localhost, meaning ' +
+            f'it can only be accessed from the system {app.AppName} is running on. ' +
+            'The proxy also only allows access to the Traveller Map URL configured ' +
+            'above.<p>' +            
+            '<p>You may need to change the port the proxy listens on if there is a ' +
+            'conflict with another service running on you system. The port can be set ' +
+            'to 0 in order to disable the use of the proxy, however this will also ' +
+            'disable the features mentioned above.</p>' +
+            restartRequiredText,
+            escape=False))        
+        
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),
@@ -313,6 +337,7 @@ class ConfigDialog(gui.DialogEx):
 
         travellerLayout = gui.FormLayoutEx()
         travellerLayout.addRow('Traveller Map Url:', self._mapUrlLineEdit)
+        travellerLayout.addRow('Map Proxy Port:', self._mapProxyPortSpinBox)
         travellerLayout.addRow('Milieu:', self._milieuComboBox)
         travellerLayout.addRow('Rules:', self._rulesComboBox)
 
@@ -697,6 +722,7 @@ class ConfigDialog(gui.DialogEx):
         try:
             config = app.Config.instance()
             checker.update(config.setTravellerMapUrl(self._mapUrlLineEdit.text()))
+            checker.update(config.setMapProxyPort(self._mapProxyPortSpinBox.value()))
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))

@@ -330,7 +330,6 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         options.sort()
         return '&'.join(options)
 
-# TODO: Rename this to MapProxy
 class MapProxy(object):
     class ServerStatus(enum.Enum):
         Stopped = 0
@@ -340,6 +339,7 @@ class MapProxy(object):
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
+    _listenPort = None
     _travellerMapUrl = None
     _localFilesDir = None
     _customMapsDir = None
@@ -349,7 +349,6 @@ class MapProxy(object):
     _shutdownEvent = None
     _currentState = ServerStatus.Stopped
     _messageQueue = multiprocessing.Queue()
-    _port = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -366,6 +365,7 @@ class MapProxy(object):
 
     @staticmethod
     def configure(
+            listenPort: int,
             travellerMapUrl: str,
             localFilesDir: str,
             customMapsDir: str,
@@ -374,6 +374,9 @@ class MapProxy(object):
             ) -> None:
         if MapProxy._instance:
             raise RuntimeError('You can\'t configure map proxy after the singleton has been initialised')
+        if MapProxy._listenPort == 0:
+            raise RuntimeError('Map proxy listen port can\'t be 0')
+        MapProxy._listenPort = listenPort
         MapProxy._travellerMapUrl = travellerMapUrl
         MapProxy._localFilesDir = localFilesDir
         MapProxy._customMapsDir = customMapsDir
@@ -390,6 +393,7 @@ class MapProxy(object):
             self._service = multiprocessing.Process(
                 target=MapProxy._serviceCallback,
                 args=[
+                    self._listenPort,
                     self._travellerMapUrl,
                     self._localFilesDir,
                     self._customMapsDir,
@@ -411,11 +415,6 @@ class MapProxy(object):
         self._service = None
         self._shutdownEvent = None
         self._currentState =  MapProxy.ServerStatus.Stopped
-        self._port = None
-
-    def port(self) -> typing.Optional[int]:
-        self._updateState()
-        return self._port
 
     def status(self) -> 'MapProxy.ServerStatus':
         self._updateState()
@@ -430,15 +429,10 @@ class MapProxy(object):
                 assert(isinstance(status, MapProxy.ServerStatus))
                 self._currentState = status
 
-                if self._currentState == MapProxy.ServerStatus.Started:
-                    assert(isinstance(data, int))
-                    self._port = data
-                elif self._currentState == MapProxy.ServerStatus.Error:
-                    self._port = None
-
     # NOTE: This runs in a separate process
     @staticmethod
     def _serviceCallback(
+            listenPort: int,
             travellerMapUrl: str,
             localFilesDir: str,
             customMapsDir: str,
@@ -453,7 +447,7 @@ class MapProxy(object):
         except Exception as ex:
             logging.error('Failed to set up map proxy logging', exc_info=ex)
 
-        logging.info('Map proxy starting')
+        logging.info(f'Map proxy starting on port {listenPort}')
 
         try:
             localFileStore = _LocalFileStore(localFileDir=localFilesDir)
@@ -478,13 +472,12 @@ class MapProxy(object):
             # Only listen on loopback for security. Allow address reuse to prevent issues if the
             # app is restarted
             httpd = _HTTPServer(
-                serverAddress=('127.0.0.1', 0),
+                serverAddress=('127.0.0.1', listenPort),
                 requestHandlerClass=handler,
                 shutdownEvent=shutdownEvent)
             httpd.allow_reuse_address = True
 
-            logging.info(f'Map proxy listening on port {httpd.server_port}')
-            messageQueue.put((MapProxy.ServerStatus.Started, httpd.server_port))
+            messageQueue.put((MapProxy.ServerStatus.Started, None))
             httpd.serve_forever(poll_interval=0.5)
 
             messageQueue.put((MapProxy.ServerStatus.Stopped, None))

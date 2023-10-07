@@ -277,16 +277,21 @@ def main() -> None:
             customDir=customMapDir)
         
         # Set up map proxy now to give it time to start its child process while data is being loaded
-        travellermap.MapProxy.configure(
-            travellerMapUrl=app.Config.instance().travellerMapUrl(),
-            localFilesDir=os.path.join(installDir, 'data', 'web'),
-            customMapsDir=customMapDir,
-            logDir=logDirectory,
-            logLevel=logLevel)            
-        travellermap.MapProxy.instance().run()
+        travellerMapUrl = app.Config.instance().travellerMapUrl()
+        mapProxyPort = app.Config.instance().mapProxyPort()
+        if mapProxyPort:
+            travellermap.MapProxy.configure(
+                listenPort=mapProxyPort,
+                travellerMapUrl=travellerMapUrl,
+                localFilesDir=os.path.join(installDir, 'data', 'web'),
+                customMapsDir=customMapDir,
+                logDir=logDirectory,
+                logLevel=logLevel)            
+            travellermap.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
-            travellerMapBaseUrl=app.Config.instance().travellerMapUrl())
+            travellerMapBaseUrl=travellerMapUrl,
+            mapProxyPort=mapProxyPort)
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
@@ -319,13 +324,14 @@ def main() -> None:
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
         loadProgress.deleteLater()
 
-        # Start monitoring the map proxy after everything has loaded. If it does fail, this prevents
-        # an error popup being displayed while loading (it will be displayed when the monitor first
-        # polls the proxy)
-        mapProxyMonitor = _MapProxyMonitor()
-        mapProxyMonitor.error.connect(
-            lambda: gui.MessageBoxEx.critical('The map proxy has failed. Check logs for further details.'))
-        mapProxyMonitor.start()
+        if mapProxyPort:
+            # Start monitoring the map proxy after everything has loaded. If it does fail, this prevents
+            # an error popup being displayed while loading (it will be displayed when the monitor first
+            # polls the proxy)
+            mapProxyMonitor = _MapProxyMonitor()
+            mapProxyMonitor.error.connect(lambda: gui.MessageBoxEx.critical(
+                'The map proxy has stopped running or failed to start. Check logs for further details.'))
+            mapProxyMonitor.start()
 
         window = MainWindow()
         exitCode = application.exec()

@@ -8,6 +8,7 @@ class TileClient(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _travellerMapBaseUrl = travellermap.TravellerMapBaseUrl
+    _mapProxyPort = 0 # Disabled by default
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -24,10 +25,14 @@ class TileClient(object):
     
     # The Traveller Map URL specified here is only used if the map proxy isn't running
     @staticmethod
-    def configure(travellerMapBaseUrl: str) -> None:
+    def configure(
+        travellerMapBaseUrl: str,
+        mapProxyPort: int
+        ) -> None:
         if TileClient._instance:
             raise RuntimeError('You can\'t configure map proxy after the singleton has been initialised')        
         TileClient._travellerMapBaseUrl = travellerMapBaseUrl
+        TileClient._mapProxyPort = mapProxyPort
 
     def tile(
             self,
@@ -51,10 +56,8 @@ class TileClient(object):
             tileY=(-mapY * linearScale - (height / 2)) / height,
             linearScale=linearScale)
         
-        mapProxyPort = travellermap.MapProxy.instance().port()
-        if mapProxyPort:
-            assert(isinstance(mapProxyPort, int))
-            baseUrl = f'http://127.0.0.1:{mapProxyPort}/api/tile'
+        if self._mapProxyPort:
+            baseUrl = f'http://127.0.0.1:{self._mapProxyPort}/api/tile'
         else:
             baseUrl = urllib.parse.urljoin(self._travellerMapBaseUrl, '/api/tile')
             

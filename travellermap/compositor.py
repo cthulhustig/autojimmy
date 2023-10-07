@@ -207,7 +207,9 @@ class Compositor(object):
                 # generate tileData without the need to open the original tile. The best way
                 # I can think to do this is to sectorBoundingRect so it can either return the
                 # maximal bounds (what it currently returns) or the minimal bounds (where it
-                # shrinks and offsets the rect)
+                # shrinks and offsets the rect). The main issue is it would mean the compositor
+                # would have to (possibly indirectly) initiate the request for the tile from
+                # Traveller Map (if it's not in the cache).
 
                 with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
                     tgtImage.paste(srcImage, tgtPixelOffset, srcImage)

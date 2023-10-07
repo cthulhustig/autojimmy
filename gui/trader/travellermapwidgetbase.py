@@ -635,7 +635,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        mapProxyPort = travellermap.MapProxy.instance().port()
+        mapProxyPort = app.Config.instance().mapProxyPort()
         if mapProxyPort:
             # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
             # using localhost causes the web widget to be incredibly slow to update tiles

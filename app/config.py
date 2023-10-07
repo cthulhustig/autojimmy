@@ -22,6 +22,7 @@ class Config(object):
 
     _LogLevelKeyName = 'Debug/LogLevel'
     _TravellerMapUrlKeyName = 'TravellerMap/SiteUrl'
+    _MapProxyPortKeyName = 'TravellerMap/ProxyPort'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
 
@@ -206,6 +207,21 @@ class Config(object):
 
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._TravellerMapUrlKeyName, url)
+        return True # Restart required
+    
+    # NOTE: If this returns 0 it means the proxy is disabled
+    def mapProxyPort(self) -> int:
+        return self._mapProxyPort
+
+    def setMapProxyPort(
+            self,
+            port: int # 0 == proxy disabled
+        ) -> None:
+        if port == self._mapProxyPort:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._MapProxyPortKeyName, port)
         return True # Restart required
 
     def milieu(self) -> travellermap.Milieu:
@@ -989,6 +1005,11 @@ class Config(object):
         self._travellerMapUrl = self._loadUrlSetting(
             key=Config._TravellerMapUrlKeyName,
             default=travellermap.TravellerMapBaseUrl)
+        self._mapProxyPort = self._loadIntSetting(
+            key=Config._MapProxyPortKeyName,
+            default=61977,
+            minValue=0,
+            maxValue=65535)        
         self._milieu = self._loadEnumSetting(
             key=Config._MilieuKeyName,
             default=travellermap.Milieu.M1105,
