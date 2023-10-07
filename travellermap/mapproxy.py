@@ -94,10 +94,11 @@ class _TileCache(object):
             data = self._cache.get(key)
             if not data:
                 return None
-            
+
             # Move most recently used item to end of cache so it will be evicted last
             self._cache.move_to_end(key, last=True)
             return data
+
 
 if _MultiThreaded:
     class _HTTPServerBase(socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -145,8 +146,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     def log_error(self, format: str, *args: typing.Any) -> None:
         logging.error('{address}: {message}'.format(
             address=self.address_string(),
-            message=format%args))
-        
+            message=format % args))
+
     def log_request(
             self,
             code: typing.Union[int, str, http.HTTPStatus] = "-",
@@ -163,7 +164,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logging.info('{address}: {message}'.format(
             address=self.address_string(),
-            message=format%args))
+            message=format % args))
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
@@ -314,7 +315,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         for header, value in info.items():
             self.send_header(header, value)
         self.end_headers()
-        self.wfile.write(data)            
+        self.wfile.write(data)
 
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
@@ -387,7 +388,7 @@ class MapProxy(object):
         MapProxy._overlayMapsDir = overlayMapsDir
         MapProxy._customMapsDir = customMapsDir
         MapProxy._logDir = logDir
-        MapProxy._logLevel = logLevel         
+        MapProxy._logLevel = logLevel
 
     def run(self) -> None:
         if self._service:
@@ -422,12 +423,12 @@ class MapProxy(object):
         self._service.join()
         self._service = None
         self._shutdownEvent = None
-        self._currentState =  MapProxy.ServerStatus.Stopped
+        self._currentState = MapProxy.ServerStatus.Stopped
 
     def status(self) -> 'MapProxy.ServerStatus':
         self._updateState()
         return self._currentState
-    
+
     def _updateState(self) -> None:
         while not self._messageQueue.empty():
             message = self._messageQueue.get(block=False)
@@ -444,7 +445,7 @@ class MapProxy(object):
             travellerMapUrl: str,
             localFilesDir: str,
             installMapsDir: str,
-            overlayMapsDir: str,            
+            overlayMapsDir: str,
             customMapsDir: str,
             logDir: str,
             logLevel: int,
@@ -466,7 +467,7 @@ class MapProxy(object):
             travellermap.DataStore.setSectorDirs(
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
-                customDir=customMapsDir)            
+                customDir=customMapsDir)
 
             # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
             # then it's important that we continue setting up the proxy so it can at least return the

@@ -23,7 +23,7 @@ def _calculateIntersection(
     bottom = min(rect1[3], rect2[3])
     if top >= bottom:
         return None
-    
+
     return (left, top, right, bottom)
 
 class _MipMap(object):
@@ -127,7 +127,7 @@ class Compositor(object):
             ) -> bytes:
         if tileScale < Compositor._MinCompositionScale:
             return tileData
-        
+
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -140,12 +140,12 @@ class Compositor(object):
             tileMapUL[0], # Left
             tileMapUL[1], # Top
             tileMapBR[0], # Right
-            tileMapBR[1]) # Bottom        
+            tileMapBR[1]) # Bottom
 
         # TODO: There is an annoying graphics issue that can occur if two custom sectors
         # are horizontally next to each other. If the name of one of the edge worlds from
         # the first sector processed overlaps the hex from the adjacent sector. When the
-        # adjacent sector is overlayed on the tile will be overwritten. The only solution 
+        # adjacent sector is overlayed on the tile will be overwritten. The only solution
         # I can see to that problem is switching so the custom sector mip levels have a
         # completely transparent background. However this introduces a load more problems
         # that are worse, such as issues with the * placeholders and things like trade
@@ -157,7 +157,7 @@ class Compositor(object):
             intersection = _calculateIntersection(sectorMapRect, tileMapRect)
             if not intersection:
                 continue # No intersection so just use base tile data
-            
+
             # The custom sector overlaps the tile so copy the section that overlaps to
             # the tile
 
@@ -246,7 +246,7 @@ class Compositor(object):
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} mip level data {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
-                
+
                 sectors.append(_CustomSector(
                     name=sectorInfo.canonicalName(),
                     position=(sectorInfo.x(), sectorInfo.y()),

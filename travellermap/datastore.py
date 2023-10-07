@@ -52,10 +52,10 @@ class SectorInfo(object):
 
     def tags(self) -> typing.Optional[typing.Iterable[str]]:
         return self._tags
-    
+
     def isCustomSector(self) -> bool:
         return self._isCustomSector
-    
+
     def mipLevels(self) -> typing.Optional[typing.Dict[int, str]]:
         return self._mipLevels
 
@@ -141,7 +141,7 @@ class DataStore(object):
             fileName=f'{escapedSectorName}.sec',
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
-    
+
     def sectorMipData(
             self,
             sectorName: str,
@@ -283,13 +283,13 @@ class DataStore(object):
                     logging.debug(
                         f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
                     sectorNameMap[sector.canonicalName()] = sector
-                    sectorPosMap[(sector.x(),sector.y())] = sector
+                    sectorPosMap[(sector.x(), sector.y())] = sector
 
                 sectors = self._loadMilieuSectors(
                     milieu=milieu,
                     useCustomMapDir=False)
                 for sector in sectors:
-                    conflictSector = sectorPosMap.get((sector.x(),sector.y()))
+                    conflictSector = sectorPosMap.get((sector.x(), sector.y()))
                     if conflictSector:
                         logging.warning(
                             f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same position as custom sector {conflictSector.canonicalName()}')
@@ -418,7 +418,7 @@ class DataStore(object):
             useCustomMapDir: bool
             ) -> typing.List[SectorInfo]:
         try:
-            universeData=self._readMilieuFile(
+            universeData = self._readMilieuFile(
                 fileName=self._UniverseFileName,
                 milieu=milieu,
                 useCustomMapDir=useCustomMapDir)
@@ -427,9 +427,9 @@ class DataStore(object):
                 # Custom map data is optional so if the universe file doesn't exist it just
                 # means there are no custom sectors for this milieu
                 return []
-            
+
             # When loading sectors for a standard milieu the universe file is mandatory
-            raise 
+            raise
 
         universeJson = json.loads(DataStore._bytesToString(universeData))
         if 'Sectors' not in universeJson:

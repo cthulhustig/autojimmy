@@ -293,7 +293,7 @@ class ConfigDialog(gui.DialogEx):
             '<p>If you run your own copy of Traveller Map, you can specify it\'s URL here.</p>' +
             restartRequiredText,
             escape=False))
-        
+
         self._mapProxyPortSpinBox = gui.SpinBoxEx()
         self._mapProxyPortSpinBox.setRange(0, 65535)
         self._mapProxyPortSpinBox.setValue(app.Config.instance().mapProxyPort())
@@ -310,14 +310,14 @@ class ConfigDialog(gui.DialogEx):
             '<p>For increased security, this proxy only listens on localhost, meaning ' +
             f'it can only be accessed from the system {app.AppName} is running on. ' +
             'The proxy also only allows access to the Traveller Map URL configured ' +
-            'above.<p>' +            
+            'above.<p>' +
             '<p>You may need to change the port the proxy listens on if there is a ' +
             'conflict with another service running on you system. The port can be set ' +
             'to 0 in order to disable the use of the proxy, however this will also ' +
             'disable the features mentioned above.</p>' +
             restartRequiredText,
-            escape=False))        
-        
+            escape=False))
+
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),

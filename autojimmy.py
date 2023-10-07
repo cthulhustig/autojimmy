@@ -45,7 +45,7 @@ def _applicationDirectory() -> str:
         return os.path.join(os.getenv('APPDATA'), app.AppName)
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
-    
+
 class _MapProxyMonitor(QtCore.QObject):
     error = QtCore.pyqtSignal()
 
@@ -75,7 +75,7 @@ class _MapProxyMonitor(QtCore.QObject):
             self.error.emit()
 
         self._status = newStatus
-    
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -275,7 +275,7 @@ def main() -> None:
             installDir=installMapDir,
             overlayDir=overlayMapDir,
             customDir=customMapDir)
-    
+
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
@@ -314,7 +314,7 @@ def main() -> None:
                 overlayMapsDir=overlayMapDir,
                 customMapsDir=customMapDir,
                 logDir=logDirectory,
-                logLevel=logLevel)            
+                logLevel=logLevel)
             travellermap.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
