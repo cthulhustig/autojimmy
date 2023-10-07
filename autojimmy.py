@@ -275,24 +275,7 @@ def main() -> None:
             installDir=installMapDir,
             overlayDir=overlayMapDir,
             customDir=customMapDir)
-        
-        # Set up map proxy now to give it time to start its child process while data is being loaded
-        travellerMapUrl = app.Config.instance().travellerMapUrl()
-        mapProxyPort = app.Config.instance().mapProxyPort()
-        if mapProxyPort:
-            travellermap.MapProxy.configure(
-                listenPort=mapProxyPort,
-                travellerMapUrl=travellerMapUrl,
-                localFilesDir=os.path.join(installDir, 'data', 'web'),
-                customMapsDir=customMapDir,
-                logDir=logDirectory,
-                logLevel=logLevel)            
-            travellermap.MapProxy.instance().run()
-
-        travellermap.TileClient.configure(
-            travellerMapBaseUrl=travellerMapUrl,
-            mapProxyPort=mapProxyPort)
-
+    
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
@@ -315,6 +298,28 @@ def main() -> None:
                 # when exec is called on the application
                 # https://doc.qt.io/qt-6/qobject.html#deleteLater
                 updateProgress.deleteLater()
+
+        # Set up map proxy now to give it time to start its child process while data is being loaded.
+        # It's important this is done after the check for new map data. If new data is downloaded it
+        # should be done before the proxy is started so it and the main app don't end up with a different
+        # view of the data.
+        travellerMapUrl = app.Config.instance().travellerMapUrl()
+        mapProxyPort = app.Config.instance().mapProxyPort()
+        if mapProxyPort:
+            travellermap.MapProxy.configure(
+                listenPort=mapProxyPort,
+                travellerMapUrl=travellerMapUrl,
+                localFilesDir=os.path.join(installDir, 'data', 'web'),
+                installMapsDir=installMapDir,
+                overlayMapsDir=overlayMapDir,
+                customMapsDir=customMapDir,
+                logDir=logDirectory,
+                logLevel=logLevel)            
+            travellermap.MapProxy.instance().run()
+
+        travellermap.TileClient.configure(
+            travellerMapBaseUrl=travellerMapUrl,
+            mapProxyPort=mapProxyPort)
 
         loadProgress = gui.LoadProgressDialog()
         if loadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:

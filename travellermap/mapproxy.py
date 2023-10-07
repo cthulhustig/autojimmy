@@ -291,9 +291,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'image/png')
         self.send_header('Content-Length', len(data))
-        # This is copied from Traveller Map (public not local). Worth pointing
-        # out that this proxy is ignoring the max-age request
-        self.send_header('Cache-Control', 'public, max-age=3600')
+        # Tell the client not to cache tiles. Assuming the browser respects the request, it
+        # should prevent stale tiles being displayed if the user modifies data
+        self.send_header('Cache-Control', 'no-store, no-cache')
         self.end_headers()
         self.wfile.write(data.read() if isinstance(data, io.BytesIO) else data)
 
@@ -342,6 +342,8 @@ class MapProxy(object):
     _listenPort = None
     _travellerMapUrl = None
     _localFilesDir = None
+    _installMapsDir = None
+    _overlayMapsDir = None
     _customMapsDir = None
     _logDir = None
     _logLevel = logging.INFO
@@ -368,6 +370,8 @@ class MapProxy(object):
             listenPort: int,
             travellerMapUrl: str,
             localFilesDir: str,
+            installMapsDir: str,
+            overlayMapsDir: str,
             customMapsDir: str,
             logDir: str,
             logLevel: int
@@ -379,6 +383,8 @@ class MapProxy(object):
         MapProxy._listenPort = listenPort
         MapProxy._travellerMapUrl = travellerMapUrl
         MapProxy._localFilesDir = localFilesDir
+        MapProxy._installMapsDir = installMapsDir
+        MapProxy._overlayMapsDir = overlayMapsDir
         MapProxy._customMapsDir = customMapsDir
         MapProxy._logDir = logDir
         MapProxy._logLevel = logLevel         
@@ -396,6 +402,8 @@ class MapProxy(object):
                     self._listenPort,
                     self._travellerMapUrl,
                     self._localFilesDir,
+                    self._installMapsDir,
+                    self._overlayMapsDir,
                     self._customMapsDir,
                     self._logDir,
                     self._logLevel,
@@ -435,6 +443,8 @@ class MapProxy(object):
             listenPort: int,
             travellerMapUrl: str,
             localFilesDir: str,
+            installMapsDir: str,
+            overlayMapsDir: str,            
             customMapsDir: str,
             logDir: str,
             logLevel: int,
@@ -452,6 +462,11 @@ class MapProxy(object):
         try:
             localFileStore = _LocalFileStore(localFileDir=localFilesDir)
             tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
+
+            travellermap.DataStore.setSectorDirs(
+                installDir=installMapsDir,
+                overlayDir=overlayMapsDir,
+                customDir=customMapsDir)            
 
             # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
             # then it's important that we continue setting up the proxy so it can at least return the

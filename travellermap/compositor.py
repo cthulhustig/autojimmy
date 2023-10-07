@@ -26,15 +26,14 @@ def _calculateIntersection(
     
     return (left, top, right, bottom)
 
-class _MipLevel(object):
+class _MipMap(object):
     def __init__(
             self,
-            filePath: str,
+            mipData: bytes,
             scale: float
             ) -> None:
-        self._filePath = filePath
         self._scale = scale
-        with PIL.Image.open(self._filePath) as image:
+        with PIL.Image.open(io.BytesIO(mipData)) as image:
             self._pixels = image.tobytes()
             self._size = (image.width, image.height)
             self._mode = image.mode
@@ -51,7 +50,7 @@ class _MipLevel(object):
     def mode(self) -> str:
         return self._mode
 
-    def __lt__(self, other: '_MipLevel') -> bool:
+    def __lt__(self, other: '_MipMap') -> bool:
         if self.__class__ is other.__class__:
             return self.scale() > other.scale()
         return NotImplemented
@@ -61,11 +60,11 @@ class _CustomSector(object):
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mipLevels: typing.Iterable[_MipLevel]
+            mipMaps: typing.Iterable[_MipMap]
             ) -> None:
         self._name = name
         self._position = position
-        self._mipLevels = sorted(mipLevels)
+        self._mipMaps = sorted(mipMaps)
 
         absoluteRect = travellermap.sectorBoundingRect(position[0], position[1])
         mapSpaceUL = travellermap.absoluteHexToMapSpace(
@@ -87,9 +86,9 @@ class _CustomSector(object):
     def findMipLevel(
             self,
             scale: float
-            ) -> typing.Optional[_MipLevel]:
+            ) -> typing.Optional[_MipMap]:
         bestLevel = None
-        for level in self._mipLevels:
+        for level in self._mipMaps:
             if bestLevel and scale > level.scale():
                 # We've got a possible best level and the one currently being looked at is for a
                 # lower scale so use the current best. This works on the assumption that list is
@@ -225,128 +224,32 @@ class Compositor(object):
     def _loadCustomUniverse(self) -> None:
         self._milieuSectorMap.clear()
 
-        manifestFilePath = os.path.join(self._customMapsDir, Compositor._ManifestFileName)
-        if not os.path.isfile(manifestFilePath):
-            return # Nothing to do
+        for milieu in travellermap.Milieu:
+            sectors = []
+            for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
+                if not sectorInfo.isCustomSector():
+                    continue # Only interested in custom sectors
 
-        with open(manifestFilePath, 'r') as file:
-            data: typing.Mapping[str, typing.Any] = json.load(file)
-            universeData = data.get('Universe')
-            if not universeData:
-                return # Nothing to do
+                mipLevels = sectorInfo.mipLevels()
+                if not mipLevels:
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no mip levels')
+                    continue
 
-            for milieuData in universeData:
-                try:
-                    self._loadMilieu(milieuData=milieuData)
-                except Exception as ex:
-                    logging.warning(f'Compositor skipping milieu due to parsing error')
+                mipMaps = []
+                for scale in mipLevels.keys():
+                    try:
+                        mipData = travellermap.DataStore.instance().sectorMipData(
+                            sectorName=sectorInfo.canonicalName(),
+                            milieu=milieu,
+                            scale=scale)
+                        mipMaps.append(_MipMap(mipData=mipData, scale=scale))
+                    except Exception as ex:
+                        logging.warning(f'Compositor failed to load scale {scale} mip level data {sectorInfo.canonicalName()}', exc_info=ex)
+                        continue
+                
+                sectors.append(_CustomSector(
+                    name=sectorInfo.canonicalName(),
+                    position=(sectorInfo.x(), sectorInfo.y()),
+                    mipMaps=mipMaps))
 
-
-    def _loadMilieu(
-            self,
-            milieuData: typing.Mapping[str, typing.Any]
-            ) -> None:
-        milieu = milieuData.get('Milieu')
-        if milieu == None:
-            raise RuntimeError('Milieu data is missing the Milieu element')
-        if milieu not in travellermap.Milieu.__members__:
-            raise RuntimeError(f'Milieu element has an invalid value "{milieu}"')
-        milieu = travellermap.Milieu.__members__[milieu]
-
-        sectors = milieuData.get('Sectors')
-        if not sectors:
-            logging.warning(f'Compositor skipping milieu {milieu.value} as it has no sectors')
-            return
-
-        self._milieuSectorMap[milieu] = self._loadSectors(
-            sectorsData=sectors,
-            milieu=milieu)
-
-    def _loadSectors(
-            self,
-            sectorsData: typing.Iterable[typing.Mapping[str, typing.Any]],
-            milieu: travellermap.Milieu
-            ) -> typing.List[_CustomSector]:
-        sectors = []
-        for sectorData in sectorsData:
-            try:
-                sectors.append(self._loadSector(
-                    sectorData=sectorData,
-                    milieu=milieu))
-            except Exception as ex:
-                logging.warning(
-                    f'Compositor skipping sector from {milieu.value} due to parsing error',
-                    exc_info=ex)
-        return sectors
-
-    def _loadSector(
-            self,
-            sectorData: typing.Mapping[str, typing.Any],
-            milieu: travellermap.Milieu     
-            ) -> typing.Optional[_CustomSector]:
-        name = sectorData.get('Name')
-        if name == None:
-            raise RuntimeError(f'Sector data from {milieu.value} is missing the Name element')
-
-        sectorX = sectorData.get('SectorX')
-        if sectorX == None:
-            raise RuntimeError(f'Sector data for {name} from {milieu.value} is missing the SectorX element')
-        if not isinstance(sectorX, int):
-            raise RuntimeError(f'SectorX element for {name} from {milieu.value} has non integer value')
-
-        sectorY = sectorData.get('SectorY')
-        if sectorY == None:
-            raise RuntimeError(f'Sector data for {name} from {milieu.value} is missing the SectorY element')
-        if not isinstance(sectorY, int):
-            raise RuntimeError(f'SectorY element for {name} from {milieu.value} has non integer value')
-
-        mipLevels = sectorData.get('MipLevels')
-        if not mipLevels:
-            raise RuntimeError(f'Sector data  for {name} from {milieu.value} is missing the MipLevels element')
-
-        return _CustomSector(
-            name=name,
-            position=(sectorX, sectorY),
-            mipLevels=self._loadMipLevels(
-                mipLevelsData=mipLevels,
-                milieu=milieu,
-                sectorName=name))
-
-    def _loadMipLevels(
-            self,
-            mipLevelsData: typing.Iterable[typing.Mapping[str, typing.Any]],
-            milieu: travellermap.Milieu,
-            sectorName: str
-            ) -> typing.List[_MipLevel]:
-        levels = []
-        for mipLevelData in mipLevelsData:
-            try:
-                levels.append(self._loadMipLevel(
-                    mipLevelData=mipLevelData,
-                    milieu=milieu,
-                    sectorName=sectorName))
-            except Exception as ex:
-                logging.warning(
-                    f'Compositor skipping mip level for {sectorName} from {milieu.value} due to parsing error',
-                    exc_info=ex)
-        return levels
-
-    def _loadMipLevel(
-            self,
-            mipLevelData: typing.Mapping[str, typing.Any],
-            milieu: travellermap.Milieu,
-            sectorName: str
-            ) -> _MipLevel:
-        fileName = mipLevelData.get('FileName')
-        if fileName == None:
-            raise RuntimeError(f'MipLevel data for {sectorName} from {milieu.value} is missing the FileName element')
-
-        scale = mipLevelData.get('Scale')
-        if scale == None:
-            raise RuntimeError(f'MipLevel data for {sectorName} from {milieu.value} is missing the Scale element')
-        if not isinstance(scale, (int, float)):
-            raise RuntimeError(f'MipLevel element for {sectorName} from {milieu.value}  has non numeric value')
-
-        return _MipLevel(
-            filePath=os.path.join(self._customMapsDir, 'milieu', milieu.value, fileName),
-            scale=scale)
+            self._milieuSectorMap[milieu] = sectors

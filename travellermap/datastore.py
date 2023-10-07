@@ -22,7 +22,9 @@ class SectorInfo(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            tags: typing.Optional[typing.Iterable[str]]
+            tags: typing.Optional[typing.Iterable[str]],
+            isCustomSector: bool,
+            mipLevels: typing.Optional[typing.Dict[int, str]] # Map mip level scale to file name
             ) -> None:
         self._canonicalName = canonicalName
         self._alternateNames = alternateNames
@@ -30,6 +32,8 @@ class SectorInfo(object):
         self._x = x
         self._y = y
         self._tags = tags
+        self._isCustomSector = isCustomSector
+        self._mipLevels = mipLevels
 
     def canonicalName(self) -> str:
         return self._canonicalName
@@ -48,7 +52,12 @@ class SectorInfo(object):
 
     def tags(self) -> typing.Optional[typing.Iterable[str]]:
         return self._tags
-
+    
+    def isCustomSector(self) -> bool:
+        return self._isCustomSector
+    
+    def mipLevels(self) -> typing.Optional[typing.Dict[int, str]]:
+        return self._mipLevels
 
 class DataStore(object):
     class UpdateStage(enum.Enum):
@@ -106,31 +115,53 @@ class DataStore(object):
             self,
             milieu: travellermap.Milieu
             ) -> int:
-        self._loadSectors()
+        self._loadAllSectors()
         return len(self._milieuMap[milieu])
 
     def sectors(
             self,
             milieu: travellermap.Milieu
             ) -> typing.Iterable[SectorInfo]:
-        self._loadSectors()
+        self._loadAllSectors()
         return self._milieuMap[milieu].values()
 
     def sectorFileData(
             self,
-            name: str,
+            sectorName: str,
             milieu: travellermap.Milieu
             ) -> str:
-        self._loadSectors()
+        self._loadAllSectors()
 
         sectorMap = self._milieuMap[milieu]
-        if name not in sectorMap:
-            raise RuntimeError(f'Unknown sector "{name}"')
-        sector: SectorInfo = sectorMap[name]
+        if sectorName not in sectorMap:
+            raise RuntimeError(f'Unknown sector "{sectorName}"')
+        sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
         return self._bytesToString(bytes=self._readMilieuFile(
             fileName=f'{escapedSectorName}.sec',
-            milieu=milieu))
+            milieu=milieu,
+            useCustomMapDir=sector.isCustomSector()))
+    
+    def sectorMipData(
+            self,
+            sectorName: str,
+            milieu: travellermap.Milieu,
+            scale: int
+            ) -> bytes:
+        self._loadAllSectors()
+
+        sectorMap = self._milieuMap[milieu]
+        if sectorName not in sectorMap:
+            raise RuntimeError(f'Unknown sector "{sectorName}"')
+        sector: SectorInfo = sectorMap[sectorName]
+        mipLevels = sector.mipLevels()
+        if not mipLevels or scale not in mipLevels:
+            raise RuntimeError(f'Sector {sectorName} has no mip entry for scale {scale}')
+        mipFileName = mipLevels[scale]
+        return self._readMilieuFile(
+            fileName=mipFileName,
+            milieu=milieu,
+            useCustomMapDir=sector.isCustomSector())
 
     def sophontsData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
@@ -165,7 +196,7 @@ class DataStore(object):
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         with self._lock:
-            logging.debug('Downloading universe data archive')
+            logging.info('Downloading universe data archive')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.DownloadStage, 0)
 
@@ -192,7 +223,7 @@ class DataStore(object):
                             DataStore.UpdateStage.DownloadStage,
                             int((downloaded / length) * 100))
 
-            logging.debug('Extracting universe data archive')
+            logging.info('Extracting universe data archive')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.ExtractStage, 0)
 
@@ -218,40 +249,58 @@ class DataStore(object):
                 subPath = fileInfo.filename[len(DataStore._DataArchiveMapPath):]
                 targetPath = os.path.join(workingDirPath, subPath)
 
-                logging.debug(f'Extracting {subPath}')
+                logging.info(f'Extracting {subPath}')
                 directoryHierarchy = os.path.dirname(targetPath)
                 if not os.path.exists(directoryHierarchy):
                     os.makedirs(directoryHierarchy, exist_ok=True)
                 with open(targetPath, 'wb') as outputFile:
                     outputFile.write(zipData.read(fileInfo.filename))
 
-            logging.debug('Replacing old universe data')
+            logging.info('Replacing old universe data')
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
 
-    def _loadSectors(self) -> None:
+    def _loadAllSectors(self) -> None:
         if self._milieuMap:
             # Already loaded, nothing to do
             return
 
         with self._lock:
             if self._milieuMap:
-                # Another thread loaded the sectors
+                # Another thread loaded the sectors while this one was waiting on the lock
                 return
 
             self._milieuMap = {}
             for milieu in travellermap.Milieu:
-                sectors = self._parseUniverseData(
-                    universeData=self._readMilieuFile(
-                        fileName=self._UniverseFileName,
-                        milieu=milieu))
-                sectorMap = {}
-                for sector in sectors:
-                    logging.debug(f'Initialising sector {sector.canonicalName()}')
-                    sectorMap[sector.canonicalName()] = sector
+                sectorNameMap: typing.Dict[str, SectorInfo] = {}
+                sectorPosMap: typing.Dict[typing.Tuple[int, int], SectorInfo] = {}
 
-                self._milieuMap[milieu] = sectorMap
+                sectors = self._loadMilieuSectors(
+                    milieu=milieu,
+                    useCustomMapDir=True)
+                for sector in sectors:
+                    logging.debug(
+                        f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
+                    sectorNameMap[sector.canonicalName()] = sector
+                    sectorPosMap[(sector.x(),sector.y())] = sector
+
+                sectors = self._loadMilieuSectors(
+                    milieu=milieu,
+                    useCustomMapDir=False)
+                for sector in sectors:
+                    conflictSector = sectorPosMap.get((sector.x(),sector.y()))
+                    if conflictSector:
+                        logging.warning(
+                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same position as custom sector {conflictSector.canonicalName()}')
+                        continue
+
+                    logging.debug(
+                        f'Loaded sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
+                    # TODO: Do something if there is a name conflict with a custom sector
+                    sectorNameMap[sector.canonicalName()] = sector
+
+                self._milieuMap[milieu] = sectorNameMap
 
     def _checkOverlayAge(self) -> None:
         if not os.path.exists(self._overlayDir):
@@ -291,7 +340,7 @@ class DataStore(object):
             # The install copy of the sectors is older than the overlay copy so there is nothing to do
             return
 
-        logging.debug(f'Deleting out of date overlay directory "{self._overlayDir}"')
+        logging.info(f'Deleting out of date overlay directory "{self._overlayDir}"')
         try:
             shutil.rmtree(self._overlayDir)
         except Exception as ex:
@@ -303,24 +352,27 @@ class DataStore(object):
             self,
             relativeFilePath: str
             ) -> bytes:
-        # If a FILE exists in the user dir use it over anything else. If it doesn't, read it
-        # from the overlay if that DIRECTORY exists, if not read it from the install directory
-        filePath = os.path.join(self._customDir, relativeFilePath)
-        if not os.path.exists(filePath):
-            filePath = os.path.join(
-                self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
-                relativeFilePath)
-
+        # If the overlay directory exists load files from there, if not load from the
+        # install directory
+        filePath = os.path.join(
+            self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
+            relativeFilePath)
         with open(filePath, 'rb') as file:
             return file.read()
 
     def _readMilieuFile(
             self,
             fileName: str,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            useCustomMapDir: bool
             ) -> bytes:
-        return self._readFile(
-            relativeFilePath=os.path.join(os.path.join(self._MilieuBaseDir, milieu.value), fileName))
+        relativePath = os.path.join(self._MilieuBaseDir, milieu.value, fileName)
+        if useCustomMapDir:
+            absolutePath = os.path.join(self._customDir, relativePath)
+            with open(absolutePath, 'rb') as file:
+                return file.read()
+
+        return self._readFile(relativeFilePath=relativePath)
 
     @staticmethod
     def _makeWorkingDir(overlayDirPath: str) -> str:
@@ -360,10 +412,25 @@ class DataStore(object):
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
 
-    @staticmethod
-    def _parseUniverseData(
-            universeData: bytes
+    def _loadMilieuSectors(
+            self,
+            milieu: travellermap.Milieu,
+            useCustomMapDir: bool
             ) -> typing.List[SectorInfo]:
+        try:
+            universeData=self._readMilieuFile(
+                fileName=self._UniverseFileName,
+                milieu=milieu,
+                useCustomMapDir=useCustomMapDir)
+        except FileNotFoundError:
+            if useCustomMapDir:
+                # Custom map data is optional so if the universe file doesn't exist it just
+                # means there are no custom sectors for this milieu
+                return []
+            
+            # When loading sectors for a standard milieu the universe file is mandatory
+            raise 
+
         universeJson = json.loads(DataStore._bytesToString(universeData))
         if 'Sectors' not in universeJson:
             raise RuntimeError('Invalid sector list')
@@ -396,12 +463,22 @@ class DataStore(object):
             if 'Tags' in sectorInfo:
                 tags = sectorInfo['Tags'].split()
 
+            mipLevels = None
+            if 'MipLevels' in sectorInfo:
+                mipLevels = {}
+                for mipLevel in sectorInfo['MipLevels']:
+                    fileName = mipLevel['FileName']
+                    scale = mipLevel['Scale']
+                    mipLevels[scale] = fileName
+
             sectors.append(SectorInfo(
                 canonicalName=canonicalName,
                 alternateNames=alternateNames,
                 abbreviation=abbreviation,
                 x=sectorX,
                 y=sectorY,
-                tags=tags))
+                tags=tags,
+                isCustomSector=useCustomMapDir,
+                mipLevels=mipLevels))
 
         return sectors

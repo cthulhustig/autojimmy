@@ -102,7 +102,7 @@ class WorldManager(object):
                 sectorY = sectorInfo.y()
 
                 sectorData = travellermap.DataStore.instance().sectorFileData(
-                    name=canonicalName,
+                    sectorName=canonicalName,
                     milieu=self._milieu)
 
                 sector = self._parseSector(
