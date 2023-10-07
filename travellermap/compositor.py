@@ -99,8 +99,6 @@ class _CustomSector(object):
         return bestLevel
 
 class Compositor(object):
-    _ManifestFileName = 'manifest.json'
-
     # This seems to be the point where things stop being that visible and Traveller Map starts showing
     # the galaxy overlay. If the requested tile has a scale lower than this then there isn't any point
     # in compositing.
