@@ -199,6 +199,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 code = 500
             self.send_response(code)
             self.end_headers()
+        except ConnectionAbortedError as ex:
+            # Log this at debug as it's expected that it can happen if the client closes
+            # the connection while the proxy is handling the request
+            logging.debug(f'Connection aborted when handling request for {self.path}', exc_info=ex)
         except Exception as ex:
             logging.error(f'Exception occurred when handling request for {self.path}', exc_info=ex)
             self.send_response(500)

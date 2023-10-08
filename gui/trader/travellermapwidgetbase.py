@@ -630,7 +630,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     # NOTE: The 'tilt' url parameter isn't supported as it doesn't draw properly in the Qt widget
     def _generateUrl(self) -> QtCore.QUrl:
         currentUrl = self._mapWidget.url().toString()
-        currentPosition = travellermap.posFromMapUrl(url=currentUrl) if currentUrl else None
+        currentPos = travellermap.parsePosFromMapUrl(url=currentUrl) if currentUrl else None
+        currentScale = travellermap.parseScaleFromMapUrl(url=currentUrl) if currentUrl else None
 
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
@@ -640,19 +641,20 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
             # using localhost causes the web widget to be incredibly slow to update tiles
             # as you zoom in and out.
-            indexUrl = f'http://127.0.0.1:{mapProxyPort}/index.html'
+            indexUrl = f'http://127.0.0.1:{mapProxyPort}'
         else:
-            indexUrl = f'file:///{rootPath}/data/web/index.html'
+            indexUrl = f'file:///{rootPath}/data/web/'
 
         options = set(app.Config.instance().mapOptions())
         options.add(travellermap.Option.HideUI) # Always hide the UI
 
         return QtCore.QUrl(travellermap.formatMapUrl(
-            baseUrl=indexUrl,
+            baseMapUrl=indexUrl,
             milieu=app.Config.instance().milieu(),
             style=app.Config.instance().mapStyle(),
             options=options,
-            position=currentPosition))
+            mapPosition=currentPos,
+            linearScale=currentScale))
 
     def _loadMap(self) -> None:
         url = self._generateUrl()

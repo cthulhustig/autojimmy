@@ -56,22 +56,22 @@ class TileClient(object):
             absoluteY=absoluteY)
 
         # Calculate position to center tile on map position
-        position = travellermap.TilePosition(
-            tileX=(mapX * linearScale - (width / 2)) / width,
-            tileY=(-mapY * linearScale - (height / 2)) / height,
-            linearScale=linearScale)
+        tilePosition = (
+            (mapX * linearScale - (width / 2)) / width,
+            (-mapY * linearScale - (height / 2)) / height)
 
         if self._mapProxyPort:
-            baseUrl = f'http://127.0.0.1:{self._mapProxyPort}/api/tile'
+            baseUrl = f'http://127.0.0.1:{self._mapProxyPort}'
         else:
-            baseUrl = urllib.parse.urljoin(self._travellerMapBaseUrl, '/api/tile')
+            baseUrl = self._travellerMapBaseUrl
 
-        url = travellermap.formatMapUrl(
-            baseUrl=baseUrl,
+        url = travellermap.formatTileUrl(
+            baseMapUrl=baseUrl,
             milieu=milieu,
             style=style,
             options=options,
-            position=position,
+            tilePosition=tilePosition,
+            linearScale=linearScale,
             minimal=True)
         
         with self._lock:

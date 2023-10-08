@@ -1,7 +1,7 @@
 import math
 import travellermap
 import typing
-from urllib import parse
+import urllib.parse
 
 TravellerMapBaseUrl = 'https://travellermap.com'
 
@@ -24,46 +24,6 @@ _ForceHexesOption = 0x2000
 _WorldColorsOption = 0x4000
 _FilledBordersOption = 0x8000
 
-class MapPosition(object):
-    def __init__(
-            self,
-            mapX: float,
-            mapY: float,
-            logScale: float
-            ) -> None:
-        self._mapX = mapX
-        self._mapY = mapY
-        self._logScale = logScale
-
-    def mapX(self) -> float:
-        return self._mapX
-
-    def mapY(self) -> float:
-        return self._mapY
-
-    def logScale(self) -> float:
-        return self._logScale
-
-class TilePosition(object):
-    def __init__(
-            self,
-            tileX: float,
-            tileY: float,
-            linearScale: float
-            ) -> None:
-        self._tileX = tileX
-        self._tileY = tileY
-        self._linearScale = linearScale
-
-    def tileX(self) -> float:
-        return self._tileX
-
-    def tileY(self) -> float:
-        return self._tileY
-
-    def linearScale(self) -> float:
-        return self._linearScale
-
 def linearScaleToLogScale(linearScale: float) -> float:
     return 1 + math.log2(linearScale)
 
@@ -71,14 +31,55 @@ def logScaleToLinearScale(logScale: float) -> float:
     return math.pow(2, logScale - 1)
 
 def formatMapUrl(
-        baseUrl: str,
+        baseMapUrl: str,
         milieu: travellermap.Milieu,
         style: travellermap.Style,
         options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
-        position: typing.Optional[typing.Union[MapPosition, TilePosition]] = None,
+        mapPosition: typing.Optional[typing.Tuple[float, float]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
         ) -> str:
-    url = f'{baseUrl}?milieu={milieu.value}&style={style.value}'
+    urlOptions = formatCommonUrlOptions(
+        milieu=milieu,
+        style=style,
+        options=options,
+        minimal=minimal)
+    
+    if (mapPosition != None) and (linearScale != None):
+        logScale = linearScaleToLogScale(linearScale=linearScale)
+        urlOptions += f'&p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}'
+    
+    # It's important the file name doesn't start with a slash as, in the case of a file url,
+    # it will cause it to be take as the located in the root of the filesystem and any part
+    # in baseMapUrl will be deleted
+    return urllib.parse.urljoin(baseMapUrl, 'index.html?' + urlOptions)
+
+def formatTileUrl(
+        baseMapUrl: str,
+        tilePosition: typing.Tuple[float, float],
+        milieu: travellermap.Milieu,
+        style: travellermap.Style,
+        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
+        minimal: bool = False
+        ) -> str:
+    urlOptions = formatCommonUrlOptions(
+        milieu=milieu,
+        style=style,
+        options=options,
+        minimal=minimal)
+    urlOptions += f'&x={tilePosition[0]:.4f}&y={tilePosition[1]:.4f}'
+    if linearScale != None:
+        urlOptions += f'&scale={linearScale}'
+    return urllib.parse.urljoin(baseMapUrl, 'api/tile?' + urlOptions)
+
+def formatCommonUrlOptions(
+        milieu: travellermap.Milieu,
+        style: travellermap.Style,
+        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        minimal: bool = False
+        ) -> str:
+    urlOptions = f'milieu={milieu.value}&style={style.value}'
 
     optionBitMask = _ForceHexesOption # Always enabled
     if travellermap.Option.SectorGrid in options:
@@ -96,92 +97,101 @@ def formatMapUrl(
     if travellermap.Option.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
 
-    url += '&options=' + str(optionBitMask)
+    urlOptions += '&options=' + str(optionBitMask)
 
     if travellermap.Option.HideUI in options:
-        url += '&hideui=1'
+        urlOptions += '&hideui=1'
     elif not minimal:
-        url += '&hideui=0'
+        urlOptions += '&hideui=0'
 
     if travellermap.Option.GalacticDirections in options:
-        url += '&galdir=1'
+        urlOptions += '&galdir=1'
     elif not minimal:
-        url += '&galdir=0'
+        urlOptions += '&galdir=0'
 
     if travellermap.Option.Routes in options:
-        url += '&routes=1'
+        urlOptions += '&routes=1'
     elif not minimal:
-        url += '&routes=0'
+        urlOptions += '&routes=0'
 
     if travellermap.Option.DimUnofficial in options:
-        url += '&dimunofficial=1'
+        urlOptions += '&dimunofficial=1'
     elif not minimal:
-        url += '&dimunofficial=0'
+        urlOptions += '&dimunofficial=0'
 
     if travellermap.Option.ImportanceOverlay in options:
-        url += '&im=1'
+        urlOptions += '&im=1'
     elif not minimal:
-        url += '&im=0'
+        urlOptions += '&im=0'
 
     if travellermap.Option.PopulationOverlay in options:
-        url += '&po=1'
+        urlOptions += '&po=1'
     elif not minimal:
-        url += '&po=0'
+        urlOptions += '&po=0'
 
     if travellermap.Option.CapitalsOverlay in options:
-        url += '&cp=1'
+        urlOptions += '&cp=1'
     elif not minimal:
-        url += '&cp=0'
+        urlOptions += '&cp=0'
 
     if travellermap.Option.MinorRaceOverlay in options:
-        url += '&mh=1'
+        urlOptions += '&mh=1'
     elif not minimal:
-        url += '&mh=0'
+        urlOptions += '&mh=0'
 
     if travellermap.Option.DroyneWorldOverlay in options:
-        url += '&dw=1'
+        urlOptions += '&dw=1'
     elif not minimal:
-        url += '&dw=0'
+        urlOptions += '&dw=0'
 
     if travellermap.Option.AncientSitesOverlay in options:
-        url += '&an=1'
+        urlOptions += '&an=1'
     elif not minimal:
-        url += '&an=0'
+        urlOptions += '&an=0'
 
     if travellermap.Option.StellarOverlay in options:
-        url += '&stellar=1'
+        urlOptions += '&stellar=1'
     elif not minimal:
-        url += '&stellar=0'
+        urlOptions += '&stellar=0'
 
     if travellermap.Option.MainsOverlay in options:
-        url += '&mains=1'
+        urlOptions += '&mains=1'
     elif not minimal:
-        url += '&mains=0'
+        urlOptions += '&mains=0'
 
     # Note that ew and qz use an empty argument to clear rather than 0
     if travellermap.Option.EmpressWaveOverlay in options:
-        url += '&ew=milieu' # Show for current milieu
+        urlOptions += '&ew=milieu' # Show for current milieu
     elif not minimal:
-        url += '&ew=' # Empty to clear rather than 0
+        urlOptions += '&ew=' # Empty to clear rather than 0
 
     if travellermap.Option.EmpressWaveOverlay in options:
-        url += '&qz=1'
+        urlOptions += '&qz=1'
     elif not minimal:
-        url += '&qz=' # Empty to clear rather than 0
+        urlOptions += '&qz=' # Empty to clear rather than 0
 
-    if isinstance(position, MapPosition):
-        url += f'&p={position.mapX():.3f}!{position.mapY():.3f}!{position.logScale():.2f}'
-    elif isinstance(position, TilePosition):
-        url += f'&x={position.tileX():.4f}&y={position.tileY():.4f}&scale={position.linearScale()}'
+    return urlOptions
 
-    return url
-
-def posFromMapUrl(url: str) -> typing.Optional[MapPosition]:
-    paramMap = parse.parse_qs(parse.urlsplit(url).query)
+def parsePosFromMapUrl(
+        url: str
+        ) -> typing.Optional[typing.Tuple[float, float]]:
+    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
     paramValues = paramMap.get('p')
     if not paramValues:
         return None
     tokens = paramValues[0].split('!')
     if len(tokens) != 3:
         return None
-    return MapPosition(mapX=float(tokens[0]), mapY=float(tokens[1]), logScale=float(tokens[2]))
+    return (float(tokens[0]), float(tokens[1]))
+
+def parseScaleFromMapUrl(
+        url: str
+        ) -> typing.Optional[float]: # Pixels per parsec
+    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+    paramValues = paramMap.get('p')
+    if not paramValues:
+        return None
+    tokens = paramValues[0].split('!')
+    if len(tokens) != 3:
+        return None
+    return logScaleToLinearScale(float(tokens[2]))
