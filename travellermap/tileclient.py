@@ -1,14 +1,19 @@
 import common
+import logging
+import time
 import threading
 import travellermap
 import typing
+import urllib.error
 import urllib.parse
+import urllib.request
 
 class TileClient(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _travellerMapBaseUrl = travellermap.TravellerMapBaseUrl
     _mapProxyPort = 0 # Disabled by default
+    _cache = {}
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -68,8 +73,47 @@ class TileClient(object):
             options=options,
             position=position,
             minimal=True)
+        
+        with self._lock:
+            content = self._cache.get(url)
+        if content != None:
+            logging.debug(f'Tile cache hit for {url}')
+            return content        
 
-        return common.RequestCache.instance().makeRequest(
+        content = TileClient._makeRequest(
             url=url,
-            timeout=timeout,
-            cacheInMemory=True)
+            timeout=timeout)
+        
+        with self._lock:
+            self._cache[url] = content        
+        
+        return content
+    
+    @staticmethod
+    def _makeRequest(
+            url: str,
+            timeout: typing.Optional[typing.Union[int, float]] = None
+            ) -> bytes:
+        # Leave this enabled to catch bugs that are causing LOTS of requests
+        logging.info(f'Downloading tile {url}')
+
+        startTime = time.time()
+
+        # Any exception that occurs here is just allowed to pass up to the caller
+        try:
+            response = urllib.request.urlopen(url=url, timeout=timeout)
+        except urllib.error.HTTPError as ex:
+            raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
+        except urllib.error.URLError as ex:
+            if isinstance(ex.reason, TimeoutError):
+                raise TimeoutError(f'Tile request timeout for {url}') from ex
+            raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
+        except Exception as ex:
+            raise RuntimeError(f'Tile request failed for {url} ({ex})') from ex
+
+        content = response.read()
+
+        downloadTime = time.time() - startTime
+        logging.debug(f'Download of tile {url} took {downloadTime}s')
+
+        return content

@@ -81,7 +81,6 @@ class DataStore(object):
     _overlayDir = None
     _customDir = None
     _milieuMap = None
-    _downloader = common.Downloader()
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')

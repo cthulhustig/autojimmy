@@ -266,8 +266,6 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        common.RequestCache.setCacheDir(cacheDirectory)
-
         installMapDir = os.path.join(installDir, 'data', 'map')
         overlayMapDir = os.path.join(appDirectory, 'map')
         customMapDir = os.path.join(appDirectory, 'custom_map')
