@@ -165,10 +165,12 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         logging.info('{address}: {message}'.format(
             address=self.address_string(),
             message=format % args))
+        
+    # This is the string the gets returned as the Server HTTP header
+    def version_string(self) -> str:
+        return f'Traveller Map Proxy {app.AppVersion}'
 
-    # NOTE: It's important that this function tries it's best to return something. If compositing
-    # fails it should return the default tile
-    def do_GET(self):
+    def do_GET(self) -> None:
         try:
             parsedUrl = urllib.parse.urlparse(self.path)
 
@@ -184,15 +186,15 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             elif path == '/api/tile':
                 self._handleTileRequest(parsedUrl=parsedUrl)
             else:
-                # Act as a proxy for all other requests, pulling data from the configured
-                # Traveller Map instance
+                # Act as a proxy for all other requests and just forward them to the
+                # configured Traveller Map instance
                 self._handleProxyRequest(parsedUrl=parsedUrl)
         except urllib.error.HTTPError as ex:
-            logging.error(f'HTTP Error {ex.code} when handling request for {self.path}')
+            logging.error(f'HTTP Error {ex.code} when handling GET request for {self.path}')
             self.send_response(ex.code)
             self.end_headers()
         except urllib.error.URLError as ex:
-            logging.error(f'URL Error {ex.reason} when handling request for {self.path}')
+            logging.error(f'URL Error {ex.reason} when handling GET request for {self.path}')
             if hasattr(ex, 'code'):
                 code = ex.code
             else:
@@ -202,9 +204,59 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         except ConnectionAbortedError as ex:
             # Log this at debug as it's expected that it can happen if the client closes
             # the connection while the proxy is handling the request
-            logging.debug(f'Connection aborted when handling request for {self.path}', exc_info=ex)
+            logging.debug(f'Connection aborted when handling GET request for {self.path}', exc_info=ex)
         except Exception as ex:
-            logging.error(f'Exception occurred when handling request for {self.path}', exc_info=ex)
+            logging.error(f'Exception occurred when handling GET request for {self.path}', exc_info=ex)
+            self.send_response(500)
+            self.end_headers()
+
+    def do_POST(self) -> None:
+        try:
+            parsedUrl = urllib.parse.urlparse(self.path)
+
+            requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
+            if parsedUrl.query:
+                requestUrl += '?' + parsedUrl.query            
+            logging.debug(f'Making proxied POST request to {requestUrl}')
+
+            contentLength = int(self.headers.get('Content-Length', 0))
+            content = None
+            if contentLength:
+                content = self.rfile.read(contentLength)
+
+            request = urllib.request.Request(requestUrl, data=content)
+            contentType = self.headers.get('Content-Type')
+            if contentType:
+                request.add_header('Content-Type', contentType)
+
+            with urllib.request.urlopen(request) as response:
+                info = response.info()
+                data = response.read()
+
+            self.send_response(200)
+            contentType = info.get('Content-Type')            
+            if contentType:
+                self.send_header('Content-Type', contentType)
+            self.end_headers()
+            self.wfile.write(data)
+        except urllib.error.HTTPError as ex:
+            logging.error(f'HTTP Error {ex.code} when handling POST request to {self.path}')
+            self.send_response(ex.code)
+            self.end_headers()
+        except urllib.error.URLError as ex:
+            logging.error(f'URL Error {ex.reason} when handling POST request to {self.path}')
+            if hasattr(ex, 'code'):
+                code = ex.code
+            else:
+                code = 500
+            self.send_response(code)
+            self.end_headers()
+        except ConnectionAbortedError as ex:
+            # Log this at debug as it's expected that it can happen if the client closes
+            # the connection while the proxy is handling the request
+            logging.debug(f'Connection aborted when handling POST request to {self.path}', exc_info=ex)
+        except Exception as ex:
+            logging.error(f'Exception occurred when handling POST request to {self.path}', exc_info=ex)
             self.send_response(500)
             self.end_headers()
 
@@ -225,6 +277,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(fileData)
 
+    # NOTE: It's important that this function tries it's best to return something. If compositing
+    # fails it should return the default tile
     def _handleTileRequest(
             self,
             parsedUrl: urllib.parse.ParseResult
@@ -234,22 +288,13 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         data = self._tileCache.lookup(key=cacheKey)
         if data == None:
-            logging.debug(f'Proxying request for tile {parsedUrl.query}')
-
             requestUrl = urllib.parse.urljoin(self._travellerMapUrl, '/api/tile?' + parsedUrl.query)
+            logging.debug(f'Making proxied request for {requestUrl}')
+
+            # TODO: I suspect this is creating a new TCP connection for each request. If so it
+            # would be better to use a connection pull if possible
             with urllib.request.urlopen(requestUrl) as response:
                 data = response.read()
-
-            # TODO: Remove debug code
-            """
-            with PIL.Image.open(data if isinstance(data, io.BytesIO) else io.BytesIO(data)) as image:
-                draw = PIL.ImageDraw.Draw(image)
-                draw.rectangle([(0, 0), (255, 255)], fill="green", width=0)
-                data = io.BytesIO()
-                image.save(data, format='PNG')
-                data.seek(0)
-                data = data.read()
-            """
 
             if self._compositor:
                 tileX = float(parsedQuery['x'][0])
@@ -307,10 +352,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             parsedUrl: urllib.parse.ParseResult
             ) -> None:
         requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
-        logging.debug(f'Proxying request to {requestUrl}')
-
         if parsedUrl.query:
             requestUrl += '?' + parsedUrl.query
+        logging.debug(f'Making proxied request for {requestUrl}')
+
         with urllib.request.urlopen(requestUrl) as response:
             info = response.info()
             data = response.read()

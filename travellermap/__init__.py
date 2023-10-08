@@ -7,3 +7,4 @@ from .datastore import *
 from .compositor import *
 from .mapproxy import *
 from .tileclient import *
+from .posterclient import *

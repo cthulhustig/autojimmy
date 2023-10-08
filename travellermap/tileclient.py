@@ -1,4 +1,3 @@
-import common
 import logging
 import time
 import threading
@@ -11,7 +10,7 @@ import urllib.request
 class TileClient(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _travellerMapBaseUrl = travellermap.TravellerMapBaseUrl
+    _mapBaseUrl = travellermap.TravellerMapBaseUrl
     _mapProxyPort = 0 # Disabled by default
     _cache = {}
 
@@ -31,12 +30,12 @@ class TileClient(object):
     # The Traveller Map URL specified here is only used if the map proxy isn't running
     @staticmethod
     def configure(
-            travellerMapBaseUrl: str,
+            mapBaseUrl: str,
             mapProxyPort: int
             ) -> None:
         if TileClient._instance:
             raise RuntimeError('You can\'t configure map proxy after the singleton has been initialised')
-        TileClient._travellerMapBaseUrl = travellerMapBaseUrl
+        TileClient._mapBaseUrl = mapBaseUrl
         TileClient._mapProxyPort = mapProxyPort
 
     def tile(
@@ -63,7 +62,7 @@ class TileClient(object):
         if self._mapProxyPort:
             baseUrl = f'http://127.0.0.1:{self._mapProxyPort}'
         else:
-            baseUrl = self._travellerMapBaseUrl
+            baseUrl = self._mapBaseUrl
 
         url = travellermap.formatTileUrl(
             baseMapUrl=baseUrl,
@@ -101,7 +100,8 @@ class TileClient(object):
 
         # Any exception that occurs here is just allowed to pass up to the caller
         try:
-            response = urllib.request.urlopen(url=url, timeout=timeout)
+            with urllib.request.urlopen(url=url, timeout=timeout) as response:
+                content = response.read()
         except urllib.error.HTTPError as ex:
             raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
         except urllib.error.URLError as ex:
@@ -110,8 +110,6 @@ class TileClient(object):
             raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
         except Exception as ex:
             raise RuntimeError(f'Tile request failed for {url} ({ex})') from ex
-
-        content = response.read()
 
         downloadTime = time.time() - startTime
         logging.debug(f'Download of tile {url} took {downloadTime}s')

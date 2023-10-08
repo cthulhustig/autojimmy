@@ -316,7 +316,7 @@ def main() -> None:
             travellermap.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
-            travellerMapBaseUrl=travellerMapUrl,
+            mapBaseUrl=travellerMapUrl,
             mapProxyPort=mapProxyPort)
 
         loadProgress = gui.LoadProgressDialog()

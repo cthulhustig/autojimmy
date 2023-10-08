@@ -39,20 +39,23 @@ def formatMapUrl(
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
         ) -> str:
-    urlOptions = formatCommonUrlOptions(
+    # It's important the file name doesn't start with a slash as, in the case of a file url,
+    # it will cause it to be take as the located in the root of the filesystem and any part
+    # in baseMapUrl will be deleted    
+    url = urllib.parse.urljoin(baseMapUrl, 'index.html')
+
+    queryList = _createCommonQueryList(
         milieu=milieu,
         style=style,
         options=options,
         minimal=minimal)
-    
     if (mapPosition != None) and (linearScale != None):
         logScale = linearScaleToLogScale(linearScale=linearScale)
-        urlOptions += f'&p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}'
+        queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
     
-    # It's important the file name doesn't start with a slash as, in the case of a file url,
-    # it will cause it to be take as the located in the root of the filesystem and any part
-    # in baseMapUrl will be deleted
-    return urllib.parse.urljoin(baseMapUrl, 'index.html?' + urlOptions)
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
 
 def formatTileUrl(
         baseMapUrl: str,
@@ -63,114 +66,150 @@ def formatTileUrl(
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
         ) -> str:
-    urlOptions = formatCommonUrlOptions(
+    url = urllib.parse.urljoin(baseMapUrl, 'api/tile')
+
+    queryList = _createCommonQueryList(
         milieu=milieu,
         style=style,
         options=options,
         minimal=minimal)
-    urlOptions += f'&x={tilePosition[0]:.4f}&y={tilePosition[1]:.4f}'
+    queryList.append(f'x={tilePosition[0]:.4f}')
+    queryList.append(f'y={tilePosition[1]:.4f}')
     if linearScale != None:
-        urlOptions += f'&scale={linearScale}'
-    return urllib.parse.urljoin(baseMapUrl, 'api/tile?' + urlOptions)
+        queryList.append('scale=' + str(linearScale))
 
-def formatCommonUrlOptions(
-        milieu: travellermap.Milieu,
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
+
+# NOTE: This only supports generating full sector posters from custom sector data, it doesn't
+# support generating posters from standard sector data or subsector/quadrant posters of
+# custom sectors as those features aren't used by the app
+def formatPosterUrl(
+        baseMapUrl: str,
         style: travellermap.Style,
         options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
+        compositing: bool = True,
         minimal: bool = False
         ) -> str:
-    urlOptions = f'milieu={milieu.value}&style={style.value}'
+    url = urllib.parse.urljoin(baseMapUrl, 'api/poster')
 
-    optionBitMask = _ForceHexesOption # Always enabled
-    if travellermap.Option.SectorGrid in options:
-        optionBitMask |= _GridMaskOption
-    if travellermap.Option.SectorNames in options:
-        optionBitMask |= _SectorsAllOption
-    if travellermap.Option.Borders in options:
-        optionBitMask |= _BordersMaskOption
-    if travellermap.Option.RegionNames in options:
-        optionBitMask |= _NamesMaskOption
-    if travellermap.Option.ImportantWorlds in options:
-        optionBitMask |= _WorldsMaskOption
-    if travellermap.Option.WorldColours in options:
-        optionBitMask |= _WorldColorsOption
-    if travellermap.Option.FilledBorders in options:
-        optionBitMask |= _FilledBordersOption
+    queryList = _createCommonQueryList(
+        style=style,
+        options=options,
+        minimal=minimal)
+    if linearScale != None:
+        queryList.append(f'scale=' + str(linearScale))
+    queryList.append(f'compositing=' + ('1' if compositing else '0'))
+    
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
 
-    urlOptions += '&options=' + str(optionBitMask)
+def _createCommonQueryList(
+        milieu: typing.Optional[travellermap.Milieu] = None,
+        style: typing.Optional[travellermap.Style] = None,
+        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        minimal: bool = False
+        ) -> typing.List[str]:
+    optionList = []
+    if milieu != None:
+        optionList.append('milieu=' + str(milieu.value))
+    if style != None:
+        optionList.append('style=' + str(style.value))
 
-    if travellermap.Option.HideUI in options:
-        urlOptions += '&hideui=1'
-    elif not minimal:
-        urlOptions += '&hideui=0'
+    if options != None:
+        optionBitMask = _ForceHexesOption # Always enabled
+        if travellermap.Option.SectorGrid in options:
+            optionBitMask |= _GridMaskOption
+        if travellermap.Option.SectorNames in options:
+            optionBitMask |= _SectorsAllOption
+        if travellermap.Option.Borders in options:
+            optionBitMask |= _BordersMaskOption
+        if travellermap.Option.RegionNames in options:
+            optionBitMask |= _NamesMaskOption
+        if travellermap.Option.ImportantWorlds in options:
+            optionBitMask |= _WorldsMaskOption
+        if travellermap.Option.WorldColours in options:
+            optionBitMask |= _WorldColorsOption
+        if travellermap.Option.FilledBorders in options:
+            optionBitMask |= _FilledBordersOption
 
-    if travellermap.Option.GalacticDirections in options:
-        urlOptions += '&galdir=1'
-    elif not minimal:
-        urlOptions += '&galdir=0'
+        optionList.append('options=' + str(optionBitMask))
 
-    if travellermap.Option.Routes in options:
-        urlOptions += '&routes=1'
-    elif not minimal:
-        urlOptions += '&routes=0'
+        if travellermap.Option.HideUI in options:
+            optionList.append('hideui=1')
+        elif not minimal:
+            optionList.append('hideui=0')
 
-    if travellermap.Option.DimUnofficial in options:
-        urlOptions += '&dimunofficial=1'
-    elif not minimal:
-        urlOptions += '&dimunofficial=0'
+        if travellermap.Option.GalacticDirections in options:
+            optionList.append('galdir=1')
+        elif not minimal:
+            optionList.append('galdir=0')
 
-    if travellermap.Option.ImportanceOverlay in options:
-        urlOptions += '&im=1'
-    elif not minimal:
-        urlOptions += '&im=0'
+        if travellermap.Option.Routes in options:
+            optionList.append('routes=1')
+        elif not minimal:
+            optionList.append('routes=0')
 
-    if travellermap.Option.PopulationOverlay in options:
-        urlOptions += '&po=1'
-    elif not minimal:
-        urlOptions += '&po=0'
+        if travellermap.Option.DimUnofficial in options:
+            optionList.append('dimunofficial=1')
+        elif not minimal:
+            optionList.append('dimunofficial=0')
 
-    if travellermap.Option.CapitalsOverlay in options:
-        urlOptions += '&cp=1'
-    elif not minimal:
-        urlOptions += '&cp=0'
+        if travellermap.Option.ImportanceOverlay in options:
+            optionList.append('im=1')
+        elif not minimal:
+            optionList.append('im=0')
 
-    if travellermap.Option.MinorRaceOverlay in options:
-        urlOptions += '&mh=1'
-    elif not minimal:
-        urlOptions += '&mh=0'
+        if travellermap.Option.PopulationOverlay in options:
+            optionList.append('po=1')
+        elif not minimal:
+            optionList.append('po=0')
 
-    if travellermap.Option.DroyneWorldOverlay in options:
-        urlOptions += '&dw=1'
-    elif not minimal:
-        urlOptions += '&dw=0'
+        if travellermap.Option.CapitalsOverlay in options:
+            optionList.append('cp=1')
+        elif not minimal:
+            optionList.append('cp=0')
 
-    if travellermap.Option.AncientSitesOverlay in options:
-        urlOptions += '&an=1'
-    elif not minimal:
-        urlOptions += '&an=0'
+        if travellermap.Option.MinorRaceOverlay in options:
+            optionList.append('mh=1')
+        elif not minimal:
+            optionList.append('mh=0')
 
-    if travellermap.Option.StellarOverlay in options:
-        urlOptions += '&stellar=1'
-    elif not minimal:
-        urlOptions += '&stellar=0'
+        if travellermap.Option.DroyneWorldOverlay in options:
+            optionList.append('dw=1')
+        elif not minimal:
+            optionList.append('dw=0')
 
-    if travellermap.Option.MainsOverlay in options:
-        urlOptions += '&mains=1'
-    elif not minimal:
-        urlOptions += '&mains=0'
+        if travellermap.Option.AncientSitesOverlay in options:
+            optionList.append('an=1')
+        elif not minimal:
+            optionList.append('an=0')
 
-    # Note that ew and qz use an empty argument to clear rather than 0
-    if travellermap.Option.EmpressWaveOverlay in options:
-        urlOptions += '&ew=milieu' # Show for current milieu
-    elif not minimal:
-        urlOptions += '&ew=' # Empty to clear rather than 0
+        if travellermap.Option.StellarOverlay in options:
+            optionList.append('stellar=1')
+        elif not minimal:
+            optionList.append('stellar=0')
 
-    if travellermap.Option.EmpressWaveOverlay in options:
-        urlOptions += '&qz=1'
-    elif not minimal:
-        urlOptions += '&qz=' # Empty to clear rather than 0
+        if travellermap.Option.MainsOverlay in options:
+            optionList.append('mains=1')
+        elif not minimal:
+            optionList.append('mains=0')
 
-    return urlOptions
+        # Note that ew and qz use an empty argument to clear rather than 0
+        if travellermap.Option.EmpressWaveOverlay in options:
+            optionList.append('ew=milieu') # Show for current milieu
+        elif not minimal:
+            optionList.append('ew=') # Empty to clear rather than 0
+
+        if travellermap.Option.EmpressWaveOverlay in options:
+            optionList.append('qz=1')
+        elif not minimal:
+            optionList.append('qz=') # Empty to clear rather than 0
+
+    return optionList
 
 def parsePosFromMapUrl(
         url: str
