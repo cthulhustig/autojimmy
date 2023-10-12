@@ -4,3 +4,4 @@ from .routeplannerjobs import *
 from .traderjobs import *
 from .simulatorjob import *
 from .exportweaponjob import *
+from .posterjob import *

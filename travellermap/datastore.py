@@ -19,27 +19,40 @@ class SectorInfo(object):
             self,
             canonicalName: typing.Iterable[str],
             alternateNames: typing.Optional[typing.Iterable[str]],
+            nameLanguages: typing.Optional[typing.Mapping[str, str]], 
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
             tags: typing.Optional[typing.Iterable[str]],
             isCustomSector: bool,
-            mipLevels: typing.Optional[typing.Dict[int, str]] # Map mip level scale to file name
+            mapLevels: typing.Optional[typing.Dict[int, str]] # Map mip level scale to file name
             ) -> None:
         self._canonicalName = canonicalName
         self._alternateNames = alternateNames
+        self._nameLanguages = nameLanguages
         self._abbreviation = abbreviation
         self._x = x
         self._y = y
         self._tags = tags
         self._isCustomSector = isCustomSector
-        self._mipLevels = mipLevels
+        self._mapLevels = mapLevels
 
     def canonicalName(self) -> str:
         return self._canonicalName
 
     def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
         return self._alternateNames
+    
+    def names(self) -> typing.Iterable[str]:
+        names = [self._canonicalName]
+        if self._alternateNames:
+            names.extend(self._alternateNames)
+        return names
+    
+    def nameLanguage(self, name: str) -> typing.Optional[str]:
+        if not self._nameLanguages:
+            return None
+        return self._nameLanguages.get(name, None)
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
@@ -51,13 +64,13 @@ class SectorInfo(object):
         return self._y
 
     def tags(self) -> typing.Optional[typing.Iterable[str]]:
-        return self._tags
+        return list(self._tags) if self._tags else None
 
     def isCustomSector(self) -> bool:
         return self._isCustomSector
 
-    def mipLevels(self) -> typing.Optional[typing.Dict[int, str]]:
-        return self._mipLevels
+    def mapLevels(self) -> typing.Optional[typing.Dict[int, str]]:
+        return self._mapLevels.copy() if self._mapLevels else None
 
 class DataStore(object):
     class UpdateStage(enum.Enum):
@@ -76,7 +89,7 @@ class DataStore(object):
     _TimestampCheckTimeout = 3 # Seconds
 
     _instance = None # Singleton instance
-    _lock = threading.Lock()
+    _lock = threading.RLock()
     _installDir = None
     _overlayDir = None
     _customDir = None
@@ -115,14 +128,16 @@ class DataStore(object):
             milieu: travellermap.Milieu
             ) -> int:
         self._loadAllSectors()
-        return len(self._milieuMap[milieu])
+        with self._lock:
+            return len(self._milieuMap[milieu])
 
     def sectors(
             self,
             milieu: travellermap.Milieu
             ) -> typing.Iterable[SectorInfo]:
         self._loadAllSectors()
-        return self._milieuMap[milieu].values()
+        with self._lock:
+            return list(self._milieuMap[milieu].values())
 
     def sectorFileData(
             self,
@@ -133,15 +148,32 @@ class DataStore(object):
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
-            raise RuntimeError(f'Unknown sector "{sectorName}"')
+            raise RuntimeError(f'Unable to retrieve sector file data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
         return self._bytesToString(bytes=self._readMilieuFile(
             fileName=f'{escapedSectorName}.sec',
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
+    
+    def sectorMetaData(
+            self,
+            sectorName: str,
+            milieu: travellermap.Milieu
+            ) -> str:
+        self._loadAllSectors()
 
-    def sectorMipData(
+        sectorMap = self._milieuMap[milieu]
+        if sectorName not in sectorMap:
+            raise RuntimeError(f'Unable to retrieve sector meta data for unknown sector {sectorName}')
+        sector: SectorInfo = sectorMap[sectorName]
+        escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
+        return self._bytesToString(bytes=self._readMilieuFile(
+            fileName=f'{escapedSectorName}.xml',
+            milieu=milieu,
+            useCustomMapDir=sector.isCustomSector()))
+
+    def sectorMapImage(
             self,
             sectorName: str,
             milieu: travellermap.Milieu,
@@ -151,14 +183,14 @@ class DataStore(object):
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
-            raise RuntimeError(f'Unknown sector "{sectorName}"')
+            raise RuntimeError(f'Unable to retrieve sector map data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
-        mipLevels = sector.mipLevels()
-        if not mipLevels or scale not in mipLevels:
-            raise RuntimeError(f'Sector {sectorName} has no mip entry for scale {scale}')
-        mipFileName = mipLevels[scale]
+        mapLevels = sector.mapLevels()
+        if not mapLevels or scale not in mapLevels:
+            raise RuntimeError(f'Unable to retrieve {scale} scale sector map data for {sectorName}')
+        mapFileName = mapLevels[scale]
         return self._readMilieuFile(
-            fileName=mipFileName,
+            fileName=mapFileName,
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector())
 
@@ -259,6 +291,91 @@ class DataStore(object):
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
+            
+    def createCustomSector(
+            self,
+            sectorData: str,
+            sectorMetadata: str,
+            sectorMaps: typing.Mapping[float, bytes],
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._loadAllSectors()
+
+        # TODO: Parse sector data to verify it
+
+        parsedMetadata = travellermap.Metadata(xml=sectorMetadata)
+        milieuDirPath = os.path.join(
+            self._customDir,
+            DataStore._MilieuBaseDir,
+            milieu.value)
+        os.makedirs(milieuDirPath, exist_ok=True)
+
+        with self._lock:
+            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
+            if sectors:
+                # Check for sectors with the same name
+                existingSector = sectors.get(parsedMetadata.canonicalName())
+                if existingSector:
+                    if existingSector.isCustomSector():
+                        raise RuntimeError(
+                            'Unable to create custom sector {newName} as there is a already a custom sector with that name'.format(
+                                newName=parsedMetadata.canonicalName()))
+
+                    if parsedMetadata.x() != existingSector.x() or \
+                            parsedMetadata.y() != existingSector.y():
+                        raise RuntimeError(
+                            'Unable to create custom sector {newName} as there is a standard sector with the same name at a different location'.format(
+                                newName=parsedMetadata.canonicalName()))
+
+                # Check for custom sectors at the same location
+                for existingSector in sectors.values():
+                    if not existingSector.isCustomSector():
+                        continue
+
+                    if parsedMetadata.x() == existingSector.x() and \
+                            parsedMetadata.y() == existingSector.y():
+                        raise RuntimeError(
+                            'Unable to create custom sector {newName} as custom sector {existingName} is already located at ({x}, {y})'.format(
+                                newName=parsedMetadata.canonicalName(),
+                                existingName=existingSector.canonicalName(),
+                                x=parsedMetadata.x(),
+                                y=parsedMetadata.y()))
+
+            # TODO: Need to handle file encoding for sector files as some use specific encodings
+            # TODO: Need a better way of handling map level image types rather than assuming they are png
+            # TODO: hard coding extension will be incorrect when multiple formats are supported
+            # TODO: Need to handle sector names that contain characters that are invalid for a file name
+            sectorFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.sec')
+            with open(sectorFilePath, 'w') as file:
+                file.write(sectorData)
+
+            # TODO: This is currently writing the metadata in xml format but the snapshot I create
+            # from traveller map uses a json format. If I ever start using sector meta data for more
+            # than generating posters then I'll need to support loading both formats.
+            metadataFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.xml')
+            with open(metadataFilePath, 'w', encoding='UTF8') as file:
+                file.write(sectorMetadata)
+
+            mapLevels = {}
+            for scale, map in sectorMaps.items():
+                mapLevelFileName = f'{parsedMetadata.canonicalName()}_{scale}.png'
+                mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
+                mapLevels[scale] = mapLevelFileName
+                with open(mapLevelFilePath, 'wb') as file:
+                    file.write(map)
+
+            sectors[parsedMetadata.canonicalName()] = SectorInfo(
+                canonicalName=parsedMetadata.canonicalName(),
+                alternateNames=parsedMetadata.alternateNames(),
+                nameLanguages=parsedMetadata.nameLanguages(),
+                abbreviation=None, # Not supported for custom sectors as it's not included in the xml metadata
+                x=parsedMetadata.x(),
+                y=parsedMetadata.y(),
+                tags=None, # Not supported for custom sectors as it's not included in the xml metadata
+                isCustomSector=True,
+                mapLevels=mapLevels)
+
+            self._saveCustomSectors(milieu=milieu)
 
     def _loadAllSectors(self) -> None:
         if self._milieuMap:
@@ -444,6 +561,7 @@ class DataStore(object):
 
             canonicalName = None
             alternateNames = None
+            nameLanguages = None
             for element in sectorInfo['Names']:
                 name = element['Text']
                 if not canonicalName:
@@ -452,6 +570,12 @@ class DataStore(object):
                     if not alternateNames:
                         alternateNames = []
                     alternateNames.append(name)
+
+                lang = element.get('Lang')
+                if lang:
+                    if not nameLanguages:
+                        nameLanguages = {}
+                    nameLanguages[name] = lang
             assert(canonicalName)
 
             abbreviation = None
@@ -462,22 +586,83 @@ class DataStore(object):
             if 'Tags' in sectorInfo:
                 tags = sectorInfo['Tags'].split()
 
-            mipLevels = None
-            if 'MipLevels' in sectorInfo:
-                mipLevels = {}
-                for mipLevel in sectorInfo['MipLevels']:
-                    fileName = mipLevel['FileName']
-                    scale = mipLevel['Scale']
-                    mipLevels[scale] = fileName
+            mapLevels = None
+            if 'MapLevels' in sectorInfo:
+                mapLevels = {}
+                for mapLevel in sectorInfo['MapLevels']:
+                    fileName = mapLevel['FileName']
+                    scale = mapLevel['Scale']
+                    mapLevels[scale] = fileName
 
             sectors.append(SectorInfo(
                 canonicalName=canonicalName,
                 alternateNames=alternateNames,
+                nameLanguages=nameLanguages,
                 abbreviation=abbreviation,
                 x=sectorX,
                 y=sectorY,
                 tags=tags,
                 isCustomSector=useCustomMapDir,
-                mipLevels=mipLevels))
+                mapLevels=mapLevels))
 
         return sectors
+
+    def _saveCustomSectors(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
+        universeFilePath = os.path.join(
+            self._customDir,
+            DataStore._MilieuBaseDir,
+            milieu.value,
+            DataStore._UniverseFileName)
+
+        with self._lock:
+            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
+            sectorListData = []
+            if sectors:
+                for sector in sectors.values():
+                    if not sector.isCustomSector():
+                        continue
+
+                    sectorData = {
+                        'X': sector.x(),
+                        'Y': sector.y(),
+                        'Milieu': milieu.value}
+
+                    namesData = []
+                    for name in sector.names():
+                        nameData = {'Text': name}
+                        lang = sector.nameLanguage(name)
+                        if lang != None:
+                            nameData['Lang'] = lang
+
+                        namesData.append(nameData)
+                    if namesData:
+                        sectorData['Names'] = namesData
+
+                    abbreviation = sector.abbreviation()
+                    if abbreviation != None:
+                        sectorData['Abbreviation'] = abbreviation
+
+                    tags = sector.tags()
+                    if tags != None:
+                        sectorData['Tags'] = " ".join(tags)
+
+                    mapLevels = sector.mapLevels()
+                    mapLevelListData = []
+                    if mapLevels:
+                        for scale, file in mapLevels.items():
+                            mapLevelListData.append({
+                                'Scale': scale,
+                                'FileName': file
+                            })
+                    if mapLevelListData:
+                        sectorData['MapLevels'] = mapLevelListData
+
+                    sectorListData.append(sectorData)
+
+            universeData = {'Sectors': sectorListData}
+
+            with open(universeFilePath, 'w', encoding='UTF8') as file:
+                json.dump(universeData, file, indent=4)

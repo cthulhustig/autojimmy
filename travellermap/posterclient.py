@@ -9,18 +9,16 @@ import urllib.request
 class PosterClient(object):
     def __init__(
             self,
-            mapBaseUrl: str,
-            mapProxyPort: int,
+            mapUrl: str,
             sectorData: str,
-            metaData: typing.Optional[str] = None,
+            sectorMetadata: typing.Optional[str] = None,
             style: travellermap.Style = travellermap.Style.Poster,
             options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
             compositing: bool = True
             ) -> None:
-        self._mapBaseUrl = mapBaseUrl
-        self._mapProxyPort = mapProxyPort
+        self._mapUrl = mapUrl
         self._sectorData = sectorData
-        self._metaData = metaData
+        self._metaData = sectorMetadata
         self._style = style
         self._options = options
         self._compositing = compositing
@@ -29,20 +27,13 @@ class PosterClient(object):
             self,
             linearScale: float # Pixels per parsec
             ) -> bytes:
-        # TODO: This logic is duplicated in a few places, should consolidate. I don't think
-        # this actually needs both, could just have the required base url (proxy or direct)
-        # passed in from a higher level
-        if self._mapProxyPort:
-            baseUrl = f'http://127.0.0.1:{self._mapProxyPort}'
-        else:
-            baseUrl = self._mapBaseUrl
-
         url = travellermap.formatPosterUrl(
-            baseMapUrl=baseUrl,
+            baseMapUrl=self._mapUrl,
             style=self._style,
             options=self._options,
             linearScale=linearScale,
-            compositing=self._compositing)
+            compositing=self._compositing,
+            minimal=True)
         
         # Leave this enabled to catch bugs that are causing LOTS of requests
         logging.info(f'Requesting poster {url}')

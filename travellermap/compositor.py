@@ -26,14 +26,14 @@ def _calculateIntersection(
 
     return (left, top, right, bottom)
 
-class _MipMap(object):
+class _MapImage(object):
     def __init__(
             self,
-            mipData: bytes,
+            imageData: bytes,
             scale: float
             ) -> None:
         self._scale = scale
-        with PIL.Image.open(io.BytesIO(mipData)) as image:
+        with PIL.Image.open(io.BytesIO(imageData)) as image:
             self._pixels = image.tobytes()
             self._size = (image.width, image.height)
             self._mode = image.mode
@@ -50,7 +50,7 @@ class _MipMap(object):
     def mode(self) -> str:
         return self._mode
 
-    def __lt__(self, other: '_MipMap') -> bool:
+    def __lt__(self, other: '_MapImage') -> bool:
         if self.__class__ is other.__class__:
             return self.scale() > other.scale()
         return NotImplemented
@@ -60,11 +60,11 @@ class _CustomSector(object):
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mipMaps: typing.Iterable[_MipMap]
+            mapImages: typing.Iterable[_MapImage]
             ) -> None:
         self._name = name
         self._position = position
-        self._mipMaps = sorted(mipMaps)
+        self._mapImages = sorted(mapImages)
 
         absoluteRect = travellermap.sectorBoundingRect(position[0], position[1])
         mapSpaceUL = travellermap.absoluteHexToMapSpace(
@@ -83,12 +83,12 @@ class _CustomSector(object):
     def mapSpaceRect(self) -> typing.Tuple[float, float, float, float]:
         return self._mapSpaceRect
 
-    def findMipLevel(
+    def findMapImage(
             self,
             scale: float
-            ) -> typing.Optional[_MipMap]:
+            ) -> typing.Optional[_MapImage]:
         bestLevel = None
-        for level in self._mipMaps:
+        for level in self._mapImages:
             if bestLevel and scale > level.scale():
                 # We've got a possible best level and the one currently being looked at is for a
                 # lower scale so use the current best. This works on the assumption that list is
@@ -159,17 +159,17 @@ class Compositor(object):
             # The custom sector overlaps the tile so copy the section that overlaps to
             # the tile
 
-            mipLevel = sector.findMipLevel(scale=tileScale)
-            if not mipLevel:
+            mapImage = sector.findMapImage(scale=tileScale)
+            if not mapImage:
                 continue
 
             # NOTE: Y-axis is flipped due to map space having a negative Y compared to other
             # coordinate systems
             srcPixelRect = (
-                round((intersection[0] - sectorMapRect[0]) * mipLevel.scale()), # Left
-                -round((intersection[3] - sectorMapRect[3]) * mipLevel.scale()), # Upper
-                round((intersection[2] - sectorMapRect[0]) * mipLevel.scale()), # Right
-                -round((intersection[1] - sectorMapRect[3]) * mipLevel.scale())) # Lower
+                round((intersection[0] - sectorMapRect[0]) * mapImage.scale()), # Left
+                -round((intersection[3] - sectorMapRect[3]) * mapImage.scale()), # Upper
+                round((intersection[2] - sectorMapRect[0]) * mapImage.scale()), # Right
+                -round((intersection[1] - sectorMapRect[3]) * mapImage.scale())) # Lower
 
             tgtPixelDim = (
                 round((intersection[2] - intersection[0]) * tileScale),
@@ -178,13 +178,13 @@ class Compositor(object):
                 math.ceil((intersection[0] * tileScale) - (float(tileX) * tileWidth)),
                 -math.ceil((intersection[3] * tileScale) + (float(tileY) * tileHeight)))
 
-            # Convert the mip level bytes to an image each time. The Image can't be shared between
+            # Convert the map image bytes to an image each time. The Image can't be shared between
             # threads as things like crop aren't thread safe
             # https://github.com/python-pillow/Pillow/issues/4848
             srcImage = PIL.Image.frombytes(
-                mipLevel.mode(),
-                mipLevel.size(),
-                mipLevel.pixels())
+                mapImage.mode(),
+                mapImage.size(),
+                mapImage.pixels())
             try:
                 cropImage = srcImage.crop(srcPixelRect)
                 del srcImage
@@ -228,26 +228,26 @@ class Compositor(object):
                 if not sectorInfo.isCustomSector():
                     continue # Only interested in custom sectors
 
-                mipLevels = sectorInfo.mipLevels()
-                if not mipLevels:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no mip levels')
+                mapLevels = sectorInfo.mapLevels()
+                if not mapLevels:
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no map levels')
                     continue
 
-                mipMaps = []
-                for scale in mipLevels.keys():
+                mapImages = []
+                for scale in mapLevels.keys():
                     try:
-                        mipData = travellermap.DataStore.instance().sectorMipData(
+                        mapImage = travellermap.DataStore.instance().sectorMapImage(
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
-                        mipMaps.append(_MipMap(mipData=mipData, scale=scale))
+                        mapImages.append(_MapImage(imageData=mapImage, scale=scale))
                     except Exception as ex:
-                        logging.warning(f'Compositor failed to load scale {scale} mip level data {sectorInfo.canonicalName()}', exc_info=ex)
+                        logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
 
                 sectors.append(_CustomSector(
                     name=sectorInfo.canonicalName(),
                     position=(sectorInfo.x(), sectorInfo.y()),
-                    mipMaps=mipMaps))
+                    mapImages=mapImages))
 
             self._milieuSectorMap[milieu] = sectors

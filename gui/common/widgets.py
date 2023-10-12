@@ -1076,3 +1076,8 @@ class ProgressDialogEx(QtWidgets.QProgressDialog):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         gui.configureWindowTitleBar(widget=self)
+
+class LayoutWrapperWidget(QtWidgets.QWidget):
+    def __init__(self, layout, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.setLayout(layout)
