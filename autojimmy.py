@@ -130,6 +130,9 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
+        self._customSectorsButton = QtWidgets.QPushButton('Custom Sectors...', self)
+        self._customSectorsButton.clicked.connect(self._showCustomSectorsWindow)
+
         self._configurationButton = QtWidgets.QPushButton('Configuration...', self)
         self._configurationButton.clicked.connect(self._showConfiguration)
 
@@ -140,6 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._aboutButton.clicked.connect(self._showAbout)
 
         systemLayout = QtWidgets.QVBoxLayout()
+        systemLayout.addWidget(self._customSectorsButton)
         systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._downloadButton)
         systemLayout.addWidget(self._aboutButton)
@@ -197,6 +201,15 @@ class MainWindow(QtWidgets.QMainWindow):
             html=_WelcomeMessage,
             noShowAgainId='AppWelcome')
         message.exec()
+
+    def _showCustomSectorsWindow(self) -> None:
+        configDialog = gui.CustomSectorDialog()
+        configDialog.exec()
+
+        if configDialog.modified():
+            gui.MessageBoxEx.information(
+                parent=self,
+                text=f'{app.AppName} will load changes to custom sectors when next started.')
 
     def _showConfiguration(self) -> None:
         configDialog = gui.ConfigDialog()

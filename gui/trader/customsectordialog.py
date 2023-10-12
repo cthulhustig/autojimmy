@@ -1,4 +1,5 @@
 import app
+import enum
 import gui
 import jobs
 import logging
@@ -36,6 +37,7 @@ class _NewSectorDialog(gui.DialogEx):
         self._posterJob = None
         self._sectorData = None
         self._sectorMetadata = None
+        self._sector = None
         
         self._setupFileSelectControls()
         self._setupRenderOptionControls()
@@ -48,6 +50,9 @@ class _NewSectorDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
         self.setFixedHeight(self.sizeHint().height())
+
+    def sector(self) -> typing.Optional[travellermap.SectorInfo]:
+        return self._sector
 
     def loadSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
@@ -241,7 +246,10 @@ class _NewSectorDialog(gui.DialogEx):
         except Exception as ex:
             message = 'Failed to generate sector maps'
             logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(message, exception=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
         
     def _posterCreationFinished(
             self,
@@ -262,7 +270,7 @@ class _NewSectorDialog(gui.DialogEx):
         assert(isinstance(result, dict))
 
         try:
-            travellermap.DataStore.instance().createCustomSector(
+            self._sector = travellermap.DataStore.instance().createCustomSector(
                 sectorData=self._sectorData,
                 sectorMetadata=self._sectorMetadata,
                 sectorMaps=result,
@@ -270,7 +278,11 @@ class _NewSectorDialog(gui.DialogEx):
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
             logging.critical(message, exc_info=ex)
-            gui.MessageBoxEx.critical(message, exception=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
             
         self.accept()
 
@@ -300,31 +312,116 @@ class _NewSectorDialog(gui.DialogEx):
 
         return renderOptions            
 
-class _SectorListWidget(gui.ListWidgetEx):
-    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
-        super().__init__(parent)
+class _CustomSectorTable(gui.ListTable):
+    class ColumnType(enum.Enum):
+        Name = 'Name'
+        Location = 'Location'
 
-        self._synchronise()
+    AllColumns = [
+        ColumnType.Name,
+        ColumnType.Location
+    ]
 
-    def _synchronise(self) -> None:
+    def __init__(
+            self,
+            columns: typing.Iterable[ColumnType] = AllColumns
+            ) -> None:
+        super().__init__()
+
+        self.setColumnHeaders(columns)
+        self.resizeColumnsToContents() # Size columns to header text
+        self.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+
+        self.synchronise()
+
+    def sector(self, row: int) -> typing.Optional[travellermap.SectorInfo]:
+        tableItem = self.item(row, 0)
+        if not tableItem:
+            return None
+        return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
+    
+    def sectorRow(self, sector: travellermap.SectorInfo) -> int:
+        for row in range(self.rowCount()):
+            if sector == self.sector(row):
+                return row
+        return -1
+
+    def currentSector(self) -> typing.Optional[travellermap.SectorInfo]:
+        row = self.currentRow()
+        if row < 0:
+            return None
+        return self.sector(row)     
+
+    def synchronise(self) -> None:
         sectors = travellermap.DataStore.instance().sectors(
             milieu=app.Config.instance().milieu())
-        self.clear()
-        for sector in sectors:
-            if not sector.isCustomSector():
-                continue
-            item = gui.NaturalSortListWidgetItem(sector.canonicalName())
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, sector)
-            self.addItem(item)
-        if self.count() > 0:
-            self.setCurrentRow(0)
 
-    def selectedSector(self) -> typing.Optional[travellermap.SectorInfo]:
-        items = self.selectedItems()
-        if not items or len(items) != 1:
-            return None
-        item = items[0]
-        return item.data(QtCore.Qt.ItemDataRole.UserRole)
+        # Disable sorting while inserting multiple rows then sort once after they've
+        # all been added
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            currentSectors = set()
+            for row in range(self.rowCount() - 1, -1, -1):
+                sector = self.sector(row)
+                if sector not in sectors:
+                    self.removeRow(row)
+                else:
+                    currentSectors.add(sector)
+
+            for sector in sectors:
+                if not sector.isCustomSector():
+                    continue # Ignore standard sectors
+                if sector in currentSectors:
+                    continue # Table already has an entry for the sector
+
+                row = self.rowCount()
+                self.insertRow(row)
+                self._fillRow(row, sector)
+        finally:
+            self.setSortingEnabled(sortingEnabled)
+
+        # Force a selection if there isn't one
+        if not self.hasSelection() and self.rowCount() > 0:
+            self.selectRow(0)
+
+    def _fillRow(
+            self,
+            row: int,
+            sector: travellermap.SectorInfo
+            ) -> int:
+        # Workaround for the issue covered here, re-enabled after setting items
+        # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
+        sortingEnabled = self.isSortingEnabled()
+        self.setSortingEnabled(False)
+
+        try:
+            for column in range(self.columnCount()):
+                columnType = self.columnHeader(column)
+                tableItem = None
+                if columnType == self.ColumnType.Name:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sector.canonicalName())
+                elif columnType == self.ColumnType.Location:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.x()}, {sector.y()})')
+
+                if tableItem:
+                    self.setItem(row, column, tableItem)
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, sector)
+
+            # Take note of the sort column item so we can determine which row index after the table
+            # has been sorted
+            sortItem = self.item(row, self.horizontalHeader().sortIndicatorSection())
+        finally:
+            self.setSortingEnabled(sortingEnabled)
+
+        # If we don't have a sort item we assume a derived class has overridden _fillRow to add custom
+        # columns and the table is currently sorted by one of those columns. In this the expectation is
+        # the derived class will be handling working out the post sort row index.
+        return sortItem.row() if sortItem else row
 
 class _MapComboBox(gui.ComboBoxEx):
     def __init__(
@@ -350,8 +447,9 @@ class _MapComboBox(gui.ComboBoxEx):
         self._sectorInfo = sectorInfo
         with gui.SignalBlocker(widget=self):
             self.clear()
-            for scale in sectorInfo.mapLevels().keys():
-                self.addItem(f'{scale} Pixels Per Parsec', scale)
+            if sectorInfo:
+                for scale in sectorInfo.mapLevels().keys():
+                    self.addItem(f'{scale} Pixels Per Parsec', scale)
         self.currentIndexChanged.emit(self.currentIndex())
 
     def currentScale(self) -> typing.Optional[float]:
@@ -399,6 +497,8 @@ class CustomSectorDialog(gui.DialogEx):
             title='Custom Sectors',
             configSection='CustomSectorDialog',
             parent=parent)
+        
+        self._modified = False
 
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowMaximizeButtonHint)
 
@@ -414,35 +514,28 @@ class CustomSectorDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
 
+    def modified(self) -> bool:
+        return self._modified
+
     def _setupSectorListControls(self) -> None:
-        self._sectorList = _SectorListWidget()
-        self._sectorList.selectionModel().selectionChanged.connect(self._sectorSelectionChanged)
+        self._sectorTable = _CustomSectorTable()
+        self._sectorTable.selectionModel().selectionChanged.connect(self._sectorSelectionChanged)
 
-        self._sectorListToolbar = QtWidgets.QToolBar("Sector Toolbar")
-        self._sectorListToolbar.setIconSize(QtCore.QSize(32, 32))
-        self._sectorListToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
-        self._sectorListToolbar.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Minimum)
+        self._newSectorButton = QtWidgets.QPushButton('New...')
+        self._newSectorButton.clicked.connect(self._newSectorClicked)
 
-        self._newSectorAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.NewFile), 'New', self)
-        self._newSectorAction.triggered.connect(self._newSectorClicked)
-        self._sectorList.addAction(self._newSectorAction)
-        self._sectorListToolbar.addAction(self._newSectorAction)
+        self._deleteSectorButton = QtWidgets.QPushButton('Delete...')
+        self._deleteSectorButton.clicked.connect(self._deleteSectorClicked)    
 
-        self._renameSectorAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
-        self._renameSectorAction.triggered.connect(self._renameSectorClicked)
-        self._sectorList.addAction(self._renameSectorAction)
-        self._sectorListToolbar.addAction(self._renameSectorAction)
+        buttonLayout = QtWidgets.QHBoxLayout()    
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addWidget(self._newSectorButton)
+        buttonLayout.addWidget(self._deleteSectorButton)
+        buttonLayout.addStretch()
 
-        self._deleteSectorAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
-        self._deleteSectorAction.triggered.connect(self._deleteSectorClicked)
-        self._sectorList.addAction(self._deleteSectorAction)
-        self._sectorListToolbar.addAction(self._deleteSectorAction)               
-
-        groupLayout = QtWidgets.QHBoxLayout()
-        groupLayout.addWidget(self._sectorListToolbar)
-        groupLayout.addWidget(self._sectorList)
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.addLayout(buttonLayout)
+        groupLayout.addWidget(self._sectorTable)
 
         self._sectorListGroupBox = QtWidgets.QGroupBox('Sectors')
         self._sectorListGroupBox.setLayout(groupLayout)
@@ -484,10 +577,10 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorDataGroupBox.setLayout(groupLayout)
 
         # Sync the controls to the currently selected sector
-        self._syncSectorDataControls(sectorInfo=self._sectorList.selectedSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
 
     def _sectorSelectionChanged(self) -> None:
-        self._syncSectorDataControls(sectorInfo=self._sectorList.selectedSector())
+        self._syncSectorDataControls(sectorInfo=self._sectorTable.currentSector())
 
     def _mapSelectionChanged(self) -> None:
         self._mapGraphicsView.setMapImage(
@@ -514,7 +607,11 @@ class CustomSectorDialog(gui.DialogEx):
         except Exception as ex:
             self._sectorFileTextEdit.clear()
             # TODO: Log something
-            gui.MessageBoxEx.critical('Failed to retrieve sector file data.', exception=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='Failed to retrieve sector file data.',
+                exception=ex)
+            # Continue to try and sync other controls
 
         try:
             metaData = travellermap.DataStore.instance().sectorMetaData(
@@ -524,19 +621,57 @@ class CustomSectorDialog(gui.DialogEx):
         except Exception as ex:
             self._sectorMetadataTextEdit.clear()
             # TODO: Log something
-            gui.MessageBoxEx.critical('Failed to retrieve sector file data.', exception=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='Failed to retrieve sector file data.',
+                exception=ex)
+            # Continue to try and sync other controls
 
         # This will trigger an update of the map graphics view
         self._mapSelectionComboBox.setSectorInfo(sectorInfo=sectorInfo)
 
     def _newSectorClicked(self) -> None:
         dialog = _NewSectorDialog()
-        dialog.exec()
+        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        
+        newSector = dialog.sector()
+        assert(newSector != None)
 
-    def _renameSectorClicked(self) -> None:
-        # TODO: Rename sector
-        pass
+        self._modified = True
+        self._sectorTable.synchronise()
+
+        # Select the sector that was just added
+        row = self._sectorTable.sectorRow(newSector)
+        if row >= 0:
+            self._sectorTable.selectRow(row)
 
     def _deleteSectorClicked(self) -> None:
-        # TODO: delete sector
-        pass
+        sector = self._sectorTable.currentSector()
+        if not sector:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='No sector selected for deletion')
+
+        answer = gui.MessageBoxEx.question(
+            parent=self,
+            text=f'Are you sure you want to delete {sector.canonicalName()}')
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return # User cancelled            
+
+        try:
+            travellermap.DataStore.instance().deleteCustomSector(
+                sectorName=sector.canonicalName(),
+                milieu=app.Config.instance().milieu())
+        except Exception as ex:
+            message = f'Failed to delete {sector.canonicalName()}'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)            
+            # Continue in order to sync the table if an error occurs as we don't know what state
+            # the data store was left in after the error
+
+        self._modified = True
+        self._sectorTable.synchronise()

@@ -298,7 +298,7 @@ class DataStore(object):
             sectorMetadata: str,
             sectorMaps: typing.Mapping[float, bytes],
             milieu: travellermap.Milieu
-            ) -> None:
+            ) -> SectorInfo:
         self._loadAllSectors()
 
         # TODO: Parse sector data to verify it
@@ -318,14 +318,16 @@ class DataStore(object):
                 if existingSector:
                     if existingSector.isCustomSector():
                         raise RuntimeError(
-                            'Unable to create custom sector {newName} as there is a already a custom sector with that name'.format(
-                                newName=parsedMetadata.canonicalName()))
+                            'Unable to create custom sector {newName} in {milieu} as there is a already a custom sector with that name'.format(
+                                newName=parsedMetadata.canonicalName(),
+                                milieu=milieu.value))
 
                     if parsedMetadata.x() != existingSector.x() or \
                             parsedMetadata.y() != existingSector.y():
                         raise RuntimeError(
-                            'Unable to create custom sector {newName} as there is a standard sector with the same name at a different location'.format(
-                                newName=parsedMetadata.canonicalName()))
+                            'Unable to create custom sector {newName} in {milieu} as there is a standard sector with the same name at a different location'.format(
+                                newName=parsedMetadata.canonicalName(),
+                                milieu=milieu.value))
 
                 # Check for custom sectors at the same location
                 for existingSector in sectors.values():
@@ -335,12 +337,14 @@ class DataStore(object):
                     if parsedMetadata.x() == existingSector.x() and \
                             parsedMetadata.y() == existingSector.y():
                         raise RuntimeError(
-                            'Unable to create custom sector {newName} as custom sector {existingName} is already located at ({x}, {y})'.format(
+                            'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
                                 newName=parsedMetadata.canonicalName(),
+                                milieu=milieu.value,
                                 existingName=existingSector.canonicalName(),
                                 x=parsedMetadata.x(),
                                 y=parsedMetadata.y()))
 
+            # TODO: Need to handle different format sector files
             # TODO: Need to handle file encoding for sector files as some use specific encodings
             # TODO: Need a better way of handling map level image types rather than assuming they are png
             # TODO: hard coding extension will be incorrect when multiple formats are supported
@@ -364,7 +368,7 @@ class DataStore(object):
                 with open(mapLevelFilePath, 'wb') as file:
                     file.write(map)
 
-            sectors[parsedMetadata.canonicalName()] = SectorInfo(
+            sector = SectorInfo(
                 canonicalName=parsedMetadata.canonicalName(),
                 alternateNames=parsedMetadata.alternateNames(),
                 nameLanguages=parsedMetadata.nameLanguages(),
@@ -374,8 +378,57 @@ class DataStore(object):
                 tags=None, # Not supported for custom sectors as it's not included in the xml metadata
                 isCustomSector=True,
                 mapLevels=mapLevels)
+            sectors[sector.canonicalName()] = sector
 
             self._saveCustomSectors(milieu=milieu)
+
+            return sector
+
+    def deleteCustomSector(
+            self,
+            sectorName: str,
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._loadAllSectors()
+
+        milieuDirPath = os.path.join(
+            self._customDir,
+            DataStore._MilieuBaseDir,
+            milieu.value)
+
+        with self._lock:
+            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
+            sector = sectors.get(sectorName) if sectors else None
+            if not sector:
+                raise RuntimeError(
+                    'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
+                        name=sectorName,
+                        milieu=milieu.value))
+            
+            # Remove the sector from the custom universe file first. That way we don't leave a partially
+            # populated sector if deleting a file fails
+            del sectors[sectorName]
+            self._saveCustomSectors(milieu=milieu)
+
+            files = [f'{sector.canonicalName()}.sec', f'{sector.canonicalName()}.xml']
+            mapLevels = sector.mapLevels()
+            if mapLevels:
+                files.extend(mapLevels.values())
+
+            # Perform best effort attempt to delete files. If it fails log and continue,
+            # any undeleted files will have no effect since the sector has been deleted
+            # from the universe. If the user re-creates the a sector with the same name
+            # the files will hopefully be overwritten, if not an error will be generated
+            for file in files:
+                try:
+                    filePath = os.path.join(milieuDirPath, file)
+                    os.remove(filePath)
+                except Exception as ex:
+                    logging.warning(
+                        'Failed to delete custom sector file {file} from {milieu}'.format(
+                            file=filePath,
+                            milieu=milieu.value),
+                        exc_info=ex)
 
     def _loadAllSectors(self) -> None:
         if self._milieuMap:

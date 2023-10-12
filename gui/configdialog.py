@@ -698,10 +698,14 @@ class ConfigDialog(gui.DialogEx):
         mapUrl = QtCore.QUrl(self._mapUrlLineEdit.text())
         # Map URL must have a scheme but no path or options
         if mapUrl.scheme() != 'http' and mapUrl.scheme() != 'https':
-            gui.MessageBoxEx.critical('The Traveller Map URL must use http or https')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='The Traveller Map URL must use http or https')
             return False
         if (mapUrl.path() != '' and mapUrl.path() != '/') or mapUrl.query():
-            gui.MessageBoxEx.critical('The Traveller Map URL can\'t have a path or query')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='The Traveller Map URL can\'t have a path or query')
             return False
         return True
 
