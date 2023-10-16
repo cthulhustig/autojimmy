@@ -210,6 +210,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
 
+    # NOTE: The POST handler of the proxy isn't currently used as it doesn't support the
+    # multipart/form-data content that is being used by the poster generation code. I've
+    # left the code in in case it's useful in the future
+    """
     def do_POST(self) -> None:
         try:
             parsedUrl = urllib.parse.urlparse(self.path)
@@ -259,7 +263,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             logging.error(f'Exception occurred when handling POST request to {self.path}', exc_info=ex)
             self.send_response(500)
             self.end_headers()
-
+    """
+    
     def _handleLocalFileRequest(
             self,
             filePath: urllib.parse.ParseResult,

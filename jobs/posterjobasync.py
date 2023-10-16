@@ -37,6 +37,8 @@ class PosterJobAsync(QtCore.QObject):
         metadataBytes = sectorMetadata.encode()
 
         self._mapUrl = mapUrl
+        # NOTE: Use file for the sector data as AsyncRequest wraps the uploaded data in a byte
+        # stream and that forces aiohttp to use multipart/form-data content
         self._data = {'file': sectorBytes, 'metadata': metadataBytes}
         self._style = style
         self._options = copy.copy(options) if options else None
