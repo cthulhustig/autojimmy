@@ -6,3 +6,4 @@ reportlab>=3.6.12
 Pillow>=9.5.0
 aiohttp>=3.8.6
 qasync>=0.26.0
+xmlschema>=2.5.0

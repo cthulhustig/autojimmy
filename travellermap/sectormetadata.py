@@ -1,8 +1,9 @@
 import typing
 import xml.etree.ElementTree as ET
 
-# TODO: This probably needs a less generic name
-class Metadata(object):
+# TODO: I don't like the way the XML parsing is handled here and in DataStore (for validation).
+# Validation really needs to be done in DataStore as it knows about the filepath of the XSD
+class SectorMetadata(object):
     def __init__(
             self,
             xml: str
@@ -54,3 +55,7 @@ class Metadata(object):
 
     def y(self) -> int:
         return self._y
+
+    @staticmethod
+    def validate(xml: str) -> None:
+        pass

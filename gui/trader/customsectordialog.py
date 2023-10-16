@@ -370,8 +370,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             with open(self._metadataFileLineEdit.text(), 'r') as file:
                 self._sectorMetadata = file.read()
-
-            # TODO: Validate metadata against XSD
+            travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
 
             posterJob = jobs.PosterJobAsync(
                 parent=self,
@@ -395,6 +394,7 @@ class _NewSectorDialog(gui.DialogEx):
                 parent=self,
                 text=message,
                 exception=ex)
+            return
 
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(

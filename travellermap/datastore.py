@@ -12,6 +12,8 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
+import xmlschema
+import xml.etree.ElementTree as ET
 import zipfile
 
 class SectorInfo(object):
@@ -82,6 +84,7 @@ class DataStore(object):
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
     _TimestampFileName = 'timestamp.txt'
+    _SectorMetadataXsdFileName = 'sectors.xsd'
     _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
     _DataArchiveUrl = 'https://github.com/cthulhustig/autojimmy-data/archive/refs/heads/main.zip'
     _DataArchiveMapPath = 'autojimmy-data-main/map/'
@@ -303,7 +306,7 @@ class DataStore(object):
 
         # TODO: Parse sector data to verify it
 
-        parsedMetadata = travellermap.Metadata(xml=sectorMetadata)
+        parsedMetadata = travellermap.SectorMetadata(xml=sectorMetadata)
         milieuDirPath = os.path.join(
             self._customDir,
             DataStore._MilieuBaseDir,
@@ -429,6 +432,36 @@ class DataStore(object):
                             file=filePath,
                             milieu=milieu.value),
                         exc_info=ex)
+                    
+    class SectorMetadataValidationError(Exception):
+        def __init__(self, reason) -> None:
+            super().__init__(f'Sector metadata is invalid:\nReason: {reason}')
+
+    def validateSectorMetadataXML(self, xml: str) -> None:
+        xsdPath = os.path.join(self._installDir, DataStore._SectorMetadataXsdFileName)
+
+        try:
+            root = ET.fromstring(xml)
+        except ET.ParseError as ex:
+            raise DataStore.SectorMetadataValidationError(str(ex))
+            
+        try:
+            xmlschema.validate(root, xsdPath)
+        except xmlschema.validators.exceptions.XMLSchemaValidationError as ex:
+            # The default string representation for an XML validation exception is stupidly long (dozens of lines) so
+            # wrap it in something more concise
+            logging.debug('XSD validation of sector metadata failed', exc_info=ex)
+            raise DataStore.SectorMetadataValidationError(ex.reason)
+        
+        # The base XSD has these as optional but they are required for custom sectors
+        if root.find('./Name') == None:
+            raise DataStore.SectorMetadataValidationError('Metadata must contain Name element')
+
+        if root.find('./X') == None:
+            raise DataStore.SectorMetadataValidationError('Metadata must contain X element')
+        
+        if root.find('./Y') == None:
+            raise DataStore.SectorMetadataValidationError('Metadata must contain Y element')
 
     def _loadAllSectors(self) -> None:
         if self._milieuMap:

@@ -6,6 +6,8 @@
 *.txt text
 *.json text
 *.sec text
+*.xml text
+*.xsd text
 
 *.htm text
 *.html text

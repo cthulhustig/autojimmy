@@ -3,7 +3,7 @@ from .options import *
 from .style import *
 from .url import *
 from .astrometrics import *
-from .metadata import *
+from .sectormetadata import *
 from .datastore import *
 from .compositor import *
 from .mapproxy import *
