@@ -358,6 +358,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         with urllib.request.urlopen(requestUrl) as response:
             info = response.info()
+
+            # TODO: Rather than wait for all the content to be received this should read in
+            # chunks and write it as it comes in
             data = response.read()
 
         self.send_response(200)

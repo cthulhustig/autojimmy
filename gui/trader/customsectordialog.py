@@ -1,4 +1,5 @@
 import app
+import common
 import enum
 import gui
 import jobs
@@ -17,8 +18,153 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # It's important that this is defined from largest to smallest as this will be the
 # order the maps are generated in and the generating the largest is the most likely to
 # fail so best to do it first
-# TODO: Need to check with Joshua that generating 5 maps is cool
 _CustomMapScales = [128, 64, 32, 16, 3]
+
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class _PosterJobDialog(QtWidgets.QDialog):
+    _GeneratingProgressDotCount = 5
+
+    def __init__(
+            self,
+            title: str,
+            job: jobs.PosterJobAsync,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
+
+        self._job = job
+        self._job.complete.connect(self._jobComplete)
+        self._job.progress.connect(self._jobEvent)
+        self._posters = None
+        self._generatingTimer = QtCore.QTimer()
+        self._generatingTimer.timeout.connect(self._generatingTimerFired)
+        self._generatingTimer.setInterval(500)
+        self._generatingTimer.setSingleShot(False)
+        
+        self._mapLabel = gui.PrefixLabel(prefix='Map: ')
+        self._uploadingLabel = gui.PrefixLabel(prefix='Uploading: ')
+        self._generatingLabel = gui.PrefixLabel(prefix='Generating: ')
+        self._downloadingLabel = gui.PrefixLabel(prefix='Downloading: ')
+
+        progressLayout = QtWidgets.QVBoxLayout()
+        progressLayout.addWidget(self._mapLabel)
+        progressLayout.addWidget(self._uploadingLabel)
+        progressLayout.addWidget(self._generatingLabel)
+        progressLayout.addWidget(self._downloadingLabel)
+
+        progressGroupBox = QtWidgets.QGroupBox()
+        progressGroupBox.setLayout(progressLayout)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self._cancelJob)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(progressGroupBox)
+        windowLayout.addWidget(self._cancelButton)
+
+        self.setWindowTitle(title)
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setSizeGripEnabled(False)
+        self.setLayout(windowLayout)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
+
+    def posters(self) -> typing.Optional[typing.Mapping[float, bytes]]:
+        return self._posters
+
+    def exec(self) -> int:
+        try:
+            self._job.run()
+        except Exception as ex:
+            message = 'Failed to start download job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
+            # the window is shown
+            QtCore.QTimer.singleShot(0, self.close)
+
+        return super().exec()
+    
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self._job:
+            self._job.cancel()
+        return super().closeEvent(a0)
+
+    def _cancelJob(self) -> None:
+        if self._job:
+            self._job.cancel()
+        self.close()
+
+    def _jobComplete(
+            self,
+            result: typing.Union[bytes, Exception]
+            ) -> None:
+        self._generatingTimer.stop()
+
+        if isinstance(result, Exception):
+            message = 'Map creation job failed'
+            logging.critical(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+        else:
+            self._posters = result
+            self.accept()
+
+    def _jobEvent(
+            self,
+            event: jobs.PosterJobAsync.ProgressEvent,
+            scale: float,
+            stageIndex: int,
+            totalStages: int,
+            currentBytes: int,
+            totalBytes: int
+            ) -> None:
+        self._mapLabel.setText(f'{scale} pixels per parsec ({stageIndex + 1}/{totalStages})')
+
+        if totalBytes > 0:
+            progressText = common.humanFriendlyByteSizes(currentBytes) + ' / ' + \
+                common.humanFriendlyByteSizes(totalBytes)
+        else:
+            progressText = common.humanFriendlyByteSizes(currentBytes)
+
+        if event == jobs.PosterJobAsync.ProgressEvent.Uploading:
+            if currentBytes == 0:
+                self._generatingLabel.setText('')
+                self._downloadingLabel.setText('')
+
+            self._uploadingLabel.setText(progressText)
+
+            if currentBytes == totalBytes:
+                self._generatingTimer.start()
+        elif event == jobs.PosterJobAsync.ProgressEvent.Downloading:
+            if currentBytes == 0:
+                self._generatingTimer.stop()
+                self._generatingLabel.setText('Complete')
+
+            self._downloadingLabel.setText(progressText)
+
+    def _generatingTimerFired(self) -> None:
+        text = self._generatingLabel.text()
+        if (len(text) % _PosterJobDialog._GeneratingProgressDotCount) == 0:
+            text = ''
+        text += '.'
+        self._generatingLabel.setText(text)
 
 class _NewSectorDialog(gui.DialogEx):
     _XmlFileFilter = 'XML Files(*.xml)'
@@ -34,7 +180,6 @@ class _NewSectorDialog(gui.DialogEx):
             parent=parent)
         
         self._recentDirectoryPath = None
-        self._posterJob = None
         self._sectorData = None
         self._sectorMetadata = None
         self._sector = None
@@ -210,15 +355,11 @@ class _NewSectorDialog(gui.DialogEx):
         return path
     
     def _createClicked(self) -> None:
-        # TODO: This logic is duplicated in a few places, should consolidate. I don't think
-        # this actually needs both, could just have the required base url (proxy or direct)
-        # passed in from a higher level
         try:
-            mapProxyPort = app.Config.instance().mapProxyPort()
-            if mapProxyPort:
-                mapUrl = f'http://127.0.0.1:{mapProxyPort}'
-            else:
-                mapUrl = app.Config.instance().travellerMapUrl()
+            # Always send poster requests directly to the configured traveller map instance.
+            # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
+            # to add support for proxying multipart/form-data
+            mapUrl = app.Config.instance().travellerMapUrl()
 
             # TODO: Some sector file types use specific character encodings, need to make sure this
             # doesn't mess with them
@@ -232,7 +373,7 @@ class _NewSectorDialog(gui.DialogEx):
 
             # TODO: Validate metadata against XSD
 
-            self._posterJob = jobs.PosterJob(
+            posterJob = jobs.PosterJobAsync(
                 parent=self,
                 mapUrl=mapUrl,
                 sectorData=self._sectorData,
@@ -240,9 +381,13 @@ class _NewSectorDialog(gui.DialogEx):
                 style=self._renderStyleComboBox.currentEnum(),
                 options=self._renderOptionList(),
                 scales=_CustomMapScales,
-                compositing=True,
-                finishedCallback=self._posterCreationFinished)
-            self._syncControls()
+                compositing=True)
+            progressDlg = _PosterJobDialog(
+                title='Map Creation',
+                job=posterJob)
+            if progressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+                return
+            posters = posterJob.posters()
         except Exception as ex:
             message = 'Failed to generate sector maps'
             logging.critical(message, exc_info=ex)
@@ -250,30 +395,12 @@ class _NewSectorDialog(gui.DialogEx):
                 parent=self,
                 text=message,
                 exception=ex)
-        
-    def _posterCreationFinished(
-            self,
-            result: typing.Union[typing.Dict[float, bytes], Exception]
-            ) -> None:
-        self._posterJob = None
-        self._syncControls()
-
-        if isinstance(result, Exception):
-            message = 'Failed to generate posters'
-            logging.error(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
-            return
-        
-        assert(isinstance(result, dict))
 
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(
                 sectorData=self._sectorData,
                 sectorMetadata=self._sectorMetadata,
-                sectorMaps=result,
+                sectorMaps=posters,
                 milieu=app.Config.instance().milieu())
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
@@ -284,8 +411,8 @@ class _NewSectorDialog(gui.DialogEx):
                 exception=ex)
             return
             
-        self.accept()
-
+        self.accept()            
+        
     def _renderOptionList(self) -> typing.Iterable[travellermap.Option]:
         renderOptions = []
 
@@ -606,10 +733,12 @@ class CustomSectorDialog(gui.DialogEx):
             self._sectorFileTextEdit.setPlainText(fileData)
         except Exception as ex:
             self._sectorFileTextEdit.clear()
-            # TODO: Log something
+
+            message = 'Failed to retrieve sector file data.'
+            logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
-                text='Failed to retrieve sector file data.',
+                text=message,
                 exception=ex)
             # Continue to try and sync other controls
 
@@ -620,10 +749,12 @@ class CustomSectorDialog(gui.DialogEx):
             self._sectorMetadataTextEdit.setPlainText(metaData)
         except Exception as ex:
             self._sectorMetadataTextEdit.clear()
-            # TODO: Log something
+
+            message = 'Failed to retrieve sector metadata.'
+            logging.critical(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
-                text='Failed to retrieve sector file data.',
+                text=message,
                 exception=ex)
             # Continue to try and sync other controls
 

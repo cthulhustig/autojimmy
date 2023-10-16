@@ -6,3 +6,4 @@ from .config import *
 from .recentworlds import *
 from .tagging import *
 from .serialization import *
+from .asyncrequest import *

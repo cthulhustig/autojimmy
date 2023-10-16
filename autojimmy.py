@@ -9,6 +9,7 @@ import logging
 import multiprocessing
 import os
 import pathlib
+import qasync
 import sys
 import traveller
 import travellermap
@@ -246,8 +247,9 @@ def main() -> None:
     if application.isAlreadyRunning():
         print(f'{app.AppName} is already running.')
         return
+    asyncEventLoop = qasync.QEventLoop()
 
-    exitCode = None
+    exitCode = 0
     mapProxyMonitor = None
     try:
         installDir = _installDirectory()
@@ -350,7 +352,9 @@ def main() -> None:
             mapProxyMonitor.start()
 
         window = MainWindow()
-        exitCode = application.exec()
+        window.show()
+        with asyncEventLoop:
+            asyncEventLoop.run_forever()
     except Exception as ex:
         message = 'Failed to initialise application'
         logging.error(message, exc_info=ex)

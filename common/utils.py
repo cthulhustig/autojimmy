@@ -1,6 +1,7 @@
 import enum
 import itertools
 import locale
+import math
 import platform
 import re
 import typing
@@ -175,3 +176,14 @@ def humanFriendlyListString(strings: typing.Sequence[str]) -> str:
 
     result += ' & ' + strings[count - 1]
     return result
+
+_ByteSizeSuffixes = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
+def humanFriendlyByteSizes(byteSize) -> str:
+   if byteSize == 0:
+       return '0B'
+   i = int(math.floor(math.log(byteSize, 1024)))
+   if i >= len(_ByteSizeSuffixes):
+       return f'{byteSize}B'
+   p = math.pow(1024, i)
+   s = round(byteSize / p, 2)
+   return f'{s}{_ByteSizeSuffixes[i]}'

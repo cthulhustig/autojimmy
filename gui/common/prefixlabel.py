@@ -14,6 +14,12 @@ class PrefixLabel(QtWidgets.QLabel):
         self._text = None
         self.setText(text)
 
+    def text(self) -> str:
+        text = super().text()
+        if text.startswith(self._prefix):
+            return text[len(self._prefix):]
+        return text
+
     def setText(self, text: str) -> None:
         self._text = text
         return super().setText(self._prefix + self._text if self._text else self._prefix)
