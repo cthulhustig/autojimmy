@@ -111,7 +111,7 @@ class WorldManager(object):
                     sectorAbbreviation=sectorInfo.abbreviation(),
                     sectorX=sectorX,
                     sectorY=sectorY,
-                    sectorData=sectorData)
+                    sectorContent=sectorData)
 
                 logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName}')
 
@@ -301,14 +301,8 @@ class WorldManager(object):
             sectorAbbreviation: typing.Optional[str],
             sectorX: int,
             sectorY: int,
-            sectorData: str
+            sectorContent: str
             ) -> traveller.Sector:
-        columnNames: typing.Optional[typing.List[str]] = None
-        columnCount: typing.Optional[int] = None
-        columnWidths: typing.Optional[typing.List[int]] = None
-        columnMap: typing.Optional[typing.Dict[str, int]] = None
-        rowData: typing.Optional[typing.List[str]] = None
-
         subsectorMap = {}
         allegianceMap = {}
 
@@ -317,102 +311,31 @@ class WorldManager(object):
         for code in list(map(chr, range(ord('A'), ord('P') + 1))):
             subsectorMap[code] = f'{sectorName} Subsector {code}'
 
+        sectorData = travellermap.parseSector(
+            content=sectorContent,
+            fileFormat=travellermap.SectorFileFormat.T5Column, # TODO: Type should be loaded from universe
+            identifier=sectorName) 
+        
+        for code, name in sectorData.subsectorNames().items():
+            code = code.upper()
+            assert(code in subsectorMap)
+            subsectorMap[code] = name
+
+        for code, name in sectorData.allegiances().items():
+            code = code.upper()
+            allegianceMap[code] = name
+
         worlds = []
-        for lineIndex, line in enumerate(sectorData.splitlines()):
-            if not line:
-                # Ignore empty lines
-                continue
-            if line[:1] == '#':
-                match = WorldManager._SubsectorPattern.match(line)
-                if match:
-                    code = match[1].upper()
-                    name = match[2]
-                    assert(code in subsectorMap)
-                    subsectorMap[code] = name
-                    continue
-
-                match = WorldManager._AllegiancePattern.match(line)
-                if match:
-                    code = match[1]
-                    name = match[2]
-                    # Ignore allegiances made up completely of '-' as we strip those out of the
-                    # world data when reading it
-                    if not all(ch == '-' for ch in code):
-                        allegianceMap[code] = name
-                    continue
-
-                # Ignore other comments
-                continue
-
-            if not columnNames:
-                columnNames = WorldManager._HeaderPattern.findall(line)
-                if len(columnNames) < 14:
-                    # This is needed as some sectors (notably Shadow Rift) are off format and have
-                    # broken comments that don't start with #. This gets logged at a low level so
-                    # we don't spam the logs every time we start
-                    logging.debug(
-                        f'Skipping bogus header on line {lineIndex} in data for sector {sectorName}')
-                    columnNames = None
-                    continue
-
-                columnCount = len(columnNames)
-
-                columnMap = {}
-                rowData = [None] * columnCount
-                for columnIndex, columnName in enumerate(columnNames):
-                    columnMap[columnName] = columnIndex
-                continue
-            elif not columnWidths:
-                separators = WorldManager._SeparatorPattern.findall(line)
-                if len(separators) != columnCount:
-                    raise RuntimeError(
-                        f'Unable to load data for sector {sectorName} (Header column count doesn\'t match separator column count)')
-
-                columnWidths = []
-                for columnSeparator in separators:
-                    columnWidths.append(len(columnSeparator))
-                continue
-
-            lineLength = len(line)
-            startIndex = 0
-            finishIndex = 0
-            for columnIndex in range(columnCount):
-                if startIndex >= lineLength:
-                    finishIndex = None
-                    break
-
-                finishIndex = (startIndex + columnWidths[columnIndex])
-                data = line[startIndex:finishIndex].strip()
-                if data and all(ch == '-' for ch in data):
-                    # Replace no data marker with empty string
-                    data = ''
-                rowData[columnIndex] = data
-                startIndex = finishIndex + 1
-            if finishIndex != lineLength:
-                logging.warning(
-                    f'Skipping incorrect length line on {lineIndex} in data for sector {sectorName}')
-                continue
-
+        for worldData in sectorData.worlds():
             try:
-                hex = rowData[columnMap[WorldManager._HexColumn]]
-                worldName = rowData[columnMap[WorldManager._NameColumn]]
+                hex = worldData.attribute(travellermap.WorldAttribute.Hex)
+                worldName = worldData.attribute(travellermap.WorldAttribute.Name)
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
                     # is important as it's the same format as Traveller Map meaning searches will
                     # work
                     worldName = f'{sectorName} {hex}'
-                uwp = rowData[columnMap[WorldManager._UWPColumn]]
-                bases = rowData[columnMap[WorldManager._BasesColumn]]
-                remarks = rowData[columnMap[WorldManager._RemarksColumn]]
-                zone = rowData[columnMap[WorldManager._ZoneColumn]]
-                pbg = rowData[columnMap[WorldManager._PBGColumn]]
-                allegiance = rowData[columnMap[WorldManager._AllegianceColumn]]
-                stellar = rowData[columnMap[WorldManager._StellarColumn]]
-                economics = rowData[columnMap[WorldManager._EconomicsColumn]].strip('()')
-                culture = rowData[columnMap[WorldManager._CultureColumn]].strip('[]')
-                nobilities = rowData[columnMap[WorldManager._NobilityColumn]]
-                systemWorlds = rowData[columnMap[WorldManager._SystemWorldsColumn]]
-
+            
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                 subsectorName = subsectorMap[subsectorCode]
 
@@ -421,23 +344,24 @@ class WorldManager(object):
                     sectorName=sectorName,
                     subsectorName=subsectorName,
                     hex=hex,
-                    allegiance=allegiance,
-                    uwp=uwp,
-                    economics=economics,
-                    culture=culture,
-                    nobilities=nobilities,
-                    remarks=remarks,
-                    zone=zone,
-                    stellar=stellar,
-                    pbg=pbg,
-                    systemWorlds=systemWorlds,
-                    bases=bases,
+                    allegiance=worldData.attribute(travellermap.WorldAttribute.Allegiance),
+                    uwp=worldData.attribute(travellermap.WorldAttribute.UWP),
+                    # TODO: This stripping should probably live somewhere ele (with code that parses economic/culture codes)
+                    economics=worldData.attribute(travellermap.WorldAttribute.Economics).strip('()'),
+                    culture=worldData.attribute(travellermap.WorldAttribute.Culture).strip('[]'),
+                    nobilities=worldData.attribute(travellermap.WorldAttribute.Nobility),
+                    remarks=worldData.attribute(travellermap.WorldAttribute.Remarks),
+                    zone=worldData.attribute(travellermap.WorldAttribute.Zone),
+                    stellar=worldData.attribute(travellermap.WorldAttribute.Stellar),
+                    pbg=worldData.attribute(travellermap.WorldAttribute.PBG),
+                    systemWorlds=worldData.attribute(travellermap.WorldAttribute.SystemWorlds),
+                    bases=worldData.attribute(travellermap.WorldAttribute.Bases),
                     sectorX=sectorX,
                     sectorY=sectorY)
                 worlds.append(world)
             except Exception as ex:
                 logging.warning(
-                    f'Failed to process world entry on line {lineIndex} in data for sector {sectorName}',
+                    f'Failed to process world entry on line {worldData.lineNumber()} in data for sector {sectorName}',
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
