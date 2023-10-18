@@ -746,49 +746,55 @@ class DataStore(object):
             DataStore._UniverseFileName)
 
         with self._lock:
-            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
+            sectors: typing.Mapping[str, SectorInfo] = self._milieuMap.get(milieu, {})
             sectorListData = []
-            if sectors:
-                for sector in sectors.values():
-                    if not sector.isCustomSector():
-                        continue
+            for sectorInfo in sectors.values():
+                if not sectorInfo.isCustomSector():
+                    continue
 
-                    sectorData = {
-                        'X': sector.x(),
-                        'Y': sector.y(),
-                        'Milieu': milieu.value}
+                sectorData = {
+                    'X': sectorInfo.x(),
+                    'Y': sectorInfo.y(),
+                    'Milieu': milieu.value}
 
-                    namesData = []
-                    for name in sector.names():
-                        nameData = {'Text': name}
-                        lang = sector.nameLanguage(name)
-                        if lang != None:
-                            nameData['Lang'] = lang
+                namesData = []
+                for name in sectorInfo.names():
+                    nameData = {'Text': name}
+                    lang = sectorInfo.nameLanguage(name)
+                    if lang != None:
+                        nameData['Lang'] = lang
 
-                        namesData.append(nameData)
-                    if namesData:
-                        sectorData['Names'] = namesData
+                    namesData.append(nameData)
+                if namesData:
+                    sectorData['Names'] = namesData
 
-                    abbreviation = sector.abbreviation()
-                    if abbreviation != None:
-                        sectorData['Abbreviation'] = abbreviation
+                abbreviation = sectorInfo.abbreviation()
+                if abbreviation != None:
+                    sectorData['Abbreviation'] = abbreviation
 
-                    tags = sector.tags()
-                    if tags != None:
-                        sectorData['Tags'] = " ".join(tags)
+                tags = sectorInfo.tags()
+                if tags != None:
+                    sectorData['Tags'] = " ".join(tags)
 
-                    mapLevels = sector.mapLevels()
-                    mapLevelListData = []
-                    if mapLevels:
-                        for scale, file in mapLevels.items():
-                            mapLevelListData.append({
-                                'Scale': scale,
-                                'FileName': file
-                            })
-                    if mapLevelListData:
-                        sectorData['MapLevels'] = mapLevelListData
+                #
+                # The following elements are extensions and not part of the standard universe file format
+                #
 
-                    sectorListData.append(sectorData)
+                mapLevels = sectorInfo.mapLevels()
+                mapLevelListData = []
+                if mapLevels:
+                    for scale, file in mapLevels.items():
+                        mapLevelListData.append({
+                            'Scale': scale,
+                            'FileName': file
+                        })
+                if mapLevelListData:
+                    sectorData['MapLevels'] = mapLevelListData
+
+                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
+                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
+
+                sectorListData.append(sectorData)
 
             universeData = {'Sectors': sectorListData}
 

@@ -92,7 +92,7 @@ _HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile('(?:([-]+)\s?)')
 _SubsectorPattern = re.compile('#\s*Subsector ([a-pA-P]{1}): (.+)')
 _AllegiancePattern = re.compile('#\s*Alleg: (\S+): ["?](.+)["?]')
-_T5ColumnNamesToAttributeMap = {
+_T5Column_ColumnNameToAttributeMap = {
     'Hex': WorldAttribute.Hex,
     'Name': WorldAttribute.Name,
     'UWP': WorldAttribute.UWP,
@@ -107,6 +107,22 @@ _T5ColumnNamesToAttributeMap = {
     'W': WorldAttribute.SystemWorlds,
     'A': WorldAttribute.Allegiance,
     'Stellar': WorldAttribute.Stellar
+}
+_T5Row_ColumnNameToAttributeMap = {
+    'Hex': WorldAttribute.Hex,
+    'Name': WorldAttribute.Name,
+    'UWP': WorldAttribute.UWP,
+    'Remarks': WorldAttribute.Remarks,
+    '{Ix}': WorldAttribute.Importance,
+    '(Ex)': WorldAttribute.Economics,
+    '[Cx]': WorldAttribute.Culture,
+    'Nobility': WorldAttribute.Nobility,
+    'Bases': WorldAttribute.Bases,
+    'Zone': WorldAttribute.Zone,
+    'PBG': WorldAttribute.PBG,
+    'W': WorldAttribute.SystemWorlds,
+    'Allegiance': WorldAttribute.Allegiance,
+    'Stars': WorldAttribute.Stellar
 }
 
 def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
@@ -128,7 +144,7 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
                 continue
            
             # Check if this line contains all the mandatory columns
-            for column in _T5ColumnNamesToAttributeMap.keys():
+            for column in _T5Column_ColumnNameToAttributeMap.keys():
                 if column not in columnNames:
                     continue
 
@@ -168,7 +184,7 @@ def parseSector(
     elif fileFormat == SectorFormat.T5Tab:
         return parseT5RowSector(
             content=content,
-            sectorName=identifier)
+            identifier=identifier)
     else:
         raise RuntimeError(f'Unknown sector format {fileFormat} for {identifier}')
     
@@ -211,7 +227,7 @@ def parseT5ColumnSector(
 
         if not columnNames:
             columnNames = _HeaderPattern.findall(line)
-            if len(columnNames) < len(_T5ColumnNamesToAttributeMap):
+            if len(columnNames) < len(_T5Column_ColumnNameToAttributeMap):
                 # This is needed as some sectors (notably Shadow Rift) are off format and have
                 # broken comments that don't start with #. This gets logged at a low level so
                 # we don't spam the logs every time we start
@@ -221,7 +237,7 @@ def parseT5ColumnSector(
                 continue
 
             # Check that mandatory columns are present
-            for columnName in _T5ColumnNamesToAttributeMap.keys():
+            for columnName in _T5Column_ColumnNameToAttributeMap.keys():
                 if columnName not in columnNames:
                     raise RuntimeError(
                         f'Unable to load data for {identifier} (Header is missing {columnName} column)')
@@ -229,7 +245,7 @@ def parseT5ColumnSector(
             # Convert column names to list of column attributes with None for unknown columns
             columnAttributes = []
             for columnName in columnNames:
-                attribute = _T5ColumnNamesToAttributeMap.get(columnName)
+                attribute = _T5Column_ColumnNameToAttributeMap.get(columnName)
                 columnAttributes.append(attribute)
             continue
         elif not columnWidths:
@@ -300,7 +316,7 @@ def parseT5RowSector(
 
         if not columnNames:
             columnNames = _HeaderPattern.findall(line)
-            if len(columnNames) < len(_T5ColumnNamesToAttributeMap):
+            if len(columnNames) < len(_T5Row_ColumnNameToAttributeMap):
                 # This is needed as some sectors (notably Shadow Rift) are off format and have
                 # broken comments that don't start with #. This gets logged at a low level so
                 # we don't spam the logs every time we start
@@ -310,7 +326,7 @@ def parseT5RowSector(
                 continue
 
             # Check that mandatory columns are present
-            for columnName in _T5ColumnNamesToAttributeMap.keys():
+            for columnName in _T5Row_ColumnNameToAttributeMap.keys():
                 if columnName not in columnNames:
                     raise RuntimeError(
                         f'Unable to load data for {identifier} (Header is missing {columnName} column)')
@@ -318,7 +334,7 @@ def parseT5RowSector(
             # Convert column names to list of column attributes with None for unknown columns
             columnAttributes = []
             for columnName in columnNames:
-                attribute = _T5ColumnNamesToAttributeMap.get(columnName)
+                attribute = _T5Row_ColumnNameToAttributeMap.get(columnName)
                 columnAttributes.append(attribute)
             continue
 
