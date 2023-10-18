@@ -1,14 +1,16 @@
 import enum
 import itertools
+import json
 import logging
 import re
 import typing
+import xml.etree.ElementTree
 
-class SectorFileFormat(enum.Enum):
+class SectorFormat(enum.Enum):
     T5Column = 0, # aka Second Survey format
     T5Tab = 1
 
-class SectorMetadataFormat(enum.Enum):
+class MetadataFormat(enum.Enum):
     JSON = 0
     XML = 1
 
@@ -107,7 +109,7 @@ _T5ColumnNamesToAttributeMap = {
     'Stellar': WorldAttribute.Stellar
 }
 
-def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFileFormat]:
+def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
     hasSeparator = False
     foundNames = None
@@ -147,23 +149,23 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFileFormat]:
         return None
     
     if (not hasComment) and (not hasSeparator):
-        return SectorFileFormat.T5Tab
+        return SectorFormat.T5Tab
 
     if hasSeparator:
-        return SectorFileFormat.T5Column
+        return SectorFormat.T5Column
     
     return None
 
 def parseSector(
         content: str,
-        fileFormat: SectorFileFormat,
+        fileFormat: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
         ) -> SectorData:
-    if fileFormat == SectorFileFormat.T5Column:
+    if fileFormat == SectorFormat.T5Column:
         return parseT5ColumnSector(
             content=content,
             identifier=identifier)
-    elif fileFormat == SectorFileFormat.T5Tab:
+    elif fileFormat == SectorFormat.T5Tab:
         return parseT5RowSector(
             content=content,
             sectorName=identifier)

@@ -27,7 +27,9 @@ class SectorInfo(object):
             y: int,
             tags: typing.Optional[typing.Iterable[str]],
             isCustomSector: bool,
-            mapLevels: typing.Optional[typing.Dict[int, str]] # Map mip level scale to file name
+            mapLevels: typing.Optional[typing.Dict[int, str]], # Map mip level scale to file name
+            sectorFormat: travellermap.SectorFormat,
+            metadataFormat: travellermap.MetadataFormat
             ) -> None:
         self._canonicalName = canonicalName
         self._alternateNames = alternateNames
@@ -38,6 +40,8 @@ class SectorInfo(object):
         self._tags = tags
         self._isCustomSector = isCustomSector
         self._mapLevels = mapLevels
+        self._sectorFormat = sectorFormat
+        self._metadataFormat = metadataFormat
 
     def canonicalName(self) -> str:
         return self._canonicalName
@@ -73,6 +77,12 @@ class SectorInfo(object):
 
     def mapLevels(self) -> typing.Optional[typing.Dict[int, str]]:
         return self._mapLevels.copy() if self._mapLevels else None
+    
+    def sectorFormat(self) -> travellermap.SectorFormat:
+        return self._sectorFormat
+    
+    def metadataFormat(self) -> travellermap.MetadataFormat:
+        return self._metadataFormat
 
 class DataStore(object):
     class UpdateStage(enum.Enum):
@@ -297,16 +307,26 @@ class DataStore(object):
             
     def createCustomSector(
             self,
-            sectorData: str,
-            sectorMetadata: str,
+            sectorContent: str,
+            metadataContent: str,
             sectorMaps: typing.Mapping[float, bytes],
             milieu: travellermap.Milieu
             ) -> SectorInfo:
         self._loadAllSectors()
 
-        # TODO: Parse sector data to verify it
+        sectorFileFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
+        if not sectorFileFormat:
+            raise RuntimeError('Sector file content has an unknown format')
+        
+        # Do a full parse of the custom sector data based on the detected file format. If it fails
+        # an exception will be raised an allowed to pass back to the called. Doing this check is
+        # important as it prevents bad data causing the app to barf when loading
+        travellermap.parseSector(
+            content=sectorContent,
+            fileFormat=sectorFileFormat,
+            identifier='Custom Sector')
 
-        parsedMetadata = travellermap.SectorMetadata(xml=sectorMetadata)
+        parsedMetadata = travellermap.SectorMetadata(xml=metadataContent)
         milieuDirPath = os.path.join(
             self._customDir,
             DataStore._MilieuBaseDir,
@@ -347,21 +367,19 @@ class DataStore(object):
                                 x=parsedMetadata.x(),
                                 y=parsedMetadata.y()))
 
-            # TODO: Need to handle different format sector files
-            # TODO: Need to handle file encoding for sector files as some use specific encodings
             # TODO: Need a better way of handling map level image types rather than assuming they are png
             # TODO: hard coding extension will be incorrect when multiple formats are supported
             # TODO: Need to handle sector names that contain characters that are invalid for a file name
             sectorFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.sec')
             with open(sectorFilePath, 'w') as file:
-                file.write(sectorData)
+                file.write(sectorContent)
 
             # TODO: This is currently writing the metadata in xml format but the snapshot I create
             # from traveller map uses a json format. If I ever start using sector meta data for more
             # than generating posters then I'll need to support loading both formats.
             metadataFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.xml')
             with open(metadataFilePath, 'w', encoding='UTF8') as file:
-                file.write(sectorMetadata)
+                file.write(metadataContent)
 
             mapLevels = {}
             for scale, map in sectorMaps.items():
@@ -380,7 +398,9 @@ class DataStore(object):
                 y=parsedMetadata.y(),
                 tags=None, # Not supported for custom sectors as it's not included in the xml metadata
                 isCustomSector=True,
-                mapLevels=mapLevels)
+                mapLevels=mapLevels,
+                sectorFormat=sectorFileFormat,
+                metadataFormat=travellermap.MetadataFormat.XML) # Only XML metadata is supported for custom sectors
             sectors[sector.canonicalName()] = sector
 
             self._saveCustomSectors(milieu=milieu)
@@ -620,7 +640,7 @@ class DataStore(object):
             useCustomMapDir: bool
             ) -> typing.List[SectorInfo]:
         try:
-            universeData = self._readMilieuFile(
+            universeContent = self._readMilieuFile(
                 fileName=self._UniverseFileName,
                 milieu=milieu,
                 useCustomMapDir=useCustomMapDir)
@@ -633,7 +653,7 @@ class DataStore(object):
             # When loading sectors for a standard milieu the universe file is mandatory
             raise
 
-        universeJson = json.loads(DataStore._bytesToString(universeData))
+        universeJson = json.loads(DataStore._bytesToString(universeContent))
         if 'Sectors' not in universeJson:
             raise RuntimeError('Invalid sector list')
 
@@ -672,6 +692,10 @@ class DataStore(object):
             if 'Tags' in sectorInfo:
                 tags = sectorInfo['Tags'].split()
 
+            #
+            # The following elements are extensions and not part of the standard universe file format
+            #
+
             mapLevels = None
             if 'MapLevels' in sectorInfo:
                 mapLevels = {}
@@ -679,6 +703,22 @@ class DataStore(object):
                     fileName = mapLevel['FileName']
                     scale = mapLevel['Scale']
                     mapLevels[scale] = fileName
+
+            # If the universe doesn't specify the sector format it must be a standard traveller map
+            # universe file which means the corresponding sectors files all use T5 column format
+            sectorFormat = travellermap.SectorFormat.T5Column
+            if 'SectorFormat' in sectorInfo:
+                sectorFormat = travellermap.SectorFormat.__members__.get(
+                    sectorInfo['SectorFormat'],
+                    sectorFormat)
+
+            # If the universe doesn't specify the metadata format it must be a standard traveller map
+            # universe file which means the corresponding metadata files all use JSON format
+            metadataFormat = travellermap.MetadataFormat.JSON
+            if 'MetadataFormat' in sectorInfo:
+                metadataFormat = travellermap.MetadataFormat.__members__.get(
+                    sectorInfo['MetadataFormat'],
+                    metadataFormat)                
 
             sectors.append(SectorInfo(
                 canonicalName=canonicalName,
@@ -689,7 +729,9 @@ class DataStore(object):
                 y=sectorY,
                 tags=tags,
                 isCustomSector=useCustomMapDir,
-                mapLevels=mapLevels))
+                mapLevels=mapLevels,
+                sectorFormat=sectorFormat,
+                metadataFormat=metadataFormat))
 
         return sectors
 

@@ -98,25 +98,18 @@ class WorldManager(object):
                 if progressCallback:
                     progressCallback(canonicalName, index + 1, sectorCount)
 
-                sectorX = sectorInfo.x()
-                sectorY = sectorInfo.y()
-
-                sectorData = travellermap.DataStore.instance().sectorFileData(
+                sectorContent = travellermap.DataStore.instance().sectorFileData(
                     sectorName=canonicalName,
                     milieu=self._milieu)
 
-                sector = self._parseSector(
-                    sectorName=canonicalName,
-                    sectorAltNames=sectorInfo.alternateNames(),
-                    sectorAbbreviation=sectorInfo.abbreviation(),
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    sectorContent=sectorData)
+                sector = self._loadSector(
+                    sectorInfo=sectorInfo,
+                    sectorContent=sectorContent)
 
                 logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName}')
 
                 self._sectorList.append(sector)
-                self._sectorPositionMap[(sectorX, sectorY)] = sector
+                self._sectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = sector
 
                 # Sectors can have multiple names. We have a single  sector object that uses the
                 # first name but multiple entries in the sector name map (but only a single entry
@@ -295,14 +288,14 @@ class WorldManager(object):
         return list(foundWorlds) # Convert to a list for ease of use by consumers
 
     @staticmethod
-    def _parseSector(
-            sectorName: str,
-            sectorAltNames: typing.Optional[typing.Optional[str]],
-            sectorAbbreviation: typing.Optional[str],
-            sectorX: int,
-            sectorY: int,
+    def _loadSector(
+            sectorInfo: travellermap.SectorInfo,
             sectorContent: str
             ) -> traveller.Sector:
+        sectorName = sectorInfo.canonicalName()
+        sectorX = sectorInfo.x()
+        sectorY = sectorInfo.y()
+
         subsectorMap = {}
         allegianceMap = {}
 
@@ -313,7 +306,7 @@ class WorldManager(object):
 
         sectorData = travellermap.parseSector(
             content=sectorContent,
-            fileFormat=travellermap.SectorFileFormat.T5Column, # TODO: Type should be loaded from universe
+            fileFormat=sectorInfo.sectorFormat(),
             identifier=sectorName) 
         
         for code, name in sectorData.subsectorNames().items():
@@ -372,8 +365,8 @@ class WorldManager(object):
 
         return traveller.Sector(
             name=sectorName,
-            alternateNames=sectorAltNames,
-            abbreviation=sectorAbbreviation,
+            alternateNames=sectorInfo.alternateNames(),
+            abbreviation=sectorInfo.abbreviation(),
             x=sectorX,
             y=sectorY,
             worlds=worlds,

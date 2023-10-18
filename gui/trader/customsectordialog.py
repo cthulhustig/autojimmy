@@ -398,8 +398,8 @@ class _NewSectorDialog(gui.DialogEx):
 
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(
-                sectorData=self._sectorData,
-                sectorMetadata=self._sectorMetadata,
+                sectorContent=self._sectorData,
+                metadataContent=self._sectorMetadata,
                 sectorMaps=posters,
                 milieu=app.Config.instance().milieu())
         except Exception as ex:
