@@ -10,10 +10,6 @@ import typing
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
     _SectorSearchHintPattern = re.compile('^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
-    _HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
-    _SeparatorPattern = re.compile('(?:([-]+)\s?)')
-    _SubsectorPattern = re.compile('#\s*Subsector ([a-pA-P]{1}): (.+)')
-    _AllegiancePattern = re.compile('#\s*Alleg: (\S+): ["?](.+)["?]')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -25,21 +21,6 @@ class WorldManager(object):
         8:  'I', 9:  'J', 10: 'K', 11: 'L',
         12: 'M', 13: 'N', 14: 'O', 15: 'P'
     }
-
-    _HexColumn = 'Hex'
-    _NameColumn = 'Name'
-    _UWPColumn = 'UWP'
-    _RemarksColumn = 'Remarks'
-    _ImportanceColumn = '{Ix}'
-    _EconomicsColumn = '(Ex)'
-    _CultureColumn = '[Cx]'
-    _NobilityColumn = 'N'
-    _BasesColumn = 'B'
-    _ZoneColumn = 'Z'
-    _PBGColumn = 'PBG'
-    _SystemWorldsColumn = 'W'
-    _AllegianceColumn = 'A'
-    _StellarColumn = 'Stellar'
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
