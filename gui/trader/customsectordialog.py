@@ -12,7 +12,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Welcome message
 
 # This defines the scales of the different map images that will be generated. The values
-# are specifically chosen to match up with the scales that the Traveller Map rendering 
+# are specifically chosen to match up with the scales that the Traveller Map rendering
 # code makes significant changes to how it renders the sector (e.g. transitioning from
 # full world info -> no names -> no worlds)
 # It's important that this is defined from largest to smallest as this will be the
@@ -41,7 +41,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
         self._generatingTimer.timeout.connect(self._generatingTimerFired)
         self._generatingTimer.setInterval(500)
         self._generatingTimer.setSingleShot(False)
-        
+
         self._mapLabel = gui.PrefixLabel(prefix='Map: ')
         self._uploadingLabel = gui.PrefixLabel(prefix='Uploading: ')
         self._generatingLabel = gui.PrefixLabel(prefix='Generating: ')
@@ -91,7 +91,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
             QtCore.QTimer.singleShot(0, self.close)
 
         return super().exec()
-    
+
     def showEvent(self, e: QtGui.QShowEvent) -> None:
         if not e.spontaneous():
             # Setting up the title bar needs to be done before the window is show to take effect. It
@@ -178,12 +178,12 @@ class _NewSectorDialog(gui.DialogEx):
             title='New Custom Sector',
             configSection='NewCustomSectorDialog',
             parent=parent)
-        
+
         self._recentDirectoryPath = None
         self._sectorData = None
         self._sectorMetadata = None
         self._sector = None
-        
+
         self._setupFileSelectControls()
         self._setupRenderOptionControls()
         self._setupDialogButtons()
@@ -214,8 +214,8 @@ class _NewSectorDialog(gui.DialogEx):
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('RecentDirectory', self._recentDirectoryPath)
-        self._settings.endGroup()    
-    
+        self._settings.endGroup()
+
     def _setupFileSelectControls(self) -> None:
         self._sectorFileLineEdit = gui.LineEditEx()
         self._sectorFileBrowseButton = QtWidgets.QPushButton('Browse...')
@@ -224,7 +224,7 @@ class _NewSectorDialog(gui.DialogEx):
         sectorLayout.setContentsMargins(0, 0, 0, 0)
         sectorLayout.addWidget(self._sectorFileLineEdit)
         sectorLayout.addWidget(self._sectorFileBrowseButton)
-        
+
         self._metadataFileLineEdit = gui.LineEditEx()
         self._metadataFileBrowseButton = QtWidgets.QPushButton('Browse...')
         self._metadataFileBrowseButton.clicked.connect(self._metadataFileBrowseClicked)
@@ -236,13 +236,13 @@ class _NewSectorDialog(gui.DialogEx):
         groupLayout = gui.FormLayoutEx()
         groupLayout.addRow('Sector File:', gui.LayoutWrapperWidget(sectorLayout))
         groupLayout.addRow('Metadata File:', gui.LayoutWrapperWidget(metadataLayout))
-        
+
         self._filesGroupBox = QtWidgets.QGroupBox('Files')
         self._filesGroupBox.setLayout(groupLayout)
 
     # NOTE: This only allows setting a subset of options that are available. In some cases I don't
     # thing anyone would ever want their custom sectors to always display the info (all overlays
-    # fall into this category). Other options are client side so don't need to be included (i.e. 
+    # fall into this category). Other options are client side so don't need to be included (i.e.
     # mains)
     def _setupRenderOptionControls(self) -> None:
         style = app.Config.instance().mapStyle()
@@ -251,18 +251,18 @@ class _NewSectorDialog(gui.DialogEx):
         self._renderStyleComboBox = gui.EnumComboBox(
             type=travellermap.Style,
             value=style)
-                
+
         self._renderSectorGridCheckBox = gui.CheckBoxEx()
         self._renderSectorGridCheckBox.setChecked(
             travellermap.Option.SectorGrid in options)
-        
+
         self._renderSectorNamesCheckBox = gui.CheckBoxEx()
         self._renderSectorNamesCheckBox.setChecked(
             travellermap.Option.SectorNames in options)
 
         self._renderRegionNamesCheckBox = gui.CheckBoxEx()
         self._renderRegionNamesCheckBox.setChecked(
-            travellermap.Option.RegionNames in options)           
+            travellermap.Option.RegionNames in options)
 
         self._renderBordersCheckBox = gui.CheckBoxEx()
         self._renderBordersCheckBox.setChecked(
@@ -274,12 +274,12 @@ class _NewSectorDialog(gui.DialogEx):
 
         self._renderRoutesCheckBox = gui.CheckBoxEx()
         self._renderRoutesCheckBox.setChecked(
-            travellermap.Option.Routes in options)         
+            travellermap.Option.Routes in options)
 
         self._renderWorldColoursCheckBox = gui.CheckBoxEx()
         self._renderWorldColoursCheckBox.setChecked(
-            travellermap.Option.WorldColours in options)        
-        
+            travellermap.Option.WorldColours in options)
+
         leftLayout = gui.FormLayoutEx()
         leftLayout.setContentsMargins(0, 0, 0, 0)
         leftLayout.addRow('Style:', self._renderStyleComboBox)
@@ -288,7 +288,7 @@ class _NewSectorDialog(gui.DialogEx):
         leftLayout.addRow('Region Names:', self._renderRegionNamesCheckBox)
 
         rightLayout = gui.FormLayoutEx()
-        rightLayout.setContentsMargins(0, 0, 0, 0)        
+        rightLayout.setContentsMargins(0, 0, 0, 0)
         rightLayout.addRow('Borders:', self._renderBordersCheckBox)
         rightLayout.addRow('Filled Borders:', self._renderFilledBordersCheckBox)
         rightLayout.addRow('Routes:', self._renderRoutesCheckBox)
@@ -353,7 +353,7 @@ class _NewSectorDialog(gui.DialogEx):
 
         self._recentDirectoryPath = os.path.dirname(path)
         return path
-    
+
     def _createClicked(self) -> None:
         try:
             # Always send poster requests directly to the configured traveller map instance.
@@ -410,9 +410,9 @@ class _NewSectorDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
             return
-            
-        self.accept()            
-        
+
+        self.accept()
+
     def _renderOptionList(self) -> typing.Iterable[travellermap.Option]:
         renderOptions = []
 
@@ -421,7 +421,7 @@ class _NewSectorDialog(gui.DialogEx):
 
         if self._renderSectorNamesCheckBox.isChecked():
             renderOptions.append(travellermap.Option.SectorNames)
-    
+
         if self._renderRegionNamesCheckBox.isChecked():
             renderOptions.append(travellermap.Option.RegionNames)
 
@@ -435,9 +435,9 @@ class _NewSectorDialog(gui.DialogEx):
             renderOptions.append(travellermap.Option.Routes)
 
         if self._renderWorldColoursCheckBox.isChecked():
-            renderOptions.append(travellermap.Option.WorldColours)            
+            renderOptions.append(travellermap.Option.WorldColours)
 
-        return renderOptions            
+        return renderOptions
 
 class _CustomSectorTable(gui.ListTable):
     class ColumnType(enum.Enum):
@@ -467,7 +467,7 @@ class _CustomSectorTable(gui.ListTable):
         if not tableItem:
             return None
         return tableItem.data(QtCore.Qt.ItemDataRole.UserRole)
-    
+
     def sectorRow(self, sector: travellermap.SectorInfo) -> int:
         for row in range(self.rowCount()):
             if sector == self.sector(row):
@@ -478,7 +478,7 @@ class _CustomSectorTable(gui.ListTable):
         row = self.currentRow()
         if row < 0:
             return None
-        return self.sector(row)     
+        return self.sector(row)
 
     def synchronise(self) -> None:
         sectors = travellermap.DataStore.instance().sectors(
@@ -624,7 +624,7 @@ class CustomSectorDialog(gui.DialogEx):
             title='Custom Sectors',
             configSection='CustomSectorDialog',
             parent=parent)
-        
+
         self._modified = False
 
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowMaximizeButtonHint)
@@ -652,9 +652,9 @@ class CustomSectorDialog(gui.DialogEx):
         self._newSectorButton.clicked.connect(self._newSectorClicked)
 
         self._deleteSectorButton = QtWidgets.QPushButton('Delete...')
-        self._deleteSectorButton.clicked.connect(self._deleteSectorClicked)    
+        self._deleteSectorButton.clicked.connect(self._deleteSectorClicked)
 
-        buttonLayout = QtWidgets.QHBoxLayout()    
+        buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addWidget(self._newSectorButton)
         buttonLayout.addWidget(self._deleteSectorButton)
@@ -690,12 +690,12 @@ class CustomSectorDialog(gui.DialogEx):
         mapLayout.addWidget(self._mapGraphicsView)
         mapLayoutWidget = QtWidgets.QWidget()
         mapLayoutWidget.setLayout(mapLayout)
-        
+
         self._sectorDataTabView = gui.TabWidgetEx()
         self._sectorDataTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
         self._sectorDataTabView.addTab(self._sectorFileTextEdit, 'Sector')
         self._sectorDataTabView.addTab(self._sectorMetadataTextEdit, 'Metadata')
-        self._sectorDataTabView.addTab(mapLayoutWidget, 'Maps')        
+        self._sectorDataTabView.addTab(mapLayoutWidget, 'Maps')
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._sectorDataTabView)
@@ -713,7 +713,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._mapGraphicsView.setMapImage(
             sectorInfo=self._mapSelectionComboBox.sectorInfo(),
             scale=self._mapSelectionComboBox.currentScale())
-        
+
     def _syncSectorDataControls(
             self,
             sectorInfo: typing.Optional[travellermap.SectorInfo]
@@ -723,9 +723,9 @@ class CustomSectorDialog(gui.DialogEx):
             self._sectorMetadataTextEdit.clear()
             self._mapSelectionComboBox.setSectorInfo(None)
             return
-        
+
         milieu = app.Config.instance().milieu()
-        
+
         try:
             fileData = travellermap.DataStore.instance().sectorFileData(
                 sectorName=sectorInfo.canonicalName(),
@@ -765,7 +765,7 @@ class CustomSectorDialog(gui.DialogEx):
         dialog = _NewSectorDialog()
         if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        
+
         newSector = dialog.sector()
         assert(newSector != None)
 
@@ -788,7 +788,7 @@ class CustomSectorDialog(gui.DialogEx):
             parent=self,
             text=f'Are you sure you want to delete {sector.canonicalName()}')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return # User cancelled            
+            return # User cancelled
 
         try:
             travellermap.DataStore.instance().deleteCustomSector(
@@ -800,7 +800,7 @@ class CustomSectorDialog(gui.DialogEx):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)            
+                exception=ex)
             # Continue in order to sync the table if an error occurs as we don't know what state
             # the data store was left in after the error
 

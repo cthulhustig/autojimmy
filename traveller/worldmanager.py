@@ -101,10 +101,10 @@ class WorldManager(object):
                 sectorContent = travellermap.DataStore.instance().sectorFileData(
                     sectorName=canonicalName,
                     milieu=self._milieu)
-                
+
                 metadataContent = travellermap.DataStore.instance().sectorMetaData(
                     sectorName=canonicalName,
-                    milieu=self._milieu)                
+                    milieu=self._milieu)
 
                 sector = self._loadSector(
                     sectorInfo=sectorInfo,
@@ -318,8 +318,8 @@ class WorldManager(object):
         rawWorlds = travellermap.parseSector(
             content=sectorContent,
             fileFormat=sectorInfo.sectorFormat(),
-            identifier=sectorName) 
-        
+            identifier=sectorName)
+
         for code, name in rawMetadata.subsectorNames().items():
             code = code.upper()
             assert(code in subsectorMap)
@@ -339,7 +339,7 @@ class WorldManager(object):
                     # is important as it's the same format as Traveller Map meaning searches will
                     # work
                     worldName = f'{sectorName} {hex}'
-            
+
                 subsectorCode = WorldManager._calculateSubsectorCode(relativeWorldHex=hex)
                 subsectorName = subsectorMap[subsectorCode]
 

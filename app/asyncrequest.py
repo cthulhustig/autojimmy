@@ -76,7 +76,7 @@ class AsyncRequest(QtCore.QObject):
             self._requestTask = asyncio.ensure_future(
                 self._getRequestAsync(url, data),
                 loop=loop)
-            
+
             if timeout != None:
                 self._timeoutTask = asyncio.ensure_future(
                     self._timeoutRequestAsync(timeout),
@@ -97,7 +97,7 @@ class AsyncRequest(QtCore.QObject):
             self._requestTask = asyncio.ensure_future(
                 self._postRequestAsync(url, data.copy()),
                 loop=loop)
-            
+
             if timeout != None:
                 self._timeoutTask = asyncio.ensure_future(
                     self._timeoutRequestAsync(timeout),
@@ -113,11 +113,11 @@ class AsyncRequest(QtCore.QObject):
             logging.info(f'Starting async GET request for {url}')
 
             content = None
-            async with aiohttp.ClientSession() as session:                       
+            async with aiohttp.ClientSession() as session:
                 async with session.get(url=url) as response:
                     if response.status != 200:
                         raise AsyncRequest.HttpException(response.status, response.reason)
-                    
+
                     size = response.headers.get('Content-Length', 0)
                     self._updateDownloadProgress(0, size)
 
@@ -152,7 +152,7 @@ class AsyncRequest(QtCore.QObject):
                         data=value,
                         callback=self._updateUploadProgress)
                     formData.add_field(key, dataWrapper)
-            async with aiohttp.ClientSession() as session:     
+            async with aiohttp.ClientSession() as session:
                 async with session.post(url=url, data=formData) as response:
                     if response.status != 200:
                         raise AsyncRequest.HttpException(response.status, response.reason)
@@ -164,7 +164,7 @@ class AsyncRequest(QtCore.QObject):
                     async for chunk in response.content.iter_chunked(self._chunkSize):
                         content.extend(chunk)
                         self._updateDownloadProgress(len(content), size)
-                    
+
             self.complete[object].emit(bytes(content))
         except Exception as ex:
             logging.critical(f'Async POST request to {url} failed', exc_info=ex)

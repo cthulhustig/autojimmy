@@ -12,7 +12,7 @@ class PosterJobAsync(QtCore.QObject):
         Downloading = 1
 
     # If successful, this signal will pass a dict mapping float pixel per parsec scales to
-    # the bytes for that poster. If an exception occurs it will pass the exception.    
+    # the bytes for that poster. If an exception occurs it will pass the exception.
     complete = QtCore.pyqtSignal([object])
 
     # This signal passes the event type, scale being process, poster index, total posters,
@@ -46,14 +46,14 @@ class PosterJobAsync(QtCore.QObject):
         self._compositing = compositing
 
         self._uploadHistory = 0
-        self._uploadSize = len(sectorBytes) + len(metadataBytes)        
+        self._uploadSize = len(sectorBytes) + len(metadataBytes)
 
         self._request = None
         self._posters: typing.Dict[float, bytes] = {}
 
-    def run(self):          
+    def run(self):
         self._primeNextRequest(index=0)
-        
+
     def cancel(self) -> None:
         if self._request:
             self._request.cancel()
@@ -61,7 +61,7 @@ class PosterJobAsync(QtCore.QObject):
 
     def posters(self) -> typing.Mapping[float, bytes]:
         return self._posters
-    
+
     def _primeNextRequest(
             self,
             index: int
@@ -73,7 +73,7 @@ class PosterJobAsync(QtCore.QObject):
             linearScale=self._scales[index],
             compositing=self._compositing,
             minimal=True)
-        
+
         self._uploadHistory = 0
         self._emitProgress(
             event=PosterJobAsync.ProgressEvent.Uploading,
@@ -92,7 +92,7 @@ class PosterJobAsync(QtCore.QObject):
             url=url,
             data=self._data,
             loop=asyncio.get_event_loop())
-        
+
     def _requestCompleted(
             self,
             index: int,
@@ -101,7 +101,7 @@ class PosterJobAsync(QtCore.QObject):
         if isinstance(result, Exception):
             self.complete[object].emit(result)
             return
-        
+
         scale = self._scales[index]
         self._posters[scale] = result
 
@@ -126,7 +126,7 @@ class PosterJobAsync(QtCore.QObject):
             event=PosterJobAsync.ProgressEvent.Uploading,
             index=index,
             currentBytes=totalUpload,
-            totalBytes=self._uploadSize)            
+            totalBytes=self._uploadSize)
 
     def _requestDownloadProgress(
             self,

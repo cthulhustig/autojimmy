@@ -46,7 +46,7 @@ class RawWorld(object):
             attribute: WorldAttribute
             ) -> str:
         return self._attributes[attribute]
-    
+
     def setAttribute(
             self,
             attribute: WorldAttribute,
@@ -59,7 +59,7 @@ class RawMetadata(object):
             self,
             canonicalName: typing.Iterable[str],
             alternateNames: typing.Optional[typing.Iterable[str]],
-            nameLanguages: typing.Optional[typing.Mapping[str, str]], 
+            nameLanguages: typing.Optional[typing.Mapping[str, str]],
             abbreviation: typing.Optional[str],
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             x: int,
@@ -82,24 +82,24 @@ class RawMetadata(object):
 
     def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
         return self._alternateNames
-    
+
     def names(self) -> typing.Iterable[str]:
         names = [self._canonicalName]
         if self._alternateNames:
             names.extend(self._alternateNames)
         return names
-    
+
     def nameLanguage(self, name: str) -> typing.Optional[str]:
         if not self._nameLanguages:
             return None
         return self._nameLanguages.get(name, None)
-    
+
     def nameLanguages(self) -> typing.Mapping[str, str]:
         return self._nameLanguages
 
     def abbreviation(self) -> typing.Optional[str]:
         return self._abbreviation
-        
+
     def subsectorNames(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._subsectorNames
 
@@ -114,6 +114,7 @@ class RawMetadata(object):
 
     def allegiances(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._allegiances
+
 
 _HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile('(?:([-]+)\s?)')
@@ -167,7 +168,7 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
                 # Technically this is off spec for both file types but some second
                 # survey files have off spec comments so just skip it
                 continue
-           
+
             # Check if this line contains all the mandatory columns
             for column in _T5Column_ColumnNameToAttributeMap.keys():
                 if column not in columnNames:
@@ -188,13 +189,13 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     if not foundNames:
         # Didn't find any column names
         return None
-    
+
     if (not hasComment) and (not hasSeparator):
         return SectorFormat.T5Tab
 
     if hasSeparator:
         return SectorFormat.T5Column
-    
+
     return None
 
 def parseSector(
@@ -212,7 +213,7 @@ def parseSector(
             identifier=identifier)
     else:
         raise RuntimeError(f'Unknown sector format {fileFormat} for {identifier}')
-    
+
 def parseT5ColumnSector(
         content: str,
         identifier: str
@@ -245,7 +246,7 @@ def parseT5ColumnSector(
                 if columnName not in columnNames:
                     raise RuntimeError(
                         f'Unable to load data for {identifier} (Header is missing {columnName} column)')
-                
+
             # Convert column names to list of column attributes with None for unknown columns
             columnAttributes = []
             for columnName in columnNames:
@@ -272,7 +273,7 @@ def parseT5ColumnSector(
                 columnWidths=columnWidths))
         except Exception as ex:
             logging.debug(
-                f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')            
+                f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')
             continue
     return worlds
 
@@ -295,7 +296,7 @@ def _parseT5ColumnWorld(
             data = line[startIndex:finishIndex].strip()
             # TODO: If I'm trying to keep this code as a faithful representation of the contents
             # of the file then this code should be moved into somewhere higher level such as
-            # WorldManager            
+            # WorldManager
             if data and all(ch == '-' for ch in data):
                 # Replace no data marker with empty string
                 data = ''
@@ -336,7 +337,7 @@ def parseT5RowSector(
                 if columnName not in columnNames:
                     raise RuntimeError(
                         f'Unable to load data for {identifier} (Header is missing {columnName} column)')
-                
+
             # Convert column names to list of column attributes with None for unknown columns
             columnAttributes = []
             for columnName in columnNames:
@@ -352,7 +353,7 @@ def parseT5RowSector(
                 columnAttributes=columnAttributes))
         except Exception as ex:
             logging.debug(
-                f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')            
+                f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')
             continue
     return worlds
 
@@ -364,7 +365,7 @@ def _parseT5RowWorld(
     columnData = line.split('\t')
     if len(columnData) != len(columnAttributes):
         raise RuntimeError('Line has incorrect number of columns')
-    
+
     worldData = RawWorld(lineNumber=lineNumber)
     for attribute, data in itertools.zip_longest(columnAttributes, columnData):
         worldData.setAttribute(
@@ -397,7 +398,7 @@ def parseXMLMetadata(
     nameElements = root.findall('./Name')
     if not nameElements:
         raise RuntimeError(f'Failed to find Name element in {identifier} metadata')
-    
+
     names = []
     nameLanguages = {}
     for element in nameElements:
@@ -412,7 +413,7 @@ def parseXMLMetadata(
     if xElement == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
     x = int(xElement.text)
-    
+
     yElement = root.find('./Y')
     if yElement == None:
         raise RuntimeError(f'Failed to find Y element in {identifier} metadata')
@@ -453,7 +454,7 @@ def parseJSONMetadata(
         identifier: str
         ) -> RawMetadata:
     root = json.loads(content)
-    
+
     nameElements = root.get('Names')
     if not nameElements:
         raise RuntimeError(f'Failed to find Names element in {identifier} metadata')
@@ -470,7 +471,7 @@ def parseJSONMetadata(
         lang = element.get('Lang')
         if lang:
             nameLanguages[name] = lang
-    
+
     x = root.get('X')
     if x == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
@@ -512,7 +513,7 @@ def parseJSONMetadata(
                 continue
             # TODO: Should probably validate that code is in range A-P
             allegiances[code] = name
-    
+
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],

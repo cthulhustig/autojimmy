@@ -72,22 +72,22 @@ class TileClient(object):
             tilePosition=tilePosition,
             linearScale=linearScale,
             minimal=True)
-        
+
         with self._lock:
             content = self._cache.get(url)
         if content != None:
             logging.debug(f'Tile cache hit for {url}')
-            return content        
+            return content
 
         content = TileClient._makeRequest(
             url=url,
             timeout=timeout)
-        
+
         with self._lock:
-            self._cache[url] = content        
-        
+            self._cache[url] = content
+
         return content
-    
+
     @staticmethod
     def _makeRequest(
             url: str,

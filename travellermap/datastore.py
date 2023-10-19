@@ -39,7 +39,7 @@ class SectorInfo(object):
 
     def canonicalName(self) -> str:
         return self._canonicalName
-    
+
     def abbreviation(self) -> str:
         return self._abbreviation
 
@@ -54,10 +54,10 @@ class SectorInfo(object):
 
     def mapLevels(self) -> typing.Optional[typing.Dict[int, str]]:
         return self._mapLevels.copy() if self._mapLevels else None
-    
+
     def sectorFormat(self) -> travellermap.SectorFormat:
         return self._sectorFormat
-    
+
     def metadataFormat(self) -> travellermap.MetadataFormat:
         return self._metadataFormat
 
@@ -85,7 +85,6 @@ class DataStore(object):
     _MetadataFormatExtensions = {
         travellermap.MetadataFormat.JSON: 'json',
         travellermap.MetadataFormat.XML: 'xml'}
-    
 
     _instance = None # Singleton instance
     _lock = threading.RLock()
@@ -155,7 +154,7 @@ class DataStore(object):
             fileName=f'{escapedSectorName}.{extension}',
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
-    
+
     def sectorMetaData(
             self,
             sectorName: str,
@@ -292,7 +291,7 @@ class DataStore(object):
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
-            
+
     def createCustomSector(
             self,
             sectorContent: str,
@@ -308,12 +307,12 @@ class DataStore(object):
         # TODO: Try generating a poster using JSON metadata
         metadata = travellermap.parseXMLMetadata(
             content=metadataContent,
-            identifier='Custom Metadata')        
+            identifier='Custom Metadata')
 
         sectorFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
-                
+
         # Do a full parse of the custom sector data based on the detected file format. If it fails
         # an exception will be raised an allowed to pass back to the called. Doing this check is
         # important as it prevents bad data causing the app to barf when loading
@@ -419,7 +418,7 @@ class DataStore(object):
                     'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
                         name=sectorName,
                         milieu=milieu.value))
-            
+
             # Remove the sector from the custom universe file first. That way we don't leave a partially
             # populated sector if deleting a file fails
             del sectors[sectorName]
@@ -447,7 +446,7 @@ class DataStore(object):
                             file=filePath,
                             milieu=milieu.value),
                         exc_info=ex)
-                    
+
     class SectorMetadataValidationError(Exception):
         def __init__(self, reason) -> None:
             super().__init__(f'Sector metadata is invalid:\nReason: {reason}')
@@ -459,7 +458,7 @@ class DataStore(object):
             root = xml.etree.ElementTree.fromstring(content)
         except xml.etree.ElementTree.ParseError as ex:
             raise DataStore.SectorMetadataValidationError(str(ex))
-            
+
         try:
             xmlschema.validate(root, xsdPath)
         except xmlschema.validators.exceptions.XMLSchemaValidationError as ex:
@@ -467,14 +466,14 @@ class DataStore(object):
             # wrap it in something more concise
             logging.debug('XSD validation of sector metadata failed', exc_info=ex)
             raise DataStore.SectorMetadataValidationError(ex.reason)
-        
+
         # The base XSD has these as optional but they are required for custom sectors
         if root.find('./Name') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain Name element')
 
         if root.find('./X') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain X element')
-        
+
         if root.find('./Y') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain Y element')
 
@@ -668,10 +667,10 @@ class DataStore(object):
                 canonicalName = name
                 break
             assert(canonicalName)
-            
+
             abbreviation = None
             if 'Abbreviation' in sectorInfo:
-                abbreviation = sectorInfo['Abbreviation']            
+                abbreviation = sectorInfo['Abbreviation']
 
             #
             # The following elements are extensions and not part of the standard universe file format
@@ -699,7 +698,7 @@ class DataStore(object):
             if 'MetadataFormat' in sectorInfo:
                 metadataFormat = travellermap.MetadataFormat.__members__.get(
                     sectorInfo['MetadataFormat'],
-                    metadataFormat)                
+                    metadataFormat)
 
             sectors.append(SectorInfo(
                 canonicalName=canonicalName,

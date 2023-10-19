@@ -165,7 +165,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         logging.info('{address}: {message}'.format(
             address=self.address_string(),
             message=format % args))
-        
+
     # This is the string the gets returned as the Server HTTP header
     def version_string(self) -> str:
         return f'Traveller Map Proxy {app.AppVersion}'
@@ -220,7 +220,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
             requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
             if parsedUrl.query:
-                requestUrl += '?' + parsedUrl.query            
+                requestUrl += '?' + parsedUrl.query
             logging.debug(f'Making proxied POST request to {requestUrl}')
 
             contentLength = int(self.headers.get('Content-Length', 0))
@@ -238,7 +238,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 data = response.read()
 
             self.send_response(200)
-            contentType = info.get('Content-Type')            
+            contentType = info.get('Content-Type')
             if contentType:
                 self.send_header('Content-Type', contentType)
             self.end_headers()
@@ -264,7 +264,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
     """
-    
+
     def _handleLocalFileRequest(
             self,
             filePath: urllib.parse.ParseResult,

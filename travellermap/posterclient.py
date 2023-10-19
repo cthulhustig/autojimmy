@@ -34,19 +34,19 @@ class PosterClient(object):
             linearScale=linearScale,
             compositing=self._compositing,
             minimal=True)
-        
+
         # Leave this enabled to catch bugs that are causing LOTS of requests
         logging.info(f'Requesting poster {url}')
 
-        startTime = time.time()        
-        
+        startTime = time.time()
+
         data = {'data': self._sectorData}
         if self._metaData:
             data['metadata'] = self._metaData
         request = urllib.request.Request(
             url,
             data=urllib.parse.urlencode(data).encode())
-        
+
         try:
             with urllib.request.urlopen(request) as response:
                 content = response.read()
@@ -58,7 +58,7 @@ class PosterClient(object):
             raise RuntimeError(f'Poster request failed for {url} ({ex.reason})') from ex
         except Exception as ex:
             raise RuntimeError(f'Poster request failed for {url} ({ex})') from ex
-        
+
         downloadTime = time.time() - startTime
         logging.debug(f'Generation of poster {url} took {downloadTime}s')
 

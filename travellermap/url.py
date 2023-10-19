@@ -41,7 +41,7 @@ def formatMapUrl(
         ) -> str:
     # It's important the file name doesn't start with a slash as, in the case of a file url,
     # it will cause it to be take as the located in the root of the filesystem and any part
-    # in baseMapUrl will be deleted    
+    # in baseMapUrl will be deleted
     url = urllib.parse.urljoin(baseMapUrl, 'index.html')
 
     queryList = _createCommonQueryList(
@@ -52,7 +52,7 @@ def formatMapUrl(
     if (mapPosition != None) and (linearScale != None):
         logScale = linearScaleToLogScale(linearScale=linearScale)
         queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
-    
+
     if queryList:
         url += '?' + ('&'.join(queryList))
     return url
@@ -102,7 +102,7 @@ def formatPosterUrl(
     if linearScale != None:
         queryList.append(f'scale=' + str(linearScale))
     queryList.append(f'compositing=' + ('1' if compositing else '0'))
-    
+
     if queryList:
         url += '?' + ('&'.join(queryList))
     return url
