@@ -360,24 +360,22 @@ class DataStore(object):
                                 existingName=existingSector.canonicalName(),
                                 x=metadata.x(),
                                 y=metadata.y()))
+                    
+            escapedSectorName = common.encodeFileName(rawFileName=metadata.canonicalName())
 
-            # TODO: Need to handle sector names that contain characters that are invalid for a file name
             sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
-            sectorFilePath = os.path.join(milieuDirPath, f'{metadata.canonicalName()}.{sectorExtension}')
-            with open(sectorFilePath, 'w', encoding='UTF8') as file:
+            sectorFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{sectorExtension}')
+            with open(sectorFilePath, 'w', encoding='utf-8') as file:
                 file.write(sectorContent)
 
-            # TODO: This is currently writing the metadata in xml format but the snapshot I create
-            # from traveller map uses a json format. If I ever start using sector meta data for more
-            # than generating posters then I'll need to support loading both formats.
-            metadataFilePath = os.path.join(milieuDirPath, f'{metadata.canonicalName()}.xml')
-            with open(metadataFilePath, 'w', encoding='UTF8') as file:
+            metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.xml')
+            with open(metadataFilePath, 'w', encoding='utf-8') as file:
                 file.write(metadataContent)
 
             # TODO: Need a better way of handling map level image types rather than assuming they are png
             mapLevels = {}
             for scale, map in sectorMaps.items():
-                mapLevelFileName = f'{metadata.canonicalName()}_{scale}.png'
+                mapLevelFileName = f'{escapedSectorName}_{scale}.png'
                 mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
                 mapLevels[scale] = mapLevelFileName
                 with open(mapLevelFilePath, 'wb') as file:
@@ -620,7 +618,7 @@ class DataStore(object):
 
     @staticmethod
     def _bytesToString(bytes: bytes) -> str:
-        return bytes.decode('utf-8')
+        return bytes.decode('utf-8-sig') # Use utf-8-sig to strip BOM from unicode files
 
     @staticmethod
     def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
@@ -662,6 +660,7 @@ class DataStore(object):
             canonicalName = None
             for element in sectorInfo['Names']:
                 name = element['Text']
+
                 if not name:
                     continue
                 canonicalName = name
@@ -730,7 +729,7 @@ class DataStore(object):
                     continue
 
                 sectorData = {
-                    'Names': [sectorInfo.canonicalName()],
+                    'Names': [{'Text': sectorInfo.canonicalName()}],
                     'X': sectorInfo.x(),
                     'Y': sectorInfo.y()
                     }
@@ -757,5 +756,5 @@ class DataStore(object):
 
             universeData = {'Sectors': sectorListData}
 
-            with open(universeFilePath, 'w', encoding='UTF8') as file:
+            with open(universeFilePath, 'w', encoding='utf-8') as file:
                 json.dump(universeData, file, indent=4)

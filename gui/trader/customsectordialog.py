@@ -363,12 +363,12 @@ class _NewSectorDialog(gui.DialogEx):
 
             # TODO: Some sector file types use specific character encodings, need to make sure this
             # doesn't mess with them
-            with open(self._sectorFileLineEdit.text(), 'r') as file:
+            with open(self._sectorFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
                 self._sectorData = file.read()
 
             # TODO: Validate sector file with my parsers
 
-            with open(self._metadataFileLineEdit.text(), 'r') as file:
+            with open(self._metadataFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
                 self._sectorMetadata = file.read()
             travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
 

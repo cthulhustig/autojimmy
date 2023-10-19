@@ -13,7 +13,8 @@ def setupLogger(
     fileHandler = RotatingFileHandler(
         logFile,
         maxBytes=1024 * 1024,
-        backupCount=10)
+        backupCount=10,
+        encoding='utf-8')
     fileFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     fileFormatter.converter = time.gmtime
     fileHandler.setFormatter(fileFormatter)
