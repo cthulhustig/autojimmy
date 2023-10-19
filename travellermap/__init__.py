@@ -3,7 +3,6 @@ from .options import *
 from .style import *
 from .url import *
 from .astrometrics import *
-from .sectormetadata import *
 from .sectorparsers import *
 from .datastore import *
 from .compositor import *

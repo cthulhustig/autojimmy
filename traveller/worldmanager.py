@@ -101,10 +101,15 @@ class WorldManager(object):
                 sectorContent = travellermap.DataStore.instance().sectorFileData(
                     sectorName=canonicalName,
                     milieu=self._milieu)
+                
+                metadataContent = travellermap.DataStore.instance().sectorMetaData(
+                    sectorName=canonicalName,
+                    milieu=self._milieu)                
 
                 sector = self._loadSector(
                     sectorInfo=sectorInfo,
-                    sectorContent=sectorContent)
+                    sectorContent=sectorContent,
+                    metadataContent=metadataContent)
 
                 logging.debug(f'Loaded {sector.worldCount()} worlds for sector {canonicalName}')
 
@@ -290,7 +295,8 @@ class WorldManager(object):
     @staticmethod
     def _loadSector(
             sectorInfo: travellermap.SectorInfo,
-            sectorContent: str
+            sectorContent: str,
+            metadataContent: str
             ) -> traveller.Sector:
         sectorName = sectorInfo.canonicalName()
         sectorX = sectorInfo.x()
@@ -304,25 +310,30 @@ class WorldManager(object):
         for code in list(map(chr, range(ord('A'), ord('P') + 1))):
             subsectorMap[code] = f'{sectorName} Subsector {code}'
 
-        sectorData = travellermap.parseSector(
+        rawMetadata = travellermap.parseMetadata(
+            content=metadataContent,
+            metadataFormat=sectorInfo.metadataFormat(),
+            identifier=sectorName)
+
+        rawWorlds = travellermap.parseSector(
             content=sectorContent,
             fileFormat=sectorInfo.sectorFormat(),
             identifier=sectorName) 
         
-        for code, name in sectorData.subsectorNames().items():
+        for code, name in rawMetadata.subsectorNames().items():
             code = code.upper()
             assert(code in subsectorMap)
             subsectorMap[code] = name
 
-        for code, name in sectorData.allegiances().items():
+        for code, name in rawMetadata.allegiances().items():
             code = code.upper()
             allegianceMap[code] = name
 
         worlds = []
-        for worldData in sectorData.worlds():
+        for rawWorld in rawWorlds:
             try:
-                hex = worldData.attribute(travellermap.WorldAttribute.Hex)
-                worldName = worldData.attribute(travellermap.WorldAttribute.Name)
+                hex = rawWorld.attribute(travellermap.WorldAttribute.Hex)
+                worldName = rawWorld.attribute(travellermap.WorldAttribute.Name)
                 if not worldName:
                     # If the world doesn't have a name the sector combined with the hex. This format
                     # is important as it's the same format as Traveller Map meaning searches will
@@ -337,24 +348,24 @@ class WorldManager(object):
                     sectorName=sectorName,
                     subsectorName=subsectorName,
                     hex=hex,
-                    allegiance=worldData.attribute(travellermap.WorldAttribute.Allegiance),
-                    uwp=worldData.attribute(travellermap.WorldAttribute.UWP),
+                    allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
+                    uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
                     # TODO: This stripping should probably live somewhere ele (with code that parses economic/culture codes)
-                    economics=worldData.attribute(travellermap.WorldAttribute.Economics).strip('()'),
-                    culture=worldData.attribute(travellermap.WorldAttribute.Culture).strip('[]'),
-                    nobilities=worldData.attribute(travellermap.WorldAttribute.Nobility),
-                    remarks=worldData.attribute(travellermap.WorldAttribute.Remarks),
-                    zone=worldData.attribute(travellermap.WorldAttribute.Zone),
-                    stellar=worldData.attribute(travellermap.WorldAttribute.Stellar),
-                    pbg=worldData.attribute(travellermap.WorldAttribute.PBG),
-                    systemWorlds=worldData.attribute(travellermap.WorldAttribute.SystemWorlds),
-                    bases=worldData.attribute(travellermap.WorldAttribute.Bases),
+                    economics=rawWorld.attribute(travellermap.WorldAttribute.Economics).strip('()'),
+                    culture=rawWorld.attribute(travellermap.WorldAttribute.Culture).strip('[]'),
+                    nobilities=rawWorld.attribute(travellermap.WorldAttribute.Nobility),
+                    remarks=rawWorld.attribute(travellermap.WorldAttribute.Remarks),
+                    zone=rawWorld.attribute(travellermap.WorldAttribute.Zone),
+                    stellar=rawWorld.attribute(travellermap.WorldAttribute.Stellar),
+                    pbg=rawWorld.attribute(travellermap.WorldAttribute.PBG),
+                    systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
+                    bases=rawWorld.attribute(travellermap.WorldAttribute.Bases),
                     sectorX=sectorX,
                     sectorY=sectorY)
                 worlds.append(world)
             except Exception as ex:
                 logging.warning(
-                    f'Failed to process world entry on line {worldData.lineNumber()} in data for sector {sectorName}',
+                    f'Failed to process world entry on line {rawWorld.lineNumber()} in data for sector {sectorName}',
                     exc_info=ex)
                 continue # Continue trying to process the rest of the worlds
 
@@ -365,8 +376,8 @@ class WorldManager(object):
 
         return traveller.Sector(
             name=sectorName,
-            alternateNames=sectorInfo.alternateNames(),
-            abbreviation=sectorInfo.abbreviation(),
+            alternateNames=rawMetadata.alternateNames(),
+            abbreviation=rawMetadata.abbreviation(),
             x=sectorX,
             y=sectorY,
             worlds=worlds,

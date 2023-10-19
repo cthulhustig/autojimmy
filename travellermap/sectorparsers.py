@@ -30,7 +30,7 @@ class WorldAttribute(enum.Enum):
     Allegiance = 12
     Stellar = 13
 
-class WorldData(object):
+class RawWorld(object):
     def __init__(
             self,
             lineNumber: int
@@ -54,44 +54,69 @@ class WorldData(object):
             ) -> None:
         self._attributes[attribute] = value
 
-# TODO: When I switch to loading subsector names and allegiances from the metadata files I
-# can remove the SectorData class and have the parsers just return a list of WorldData
-class SectorData(object):
-    def __init__(self) -> None:
-        self._subsectorNames: typing.Dict[str, str] = {}
-        self._allegiances: typing.Dict[str, str] = {}
-        self._worlds: typing.List[WorldData] = []
+class RawMetadata(object):
+    def __init__(
+            self,
+            canonicalName: typing.Iterable[str],
+            alternateNames: typing.Optional[typing.Iterable[str]],
+            nameLanguages: typing.Optional[typing.Mapping[str, str]], 
+            abbreviation: typing.Optional[str],
+            subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
+            x: int,
+            y: int,
+            tags: typing.Optional[typing.Iterable[str]],
+            allegiances: typing.Optional[typing.Mapping[str, str]], # Maps allegiance code to the name of the allegiance
+            ) -> None:
+        self._canonicalName = canonicalName
+        self._alternateNames = alternateNames
+        self._nameLanguages = nameLanguages
+        self._abbreviation = abbreviation
+        self._subsectorNames = subsectorNames
+        self._x = x
+        self._y = y
+        self._tags = tags
+        self._allegiances = allegiances
 
-    def subsectorNames(self) -> typing.Mapping[str, str]:
+    def canonicalName(self) -> str:
+        return self._canonicalName
+
+    def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
+        return self._alternateNames
+    
+    def names(self) -> typing.Iterable[str]:
+        names = [self._canonicalName]
+        if self._alternateNames:
+            names.extend(self._alternateNames)
+        return names
+    
+    def nameLanguage(self, name: str) -> typing.Optional[str]:
+        if not self._nameLanguages:
+            return None
+        return self._nameLanguages.get(name, None)
+    
+    def nameLanguages(self) -> typing.Mapping[str, str]:
+        return self._nameLanguages
+
+    def abbreviation(self) -> typing.Optional[str]:
+        return self._abbreviation
+        
+    def subsectorNames(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._subsectorNames
 
-    def addSubsectorName(
-            self,
-            code: str,
-            name: str
-            ) -> None:
-        self._subsectorNames[code] = name
+    def x(self) -> int:
+        return self._x
 
-    def allegiances(self) -> typing.Mapping[str, str]:
+    def y(self) -> int:
+        return self._y
+
+    def tags(self) -> typing.Optional[typing.Iterable[str]]:
+        return list(self._tags) if self._tags else None
+
+    def allegiances(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._allegiances
-
-    def addAllegiance(
-            self,
-            code: str,
-            name: str
-            ) -> None:
-        self._allegiances[code] = name
-
-    def worlds(self) -> typing.Iterable[WorldData]:
-        return self._worlds
-
-    def addWorld(self, world: WorldData) -> None:
-        self._worlds.append(world)
 
 _HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
 _SeparatorPattern = re.compile('(?:([-]+)\s?)')
-_SubsectorPattern = re.compile('#\s*Subsector ([a-pA-P]{1}): (.+)')
-_AllegiancePattern = re.compile('#\s*Alleg: (\S+): ["?](.+)["?]')
 _T5Column_ColumnNameToAttributeMap = {
     'Hex': WorldAttribute.Hex,
     'Name': WorldAttribute.Name,
@@ -176,7 +201,7 @@ def parseSector(
         content: str,
         fileFormat: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
-        ) -> SectorData:
+        ) -> typing.Iterable[RawWorld]:
     if fileFormat == SectorFormat.T5Column:
         return parseT5ColumnSector(
             content=content,
@@ -191,8 +216,8 @@ def parseSector(
 def parseT5ColumnSector(
         content: str,
         identifier: str
-        ) -> SectorData:
-    sectorData = SectorData()
+        ) -> typing.Iterable[RawWorld]:
+    worlds = []
     columnNames = None
     columnAttributes = None
     columnWidths = None
@@ -201,28 +226,7 @@ def parseT5ColumnSector(
             # Ignore empty lines
             continue
         if line[:1] == '#':
-            match = _SubsectorPattern.match(line)
-            if match:
-                code = match[1]
-                name = match[2]
-                sectorData.addSubsectorName(
-                    code=code,
-                    name=name)
-                continue
-
-            match = _AllegiancePattern.match(line)
-            if match:
-                code = match[1]
-                name = match[2]
-                # Ignore allegiances made up completely of '-' as we strip those out of the
-                # world data when reading it
-                if not all(ch == '-' for ch in code):
-                    sectorData.addAllegiance(
-                        code=code,
-                        name=name)
-                continue
-
-            # Ignore other comments
+            # Ignore comments
             continue
 
         if not columnNames:
@@ -261,25 +265,24 @@ def parseT5ColumnSector(
 
         # Parse the line as a world definition
         try:
-            sectorData.addWorld(
-                world=_parseT5ColumnWorld(
-                    line=line,
-                    lineNumber=lineNumber,
-                    columnAttributes=columnAttributes,
-                    columnWidths=columnWidths))
+            worlds.append(_parseT5ColumnWorld(
+                line=line,
+                lineNumber=lineNumber,
+                columnAttributes=columnAttributes,
+                columnWidths=columnWidths))
         except Exception as ex:
             logging.debug(
                 f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')            
             continue
-    return sectorData
+    return worlds
 
 def _parseT5ColumnWorld(
         line: str,
         lineNumber: int,
         columnAttributes: typing.Iterable[WorldAttribute],
         columnWidths: typing.Iterable[int]
-        ) -> WorldData:
-    worldData = WorldData(lineNumber=lineNumber)
+        ) -> RawWorld:
+    worldData = RawWorld(lineNumber=lineNumber)
     lineLength = len(line)
     startIndex = 0
     finishIndex = 0
@@ -290,6 +293,9 @@ def _parseT5ColumnWorld(
         finishIndex = startIndex + width
         if attribute != None:
             data = line[startIndex:finishIndex].strip()
+            # TODO: If I'm trying to keep this code as a faithful representation of the contents
+            # of the file then this code should be moved into somewhere higher level such as
+            # WorldManager            
             if data and all(ch == '-' for ch in data):
                 # Replace no data marker with empty string
                 data = ''
@@ -302,8 +308,8 @@ def _parseT5ColumnWorld(
 def parseT5RowSector(
         content: str,
         identifier: str
-        ) -> SectorData:
-    sectorData = SectorData()
+        ) -> typing.Iterable[RawWorld]:
+    worlds = []
     columnNames = None
     columnAttributes = None
     for lineNumber, line in enumerate(content.splitlines()):
@@ -340,29 +346,180 @@ def parseT5RowSector(
 
         # Parse the line as a world definition
         try:
-            sectorData.addWorld(
-                world=_parseT5RowWorld(
-                    line=line,
-                    lineNumber=lineNumber,
-                    columnAttributes=columnAttributes))
+            worlds.append(_parseT5RowWorld(
+                line=line,
+                lineNumber=lineNumber,
+                columnAttributes=columnAttributes))
         except Exception as ex:
             logging.debug(
                 f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')            
             continue
-    return sectorData
+    return worlds
 
 def _parseT5RowWorld(
         line: str,
         lineNumber: int,
         columnAttributes: typing.Iterable[WorldAttribute],
-        ) -> typing.Optional[SectorData]:
+        ) -> RawWorld:
     columnData = line.split('\t')
     if len(columnData) != len(columnAttributes):
         raise RuntimeError('Line has incorrect number of columns')
     
-    worldData = WorldData(lineNumber=lineNumber)
+    worldData = RawWorld(lineNumber=lineNumber)
     for attribute, data in itertools.zip_longest(columnAttributes, columnData):
         worldData.setAttribute(
             attribute=attribute,
             value=data)
     return worldData
+
+def parseMetadata(
+        content: str,
+        metadataFormat: MetadataFormat,
+        identifier: str
+        ) -> RawMetadata:
+    if metadataFormat == MetadataFormat.XML:
+        return parseXMLMetadata(
+            content=content,
+            identifier=identifier)
+    elif metadataFormat == MetadataFormat.JSON:
+        return parseJSONMetadata(
+            content=content,
+            identifier=identifier)
+    else:
+        raise RuntimeError(f'Unknown metadata format {metadataFormat} for {identifier}')
+
+def parseXMLMetadata(
+        content: str,
+        identifier: str
+        ) -> RawMetadata:
+    root = xml.etree.ElementTree.fromstring(content)
+
+    nameElements = root.findall('./Name')
+    if not nameElements:
+        raise RuntimeError(f'Failed to find Name element in {identifier} metadata')
+    
+    names = []
+    nameLanguages = {}
+    for element in nameElements:
+        name = element.text
+        names.append(name)
+
+        lang = element.attrib.get('Lang')
+        if lang != None:
+            nameLanguages[name] = lang
+
+    xElement = root.find('./X')
+    if xElement == None:
+        raise RuntimeError(f'Failed to find X element in {identifier} metadata')
+    x = int(xElement.text)
+    
+    yElement = root.find('./Y')
+    if yElement == None:
+        raise RuntimeError(f'Failed to find Y element in {identifier} metadata')
+    y = int(yElement.text)
+
+    subsectorNames = {}
+    for element in root.findall('./Subsectors/Subsector'):
+        code = element.get('Index')
+        if not code:
+            # TODO: Log something???
+            continue
+        # TODO: Should probably validate that code is in range A-P
+        subsectorNames[code] = element.text
+
+    # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
+    # with at the moment, not sure what it's used for
+    allegiances = {}
+    for element in root.findall('./Allegiances/Allegiance'):
+        code = element.get('Code')
+        if not code:
+            # TODO: Log something???
+            continue
+        allegiances[code] = element.text
+
+    return RawMetadata(
+        canonicalName=names[0],
+        alternateNames=names[1:],
+        nameLanguages=nameLanguages,
+        abbreviation=root.get('Abbreviation'),
+        subsectorNames=subsectorNames,
+        x=x,
+        y=y,
+        tags=root.get('Tags'),
+        allegiances=allegiances)
+
+def parseJSONMetadata(
+        content: str,
+        identifier: str
+        ) -> RawMetadata:
+    root = json.loads(content)
+    
+    nameElements = root.get('Names')
+    if not nameElements:
+        raise RuntimeError(f'Failed to find Names element in {identifier} metadata')
+
+    names = []
+    nameLanguages = {}
+    for element in nameElements:
+        name = element.get('Text')
+        if not name:
+            # TODO: Log something????
+            continue
+        names.append(name)
+
+        lang = element.get('Lang')
+        if lang:
+            nameLanguages[name] = lang
+    
+    x = root.get('X')
+    if x == None:
+        raise RuntimeError(f'Failed to find X element in {identifier} metadata')
+    x = int(x)
+
+    y = root.get('Y')
+    if y == None:
+        raise RuntimeError(f'Failed to find Y element in {identifier} metadata')
+    y = int(y)
+
+    subsectorElements = root.get('Subsectors')
+    subsectorNames = {}
+    if subsectorElements:
+        for element in subsectorElements:
+            name = element.get('Name')
+            if not name:
+                # TODO: Log something?????
+                continue
+            code = element.get('Index')
+            if not code:
+                # TODO: Log something?????
+                continue
+            # TODO: Should probably validate that code is in range A-P
+            subsectorNames[code] = name
+
+    # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
+    # with at the moment, not sure what it's used for
+    allegianceElements = root.get('Allegiances')
+    allegiances = {}
+    if allegianceElements:
+        for element in allegianceElements:
+            name = element.get('Name')
+            if not name:
+                # TODO: Log something?????
+                continue
+            code = element.get('Code')
+            if not code:
+                # TODO: Log something?????
+                continue
+            # TODO: Should probably validate that code is in range A-P
+            allegiances[code] = name
+    
+    return RawMetadata(
+        canonicalName=names[0],
+        alternateNames=names[1:],
+        nameLanguages=nameLanguages,
+        abbreviation=root.get('Abbreviation'),
+        subsectorNames=subsectorNames,
+        x=x,
+        y=y,
+        tags=root.get('Tags'),
+        allegiances=allegiances)

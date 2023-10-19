@@ -13,31 +13,25 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xmlschema
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree
 import zipfile
 
 class SectorInfo(object):
     def __init__(
             self,
             canonicalName: typing.Iterable[str],
-            alternateNames: typing.Optional[typing.Iterable[str]],
-            nameLanguages: typing.Optional[typing.Mapping[str, str]], 
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            tags: typing.Optional[typing.Iterable[str]],
             isCustomSector: bool,
             mapLevels: typing.Optional[typing.Dict[int, str]], # Map mip level scale to file name
             sectorFormat: travellermap.SectorFormat,
             metadataFormat: travellermap.MetadataFormat
             ) -> None:
         self._canonicalName = canonicalName
-        self._alternateNames = alternateNames
-        self._nameLanguages = nameLanguages
         self._abbreviation = abbreviation
         self._x = x
         self._y = y
-        self._tags = tags
         self._isCustomSector = isCustomSector
         self._mapLevels = mapLevels
         self._sectorFormat = sectorFormat
@@ -45,22 +39,8 @@ class SectorInfo(object):
 
     def canonicalName(self) -> str:
         return self._canonicalName
-
-    def alternateNames(self) -> typing.Optional[typing.Iterable[str]]:
-        return self._alternateNames
     
-    def names(self) -> typing.Iterable[str]:
-        names = [self._canonicalName]
-        if self._alternateNames:
-            names.extend(self._alternateNames)
-        return names
-    
-    def nameLanguage(self, name: str) -> typing.Optional[str]:
-        if not self._nameLanguages:
-            return None
-        return self._nameLanguages.get(name, None)
-
-    def abbreviation(self) -> typing.Optional[str]:
+    def abbreviation(self) -> str:
         return self._abbreviation
 
     def x(self) -> int:
@@ -68,9 +48,6 @@ class SectorInfo(object):
 
     def y(self) -> int:
         return self._y
-
-    def tags(self) -> typing.Optional[typing.Iterable[str]]:
-        return list(self._tags) if self._tags else None
 
     def isCustomSector(self) -> bool:
         return self._isCustomSector
@@ -100,6 +77,15 @@ class DataStore(object):
     _DataArchiveMapPath = 'autojimmy-data-main/map/'
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _TimestampCheckTimeout = 3 # Seconds
+
+    _SectorFormatExtensions = {
+        # NOTE: The sec format is short for second survey, not the legacy sec format
+        travellermap.SectorFormat.T5Column: 'sec',
+        travellermap.SectorFormat.T5Tab: 'tab'}
+    _MetadataFormatExtensions = {
+        travellermap.MetadataFormat.JSON: 'json',
+        travellermap.MetadataFormat.XML: 'xml'}
+    
 
     _instance = None # Singleton instance
     _lock = threading.RLock()
@@ -164,8 +150,9 @@ class DataStore(object):
             raise RuntimeError(f'Unable to retrieve sector file data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
+        extension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
         return self._bytesToString(bytes=self._readMilieuFile(
-            fileName=f'{escapedSectorName}.sec',
+            fileName=f'{escapedSectorName}.{extension}',
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
     
@@ -181,8 +168,9 @@ class DataStore(object):
             raise RuntimeError(f'Unable to retrieve sector meta data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
+        extension = DataStore._MetadataFormatExtensions[sector.metadataFormat()]
         return self._bytesToString(bytes=self._readMilieuFile(
-            fileName=f'{escapedSectorName}.xml',
+            fileName=f'{escapedSectorName}.{extension}',
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector()))
 
@@ -314,19 +302,26 @@ class DataStore(object):
             ) -> SectorInfo:
         self._loadAllSectors()
 
-        sectorFileFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
-        if not sectorFileFormat:
+        # Load metadata, currently only XML format is supported. The Poster API also supports
+        # MSEC metadata but that format doesn't include the sector position. Strangely the docs
+        # don't say it supports JSON format
+        # TODO: Try generating a poster using JSON metadata
+        metadata = travellermap.parseXMLMetadata(
+            content=metadataContent,
+            identifier='Custom Metadata')        
+
+        sectorFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
+        if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
-        
+                
         # Do a full parse of the custom sector data based on the detected file format. If it fails
         # an exception will be raised an allowed to pass back to the called. Doing this check is
         # important as it prevents bad data causing the app to barf when loading
         travellermap.parseSector(
             content=sectorContent,
-            fileFormat=sectorFileFormat,
-            identifier='Custom Sector')
+            fileFormat=sectorFormat,
+            identifier=f'Custom Sector {metadata.canonicalName()}')
 
-        parsedMetadata = travellermap.SectorMetadata(xml=metadataContent)
         milieuDirPath = os.path.join(
             self._customDir,
             DataStore._MilieuBaseDir,
@@ -337,19 +332,19 @@ class DataStore(object):
             sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
             if sectors:
                 # Check for sectors with the same name
-                existingSector = sectors.get(parsedMetadata.canonicalName())
+                existingSector = sectors.get(metadata.canonicalName())
                 if existingSector:
                     if existingSector.isCustomSector():
                         raise RuntimeError(
                             'Unable to create custom sector {newName} in {milieu} as there is a already a custom sector with that name'.format(
-                                newName=parsedMetadata.canonicalName(),
+                                newName=metadata.canonicalName(),
                                 milieu=milieu.value))
 
-                    if parsedMetadata.x() != existingSector.x() or \
-                            parsedMetadata.y() != existingSector.y():
+                    if metadata.x() != existingSector.x() or \
+                            metadata.y() != existingSector.y():
                         raise RuntimeError(
                             'Unable to create custom sector {newName} in {milieu} as there is a standard sector with the same name at a different location'.format(
-                                newName=parsedMetadata.canonicalName(),
+                                newName=metadata.canonicalName(),
                                 milieu=milieu.value))
 
                 # Check for custom sectors at the same location
@@ -357,49 +352,46 @@ class DataStore(object):
                     if not existingSector.isCustomSector():
                         continue
 
-                    if parsedMetadata.x() == existingSector.x() and \
-                            parsedMetadata.y() == existingSector.y():
+                    if metadata.x() == existingSector.x() and \
+                            metadata.y() == existingSector.y():
                         raise RuntimeError(
                             'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
-                                newName=parsedMetadata.canonicalName(),
+                                newName=metadata.canonicalName(),
                                 milieu=milieu.value,
                                 existingName=existingSector.canonicalName(),
-                                x=parsedMetadata.x(),
-                                y=parsedMetadata.y()))
+                                x=metadata.x(),
+                                y=metadata.y()))
 
-            # TODO: Need a better way of handling map level image types rather than assuming they are png
-            # TODO: hard coding extension will be incorrect when multiple formats are supported
             # TODO: Need to handle sector names that contain characters that are invalid for a file name
-            sectorFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.sec')
-            with open(sectorFilePath, 'w') as file:
+            sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
+            sectorFilePath = os.path.join(milieuDirPath, f'{metadata.canonicalName()}.{sectorExtension}')
+            with open(sectorFilePath, 'w', encoding='UTF8') as file:
                 file.write(sectorContent)
 
             # TODO: This is currently writing the metadata in xml format but the snapshot I create
             # from traveller map uses a json format. If I ever start using sector meta data for more
             # than generating posters then I'll need to support loading both formats.
-            metadataFilePath = os.path.join(milieuDirPath, f'{parsedMetadata.canonicalName()}.xml')
+            metadataFilePath = os.path.join(milieuDirPath, f'{metadata.canonicalName()}.xml')
             with open(metadataFilePath, 'w', encoding='UTF8') as file:
                 file.write(metadataContent)
 
+            # TODO: Need a better way of handling map level image types rather than assuming they are png
             mapLevels = {}
             for scale, map in sectorMaps.items():
-                mapLevelFileName = f'{parsedMetadata.canonicalName()}_{scale}.png'
+                mapLevelFileName = f'{metadata.canonicalName()}_{scale}.png'
                 mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
                 mapLevels[scale] = mapLevelFileName
                 with open(mapLevelFilePath, 'wb') as file:
                     file.write(map)
 
             sector = SectorInfo(
-                canonicalName=parsedMetadata.canonicalName(),
-                alternateNames=parsedMetadata.alternateNames(),
-                nameLanguages=parsedMetadata.nameLanguages(),
-                abbreviation=None, # Not supported for custom sectors as it's not included in the xml metadata
-                x=parsedMetadata.x(),
-                y=parsedMetadata.y(),
-                tags=None, # Not supported for custom sectors as it's not included in the xml metadata
+                canonicalName=metadata.canonicalName(),
+                abbreviation=metadata.abbreviation(),
+                x=metadata.x(),
+                y=metadata.y(),
                 isCustomSector=True,
                 mapLevels=mapLevels,
-                sectorFormat=sectorFileFormat,
+                sectorFormat=sectorFormat,
                 metadataFormat=travellermap.MetadataFormat.XML) # Only XML metadata is supported for custom sectors
             sectors[sector.canonicalName()] = sector
 
@@ -433,7 +425,10 @@ class DataStore(object):
             del sectors[sectorName]
             self._saveCustomSectors(milieu=milieu)
 
-            files = [f'{sector.canonicalName()}.sec', f'{sector.canonicalName()}.xml']
+            sectorExtension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
+            files = [
+                f'{sector.canonicalName()}.{sectorExtension}',
+                f'{sector.canonicalName()}.xml']
             mapLevels = sector.mapLevels()
             if mapLevels:
                 files.extend(mapLevels.values())
@@ -457,12 +452,12 @@ class DataStore(object):
         def __init__(self, reason) -> None:
             super().__init__(f'Sector metadata is invalid:\nReason: {reason}')
 
-    def validateSectorMetadataXML(self, xml: str) -> None:
+    def validateSectorMetadataXML(self, content: str) -> None:
         xsdPath = os.path.join(self._installDir, DataStore._SectorMetadataXsdFileName)
 
         try:
-            root = ET.fromstring(xml)
-        except ET.ParseError as ex:
+            root = xml.etree.ElementTree.fromstring(content)
+        except xml.etree.ElementTree.ParseError as ex:
             raise DataStore.SectorMetadataValidationError(str(ex))
             
         try:
@@ -666,31 +661,17 @@ class DataStore(object):
             sectorY = int(sectorInfo['Y'])
 
             canonicalName = None
-            alternateNames = None
-            nameLanguages = None
             for element in sectorInfo['Names']:
                 name = element['Text']
-                if not canonicalName:
-                    canonicalName = name
-                else:
-                    if not alternateNames:
-                        alternateNames = []
-                    alternateNames.append(name)
-
-                lang = element.get('Lang')
-                if lang:
-                    if not nameLanguages:
-                        nameLanguages = {}
-                    nameLanguages[name] = lang
+                if not name:
+                    continue
+                canonicalName = name
+                break
             assert(canonicalName)
-
+            
             abbreviation = None
             if 'Abbreviation' in sectorInfo:
-                abbreviation = sectorInfo['Abbreviation']
-
-            tags = None
-            if 'Tags' in sectorInfo:
-                tags = sectorInfo['Tags'].split()
+                abbreviation = sectorInfo['Abbreviation']            
 
             #
             # The following elements are extensions and not part of the standard universe file format
@@ -722,12 +703,9 @@ class DataStore(object):
 
             sectors.append(SectorInfo(
                 canonicalName=canonicalName,
-                alternateNames=alternateNames,
-                nameLanguages=nameLanguages,
                 abbreviation=abbreviation,
                 x=sectorX,
                 y=sectorY,
-                tags=tags,
                 isCustomSector=useCustomMapDir,
                 mapLevels=mapLevels,
                 sectorFormat=sectorFormat,
@@ -753,28 +731,10 @@ class DataStore(object):
                     continue
 
                 sectorData = {
+                    'Names': [sectorInfo.canonicalName()],
                     'X': sectorInfo.x(),
-                    'Y': sectorInfo.y(),
-                    'Milieu': milieu.value}
-
-                namesData = []
-                for name in sectorInfo.names():
-                    nameData = {'Text': name}
-                    lang = sectorInfo.nameLanguage(name)
-                    if lang != None:
-                        nameData['Lang'] = lang
-
-                    namesData.append(nameData)
-                if namesData:
-                    sectorData['Names'] = namesData
-
-                abbreviation = sectorInfo.abbreviation()
-                if abbreviation != None:
-                    sectorData['Abbreviation'] = abbreviation
-
-                tags = sectorInfo.tags()
-                if tags != None:
-                    sectorData['Tags'] = " ".join(tags)
+                    'Y': sectorInfo.y()
+                    }
 
                 #
                 # The following elements are extensions and not part of the standard universe file format
