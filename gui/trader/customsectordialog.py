@@ -458,7 +458,10 @@ class _NewSectorDialog(gui.DialogEx):
                 self._sectorMetadata = file.read()
             travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
 
-            # TODO: Check that a custom sector with the same name doesn't already exist 
+            # TODO: Check for name conflicts with existing sectors. I think this will pretty much
+            # need to mirror whatever checks DataStore.createCustomSector will do in order to
+            # prevent the case where the user waits ages for posters to be generated only for
+            # creation to fail due to DataStore rejecting it.
             # TODO: Check that a custom sector doesn't already exist at the same location
 
             posterJob = jobs.PosterJobAsync(

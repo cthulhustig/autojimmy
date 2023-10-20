@@ -331,6 +331,11 @@ class DataStore(object):
             sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
             if sectors:
                 # Check for sectors with the same name
+                # TODO: This should also check alternate names and abbreviations as they are all getting munged into
+                # the sector name map in world manager so conflicts could hide legitimate sectors. I'm not sure why
+                # abbreviations go in there, is there some data somewhere that refers to it (owner worlds etc) or
+                # was it just a convenience so the user can search by abbreviation?
+                # TODO: It might need to include subsector names as well 
                 existingSector = sectors.get(metadata.canonicalName())
                 if existingSector:
                     if existingSector.isCustomSector():

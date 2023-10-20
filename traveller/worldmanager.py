@@ -97,24 +97,34 @@ class WorldManager(object):
                 self._sectorList.append(sector)
                 self._sectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = sector
 
-                # Sectors can have multiple names. We have a single  sector object that uses the
+                # Sectors can have multiple names. We have a single sector object that uses the
                 # first name but multiple entries in the sector name map (but only a single entry
                 # in the position map). The name is converted to lower case before storing in the
                 # map to allow for case insensitive searching
+                # The canonical name is ALWAYS added to the sector name map and it's important it's
+                # never overwritten by an alternate name/abbreviation for another sector. When
+                # adding other names to the map they should always check that there isn't already
+                # a sector using that name
                 self._sectorNameMap[sectorInfo.canonicalName().lower()] = sector
 
                 alternateNames = sector.alternateNames()
                 if alternateNames:
                     for sectorName in alternateNames:
                         sectorName = sectorName.lower()
-                        self._sectorNameMap[sectorName] = sector
+                        if sectorName not in self._sectorNameMap:
+                            self._sectorNameMap[sectorName] = sector
+                        else:
+                            logging.warning(f'World manager encountered a name conflict when adding alternate sector name {sectorName} to name map')
 
-                # If the sector has an abbreviation add it to the name map
+                # If the sector has an abbreviation add it to the name map if there's not a sector
+                # that already has that abbreviation/name
                 abbreviation = sector.abbreviation()
                 if abbreviation:
                     abbreviation = abbreviation.lower()
-                    assert((abbreviation not in self._sectorNameMap) or (self._sectorNameMap[abbreviation] == sector))
-                    self._sectorNameMap[abbreviation] = sector
+                    if abbreviation not in self._sectorNameMap:
+                        self._sectorNameMap[abbreviation] = sector
+                    else:
+                        logging.warning(f'World manager encountered a name conflict when adding sector abbreviation {abbreviation} to name map')
 
                 for subsector in sector.subsectors():
                     subsectorName = subsector.name()
@@ -168,8 +178,11 @@ class WorldManager(object):
 
         return sector.worldByPosition(x=worldX, y=worldY)
 
-    # Reimplementation of code from Traveller Map source code.
-    # Sectors in Selector.cs
+    # Reimplementation of code from Traveller Map source code (Sectors in Selector.cs)
+    # NOTE: The results for this are not limited to the sector specified by sectorName. It, when
+    # combined with worldX & worldY just give the center of the search radius. The name and x/y
+    # values are basically sector hex but split out as its more efficient when this is being
+    # called repeatedly as part of the jump route planning
     def worldsInArea(
             self,
             sectorName: str,
