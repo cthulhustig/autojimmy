@@ -202,6 +202,8 @@ class _NewSectorDialog(gui.DialogEx):
     # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
     # if the user cancels the dialog)
     def loadSettings(self) -> None:
+        super().loadSettings()
+        
         self._settings.beginGroup(self._configSection)
 
         storedValue = gui.safeLoadSetting(
