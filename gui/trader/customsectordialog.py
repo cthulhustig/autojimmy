@@ -199,6 +199,8 @@ class _NewSectorDialog(gui.DialogEx):
     def sector(self) -> typing.Optional[travellermap.SectorInfo]:
         return self._sector
 
+    # NOTE: There is no saveSettings as settings are only saved when accept is triggered (i.e. not
+    # if the user cancels the dialog)
     def loadSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
@@ -209,16 +211,107 @@ class _NewSectorDialog(gui.DialogEx):
         if storedValue:
             self._recentDirectoryPath = storedValue
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SectorFilePath',
+            type=str)
+        if storedValue:
+            self._sectorFileLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='MetadataFilePath',
+            type=str)
+        if storedValue:
+            self._metadataFileLineEdit.setText(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='StyleComboBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderStyleComboBox.restoreState(storedValue)  
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SectorGridCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderSectorGridCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SectorNamesCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderSectorNamesCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='RegionNamesCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderRegionNamesCheckBox.restoreState(storedValue)
+            
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='BordersCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderBordersCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='FilledBordersCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderFilledBordersCheckBox.restoreState(storedValue)
+            
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='RoutesCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderRoutesCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='WorldColoursCheckBoxState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._renderWorldColoursCheckBox.restoreState(storedValue)            
+
         self._settings.endGroup()
 
-    def saveSettings(self) -> None:
+    def accept(self) -> None:
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('RecentDirectory', self._recentDirectoryPath)
+        self._settings.setValue('SectorFilePath', self._sectorFileLineEdit.text())
+        self._settings.setValue('MetadataFilePath', self._metadataFileLineEdit.text())
+        self._settings.setValue('StyleComboBoxState', self._renderStyleComboBox.saveState())
+        self._settings.setValue('SectorGridCheckBoxState', self._renderSectorGridCheckBox.saveState())
+        self._settings.setValue('SectorNamesCheckBoxState', self._renderSectorNamesCheckBox.saveState())
+        self._settings.setValue('RegionNamesCheckBoxState', self._renderRegionNamesCheckBox.saveState())
+        self._settings.setValue('BordersCheckBoxState', self._renderBordersCheckBox.saveState())
+        self._settings.setValue('FilledBordersCheckBoxState', self._renderFilledBordersCheckBox.saveState())
+        self._settings.setValue('RoutesCheckBoxState', self._renderRoutesCheckBox.saveState())
+        self._settings.setValue('WorldColoursCheckBoxState', self._renderWorldColoursCheckBox.saveState())
         self._settings.endGroup()
 
+        return super().accept()
+
     def _setupFileSelectControls(self) -> None:
+        sectorFileTooltip = gui.createStringToolTip(
+            '<p>Specify the T5 Column (aka Second Survey) or T5 Row sector data file to use to create the custom sector</p>',
+            escape=False)
+        metadataFileTooltip = gui.createStringToolTip(
+            '<p>Specify the XML sector metadata file to use to create the custom sector</p>',
+            escape=False)        
+
         self._sectorFileLineEdit = gui.LineEditEx()
+        self._sectorFileLineEdit.setToolTip(sectorFileTooltip)
         self._sectorFileBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._sectorFileBrowseButton.setToolTip(sectorFileTooltip)
         self._sectorFileBrowseButton.clicked.connect(self._sectorFileBrowseClicked)
         sectorLayout = QtWidgets.QHBoxLayout()
         sectorLayout.setContentsMargins(0, 0, 0, 0)
@@ -226,7 +319,9 @@ class _NewSectorDialog(gui.DialogEx):
         sectorLayout.addWidget(self._sectorFileBrowseButton)
 
         self._metadataFileLineEdit = gui.LineEditEx()
+        self._metadataFileLineEdit.setToolTip(metadataFileTooltip)
         self._metadataFileBrowseButton = QtWidgets.QPushButton('Browse...')
+        self._metadataFileBrowseButton.setToolTip(metadataFileTooltip)
         self._metadataFileBrowseButton.clicked.connect(self._metadataFileBrowseClicked)
         metadataLayout = QtWidgets.QHBoxLayout()
         metadataLayout.setContentsMargins(0, 0, 0, 0)
@@ -315,13 +410,6 @@ class _NewSectorDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._createButton)
         self._buttonLayout.addWidget(self._cancelButton)
 
-    def _syncControls(self) -> None:
-        disable = self._posterJob != None
-        self._filesGroupBox.setDisabled(disable)
-        self._renderOptionsGroupBox.setDisabled(disable)
-        self._createButton.setDisabled(disable)
-        self._cancelButton.setDisabled(disable)
-
     def _sectorFileBrowseClicked(self) -> None:
         path = self._showFileSelect(
             caption='Sector File',
@@ -369,6 +457,9 @@ class _NewSectorDialog(gui.DialogEx):
             with open(self._metadataFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
                 self._sectorMetadata = file.read()
             travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
+
+            # TODO: Check that a custom sector with the same name doesn't already exist 
+            # TODO: Check that a custom sector doesn't already exist at the same location
 
             posterJob = jobs.PosterJobAsync(
                 parent=self,
@@ -549,6 +640,8 @@ class _CustomSectorTable(gui.ListTable):
         return sortItem.row() if sortItem else row
 
 class _MapComboBox(gui.ComboBoxEx):
+    _StateVersion = '_MapComboBox_v1'
+
     def __init__(
             self,
             sectorInfo: typing.Optional[travellermap.SectorInfo] = None,
@@ -582,6 +675,38 @@ class _MapComboBox(gui.ComboBoxEx):
         if currentIndex < 0:
             return None
         return self.itemData(currentIndex, QtCore.Qt.ItemDataRole.UserRole)
+    
+    def setCurrentScale(self, scale: typing.Optional[float]) -> None:
+        if scale != None:
+            for index in range(self.count()):
+                if scale == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
+                    self.setCurrentIndex(index)
+                    return
+        else:
+            self.setCurrentIndex(-1)
+    
+    def saveState(self) -> QtCore.QByteArray:
+        value = self.currentScale()
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(_MapComboBox._StateVersion)
+        stream.writeDouble(value if value != None else 0)
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != _MapComboBox._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore MapComboBox state (Incorrect version)')
+            return False
+
+        value = stream.readDouble()
+        self.setCurrentScale(value if value > 0 else None)
+        return True
 
 class _MapImageView(gui.ImageView):
     def __init__(
@@ -641,6 +766,53 @@ class CustomSectorDialog(gui.DialogEx):
 
     def modified(self) -> bool:
         return self._modified
+    
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SectorTableState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._sectorTable.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SectorDataDisplayModeState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._sectorDataTabView.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='MapSelectState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._mapSelectComboBox.restoreState(storedValue)            
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._horizontalSplitter.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def saveSettings(self) -> None:
+        self._settings.beginGroup(self._configSection)
+
+        self._settings.setValue('SectorTableState', self._sectorTable.saveState())
+        self._settings.setValue('SectorDataDisplayModeState', self._sectorDataTabView.saveState())
+        self._settings.setValue('MapSelectState', self._mapSelectComboBox.saveState())
+        self._settings.setValue('SplitterState', self._horizontalSplitter.saveState())
+
+        self._settings.endGroup()
+
+        super().saveSettings()    
 
     def _setupSectorListControls(self) -> None:
         self._sectorTable = _CustomSectorTable()
@@ -677,14 +849,14 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setFont(monospaceFont)
         self._sectorMetadataTextEdit.setReadOnly(True)
 
-        self._mapSelectionComboBox = _MapComboBox()
-        self._mapSelectionComboBox.currentIndexChanged.connect(self._mapSelectionChanged)
+        self._mapSelectComboBox = _MapComboBox()
+        self._mapSelectComboBox.currentIndexChanged.connect(self._mapSelectionChanged)
 
         self._mapGraphicsView = _MapImageView()
 
         mapLayout = QtWidgets.QVBoxLayout()
         mapLayout.setContentsMargins(0, 0, 0, 0)
-        mapLayout.addWidget(self._mapSelectionComboBox)
+        mapLayout.addWidget(self._mapSelectComboBox)
         mapLayout.addWidget(self._mapGraphicsView)
         mapLayoutWidget = QtWidgets.QWidget()
         mapLayoutWidget.setLayout(mapLayout)
@@ -709,8 +881,8 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _mapSelectionChanged(self) -> None:
         self._mapGraphicsView.setMapImage(
-            sectorInfo=self._mapSelectionComboBox.sectorInfo(),
-            scale=self._mapSelectionComboBox.currentScale())
+            sectorInfo=self._mapSelectComboBox.sectorInfo(),
+            scale=self._mapSelectComboBox.currentScale())
 
     def _syncSectorDataControls(
             self,
@@ -719,7 +891,7 @@ class CustomSectorDialog(gui.DialogEx):
         if not sectorInfo:
             self._sectorFileTextEdit.clear()
             self._sectorMetadataTextEdit.clear()
-            self._mapSelectionComboBox.setSectorInfo(None)
+            self._mapSelectComboBox.setSectorInfo(None)
             return
 
         milieu = app.Config.instance().milieu()
@@ -757,7 +929,7 @@ class CustomSectorDialog(gui.DialogEx):
             # Continue to try and sync other controls
 
         # This will trigger an update of the map graphics view
-        self._mapSelectionComboBox.setSectorInfo(sectorInfo=sectorInfo)
+        self._mapSelectComboBox.setSectorInfo(sectorInfo=sectorInfo)
 
     def _newSectorClicked(self) -> None:
         dialog = _NewSectorDialog()
