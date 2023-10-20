@@ -272,7 +272,7 @@ def parseT5ColumnSector(
                 columnAttributes=columnAttributes,
                 columnWidths=columnWidths))
         except Exception as ex:
-            logging.debug(
+            logging.warning(
                 f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')
             continue
     return worlds
@@ -294,12 +294,9 @@ def _parseT5ColumnWorld(
         finishIndex = startIndex + width
         if attribute != None:
             data = line[startIndex:finishIndex].strip()
-            # TODO: If I'm trying to keep this code as a faithful representation of the contents
-            # of the file then this code should be moved into somewhere higher level such as
-            # WorldManager
             if data and all(ch == '-' for ch in data):
-                # Replace no data marker with empty string
-                data = ''
+                data = '' # Replace no data marker with empty string
+
             worldData.setAttribute(
                 attribute=attribute,
                 value=data)
@@ -352,7 +349,7 @@ def parseT5RowSector(
                 lineNumber=lineNumber,
                 columnAttributes=columnAttributes))
         except Exception as ex:
-            logging.debug(
+            logging.warning(
                 f'Failed parse world on line {lineNumber} in data for {identifier} ({str(ex)})')
             continue
     return worlds
@@ -368,6 +365,9 @@ def _parseT5RowWorld(
 
     worldData = RawWorld(lineNumber=lineNumber)
     for attribute, data in itertools.zip_longest(columnAttributes, columnData):
+        if data and all(ch == '-' for ch in data):
+            data = '' # Replace no data marker with empty string
+
         worldData.setAttribute(
             attribute=attribute,
             value=data)
@@ -422,10 +422,15 @@ def parseXMLMetadata(
     subsectorNames = {}
     for element in root.findall('./Subsectors/Subsector'):
         code = element.get('Index')
-        if not code:
-            # TODO: Log something???
+        if code == None:
+            logging.warning(f'Skipping subsector with no Index element in {identifier} metadata')
             continue
-        # TODO: Should probably validate that code is in range A-P
+
+        upperCode = code.upper()
+        if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
+            logging.warning(f'Skipping subsector with invalid Index value in {identifier} metadata')
+            continue
+
         subsectorNames[code] = element.text
 
     # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
@@ -433,8 +438,8 @@ def parseXMLMetadata(
     allegiances = {}
     for element in root.findall('./Allegiances/Allegiance'):
         code = element.get('Code')
-        if not code:
-            # TODO: Log something???
+        if code == None:
+            logging.warning(f'Skipping allegiance with no Code element in {identifier} metadata')
             continue
         allegiances[code] = element.text
 
@@ -463,14 +468,14 @@ def parseJSONMetadata(
     nameLanguages = {}
     for element in nameElements:
         name = element.get('Text')
-        if not name:
-            # TODO: Log something????
+        if name == None:
+            logging.warning(f'Skipping name with no Text element in {identifier} metadata')
             continue
-        names.append(name)
+        names.append(str(name))
 
         lang = element.get('Lang')
-        if lang:
-            nameLanguages[name] = lang
+        if lang != None:
+            nameLanguages[name] = str(lang)
 
     x = root.get('X')
     if x == None:
@@ -487,14 +492,22 @@ def parseJSONMetadata(
     if subsectorElements:
         for element in subsectorElements:
             name = element.get('Name')
-            if not name:
-                # TODO: Log something?????
+            if name == None:
+                logging.warning(f'Skipping subsector with no Name element in {identifier} metadata')
                 continue
+            name = str(name)
+
             code = element.get('Index')
-            if not code:
-                # TODO: Log something?????
+            if code == None:
+                logging.warning(f'Skipping subsector with no Index element in {identifier} metadata')
                 continue
-            # TODO: Should probably validate that code is in range A-P
+            code = str(code)
+
+            upperCode = code.upper()
+            if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
+                logging.warning(f'Skipping subsector with invalid Index value in {identifier} metadata')
+                continue
+
             subsectorNames[code] = name
 
     # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
@@ -504,14 +517,17 @@ def parseJSONMetadata(
     if allegianceElements:
         for element in allegianceElements:
             name = element.get('Name')
-            if not name:
-                # TODO: Log something?????
+            if name == None:
+                logging.warning(f'Skipping allegianceE with no Name element in {identifier} metadata')
                 continue
+            name = str(name)
+
             code = element.get('Code')
-            if not code:
-                # TODO: Log something?????
+            if code == None:
+                logging.warning(f'Skipping allegianceE with no Code element in {identifier} metadata')
                 continue
-            # TODO: Should probably validate that code is in range A-P
+            code = str(code)
+
             allegiances[code] = name
 
     return RawMetadata(

@@ -361,8 +361,6 @@ class _NewSectorDialog(gui.DialogEx):
             # to add support for proxying multipart/form-data
             mapUrl = app.Config.instance().travellerMapUrl()
 
-            # TODO: Some sector file types use specific character encodings, need to make sure this
-            # doesn't mess with them
             with open(self._sectorFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
                 self._sectorData = file.read()
 

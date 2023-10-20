@@ -302,11 +302,17 @@ class WorldManager(object):
             identifier=sectorName)
 
         for code, name in rawMetadata.subsectorNames().items():
+            if not code or not name:
+                continue
+
             code = code.upper()
             assert(code in subsectorMap)
             subsectorMap[code] = name
 
         for code, name in rawMetadata.allegiances().items():
+            if not code or not name:
+                continue
+
             code = code.upper()
             allegianceMap[code] = name
 
@@ -331,9 +337,8 @@ class WorldManager(object):
                     hex=hex,
                     allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
                     uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
-                    # TODO: This stripping should probably live somewhere ele (with code that parses economic/culture codes)
-                    economics=rawWorld.attribute(travellermap.WorldAttribute.Economics).strip('()'),
-                    culture=rawWorld.attribute(travellermap.WorldAttribute.Culture).strip('[]'),
+                    economics=rawWorld.attribute(travellermap.WorldAttribute.Economics),
+                    culture=rawWorld.attribute(travellermap.WorldAttribute.Culture),
                     nobilities=rawWorld.attribute(travellermap.WorldAttribute.Nobility),
                     remarks=rawWorld.attribute(travellermap.WorldAttribute.Remarks),
                     zone=rawWorld.attribute(travellermap.WorldAttribute.Zone),

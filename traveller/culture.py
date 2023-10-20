@@ -133,6 +133,7 @@ class Culture(object):
 
     @staticmethod
     def _sanitise(culture: str) -> str:
+        culture = culture.strip('[]')
         sanitized = ''
         for index in range(4):
             sanitized += Culture._sanitiseElement(index, culture)
