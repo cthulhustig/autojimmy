@@ -34,7 +34,7 @@ def formatMapUrl(
         baseMapUrl: str,
         milieu: travellermap.Milieu,
         style: travellermap.Style,
-        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
         mapPosition: typing.Optional[typing.Tuple[float, float]] = None,
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
@@ -62,7 +62,7 @@ def formatTileUrl(
         tilePosition: typing.Tuple[float, float],
         milieu: travellermap.Milieu,
         style: travellermap.Style,
-        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
         ) -> str:
@@ -88,7 +88,7 @@ def formatTileUrl(
 def formatPosterUrl(
         baseMapUrl: str,
         style: travellermap.Style,
-        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
         linearScale: typing.Optional[float] = None, # Pixels per parsec
         compositing: bool = True,
         minimal: bool = False
@@ -110,7 +110,7 @@ def formatPosterUrl(
 def _createCommonQueryList(
         milieu: typing.Optional[travellermap.Milieu] = None,
         style: typing.Optional[travellermap.Style] = None,
-        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
         minimal: bool = False
         ) -> typing.List[str]:
     optionList = []
@@ -119,8 +119,8 @@ def _createCommonQueryList(
     if style != None:
         optionList.append('style=' + str(style.value))
 
-    if options != None:
-        optionBitMask = _ForceHexesOption # Always enabled
+    optionBitMask = _ForceHexesOption # Always enabled
+    if options:
         if travellermap.Option.SectorGrid in options:
             optionBitMask |= _GridMaskOption
         if travellermap.Option.SectorNames in options:
@@ -135,9 +135,9 @@ def _createCommonQueryList(
             optionBitMask |= _WorldColorsOption
         if travellermap.Option.FilledBorders in options:
             optionBitMask |= _FilledBordersOption
+    optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set
 
-        optionList.append('options=' + str(optionBitMask))
-
+    if options:
         if travellermap.Option.HideUI in options:
             optionList.append('hideui=1')
         elif not minimal:
