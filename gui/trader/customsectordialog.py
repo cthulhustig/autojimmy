@@ -466,14 +466,44 @@ class _NewSectorDialog(gui.DialogEx):
             # to add support for proxying multipart/form-data
             mapUrl = app.Config.instance().travellerMapUrl()
 
-            with open(self._sectorFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
-                self._sectorData = file.read()
+            # Try to parse the sector format now to prevent it failing after the user has waited
+            # to create the posters. This is only really needed for cases where Traveller Map is
+            # happy with the format but my parser isn't
+            try:
+                sectorFilePath = self._sectorFileLineEdit.text()
+                with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
+                    self._sectorData = file.read()
 
-            # TODO: Validate sector file with my parsers
+                sectorFormat = travellermap.sectorFileFormatDetect(content=self._sectorData)
+                if not sectorFormat:
+                    raise RuntimeError('Unknown sector file format')
+                travellermap.parseSector(
+                    content=self._sectorData,
+                    fileFormat=sectorFormat,
+                    identifier=sectorFilePath)
+            except Exception as ex:
+                message = 'Sector file validation failed.'
+                logging.critical(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+                return
+        
+            try:
+                metadataFilePath = self._metadataFileLineEdit.text()
+                with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
+                    self._sectorMetadata = file.read()
 
-            with open(self._metadataFileLineEdit.text(), 'r', encoding='utf-8-sig') as file:
-                self._sectorMetadata = file.read()
-            travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
+                travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
+            except Exception as ex:
+                message = 'Metadata file validation failed.'
+                logging.critical(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+                return
 
             # TODO: Check for name conflicts with existing sectors. I think this will pretty much
             # need to mirror whatever checks DataStore.createCustomSector will do in order to
