@@ -459,10 +459,12 @@ class DataStore(object):
             del sectors[sectorName]
             self._saveCustomSectors(milieu=milieu)
 
+            escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
             sectorExtension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
+            metadataExtension = DataStore._MetadataFormatExtensions[sector.metadataFormat()]
             files = [
-                f'{sector.canonicalName()}.{sectorExtension}',
-                f'{sector.canonicalName()}.xml']
+                f'{escapedSectorName}.{sectorExtension}',
+                f'{escapedSectorName}.{metadataExtension}']
             mapLevels = sector.mapLevels()
             if mapLevels:
                 for mapLevel in mapLevels.values():
