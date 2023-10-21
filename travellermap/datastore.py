@@ -330,7 +330,6 @@ class DataStore(object):
         # Load metadata, currently only XML format is supported. The Poster API also supports
         # MSEC metadata but that format doesn't include the sector position. Strangely the docs
         # don't say it supports JSON format
-        # TODO: Try generating a poster using JSON metadata
         metadata = travellermap.parseXMLMetadata(
             content=metadataContent,
             identifier='Custom Metadata')

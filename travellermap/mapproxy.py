@@ -17,10 +17,8 @@ import urllib.request
 import threading
 import typing
 
-# TODO: Make sure threaded server is enabled
 _MultiThreaded = True
 
-# TODO: This should be configurable
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
 
 _ExtensionToContentTypeMap = {
@@ -384,9 +382,6 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         with urllib.request.urlopen(requestUrl) as response:
             info = response.info()
-
-            # TODO: Rather than wait for all the content to be received this should read in
-            # chunks and write it as it comes in
             data = response.read()
 
         self.send_response(200)
