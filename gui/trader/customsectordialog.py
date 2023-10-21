@@ -916,14 +916,25 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setFont(monospaceFont)
         self._sectorMetadataTextEdit.setReadOnly(True)
 
+        self._mapGraphicsView = _MapImageView()   
+
         self._mapSelectComboBox = _MapComboBox()
         self._mapSelectComboBox.currentIndexChanged.connect(self._mapSelectionChanged)
 
-        self._mapGraphicsView = _MapImageView()
+        iconSize = self._mapSelectComboBox.sizeHint().height()       
+        self._mapToolbar = QtWidgets.QToolBar("Map Toolbar")
+        self._mapToolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
+        self._mapToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        self._mapToolbar.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
+        self._mapToolbar.addWidget(self._mapSelectComboBox)
+        self._mapToolbar.addActions(self._mapGraphicsView.actions())
 
         mapLayout = QtWidgets.QVBoxLayout()
         mapLayout.setContentsMargins(0, 0, 0, 0)
-        mapLayout.addWidget(self._mapSelectComboBox)
+        mapLayout.setSpacing(0)
+        mapLayout.addWidget(self._mapToolbar)
         mapLayout.addWidget(self._mapGraphicsView)
         mapLayoutWidget = QtWidgets.QWidget()
         mapLayoutWidget.setLayout(mapLayout)

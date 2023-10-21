@@ -1,7 +1,11 @@
+import gui
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class ImageView(QtWidgets.QGraphicsView):
+    _ZoomInScale = 1.25
+    _ZoomOutScale = 0.8
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -13,6 +17,19 @@ class ImageView(QtWidgets.QGraphicsView):
         self.setCacheMode(QtWidgets.QGraphicsView.CacheModeFlag.CacheNone)
         self.setViewportUpdateMode(
             QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
+        
+        self._zoomInAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.ZoomIn), 'Zoom In', self)
+        self._zoomInAction.triggered.connect(self.zoomIn)
+        self.addAction(self._zoomInAction)
+
+        self._zoomOutAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.ZoomOut), 'Zoom Out', self)
+        self._zoomOutAction.triggered.connect(self.zoomOut)
+        self.addAction(self._zoomOutAction)
+
+        self._zoomToFitAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.ZoomToFit), 'Zoom To Fit', self)
+        self._zoomToFitAction.triggered.connect(self.zoomToFit)
+        self.addAction(self._zoomToFitAction)        
 
     def imageFromBytes(
             self,
@@ -33,36 +50,39 @@ class ImageView(QtWidgets.QGraphicsView):
     def currentScale(self) -> typing.Tuple[float, float]:
         transform = self.transform()
         return (transform.m11(), transform.m22())
+    
+    def zoomIn(self) -> None:
+        xScale, yScale = self.currentScale()
+        self.resetTransform()
+        self.scale(xScale * ImageView._ZoomInScale, yScale * ImageView._ZoomInScale)
+
+    def zoomOut(self) -> None:
+        xScale, yScale = self.currentScale()
+        self.resetTransform()
+        self.scale(xScale * ImageView._ZoomOutScale, yScale * ImageView._ZoomOutScale)
+
+    def zoomToFit(self) -> None:
+        viewRect = self.rect()
+        sceneRect = self.sceneRect()
+        if sceneRect.width() <= 0 or sceneRect.height() <= 0:
+            return # Can't scale image with no size
+
+        scale = min(
+            viewRect.width() / sceneRect.width(),
+            viewRect.height() / sceneRect.height())
+        
+        self.resetTransform()
+        self.scale(scale, scale)
 
     def clear(self) -> None:
         self._pixmap = None
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         if event.modifiers() == QtCore.Qt.KeyboardModifier.ShiftModifier:
-            xScale, yScale = self.currentScale()
-            viewRect = self.rect()
-            sceneRect = self.sceneRect()
-
             if event.angleDelta().y() > 0:
-                # Prevent further zooming in if the zoom in either axis is already at or
-                # greater than the max
-                if xScale >= 4 or yScale >= 4: # TODO: Should be a constant
-                    return
-
-                xScale *= 1.25 # TODO: Should be a constant
-                yScale *= 1.25
+                self.zoomIn()
             else:
-                # Prevent further zooming out if the the current scaled scene fits completely
-                # in the view
-                if ((sceneRect.width() * xScale) < viewRect.height()) and \
-                        ((sceneRect.height() * yScale) < viewRect.height()):
-                    return
-
-                xScale *= 0.8 # TODO: Should be a constant
-                yScale *= 0.8
-
-            self.resetTransform()
-            self.scale(xScale, yScale)
+                self.zoomOut()
             return
         return super().wheelEvent(event)
 
