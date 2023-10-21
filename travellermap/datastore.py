@@ -16,6 +16,26 @@ import xmlschema
 import xml.etree.ElementTree
 import zipfile
 
+class MapLevel(object):
+    def __init__(
+            self,
+            scale: int,
+            fileName: str,
+            format: travellermap.MapFormat
+            ) -> None:
+        self._scale = scale
+        self._fileName = fileName
+        self._format = format
+
+    def scale(self) -> int:
+        return self._scale
+    
+    def fileName(self) -> str:
+        return self._fileName
+    
+    def format(self) -> travellermap.MapFormat:
+        return self._format
+
 class SectorInfo(object):
     def __init__(
             self,
@@ -24,7 +44,7 @@ class SectorInfo(object):
             x: int,
             y: int,
             isCustomSector: bool,
-            mapLevels: typing.Optional[typing.Dict[int, str]], # Map mip level scale to file name
+            mapLevels: typing.Optional[typing.Dict[int, MapLevel]],
             sectorFormat: travellermap.SectorFormat,
             metadataFormat: travellermap.MetadataFormat
             ) -> None:
@@ -52,8 +72,11 @@ class SectorInfo(object):
     def isCustomSector(self) -> bool:
         return self._isCustomSector
 
-    def mapLevels(self) -> typing.Optional[typing.Dict[int, str]]:
+    def mapLevels(self) -> typing.Optional[typing.Dict[int, MapLevel]]:
         return self._mapLevels.copy() if self._mapLevels else None
+    
+    def mapLevel(self, scale: int) -> typing.Optional[MapLevel]:
+        return self._mapLevels.get(scale) if self._mapLevels else None
 
     def sectorFormat(self) -> travellermap.SectorFormat:
         return self._sectorFormat
@@ -178,21 +201,24 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu,
             scale: int
-            ) -> bytes:
+            ) -> travellermap.MapImage:
         self._loadAllSectors()
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
             raise RuntimeError(f'Unable to retrieve sector map data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
-        mapLevels = sector.mapLevels()
-        if not mapLevels or scale not in mapLevels:
+        mapLevel = sector.mapLevel(scale=scale)
+        if not mapLevel:
             raise RuntimeError(f'Unable to retrieve {scale} scale sector map data for {sectorName}')
-        mapFileName = mapLevels[scale]
-        return self._readMilieuFile(
-            fileName=mapFileName,
+        mapData = self._readMilieuFile(
+            fileName=mapLevel.fileName(),
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector())
+        
+        return travellermap.MapImage(
+            bytes=mapData,
+            format=mapLevel.format())
 
     def sophontsData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
@@ -296,7 +322,7 @@ class DataStore(object):
             self,
             sectorContent: str,
             metadataContent: str,
-            sectorMaps: typing.Mapping[float, bytes],
+            sectorMaps: typing.Mapping[int, travellermap.MapImage],
             milieu: travellermap.Milieu
             ) -> SectorInfo:
         self._loadAllSectors()
@@ -377,14 +403,20 @@ class DataStore(object):
             with open(metadataFilePath, 'w', encoding='utf-8') as file:
                 file.write(metadataContent)
 
-            # TODO: Need a better way of handling map level image types rather than assuming they are png
             mapLevels = {}
-            for scale, map in sectorMaps.items():
-                mapLevelFileName = f'{escapedSectorName}_{scale}.png'
+            for scale, mapImage in sectorMaps.items():
+                mapFormat = mapImage.format()
+                mapLevelFileName = f'{escapedSectorName}_{scale}.{mapFormat.value}'
                 mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
-                mapLevels[scale] = mapLevelFileName
+
+                mapLevel = MapLevel(
+                    scale=scale,
+                    fileName=mapLevelFileName,
+                    format=mapFormat)
+                mapLevels[mapLevel.scale()] = mapLevel
+
                 with open(mapLevelFilePath, 'wb') as file:
-                    file.write(map)
+                    file.write(mapImage.bytes())
 
             sector = SectorInfo(
                 canonicalName=metadata.canonicalName(),
@@ -433,7 +465,8 @@ class DataStore(object):
                 f'{sector.canonicalName()}.xml']
             mapLevels = sector.mapLevels()
             if mapLevels:
-                files.extend(mapLevels.values())
+                for mapLevel in mapLevels.values():
+                    files.append(mapLevel.fileName())
 
             # Perform best effort attempt to delete files. If it fails log and continue,
             # any undeleted files will have no effect since the sector has been deleted
@@ -652,9 +685,13 @@ class DataStore(object):
             # When loading sectors for a standard milieu the universe file is mandatory
             raise
 
-        universeJson = json.loads(DataStore._bytesToString(universeContent))
+        try:
+            universeJson = json.loads(DataStore._bytesToString(universeContent))
+        except Exception as ex:
+            raise RuntimeError(f'Failed to load universe file ({str(ex)})')
+
         if 'Sectors' not in universeJson:
-            raise RuntimeError('Invalid sector list')
+            raise RuntimeError('Failed to load universe file (No Sectors element found)')
 
         sectors = []
         for sectorInfo in universeJson['Sectors']:
@@ -686,9 +723,17 @@ class DataStore(object):
             if 'MapLevels' in sectorInfo:
                 mapLevels = {}
                 for mapLevel in sectorInfo['MapLevels']:
-                    fileName = mapLevel['FileName']
-                    scale = mapLevel['Scale']
-                    mapLevels[scale] = fileName
+                    mapFormat = travellermap.mimeTypeToMapFormat(
+                        mimeType=str(mapLevel['MimeType']))
+                    if not mapFormat:
+                        logging.warning(f'Ignoring map level for {canonicalName} in {milieu.value} as it has an unknown format {formatString}')
+                        continue
+
+                    mapLevel = MapLevel(
+                        scale=int(mapLevel['Scale']),
+                        fileName=str(mapLevel['FileName']),
+                        format=mapFormat)
+                    mapLevels[mapLevel.scale()] = mapLevel
 
             # If the universe doesn't specify the sector format it must be a standard traveller map
             # universe file which means the corresponding sectors files all use T5 column format
@@ -748,10 +793,11 @@ class DataStore(object):
                 mapLevels = sectorInfo.mapLevels()
                 mapLevelListData = []
                 if mapLevels:
-                    for scale, file in mapLevels.items():
+                    for mapLevel in mapLevels.values():
                         mapLevelListData.append({
-                            'Scale': scale,
-                            'FileName': file
+                            'Scale': mapLevel.scale(),
+                            'FileName': mapLevel.fileName(),
+                            'MimeType': travellermap.mapFormatToMimeType(format=mapLevel.format())
                         })
                 if mapLevelListData:
                     sectorData['MapLevels'] = mapLevelListData

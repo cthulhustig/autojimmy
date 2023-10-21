@@ -2,17 +2,70 @@ import aiohttp
 import asyncio
 import io
 import logging
+import multidict
 import typing
 from PyQt5 import QtCore
+
+class AsyncResponse(object):
+    def __init__(
+            self,
+            status: int,
+            headers: multidict.MultiDictProxy,
+            content: bytes
+            ) -> None:
+        self._status = status
+        self._headers = headers
+        self._content = content
+
+    def status(self) -> int:
+        return self._status
+
+    def headers(self) -> multidict.MultiDictProxy:
+        return self._headers
+    
+    def header(
+            self,
+            header: str,
+            default: typing.Optional[str] = None
+            ) -> typing.Optional[str]:
+        return self._headers.get(header, default)
+    
+    def content(self) -> bytes:
+        return self._content
 
 class AsyncRequest(QtCore.QObject):
     class HttpException(RuntimeError):
         def __init__(
                 self,
                 status: int,
-                reason: str
+                reason: typing.Optional[str],
+                headers: multidict.MultiDictProxy,
+                content: bytes
                 ) -> None:
-            super().__init__(f'Request failed ({status} {reason})')
+            super().__init__(f'Request failed ({status} {reason})' if reason else f'Request failed ({status})')
+            self._status = status
+            self._reason  = reason
+            self._headers = headers
+            self._content = content
+
+        def status(self) -> int:
+            return self._status
+        
+        def reason(self) -> typing.Optional[str]:
+            return self._reason
+
+        def headers(self) -> multidict.MultiDictProxy:
+            return self._headers
+        
+        def header(
+                self,
+                header: str,
+                default: typing.Optional[str] = None
+                ) -> typing.Optional[str]:
+            return self._headers.get(header, default)
+        
+        def content(self) -> bytes:
+            return self._content
 
     class TimeoutException(RuntimeError):
         def __init__(self) -> None:
@@ -43,8 +96,8 @@ class AsyncRequest(QtCore.QObject):
                 self._callback(self._name, self._dataRead, self._dataSize)
             return data
 
-    # If successful, this signal will return a dict mapping float pixel per parsec scales to
-    # the bytes for that poster. If an exception occurs it will return the exception.
+    # If a response is received this signal will be passed an instance of AsyncResponse.
+    # If some other kind of exception occurs then the signal will be passed the exception
     complete = QtCore.pyqtSignal([object])
 
     uploadProgress = QtCore.pyqtSignal([str, int, int])
@@ -112,20 +165,25 @@ class AsyncRequest(QtCore.QObject):
         try:
             logging.info(f'Starting async GET request for {url}')
 
-            content = None
             async with aiohttp.ClientSession() as session:
                 async with session.get(url=url) as response:
-                    if response.status != 200:
-                        raise AsyncRequest.HttpException(response.status, response.reason)
+                    status = response.status
+                    reason = response.reason
+                    headers = response.headers.copy()
 
-                    size = response.headers.get('Content-Length', 0)
+                    size = headers.get('Content-Length', 0)
                     self._updateDownloadProgress(0, size)
 
                     content = bytearray()
                     async for chunk in response.content.iter_chunked(self._chunkSize):
                         content.extend(chunk)
                         self._updateDownloadProgress(len(content), size)
-            self.complete[object].emit(content)
+
+            self._handleResponse(
+                status=status,
+                reason=reason,
+                headers=headers,
+                content=content)
         except Exception as ex:
             logging.critical(f'Async GET request for {url} failed', exc_info=ex)
             self.complete[object].emit(ex)
@@ -152,12 +210,14 @@ class AsyncRequest(QtCore.QObject):
                         data=value,
                         callback=self._updateUploadProgress)
                     formData.add_field(key, dataWrapper)
+
             async with aiohttp.ClientSession() as session:
                 async with session.post(url=url, data=formData) as response:
-                    if response.status != 200:
-                        raise AsyncRequest.HttpException(response.status, response.reason)
-
-                    size = response.headers.get('Content-Length', 0)
+                    status = response.status
+                    reason = response.reason
+                    headers = response.headers.copy()
+                
+                    size = headers.get('Content-Length', 0)
                     self._updateDownloadProgress(0, size)
 
                     content = bytearray()
@@ -165,7 +225,11 @@ class AsyncRequest(QtCore.QObject):
                         content.extend(chunk)
                         self._updateDownloadProgress(len(content), size)
 
-            self.complete[object].emit(bytes(content))
+            self._handleResponse(
+                status=status,
+                reason=reason,
+                headers=headers,
+                content=content)
         except Exception as ex:
             logging.critical(f'Async POST request to {url} failed', exc_info=ex)
             self.complete[object].emit(ex)
@@ -179,6 +243,25 @@ class AsyncRequest(QtCore.QObject):
         await asyncio.sleep(timeout)
         self.complete[object].emit(AsyncRequest.TimeoutException())
         self._teardown()
+
+    def _handleResponse(
+            self,
+            status: int,
+            reason: typing.Optional[str],
+            headers:  multidict.MultiDictProxy,
+            content: bytearray
+            ) -> None:
+        if (status < 200) or (status > 299):
+            raise AsyncRequest.HttpException(
+                status=status,
+                reason=reason,
+                headers=headers,
+                content=bytes(content))
+
+        self.complete[object].emit(AsyncResponse(
+            status=status,
+            headers=headers,
+            content=bytes(content)))
 
     def _updateUploadProgress(
             self,

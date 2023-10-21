@@ -73,7 +73,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
-    def posters(self) -> typing.Optional[typing.Mapping[float, bytes]]:
+    def posters(self) -> typing.Optional[typing.Mapping[float, travellermap.MapImage]]:
         return self._posters
 
     def exec(self) -> int:
@@ -113,7 +113,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
 
     def _jobComplete(
             self,
-            result: typing.Union[bytes, Exception]
+            result: typing.Union[typing.Mapping[float, travellermap.MapImage], Exception]
             ) -> None:
         self._generatingTimer.stop()
 
@@ -801,9 +801,9 @@ class _MapImageView(gui.ImageView):
             sectorName=self._sectorInfo.canonicalName(),
             milieu=app.Config.instance().milieu(),
             scale=scale)
-        if mapImage == None:
+        if not mapImage:
             return False
-        return self.imageFromBytes(data=mapImage, type='PNG')
+        return self.imageFromBytes(data=mapImage.bytes(), type=mapImage.format().value)
 
 class CustomSectorDialog(gui.DialogEx):
     def __init__(

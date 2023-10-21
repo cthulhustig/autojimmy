@@ -49,7 +49,7 @@ class TileClient(object):
             width: int = 256,
             height: int = 256,
             timeout: typing.Optional[typing.Union[int, float]] = None,
-            ) -> bytes:
+            ) -> typing.Tuple[bytes, travellermap.MapFormat]:
         mapX, mapY = travellermap.absoluteHexToMapSpace(
             absoluteX=absoluteX,
             absoluteY=absoluteY)
@@ -92,7 +92,7 @@ class TileClient(object):
     def _makeRequest(
             url: str,
             timeout: typing.Optional[typing.Union[int, float]] = None
-            ) -> bytes:
+            ) -> typing.Tuple[bytes, travellermap.MapFormat]:
         # Leave this enabled to catch bugs that are causing LOTS of requests
         logging.info(f'Downloading tile {url}')
 
@@ -101,6 +101,12 @@ class TileClient(object):
         # Any exception that occurs here is just allowed to pass up to the caller
         try:
             with urllib.request.urlopen(url=url, timeout=timeout) as response:
+                info = response.info()
+                contentType = info.get('Content-Type').lower()
+                mapFormat = travellermap.mimeTypeToMapFormat(contentType)
+                if not mapFormat:
+                    raise RuntimeError(f'Unknown format {contentType}')
+
                 content = response.read()
         except urllib.error.HTTPError as ex:
             raise RuntimeError(f'Tile request failed for {url} ({ex.reason})') from ex
@@ -114,4 +120,4 @@ class TileClient(object):
         downloadTime = time.time() - startTime
         logging.debug(f'Download of tile {url} took {downloadTime}s')
 
-        return content
+        return (content, mapFormat)

@@ -34,7 +34,7 @@ class ImageView(QtWidgets.QGraphicsView):
     def imageFromBytes(
             self,
             data: bytes,
-            type: str # e.g. 'PNG'
+            type: str # as used by QPixmap.loadFromData (e.g. 'PNG')
             ) -> bool:
         if not self._pixmap:
             self._pixmap = QtGui.QPixmap()

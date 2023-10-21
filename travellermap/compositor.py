@@ -26,17 +26,17 @@ def _calculateIntersection(
 
     return (left, top, right, bottom)
 
-class _MapImage(object):
+class _MapTile(object):
     def __init__(
             self,
-            imageData: bytes,
+            image: travellermap.MapImage,
             scale: float
             ) -> None:
         self._scale = scale
-        with PIL.Image.open(io.BytesIO(imageData)) as image:
-            self._pixels = image.tobytes()
-            self._size = (image.width, image.height)
-            self._mode = image.mode
+        with PIL.Image.open(io.BytesIO(image.bytes())) as pixelData:
+            self._pixels = pixelData.tobytes()
+            self._size = (pixelData.width, pixelData.height)
+            self._mode = pixelData.mode
 
     def scale(self) -> float:
         return self._scale
@@ -50,7 +50,7 @@ class _MapImage(object):
     def mode(self) -> str:
         return self._mode
 
-    def __lt__(self, other: '_MapImage') -> bool:
+    def __lt__(self, other: '_MapTile') -> bool:
         if self.__class__ is other.__class__:
             return self.scale() > other.scale()
         return NotImplemented
@@ -60,7 +60,7 @@ class _CustomSector(object):
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mapImages: typing.Iterable[_MapImage]
+            mapImages: typing.Iterable[_MapTile]
             ) -> None:
         self._name = name
         self._position = position
@@ -86,7 +86,7 @@ class _CustomSector(object):
     def findMapImage(
             self,
             scale: float
-            ) -> typing.Optional[_MapImage]:
+            ) -> typing.Optional[_MapTile]:
         bestLevel = None
         for level in self._mapImages:
             if bestLevel and scale > level.scale():
@@ -113,6 +113,38 @@ class Compositor(object):
 
         self._loadCustomUniverse()
 
+    def needsComposition(
+            self,
+            tileX: float,
+            tileY: float,
+            tileScale: float,
+            milieu: travellermap.Milieu
+            ) -> bool:
+        if tileScale < Compositor._MinCompositionScale:
+            return False
+
+        tileMapUL = travellermap.tileSpaceToMapSpace(
+            tileX=tileX,
+            tileY=tileY + 1,
+            scale=tileScale)
+        tileMapBR = travellermap.tileSpaceToMapSpace(
+            tileX=tileX + 1,
+            tileY=tileY,
+            scale=tileScale)
+        tileMapRect = (
+            tileMapUL[0], # Left
+            tileMapUL[1], # Top
+            tileMapBR[0], # Right
+            tileMapBR[1]) # Bottom
+
+        for sector in self._milieuSectorMap.get(milieu):
+            sectorMapRect = sector.mapSpaceRect()
+            intersection = _calculateIntersection(sectorMapRect, tileMapRect)
+            if intersection:
+                return True
+            
+        return False
+
     def composite(
             self,
             tileData: bytes,
@@ -121,7 +153,8 @@ class Compositor(object):
             tileWidth: int,
             tileHeight: int,
             tileScale: float,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            outputFormat: travellermap.MapFormat
             ) -> bytes:
         if tileScale < Compositor._MinCompositionScale:
             return tileData
@@ -207,11 +240,14 @@ class Compositor(object):
                 # shrinks and offsets the rect). The main issue is it would mean the compositor
                 # would have to (possibly indirectly) initiate the request for the tile from
                 # Traveller Map (if it's not in the cache).
+                # TODO: There is another optimisation as if the tile overlaps multiple custom
+                # sectors it will repeatedly decode and re-encode the image. This will also
+                # cause repeated quality loss if using jpeg
 
                 with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
                     tgtImage.paste(srcImage, tgtPixelOffset, srcImage)
                     tileData = io.BytesIO()
-                    tgtImage.save(tileData, format='png')
+                    tgtImage.save(tileData, format=outputFormat.value)
                     tileData.seek(0)
                     tileData = tileData.read()
             finally:
@@ -240,7 +276,7 @@ class Compositor(object):
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
-                        mapImages.append(_MapImage(imageData=mapImage, scale=scale))
+                        mapImages.append(_MapTile(image=mapImage, scale=scale))
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue

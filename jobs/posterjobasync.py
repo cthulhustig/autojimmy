@@ -12,7 +12,7 @@ class PosterJobAsync(QtCore.QObject):
         Downloading = 1
 
     # If successful, this signal will pass a dict mapping float pixel per parsec scales to
-    # the bytes for that poster. If an exception occurs it will pass the exception.
+    # a MapImage. If an exception occurs it will pass the exception.
     complete = QtCore.pyqtSignal([object])
 
     # This signal passes the event type, scale being process, poster index, total posters,
@@ -49,7 +49,7 @@ class PosterJobAsync(QtCore.QObject):
         self._uploadSize = len(sectorBytes) + len(metadataBytes)
 
         self._request = None
-        self._posters: typing.Dict[float, bytes] = {}
+        self._posters: typing.Dict[float, travellermap.MapImage] = {}
 
     def run(self):
         self._primeNextRequest(index=0)
@@ -59,7 +59,7 @@ class PosterJobAsync(QtCore.QObject):
             self._request.cancel()
             self._request = None
 
-    def posters(self) -> typing.Mapping[float, bytes]:
+    def posters(self) -> typing.Mapping[float, travellermap.MapImage]:
         return self._posters
 
     def _primeNextRequest(
@@ -96,14 +96,26 @@ class PosterJobAsync(QtCore.QObject):
     def _requestCompleted(
             self,
             index: int,
-            result: typing.Union[bytes, Exception]
+            result: typing.Union[app.AsyncResponse, Exception]
             ) -> None:
         if isinstance(result, Exception):
             self.complete[object].emit(result)
             return
+        assert(isinstance(result, app.AsyncResponse))
+
+        contentType = result.header('content-type')
+        if not contentType:
+            self.complete[object].emit(RuntimeError('Response has no content-type'))
+            return
+        mapFormat = travellermap.mimeTypeToMapFormat(contentType)
+        if not mapFormat:
+            self.complete[object].emit(RuntimeError(f'Unknown content-type {contentType}'))
+            return
 
         scale = self._scales[index]
-        self._posters[scale] = result
+        self._posters[scale] = travellermap.MapImage(
+            bytes=result.content(),
+            format=mapFormat)
 
         index += 1
         if index < len(self._scales):

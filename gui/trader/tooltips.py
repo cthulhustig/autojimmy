@@ -239,7 +239,7 @@ def createWorldToolTip(
             app.Config.instance().showToolTipImages() and \
             not _DisableWorldToolTipImages:
         try:
-            tileBytes = travellermap.TileClient.instance().tile(
+            tileBytes, tileFormat = travellermap.TileClient.instance().tile(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
@@ -249,11 +249,11 @@ def createWorldToolTip(
                 height=256,
                 timeout=3)
             if tileBytes:
+                mineType = travellermap.mapFormatToMimeType(tileFormat)              
                 tileString = base64.b64encode(tileBytes).decode()
                 toolTip += '<td width="256">'
                 # https://travellermap.com/doc/api#tile-render-an-arbitrary-rectangle-of-space
-                imageType = 'image/jpeg' if app.Config.instance().mapStyle() == travellermap.Style.Candy else 'image/png'
-                toolTip += f'<p style="vertical-align:middle"><img src=data:{imageType};base64,{tileString} width="256" height="256"></p>'
+                toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
             logging.error(f'Failed to retrieve tool tip image for {world.name(includeSubsector=True)}', exc_info=ex)
