@@ -109,22 +109,28 @@ class WorldManager(object):
 
                 alternateNames = sector.alternateNames()
                 if alternateNames:
-                    for sectorName in alternateNames:
-                        sectorName = sectorName.lower()
-                        if sectorName not in self._sectorNameMap:
-                            self._sectorNameMap[sectorName] = sector
-                        else:
-                            logging.warning(f'World manager encountered a name conflict when adding alternate sector name {sectorName} to name map')
+                    for alternateName in alternateNames:
+                        alternateName = alternateName.lower()
+                        conflictSector = self._sectorNameMap.get(alternateName)
+                        if not conflictSector:
+                            self._sectorNameMap[alternateName] = sector
+                        elif conflictSector != sector:
+                            # Only log at info as this does happen in standard data however it is a sign of
+                            # potential issues, especially when dealing with custom sectors
+                            logging.info(f'World manager unable to add alternate sector name {alternateName} for sector {sectorInfo.canonicalName()} to name map as it\'s already in use by sector {conflictSector.name()}')
 
                 # If the sector has an abbreviation add it to the name map if there's not a sector
                 # that already has that abbreviation/name
                 abbreviation = sector.abbreviation()
                 if abbreviation:
                     abbreviation = abbreviation.lower()
-                    if abbreviation not in self._sectorNameMap:
+                    conflictSector = self._sectorNameMap.get(abbreviation)
+                    if not conflictSector:
                         self._sectorNameMap[abbreviation] = sector
-                    else:
-                        logging.warning(f'World manager encountered a name conflict when adding sector abbreviation {abbreviation} to name map')
+                    elif conflictSector != sector:
+                        # Only log at info as this does happen in standard data however it is a sign of
+                        # potential issues, especially when dealing with custom sectors
+                        logging.info(f'World manager unable to add abbreviation {abbreviation} for sector {sectorInfo.canonicalName()} to name map as it\'s already in use by sector {conflictSector.name()}')
 
                 for subsector in sector.subsectors():
                     subsectorName = subsector.name()
