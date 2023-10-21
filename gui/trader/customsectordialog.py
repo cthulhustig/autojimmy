@@ -203,7 +203,7 @@ class _NewSectorDialog(gui.DialogEx):
     # if the user cancels the dialog)
     def loadSettings(self) -> None:
         super().loadSettings()
-        
+
         self._settings.beginGroup(self._configSection)
 
         storedValue = gui.safeLoadSetting(
@@ -543,6 +543,8 @@ class _CustomSectorTable(gui.ListTable):
         ColumnType.Location
     ]
 
+    _StateVersion = 'CustomSectorTable_v1'
+
     def __init__(
             self,
             columns: typing.Iterable[ColumnType] = AllColumns
@@ -573,6 +575,16 @@ class _CustomSectorTable(gui.ListTable):
         if row < 0:
             return None
         return self.sector(row)
+    
+    def setCurrentSector(self, sector: typing.Optional[travellermap.SectorInfo]):
+        if sector:
+            row = self.sectorRow(sector)
+            if row < 0:
+                return
+            item = self.item(row, 0)
+            self.setCurrentItem(item)
+        else:
+            self.setCurrentItem(None)
 
     def synchronise(self) -> None:
         sectors = travellermap.DataStore.instance().sectors(
@@ -607,6 +619,53 @@ class _CustomSectorTable(gui.ListTable):
         # Force a selection if there isn't one
         if not self.hasSelection() and self.rowCount() > 0:
             self.selectRow(0)
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(_CustomSectorTable._StateVersion)
+
+        currentSector = self.currentSector()
+        stream.writeQString(currentSector.canonicalName() if currentSector else '')
+
+        baseState = super().saveState()
+        stream.writeUInt32(baseState.count() if baseState != None else 0)
+        if baseState != None:
+            stream.writeRawData(baseState.data())
+
+        return state
+    
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != _CustomSectorTable._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore CustomSectorTable state (Incorrect version)')
+            return False
+
+        sectorName = stream.readQString()
+        currentSector = None
+        if sectorName:
+            for row in range(self.rowCount()):
+                sector = self.sector(row)
+                if not sector:
+                    continue
+                if sector.canonicalName() == sectorName:
+                    currentSector = sector
+                    break
+        self.setCurrentSector(currentSector)
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        baseState = QtCore.QByteArray(stream.readRawData(count))
+        if not super().restoreState(baseState):
+            return False
+
+        return True    
 
     def _fillRow(
             self,
@@ -645,7 +704,7 @@ class _CustomSectorTable(gui.ListTable):
         return sortItem.row() if sortItem else row
 
 class _MapComboBox(gui.ComboBoxEx):
-    _StateVersion = '_MapComboBox_v1'
+    _StateVersion = 'MapComboBox_v1'
 
     def __init__(
             self,
@@ -735,6 +794,9 @@ class _MapImageView(gui.ImageView):
         self.clear()
 
         self._sectorInfo = sectorInfo
+        if not self._sectorInfo:
+            return True # Nothing more to do
+        
         mapImage = travellermap.DataStore.instance().sectorMapImage(
             sectorName=self._sectorInfo.canonicalName(),
             milieu=app.Config.instance().milieu(),
