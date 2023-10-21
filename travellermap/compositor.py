@@ -30,7 +30,7 @@ class _MapTile(object):
     def __init__(
             self,
             image: travellermap.MapImage,
-            scale: float
+            scale: int
             ) -> None:
         self._scale = scale
         with PIL.Image.open(io.BytesIO(image.bytes())) as pixelData:
@@ -38,7 +38,7 @@ class _MapTile(object):
             self._size = (pixelData.width, pixelData.height)
             self._mode = pixelData.mode
 
-    def scale(self) -> float:
+    def scale(self) -> int:
         return self._scale
 
     def pixels(self) -> bytes:
@@ -85,7 +85,7 @@ class _CustomSector(object):
 
     def findMapImage(
             self,
-            scale: float
+            scale: typing.Union[int, float]
             ) -> typing.Optional[_MapTile]:
         bestLevel = None
         for level in self._mapImages:

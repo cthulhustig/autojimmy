@@ -11,8 +11,8 @@ class PosterJobAsync(QtCore.QObject):
         Uploading = 0
         Downloading = 1
 
-    # If successful, this signal will pass a dict mapping float pixel per parsec scales to
-    # a MapImage. If an exception occurs it will pass the exception.
+    # If successful, this signal will pass a dict mapping int or float pixel per parsec scales
+    # to a MapImage. If an exception occurs it will pass the exception.
     complete = QtCore.pyqtSignal([object])
 
     # This signal passes the event type, scale being process, poster index, total posters,
@@ -28,7 +28,7 @@ class PosterJobAsync(QtCore.QObject):
             sectorMetadata: typing.Optional[str],
             style: typing.Optional[travellermap.Style],
             options: typing.Optional[typing.Iterable[travellermap.Option]],
-            scales: typing.Iterable[float],
+            scales: typing.Iterable[typing.Union[float, int]],
             compositing: bool
             ) -> None:
         super().__init__(parent=parent)

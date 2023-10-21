@@ -73,7 +73,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
-    def posters(self) -> typing.Optional[typing.Mapping[float, travellermap.MapImage]]:
+    def posters(self) -> typing.Optional[typing.Mapping[int, travellermap.MapImage]]:
         return self._posters
 
     def exec(self) -> int:
@@ -113,7 +113,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
 
     def _jobComplete(
             self,
-            result: typing.Union[typing.Mapping[float, travellermap.MapImage], Exception]
+            result: typing.Union[typing.Mapping[int, travellermap.MapImage], Exception]
             ) -> None:
         self._generatingTimer.stop()
 
@@ -129,7 +129,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
     def _jobEvent(
             self,
             event: jobs.PosterJobAsync.ProgressEvent,
-            scale: float,
+            scale: int,
             stageIndex: int,
             totalStages: int,
             currentBytes: int,
@@ -779,13 +779,13 @@ class _MapComboBox(gui.ComboBoxEx):
                     self.addItem(f'{scale} Pixels Per Parsec', scale)
         self.currentIndexChanged.emit(self.currentIndex())
 
-    def currentScale(self) -> typing.Optional[float]:
+    def currentScale(self) -> typing.Optional[int]:
         currentIndex = self.currentIndex()
         if currentIndex < 0:
             return None
         return self.itemData(currentIndex, QtCore.Qt.ItemDataRole.UserRole)
     
-    def setCurrentScale(self, scale: typing.Optional[float]) -> None:
+    def setCurrentScale(self, scale: typing.Optional[int]) -> None:
         if scale != None:
             for index in range(self.count()):
                 if scale == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
@@ -821,7 +821,7 @@ class _MapImageView(gui.ImageView):
     def __init__(
             self,
             sectorInfo: typing.Optional[travellermap.SectorInfo] = None,
-            scale: typing.Optional[float] = None,
+            scale: typing.Optional[int] = None,
             *args,
             **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -834,7 +834,7 @@ class _MapImageView(gui.ImageView):
     def setMapImage(
             self,
             sectorInfo: typing.Optional[travellermap.SectorInfo],
-            scale: typing.Optional[float],
+            scale: typing.Optional[int],
             ) -> bool:
         self.clear()
 
