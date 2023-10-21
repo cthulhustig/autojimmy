@@ -102,7 +102,7 @@ class TileClient(object):
         try:
             with urllib.request.urlopen(url=url, timeout=timeout) as response:
                 info = response.info()
-                contentType = info.get('Content-Type').lower()
+                contentType = info.get('Content-Type')
                 mapFormat = travellermap.mimeTypeToMapFormat(contentType)
                 if not mapFormat:
                     raise RuntimeError(f'Unknown format {contentType}')
