@@ -961,6 +961,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._mapGraphicsView.setMapImage(
             sectorInfo=self._mapSelectComboBox.sectorInfo(),
             scale=self._mapSelectComboBox.currentScale())
+        self._mapGraphicsView.zoomToFit()
 
     def _syncSectorDataControls(
             self,
