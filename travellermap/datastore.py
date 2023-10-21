@@ -516,7 +516,9 @@ class DataStore(object):
 
                     logging.debug(
                         f'Loaded sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
-                    # TODO: Do something if there is a name conflict with a custom sector
+                    # TODO: Do something if there is a name conflict with a custom sector. No mater what pre-checking
+                    # is done this is still a technical possibility if a new sector was added to Traveller Map which
+                    # happened to have the same name as a custom sector
                     sectorNameMap[sector.canonicalName()] = sector
 
                 self._milieuMap[milieu] = sectorNameMap
