@@ -27,6 +27,7 @@ class WorldManager(object):
     _milieu = travellermap.Milieu.M1105 # Same default as Traveller Map
     _sectorList: typing.List[traveller.Sector] = []
     _sectorNameMap: typing.Dict[str, traveller.Sector] = {}
+    _alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
 
@@ -97,40 +98,29 @@ class WorldManager(object):
                 self._sectorList.append(sector)
                 self._sectorPositionMap[(sectorInfo.x(), sectorInfo.y())] = sector
 
-                # Sectors can have multiple names. We have a single sector object that uses the
-                # first name but multiple entries in the sector name map (but only a single entry
-                # in the position map). The name is converted to lower case before storing in the
-                # map to allow for case insensitive searching
-                # The canonical name is ALWAYS added to the sector name map and it's important it's
-                # never overwritten by an alternate name/abbreviation for another sector. When
-                # adding other names to the map they should always check that there isn't already
-                # a sector using that name
+                # Add canonical name to the main name map. The name is added lower case as lookups are
+                # case insensitive
                 self._sectorNameMap[sectorInfo.canonicalName().lower()] = sector
 
+                # Add alternate names and abbreviations to the alternate name map
                 alternateNames = sector.alternateNames()
                 if alternateNames:
                     for alternateName in alternateNames:
                         alternateName = alternateName.lower()
-                        conflictSector = self._sectorNameMap.get(alternateName)
-                        if not conflictSector:
-                            self._sectorNameMap[alternateName] = sector
-                        elif conflictSector != sector:
-                            # Only log at info as this does happen in standard data however it is a sign of
-                            # potential issues, especially when dealing with custom sectors
-                            logging.info(f'World manager unable to add alternate sector name {alternateName} for sector {sectorInfo.canonicalName()} to name map as it\'s already in use by sector {conflictSector.name()}')
+                        sectorList = self._alternateNameMap.get(alternateName)
+                        if not sectorList:
+                            sectorList = []
+                            self._alternateNameMap[alternateName] = sectorList
+                        sectorList.append(sector)
 
-                # If the sector has an abbreviation add it to the name map if there's not a sector
-                # that already has that abbreviation/name
                 abbreviation = sector.abbreviation()
                 if abbreviation:
                     abbreviation = abbreviation.lower()
-                    conflictSector = self._sectorNameMap.get(abbreviation)
-                    if not conflictSector:
-                        self._sectorNameMap[abbreviation] = sector
-                    elif conflictSector != sector:
-                        # Only log at info as this does happen in standard data however it is a sign of
-                        # potential issues, especially when dealing with custom sectors
-                        logging.info(f'World manager unable to add abbreviation {abbreviation} for sector {sectorInfo.canonicalName()} to name map as it\'s already in use by sector {conflictSector.name()}')
+                    sectorList = self._alternateNameMap.get(abbreviation)
+                    if not sectorList:
+                        sectorList = []
+                        self._alternateNameMap[abbreviation] = sectorList
+                    sectorList.append(sector)
 
                 for subsector in sector.subsectors():
                     subsectorName = subsector.name()
@@ -240,7 +230,7 @@ class WorldManager(object):
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
-        searchLists = None
+        worldLists = None
         result = self._SectorSearchHintPattern.match(searchString)
         if result:
             # We've matched the sector search hint pattern so check to see if the hint is actually
@@ -253,23 +243,32 @@ class WorldManager(object):
             # Sector name lookup is case insensitive. The sector name map stores sector names in
             # lower so search name should be converted to lower case before searching
             sectorString = sectorString.lower()
-            searchLists = []
+            worldLists = set()
 
-            if sectorString in self._sectorNameMap:
+            canonicalSector = self._sectorNameMap.get(sectorString)
+            if canonicalSector:
                 # Search the worlds in the specified sector
-                searchLists.append(self._sectorNameMap[sectorString])
+                worldLists.add(canonicalSector)
                 searchString = worldString
 
-            if sectorString in self._subsectorNameMap:
-                # Search the worlds in the specified subsector(s). There are multiple subsectors with
-                # the same name so this may require searching multiple subsectors
-                searchLists.extend(self._subsectorNameMap[sectorString])
+            alternateSectors = self._alternateNameMap.get(sectorString)
+            if alternateSectors:
+                for sector in alternateSectors:
+                    worldLists.add(sector)
                 searchString = worldString
 
-        if not searchLists:
+            subsectors = self._subsectorNameMap.get(sectorString)
+            if subsectors:
+                for subsector in subsectors:
+                    # Search the worlds in the specified subsector(s). There are multiple subsectors with
+                    # the same name so this may require searching multiple subsectors
+                    worldLists.add(subsector)
+                searchString = worldString
+
+        if not worldLists:
             # Search the worlds in all sectors. This will happen if no sector/subsector is specified
             # _or_ if the specified sector/subsector is unknown
-            searchLists = self._sectorList
+            worldLists = self._sectorList
 
         # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
         # will match the world without needing to specify wild cards
@@ -284,7 +283,7 @@ class WorldManager(object):
         # Katoonah subsector in the Katoonah sector, this is actually an even more special case as
         # there is also a Tristan in the Kherrou subsector which is also in the Kherrou sector).
         foundWorlds: typing.Set[traveller.World] = set()
-        for worldList in searchLists:
+        for worldList in worldLists:
             for world in worldList:
                 if searchExpression.match(world.name()):
                     foundWorlds.add(world)
