@@ -724,10 +724,10 @@ class DataStore(object):
             if 'MapLevels' in sectorInfo:
                 mapLevels = {}
                 for mapLevel in sectorInfo['MapLevels']:
-                    mapFormat = travellermap.mimeTypeToMapFormat(
-                        mimeType=str(mapLevel['MimeType']))
+                    mimeType = str(mapLevel['MimeType'])
+                    mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
                     if not mapFormat:
-                        logging.warning(f'Ignoring map level for {canonicalName} in {milieu.value} as it has an unknown format {formatString}')
+                        logging.warning(f'Ignoring map level for {canonicalName} in {milieu.value} as it has an unsupported mime type {mimeType}')
                         continue
 
                     mapLevel = MapLevel(
