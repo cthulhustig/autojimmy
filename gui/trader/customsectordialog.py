@@ -170,6 +170,11 @@ class _NewSectorDialog(gui.DialogEx):
     _XmlFileFilter = 'XML Files(*.xml)'
     _AllFileFilter = 'All Files(*.*)'
 
+    _CandyStyleWarning = \
+        'Using the candy style isn\'t recommended for custom sector maps. The method used to merge ' + \
+        'the custom maps into the tile data returned by Traveller Map can result in significant ' + \
+        'graphical issues where a custom sector borders other sectors.'
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -446,6 +451,16 @@ class _NewSectorDialog(gui.DialogEx):
 
     def _createClicked(self) -> None:
         try:
+            renderStyle = self._renderStyleComboBox.currentEnum()
+            if renderStyle == travellermap.Style.Candy:
+                answer = gui.AutoSelectMessageBox.question(
+                    text=_NewSectorDialog._CandyStyleWarning + \
+                        '\nDo you want to continue?\n', # Extra trialling \n is intentional for padding
+                    stateKey='CreateCandyCustomSectorMaps',
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
+                if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                    return
+
             # Always send poster requests directly to the configured traveller map instance.
             # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
             # to add support for proxying multipart/form-data
@@ -471,7 +486,7 @@ class _NewSectorDialog(gui.DialogEx):
                 mapUrl=mapUrl,
                 sectorData=self._sectorData,
                 sectorMetadata=self._sectorMetadata,
-                style=self._renderStyleComboBox.currentEnum(),
+                style=renderStyle,
                 options=self._renderOptionList(),
                 scales=_CustomMapScales,
                 compositing=True)
