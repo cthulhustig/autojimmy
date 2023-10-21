@@ -80,7 +80,7 @@ class _PosterJobDialog(QtWidgets.QDialog):
         try:
             self._job.run()
         except Exception as ex:
-            message = 'Failed to start download job'
+            message = 'Failed to start poster job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -165,6 +165,185 @@ class _PosterJobDialog(QtWidgets.QDialog):
             text = ''
         text += '.'
         self._generatingLabel.setText(text)
+
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class _LintJobDialog(QtWidgets.QDialog):
+    _GeneratingProgressDotCount = 5
+
+    def __init__(
+            self,
+            title: str,
+            job: jobs.LintJobAsync,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
+
+        self._job = job
+        self._job.complete.connect(self._jobComplete)
+        self._job.progress.connect(self._jobEvent)
+        self._results = None
+        self._lintingTimer = QtCore.QTimer()
+        self._lintingTimer.timeout.connect(self._lintingTimerFired)
+        self._lintingTimer.setInterval(500)
+        self._lintingTimer.setSingleShot(False)
+
+        self._fileLabel = gui.PrefixLabel(prefix='File: ')
+        self._uploadingLabel = gui.PrefixLabel(prefix='Uploading: ')
+        self._lintingLabel = gui.PrefixLabel(prefix='Linting: ')
+        self._downloadingLabel = gui.PrefixLabel(prefix='Downloading: ')
+
+        progressLayout = QtWidgets.QVBoxLayout()
+        progressLayout.addWidget(self._fileLabel)
+        progressLayout.addWidget(self._uploadingLabel)
+        progressLayout.addWidget(self._lintingLabel)
+        progressLayout.addWidget(self._downloadingLabel)
+
+        progressGroupBox = QtWidgets.QGroupBox()
+        progressGroupBox.setLayout(progressLayout)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self._cancelJob)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(progressGroupBox)
+        windowLayout.addWidget(self._cancelButton)
+
+        self.setWindowTitle(title)
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setSizeGripEnabled(False)
+        self.setLayout(windowLayout)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
+
+    def results(self) -> typing.Optional[typing.Mapping[jobs.LintJobAsync.Stage, jobs.LintJobAsync.LinterResult]]:
+        return self._results
+
+    def exec(self) -> int:
+        try:
+            self._job.run()
+        except Exception as ex:
+            message = 'Failed to start lint job'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
+            # the window is shown
+            QtCore.QTimer.singleShot(0, self.close)
+
+        return super().exec()
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self._job:
+            self._job.cancel()
+        return super().closeEvent(a0)
+
+    def _cancelJob(self) -> None:
+        if self._job:
+            self._job.cancel()
+        self.close()
+
+    def _jobComplete(
+            self,
+            result: typing.Union[typing.Mapping[jobs.LintJobAsync.Stage, jobs.LintJobAsync.LinterResult], Exception]
+            ) -> None:
+        self._lintingTimer.stop()
+
+        if isinstance(result, Exception):
+            message = 'Map creation job failed'
+            logging.critical(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+        else:
+            self._results = result
+            self.accept()
+
+    def _jobEvent(
+            self,
+            event: jobs.LintJobAsync.ProgressEvent,
+            stage: jobs.LintJobAsync.Stage,
+            currentBytes: int,
+            totalBytes: int
+            ) -> None:
+        self._fileLabel.setText(stage.name)
+
+        if totalBytes > 0:
+            progressText = common.humanFriendlyByteSizes(currentBytes) + ' / ' + \
+                common.humanFriendlyByteSizes(totalBytes)
+        else:
+            progressText = common.humanFriendlyByteSizes(currentBytes)
+
+        if event == jobs.LintJobAsync.ProgressEvent.Uploading:
+            if currentBytes == 0:
+                self._lintingLabel.setText('')
+                self._downloadingLabel.setText('')
+
+            self._uploadingLabel.setText(progressText)
+
+            if currentBytes == totalBytes:
+                self._lintingTimer.start()
+        elif event == jobs.LintJobAsync.ProgressEvent.Downloading:
+            if currentBytes == 0:
+                self._lintingTimer.stop()
+                self._lintingLabel.setText('Complete')
+
+            self._downloadingLabel.setText(progressText)
+
+    def _lintingTimerFired(self) -> None:
+        text = self._lintingLabel.text()
+        if (len(text) % _LintJobDialog._GeneratingProgressDotCount) == 0:
+            text = ''
+        text += '.'
+        self._lintingLabel.setText(text)
+
+class _LintJobResultsDialog(gui.DialogEx):
+    def __init__(
+            self,
+            results: typing.Mapping[jobs.LintJobAsync.Stage, jobs.LintJobAsync.LinterResult],
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            title='Linter Results',
+            configSection='LinterResultsDialog',
+            parent=parent)
+        
+        self._tabWidget = gui.TabWidgetEx()
+        for stage, result in results.items():
+            textWidget = gui.TextEditEx()
+            if result.mimeType().lower().startswith('text/html'):
+                textWidget.setHtml(result.content())
+            else:
+                textWidget.setPlainText(result.content())
+            textWidget.setReadOnly(True)
+            self._tabWidget.addTab(textWidget, stage.name)
+
+        self._closeButton = QtWidgets.QPushButton('Close')
+        self._closeButton.clicked.connect(self.close)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self._closeButton)               
+
+        dialogLayout = QtWidgets.QVBoxLayout()
+        dialogLayout.addWidget(self._tabWidget)
+        dialogLayout.addLayout(buttonLayout)
+
+        self.setLayout(dialogLayout)
 
 class _NewSectorDialog(gui.DialogEx):
     _XmlFileFilter = 'XML Files(*.xml)'
@@ -405,6 +584,17 @@ class _NewSectorDialog(gui.DialogEx):
         self._renderOptionsGroupBox.setLayout(groupLayout)
 
     def _setupDialogButtons(self):
+        metadataFileTooltip = gui.createStringToolTip(
+            '<p>Linting uploads your sector and metadata files to Traveller Map so it can check them for problems.</p>' +
+            '<p>It\'s advisable to do this before trying to create a custom sector as, when creating the map ' +
+            'images, Traveller Map will ignore most errors resulting in worlds with errors not being rendered ' +
+            'correctly.</p>',
+            escape=False)    
+                
+        self._lintButton = QtWidgets.QPushButton('Lint...')
+        self._lintButton.setToolTip(metadataFileTooltip)
+        self._lintButton.clicked.connect(self._lintClicked)
+
         self._createButton = QtWidgets.QPushButton('Create')
         self._createButton.setDefault(True)
         self._createButton.clicked.connect(self._createClicked)
@@ -413,6 +603,7 @@ class _NewSectorDialog(gui.DialogEx):
         self._cancelButton.clicked.connect(self.reject)
 
         self._buttonLayout = QtWidgets.QHBoxLayout()
+        self._buttonLayout.addWidget(self._lintButton)
         self._buttonLayout.addStretch()
         self._buttonLayout.addWidget(self._createButton)
         self._buttonLayout.addWidget(self._cancelButton)
@@ -551,6 +742,69 @@ class _NewSectorDialog(gui.DialogEx):
             return
 
         self.accept()
+
+    def _lintClicked(self) -> None:
+        try:
+            # Always send linter requests directly to the configured traveller map instance.
+            # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
+            # to add support for proxying multipart/form-data
+            mapUrl = app.Config.instance().travellerMapUrl()
+
+            # Try to parse the sector format now to prevent it failing after the user has waited
+            # to create the posters. This is only really needed for cases where Traveller Map is
+            # happy with the format but my parser isn't
+            try:
+                sectorFilePath = self._sectorFileLineEdit.text()
+                with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
+                    self._sectorData = file.read()
+            except Exception as ex:
+                message = 'Failed to load sector file.'
+                logging.critical(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+                return
+        
+            try:
+                metadataFilePath = self._metadataFileLineEdit.text()
+                with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
+                    self._sectorMetadata = file.read()
+            except Exception as ex:
+                message = 'Failed to load metadata file.'
+                logging.critical(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+                return
+
+            lintJob = jobs.LintJobAsync(
+                parent=self,
+                mapUrl=mapUrl,
+                sectorData=self._sectorData,
+                sectorMetadata=self._sectorMetadata)
+            progressDlg = _LintJobDialog(
+                title='Linting',
+                job=lintJob)
+            if progressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+                return
+            results = lintJob.results()
+        except Exception as ex:
+            message = 'Failed to lint data.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        if not results:
+            gui.MessageBoxEx.information(
+                text='The Traveller Map linter reported no errors or warnings in your sector or metadata files')
+        else:
+            dlg = _LintJobResultsDialog(results=results)
+            dlg.exec()
 
     def _renderOptionList(self) -> typing.Iterable[travellermap.Option]:
         renderOptions = []

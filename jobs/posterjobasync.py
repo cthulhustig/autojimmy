@@ -90,7 +90,7 @@ class PosterJobAsync(QtCore.QObject):
             lambda current, total: self._requestDownloadProgress(index, current, total))
         self._request.post(
             url=url,
-            data=self._data,
+            content=self._data,
             loop=asyncio.get_event_loop())
 
     def _requestCompleted(

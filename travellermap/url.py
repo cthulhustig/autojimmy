@@ -107,6 +107,12 @@ def formatPosterUrl(
         url += '?' + ('&'.join(queryList))
     return url
 
+def formatPosterLintUrl(baseMapUrl: str) -> str:
+    return urllib.parse.urljoin(baseMapUrl, 'api/poster?lint=1')
+
+def formatMetadataLintUrl(baseMapUrl: str) -> str:
+    return urllib.parse.urljoin(baseMapUrl, 'api/metadata?lint=1')
+
 def _createCommonQueryList(
         milieu: typing.Optional[travellermap.Milieu] = None,
         style: typing.Optional[travellermap.Style] = None,

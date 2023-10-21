@@ -77,7 +77,7 @@ class AsyncRequest(QtCore.QObject):
                 name: str,
                 data: bytes,
                 callback=typing.Callable[[int, int], typing.Any]
-                ):
+                ) -> None:
             self._name = name
             self._data = io.BytesIO(data)
             self._callback = callback
@@ -119,7 +119,6 @@ class AsyncRequest(QtCore.QObject):
     def get(
             self,
             url,
-            data: typing.Optional[typing.Dict[str, str]],
             timeout: typing.Optional[float],
             loop: typing.Optional[asyncio.AbstractEventLoop] = None # None means use current loop
             ) -> None:
@@ -127,7 +126,7 @@ class AsyncRequest(QtCore.QObject):
             self._teardown() # Making a new request cancels any in progress request
 
             self._requestTask = asyncio.ensure_future(
-                self._getRequestAsync(url, data),
+                self._getRequestAsync(url),
                 loop=loop)
 
             if timeout != None:
@@ -140,7 +139,7 @@ class AsyncRequest(QtCore.QObject):
     def post(
             self,
             url,
-            data: typing.Optional[typing.Dict[str, str]],
+            content: typing.Optional[typing.Union[bytes, str, typing.Mapping[str, typing.Union[bytes, str]]]],
             timeout: typing.Optional[float] = None,
             loop: typing.Optional[asyncio.AbstractEventLoop] = None # None means use current loop
             ) -> None:
@@ -148,7 +147,7 @@ class AsyncRequest(QtCore.QObject):
             self._teardown() # Making a new request cancels any in progress request
 
             self._requestTask = asyncio.ensure_future(
-                self._postRequestAsync(url, data.copy()),
+                self._postRequestAsync(url, content),
                 loop=loop)
 
             if timeout != None:
@@ -161,7 +160,7 @@ class AsyncRequest(QtCore.QObject):
     async def _getRequestAsync(
             self,
             url: str
-            ):
+            ) -> None:
         try:
             logging.info(f'Starting async GET request for {url}')
 
@@ -185,7 +184,9 @@ class AsyncRequest(QtCore.QObject):
                 headers=headers,
                 content=content)
         except Exception as ex:
-            logging.critical(f'Async GET request for {url} failed', exc_info=ex)
+            # Log errors are debug level, it's really up to the observer to log. In some cases errors are
+            # expected (e.g. when linting if there are errors in the data)
+            logging.debug(f'Async GET request for {url} failed', exc_info=ex)
             self.complete[object].emit(ex)
         finally:
             self._teardown()
@@ -193,15 +194,14 @@ class AsyncRequest(QtCore.QObject):
     async def _postRequestAsync(
             self,
             url: str,
-            data: typing.Optional[typing.Dict[str, typing.Union[str, bytes]]],
-            ):
+            content: typing.Optional[typing.Union[bytes, str, typing.Mapping[str, typing.Union[bytes, str]]]],
+            ) -> None:
         try:
             logging.info(f'Starting async POST request to {url}')
 
-            formData = None
-            if data:
-                formData = aiohttp.FormData()
-                for key, value in data.items():
+            if isinstance(content, dict):
+                data = data = aiohttp.FormData()
+                for key, value in content.items():
                     if isinstance(value, str):
                         value = value.encode()
 
@@ -209,10 +209,12 @@ class AsyncRequest(QtCore.QObject):
                         name=key,
                         data=value,
                         callback=self._updateUploadProgress)
-                    formData.add_field(key, dataWrapper)
+                    data.add_field(key, dataWrapper)
+            else:
+                data = content
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(url=url, data=formData) as response:
+                async with session.post(url=url, data=data) as response:
                     status = response.status
                     reason = response.reason
                     headers = response.headers.copy()
@@ -231,7 +233,9 @@ class AsyncRequest(QtCore.QObject):
                 headers=headers,
                 content=content)
         except Exception as ex:
-            logging.critical(f'Async POST request to {url} failed', exc_info=ex)
+            # Log errors are debug level, it's really up to the observer to log. In some cases errors are
+            # expected (e.g. when linting if there are errors in the data)
+            logging.debug(f'Async POST request to {url} failed', exc_info=ex)
             self.complete[object].emit(ex)
         finally:
             self._teardown()
@@ -239,7 +243,7 @@ class AsyncRequest(QtCore.QObject):
     async def _timeoutRequestAsync(
             self,
             timeout: float
-            ):
+            ) -> None:
         await asyncio.sleep(timeout)
         self.complete[object].emit(AsyncRequest.TimeoutException())
         self._teardown()
