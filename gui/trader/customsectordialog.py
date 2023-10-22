@@ -657,6 +657,43 @@ class _NewSectorDialog(gui.DialogEx):
             # to add support for proxying multipart/form-data
             mapUrl = app.Config.instance().travellerMapUrl()
 
+            try:
+                metadataFilePath = self._metadataFileLineEdit.text()
+                with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
+                    self._sectorMetadata = file.read()
+
+                travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
+
+                rawMetadata = travellermap.parseXMLMetadata(
+                    content=self._sectorMetadata,
+                    identifier=metadataFilePath)
+                sectorX = rawMetadata.x()
+                sectorY = rawMetadata.y()
+                
+                # Check that there aren't any custom sectors at the same location
+                existingSector = travellermap.DataStore.instance().sectorAt(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    milieu=app.Config.instance().milieu())
+                if existingSector and existingSector.isCustomSector():
+                    raise RuntimeError(f'There is already a custom sector located at ({sectorX}, {sectorY})')
+
+                # Check that there aren't any sectors with the same name at a different location (a sector
+                # with the same name at the same location is allowed as it will be replaced)
+                existingSector = travellermap.DataStore.instance().sector(
+                    sectorName=rawMetadata.canonicalName(),
+                    milieu=app.Config.instance().milieu())
+                if existingSector and ((sectorX != existingSector.x()) or (sectorY != existingSector.y())):
+                    raise RuntimeError(f'There is already a sector named {rawMetadata.canonicalName()}')
+            except Exception as ex:
+                message = 'Metadata file validation failed.'
+                logging.critical(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+                return            
+
             # Try to parse the sector format now to prevent it failing after the user has waited
             # to create the posters. This is only really needed for cases where Traveller Map is
             # happy with the format but my parser isn't
@@ -680,27 +717,6 @@ class _NewSectorDialog(gui.DialogEx):
                     text=message,
                     exception=ex)
                 return
-        
-            try:
-                metadataFilePath = self._metadataFileLineEdit.text()
-                with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
-                    self._sectorMetadata = file.read()
-
-                travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
-            except Exception as ex:
-                message = 'Metadata file validation failed.'
-                logging.critical(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-                return
-
-            # TODO: Check for name conflicts with existing sectors. I think this will pretty much
-            # need to mirror whatever checks DataStore.createCustomSector will do in order to
-            # prevent the case where the user waits ages for posters to be generated only for
-            # creation to fail due to DataStore rejecting it.
-            # TODO: Check that a custom sector doesn't already exist at the same location
 
             posterJob = jobs.PosterJobAsync(
                 parent=self,

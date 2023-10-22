@@ -10,6 +10,7 @@ import typing
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
     _SectorSearchHintPattern = re.compile('^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
+    _SectorHexPattern = re.compile('^(.*) (\d{4})$')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -165,14 +166,32 @@ class WorldManager(object):
         # Sector name lookup is case insensitive. The sector name map stores sector names in lower
         # so search name should be converted to lower case before searching
         sectorName = sectorName.lower()
-        sector: traveller.Sector = self._sectorNameMap.get(sectorName)
-        if not sector:
-            # Return None rather than throwing an exception, some of the Second Survey data has
-            # invalid sector names (example: The owner of Seddon has a sector hex of Zaru-2340 but
-            # Zaru isn't a sector (it's a sub sector))
-            return None
+        sector = self._sectorNameMap.get(sectorName)
+        if sector:
+            return sector.worldByPosition(x=worldX, y=worldY)
+        
+        # Make a best effort attempt to find the world by looking at abbreviations/alternate names
+        # and subsector names. This is important as in some places the official data does ths for
+        # things like owner/colony worlds sector hexes. These names are not guaranteed to be unique
+        # so the first found world will be returned
+        
+        # Check to see if the sector name is as a alternate name
+        sectors = self._alternateNameMap.get(sectorName)
+        if sectors:
+            for sector in sectors:
+                world = sector.worldByPosition(x=worldX, y=worldY)
+                if world:
+                    return world
+        
+        # Check to see if the sector name is as actually a subsector name
+        subsectors = self._subsectorNameMap.get(sectorName)
+        if subsectors:
+            for subsector in subsectors:
+                world = subsector.worldByPosition(x=worldX, y=worldY)
+                if world:
+                    return world
 
-        return sector.worldByPosition(x=worldX, y=worldY)
+        return None
 
     # Reimplementation of code from Traveller Map source code (Sectors in Selector.cs)
     # NOTE: The results for this are not limited to the sector specified by sectorName. It, when
@@ -232,38 +251,39 @@ class WorldManager(object):
             ) -> typing.List[traveller.World]:
         worldLists = None
         result = self._SectorSearchHintPattern.match(searchString)
+        filterString = searchString
         if result:
             # We've matched the sector search hint pattern so check to see if the hint is actually
             # a known sector. If it is then perform the search with just the world portion of the
             # search string and filter the results afterwards. If it's not a known sector then just
             # perform the search with the full search string as normal
             worldString = result.group(1)
-            sectorString = result.group(2)
+            hintString = result.group(2)
 
             # Sector name lookup is case insensitive. The sector name map stores sector names in
             # lower so search name should be converted to lower case before searching
-            sectorString = sectorString.lower()
+            hintString = hintString.lower()
             worldLists = set()
 
-            canonicalSector = self._sectorNameMap.get(sectorString)
+            canonicalSector = self._sectorNameMap.get(hintString)
             if canonicalSector:
                 # Search the worlds in the specified sector
                 worldLists.add(canonicalSector)
-                searchString = worldString
+                filterString = worldString
 
-            alternateSectors = self._alternateNameMap.get(sectorString)
+            alternateSectors = self._alternateNameMap.get(hintString)
             if alternateSectors:
                 for sector in alternateSectors:
                     worldLists.add(sector)
-                searchString = worldString
+                filterString = worldString
 
-            subsectors = self._subsectorNameMap.get(sectorString)
+            subsectors = self._subsectorNameMap.get(hintString)
             if subsectors:
                 for subsector in subsectors:
                     # Search the worlds in the specified subsector(s). There are multiple subsectors with
                     # the same name so this may require searching multiple subsectors
                     worldLists.add(subsector)
-                searchString = worldString
+                filterString = worldString
 
         if not worldLists:
             # Search the worlds in all sectors. This will happen if no sector/subsector is specified
@@ -272,10 +292,10 @@ class WorldManager(object):
 
         # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
         # will match the world without needing to specify wild cards
-        if searchString[-1:] != '*':
-            searchString += '*'
+        if filterString[-1:] != '*':
+            filterString += '*'
         searchExpression = re.compile(
-            fnmatch.translate(searchString),
+            fnmatch.translate(filterString),
             re.IGNORECASE)
 
         # Use a set for storing found worlds to avoid duplicates of the same world. This can happen
@@ -289,6 +309,15 @@ class WorldManager(object):
                     foundWorlds.add(world)
                     if maxResults and len(foundWorlds) >= maxResults:
                         return list(foundWorlds)
+
+        # If the search string matches the sector hex format try to look up the world and add it
+        # to the list
+        result = self._SectorHexPattern.match(searchString)
+        if result:
+            foundWorld = self.world(sectorHex=searchString)
+            if foundWorld:
+                foundWorlds.add(foundWorld)
+
         return list(foundWorlds) # Convert to a list for ease of use by consumers
 
     @staticmethod

@@ -159,6 +159,31 @@ class DataStore(object):
         self._loadAllSectors()
         with self._lock:
             return list(self._milieuMap[milieu].values())
+        
+    def sector(
+            self,
+            sectorName: str,
+            milieu: travellermap.Milieu
+            ) -> typing.Optional[SectorInfo]:
+        self._loadAllSectors()
+        with self._lock:
+            sectors = self._milieuMap[milieu]
+            return sectors.get(sectorName)
+        
+    def sectorAt(
+            self,
+            sectorX: int,
+            sectorY: int,
+            milieu: travellermap.Milieu
+            ) -> typing.Optional[SectorInfo]:
+        self._loadAllSectors()
+        with self._lock:
+            # TODO: Iterating over all sectors is inefficient
+            for sector in self._milieuMap[milieu].values():
+                assert(isinstance(sector, SectorInfo))
+                if (sectorX == sector.x()) and (sectorY == sector.y()):
+                    return sector
+        return None
 
     def sectorFileData(
             self,
@@ -353,36 +378,15 @@ class DataStore(object):
         os.makedirs(milieuDirPath, exist_ok=True)
 
         with self._lock:
-            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
+            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu)
             if sectors:
-                # Check for sectors with the same name
-                # TODO: This should also check alternate names and abbreviations as they are all getting munged into
-                # the sector name map in world manager so conflicts could hide legitimate sectors. I'm not sure why
-                # abbreviations go in there, is there some data somewhere that refers to it (owner worlds etc) or
-                # was it just a convenience so the user can search by abbreviation?
-                # TODO: It might need to include subsector names as well 
-                existingSector = sectors.get(metadata.canonicalName())
-                if existingSector:
-                    if existingSector.isCustomSector():
-                        raise RuntimeError(
-                            'Unable to create custom sector {newName} in {milieu} as there is a already a custom sector with that name'.format(
-                                newName=metadata.canonicalName(),
-                                milieu=milieu.value))
-
-                    if metadata.x() != existingSector.x() or \
-                            metadata.y() != existingSector.y():
-                        raise RuntimeError(
-                            'Unable to create custom sector {newName} in {milieu} as there is a standard sector with the same name at a different location'.format(
-                                newName=metadata.canonicalName(),
-                                milieu=milieu.value))
-
                 # Check for custom sectors at the same location
                 for existingSector in sectors.values():
+                    assert(isinstance(existingSector, SectorInfo))
                     if not existingSector.isCustomSector():
                         continue
 
-                    if metadata.x() == existingSector.x() and \
-                            metadata.y() == existingSector.y():
+                    if (metadata.x() == existingSector.x()) and (metadata.y() == existingSector.y()):
                         raise RuntimeError(
                             'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
                                 newName=metadata.canonicalName(),
@@ -390,6 +394,16 @@ class DataStore(object):
                                 existingName=existingSector.canonicalName(),
                                 x=metadata.x(),
                                 y=metadata.y()))
+                    
+                # Check for sectors with the same name but different locations
+                existingSector = sectors.get(metadata.canonicalName())
+                if existingSector:
+                    assert(isinstance(existingSector, SectorInfo))
+                    if (metadata.x() != existingSector.x()) or (metadata.y() != existingSector.y()):
+                        raise RuntimeError(
+                            'Unable to create custom sector {newName} in {milieu} as there is a already a sector with that name'.format(
+                                newName=metadata.canonicalName(),
+                                milieu=milieu.value))
                     
             escapedSectorName = common.encodeFileName(rawFileName=metadata.canonicalName())
 
@@ -526,36 +540,42 @@ class DataStore(object):
 
             self._milieuMap = {}
             for milieu in travellermap.Milieu:
-                sectorNameMap: typing.Dict[str, SectorInfo] = {}
-                sectorPosMap: typing.Dict[typing.Tuple[int, int], SectorInfo] = {}
+                customSectorPosMap: typing.Dict[typing.Tuple[int, int], SectorInfo] = {}
+                customSectorNameMap: typing.Dict[str, SectorInfo] = {}
+                loadedSectorNameMap: typing.Dict[str, SectorInfo] = {}
 
-                sectors = self._loadMilieuSectors(
+                loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     useCustomMapDir=True)
-                for sector in sectors:
+                for sector in loadedSectors:
                     logging.debug(
                         f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
-                    sectorNameMap[sector.canonicalName()] = sector
-                    sectorPosMap[(sector.x(), sector.y())] = sector
+                    customSectorPosMap[(sector.x(), sector.y())] = sector
+                    customSectorNameMap[sector.canonicalName()] = sector
+                    loadedSectorNameMap[sector.canonicalName()] = sector
 
-                sectors = self._loadMilieuSectors(
+                loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     useCustomMapDir=False)
-                for sector in sectors:
-                    conflictSector = sectorPosMap.get((sector.x(), sector.y()))
+                
+                for sector in loadedSectors:
+                    conflictSector = customSectorPosMap.get((sector.x(), sector.y()))
                     if conflictSector:
                         logging.warning(
                             f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same position as custom sector {conflictSector.canonicalName()}')
                         continue
 
+                    conflictSector = customSectorNameMap.get(sector.canonicalName())
+                    if conflictSector:
+                        logging.warning(
+                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same name as a custom sector at ({conflictSector.x()}, {conflictSector.y()})')                    
+                        continue
+
                     logging.debug(
                         f'Loaded sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
-                    # TODO: Do something if there is a name conflict with a custom sector. No mater what pre-checking
-                    # is done this is still a technical possibility if a new sector was added to Traveller Map which
-                    # happened to have the same name as a custom sector
-                    sectorNameMap[sector.canonicalName()] = sector
+                    loadedSectorNameMap[sector.canonicalName()] = sector
 
-                self._milieuMap[milieu] = sectorNameMap
+                self._milieuMap[milieu] = loadedSectorNameMap
 
     def _checkOverlayAge(self) -> None:
         if not os.path.exists(self._overlayDir):
