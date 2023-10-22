@@ -27,7 +27,7 @@ class WorldManager(object):
     _lock = threading.Lock()
     _milieu = travellermap.Milieu.M1105 # Same default as Traveller Map
     _sectorList: typing.List[traveller.Sector] = []
-    _sectorNameMap: typing.Dict[str, traveller.Sector] = {}
+    _canonicalNameMap: typing.Dict[str, traveller.Sector] = {}
     _alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
@@ -63,12 +63,12 @@ class WorldManager(object):
         # means, if the sectors are found to not be loaded, we need to check again after we've
         # acquired the lock as another thread could sneak in and load the sectors between this
         # point and the point where we acquire the lock
-        if self._sectorNameMap:
+        if self._canonicalNameMap:
             return # Sector map already loaded
 
         # Acquire lock while loading sectors
         with self._lock:
-            if self._sectorNameMap:
+            if self._canonicalNameMap:
                 # Another thread already loaded the sectors between the point we found they
                 # weren't loaded and the point it acquired the mutex.
                 return
@@ -101,7 +101,7 @@ class WorldManager(object):
 
                 # Add canonical name to the main name map. The name is added lower case as lookups are
                 # case insensitive
-                self._sectorNameMap[sectorInfo.canonicalName().lower()] = sector
+                self._canonicalNameMap[sectorInfo.canonicalName().lower()] = sector
 
                 # Add alternate names and abbreviations to the alternate name map
                 alternateNames = sector.alternateNames()
@@ -152,7 +152,7 @@ class WorldManager(object):
             self,
             name: str
             ) -> traveller.Sector:
-        return self._sectorNameMap.get(name.lower())
+        return self._canonicalNameMap.get(name.lower())
 
     def sectors(self) -> typing.Iterable[traveller.Sector]:
         return self._sectorList
@@ -166,9 +166,13 @@ class WorldManager(object):
         # Sector name lookup is case insensitive. The sector name map stores sector names in lower
         # so search name should be converted to lower case before searching
         sectorName = sectorName.lower()
-        sector = self._sectorNameMap.get(sectorName)
+
+        # Check to see if the sector name is a canonical sector name
+        sector = self._canonicalNameMap.get(sectorName)
         if sector:
-            return sector.worldByPosition(x=worldX, y=worldY)
+            world = sector.worldByPosition(x=worldX, y=worldY)
+            if world:
+                return world
         
         # Make a best effort attempt to find the world by looking at abbreviations/alternate names
         # and subsector names. This is important as in some places the official data does ths for
@@ -198,6 +202,7 @@ class WorldManager(object):
     # combined with worldX & worldY just give the center of the search radius. The name and x/y
     # values are basically sector hex but split out as its more efficient when this is being
     # called repeatedly as part of the jump route planning
+    # NOTE: For speed the sector name must be the canonical sector name
     def worldsInArea(
             self,
             sectorName: str,
@@ -209,7 +214,7 @@ class WorldManager(object):
         # Sector name lookup is case insensitive. The sector name map stores sector names in lower
         # so search name should be converted to lower case before searching
         sectorName = sectorName.lower()
-        sector = self._sectorNameMap.get(sectorName)
+        sector = self._canonicalNameMap.get(sectorName)
         if not sector:
             raise RuntimeError(f'Unknown sector "{sectorName}"')
 
@@ -265,7 +270,7 @@ class WorldManager(object):
             hintString = hintString.lower()
             worldLists = set()
 
-            canonicalSector = self._sectorNameMap.get(hintString)
+            canonicalSector = self._canonicalNameMap.get(hintString)
             if canonicalSector:
                 # Search the worlds in the specified sector
                 worldLists.add(canonicalSector)
