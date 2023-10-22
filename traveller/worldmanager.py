@@ -254,7 +254,7 @@ class WorldManager(object):
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
-        worldLists = None
+        searchWorldLists = None
         result = self._SectorSearchHintPattern.match(searchString)
         filterString = searchString
         if result:
@@ -265,65 +265,86 @@ class WorldManager(object):
             worldString = result.group(1)
             hintString = result.group(2)
 
-            # Sector name lookup is case insensitive. The sector name map stores sector names in
-            # lower so search name should be converted to lower case before searching
-            hintString = hintString.lower()
-            worldLists = set()
+            hintExpression = re.compile(
+                fnmatch.translate(hintString),
+                re.IGNORECASE)
+            
+            canonicalMatches = []
+            alternateMatches = []
+            subsectorMatches = []
 
-            canonicalSector = self._canonicalNameMap.get(hintString)
-            if canonicalSector:
-                # Search the worlds in the specified sector
-                worldLists.add(canonicalSector)
+            for sector in self._canonicalNameMap.values():
+                if hintExpression.match(sector.name()):
+                    # The hint matched the canonical sector name so search the whole sector for
+                    # worlds
+                    canonicalMatches.append(sector)
+
+                    # The sector has been added to the list of worlds to search so no need to check
+                    # alternate names or subsectors
+                    continue
+
+                alternateNames = sector.alternateNames()
+                if alternateNames:
+                    matched = False
+                    for alternateName in sector.alternateNames():
+                        if hintExpression.match(alternateName):
+                            matched = True
+                            break
+                    if matched:
+                        # The hint matched an alternate name or abbreviations so search the whole
+                        # sector for worlds
+                        alternateMatches.append(sector)
+
+                        # The sector has been added to the list of worlds to search so no need to
+                        # check subsectors
+                        continue
+
+                for subsector in sector.subsectors():
+                    if hintExpression.match(subsector.name()):
+                        # The hint matched a subsector name so search that subsector for worlds
+                        subsectorMatches.append(subsector)
+
+            # Order the matched world lists so all canonical matches are before all alternate matches
+            # then finally any subsector matches. Doing this means the final found world list will be
+            # in a consistent order
+            searchWorldLists = canonicalMatches + alternateMatches + subsectorMatches
+            if searchWorldLists:
                 filterString = worldString
 
-            alternateSectors = self._alternateNameMap.get(hintString)
-            if alternateSectors:
-                for sector in alternateSectors:
-                    worldLists.add(sector)
-                filterString = worldString
-
-            subsectors = self._subsectorNameMap.get(hintString)
-            if subsectors:
-                for subsector in subsectors:
-                    # Search the worlds in the specified subsector(s). There are multiple subsectors with
-                    # the same name so this may require searching multiple subsectors
-                    worldLists.add(subsector)
-                filterString = worldString
-
-        if not worldLists:
+        if not searchWorldLists:
             # Search the worlds in all sectors. This will happen if no sector/subsector is specified
             # _or_ if the specified sector/subsector is unknown
-            worldLists = self._sectorList
+            searchWorldLists = self._sectorList
 
         # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
         # will match the world without needing to specify wild cards
         if filterString[-1:] != '*':
             filterString += '*'
-        searchExpression = re.compile(
+        worldExpression = re.compile(
             fnmatch.translate(filterString),
             re.IGNORECASE)
 
-        # Use a set for storing found worlds to avoid duplicates of the same world. This can happen
-        # when the sector and subsector a world is in have the same name (e.g. Tristan is in the
-        # Katoonah subsector in the Katoonah sector, this is actually an even more special case as
-        # there is also a Tristan in the Kherrou subsector which is also in the Kherrou sector).
-        foundWorlds: typing.Set[traveller.World] = set()
-        for worldList in worldLists:
+        # IMPORTANT: In order for the list of found worlds to contain no duplicates this assumes
+        # that sectors will never appear on the list of world lists multiple times and a subsector
+        # will never be on the list if its sector is on the list
+        foundWorlds = []
+        for worldList in searchWorldLists:
             for world in worldList:
-                if searchExpression.match(world.name()):
-                    foundWorlds.add(world)
+                if worldExpression.match(world.name()):
+                    assert(world not in foundWorlds) # TODO: Remove temp assert (to slow)
+                    foundWorlds.append(world)
                     if maxResults and len(foundWorlds) >= maxResults:
-                        return list(foundWorlds)
+                        return foundWorlds
 
         # If the search string matches the sector hex format try to look up the world and add it
         # to the list
         result = self._SectorHexPattern.match(searchString)
         if result:
             foundWorld = self.world(sectorHex=searchString)
-            if foundWorld:
-                foundWorlds.add(foundWorld)
+            if foundWorld and (foundWorld not in foundWorlds):
+                foundWorlds.append(foundWorld)
 
-        return list(foundWorlds) # Convert to a list for ease of use by consumers
+        return foundWorlds
 
     @staticmethod
     def _loadSector(
