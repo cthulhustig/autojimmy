@@ -349,17 +349,17 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         # Enable this to add a red boundary to all tiles in order to highlight where they are
         """
-        if mapFormat:
-            with PIL.Image.open(data if isinstance(data, io.BytesIO) else io.BytesIO(data)) as image:
+        if mapImage:
+            with PIL.Image.open(mapBytes if isinstance(mapBytes, io.BytesIO) else io.BytesIO(mapBytes)) as image:
                 draw = PIL.ImageDraw.Draw(image)
                 draw.line([(0, 0), (0, image.height - 1)], fill="red", width=0)
                 draw.line([(0, image.height - 1), (image.width - 1, image.height - 1)], fill="red", width=0)
                 draw.line([(image.width - 1, image.height - 1), (image.width - 1, 0)], fill="red", width=0)
                 draw.line([(image.width - 1, 0), (0, 0)], fill="red", width=0)
-                data = io.BytesIO()
-                image.save(data, format=mapFormat.value)
-                data.seek(0)
-                data = data.read()
+                mapBytes = io.BytesIO()
+                image.save(mapBytes, format=mapImage.format().value)
+                mapBytes.seek(0)
+                mapBytes = mapBytes.read()
         """
 
         self.send_response(200)
