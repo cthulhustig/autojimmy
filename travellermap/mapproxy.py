@@ -309,7 +309,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 milieu = travellermap.Milieu.M1105
 
             if self._compositor:
-                compositorOp = self._compositor.needsComposition(
+                compositorOp = self._compositor.compositeOperation(
                         tileX=tileX,
                         tileY=tileY,
                         tileScale=tileScale,
@@ -335,15 +335,20 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if tileFormat and (compositorOp != travellermap.Compositor.Operation.NoComposite):
                 try:
                     if compositorOp == travellermap.Compositor.Operation.FullComposite:
-                        tileBytes = self._compositor.composite(
-                            tileData=tileBytes,
-                            tileX=tileX,
-                            tileY=tileY,
-                            tileWidth=tileWidth,
-                            tileHeight=tileHeight,
-                            tileScale=tileScale,
-                            milieu=milieu,
-                            outputFormat=tileFormat)
+                        with PIL.Image.open(io.BytesIO(tileBytes)) as tileImage:
+                            self._compositor.composite(
+                                tileImage=tileImage,
+                                tileX=tileX,
+                                tileY=tileY,
+                                tileWidth=tileWidth,
+                                tileHeight=tileHeight,
+                                tileScale=tileScale,
+                                milieu=milieu)
+
+                            tileBytes = io.BytesIO()
+                            tileImage.save(tileBytes, format=tileFormat.value)
+                            tileBytes.seek(0)
+                            tileBytes = tileBytes.read()
                     else:
                         assert(compositorOp == travellermap.Compositor.Operation.SimpleCopy)
                         tileBytes = self._compositor.copy(

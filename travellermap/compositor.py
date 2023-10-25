@@ -153,7 +153,7 @@ class Compositor(object):
 
         self._loadCustomUniverse()
 
-    def needsComposition(
+    def compositeOperation(
             self,
             tileX: float,
             tileY: float,
@@ -195,17 +195,16 @@ class Compositor(object):
 
     def composite(
             self,
-            tileData: bytes,
+            tileImage: PIL.Image,
             tileX: float,
             tileY: float,
             tileWidth: int,
             tileHeight: int,
             tileScale: float,
-            milieu: travellermap.Milieu,
-            outputFormat: travellermap.MapFormat
-            ) -> bytes:
+            milieu: travellermap.Milieu
+            ) -> None:
         if tileScale < Compositor._MinCompositionScale:
-            return tileData
+            return # Nothing to do (shouldn't happen if correctly checking which operation to use)
 
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
@@ -279,22 +278,12 @@ class Compositor(object):
                     del srcImage
                     srcImage = resizedImage
 
-
-                # TODO: There is another optimisation as if the tile overlaps multiple custom
-                # sectors it will repeatedly decode and re-encode the image. This will also
-                # cause repeated quality loss if using jpeg
-
-                with PIL.Image.open(io.BytesIO(tileData)) as tgtImage:
-                    tgtImage.paste(srcImage, tgtPixelOffset, srcImage)              
-
-                    tileData = io.BytesIO()
-                    tgtImage.save(tileData, format=outputFormat.value)
-                    tileData.seek(0)
-                    tileData = tileData.read()
+                # Copy custom sector section over current tile using it's alpha channel as a mask
+                tileImage.paste(srcImage, tgtPixelOffset, srcImage)              
             finally:
                 del srcImage
 
-        return tileData
+        return tileImage
     
     def copy(
             self,
