@@ -68,8 +68,8 @@ def tileSpaceToMapSpace(
     return (tileX / scalar, -tileY / scalar)
 
 # This gets the bounding rect of a sector in absolute coordinates (world coordinates in Traveller
-# Map parlance). It's based on SubsectorBounds from Traveller Map (Sector.cs) but I've updated it
-# so it returns a bounding box that contains the full extent of all hexes in the sector.
+# Map parlance). It's based on Bounds from Traveller Map (Sector.cs) but I've updated it so it
+# returns a bounding box that contains the full extent of all hexes in the sector.
 def sectorBoundingRect(
         sectorX: int,
         sectorY: int
@@ -84,7 +84,28 @@ def sectorBoundingRect(
     left += 0.5 - _HexEdgePadding
     width += _HexEdgePadding * 2
 
-    return (left, bottom, width, height) # Height
+    return (left, bottom, width, height)
+
+# Similar to sectorBoundingRect but gets the largest absolute coordinate rect that can
+# fit inside the sector without overlapping any hexes from adjacent sectors. This is
+# useful as any rect that falls completely inside this rect is guaranteed to only cover
+# this sector
+def sectorInteriorRect(
+    sectorX: int,
+    sectorY: int
+    ) -> typing.Tuple[int, int, int, int]:
+    left = (sectorX * _SectorWidth) - _ReferenceHexX
+    bottom = (sectorY * _SectorHeight) - _ReferenceHexY
+    width = _SectorWidth
+    height = _SectorHeight
+
+    # Shrink to fit within the hexes of this sector
+    bottom += 0.5
+    height -= 1
+    left += 0.5 + _HexEdgePadding
+    width -= (_HexEdgePadding * 2)
+
+    return (left, bottom, width, height)
 
 # Reimplementation of code from Traveller Map source code.
 # HexDistance in Astrometrics.cs

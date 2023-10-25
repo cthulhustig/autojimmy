@@ -289,14 +289,13 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
         cacheKey = self._generateCacheKey(queryMap=parsedQuery)
 
-        mapImage = self._tileCache.lookup(key=cacheKey)
-        if mapImage:
+        tileImage = self._tileCache.lookup(key=cacheKey)
+        if tileImage:
             logging.debug(f'Serving cached response for tile {parsedUrl.query}')
-            mapBytes = mapImage.bytes()
-            contentType = travellermap.mapFormatToMimeType(mapImage.format())
+            tileBytes = tileImage.bytes()
+            contentType = travellermap.mapFormatToMimeType(tileImage.format())
         else:
-            requestUrl = urllib.parse.urljoin(self._travellerMapUrl, '/api/tile?' + parsedUrl.query)
-            logging.debug(f'Making proxied request for {requestUrl}')
+            logging.debug(f'Creating tile for {parsedUrl.query}')
 
             tileX = float(parsedQuery['x'][0])
             tileY = float(parsedQuery['y'][0])
@@ -309,87 +308,148 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 milieu = travellermap.Milieu.M1105
 
-            # TODO: I suspect this is creating a new TCP connection for each request. If so it
-            # would be better to use a connection pull if possible
-            with urllib.request.urlopen(requestUrl) as response:
-                info = response.info()
-                contentType = info.get('Content-Type') # TODO: Is this check case sensitive?
-                mapFormat = travellermap.mimeTypeToMapFormat(contentType)
-                if not mapFormat:
-                    # Log this at debug as it could happen a lot if something goes wrong
-                    logging.debug(f'Unexpected Content-Type {contentType} for tile {parsedUrl.query}')
-                
-                mapBytes = response.read()
-
-            if self._compositor and mapFormat:
-                if self._compositor.needsComposition(
+            if self._compositor:
+                compositorOp = self._compositor.needsComposition(
                         tileX=tileX,
                         tileY=tileY,
                         tileScale=tileScale,
-                        milieu=milieu):
-                    try:
-                        mapBytes = self._compositor.composite(
-                            tileData=mapBytes,
+                        milieu=milieu)
+            else:
+                compositorOp = travellermap.Compositor.Operation.NoComposite
+
+            if compositorOp != travellermap.Compositor.Operation.SimpleCopy:
+                # TODO: I suspect this is creating a new TCP connection for each request. If so it
+                # would be better to use a connection pull if possible
+                tileBytes, contentType, tileFormat = self._makeTileRequest(parsedUrl=parsedUrl)
+
+                # No tile data shouldn't really happen and there's nothing we can do to return something
+                # usable. Making this check is important as, if it was to happen, it prevents code later
+                # from re-making the request
+                if not tileBytes:
+                    raise RuntimeError('Proxied tile request returned no data')
+            else:
+                tileBytes = None
+                tileFormat = travellermap.MapFormat.PNG
+                contentType = travellermap.mapFormatToMimeType(tileFormat)
+
+            if tileFormat and (compositorOp != travellermap.Compositor.Operation.NoComposite):
+                try:
+                    if compositorOp == travellermap.Compositor.Operation.FullComposite:
+                        tileBytes = self._compositor.composite(
+                            tileData=tileBytes,
                             tileX=tileX,
                             tileY=tileY,
                             tileWidth=tileWidth,
                             tileHeight=tileHeight,
                             tileScale=tileScale,
                             milieu=milieu,
-                            outputFormat=mapFormat)
-                    except Exception as ex:
-                        logging.error('Failed to composite tile', exc_info=ex)
+                            outputFormat=tileFormat)
+                    else:
+                        assert(compositorOp == travellermap.Compositor.Operation.SimpleCopy)
+                        tileBytes = self._compositor.copy(
+                            tileX=tileX,
+                            tileY=tileY,
+                            tileScale=tileScale,
+                            milieu=milieu,
+                            outputFormat=tileFormat)
 
-                mapImage = travellermap.MapImage(
-                    bytes=mapBytes,
-                    format=mapFormat)
-                self._tileCache.add(key=cacheKey, image=mapImage)                     
+                    if not tileBytes:
+                        raise RuntimeError('Compositor returned no image')
+                except Exception as ex:
+                    logging.error('Failed to composite tile', exc_info=ex)
             else:
                 logging.debug(f'Serving live response for tile {parsedUrl.query}')
 
-        # Enable this to add a red boundary to all tiles in order to highlight where they are
-        """
-        if mapImage:
-            with PIL.Image.open(mapBytes if isinstance(mapBytes, io.BytesIO) else io.BytesIO(mapBytes)) as image:
-                draw = PIL.ImageDraw.Draw(image)
-                draw.line([(0, 0), (0, image.height - 1)], fill="red", width=0)
-                draw.line([(0, image.height - 1), (image.width - 1, image.height - 1)], fill="red", width=0)
-                draw.line([(image.width - 1, image.height - 1), (image.width - 1, 0)], fill="red", width=0)
-                draw.line([(image.width - 1, 0), (0, 0)], fill="red", width=0)
-                mapBytes = io.BytesIO()
-                image.save(mapBytes, format=mapImage.format().value)
-                mapBytes.seek(0)
-                mapBytes = mapBytes.read()
-        """
+            # Enable this to add a red boundary to all tiles in order to highlight where they are
+            # TODO: When I add caching this overlay shouldn't be included in the image that is cached
+            """
+            if tileFormat:
+                colour = 'red'
+
+                if compositorOp == travellermap.Compositor.Operation.FullComposite:
+                    colour = 'blue'
+                elif compositorOp == travellermap.Compositor.Operation.SimpleCopy:
+                    colour = 'green'
+
+                with PIL.Image.open(tileBytes if isinstance(tileBytes, io.BytesIO) else io.BytesIO(tileBytes)) as image:
+                    draw = PIL.ImageDraw.Draw(image)
+                    draw.line([(0, 0), (0, image.height - 1)], fill=colour, width=0)
+                    draw.line([(0, image.height - 1), (image.width - 1, image.height - 1)], fill=colour, width=0)
+                    draw.line([(image.width - 1, image.height - 1), (image.width - 1, 0)], fill=colour, width=0)
+                    draw.line([(image.width - 1, 0), (0, 0)], fill=colour, width=0)
+                    tileBytes = io.BytesIO()
+                    image.save(tileBytes, format=tileFormat.value)
+                    tileBytes.seek(0)
+                    tileBytes = tileBytes.read()
+            """
+
+            if not tileBytes:
+                # If we get to here with no tile bytes it means something wen't wrong performing a simple
+                # copy. In this situation the best I can think to request the tile from Traveller Map and
+                # return that
+                tileBytes, contentType, tileFormat = self._makeTileRequest(parsedUrl=parsedUrl)
+                if not tileBytes:
+                    # We're having a bad day, something also wen't wrong getting the tile from Traveller
+                    # Map. Not much to do apart from bail
+                    raise RuntimeError('Proxied tile request returned no data')                
+
+            # Add the tile to the cache. Depending on the logic above this could either be a tile
+            # as-is from Traveller Map or a composite tile
+            if tileBytes and tileFormat:
+                tileImage = travellermap.MapImage(
+                    bytes=tileBytes,
+                    format=tileFormat)                
+                self._tileCache.add(key=cacheKey, image=tileImage)
 
         self.send_response(200)
-        self.send_header('Content-Type', contentType)
-        self.send_header('Content-Length', len(mapBytes))
+        if contentType:
+            self.send_header('Content-Type', contentType)
+        self.send_header('Content-Length', len(tileBytes) if tileBytes else 0)
         # Tell the client not to cache tiles. Assuming the browser respects the request, it
         # should prevent stale tiles being displayed if the user modifies data
         self.send_header('Cache-Control', 'no-store, no-cache')
         self.end_headers()
-        self.wfile.write(mapBytes.read() if isinstance(mapBytes, io.BytesIO) else mapBytes)
+        if tileBytes:
+            self.wfile.write(tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes)
 
     def _handleProxyRequest(
             self,
             parsedUrl: urllib.parse.ParseResult
             ) -> None:
+        content, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
+
+        self.send_response(200)
+        for header, value in headers.items():
+            self.send_header(header, value)
+        self.end_headers()
+        self.wfile.write(content)
+
+    def _makeTileRequest(
+            self,
+            parsedUrl: urllib.parse.ParseResult
+            ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
+        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
+
+        contentType = headers.get('Content-Type') # TODO: Is this check case sensitive?
+        tileFormat = travellermap.mimeTypeToMapFormat(contentType)
+        if not tileFormat:
+            # Log this at debug as it could happen a lot if something goes wrong
+            logging.debug(f'Unexpected Content-Type {contentType} for tile {parsedUrl.query}')
+
+        return tileBytes, contentType, tileFormat
+    
+    def _makeProxyRequest(
+            self,
+            parsedUrl: urllib.parse.ParseResult
+            ) -> typing.Tuple[bytes, typing.Dict[str, str]]:
         requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
         if parsedUrl.query:
             requestUrl += '?' + parsedUrl.query
         logging.debug(f'Making proxied request for {requestUrl}')
 
         with urllib.request.urlopen(requestUrl) as response:
-            info = response.info()
-            data = response.read()
-
-        self.send_response(200)
-        for header, value in info.items():
-            self.send_header(header, value)
-        self.end_headers()
-        self.wfile.write(data)
-
+            return (response.read(), response.info())
+    
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
     # This is done so that the order the options are specified in the URL don't mater when it comes
