@@ -290,12 +290,8 @@ class Compositor(object):
             tileX: float,
             tileY: float,
             tileScale: float,
-            milieu: travellermap.Milieu,
-            outputFormat: travellermap.MapFormat
-            ) -> bytes:
-        if tileScale < Compositor._MinCompositionScale:
-            return tileData
-
+            milieu: travellermap.Milieu
+            ) -> PIL.Image:
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -356,11 +352,8 @@ class Compositor(object):
                     del srcImage
                     srcImage = resizedImage
 
-                tileData = io.BytesIO()
-                srcImage.save(tileData, format=outputFormat.value)
-                tileData.seek(0)
-                return tileData.read()
-            finally:
+                return srcImage
+            except:
                 del srcImage
 
         return None

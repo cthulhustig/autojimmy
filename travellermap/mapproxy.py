@@ -351,12 +351,17 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                             tileBytes = tileBytes.read()
                     else:
                         assert(compositorOp == travellermap.Compositor.Operation.SimpleCopy)
-                        tileBytes = self._compositor.copy(
+                        tileImage = self._compositor.copy(
                             tileX=tileX,
                             tileY=tileY,
                             tileScale=tileScale,
-                            milieu=milieu,
-                            outputFormat=tileFormat)
+                            milieu=milieu)
+                        
+                        tileBytes = io.BytesIO()
+                        tileImage.save(tileBytes, format=tileFormat.value)
+                        del tileImage
+                        tileBytes.seek(0)
+                        tileBytes = tileBytes.read()
 
                     if not tileBytes:
                         raise RuntimeError('Compositor returned no image')
