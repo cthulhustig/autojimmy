@@ -302,7 +302,7 @@ def main() -> None:
         if travellermap.DataStore.instance().checkForNewSnapshot():
             # TODO: At some point in the future I can remove the note about it being faster
             answer = gui.AutoSelectMessageBox.question(
-                text='New universe data is available. Do you want to update?\nDon\'t worry, updating is a LOT faster than it used to be.',
+                text='New universe data is available. Do you want to update?\nCustom sectors will not be affected\n\nDon\'t worry, updating is a LOT faster than it used to be.',
                 stateKey='DownloadUniverseAtStartup')
             if answer == QtWidgets.QMessageBox.StandardButton.Yes:
                 updateProgress = gui.DownloadProgressDialog()

@@ -103,6 +103,7 @@ class DataStore(object):
     _UniverseFileName = 'universe.json'
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
+    _DataFormatFileName = 'dataformat.txt'
     _TimestampFileName = 'timestamp.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
     _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
@@ -110,6 +111,8 @@ class DataStore(object):
     _DataArchiveMapPath = 'autojimmy-data-main/map/'
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _TimestampCheckTimeout = 3 # Seconds
+
+    _MinDataFormatVersion = 2
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -137,8 +140,9 @@ class DataStore(object):
                 # first check adn the lock
                 if not cls._instance:
                     cls._instance = cls.__new__(cls)
-                    # Check the overlay age, the overlay directory will be deleted if it's older
-                    # than the install directory
+                    # Check the overlay version and age, the overlay directory will be deleted if
+                    # it's no longer valid
+                    cls._instance._checkOverlayVersion()
                     cls._instance._checkOverlayAge()
         return cls._instance
 
@@ -262,8 +266,8 @@ class DataStore(object):
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
             relativeFilePath=self._AllegiancesFileName))
-
-    def snapshotTimestamp(self) -> datetime.datetime:
+    
+    def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
             return DataStore._parseSnapshotTimestamp(
                 data=self._readFile(relativeFilePath=self._TimestampFileName))
@@ -591,6 +595,31 @@ class DataStore(object):
 
                 self._milieuMap[milieu] = loadedSectorNameMap
 
+    def _checkOverlayVersion(self) -> None:
+        if not os.path.exists(self._overlayDir):
+            # If the overlay directory doesn't exist there is nothing to check
+            return
+        overlayDataFormatPath = os.path.join(self._overlayDir, self._DataFormatFileName)
+
+        # The data format file might not exist if the overlay was created by an older version.
+        # In that situation the current overlay should be deleted
+        if os.path.exists(overlayDataFormatPath):
+            try:
+                with open(overlayDataFormatPath, 'rb') as file:
+                    overlayDataFormat = int(file.read())
+
+                if overlayDataFormat >= self._MinDataFormatVersion:
+                    # The current overlay meets the required data format
+                    return
+
+            except Exception as ex:
+                logging.error(
+                    f'Failed to load overlay data format from "{overlayDataFormatPath}"',
+                    exc_info=ex)
+                return
+
+        self._deleteOverlayDir()        
+
     def _checkOverlayAge(self) -> None:
         if not os.path.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
@@ -628,13 +657,16 @@ class DataStore(object):
         if installTimestamp <= overlayTimestamp:
             # The install copy of the sectors is older than the overlay copy so there is nothing to do
             return
+        
+        self._deleteOverlayDir()
 
-        logging.info(f'Deleting out of date overlay directory "{self._overlayDir}"')
+    def _deleteOverlayDir(self) -> None:
+        logging.info(f'Deleting overlay directory "{self._overlayDir}"')
         try:
             shutil.rmtree(self._overlayDir)
         except Exception as ex:
             logging.error(
-                f'Failed to delete out of date overlay directory "{self._overlayDir}"',
+                f'Failed to delete overlay directory "{self._overlayDir}"',
                 exc_info=ex)
 
     def _readFile(
