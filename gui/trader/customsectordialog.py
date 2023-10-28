@@ -744,10 +744,12 @@ class _NewSectorDialog(gui.DialogEx):
 
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(
+                milieu=app.Config.instance().milieu(),
                 sectorContent=self._sectorData,
                 metadataContent=self._sectorMetadata,
-                sectorMaps=posters,
-                milieu=app.Config.instance().milieu())
+                customMapStyle=renderStyle,
+                customMapOptions=self._renderOptionList(),
+                customMapImages=posters)
         except Exception as ex:
             message = 'Failed to add custom sector to data store'
             logging.critical(message, exc_info=ex)
@@ -1045,7 +1047,7 @@ class _MapComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
             if sectorInfo:
-                for scale in sectorInfo.mapLevels().keys():
+                for scale in sectorInfo.customMapLevels().keys():
                     self.addItem(f'{scale} Pixels Per Parsec', scale)
         self.currentIndexChanged.emit(self.currentIndex())
 

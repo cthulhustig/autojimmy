@@ -367,7 +367,7 @@ class Compositor(object):
                 if not sectorInfo.isCustomSector():
                     continue # Only interested in custom sectors
 
-                mapLevels = sectorInfo.mapLevels()
+                mapLevels = sectorInfo.customMapLevels()
                 if not mapLevels:
                     logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no map levels')
                     continue

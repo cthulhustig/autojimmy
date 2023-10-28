@@ -16,7 +16,7 @@ import xmlschema
 import xml.etree.ElementTree
 import zipfile
 
-class MapLevel(object):
+class CustomMapLevel(object):
     def __init__(
             self,
             scale: int,
@@ -43,19 +43,23 @@ class SectorInfo(object):
             abbreviation: typing.Optional[str],
             x: int,
             y: int,
-            isCustomSector: bool,
-            mapLevels: typing.Optional[typing.Dict[int, MapLevel]],
             sectorFormat: travellermap.SectorFormat,
-            metadataFormat: travellermap.MetadataFormat
+            metadataFormat: travellermap.MetadataFormat,
+            isCustomSector: bool,
+            customMapStyle: typing.Optional[travellermap.Style],
+            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
+            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]],
             ) -> None:
         self._canonicalName = canonicalName
         self._abbreviation = abbreviation
         self._x = x
         self._y = y
-        self._isCustomSector = isCustomSector
-        self._mapLevels = mapLevels
         self._sectorFormat = sectorFormat
-        self._metadataFormat = metadataFormat
+        self._metadataFormat = metadataFormat        
+        self._isCustomSector = isCustomSector
+        self._customMapStyle = customMapStyle
+        self._customMapOptions = list(customMapOptions) if customMapOptions else None
+        self._customMapLevels = dict(customMapLevels) if customMapLevels else None
 
     def canonicalName(self) -> str:
         return self._canonicalName
@@ -69,20 +73,26 @@ class SectorInfo(object):
     def y(self) -> int:
         return self._y
 
-    def isCustomSector(self) -> bool:
-        return self._isCustomSector
-
-    def mapLevels(self) -> typing.Optional[typing.Dict[int, MapLevel]]:
-        return self._mapLevels.copy() if self._mapLevels else None
-    
-    def mapLevel(self, scale: int) -> typing.Optional[MapLevel]:
-        return self._mapLevels.get(scale) if self._mapLevels else None
-
     def sectorFormat(self) -> travellermap.SectorFormat:
         return self._sectorFormat
 
     def metadataFormat(self) -> travellermap.MetadataFormat:
-        return self._metadataFormat
+        return self._metadataFormat    
+
+    def isCustomSector(self) -> bool:
+        return self._isCustomSector
+
+    def customMapLevels(self) -> typing.Optional[typing.Dict[int, CustomMapLevel]]:
+        return self._customMapLevels.copy() if self._customMapLevels else None
+    
+    def customMapLevel(self, scale: int) -> typing.Optional[CustomMapLevel]:
+        return self._customMapLevels.get(scale) if self._customMapLevels else None
+    
+    def customMapStyle(self) -> typing.Optional[travellermap.Style]:
+        return self._customMapStyle
+    
+    def customMapOptions(self) -> typing.Optional[typing.List[travellermap.Option]]:
+        return self._customMapOptions.copy() if self._customMapOptions else None
 
 class DataStore(object):
     class UpdateStage(enum.Enum):
@@ -233,7 +243,7 @@ class DataStore(object):
         if sectorName not in sectorMap:
             raise RuntimeError(f'Unable to retrieve sector map data for unknown sector {sectorName}')
         sector: SectorInfo = sectorMap[sectorName]
-        mapLevel = sector.mapLevel(scale=scale)
+        mapLevel = sector.customMapLevel(scale=scale)
         if not mapLevel:
             raise RuntimeError(f'Unable to retrieve {scale} scale sector map data for {sectorName}')
         mapData = self._readMilieuFile(
@@ -345,10 +355,12 @@ class DataStore(object):
 
     def createCustomSector(
             self,
+            milieu: travellermap.Milieu,
             sectorContent: str,
             metadataContent: str,
-            sectorMaps: typing.Mapping[int, travellermap.MapImage],
-            milieu: travellermap.Milieu
+            customMapStyle: typing.Optional[travellermap.Style],
+            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],       
+            customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
         self._loadAllSectors()
 
@@ -417,12 +429,12 @@ class DataStore(object):
                 file.write(metadataContent)
 
             mapLevels = {}
-            for scale, mapImage in sectorMaps.items():
+            for scale, mapImage in customMapImages.items():
                 mapFormat = mapImage.format()
                 mapLevelFileName = f'{escapedSectorName}_{scale}.{mapFormat.value}'
                 mapLevelFilePath = os.path.join(milieuDirPath, mapLevelFileName)
 
-                mapLevel = MapLevel(
+                mapLevel = CustomMapLevel(
                     scale=scale,
                     fileName=mapLevelFileName,
                     format=mapFormat)
@@ -436,10 +448,12 @@ class DataStore(object):
                 abbreviation=metadata.abbreviation(),
                 x=metadata.x(),
                 y=metadata.y(),
-                isCustomSector=True,
-                mapLevels=mapLevels,
                 sectorFormat=sectorFormat,
-                metadataFormat=travellermap.MetadataFormat.XML) # Only XML metadata is supported for custom sectors
+                metadataFormat=travellermap.MetadataFormat.XML, # Only XML metadata is supported for custom sectors                
+                isCustomSector=True,
+                customMapStyle=customMapStyle,
+                customMapOptions=customMapOptions,
+                customMapLevels=mapLevels)
             sectors[sector.canonicalName()] = sector
 
             self._saveCustomSectors(milieu=milieu)
@@ -478,7 +492,7 @@ class DataStore(object):
             files = [
                 f'{escapedSectorName}.{sectorExtension}',
                 f'{escapedSectorName}.{metadataExtension}']
-            mapLevels = sector.mapLevels()
+            mapLevels = sector.customMapLevels()
             if mapLevels:
                 for mapLevel in mapLevels.values():
                     files.append(mapLevel.fileName())
@@ -546,7 +560,7 @@ class DataStore(object):
 
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
-                    useCustomMapDir=True)
+                    customSectors=True)
                 for sector in loadedSectors:
                     logging.debug(
                         f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
@@ -556,7 +570,7 @@ class DataStore(object):
 
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
-                    useCustomMapDir=False)
+                    customSectors=False)
                 
                 for sector in loadedSectors:
                     conflictSector = customSectorPosMap.get((sector.x(), sector.y()))
@@ -690,97 +704,157 @@ class DataStore(object):
     def _loadMilieuSectors(
             self,
             milieu: travellermap.Milieu,
-            useCustomMapDir: bool
+            customSectors: bool
             ) -> typing.List[SectorInfo]:
+        sectorType = 'custom' if customSectors else 'base'
+
         try:
             universeContent = self._readMilieuFile(
                 fileName=self._UniverseFileName,
                 milieu=milieu,
-                useCustomMapDir=useCustomMapDir)
-        except FileNotFoundError:
-            if useCustomMapDir:
-                # Custom map data is optional so if the universe file doesn't exist it just
-                # means there are no custom sectors for this milieu
-                return []
-
-            # When loading sectors for a standard milieu the universe file is mandatory
-            raise
-
-        try:
+                useCustomMapDir=customSectors)
+                        
             universeJson = json.loads(DataStore._bytesToString(universeContent))
-        except Exception as ex:
-            raise RuntimeError(f'Failed to load universe file ({str(ex)})')
 
-        if 'Sectors' not in universeJson:
-            raise RuntimeError('Failed to load universe file (No Sectors element found)')
+            sectorsElement = universeJson.get('Sectors')
+            if sectorsElement == None:
+                raise RuntimeError('No Sectors element found')
+        except Exception as ex:
+            message = f'Failed to load {sectorType} universe ({str(ex)})'
+            if customSectors:
+                # Custom map data is optional so if the universe file doesn't exist or fails to
+                # parse just log and continue as if there are no custom sectors
+                if isinstance(ex, FileNotFoundError):
+                    logging.debug(message)
+                else:
+                    logging.warning(message)
+                return []
+            
+            raise RuntimeError(message)
 
         sectors = []
-        for sectorInfo in universeJson['Sectors']:
-            # Sectors can have multiple names. We have a single sector object that uses the first
-            # name but multiple entries in the sector name map (but only a single entry in the
-            # position map)
-            sectorX = int(sectorInfo['X'])
-            sectorY = int(sectorInfo['Y'])
-
+        for sectorElement in sectorsElement:
+            sectorX = None
+            sectorY = None
             canonicalName = None
-            for element in sectorInfo['Names']:
-                name = element['Text']
+            try:
+                sectorX = sectorElement.get('X')
+                if sectorX == None:
+                    raise RuntimeError('Sector has no x position')
+                sectorX = int(sectorX)
 
-                if not name:
-                    continue
-                canonicalName = name
-                break
-            assert(canonicalName)
+                sectorY = sectorElement.get('Y')
+                if sectorY == None:
+                    raise RuntimeError('Sector has no y position')
+                sectorY = int(sectorY)
 
-            abbreviation = None
-            if 'Abbreviation' in sectorInfo:
-                abbreviation = sectorInfo['Abbreviation']
+                namesElements = sectorElement.get('Names')
+                canonicalName = None
+                if namesElements != None:
+                    for nameElement in namesElements:
+                        name = nameElement.get('Text')
+                        if name == None:
+                            continue
+                        canonicalName = str(name)
+                        break
+                if not canonicalName:
+                    raise RuntimeError('Sector has no name')
 
-            #
-            # The following elements are extensions and not part of the standard universe file format
-            #
+                abbreviation = sectorElement.get('Abbreviation')
+                if abbreviation != None:
+                    abbreviation = str(abbreviation)
 
-            mapLevels = None
-            if 'MapLevels' in sectorInfo:
-                mapLevels = {}
-                for mapLevel in sectorInfo['MapLevels']:
-                    mimeType = str(mapLevel['MimeType'])
-                    mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
-                    if not mapFormat:
-                        logging.warning(f'Ignoring map level for {canonicalName} in {milieu.value} as it has an unsupported mime type {mimeType}')
-                        continue
+                #
+                # The following elements are extensions and not part of the standard universe file format
+                #
 
-                    mapLevel = MapLevel(
-                        scale=int(mapLevel['Scale']),
-                        fileName=str(mapLevel['FileName']),
-                        format=mapFormat)
-                    mapLevels[mapLevel.scale()] = mapLevel
+                # If the universe doesn't specify the sector format it must be a standard traveller map
+                # universe file which means the corresponding sectors files all use T5 column format
+                sectorFormatTag = sectorElement.get('SectorFormat')
+                sectorFormat = travellermap.SectorFormat.T5Column
+                if sectorFormatTag != None:
+                    sectorFormat = travellermap.SectorFormat.__members__.get(
+                        str(sectorFormatTag),
+                        sectorFormat)
 
-            # If the universe doesn't specify the sector format it must be a standard traveller map
-            # universe file which means the corresponding sectors files all use T5 column format
-            sectorFormat = travellermap.SectorFormat.T5Column
-            if 'SectorFormat' in sectorInfo:
-                sectorFormat = travellermap.SectorFormat.__members__.get(
-                    sectorInfo['SectorFormat'],
-                    sectorFormat)
+                # If the universe doesn't specify the metadata format it must be a standard traveller map
+                # universe file which means the corresponding metadata files all use JSON format
+                metadataFormatTag = sectorElement.get('MetadataFormat')
+                metadataFormat = travellermap.MetadataFormat.JSON
+                if metadataFormatTag != None:
+                    metadataFormat = travellermap.MetadataFormat.__members__.get(
+                        str(metadataFormatTag),
+                        metadataFormat)
 
-            # If the universe doesn't specify the metadata format it must be a standard traveller map
-            # universe file which means the corresponding metadata files all use JSON format
-            metadataFormat = travellermap.MetadataFormat.JSON
-            if 'MetadataFormat' in sectorInfo:
-                metadataFormat = travellermap.MetadataFormat.__members__.get(
-                    sectorInfo['MetadataFormat'],
-                    metadataFormat)
+                customMapLevels = None
+                customMapStyle = None
+                customMapOptions = None
+                if customSectors:
+                    customMapStyleTag = sectorElement.get('CustomMapStyle')
+                    if customMapStyleTag:
+                        customMapStyle = travellermap.Style.__members__.get(str(customMapStyleTag))
+                        if customMapStyle == None:
+                            raise RuntimeError('Sector has no custom map style')
 
-            sectors.append(SectorInfo(
-                canonicalName=canonicalName,
-                abbreviation=abbreviation,
-                x=sectorX,
-                y=sectorY,
-                isCustomSector=useCustomMapDir,
-                mapLevels=mapLevels,
-                sectorFormat=sectorFormat,
-                metadataFormat=metadataFormat))
+                    customMapOptionsElement = sectorElement.get('CustomMapOptions')
+                    if customMapOptionsElement:
+                        customMapOptions = []
+                        for optionTag in customMapOptionsElement:
+                            optionTag = str(optionTag)
+                            option = travellermap.Option.__members__.get(optionTag)
+                            if option == None:
+                                raise RuntimeError(f'Sector has unknown custom map option {optionTag}')
+                            customMapOptions.append(option)
+
+                    customMapLevelsElement = sectorElement.get('CustomMapLevels')
+                    if customMapLevelsElement == None:
+                        raise RuntimeError('Sector has no custom map levels')
+                    
+                    customMapLevels = {}
+                    for mapLevel in customMapLevelsElement:
+                        mimeType = mapLevel.get('MimeType')
+                        if mimeType == None:
+                            raise RuntimeError('Custom map level has no mime type')
+                        mimeType = str(mimeType)
+
+                        mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
+                        if mapFormat == None:
+                            raise RuntimeError(f'Custom map level has unsupported mime type {mimeType}')
+
+                        scale = mapLevel.get('Scale')
+                        if scale == None:
+                            raise RuntimeError(f'Custom map level has no scale')
+                        scale = int(scale)
+
+                        fileName = mapLevel.get('FileName')
+                        if fileName == None:
+                            raise RuntimeError(f'Custom map level has no file name')
+                        fileName = str(fileName)                        
+
+                        mapLevel = CustomMapLevel(
+                            scale=scale,
+                            fileName=fileName,
+                            format=mapFormat)
+                        customMapLevels[mapLevel.scale()] = mapLevel
+                            
+                sectors.append(SectorInfo(
+                    canonicalName=canonicalName,
+                    abbreviation=abbreviation,
+                    x=sectorX,
+                    y=sectorY,
+                    sectorFormat=sectorFormat,
+                    metadataFormat=metadataFormat,                
+                    isCustomSector=customSectors,
+                    customMapStyle=customMapStyle,
+                    customMapOptions=customMapOptions,
+                    customMapLevels=customMapLevels))
+            except Exception as ex:
+                if canonicalName != None:
+                    logging.warning(f'Skipping {sectorType} sector at {canonicalName} in {milieu.value} ({str(ex)})')
+                elif sectorX != None and sectorY != None:
+                    logging.warning(f'Skipping {sectorType} sector at {sectorX},{sectorY} in {milieu.value} ({str(ex)})')
+                else:
+                    logging.warning(f'Skipping unidentified {sectorType} sector in {milieu.value} ({str(ex)})')
 
         return sectors
 
@@ -806,12 +880,15 @@ class DataStore(object):
                     'X': sectorInfo.x(),
                     'Y': sectorInfo.y()
                     }
-
+         
                 #
                 # The following elements are extensions and not part of the standard universe file format
                 #
 
-                mapLevels = sectorInfo.mapLevels()
+                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
+                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
+
+                mapLevels = sectorInfo.customMapLevels()
                 mapLevelListData = []
                 if mapLevels:
                     for mapLevel in mapLevels.values():
@@ -821,10 +898,15 @@ class DataStore(object):
                             'MimeType': travellermap.mapFormatToMimeType(format=mapLevel.format())
                         })
                 if mapLevelListData:
-                    sectorData['MapLevels'] = mapLevelListData
+                    sectorData['CustomMapLevels'] = mapLevelListData
 
-                sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
-                sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
+                mapStyle = sectorInfo.customMapStyle()
+                if mapStyle:
+                    sectorData['CustomMapStyle'] = mapStyle.name
+
+                mapOptions = sectorInfo.customMapOptions()
+                if mapOptions:
+                    sectorData['CustomMapOptions'] = [option.name for option in mapOptions]
 
                 sectorListData.append(sectorData)
 
