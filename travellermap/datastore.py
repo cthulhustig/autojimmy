@@ -611,12 +611,10 @@ class DataStore(object):
                 if overlayDataFormat >= self._MinDataFormatVersion:
                     # The current overlay meets the required data format
                     return
-
             except Exception as ex:
-                logging.error(
+                logging.warning(
                     f'Failed to load overlay data format from "{overlayDataFormatPath}"',
                     exc_info=ex)
-                return
 
         self._deleteOverlayDir()        
 
