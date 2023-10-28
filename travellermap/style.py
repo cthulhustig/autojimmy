@@ -1,11 +1,11 @@
 import enum
 
 class Style(enum.Enum):
-    Poster = 'poster'
-    Print = 'print'
-    Atlas = 'atlas'
-    Candy = 'candy'
-    Draft = 'draft'
-    Fasa = 'fasa'
-    Terminal = 'terminal'
-    Mongoose = 'mongoose'
+    Poster = 'Poster'
+    Print = 'Print'
+    Atlas = 'Atlas'
+    Candy = 'Eye Candy'
+    Draft = 'Draft'
+    Fasa = 'FASA'
+    Terminal = 'Terminal'
+    Mongoose = 'Mongoose'

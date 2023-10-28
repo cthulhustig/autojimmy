@@ -24,6 +24,17 @@ _ForceHexesOption = 0x2000
 _WorldColorsOption = 0x4000
 _FilledBordersOption = 0x8000
 
+_StyleOptionMap = {
+    travellermap.Style.Poster: 'poster',
+    travellermap.Style.Print: 'print',
+    travellermap.Style.Atlas: 'atlas',
+    travellermap.Style.Candy: 'candy',
+    travellermap.Style.Draft: 'draft',
+    travellermap.Style.Fasa: 'fasa',
+    travellermap.Style.Terminal: 'terminal',
+    travellermap.Style.Mongoose: 'mongoose'
+}
+
 def linearScaleToLogScale(linearScale: float) -> float:
     return 1 + math.log2(linearScale)
 
@@ -122,8 +133,9 @@ def _createCommonQueryList(
     optionList = []
     if milieu != None:
         optionList.append('milieu=' + str(milieu.value))
+    style = _StyleOptionMap.get(style)
     if style != None:
-        optionList.append('style=' + str(style.value))
+        optionList.append('style=' + style)
 
     optionBitMask = _ForceHexesOption # Always enabled
     if options:

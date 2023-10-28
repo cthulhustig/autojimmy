@@ -854,10 +854,14 @@ class _CustomSectorTable(gui.ListTable):
     class ColumnType(enum.Enum):
         Name = 'Name'
         Location = 'Location'
+        Style = 'Style'
+        Options = 'Options'
 
     AllColumns = [
         ColumnType.Name,
-        ColumnType.Location
+        ColumnType.Location,
+        ColumnType.Style,
+        ColumnType.Options
     ]
 
     _StateVersion = 'CustomSectorTable_v1'
@@ -1004,7 +1008,20 @@ class _CustomSectorTable(gui.ListTable):
                 elif columnType == self.ColumnType.Location:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'({sector.x()}, {sector.y()})')
-
+                elif columnType == self.ColumnType.Style:
+                    style = sector.customMapStyle()
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, style.value if style else 'Unknown')
+                elif columnType == self.ColumnType.Options:
+                    options = sector.customMapOptions()
+                    if options:
+                        optionsString = common.humanFriendlyListString(
+                            [option.value for option in options])
+                    else:
+                        optionsString = ''
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, optionsString)
+                    
                 if tableItem:
                     self.setItem(row, column, tableItem)
                     tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, sector)

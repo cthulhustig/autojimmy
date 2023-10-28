@@ -60,11 +60,10 @@ class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
 class _MapStyleToggleAction(QtWidgets.QAction):
     def __init__(
             self,
-            text: str,
             style: travellermap.Style,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
-        super().__init__(text, parent)
+        super().__init__(style.value, parent)
 
         self._style = style
 
@@ -84,11 +83,10 @@ class _MapStyleToggleAction(QtWidgets.QAction):
 class _MapOptionToggleAction(QtWidgets.QAction):
     def __init__(
             self,
-            text: str,
             option: travellermap.Option,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
-        super().__init__(text, parent)
+        super().__init__(option.value, parent)
 
         self._option = option
 
@@ -502,95 +500,54 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._styleOptionGroup = QtWidgets.QActionGroup(self)
 
         if not TravellerMapWidgetBase._sharedStyleActions:
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Poster',
-                style=travellermap.Style.Poster))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Print',
-                style=travellermap.Style.Print))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Atlas',
-                style=travellermap.Style.Atlas))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Candy',
-                style=travellermap.Style.Candy))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Draft',
-                style=travellermap.Style.Draft))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='FASA',
-                style=travellermap.Style.Fasa))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Terminal',
-                style=travellermap.Style.Terminal))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Mongoose',
-                style=travellermap.Style.Mongoose))
+            for style in travellermap.Style:
+                TravellerMapWidgetBase._sharedStyleActions.append(
+                    _MapStyleToggleAction(style=style))
 
         if not TravellerMapWidgetBase._sharedFeatureActions:
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Galactic Directions',
                 option=travellermap.Option.GalacticDirections))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Sector Grid',
                 option=travellermap.Option.SectorGrid))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Sector Names',
                 option=travellermap.Option.SectorNames))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Borders',
                 option=travellermap.Option.Borders))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Routes',
                 option=travellermap.Option.Routes))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Region Names',
                 option=travellermap.Option.RegionNames))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Important Worlds',
                 option=travellermap.Option.ImportantWorlds))
 
         if not TravellerMapWidgetBase._sharedAppearanceActions:
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='More World Colours',
                 option=travellermap.Option.WorldColours))
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='Filled Borders',
                 option=travellermap.Option.FilledBorders))
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='Dim Unofficial Data',
                 option=travellermap.Option.DimUnofficial))
 
         if not TravellerMapWidgetBase._sharedOverlayActions:
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Importance',
                 option=travellermap.Option.ImportanceOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Population',
                 option=travellermap.Option.PopulationOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Capitals/Candidates',
                 option=travellermap.Option.CapitalsOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Minor Race Homeworlds',
                 option=travellermap.Option.MinorRaceOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Droyne Worlds',
                 option=travellermap.Option.DroyneWorldOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Ancient Sites',
                 option=travellermap.Option.AncientSitesOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Stellar',
                 option=travellermap.Option.StellarOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Empress Wave',
                 option=travellermap.Option.EmpressWaveOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Qrekrsha Zone',
                 option=travellermap.Option.QrekrshaZoneOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Mains',
                 option=travellermap.Option.MainsOverlay))
 
         for action in TravellerMapWidgetBase._sharedStyleActions:
