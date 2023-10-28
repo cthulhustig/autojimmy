@@ -950,8 +950,8 @@ class _CustomSectorTable(gui.ListTable):
         stream.writeQString(currentSector.canonicalName() if currentSector else '')
 
         baseState = super().saveState()
-        stream.writeUInt32(baseState.count() if baseState != None else 0)
-        if baseState != None:
+        stream.writeUInt32(baseState.count() if baseState else 0)
+        if baseState:
             stream.writeRawData(baseState.data())
 
         return state
