@@ -112,6 +112,7 @@ def formatPosterUrl(
         minimal=minimal)
     if linearScale != None:
         queryList.append(f'scale=' + str(linearScale))
+    # TODO: Switch to non-experimental option
     queryList.append(f'experimental-compositing=' + ('1' if compositing else '0'))
 
     if queryList:
