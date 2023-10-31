@@ -6,6 +6,4 @@ from .astrometrics import *
 from .sectorparsers import *
 from .mapimage import *
 from .datastore import *
-from .compositor import *
-from .mapproxy import *
 from .tileclient import *

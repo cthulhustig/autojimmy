@@ -91,6 +91,9 @@ class PosterJobAsync(QtCore.QObject):
         self._request.post(
             url=url,
             content=self._data,
+            # TODO: This header should probably be something that is returned by formatPosterUrl (or
+            # something like it)
+            headers={'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)},
             loop=asyncio.get_event_loop())
 
     def _requestCompleted(

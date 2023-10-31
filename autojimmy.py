@@ -9,6 +9,7 @@ import logging
 import multiprocessing
 import os
 import pathlib
+import proxy
 import qasync
 import sys
 import traveller
@@ -68,9 +69,9 @@ class _MapProxyMonitor(QtCore.QObject):
         self._timer.stop()
 
     def _checkStatus(self) -> None:
-        newStatus = travellermap.MapProxy.instance().status()
-        isError = newStatus == travellermap.MapProxy.ServerStatus.Error
-        wasError = self._status == travellermap.MapProxy.ServerStatus.Error
+        newStatus = proxy.MapProxy.instance().status()
+        isError = newStatus == proxy.MapProxy.ServerStatus.Error
+        wasError = self._status == proxy.MapProxy.ServerStatus.Error
 
         if isError and not wasError:
             self.error.emit()
@@ -319,7 +320,7 @@ def main() -> None:
         travellerMapUrl = app.Config.instance().travellerMapUrl()
         mapProxyPort = app.Config.instance().mapProxyPort()
         if mapProxyPort:
-            travellermap.MapProxy.configure(
+            proxy.MapProxy.configure(
                 listenPort=mapProxyPort,
                 travellerMapUrl=travellerMapUrl,
                 localFilesDir=os.path.join(installDir, 'data', 'web'),
@@ -328,7 +329,7 @@ def main() -> None:
                 customMapsDir=customMapDir,
                 logDir=logDirectory,
                 logLevel=logLevel)
-            travellermap.MapProxy.instance().run()
+            proxy.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
             mapBaseUrl=travellerMapUrl,
@@ -367,7 +368,7 @@ def main() -> None:
         if mapProxyMonitor:
             mapProxyMonitor.stop()
 
-        travellermap.MapProxy.instance().shutdown()
+        proxy.MapProxy.instance().shutdown()
 
     sys.exit(exitCode)
 

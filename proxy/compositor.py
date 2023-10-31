@@ -1,13 +1,16 @@
+# TODO: Need to handle cairo dll not being found
+import cairosvg
+import cairosvg.parser
+import cairosvg.surface
 import enum
 import io
-import json
 import logging
 import math
-import os
 import PIL.Image
 import PIL.ImageDraw
 import travellermap
 import typing
+import xml.etree.ElementTree
 
 # Returns true if rect1 is completely contained within rect2
 # Rect format is (left, top, right, bottom)
@@ -37,6 +40,18 @@ def _calculateIntersection(
 
     return (left, top, right, bottom)
 
+def _extractSvgSize(
+        svgData: typing.Union[str, bytes],
+        ) -> typing.Tuple[int, int]:
+    if isinstance(svgData, bytes):
+        svgData = svgData.decode()
+
+    root = xml.etree.ElementTree.fromstring(svgData)
+    
+    return (
+        int(root.attrib.get('width')),
+        int(root.attrib.get('height')))
+
 class _MapTile(object):
     def __init__(
             self,
@@ -44,7 +59,28 @@ class _MapTile(object):
             scale: int
             ) -> None:
         self._scale = scale
-        with PIL.Image.open(io.BytesIO(image.bytes())) as pixelData:
+        self._svgTree = None
+
+        # Cairo doesn't appear use RGBA internally so pixel bytes can't just be pulled from the
+        # surface (colours are all wrong), to work around this the SVG is converted to a PNG and
+        # that PNG is then loaded
+        imageBytes = image.bytes()
+        if image.format() == travellermap.MapFormat.SVG:
+            width, height = _extractSvgSize(imageBytes)
+
+            self._svgTree = cairosvg.parser.Tree(bytestring=imageBytes)
+
+            output = io.BytesIO()
+            surface = cairosvg.surface.PNGSurface(
+                tree=self._svgTree,
+                output=output,
+                output_width=width,
+                output_height=height,
+                dpi=96.0)
+            surface.finish()
+            imageBytes = output.getvalue()
+         
+        with PIL.Image.open(io.BytesIO(imageBytes)) as pixelData:
             self._pixels = pixelData.tobytes()
             self._size = (pixelData.width, pixelData.height)
             self._mode = pixelData.mode
@@ -142,7 +178,7 @@ class Compositor(object):
     # This seems to be the point where things stop being that visible and Traveller Map starts showing
     # the galaxy overlay. If the requested tile has a scale lower than this then there isn't any point
     # in compositing.
-    _MinCompositionScale = 1.4
+    _MinCompositionScale = 4
 
     def __init__(
             self,
@@ -261,6 +297,8 @@ class Compositor(object):
             # Convert the map image bytes to an image each time. The Image can't be shared between
             # threads as things like crop aren't thread safe
             # https://github.com/python-pillow/Pillow/issues/4848
+            # TODO: Looking at the bug it looks like crop is ok, it's just load (which crop can call)
+            # that isn't thread safe
             srcImage = PIL.Image.frombytes(
                 mapImage.mode(),
                 mapImage.size(),

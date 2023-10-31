@@ -17,8 +17,12 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # full world info -> no names -> no worlds)
 # It's important that this is defined from largest to smallest as this will be the
 # order the maps are generated in and the generating the largest is the most likely to
-# fail so best to do it first
-_CustomMapScales = [128, 64, 32, 16, 3]
+# fail so best to do it first.
+# There is no point in generating a map with a scale less than 4. That is the point
+# where traveller map stops drawing the real sector and starts drawing the red line
+# borders. To keep things looking consistent the compositor won't composite anything
+# at a scale less than 4.
+_CustomMapScales = [128, 64, 32, 16]
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased

@@ -5,11 +5,13 @@ import typing
 class MapFormat(enum.Enum):
     PNG = 'png'
     JPEG = 'jpeg'
+    SVG = 'svg'
 
 # NOTE: These values for this map should be lower case
 _FormatToMimeType = {
     MapFormat.PNG: 'image/png',
     MapFormat.JPEG: 'image/jpeg',
+    MapFormat.SVG: 'image/svg+xml',
 }
 
 def mapFormatToMimeType(format: MapFormat) -> str:

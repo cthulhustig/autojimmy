@@ -9,6 +9,7 @@ import multiprocessing
 import os
 import PIL.Image
 import PIL.ImageDraw
+import proxy
 import socketserver
 import travellermap
 import urllib.error
@@ -128,7 +129,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             travellerMapUrl: str,
             localFileStore: _LocalFileStore,
             tileCache: _TileCache,
-            compositor: typing.Optional[travellermap.Compositor],
+            compositor: typing.Optional[proxy.Compositor],
             *args,
             **kwargs
             ) -> None:
@@ -315,9 +316,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                         tileScale=tileScale,
                         milieu=milieu)
             else:
-                compositorOp = travellermap.Compositor.Operation.NoComposite
+                compositorOp = proxy.Compositor.Operation.NoComposite
 
-            if compositorOp != travellermap.Compositor.Operation.SimpleCopy:
+            if compositorOp != proxy.Compositor.Operation.SimpleCopy:
                 # TODO: I suspect this is creating a new TCP connection for each request. If so it
                 # would be better to use a connection pull if possible
                 tileBytes, contentType, tileFormat = self._makeTileRequest(parsedUrl=parsedUrl)
@@ -332,9 +333,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 tileFormat = travellermap.MapFormat.PNG
                 contentType = travellermap.mapFormatToMimeType(tileFormat)
 
-            if tileFormat and (compositorOp != travellermap.Compositor.Operation.NoComposite):
+            if tileFormat and (compositorOp != proxy.Compositor.Operation.NoComposite):
                 try:
-                    if compositorOp == travellermap.Compositor.Operation.FullComposite:
+                    if compositorOp == proxy.Compositor.Operation.FullComposite:
                         with PIL.Image.open(io.BytesIO(tileBytes)) as tileImage:
                             self._compositor.composite(
                                 tileImage=tileImage,
@@ -350,7 +351,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                             tileBytes.seek(0)
                             tileBytes = tileBytes.read()
                     else:
-                        assert(compositorOp == travellermap.Compositor.Operation.SimpleCopy)
+                        assert(compositorOp == proxy.Compositor.Operation.SimpleCopy)
                         tileImage = self._compositor.copy(
                             tileX=tileX,
                             tileY=tileY,
@@ -376,9 +377,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if tileFormat:
                 colour = 'red'
 
-                if compositorOp == travellermap.Compositor.Operation.FullComposite:
+                if compositorOp == proxy.Compositor.Operation.FullComposite:
                     colour = 'blue'
-                elif compositorOp == travellermap.Compositor.Operation.SimpleCopy:
+                elif compositorOp == proxy.Compositor.Operation.SimpleCopy:
                     colour = 'green'
 
                 with PIL.Image.open(tileBytes if isinstance(tileBytes, io.BytesIO) else io.BytesIO(tileBytes)) as image:
@@ -617,7 +618,7 @@ class MapProxy(object):
             # default tiles to the client
             compositor = None
             try:
-                compositor = travellermap.Compositor(customMapsDir=customMapsDir)
+                compositor = proxy.Compositor(customMapsDir=customMapsDir)
             except Exception as ex:
                 logging.error('Exception occurred while compositing tile', exc_info=ex)
 
