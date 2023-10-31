@@ -55,52 +55,60 @@ def _extractSvgSize(
 class _MapTile(object):
     def __init__(
             self,
-            image: travellermap.MapImage,
+            mapImage: travellermap.MapImage,
             scale: int
             ) -> None:
         self._scale = scale
-        self._svgTree = None
+        self._svg = None
+        self._image = None
 
         # Cairo doesn't appear use RGBA internally so pixel bytes can't just be pulled from the
         # surface (colours are all wrong), to work around this the SVG is converted to a PNG and
         # that PNG is then loaded
-        imageBytes = image.bytes()
-        if image.format() == travellermap.MapFormat.SVG:
+        imageBytes = mapImage.bytes()
+        if mapImage.format() == travellermap.MapFormat.SVG:
             width, height = _extractSvgSize(imageBytes)
 
-            self._svgTree = cairosvg.parser.Tree(bytestring=imageBytes)
+            self._svg = cairosvg.parser.Tree(bytestring=imageBytes)
 
             output = io.BytesIO()
             surface = cairosvg.surface.PNGSurface(
-                tree=self._svgTree,
+                tree=self._svg,
                 output=output,
                 output_width=width,
                 output_height=height,
                 dpi=96.0)
             surface.finish()
             imageBytes = output.getvalue()
-         
-        with PIL.Image.open(io.BytesIO(imageBytes)) as pixelData:
-            self._pixels = pixelData.tobytes()
-            self._size = (pixelData.width, pixelData.height)
-            self._mode = pixelData.mode
+
+        # Image.load isn't thread safe so make sure to call it now so it doesn't get called
+        # when cropping the image during composition
+        # https://github.com/python-pillow/Pillow/issues/4848
+        self._image = PIL.Image.open(io.BytesIO(imageBytes))
+        try:
+            self._image.load()
+        except:
+            self._image.close()
+            raise
 
     def scale(self) -> int:
         return self._scale
 
-    def pixels(self) -> bytes:
-        return self._pixels
-
-    def size(self) -> typing.Tuple[int, int]:
-        return self._size
-
-    def mode(self) -> str:
-        return self._mode
+    def image(self) -> PIL.Image:
+        return self._image
 
     def __lt__(self, other: '_MapTile') -> bool:
         if self.__class__ is other.__class__:
             return self.scale() > other.scale()
         return NotImplemented
+    
+    def __del__(self):
+        if self._image:
+            self._image.close()
+            del self._image
+
+        if self._svg:
+            del self._svg
 
 class _CustomSector(object):
     def __init__(
@@ -286,6 +294,9 @@ class Compositor(object):
                 -round((intersection[3] - sectorMapRect[3]) * mapImage.scale()), # Upper
                 round((intersection[2] - sectorMapRect[0]) * mapImage.scale()), # Right
                 -round((intersection[1] - sectorMapRect[3]) * mapImage.scale())) # Lower
+            srcPixelDim = (
+                srcPixelRect[2] - srcPixelRect[0],
+                srcPixelRect[3] - srcPixelRect[1])
 
             tgtPixelDim = (
                 round((intersection[2] - intersection[0]) * tileScale),
@@ -294,32 +305,30 @@ class Compositor(object):
                 math.ceil((intersection[0] * tileScale) - (float(tileX) * tileWidth)),
                 -math.ceil((intersection[3] * tileScale) + (float(tileY) * tileHeight)))
 
-            # Convert the map image bytes to an image each time. The Image can't be shared between
-            # threads as things like crop aren't thread safe
-            # https://github.com/python-pillow/Pillow/issues/4848
-            # TODO: Looking at the bug it looks like crop is ok, it's just load (which crop can call)
-            # that isn't thread safe
-            srcImage = PIL.Image.frombytes(
-                mapImage.mode(),
-                mapImage.size(),
-                mapImage.pixels())
+            srcImage = mapImage.image()
+            croppedImage = None
+            resizedImage = None
             try:
-                cropImage = srcImage.crop(srcPixelRect)
-                del srcImage
-                srcImage = cropImage
+                # Crop the source image if required
+                if ((srcImage.width != srcPixelDim[0]) or (srcImage.height != srcPixelDim[1])):
+                    croppedImage = srcImage.crop(srcPixelRect)
+                    srcImage = croppedImage
 
                 # Scale the source image if required
                 if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
                     resizedImage = srcImage.resize(
                         tgtPixelDim,
                         resample=PIL.Image.Resampling.BICUBIC)
-                    del srcImage
                     srcImage = resizedImage
 
                 # Copy custom sector section over current tile using it's alpha channel as a mask
                 tileImage.paste(srcImage, tgtPixelOffset, srcImage)              
             finally:
-                del srcImage
+                # TODO: Not sure if this is actually needed
+                if croppedImage != None:
+                    del croppedImage
+                if resizedImage != None:
+                    del resizedImage
 
         return tileImage
     
@@ -370,29 +379,27 @@ class Compositor(object):
                 round((tileMapRect[2] - tileMapRect[0]) * tileScale),
                 round((tileMapRect[3] - tileMapRect[1]) * tileScale))
 
-            # Convert the map image bytes to an image each time. The Image can't be shared between
-            # threads as things like crop aren't thread safe
-            # https://github.com/python-pillow/Pillow/issues/4848
-            srcImage = PIL.Image.frombytes(
-                mapImage.mode(),
-                mapImage.size(),
-                mapImage.pixels())
+            srcImage = mapImage.image()
+            croppedImage = None
+            resizedImage = None
             try:
-                cropImage = srcImage.crop(srcPixelRect)
-                del srcImage
-                srcImage = cropImage
+                croppedImage = srcImage.crop(srcPixelRect)
+                srcImage = croppedImage
 
                 # Scale the source image if required
                 if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
                     resizedImage = srcImage.resize(
                         tgtPixelDim,
                         resample=PIL.Image.Resampling.BICUBIC)
-                    del srcImage
                     srcImage = resizedImage
 
                 return srcImage
-            except:
-                del srcImage
+            finally:
+                # TODO: Not sure if this is actually needed
+                if croppedImage != None:
+                    del croppedImage
+                if resizedImage != None:
+                    del resizedImage
 
         return None
 
@@ -417,7 +424,7 @@ class Compositor(object):
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
-                        mapImages.append(_MapTile(image=mapImage, scale=scale))
+                        mapImages.append(_MapTile(mapImage=mapImage, scale=scale))
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
