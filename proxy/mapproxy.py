@@ -209,61 +209,6 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
 
-    # NOTE: The POST handler of the proxy isn't currently used as it doesn't support the
-    # multipart/form-data content that is being used by the poster generation code. I've
-    # left the code in in case it's useful in the future
-    """
-    def do_POST(self) -> None:
-        try:
-            parsedUrl = urllib.parse.urlparse(self.path)
-
-            requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
-            if parsedUrl.query:
-                requestUrl += '?' + parsedUrl.query
-            logging.debug(f'Making proxied POST request to {requestUrl}')
-
-            contentLength = int(self.headers.get('Content-Length', 0))
-            content = None
-            if contentLength:
-                content = self.rfile.read(contentLength)
-
-            request = urllib.request.Request(requestUrl, data=content)
-            contentType = self.headers.get('Content-Type')
-            if contentType:
-                request.add_header('Content-Type', contentType)
-
-            with urllib.request.urlopen(request) as response:
-                info = response.info()
-                data = response.read()
-
-            self.send_response(200)
-            contentType = info.get('Content-Type')
-            if contentType:
-                self.send_header('Content-Type', contentType)
-            self.end_headers()
-            self.wfile.write(data)
-        except urllib.error.HTTPError as ex:
-            logging.error(f'HTTP Error {ex.code} when handling POST request to {self.path}')
-            self.send_response(ex.code)
-            self.end_headers()
-        except urllib.error.URLError as ex:
-            logging.error(f'URL Error {ex.reason} when handling POST request to {self.path}')
-            if hasattr(ex, 'code'):
-                code = ex.code
-            else:
-                code = 500
-            self.send_response(code)
-            self.end_headers()
-        except ConnectionAbortedError as ex:
-            # Log this at debug as it's expected that it can happen if the client closes
-            # the connection while the proxy is handling the request
-            logging.debug(f'Connection aborted when handling POST request to {self.path}', exc_info=ex)
-        except Exception as ex:
-            logging.error(f'Exception occurred when handling POST request to {self.path}', exc_info=ex)
-            self.send_response(500)
-            self.end_headers()
-    """
-
     def _handleLocalFileRequest(
             self,
             filePath: urllib.parse.ParseResult,
@@ -304,65 +249,98 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             tileWidth = int(parsedQuery.get('w', [256])[0])
             tileHeight = int(parsedQuery.get('h', [256])[0])
             milieu = str(parsedQuery.get('milieu', ['M1105'])[0])
+            style = str(parsedQuery.get('style', 'poster'))
             if milieu.upper() in travellermap.Milieu.__members__:
                 milieu = travellermap.Milieu.__members__[milieu]
             else:
                 milieu = travellermap.Milieu.M1105
 
             if self._compositor:
-                compositorOp = self._compositor.compositeOperation(
+                overlapType = self._compositor.overlapType(
                         tileX=tileX,
                         tileY=tileY,
                         tileScale=tileScale,
                         milieu=milieu)
             else:
-                compositorOp = proxy.Compositor.Operation.NoComposite
+                overlapType = proxy.Compositor.OverlapType.NoOverlap
 
-            if compositorOp != proxy.Compositor.Operation.SimpleCopy:
+            if overlapType != proxy.Compositor.OverlapType.CompleteOverlap:
+                # Request the tile from Traveller Map. If it's a partial overlap request an SVG so
+                # the text can be processed to avoid truncation by overlaid sectors
+
                 # TODO: I suspect this is creating a new TCP connection for each request. If so it
                 # would be better to use a connection pull if possible
-                tileBytes, contentType, tileFormat = self._makeTileRequest(parsedUrl=parsedUrl)
 
+                tileBytes, contentType, sourceFormat = self._makeTileRequest(
+                    parsedUrl=parsedUrl,
+                    # TODO: Fix SVG tiles (names and * get drawn over custom sectors)
+                    #requestSvg=overlapType == proxy.Compositor.OverlapType.PartialOverlap)
+                    requestSvg=False)
+                
+                # Set the target format, by default the source format is used, this can be None if we
+                # got something unexpected back from Traveller Map. In that case the tile will be
+                # returned as is (using the content type string returned with the tile). If the tile
+                # is an SVG set the target format to the best type for the style and update the content
+                # type string to match
+                targetFormat = sourceFormat
+                if sourceFormat == travellermap.MapFormat.SVG:
+                    targetFormat = travellermap.MapFormat.JPEG if style == 'candy' else travellermap.MapFormat.PNG
+                    contentType = travellermap.mapFormatToMimeType(targetFormat)
+                
                 # No tile data shouldn't really happen and there's nothing we can do to return something
                 # usable. Making this check is important as, if it was to happen, it prevents code later
                 # from re-making the request
                 if not tileBytes:
                     raise RuntimeError('Proxied tile request returned no data')
             else:
+                # The tile is completely overlapped by a custom sector so there is no need to request the tile
+                # from Traveller Map. This also means there is no source format. Set the target format to the
+                # best type for the style and update the content string accordingly
                 tileBytes = None
-                tileFormat = travellermap.MapFormat.PNG
-                contentType = travellermap.mapFormatToMimeType(tileFormat)
+                sourceFormat = None
+                targetFormat = travellermap.MapFormat.JPEG if style == 'candy' else travellermap.MapFormat.PNG
+                contentType = travellermap.mapFormatToMimeType(targetFormat)
 
-            if tileFormat and (compositorOp != proxy.Compositor.Operation.NoComposite):
+            if targetFormat and (overlapType != proxy.Compositor.OverlapType.NoOverlap):
                 try:
-                    if compositorOp == proxy.Compositor.Operation.FullComposite:
-                        with PIL.Image.open(io.BytesIO(tileBytes)) as tileImage:
-                            self._compositor.composite(
-                                tileImage=tileImage,
+                    if overlapType == proxy.Compositor.OverlapType.PartialOverlap:
+                        tile = proxy.CompositorImage(
+                            mapImage=travellermap.MapImage(bytes=tileBytes, format=sourceFormat),
+                            scale=tileScale)
+
+                        try:
+                            self._compositor.partialOverlap(
+                                tileImage=tile.mainImage(),
+                                tileText=tile.textImage(),
                                 tileX=tileX,
                                 tileY=tileY,
                                 tileWidth=tileWidth,
                                 tileHeight=tileHeight,
                                 tileScale=tileScale,
                                 milieu=milieu)
-
+                            
+                            tileImage = tile.mainImage()
                             tileBytes = io.BytesIO()
-                            tileImage.save(tileBytes, format=tileFormat.value)
+                            tileImage.save(tileBytes, format=targetFormat.value)
                             tileBytes.seek(0)
                             tileBytes = tileBytes.read()
+                        finally:
+                            del tile
                     else:
-                        assert(compositorOp == proxy.Compositor.Operation.SimpleCopy)
-                        tileImage = self._compositor.copy(
+                        assert(overlapType == proxy.Compositor.OverlapType.CompleteOverlap)
+                        tileImage = self._compositor.fullOverlap(
                             tileX=tileX,
                             tileY=tileY,
                             tileScale=tileScale,
                             milieu=milieu)
                         
-                        tileBytes = io.BytesIO()
-                        tileImage.save(tileBytes, format=tileFormat.value)
-                        del tileImage
-                        tileBytes.seek(0)
-                        tileBytes = tileBytes.read()
+                        try:
+                            tileBytes = io.BytesIO()
+                            tileImage.save(tileBytes, format=targetFormat.value)
+                            tileBytes.seek(0)
+                            tileBytes = tileBytes.read()
+                        finally:
+                            del tileImage
 
                     if not tileBytes:
                         raise RuntimeError('Compositor returned no image')
@@ -372,16 +350,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 logging.debug(f'Serving live response for tile {parsedUrl.query}')
 
             # Enable this to add a red boundary to all tiles in order to highlight where they are
-            # TODO: When I add caching this overlay shouldn't be included in the image that is cached
+            # TODO: When I add disk caching this overlay shouldn't be included in the image that is cached
             """
             if tileFormat:
                 colour = 'red'
-
-                if compositorOp == proxy.Compositor.Operation.FullComposite:
-                    colour = 'blue'
-                elif compositorOp == proxy.Compositor.Operation.SimpleCopy:
-                    colour = 'green'
-
                 with PIL.Image.open(tileBytes if isinstance(tileBytes, io.BytesIO) else io.BytesIO(tileBytes)) as image:
                     draw = PIL.ImageDraw.Draw(image)
                     draw.line([(0, 0), (0, image.height - 1)], fill=colour, width=0)
@@ -396,9 +368,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
             if not tileBytes:
                 # If we get to here with no tile bytes it means something wen't wrong performing a simple
-                # copy. In this situation the best I can think to request the tile from Traveller Map and
+                # copy. In this situation the only real option is to request the tile from Traveller Map and
                 # return that
-                tileBytes, contentType, tileFormat = self._makeTileRequest(parsedUrl=parsedUrl)
+                tileBytes, contentType, targetFormat = self._makeTileRequest(
+                    parsedUrl=parsedUrl,
+                    requestSvg=False)
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
@@ -406,10 +380,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
             # Add the tile to the cache. Depending on the logic above this could either be a tile
             # as-is from Traveller Map or a composite tile
-            if tileBytes and tileFormat:
+            if tileBytes and targetFormat:
                 tileImage = travellermap.MapImage(
                     bytes=tileBytes,
-                    format=tileFormat)                
+                    format=targetFormat)                
                 self._tileCache.add(key=cacheKey, image=tileImage)
 
         self.send_response(200)
@@ -437,9 +411,14 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _makeTileRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult
+            parsedUrl: urllib.parse.ParseResult,
+            requestSvg: bool
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
-        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
+        headers = None
+        if requestSvg:
+            headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}
+
+        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl, headers=headers)
 
         contentType = headers.get('Content-Type') # TODO: Is this check case sensitive?
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
@@ -451,14 +430,20 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
     
     def _makeProxyRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult
+            parsedUrl: urllib.parse.ParseResult,
+            headers: typing.Optional[typing.Mapping[str, str]] = None
             ) -> typing.Tuple[bytes, typing.Dict[str, str]]:
         requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
         if parsedUrl.query:
             requestUrl += '?' + parsedUrl.query
         logging.debug(f'Making proxied request for {requestUrl}')
 
-        with urllib.request.urlopen(requestUrl) as response:
+        request = urllib.request.Request(requestUrl)
+        if headers:
+            for key, value in headers.items():
+                request.add_header(key, value)        
+
+        with urllib.request.urlopen(request) as response:
             return (response.read(), response.info())
     
     # The key used for the tile cache is based on the request options. Rather than just use the raw

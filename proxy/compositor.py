@@ -6,10 +6,11 @@ import enum
 import io
 import logging
 import math
+import numpy
 import PIL.Image
-import PIL.ImageDraw
 import travellermap
 import typing
+import threading
 import xml.etree.ElementTree
 
 # Returns true if rect1 is completely contained within rect2
@@ -52,74 +53,143 @@ def _extractSvgSize(
         int(root.attrib.get('width')),
         int(root.attrib.get('height')))
 
-class _MapTile(object):
+class CompositorImage(object):
     def __init__(
             self,
             mapImage: travellermap.MapImage,
             scale: int
             ) -> None:
         self._scale = scale
-        self._svg = None
-        self._image = None
+        self._mainImage = None
+        self._textImage = None
 
-        # Cairo doesn't appear use RGBA internally so pixel bytes can't just be pulled from the
-        # surface (colours are all wrong), to work around this the SVG is converted to a PNG and
-        # that PNG is then loaded
-        imageBytes = mapImage.bytes()
-        if mapImage.format() == travellermap.MapFormat.SVG:
-            width, height = _extractSvgSize(imageBytes)
+        mapBytes = mapImage.bytes()
+        mapFormat = mapImage.format()
+        if mapFormat == travellermap.MapFormat.SVG:    
+            self._mainImage = CompositorImage._createImage(
+                mapBytes=mapBytes,
+                mapFormat=mapFormat)     
 
-            self._svg = cairosvg.parser.Tree(bytestring=imageBytes)
+            textSvg = CompositorImage._createTextSvg(mapBytes=mapBytes)            
+            self._textImage = CompositorImage._createImage(
+                mapBytes=textSvg,
+                mapFormat=mapFormat)
+        else:
+            self._mainImage = CompositorImage._createImage(
+                mapBytes=mapBytes,
+                mapFormat=mapFormat)
+            
+    def mainImage(self) -> PIL.Image.Image:
+        return self._mainImage
 
-            output = io.BytesIO()
-            surface = cairosvg.surface.PNGSurface(
-                tree=self._svg,
-                output=output,
-                output_width=width,
-                output_height=height,
-                dpi=96.0)
-            surface.finish()
-            imageBytes = output.getvalue()
-
-        # Image.load isn't thread safe so make sure to call it now so it doesn't get called
-        # when cropping the image during composition
-        # https://github.com/python-pillow/Pillow/issues/4848
-        self._image = PIL.Image.open(io.BytesIO(imageBytes))
-        try:
-            self._image.load()
-        except:
-            self._image.close()
-            raise
-
+    def textImage(self) -> PIL.Image.Image:
+        return self._textImage
+    
     def scale(self) -> int:
         return self._scale
-
-    def image(self) -> PIL.Image:
-        return self._image
-
-    def __lt__(self, other: '_MapTile') -> bool:
+    
+    def __lt__(self, other: 'CompositorImage') -> bool:
         if self.__class__ is other.__class__:
             return self.scale() > other.scale()
         return NotImplemented
     
     def __del__(self):
-        if self._image:
-            self._image.close()
-            del self._image
+        if self._mainImage:
+            self._mainImage.close()
+            del self._mainImage
 
-        if self._svg:
-            del self._svg
+        if self._textImage:
+            self._textImage.close()
+            del self._textImage
+
+    @staticmethod
+    def _createTextSvg(mapBytes: bytes) -> bytes:
+        root = xml.etree.ElementTree.fromstring(mapBytes)
+        element = root.find('{http://www.w3.org/2000/svg}g')
+        CompositorImage._recursiveRemoveGraphics(element)
+        return xml.etree.ElementTree.tostring(element=root)
+
+    @staticmethod
+    def _recursiveRemoveGraphics(
+            element: xml.etree.ElementTree.Element
+            ) -> None:
+        for child in reversed(element):
+            if child.tag == '{http://www.w3.org/2000/svg}g':
+                CompositorImage._recursiveRemoveGraphics(child)
+                if len(child) == 0:
+                    element.remove(child)
+            elif child.tag != '{http://www.w3.org/2000/svg}text':
+                element.remove(child)    
+
+    # I found that when having cairosvg render from multiple threads simultaneously (on Windows) it
+    # could result in it throwing an GDI exception. I assume it's got some kind of shared resource
+    # or resource limit somewhere
+    _cairoLock = threading.Lock()
+
+    @staticmethod
+    def _createImage(
+            mapBytes: bytes,
+            mapFormat: travellermap.MapFormat
+            ) -> PIL.Image.Image:
+        if mapFormat != travellermap.MapFormat.SVG:
+            # The map image is something other than SVG so use PIL to load it
+
+            # Image.load isn't thread safe so make sure to call it now so it doesn't get called
+            # when cropping the image during composition
+            # https://github.com/python-pillow/Pillow/issues/4848
+            image = PIL.Image.open(io.BytesIO(mapBytes))
+            try:
+                image.load()
+            except:
+                image.close()
+                raise
+            return image
+        
+        # The image is an SVG so generate two images, one containing the full tile and the other
+        # containing just the text on a transparent background
+        width, height = _extractSvgSize(mapBytes)
+        output = io.BytesIO()
+        
+        with CompositorImage._cairoLock:
+            surface = cairosvg.surface.PNGSurface(
+                tree=cairosvg.parser.Tree(bytestring=mapBytes),
+                output=output,
+                output_width=width,
+                output_height=height,
+                dpi=96.0)
+            try:
+                bgra = numpy.frombuffer(
+                    buffer=bytes(surface.cairo.get_data()),
+                    dtype=numpy.uint8)
+                surface.finish()
+            finally:
+                del surface
+
+        # Convert cairo BGRA pixels to PIL RGBA
+        bgra.shape = (height, width, 4) # for RGBA
+        b, g, r, a = bgra[:,:,0], bgra[:,:,1], bgra[:,:,2], bgra[:,:,3]
+        rgba = numpy.zeros(
+            shape=(height, width, 4),
+            dtype=numpy.uint8)
+        rgba[:,:,0] = r
+        rgba[:,:,1] = g
+        rgba[:,:,2] = b
+        rgba[:,:,3] = a
+
+        return PIL.Image.frombytes('RGBA', (width, height), rgba.tobytes())
+        
+
 
 class _CustomSector(object):
     def __init__(
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mapImages: typing.Iterable[_MapTile]
+            mapPosters: typing.Iterable[CompositorImage]
             ) -> None:
         self._name = name
         self._position = position
-        self._mapImages = sorted(mapImages)
+        self._mapPosters = sorted(mapPosters)
 
         absoluteRect = travellermap.sectorBoundingRect(position[0], position[1])
         mapSpaceUL = travellermap.absoluteHexToMapSpace(
@@ -155,33 +225,33 @@ class _CustomSector(object):
     def interiorRect(self) -> typing.Tuple[float, float, float, float]:
         return self._interiorRect    
 
-    def findMapImage(
+    def findMapPoster(
             self,
             scale: typing.Union[int, float]
-            ) -> typing.Optional[_MapTile]:
-        bestLevel = None
-        for level in self._mapImages:
-            if bestLevel and scale > level.scale():
-                # We've got a possible best level and the one currently being looked at is for a
+            ) -> typing.Optional[CompositorImage]:
+        bestPoster = None
+        for poster in self._mapPosters:
+            if bestPoster and scale > poster.scale():
+                # We've got a possible best poster and the one currently being looked at is for a
                 # lower scale so use the current best. This works on the assumption that list is
                 # ordered highest scale to lowest scale
                 break
-            bestLevel = level
+            bestPoster = poster
 
-        return bestLevel
+        return bestPoster
 
 class Compositor(object):
-    class Operation(enum.Enum):
+    class OverlapType(enum.Enum):
         # The tile doesn't overlap any custom sectors so the required tile is just the source tile
         # that is generated by Traveller Map and no composition is required
-        NoComposite = 0
+        NoOverlap = 0
 
         # The tile partially overlaps at least one custom sector so composition is required.
-        FullComposite = 1
+        PartialOverlap = 1
 
         # The tile is completely contained within a single custom sector so the required tile  can
         # be generated simply by copying from the (i.e. the Traveller Map tile isn't required)
-        SimpleCopy = 2
+        CompleteOverlap = 2
 
     # This seems to be the point where things stop being that visible and Traveller Map starts showing
     # the galaxy overlay. If the requested tile has a scale lower than this then there isn't any point
@@ -191,21 +261,21 @@ class Compositor(object):
     def __init__(
             self,
             customMapsDir: str
-            ) -> Operation:
+            ) -> OverlapType:
         self._customMapsDir = customMapsDir
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
 
         self._loadCustomUniverse()
 
-    def compositeOperation(
+    def overlapType(
             self,
             tileX: float,
             tileY: float,
             tileScale: float,
             milieu: travellermap.Milieu
-            ) -> Operation:
+            ) -> OverlapType:
         if tileScale < Compositor._MinCompositionScale:
-            return Compositor.Operation.NoComposite
+            return Compositor.OverlapType.NoOverlap
 
         # Calculate tile rect in map space
         tileMapUL = travellermap.tileSpaceToMapSpace(
@@ -227,19 +297,20 @@ class Compositor(object):
         for sector in sectorList:
             sectorMapRect = sector.interiorRect()
             if _isContained(tileMapRect, sectorMapRect):
-                return Compositor.Operation.SimpleCopy
+                return Compositor.OverlapType.CompleteOverlap
 
         for sector in sectorList:
             sectorMapRect = sector.boundingRect()
             intersection = _calculateIntersection(sectorMapRect, tileMapRect)
             if intersection:
-                return Compositor.Operation.FullComposite
+                return Compositor.OverlapType.PartialOverlap
             
-        return Compositor.Operation.NoComposite
+        return Compositor.OverlapType.NoOverlap
 
-    def composite(
+    def partialOverlap(
             self,
-            tileImage: PIL.Image,
+            tileImage: PIL.Image.Image,
+            tileText: typing.Optional[PIL.Image.Image],
             tileX: float,
             tileY: float,
             tileWidth: int,
@@ -264,17 +335,14 @@ class Compositor(object):
             tileMapBR[0], # Right
             tileMapBR[1]) # Bottom
 
-        # TODO: There is an annoying graphics issue that can occur if two custom sectors
-        # are horizontally next to each other. If the name of one of the edge worlds from
-        # the first sector processed overlaps the hex from the adjacent sector. When the
-        # adjacent sector is overlayed on the tile will be overwritten. The only solution
-        # I can see to that problem is switching so the custom sector mip levels have a
-        # completely transparent background. However this introduces a load more problems
-        # that are worse, such as issues with the * placeholders and things like trade
-        # routes being rendered on the tile by Traveller Map and not overwritten
-        # (especially if a custom sector was dropped over an existing populated sector).
-        sectorList = self._milieuSectorMap.get(milieu)
-        for sector in sectorList:
+        # Determine which custom sector(s) overlap the tile how they should be overlaid.
+        overlappedSectors: typing.List[typing.Tuple[
+            CompositorImage, # Map poster for custom sector that overlaps tile
+            typing.Tuple[int, int, int, int], # Custom sector rect to copy
+            typing.Tuple[int, int], # Size to scale section of custom sector to
+            typing.Tuple[int, int], # Tile offset to place scaled section of custom sector
+            ]] = []
+        for sector in self._milieuSectorMap.get(milieu):
             sectorMapRect = sector.boundingRect()
             intersection = _calculateIntersection(sectorMapRect, tileMapRect)
             if not intersection:
@@ -283,20 +351,17 @@ class Compositor(object):
             # The custom sector overlaps the tile so copy the section that overlaps to
             # the tile
 
-            mapImage = sector.findMapImage(scale=tileScale)
-            if not mapImage:
+            mapPoster = sector.findMapPoster(scale=tileScale)
+            if not mapPoster:
                 continue
 
             # NOTE: Y-axis is flipped due to map space having a negative Y compared to other
             # coordinate systems
             srcPixelRect = (
-                round((intersection[0] - sectorMapRect[0]) * mapImage.scale()), # Left
-                -round((intersection[3] - sectorMapRect[3]) * mapImage.scale()), # Upper
-                round((intersection[2] - sectorMapRect[0]) * mapImage.scale()), # Right
-                -round((intersection[1] - sectorMapRect[3]) * mapImage.scale())) # Lower
-            srcPixelDim = (
-                srcPixelRect[2] - srcPixelRect[0],
-                srcPixelRect[3] - srcPixelRect[1])
+                round((intersection[0] - sectorMapRect[0]) * mapPoster.scale()), # Left
+                -round((intersection[3] - sectorMapRect[3]) * mapPoster.scale()), # Upper
+                round((intersection[2] - sectorMapRect[0]) * mapPoster.scale()), # Right
+                -round((intersection[1] - sectorMapRect[3]) * mapPoster.scale())) # Lower
 
             tgtPixelDim = (
                 round((intersection[2] - intersection[0]) * tileScale),
@@ -304,41 +369,43 @@ class Compositor(object):
             tgtPixelOffset = (
                 math.ceil((intersection[0] * tileScale) - (float(tileX) * tileWidth)),
                 -math.ceil((intersection[3] * tileScale) + (float(tileY) * tileHeight)))
+            
+            overlappedSectors.append((mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset))
 
-            srcImage = mapImage.image()
-            croppedImage = None
-            resizedImage = None
-            try:
-                # Crop the source image if required
-                if ((srcImage.width != srcPixelDim[0]) or (srcImage.height != srcPixelDim[1])):
-                    croppedImage = srcImage.crop(srcPixelRect)
-                    srcImage = croppedImage
+        # Overlay custom sector graphics on tile
+        for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
+            Compositor._overlayCustomSector(
+                srcImage=mapPoster.mainImage(),
+                srcPixelRect=srcPixelRect,
+                tgtPixelDim=tgtPixelDim,
+                tgtPixelOffset=tgtPixelOffset,
+                tgtImage=tileImage)
+            
+        # Overlay custom sector text on tile
+        for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
+            textImage = mapPoster.textImage()
+            if textImage:
+                Compositor._overlayCustomSector(
+                    srcImage=textImage,
+                    srcPixelRect=srcPixelRect,
+                    tgtPixelDim=tgtPixelDim,
+                    tgtPixelOffset=tgtPixelOffset,
+                    tgtImage=tileImage)
 
-                # Scale the source image if required
-                if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
-                    resizedImage = srcImage.resize(
-                        tgtPixelDim,
-                        resample=PIL.Image.Resampling.BICUBIC)
-                    srcImage = resizedImage
-
-                # Copy custom sector section over current tile using it's alpha channel as a mask
-                tileImage.paste(srcImage, tgtPixelOffset, srcImage)              
-            finally:
-                # TODO: Not sure if this is actually needed
-                if croppedImage != None:
-                    del croppedImage
-                if resizedImage != None:
-                    del resizedImage
+        if tileText and overlappedSectors:
+            # Overlay original tile text layer over the top of the tile to fill in any text that
+            # was overwritten by custom sector tiles
+            tileImage.paste(tileText, (0, 0), tileText)
 
         return tileImage
     
-    def copy(
+    def fullOverlap(
             self,
             tileX: float,
             tileY: float,
             tileScale: float,
             milieu: travellermap.Milieu
-            ) -> PIL.Image:
+            ) -> PIL.Image.Image:
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -363,46 +430,45 @@ class Compositor(object):
             # The tile is completely contained within the custom sector so copy the section of
             # the custom sector that it covers
 
-            mapImage = sector.findMapImage(scale=tileScale)
-            if not mapImage:
+            mapPoster = sector.findMapPoster(scale=tileScale)
+            if not mapPoster:
                 continue
 
             # NOTE: Y-axis is flipped due to map space having a negative Y compared to other
             # coordinate systems
             srcPixelRect = (
-                round((tileMapRect[0] - sectorMapRect[0]) * mapImage.scale()), # Left
-                -round((tileMapRect[3] - sectorMapRect[3]) * mapImage.scale()), # Upper
-                round((tileMapRect[2] - sectorMapRect[0]) * mapImage.scale()), # Right
-                -round((tileMapRect[1] - sectorMapRect[3]) * mapImage.scale())) # Lower
+                round((tileMapRect[0] - sectorMapRect[0]) * mapPoster.scale()), # Left
+                -round((tileMapRect[3] - sectorMapRect[3]) * mapPoster.scale()), # Upper
+                round((tileMapRect[2] - sectorMapRect[0]) * mapPoster.scale()), # Right
+                -round((tileMapRect[1] - sectorMapRect[3]) * mapPoster.scale())) # Lower
             
             tgtPixelDim = (
                 round((tileMapRect[2] - tileMapRect[0]) * tileScale),
                 round((tileMapRect[3] - tileMapRect[1]) * tileScale))
-
-            srcImage = mapImage.image()
-            croppedImage = None
-            resizedImage = None
-            try:
-                croppedImage = srcImage.crop(srcPixelRect)
-                srcImage = croppedImage
-
-                # Scale the source image if required
-                if (srcImage.width != tgtPixelDim[0]) or (srcImage.height != tgtPixelDim[1]):
-                    resizedImage = srcImage.resize(
-                        tgtPixelDim,
-                        resample=PIL.Image.Resampling.BICUBIC)
-                    srcImage = resizedImage
-
-                return srcImage
-            finally:
-                # TODO: Not sure if this is actually needed
-                if croppedImage != None:
-                    del croppedImage
-                if resizedImage != None:
-                    del resizedImage
+                        
+            # Overlay custom sector poster on tile
+            tileImage = Compositor._overlayCustomSector(
+                srcImage=mapPoster.mainImage(),
+                srcPixelRect=srcPixelRect,
+                tgtPixelDim=tgtPixelDim,
+                tgtPixelOffset=(0, 0))
+            
+            # Overlay custom sector text on tile
+            textImage = mapPoster.textImage()
+            if textImage:
+                Compositor._overlayCustomSector(
+                    srcImage=textImage,
+                    srcPixelRect=srcPixelRect,
+                    tgtPixelDim=tgtPixelDim,
+                    tgtPixelOffset=(0, 0),
+                    tgtImage=tileImage)
+                
+            return tileImage
 
         return None
 
+    # TODO: Loading this stuff takes to long, it's still going after the main app has finished loading and
+    # the user is ready to start loading the map widget
     def _loadCustomUniverse(self) -> None:
         self._milieuSectorMap.clear()
 
@@ -424,7 +490,7 @@ class Compositor(object):
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
-                        mapImages.append(_MapTile(mapImage=mapImage, scale=scale))
+                        mapImages.append(CompositorImage(mapImage=mapImage, scale=scale))
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
@@ -432,6 +498,54 @@ class Compositor(object):
                 sectors.append(_CustomSector(
                     name=sectorInfo.canonicalName(),
                     position=(sectorInfo.x(), sectorInfo.y()),
-                    mapImages=mapImages))
+                    mapPosters=mapImages))
 
             self._milieuSectorMap[milieu] = sectors
+
+    @staticmethod
+    def _overlayCustomSector(
+            srcImage: PIL.Image.Image,
+            srcPixelRect: typing.Tuple[int, int, int, int],
+            tgtPixelDim: typing.Tuple[int, int],
+            tgtPixelOffset: typing.Tuple[int, int],
+            tgtImage: typing.Optional[PIL.Image.Image] = None
+            ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image  
+        overlayImage = srcImage
+        srcPixelDim = (
+            srcPixelRect[2] - srcPixelRect[0],
+            srcPixelRect[3] - srcPixelRect[1])
+        croppedImage = None
+        resizedImage = None
+        try:
+            # Crop the source image if required
+            if ((overlayImage.width != srcPixelDim[0]) or (overlayImage.height != srcPixelDim[1])):
+                croppedImage = overlayImage.crop(srcPixelRect)
+                overlayImage = croppedImage
+
+            # Scale the source image if required
+            if (overlayImage.width != tgtPixelDim[0]) or (overlayImage.height != tgtPixelDim[1]):
+                resizedImage = overlayImage.resize(
+                    tgtPixelDim,
+                    resample=PIL.Image.Resampling.BICUBIC)
+                overlayImage = resizedImage
+
+            if tgtImage == None:
+                # No target was specified to overlay the custom sector on so just return the
+                # cropped and resized section of the source image.
+                # NOTE: If no cropping or resizing performed a copy MUST be made as the source
+                # image shouldn't be returned as something may delete it
+                # NOTE: It's important to set tgtImage to srcImage to prevent it being deleted
+                # in the finally clause
+                tgtImage = overlayImage if overlayImage is not srcImage else overlayImage.copy()
+            else:
+                # Copy custom sector section over current tile using it's alpha channel as a mask
+                tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage)
+        finally:
+            if (croppedImage != None) and (croppedImage is not tgtImage):
+                croppedImage.close()
+                del croppedImage
+            if (resizedImage != None) and (resizedImage is not tgtImage):
+                resizedImage.close()
+                del resizedImage
+
+        return tgtImage
