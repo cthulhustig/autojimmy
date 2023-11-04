@@ -331,7 +331,6 @@ class WorldManager(object):
         for worldList in searchWorldLists:
             for world in worldList:
                 if worldExpression.match(world.name()):
-                    assert(world not in foundWorlds) # TODO: Remove temp assert (to slow)
                     foundWorlds.append(world)
                     if maxResults and len(foundWorlds) >= maxResults:
                         return foundWorlds

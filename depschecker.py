@@ -7,9 +7,6 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
-# IMPORTANT: I don't think this code can do anything with multiprocessing as it may break freeze_support
-# TODO: Check that it's not already broken because it's not the "first thing" that gets executed now
-
 _Requirements = [
     'PyQt5',
     'PyQt5.QtWebEngineWidgets',
@@ -38,8 +35,6 @@ except Exception as ex:
     print(f'Failed to open {_RequirementsFile} for dependency checking')
 
 # Try to import each of the required modules to display
-# TODO: Handle Sierra????
-# TODO: Check version of module????
 for lib in _Requirements:
     try:
         importlib.import_module(lib)

@@ -88,8 +88,6 @@ class PosterJobAsync(QtCore.QObject):
         
         headers = None
         if requestSvg:
-            # TODO: This header should probably be something that is returned by formatPosterUrl (or
-            # something like it)
             headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}
 
         self._uploadHistory = 0

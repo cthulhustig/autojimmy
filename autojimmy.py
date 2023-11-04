@@ -456,10 +456,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
-    # This needs to be called as the first line of the script
+    # According to the docs this should be called as the first line of the script. Technically I'm
+    # not doing this as the dependency checking runs first but I've tested it and it doesn't seem
+    # to matter.
     # https://docs.python.org/3/library/multiprocessing.html#windows
-    # TODO: Do I need to call this in the main proxy process as it uses multiprocessing now to
-    # spawn additional processes
     multiprocessing.freeze_support()
 
     main()

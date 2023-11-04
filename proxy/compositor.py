@@ -1,4 +1,3 @@
-# TODO: Need to handle cairo dll not being found
 _HasSvgSupport = True
 try:
     import cairosvg
@@ -518,8 +517,8 @@ class Compositor(object):
 
         return None
 
-    # TODO: Loading this stuff takes to long, it's still going after the main app has finished loading and
-    # the user is ready to start loading the map widget
+    # TODO: This is still not optimal as SVGs are rendered in per custom sector groups which may not
+    # utilise all cores
     def _loadCustomUniverse(self) -> None:
         self._milieuSectorMap.clear()
 
