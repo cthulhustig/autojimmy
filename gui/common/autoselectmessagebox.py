@@ -26,7 +26,7 @@ class AutoSelectMessageBox(object):
             defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
             rememberState: typing.Optional[QtWidgets.QMessageBox.StandardButton] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return AutoSelectMessageBox._showMessageBox(
+        return AutoSelectMessageBox.showMessageBox(
             parent=parent,
             icon=gui.MessageBoxEx.Icon.Information,
             title=title,
@@ -52,7 +52,7 @@ class AutoSelectMessageBox(object):
                 text += '\n\n' + str(exception)
             else:
                 text = str(exception)
-        return AutoSelectMessageBox._showMessageBox(
+        return AutoSelectMessageBox.showMessageBox(
             parent=parent,
             icon=gui.MessageBoxEx.Icon.Critical,
             title=title,
@@ -72,7 +72,7 @@ class AutoSelectMessageBox(object):
             defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
             rememberState: typing.Optional[QtWidgets.QMessageBox.StandardButton] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return AutoSelectMessageBox._showMessageBox(
+        return AutoSelectMessageBox.showMessageBox(
             parent=parent,
             icon=gui.MessageBoxEx.Icon.Warning,
             title=title,
@@ -92,7 +92,7 @@ class AutoSelectMessageBox(object):
             defaultButton: typing.Optional[QtWidgets.QMessageBox.StandardButton] = QtWidgets.QMessageBox.StandardButton.NoButton,
             rememberState: typing.Optional[QtWidgets.QMessageBox.StandardButton] = None
             ) -> QtWidgets.QMessageBox.StandardButton:
-        return AutoSelectMessageBox._showMessageBox(
+        return AutoSelectMessageBox.showMessageBox(
             parent=parent,
             icon=gui.MessageBoxEx.Icon.Question,
             title=title,
@@ -103,15 +103,15 @@ class AutoSelectMessageBox(object):
             rememberState=rememberState)
     
     @staticmethod
-    def _showMessageBox(
-            parent: QtWidgets.QWidget,
+    def showMessageBox(
             icon: QtWidgets.QMessageBox.Icon,
             title: str,
             text: str,
             buttons: typing.Union[QtWidgets.QMessageBox.StandardButtons, QtWidgets.QMessageBox.StandardButton],
             defaultButton: QtWidgets.QMessageBox.StandardButton,
             stateKey: str,
-            rememberState: typing.Optional[QtWidgets.QMessageBox.StandardButton]
+            rememberState: typing.Optional[QtWidgets.QMessageBox.StandardButton],
+            parent: QtWidgets.QWidget = None
             ) -> QtWidgets.QMessageBox.StandardButton:
         buttonEnumMap = gui.pyQtEnumMapping(QtWidgets.QMessageBox, QtWidgets.QMessageBox.StandardButton)
 
@@ -138,13 +138,13 @@ class AutoSelectMessageBox(object):
         checkBox.stateChanged.connect(lambda state, stateCapture=noShowAgainState: stateCapture.setChecked(state != 0))
 
         result = gui.MessageBoxEx.showMessageBox(
-            parent,
-            icon,
-            title,
-            text,
-            buttons,
-            defaultButton,
-            checkBox)
+            parent=parent,
+            icon=icon,
+            title=title,
+            text=text,
+            buttons=buttons,
+            defaultButton=defaultButton,
+            checkBox=checkBox)
         
         if noShowAgainState.isChecked() and ((not rememberState) or (rememberState == result)):
             # Map button enums int value to its name
