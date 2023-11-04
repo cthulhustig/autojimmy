@@ -175,10 +175,10 @@ class Compositor(object):
         # be generated simply by copying from the (i.e. the Traveller Map tile isn't required)
         CompleteOverlap = 2
 
-    # This seems to be the point where things stop being that visible and Traveller Map starts showing
-    # the galaxy overlay. If the requested tile has a scale lower than this then there isn't any point
-    # in compositing.
-    _MinCompositionScale = 4
+    # This is the point that Traveller Map stops rendering the sector data and starts rendering
+    # the galaxy image. It stops rendering sector detail at a scale of 4, however the sector name
+    # is still rendered so composition is still required.
+    _MinCompositionScale = 1
 
     def __init__(
             self,
