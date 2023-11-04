@@ -53,8 +53,8 @@ def _applicationDirectory() -> str:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
      
 def _cairoSvgCheck() -> bool: # True if the application should continue, or False if it should exit
-    #if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
-    #    return True # CairoSVG is working so app should continue
+    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
+        return True # CairoSVG is working so app should continue
 
     svgCustomSectors = []
     sectors = travellermap.DataStore.instance().sectors(app.Config.instance().milieu())
