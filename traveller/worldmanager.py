@@ -173,12 +173,12 @@ class WorldManager(object):
             world = sector.worldByPosition(x=worldX, y=worldY)
             if world:
                 return world
-        
+
         # Make a best effort attempt to find the world by looking at abbreviations/alternate names
         # and subsector names. This is important as in some places the official data does ths for
         # things like owner/colony worlds sector hexes. These names are not guaranteed to be unique
         # so the first found world will be returned
-        
+
         # Check to see if the sector name is as a alternate name
         sectors = self._alternateNameMap.get(sectorName)
         if sectors:
@@ -186,7 +186,7 @@ class WorldManager(object):
                 world = sector.worldByPosition(x=worldX, y=worldY)
                 if world:
                     return world
-        
+
         # Check to see if the sector name is as actually a subsector name
         subsectors = self._subsectorNameMap.get(sectorName)
         if subsectors:
@@ -268,7 +268,7 @@ class WorldManager(object):
             hintExpression = re.compile(
                 fnmatch.translate(hintString),
                 re.IGNORECASE)
-            
+
             canonicalMatches = []
             alternateMatches = []
             subsectorMatches = []

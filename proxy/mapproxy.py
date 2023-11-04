@@ -257,10 +257,10 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
             if self._compositor:
                 overlapType = self._compositor.overlapType(
-                        tileX=tileX,
-                        tileY=tileY,
-                        tileScale=tileScale,
-                        milieu=milieu)
+                    tileX=tileX,
+                    tileY=tileY,
+                    tileScale=tileScale,
+                    milieu=milieu)
             else:
                 overlapType = proxy.Compositor.OverlapType.NoOverlap
 
@@ -272,7 +272,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # would be better to use a connection pull if possible
 
                 tileBytes, contentType, sourceFormat = self._makeTileRequest(parsedUrl=parsedUrl)
-                
+
                 # Set the target format, by default the source format is used, this can be None if we
                 # got something unexpected back from Traveller Map. In that case the tile will be
                 # returned as is (using the content type string returned with the tile). If the tile
@@ -282,7 +282,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 if sourceFormat == travellermap.MapFormat.SVG:
                     targetFormat = travellermap.MapFormat.JPEG if style == 'candy' else travellermap.MapFormat.PNG
                     contentType = travellermap.mapFormatToMimeType(targetFormat)
-                
+
                 # No tile data shouldn't really happen and there's nothing we can do to return something
                 # usable. Making this check is important as, if it was to happen, it prevents code later
                 # from re-making the request
@@ -315,7 +315,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                                 tileHeight=tileHeight,
                                 tileScale=tileScale,
                                 milieu=milieu)
-                            
+
                             tileImage = tile.mainImage()
                             tileBytes = io.BytesIO()
                             tileImage.save(tileBytes, format=targetFormat.value)
@@ -330,7 +330,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                             tileY=tileY,
                             tileScale=tileScale,
                             milieu=milieu)
-                        
+
                         if tileImage != None:
                             try:
                                 tileBytes = io.BytesIO()
@@ -371,14 +371,14 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
-                    raise RuntimeError('Proxied tile request returned no data')                
+                    raise RuntimeError('Proxied tile request returned no data')
 
             # Add the tile to the cache. Depending on the logic above this could either be a tile
             # as-is from Traveller Map or a composite tile
             if tileBytes and targetFormat:
                 tileImage = travellermap.MapImage(
                     bytes=tileBytes,
-                    format=targetFormat)                
+                    format=targetFormat)
                 self._tileCache.add(key=cacheKey, image=tileImage)
 
         self.send_response(200)
@@ -417,7 +417,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             logging.debug(f'Unexpected Content-Type {contentType} for tile {parsedUrl.query}')
 
         return tileBytes, contentType, tileFormat
-    
+
     def _makeProxyRequest(
             self,
             parsedUrl: urllib.parse.ParseResult,
@@ -431,11 +431,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         request = urllib.request.Request(requestUrl)
         if headers:
             for key, value in headers.items():
-                request.add_header(key, value)        
+                request.add_header(key, value)
 
         with urllib.request.urlopen(request) as response:
             return (response.read(), response.info())
-    
+
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
     # This is done so that the order the options are specified in the URL don't mater when it comes
@@ -475,7 +475,7 @@ class MapProxy(object):
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
-    
+
     @classmethod
     def instance(cls):
         if not cls._instance:

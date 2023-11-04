@@ -91,9 +91,9 @@ def sectorBoundingRect(
 # useful as any rect that falls completely inside this rect is guaranteed to only cover
 # this sector
 def sectorInteriorRect(
-    sectorX: int,
-    sectorY: int
-    ) -> typing.Tuple[int, int, int, int]:
+        sectorX: int,
+        sectorY: int
+        ) -> typing.Tuple[int, int, int, int]:
     left = (sectorX * _SectorWidth) - _ReferenceHexX
     bottom = (sectorY * _SectorHeight) - _ReferenceHexY
     width = _SectorWidth

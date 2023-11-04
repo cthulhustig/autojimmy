@@ -51,7 +51,7 @@ def _applicationDirectory() -> str:
         return os.path.join(os.getenv('APPDATA'), app.AppName)
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
-     
+
 def _cairoSvgCheck() -> bool: # True if the application should continue, or False if it should exit
     if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
         return True # CairoSVG is working so app should continue
@@ -65,10 +65,10 @@ def _cairoSvgCheck() -> bool: # True if the application should continue, or Fals
         for mapLevel in mapLevels.values():
             if mapLevel.format() == travellermap.MapFormat.SVG:
                 svgCustomSectors.append(sector.canonicalName())
-                break    
-    
+                break
+
     alwaysShowPrompt = False
-    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:     
+    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:
         promptMessage = 'The CairoSVG Python library is not installed.'
         promptIcon = QtWidgets.QMessageBox.Icon.Information
         logging.info(promptMessage)

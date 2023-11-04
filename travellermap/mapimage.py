@@ -7,6 +7,7 @@ class MapFormat(enum.Enum):
     JPEG = 'jpeg'
     SVG = 'svg'
 
+
 # NOTE: These values for this map should be lower case
 _FormatToMimeType = {
     MapFormat.PNG: 'image/png',
@@ -35,9 +36,9 @@ class MapImage(object):
 
     def bytes(self) -> bytes:
         return self._bytes
-    
+
     def size(self) -> int:
         return len(self._bytes)
-    
+
     def format(self) -> MapFormat:
         return self._format

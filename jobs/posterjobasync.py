@@ -85,7 +85,7 @@ class PosterJobAsync(QtCore.QObject):
             linearScale=scale,
             compositing=self._compositing,
             minimal=True)
-        
+
         headers = None
         if requestSvg:
             headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}

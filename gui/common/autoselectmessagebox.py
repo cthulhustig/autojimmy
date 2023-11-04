@@ -12,7 +12,7 @@ class AutoSelectMessageBox(object):
 
         def isChecked(self) -> bool:
             return self._checked
-        
+
         def setChecked(self, state: bool) -> None:
             self._checked = state
 
@@ -101,7 +101,7 @@ class AutoSelectMessageBox(object):
             defaultButton=defaultButton,
             stateKey=stateKey,
             rememberState=rememberState)
-    
+
     @staticmethod
     def showMessageBox(
             icon: QtWidgets.QMessageBox.Icon,
@@ -129,7 +129,7 @@ class AutoSelectMessageBox(object):
             autoSelect = buttonEnumMap.get(autoSelect)
             if (autoSelect != None) and ((not rememberState) or (autoSelect == rememberState)):
                 return autoSelect
-            
+
         # Set up the 'No show again' check box. A bit of a hack is needed as it looks like the check
         # box will be destroyed when the dialog closed meaning it's state can't be read back after
         noShowAgainState = AutoSelectMessageBox._NoShowAgainStateCapture()
@@ -145,7 +145,7 @@ class AutoSelectMessageBox(object):
             buttons=buttons,
             defaultButton=defaultButton,
             checkBox=checkBox)
-        
+
         if noShowAgainState.isChecked() and ((not rememberState) or (rememberState == result)):
             # Map button enums int value to its name
             autoSelect = buttonEnumMap.get(result)

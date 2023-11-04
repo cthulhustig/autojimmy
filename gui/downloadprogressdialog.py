@@ -16,7 +16,7 @@ class DownloadProgressDialog(QtWidgets.QDialog):
         super().__init__(parent=parent)
 
         self._downloadJob = None
-        
+
         self._stageLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
         self._progressBar.setMaximum(100)

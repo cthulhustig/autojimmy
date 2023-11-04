@@ -7,6 +7,7 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
+
 _Requirements = [
     'PyQt5',
     'PyQt5.QtWebEngineWidgets',

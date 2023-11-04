@@ -9,10 +9,10 @@ class Subsector(object):
             ) -> None:
         self._name = name
         self._worlds = worlds
-        
+
         self._worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
         for world in self._worlds:
-            self._worldPositionMap[(world.x(), world.y())] = world        
+            self._worldPositionMap[(world.x(), world.y())] = world
 
     def name(self) -> str:
         return self._name
@@ -22,9 +22,9 @@ class Subsector(object):
 
     def worlds(self) -> typing.Iterable[traveller.World]:
         return self._worlds
-    
+
     def worldByPosition(self, x: int, y: int) -> traveller.World:
-        return self._worldPositionMap.get((x, y))    
+        return self._worldPositionMap.get((x, y))
 
     def __getitem__(self, index: int) -> traveller.World:
         return self._worlds.__getitem__(index)

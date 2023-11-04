@@ -25,7 +25,7 @@ class LintJobAsync(QtCore.QObject):
 
         def content(self) -> str:
             return self._content
-        
+
         def mimeType(self) -> typing.Optional[str]:
             return self._mimeType
 
@@ -95,7 +95,7 @@ class LintJobAsync(QtCore.QObject):
             if result.status() != 400 and result.status() != 500:
                 self.complete[object].emit(result)
                 return
-            
+
             self._results[LintJobAsync.Stage.Sector] = LintJobAsync.LinterResult(
                 content=result.content().decode(),
                 mimeType=result.header(header='Content-Type'))

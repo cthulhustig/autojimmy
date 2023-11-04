@@ -18,7 +18,7 @@ class ImageView(QtWidgets.QGraphicsView):
         self.setViewportUpdateMode(
             QtWidgets.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
-        
+
         self._zoomInAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.ZoomIn), 'Zoom In', self)
         self._zoomInAction.triggered.connect(self.zoomIn)
         self.addAction(self._zoomInAction)
@@ -29,7 +29,7 @@ class ImageView(QtWidgets.QGraphicsView):
 
         self._zoomToFitAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.ZoomToFit), 'Zoom To Fit', self)
         self._zoomToFitAction.triggered.connect(self.zoomToFit)
-        self.addAction(self._zoomToFitAction)        
+        self.addAction(self._zoomToFitAction)
 
     def imageFromBytes(
             self,
@@ -50,7 +50,7 @@ class ImageView(QtWidgets.QGraphicsView):
     def currentScale(self) -> typing.Tuple[float, float]:
         transform = self.transform()
         return (transform.m11(), transform.m22())
-    
+
     def zoomIn(self) -> None:
         xScale, yScale = self.currentScale()
         self.resetTransform()
@@ -70,7 +70,7 @@ class ImageView(QtWidgets.QGraphicsView):
         scale = min(
             viewRect.width() / sceneRect.width(),
             viewRect.height() / sceneRect.height())
-        
+
         self.resetTransform()
         self.scale(scale, scale)
 

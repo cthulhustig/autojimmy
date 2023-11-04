@@ -323,7 +323,7 @@ class _LintJobResultsDialog(gui.DialogEx):
             title='Linter Results',
             configSection='LinterResultsDialog',
             parent=parent)
-        
+
         self._tabWidget = gui.TabWidgetEx()
         for stage, result in results.items():
             textWidget = gui.TextEditEx()
@@ -340,7 +340,7 @@ class _LintJobResultsDialog(gui.DialogEx):
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._closeButton)               
+        buttonLayout.addWidget(self._closeButton)
 
         dialogLayout = QtWidgets.QVBoxLayout()
         dialogLayout.addWidget(self._tabWidget)
@@ -419,7 +419,7 @@ class _NewSectorDialog(gui.DialogEx):
             key='StyleComboBoxState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._renderStyleComboBox.restoreState(storedValue)  
+            self._renderStyleComboBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -441,7 +441,7 @@ class _NewSectorDialog(gui.DialogEx):
             type=QtCore.QByteArray)
         if storedValue:
             self._renderRegionNamesCheckBox.restoreState(storedValue)
-            
+
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='BordersCheckBoxState',
@@ -455,7 +455,7 @@ class _NewSectorDialog(gui.DialogEx):
             type=QtCore.QByteArray)
         if storedValue:
             self._renderFilledBordersCheckBox.restoreState(storedValue)
-            
+
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='RoutesCheckBoxState',
@@ -468,7 +468,7 @@ class _NewSectorDialog(gui.DialogEx):
             key='WorldColoursCheckBoxState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._renderWorldColoursCheckBox.restoreState(storedValue)            
+            self._renderWorldColoursCheckBox.restoreState(storedValue)
 
         self._settings.endGroup()
 
@@ -495,7 +495,7 @@ class _NewSectorDialog(gui.DialogEx):
             escape=False)
         metadataFileTooltip = gui.createStringToolTip(
             '<p>Specify the XML sector metadata file to use to create the custom sector</p>',
-            escape=False)        
+            escape=False)
 
         self._sectorFileLineEdit = gui.LineEditEx()
         self._sectorFileLineEdit.setToolTip(sectorFileTooltip)
@@ -592,8 +592,8 @@ class _NewSectorDialog(gui.DialogEx):
             '<p>It\'s advisable to do this before trying to create a custom sector as, when creating the map ' +
             'images, Traveller Map will ignore most errors resulting in worlds with errors not being rendered ' +
             'correctly.</p>',
-            escape=False)    
-                
+            escape=False)
+
         self._lintButton = QtWidgets.QPushButton('Lint...')
         self._lintButton.setToolTip(metadataFileTooltip)
         self._lintButton.clicked.connect(self._lintClicked)
@@ -649,7 +649,7 @@ class _NewSectorDialog(gui.DialogEx):
             if renderStyle == travellermap.Style.Candy:
                 answer = gui.AutoSelectMessageBox.question(
                     text=_NewSectorDialog._CandyStyleWarning + \
-                        '\nDo you want to continue?\n', # Extra trialling \n is intentional for padding
+                    '\nDo you want to continue?\n', # Extra trialling \n is intentional for padding
                     stateKey='CreateCandyCustomSectorMaps',
                     rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
                 if answer != QtWidgets.QMessageBox.StandardButton.Yes:
@@ -672,7 +672,7 @@ class _NewSectorDialog(gui.DialogEx):
                     identifier=metadataFilePath)
                 sectorX = rawMetadata.x()
                 sectorY = rawMetadata.y()
-                
+
                 # Check that there aren't any custom sectors at the same location
                 existingSector = travellermap.DataStore.instance().sectorAt(
                     sectorX=sectorX,
@@ -695,7 +695,7 @@ class _NewSectorDialog(gui.DialogEx):
                     parent=self,
                     text=message,
                     exception=ex)
-                return            
+                return
 
             # Try to parse the sector format now to prevent it failing after the user has waited
             # to create the posters. This is only really needed for cases where Traveller Map is
@@ -786,7 +786,7 @@ class _NewSectorDialog(gui.DialogEx):
                     text=message,
                     exception=ex)
                 return
-        
+
             try:
                 metadataFilePath = self._metadataFileLineEdit.text()
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
@@ -899,7 +899,7 @@ class _CustomSectorTable(gui.ListTable):
         if row < 0:
             return None
         return self.sector(row)
-    
+
     def setCurrentSector(self, sector: typing.Optional[travellermap.SectorInfo]):
         if sector:
             row = self.sectorRow(sector)
@@ -958,7 +958,7 @@ class _CustomSectorTable(gui.ListTable):
             stream.writeRawData(baseState.data())
 
         return state
-    
+
     def restoreState(
             self,
             state: QtCore.QByteArray
@@ -989,7 +989,7 @@ class _CustomSectorTable(gui.ListTable):
         if not super().restoreState(baseState):
             return False
 
-        return True    
+        return True
 
     def _fillRow(
             self,
@@ -1024,7 +1024,7 @@ class _CustomSectorTable(gui.ListTable):
                         optionsString = ''
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, optionsString)
-                    
+
                 if tableItem:
                     self.setItem(row, column, tableItem)
                     tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, sector)
@@ -1076,7 +1076,7 @@ class _MapComboBox(gui.ComboBoxEx):
         if currentIndex < 0:
             return None
         return self.itemData(currentIndex, QtCore.Qt.ItemDataRole.UserRole)
-    
+
     def setCurrentScale(self, scale: typing.Optional[int]) -> None:
         if scale != None:
             for index in range(self.count()):
@@ -1085,7 +1085,7 @@ class _MapComboBox(gui.ComboBoxEx):
                     return
         else:
             self.setCurrentIndex(-1)
-    
+
     def saveState(self) -> QtCore.QByteArray:
         value = self.currentScale()
         state = QtCore.QByteArray()
@@ -1133,7 +1133,7 @@ class _MapImageView(gui.ImageView):
         self._sectorInfo = sectorInfo
         if not self._sectorInfo:
             return True # Nothing more to do
-        
+
         mapImage = travellermap.DataStore.instance().sectorMapImage(
             sectorName=self._sectorInfo.canonicalName(),
             milieu=app.Config.instance().milieu(),
@@ -1170,7 +1170,7 @@ class CustomSectorDialog(gui.DialogEx):
 
     def modified(self) -> bool:
         return self._modified
-    
+
     def loadSettings(self) -> None:
         super().loadSettings()
 
@@ -1195,7 +1195,7 @@ class CustomSectorDialog(gui.DialogEx):
             key='MapSelectState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._mapSelectComboBox.restoreState(storedValue)            
+            self._mapSelectComboBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -1216,7 +1216,7 @@ class CustomSectorDialog(gui.DialogEx):
 
         self._settings.endGroup()
 
-        super().saveSettings()    
+        super().saveSettings()
 
     def _setupSectorListControls(self) -> None:
         self._sectorTable = _CustomSectorTable()
@@ -1253,12 +1253,12 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorMetadataTextEdit.setFont(monospaceFont)
         self._sectorMetadataTextEdit.setReadOnly(True)
 
-        self._mapGraphicsView = _MapImageView()   
+        self._mapGraphicsView = _MapImageView()
 
         self._mapSelectComboBox = _MapComboBox()
         self._mapSelectComboBox.currentIndexChanged.connect(self._mapSelectionChanged)
 
-        iconSize = self._mapSelectComboBox.sizeHint().height()       
+        iconSize = self._mapSelectComboBox.sizeHint().height()
         self._mapToolbar = QtWidgets.QToolBar("Map Toolbar")
         self._mapToolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
         self._mapToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)

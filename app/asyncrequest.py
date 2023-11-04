@@ -22,14 +22,14 @@ class AsyncResponse(object):
 
     def headers(self) -> multidict.MultiDictProxy:
         return self._headers
-    
+
     def header(
             self,
             header: str,
             default: typing.Optional[str] = None
             ) -> typing.Optional[str]:
         return self._headers.get(header, default)
-    
+
     def content(self) -> bytes:
         return self._content
 
@@ -44,26 +44,26 @@ class AsyncRequest(QtCore.QObject):
                 ) -> None:
             super().__init__(f'Request failed ({status} {reason})' if reason else f'Request failed ({status})')
             self._status = status
-            self._reason  = reason
+            self._reason = reason
             self._headers = headers
             self._content = content
 
         def status(self) -> int:
             return self._status
-        
+
         def reason(self) -> typing.Optional[str]:
             return self._reason
 
         def headers(self) -> multidict.MultiDictProxy:
             return self._headers
-        
+
         def header(
                 self,
                 header: str,
                 default: typing.Optional[str] = None
                 ) -> typing.Optional[str]:
             return self._headers.get(header, default)
-        
+
         def content(self) -> bytes:
             return self._content
 
@@ -220,7 +220,7 @@ class AsyncRequest(QtCore.QObject):
                     status = response.status
                     reason = response.reason
                     headers = response.headers.copy()
-                
+
                     size = headers.get('Content-Length', 0)
                     self._updateDownloadProgress(0, size)
 

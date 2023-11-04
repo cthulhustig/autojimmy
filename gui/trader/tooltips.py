@@ -249,7 +249,7 @@ def createWorldToolTip(
                 height=256,
                 timeout=3)
             if tileBytes:
-                mineType = travellermap.mapFormatToMimeType(tileFormat)              
+                mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
                 toolTip += '<td width="256">'
                 # https://travellermap.com/doc/api#tile-render-an-arbitrary-rectangle-of-space

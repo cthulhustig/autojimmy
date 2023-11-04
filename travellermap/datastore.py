@@ -29,10 +29,10 @@ class CustomMapLevel(object):
 
     def scale(self) -> int:
         return self._scale
-    
+
     def fileName(self) -> str:
         return self._fileName
-    
+
     def format(self) -> travellermap.MapFormat:
         return self._format
 
@@ -55,7 +55,7 @@ class SectorInfo(object):
         self._x = x
         self._y = y
         self._sectorFormat = sectorFormat
-        self._metadataFormat = metadataFormat        
+        self._metadataFormat = metadataFormat
         self._isCustomSector = isCustomSector
         self._customMapStyle = customMapStyle
         self._customMapOptions = list(customMapOptions) if customMapOptions else None
@@ -77,20 +77,20 @@ class SectorInfo(object):
         return self._sectorFormat
 
     def metadataFormat(self) -> travellermap.MetadataFormat:
-        return self._metadataFormat    
+        return self._metadataFormat
 
     def isCustomSector(self) -> bool:
         return self._isCustomSector
 
     def customMapLevels(self) -> typing.Optional[typing.Dict[int, CustomMapLevel]]:
         return self._customMapLevels.copy() if self._customMapLevels else None
-    
+
     def customMapLevel(self, scale: int) -> typing.Optional[CustomMapLevel]:
         return self._customMapLevels.get(scale) if self._customMapLevels else None
-    
+
     def customMapStyle(self) -> typing.Optional[travellermap.Style]:
         return self._customMapStyle
-    
+
     def customMapOptions(self) -> typing.Optional[typing.List[travellermap.Option]]:
         return self._customMapOptions.copy() if self._customMapOptions else None
 
@@ -173,7 +173,7 @@ class DataStore(object):
         self._loadAllSectors()
         with self._lock:
             return list(self._milieuMap[milieu].values())
-        
+
     def sector(
             self,
             sectorName: str,
@@ -183,7 +183,7 @@ class DataStore(object):
         with self._lock:
             sectors = self._milieuMap[milieu]
             return sectors.get(sectorName)
-        
+
     def sectorAt(
             self,
             sectorX: int,
@@ -254,7 +254,7 @@ class DataStore(object):
             fileName=mapLevel.fileName(),
             milieu=milieu,
             useCustomMapDir=sector.isCustomSector())
-        
+
         return travellermap.MapImage(
             bytes=mapData,
             format=mapLevel.format())
@@ -266,7 +266,7 @@ class DataStore(object):
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
             relativeFilePath=self._AllegiancesFileName))
-    
+
     def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
             return DataStore._parseSnapshotTimestamp(
@@ -363,7 +363,7 @@ class DataStore(object):
             sectorContent: str,
             metadataContent: str,
             customMapStyle: typing.Optional[travellermap.Style],
-            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],       
+            customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
             customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
         self._loadAllSectors()
@@ -410,7 +410,7 @@ class DataStore(object):
                                 existingName=existingSector.canonicalName(),
                                 x=metadata.x(),
                                 y=metadata.y()))
-                    
+
                 # Check for sectors with the same name but different locations
                 existingSector = sectors.get(metadata.canonicalName())
                 if existingSector:
@@ -420,7 +420,7 @@ class DataStore(object):
                             'Unable to create custom sector {newName} in {milieu} as there is a already a sector with that name'.format(
                                 newName=metadata.canonicalName(),
                                 milieu=milieu.value))
-                    
+
             escapedSectorName = common.encodeFileName(rawFileName=metadata.canonicalName())
 
             sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
@@ -453,7 +453,7 @@ class DataStore(object):
                 x=metadata.x(),
                 y=metadata.y(),
                 sectorFormat=sectorFormat,
-                metadataFormat=travellermap.MetadataFormat.XML, # Only XML metadata is supported for custom sectors                
+                metadataFormat=travellermap.MetadataFormat.XML, # Only XML metadata is supported for custom sectors
                 isCustomSector=True,
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,
@@ -575,7 +575,7 @@ class DataStore(object):
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     customSectors=False)
-                
+
                 for sector in loadedSectors:
                     conflictSector = customSectorPosMap.get((sector.x(), sector.y()))
                     if conflictSector:
@@ -586,7 +586,7 @@ class DataStore(object):
                     conflictSector = customSectorNameMap.get(sector.canonicalName())
                     if conflictSector:
                         logging.warning(
-                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same name as a custom sector at ({conflictSector.x()}, {conflictSector.y()})')                    
+                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same name as a custom sector at ({conflictSector.x()}, {conflictSector.y()})')
                         continue
 
                     logging.debug(
@@ -616,7 +616,7 @@ class DataStore(object):
                     f'Failed to load overlay data format from "{overlayDataFormatPath}"',
                     exc_info=ex)
 
-        self._deleteOverlayDir()        
+        self._deleteOverlayDir()
 
     def _checkOverlayAge(self) -> None:
         if not os.path.exists(self._overlayDir):
@@ -655,7 +655,7 @@ class DataStore(object):
         if installTimestamp <= overlayTimestamp:
             # The install copy of the sectors is older than the overlay copy so there is nothing to do
             return
-        
+
         self._deleteOverlayDir()
 
     def _deleteOverlayDir(self) -> None:
@@ -743,7 +743,7 @@ class DataStore(object):
                 fileName=self._UniverseFileName,
                 milieu=milieu,
                 useCustomMapDir=customSectors)
-                        
+
             universeJson = json.loads(DataStore._bytesToString(universeContent))
 
             sectorsElement = universeJson.get('Sectors')
@@ -759,7 +759,7 @@ class DataStore(object):
                 else:
                     logging.warning(message)
                 return []
-            
+
             raise RuntimeError(message)
 
         sectors = []
@@ -839,7 +839,7 @@ class DataStore(object):
                     customMapLevelsElement = sectorElement.get('CustomMapLevels')
                     if customMapLevelsElement == None:
                         raise RuntimeError('Sector has no custom map levels')
-                    
+
                     customMapLevels = {}
                     for mapLevel in customMapLevelsElement:
                         mimeType = mapLevel.get('MimeType')
@@ -859,21 +859,21 @@ class DataStore(object):
                         fileName = mapLevel.get('FileName')
                         if fileName == None:
                             raise RuntimeError(f'Custom map level has no file name')
-                        fileName = str(fileName)                        
+                        fileName = str(fileName)
 
                         mapLevel = CustomMapLevel(
                             scale=scale,
                             fileName=fileName,
                             format=mapFormat)
                         customMapLevels[mapLevel.scale()] = mapLevel
-                            
+
                 sectors.append(SectorInfo(
                     canonicalName=canonicalName,
                     abbreviation=abbreviation,
                     x=sectorX,
                     y=sectorY,
                     sectorFormat=sectorFormat,
-                    metadataFormat=metadataFormat,                
+                    metadataFormat=metadataFormat,
                     isCustomSector=customSectors,
                     customMapStyle=customMapStyle,
                     customMapOptions=customMapOptions,
@@ -910,7 +910,7 @@ class DataStore(object):
                     'X': sectorInfo.x(),
                     'Y': sectorInfo.y()
                     }
-         
+
                 #
                 # The following elements are extensions and not part of the standard universe file format
                 #
