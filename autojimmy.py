@@ -83,7 +83,7 @@ def _cairoSvgCheck() -> bool: # True if the application should continue, or Fals
         logging.error(promptMessage)
 
     promptMessage += \
-        '<br><br>Custom sector posters will be created using PNG images, this can ' + \
+        '<br><br>New custom sector posters will be created using PNG images, this can ' + \
         'introduce more render artifacts around their borders.'
 
     if svgCustomSectors:
