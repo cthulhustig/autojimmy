@@ -53,26 +53,8 @@ def _applicationDirectory() -> str:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
      
 def _cairoSvgCheck() -> bool: # True if the application should continue, or False if it should exit
-    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
-        return True # CairoSVG is working so app should continue
-    
-    alwaysShowPrompt = False
-    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:     
-        promptMessage = 'The CairoSVG Python library is not installed'
-        promptIcon = QtWidgets.QMessageBox.Icon.Information
-        logLevel = logging.INFO
-    elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
-        promptMessage = 'The CairoSVG Python library is installed but it failed to find the Cairo system libraries it requires'
-        promptIcon = QtWidgets.QMessageBox.Icon.Warning
-        logLevel = logging.WARNING
-    else:
-        promptMessage = 'The CairoSVG Python library is in an unknown state'
-        promptIcon = QtWidgets.QMessageBox.Icon.Critical
-        logLevel = logging.ERROR
-        alwaysShowPrompt = True
-
-    promptMessage += ', rendering of custom sectors using SVG posters will be disabled.'
-    logging.log(logLevel, promptMessage)
+    #if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
+    #    return True # CairoSVG is working so app should continue
 
     svgCustomSectors = []
     sectors = travellermap.DataStore.instance().sectors(app.Config.instance().milieu())
@@ -83,20 +65,44 @@ def _cairoSvgCheck() -> bool: # True if the application should continue, or Fals
         for mapLevel in mapLevels.values():
             if mapLevel.format() == travellermap.MapFormat.SVG:
                 svgCustomSectors.append(sector.canonicalName())
-                break
+                break    
+    
+    alwaysShowPrompt = False
+    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:     
+        promptMessage = 'The CairoSVG Python library is not installed.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Information
+        logging.info(promptMessage)
+    elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
+        promptMessage = 'The CairoSVG Python library is installed but it failed to find the Cairo system libraries that it requires.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Warning
+        logging.warning(promptMessage)
+    else:
+        promptMessage = 'The CairoSVG Python library is in an unknown state.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Critical
+        alwaysShowPrompt = True
+        logging.error(promptMessage)
+
+    promptMessage += \
+        '<br><br>Custom sector posters will be created using PNG images, this can ' + \
+        'introduce more render artifacts around their borders.'
 
     if svgCustomSectors:
         # Always show the prompt if there are SVG sectors that won't be rendered
         alwaysShowPrompt = True
 
-        if len(svgCustomSectors) <= 4:
-            promptMessage += '\n\nThe following custom sectors are currently using SVG posters:'
-            for sectorName in svgCustomSectors:
-                promptMessage += '\n' + sectorName
-        else:
-            promptMessage += f'\n\nThere are currently {len(svgCustomSectors)} custom sectors using SVG posters'
+        promptMessage += '<br><br>Existing custom sectors that use SVG posters will be disabled.'
 
-    promptMessage += '\n\nDo you want to continue?'
+        if len(svgCustomSectors) <= 4:
+            promptMessage += ' The following custom sectors are currently using SVG posters:'
+            for sectorName in svgCustomSectors:
+                promptMessage += '<br>' + sectorName
+        else:
+            promptMessage += f' There are currently {len(svgCustomSectors)} custom sectors using SVG posters.'
+
+    promptMessage += '<br><br>CairoSVG install info: <a href=\'https://cairosvg.org/documentation/\'>https://cairosvg.org/documentation/</a>'
+    promptMessage += f'<br><br>Do you want to continue loading {app.AppName}?'
+
+    promptMessage = f'<html>{promptMessage}</html>'
 
     promptTitle = 'Prompt'
     promptButtons = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
@@ -115,7 +121,7 @@ def _cairoSvgCheck() -> bool: # True if the application should continue, or Fals
             text=promptMessage,
             buttons=promptButtons,
             defaultButton=promptDefaultButton,
-            stateKey='CairoSvgNotWorking',
+            stateKey='ContinueIfCairoSvgNotWorking',
             rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
 
     return answer == QtWidgets.QMessageBox.StandardButton.Yes
