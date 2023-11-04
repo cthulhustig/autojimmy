@@ -7,7 +7,7 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
-
+# Mapping of library friendly name to the module to import to test it
 _Requirements = [
     'PyQt5',
     'PyQt5.QtWebEngineWidgets',
@@ -36,24 +36,32 @@ except Exception as ex:
     print(f'Failed to open {_RequirementsFile} for dependency checking')
 
 # Try to import each of the required modules to display
+_MissingRequirements = []
 for lib in _Requirements:
     try:
         importlib.import_module(lib)
     except OSError as ex:
         if lib == _CairoModuleName:
+            # CairoSVG is optional
             DetectedCairoSvgState = CairoSvgState.NoLibraries
             continue
         raise # Rethrow other OSErrors on
     except ModuleNotFoundError as ex:
         if lib == _CairoModuleName:
+            # CairoSVG is optional
             DetectedCairoSvgState = CairoSvgState.NotInstalled
             continue
+        _MissingRequirements.append(lib)
 
-        print(ex)
-        print()
-        print('To install all dependencies required by Auto-Jimmy, run the following commands:')
-        print()
-        # NOTE: This assumes that this file is at the same level as the requirements file
-        print(f'cd {os.path.dirname(os.path.realpath(__file__))}')
-        print(f'pip3 install -r {_RequirementsFile}')
-        exit(1)
+if _MissingRequirements:
+    print(f'Unable to start Auto-Jimmy due to missing dependencies.')
+    print('The following modules were not found: ' + ', '.join(_MissingRequirements))
+    print()
+    print('To install all required dependencies, run the following commands:')
+    print()
+    # NOTE: This assumes that this file is at the same level as the requirements file
+    print(f'cd {os.path.dirname(os.path.realpath(__file__))}')
+    print(f'pip3 install -r {_RequirementsFile}')
+    print()
+    print('Further documentation can be found at https://github.com/cthulhustig/autojimmy')
+    exit(1)
