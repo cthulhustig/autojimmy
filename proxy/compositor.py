@@ -1,7 +1,12 @@
 # TODO: Need to handle cairo dll not being found
-import cairosvg
-import cairosvg.parser
-import cairosvg.surface
+_HasSvgSupport = True
+try:
+    import cairosvg
+    import cairosvg.parser
+    import cairosvg.surface
+except Exception as ex:
+    _HasSvgSupport = False
+
 import copy
 import datetime
 import enum
@@ -441,7 +446,7 @@ class Compositor(object):
             tileY: float,
             tileScale: float,
             milieu: travellermap.Milieu
-            ) -> PIL.Image.Image:
+            ) -> typing.Optional[PIL.Image.Image]:
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -536,15 +541,23 @@ class Compositor(object):
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
+                        if (mapImage.format() == travellermap.MapFormat.SVG) and (not _HasSvgSupport):
+                            logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} as SVG support is disabled')
+                            continue
+
                         mapImages[scale] = mapImage
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
 
+                if not mapImages:
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as no map levels loaded')
+                    continue
+
                 try:
                     mapPosters = self.createMultipleCompositorImages(mapImages)
                 except Exception as ex:
-                    logging.warning(f'Compositor failed to create compositor images for {sectorInfo.canonicalName()}', exc_info=ex)
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it failed to create compositor images', exc_info=ex)
                     continue
 
                 sectors.append(_CustomSector(

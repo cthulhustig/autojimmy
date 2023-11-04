@@ -199,7 +199,7 @@ class AsyncRequest(QtCore.QObject):
             headers: typing.Optional[typing.Mapping[str, str]]
             ) -> None:
         try:
-            logging.info(f'Starting async POST request to {url}')
+            logging.debug(f'Starting async POST request to {url}')
 
             if isinstance(content, dict):
                 data = data = aiohttp.FormData()

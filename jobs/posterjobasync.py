@@ -1,9 +1,12 @@
 import app
 import asyncio
+import common
+import copy
+import depschecker
+import enum
+import logging
 import typing
 import travellermap
-import copy
-import enum
 from PyQt5 import QtCore
 
 class PosterJobAsync(QtCore.QObject):
@@ -66,13 +69,28 @@ class PosterJobAsync(QtCore.QObject):
             self,
             index: int
             ) -> None:
+        requestSvg = depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working
+        scale = self._scales[index]
+
+        logging.info('Requesting {type} poster (scale {scale}, style: {style}, options: {options})'.format(
+            type='SVG' if requestSvg else 'bitmap',
+            scale=scale,
+            style=self._style.value,
+            options=common.humanFriendlyListString([op.value for op in self._options]) if self._options else ''))
+
         url = travellermap.formatPosterUrl(
             baseMapUrl=self._mapUrl,
             style=self._style,
             options=self._options,
-            linearScale=self._scales[index],
+            linearScale=scale,
             compositing=self._compositing,
             minimal=True)
+        
+        headers = None
+        if requestSvg:
+            # TODO: This header should probably be something that is returned by formatPosterUrl (or
+            # something like it)
+            headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}
 
         self._uploadHistory = 0
         self._emitProgress(
@@ -91,9 +109,7 @@ class PosterJobAsync(QtCore.QObject):
         self._request.post(
             url=url,
             content=self._data,
-            # TODO: This header should probably be something that is returned by formatPosterUrl (or
-            # something like it)
-            headers={'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)},
+            headers=headers,
             loop=asyncio.get_event_loop())
 
     def _requestCompleted(

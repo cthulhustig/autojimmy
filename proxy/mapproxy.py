@@ -271,11 +271,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # TODO: I suspect this is creating a new TCP connection for each request. If so it
                 # would be better to use a connection pull if possible
 
-                tileBytes, contentType, sourceFormat = self._makeTileRequest(
-                    parsedUrl=parsedUrl,
-                    # TODO: Fix SVG tiles (names and * get drawn over custom sectors)
-                    #requestSvg=overlapType == proxy.Compositor.OverlapType.PartialOverlap)
-                    requestSvg=False)
+                tileBytes, contentType, sourceFormat = self._makeTileRequest(parsedUrl=parsedUrl)
                 
                 # Set the target format, by default the source format is used, this can be None if we
                 # got something unexpected back from Traveller Map. In that case the tile will be
@@ -304,6 +300,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if targetFormat and (overlapType != proxy.Compositor.OverlapType.NoOverlap):
                 try:
                     if overlapType == proxy.Compositor.OverlapType.PartialOverlap:
+                        # TODO: This could be simplified now that I've dropped support for SVG tiles
                         tile = self._compositor.createCompositorImage(
                             mapImage=travellermap.MapImage(bytes=tileBytes, format=sourceFormat),
                             scale=tileScale)
@@ -334,18 +331,17 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                             tileScale=tileScale,
                             milieu=milieu)
                         
-                        try:
-                            tileBytes = io.BytesIO()
-                            tileImage.save(tileBytes, format=targetFormat.value)
-                            tileBytes.seek(0)
-                            tileBytes = tileBytes.read()
-                        finally:
-                            del tileImage
-
-                    if not tileBytes:
-                        raise RuntimeError('Compositor returned no image')
+                        if tileImage != None:
+                            try:
+                                tileBytes = io.BytesIO()
+                                tileImage.save(tileBytes, format=targetFormat.value)
+                                tileBytes.seek(0)
+                                tileBytes = tileBytes.read()
+                            finally:
+                                del tileImage
                 except Exception as ex:
-                    logging.error('Failed to composite tile', exc_info=ex)
+                    # Log this at a low level as it could happen a LOT if something goes wrong
+                    logging.debug('Failed to composite tile', exc_info=ex)
             else:
                 logging.debug(f'Serving live response for tile {parsedUrl.query}')
 
@@ -370,9 +366,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # If we get to here with no tile bytes it means something wen't wrong performing a simple
                 # copy. In this situation the only real option is to request the tile from Traveller Map and
                 # return that
-                tileBytes, contentType, targetFormat = self._makeTileRequest(
-                    parsedUrl=parsedUrl,
-                    requestSvg=False)
+                logging.debug(f'Requesting fallback tile for {parsedUrl.query}')
+                tileBytes, contentType, targetFormat = self._makeTileRequest(parsedUrl=parsedUrl)
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
@@ -411,14 +406,9 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _makeTileRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult,
-            requestSvg: bool
+            parsedUrl: urllib.parse.ParseResult
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
-        headers = None
-        if requestSvg:
-            headers = {'Accept': travellermap.mapFormatToMimeType(travellermap.MapFormat.SVG)}
-
-        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl, headers=headers)
+        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
 
         contentType = headers.get('Content-Type') # TODO: Is this check case sensitive?
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)

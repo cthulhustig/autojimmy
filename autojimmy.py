@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# This should always be imported first. It will exit the app with more helpful message if any
+# external dependencies are missing (assuming I remember to keep the list up to date)
+import depschecker
+
 import app
 import common
 import gui
@@ -294,6 +298,16 @@ def main() -> None:
             exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         gui.configureAppStyle(application)
+
+
+        if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:
+            # TODO: This is probably worth having a prompt with the option to not show again.
+            # TODO: It may also need an error/warning if there are actually custom sectors that are using svg images
+            logging.info('The CairoSVG Python library is not installed, custom sectors using SVG posters will be disabled')
+        elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
+            # TODO: This probably needs a warning
+            # TODO: Probably an error if there are existing sectors using SVGs
+            logging.warning('The CairoSVG Python library is installed but the underlying Cairo libraries it requires weren\'t found, custom sectors using SVG posters will be disabled')
 
         # Check if there is new universe data available BEFORE the app loads the local snapshot so it
         # can be updated without restarting
