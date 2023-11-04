@@ -304,7 +304,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if targetFormat and (overlapType != proxy.Compositor.OverlapType.NoOverlap):
                 try:
                     if overlapType == proxy.Compositor.OverlapType.PartialOverlap:
-                        tile = proxy.CompositorImage(
+                        tile = self._compositor.createCompositorImage(
                             mapImage=travellermap.MapImage(bytes=tileBytes, format=sourceFormat),
                             scale=tileScale)
 
@@ -352,7 +352,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             # Enable this to add a red boundary to all tiles in order to highlight where they are
             # TODO: When I add disk caching this overlay shouldn't be included in the image that is cached
             """
-            if tileFormat:
+            if targetFormat:
                 colour = 'red'
                 with PIL.Image.open(tileBytes if isinstance(tileBytes, io.BytesIO) else io.BytesIO(tileBytes)) as image:
                     draw = PIL.ImageDraw.Draw(image)
@@ -361,7 +361,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                     draw.line([(image.width - 1, image.height - 1), (image.width - 1, 0)], fill=colour, width=0)
                     draw.line([(image.width - 1, 0), (0, 0)], fill=colour, width=0)
                     tileBytes = io.BytesIO()
-                    image.save(tileBytes, format=tileFormat.value)
+                    image.save(tileBytes, format=targetFormat.value)
                     tileBytes.seek(0)
                     tileBytes = tileBytes.read()
             """
@@ -539,7 +539,7 @@ class MapProxy(object):
                     self._logLevel,
                     self._shutdownEvent,
                     self._messageQueue])
-            self._service.daemon = True
+            self._service.daemon = False
             self._service.start()
         except Exception:
             self._currentState = MapProxy.ServerStatus.Error

@@ -2,16 +2,21 @@
 import cairosvg
 import cairosvg.parser
 import cairosvg.surface
+import copy
+import datetime
 import enum
 import io
 import logging
 import math
+import multiprocessing
 import numpy
 import PIL.Image
 import travellermap
 import typing
 import threading
 import xml.etree.ElementTree
+
+_FullSvgRendering = False
 
 # Returns true if rect1 is completely contained within rect2
 # Rect format is (left, top, right, bottom)
@@ -54,37 +59,31 @@ def _extractSvgSize(
         int(root.attrib.get('height')))
 
 class CompositorImage(object):
+    class ImageType(enum.Enum):
+        Bitmap = 0,
+        SVG = 1
+
     def __init__(
             self,
-            mapImage: travellermap.MapImage,
+            imageType: ImageType,
+            mainImage: typing.Union[PIL.Image.Image, bytes],
+            textImage: typing.Optional[typing.Union[PIL.Image.Image, bytes]],
             scale: int
             ) -> None:
+        self._imageType = imageType
+        self._mainImage = mainImage
+        self._textImage = textImage
         self._scale = scale
-        self._mainImage = None
-        self._textImage = None
 
-        mapBytes = mapImage.bytes()
-        mapFormat = mapImage.format()
-        if mapFormat == travellermap.MapFormat.SVG:    
-            self._mainImage = CompositorImage._createImage(
-                mapBytes=mapBytes,
-                mapFormat=mapFormat)     
-
-            textSvg = CompositorImage._createTextSvg(mapBytes=mapBytes)            
-            self._textImage = CompositorImage._createImage(
-                mapBytes=textSvg,
-                mapFormat=mapFormat)
-        else:
-            self._mainImage = CompositorImage._createImage(
-                mapBytes=mapBytes,
-                mapFormat=mapFormat)
+    def imageType(self) -> ImageType:
+        return self._imageType
             
-    def mainImage(self) -> PIL.Image.Image:
+    def mainImage(self) -> typing.Union[PIL.Image.Image, bytes]:
         return self._mainImage
 
-    def textImage(self) -> PIL.Image.Image:
+    def textImage(self) -> typing.Optional[typing.Union[PIL.Image.Image, bytes]]:
         return self._textImage
-    
+        
     def scale(self) -> int:
         return self._scale
     
@@ -94,89 +93,12 @@ class CompositorImage(object):
         return NotImplemented
     
     def __del__(self):
-        if self._mainImage:
-            self._mainImage.close()
-            del self._mainImage
+        if self._imageType == CompositorImage.ImageType.Bitmap:
+            if self._mainImage:
+                self._mainImage.close()
 
-        if self._textImage:
-            self._textImage.close()
-            del self._textImage
-
-    @staticmethod
-    def _createTextSvg(mapBytes: bytes) -> bytes:
-        root = xml.etree.ElementTree.fromstring(mapBytes)
-        element = root.find('{http://www.w3.org/2000/svg}g')
-        CompositorImage._recursiveRemoveGraphics(element)
-        return xml.etree.ElementTree.tostring(element=root)
-
-    @staticmethod
-    def _recursiveRemoveGraphics(
-            element: xml.etree.ElementTree.Element
-            ) -> None:
-        for child in reversed(element):
-            if child.tag == '{http://www.w3.org/2000/svg}g':
-                CompositorImage._recursiveRemoveGraphics(child)
-                if len(child) == 0:
-                    element.remove(child)
-            elif child.tag != '{http://www.w3.org/2000/svg}text':
-                element.remove(child)    
-
-    # I found that when having cairosvg render from multiple threads simultaneously (on Windows) it
-    # could result in it throwing an GDI exception. I assume it's got some kind of shared resource
-    # or resource limit somewhere
-    _cairoLock = threading.Lock()
-
-    @staticmethod
-    def _createImage(
-            mapBytes: bytes,
-            mapFormat: travellermap.MapFormat
-            ) -> PIL.Image.Image:
-        if mapFormat != travellermap.MapFormat.SVG:
-            # The map image is something other than SVG so use PIL to load it
-
-            # Image.load isn't thread safe so make sure to call it now so it doesn't get called
-            # when cropping the image during composition
-            # https://github.com/python-pillow/Pillow/issues/4848
-            image = PIL.Image.open(io.BytesIO(mapBytes))
-            try:
-                image.load()
-            except:
-                image.close()
-                raise
-            return image
-        
-        # The image is an SVG so generate two images, one containing the full tile and the other
-        # containing just the text on a transparent background
-        width, height = _extractSvgSize(mapBytes)
-        output = io.BytesIO()
-        
-        with CompositorImage._cairoLock:
-            surface = cairosvg.surface.PNGSurface(
-                tree=cairosvg.parser.Tree(bytestring=mapBytes),
-                output=output,
-                output_width=width,
-                output_height=height,
-                dpi=96.0)
-            try:
-                bgra = numpy.frombuffer(
-                    buffer=bytes(surface.cairo.get_data()),
-                    dtype=numpy.uint8)
-                surface.finish()
-            finally:
-                del surface
-
-        # Convert cairo BGRA pixels to PIL RGBA
-        bgra.shape = (height, width, 4) # for RGBA
-        b, g, r, a = bgra[:,:,0], bgra[:,:,1], bgra[:,:,2], bgra[:,:,3]
-        rgba = numpy.zeros(
-            shape=(height, width, 4),
-            dtype=numpy.uint8)
-        rgba[:,:,0] = r
-        rgba[:,:,1] = g
-        rgba[:,:,2] = b
-        rgba[:,:,3] = a
-
-        return PIL.Image.frombytes('RGBA', (width, height), rgba.tobytes())
+            if self._textImage:
+                self._textImage.close()
 
 class _CustomSector(object):
     def __init__(
@@ -264,8 +186,107 @@ class Compositor(object):
             ) -> OverlapType:
         self._customMapsDir = customMapsDir
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
+        self._processPool = None # Make sure variable exists for destructor in case creation fails
+        
+        self._processPool = multiprocessing.Pool()
 
         self._loadCustomUniverse()
+
+    def __del__(self):
+        if self._processPool:
+            self._processPool.close()
+
+    def createCompositorImage(
+            self,
+            mapImage: travellermap.MapImage,
+            scale: int
+            ) -> CompositorImage:
+        mapBytes = mapImage.bytes()
+        mapFormat = mapImage.format()
+        if mapFormat == travellermap.MapFormat.SVG:
+            if _FullSvgRendering:
+                imageType = CompositorImage.ImageType.SVG
+                mainImage = mapBytes
+                textImage = None
+            else:
+                imageType = CompositorImage.ImageType.Bitmap
+                width, height = _extractSvgSize(mapBytes)
+
+                imageBytes = self._processPool.apply(
+                        Compositor._renderSvgTask,
+                        args=[mapBytes])
+                mainImage = PIL.Image.frombytes('RGBA', (width, height), imageBytes)
+
+                textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
+                imageBytes = self._processPool.apply(
+                        Compositor._renderSvgTask,
+                        args=[textSvg])                           
+                textImage = PIL.Image.frombytes('RGBA', (width, height), imageBytes)
+        else:
+            imageType = CompositorImage.ImageType.Bitmap    
+            # Image.load isn't thread safe so make sure to call it now so it doesn't get called
+            # when cropping the image during composition
+            # https://github.com/python-pillow/Pillow/issues/4848
+            mainImage = PIL.Image.open(io.BytesIO(mapBytes))
+            try:
+                mainImage.load()
+            except:
+                mainImage.close()
+                raise
+            textImage = None
+            
+        return CompositorImage(
+            imageType=imageType,
+            mainImage=mainImage,
+            textImage=textImage,
+            scale=scale)
+    
+    def createMultipleCompositorImages(
+            self,
+            mapImages: typing.Mapping[int, travellermap.MapImage]
+            ) -> typing.Iterable[CompositorImage]:
+        compositorImages: typing.List[CompositorImage] = []
+        svgMapImages: typing.List[travellermap.MapImage] = []
+        svgMapScales: typing.List[int] = []
+
+        for scale, mapImage in mapImages.items():
+            mapFormat = mapImage.format()
+            if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
+                svgMapImages.append(mapImage)
+                svgMapScales.append(scale)
+            else:
+                compositorImages.append(self.createCompositorImage(
+                    mapImage=mapImage,
+                    scale=scale))
+                
+        if svgMapImages:
+            taskData = []
+            for mapImage in svgMapImages:
+                svgMapBytes = mapImage.bytes()
+                taskData.append((svgMapBytes, ))
+
+                svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
+                taskData.append((svgTextBytes, ))
+
+            results = self._processPool.starmap(
+                Compositor._renderSvgTask,
+                iterable=taskData)
+
+            for index, scale in enumerate(svgMapScales):
+                mapImage = svgMapImages[index]
+
+                svgDim = _extractSvgSize(svgData=mapImage.bytes())
+
+                mainImage = PIL.Image.frombytes('RGBA', svgDim, results[index * 2])
+                textImage = PIL.Image.frombytes('RGBA', svgDim, results[(index * 2) + 1])
+
+                compositorImages.append(CompositorImage(
+                    imageType=CompositorImage.ImageType.Bitmap,
+                    mainImage=mainImage,
+                    textImage=textImage,
+                    scale=scale))
+                
+        return compositorImages
 
     def overlapType(
             self,
@@ -374,23 +395,34 @@ class Compositor(object):
 
         # Overlay custom sector graphics on tile
         for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
-            Compositor._overlayCustomSector(
-                srcImage=mapPoster.mainImage(),
-                srcPixelRect=srcPixelRect,
-                tgtPixelDim=tgtPixelDim,
-                tgtPixelOffset=tgtPixelOffset,
-                tgtImage=tileImage)
-            
-        # Overlay custom sector text on tile
-        for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
-            textImage = mapPoster.textImage()
-            if textImage:
-                Compositor._overlayCustomSector(
-                    srcImage=textImage,
+            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                self._overlaySvgCustomSector(
+                    svgData=mapPoster.mainImage(),
                     srcPixelRect=srcPixelRect,
                     tgtPixelDim=tgtPixelDim,
                     tgtPixelOffset=tgtPixelOffset,
                     tgtImage=tileImage)
+            else:
+                self._overlayBitmapCustomSector(
+                    srcImage=mapPoster.mainImage(),
+                    srcPixelRect=srcPixelRect,
+                    tgtPixelDim=tgtPixelDim,
+                    tgtPixelOffset=tgtPixelOffset,
+                    tgtImage=tileImage)
+            
+        # Overlay custom sector text on tile
+        for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
+            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                pass # TODO: Do something about text layer for SVG
+            else:
+                textImage = mapPoster.textImage()
+                if textImage:
+                    self._overlayBitmapCustomSector(
+                        srcImage=textImage,
+                        srcPixelRect=srcPixelRect,
+                        tgtPixelDim=tgtPixelDim,
+                        tgtPixelOffset=tgtPixelOffset,
+                        tgtImage=tileImage)
 
         if tileText and overlappedSectors:
             # Overlay original tile text layer over the top of the tile to fill in any text that
@@ -445,23 +477,33 @@ class Compositor(object):
             tgtPixelDim = (
                 round((tileMapRect[2] - tileMapRect[0]) * tileScale),
                 round((tileMapRect[3] - tileMapRect[1]) * tileScale))
-                        
+
             # Overlay custom sector poster on tile
-            tileImage = Compositor._overlayCustomSector(
-                srcImage=mapPoster.mainImage(),
-                srcPixelRect=srcPixelRect,
-                tgtPixelDim=tgtPixelDim,
-                tgtPixelOffset=(0, 0))
-            
-            # Overlay custom sector text on tile
-            textImage = mapPoster.textImage()
-            if textImage:
-                Compositor._overlayCustomSector(
-                    srcImage=textImage,
+            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                tileImage = self._overlaySvgCustomSector(
+                    svgData=mapPoster.mainImage(),
                     srcPixelRect=srcPixelRect,
                     tgtPixelDim=tgtPixelDim,
-                    tgtPixelOffset=(0, 0),
-                    tgtImage=tileImage)
+                    tgtPixelOffset=(0, 0))
+            else:
+                tileImage = self._overlayBitmapCustomSector(
+                    srcImage=mapPoster.mainImage(),
+                    srcPixelRect=srcPixelRect,
+                    tgtPixelDim=tgtPixelDim,
+                    tgtPixelOffset=(0, 0))
+            
+            # Overlay custom sector text on tile
+            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                pass # TODO: Do something with text layer for svg
+            else:
+                textImage = mapPoster.textImage()
+                if textImage:
+                    self._overlayBitmapCustomSector(
+                        srcImage=textImage,
+                        srcPixelRect=srcPixelRect,
+                        tgtPixelDim=tgtPixelDim,
+                        tgtPixelOffset=(0, 0),
+                        tgtImage=tileImage)
                 
             return tileImage
 
@@ -483,27 +525,33 @@ class Compositor(object):
                     logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no map levels')
                     continue
 
-                mapImages = []
+                mapImages = {}
                 for scale in mapLevels.keys():
                     try:
                         mapImage = travellermap.DataStore.instance().sectorMapImage(
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
                             scale=scale)
-                        mapImages.append(CompositorImage(mapImage=mapImage, scale=scale))
+                        mapImages[scale] = mapImage
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
 
+                try:
+                    mapPosters = self.createMultipleCompositorImages(mapImages)
+                except Exception as ex:
+                    logging.warning(f'Compositor failed to create compositor images for {sectorInfo.canonicalName()}', exc_info=ex)
+                    continue
+
                 sectors.append(_CustomSector(
                     name=sectorInfo.canonicalName(),
                     position=(sectorInfo.x(), sectorInfo.y()),
-                    mapPosters=mapImages))
+                    mapPosters=mapPosters))
 
-            self._milieuSectorMap[milieu] = sectors
+            self._milieuSectorMap[milieu] = sectors 
 
-    @staticmethod
-    def _overlayCustomSector(
+    def _overlayBitmapCustomSector(
+            self,
             srcImage: PIL.Image.Image,
             srcPixelRect: typing.Tuple[int, int, int, int],
             tgtPixelDim: typing.Tuple[int, int],
@@ -541,11 +589,141 @@ class Compositor(object):
                 # Copy custom sector section over current tile using it's alpha channel as a mask
                 tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage)
         finally:
-            if (croppedImage != None) and (croppedImage is not tgtImage):
+            if (croppedImage is not None) and (croppedImage is not tgtImage):
                 croppedImage.close()
                 del croppedImage
-            if (resizedImage != None) and (resizedImage is not tgtImage):
+            if (resizedImage is not None) and (resizedImage is not tgtImage):
                 resizedImage.close()
                 del resizedImage
 
         return tgtImage
+    
+    def _overlaySvgCustomSector(
+            self,
+            svgData: bytes,
+            srcPixelRect: typing.Tuple[int, int, int, int],
+            tgtPixelDim: typing.Tuple[int, int],
+            tgtPixelOffset: typing.Tuple[int, int],
+            tgtImage: typing.Optional[PIL.Image.Image] = None
+            ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image  
+        overlayImage = None
+        try:
+            overlayBytes = self._processPool.apply(
+                Compositor._renderSvgRegionTask,
+                args=[svgData, srcPixelRect, tgtPixelDim])
+            overlayImage = PIL.Image.frombytes('RGBA', tgtPixelDim, overlayBytes)
+
+            if tgtImage == None:
+                # No target was specified to overlay the custom sector on so just return the
+                # cropped and resized section of the source image.
+                # NOTE: If no cropping or resizing performed a copy MUST be made as the source
+                # image shouldn't be returned as something may delete it
+                # NOTE: It's important to set tgtImage to srcImage to prevent it being deleted
+                # in the finally clause
+                tgtImage = overlayImage
+            else:
+                # Copy custom sector section over current tile using it's alpha channel as a mask
+                tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage)           
+        finally:
+            if (overlayImage is not None) and (overlayImage is not tgtImage):
+                del overlayImage
+
+        return tgtImage
+    
+    @staticmethod
+    def _createTextSvg(mapBytes: bytes) -> bytes:
+        root = xml.etree.ElementTree.fromstring(mapBytes)
+        element = root.find('{http://www.w3.org/2000/svg}g')
+        Compositor._recursiveRemoveGraphics(element)
+        return xml.etree.ElementTree.tostring(element=root)
+
+    @staticmethod
+    def _recursiveRemoveGraphics(
+            element: xml.etree.ElementTree.Element
+            ) -> None:
+        for child in reversed(element):
+            if child.tag == '{http://www.w3.org/2000/svg}g':
+                Compositor._recursiveRemoveGraphics(child)
+                if len(child) == 0:
+                    element.remove(child)
+            elif child.tag != '{http://www.w3.org/2000/svg}text':
+                element.remove(child)  
+    
+    @staticmethod
+    def _renderSvgTask(svgData: bytes) -> bytes:
+        try:
+            tree = cairosvg.parser.Tree(bytestring=svgData)
+            width = int(tree['width'])
+            height = int(tree['height'])
+
+            output = io.BytesIO()
+            surface = cairosvg.surface.PNGSurface(
+                tree=tree,
+                output=output,
+                output_width=width,
+                output_height=height,
+                dpi=96.0)
+            try:
+                result = Compositor._convertBGRAToRGBA(
+                    bgra=bytes(surface.cairo.get_data()),
+                    width=width,
+                    height=height)
+                surface.finish()
+            finally:
+                del surface
+        except Exception as ex:
+            print(ex) # TODO: Do something better
+            return None
+
+        return result
+    
+    @staticmethod
+    def _renderSvgRegionTask(
+            svgData: bytes,
+            srcPixelRect: typing.Tuple[int, int, int, int],
+            tgtPixelDim: typing.Tuple[int, int],
+            ) -> bytes:
+        try:
+            tree = cairosvg.parser.Tree(bytestring=svgData)
+            tree['viewBox'] = \
+                f'{srcPixelRect[0]}, {srcPixelRect[1]}, {srcPixelRect[2] - srcPixelRect[0]}, {srcPixelRect[3] - srcPixelRect[1]}'
+
+            output = io.BytesIO()
+            surface = cairosvg.surface.PNGSurface(
+                tree=tree,
+                output=output,
+                output_width=tgtPixelDim[0],
+                output_height=tgtPixelDim[1],
+                dpi=96.0)               
+
+            try:
+                result = Compositor._convertBGRAToRGBA(
+                    bgra=bytes(surface.cairo.get_data()),
+                    width=tgtPixelDim[0],
+                    height=tgtPixelDim[1])
+                surface.finish()
+            finally:
+                del surface
+        except Exception as ex:
+            print(ex) # TODO: Do something better
+            return None
+
+        return result
+    
+    @staticmethod
+    def _convertBGRAToRGBA(
+            bgra: bytes,
+            width: int,
+            height: int
+            ) -> bytes:
+        bgra = numpy.frombuffer(
+            buffer=bgra,
+            dtype=numpy.uint8)
+        bgra.shape = (height, width, 4) # for RGBA
+        b, g, r, a = bgra[:,:,0], bgra[:,:,1], bgra[:,:,2], bgra[:,:,3]
+        rgba = numpy.zeros(shape=bgra.shape, dtype=numpy.uint8)
+        rgba[:,:,0] = r
+        rgba[:,:,1] = g
+        rgba[:,:,2] = b
+        rgba[:,:,3] = a
+        return rgba.tobytes()
