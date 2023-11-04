@@ -232,9 +232,6 @@ class MainWindow(QtWidgets.QMainWindow):
         aboutDialog.exec()
 
 def main() -> None:
-    # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
-    multiprocessing.freeze_support()
-
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
 
@@ -374,4 +371,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
+    # This needs to be called as the first line of the script
+    # https://docs.python.org/3/library/multiprocessing.html#windows
+    # TODO: Do I need to call this in the main proxy process as it uses multiprocessing now to
+    # spawn additional processes
+    multiprocessing.freeze_support()
+
     main()

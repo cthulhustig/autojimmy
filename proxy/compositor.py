@@ -188,7 +188,11 @@ class Compositor(object):
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
         self._processPool = None # Make sure variable exists for destructor in case creation fails
         
-        self._processPool = multiprocessing.Pool()
+        # Construct the pool of processes that can be used for SVG rendering (or other long jobs).
+        # A context is used so we can force processes to be spawned, this keeps the behaviour
+        # the same on all OS and avoids issues with singletons when using fork        
+        self._mpContext = multiprocessing.get_context('spawn')
+        self._processPool = self._mpContext.Pool()
 
         self._loadCustomUniverse()
 

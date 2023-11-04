@@ -480,11 +480,12 @@ class MapProxy(object):
     _service = None
     _shutdownEvent = None
     _currentState = ServerStatus.Stopped
-    _messageQueue = multiprocessing.Queue()
+    _mpContext = None # Multiprocessing context
+    _messageQueue = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
-
+    
     @classmethod
     def instance(cls):
         if not cls._instance:
@@ -492,6 +493,14 @@ class MapProxy(object):
                 # Recheck instance as another thread could have created it between the
                 # first check adn the lock
                 if not cls._instance:
+                    # Setting up multiprocessing stuff should be protected by __main__ so
+                    # shouldn't be done when initialising the rest of the static class
+                    # variables. A context is used so we can force processes to be spawned,
+                    # this keeps the behaviour the same on all OS and avoids issues with
+                    # singletons when using fork
+                    cls._mpContext = multiprocessing.get_context('spawn')
+                    cls._messageQueue = cls._mpContext.Queue()
+
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
@@ -525,8 +534,8 @@ class MapProxy(object):
 
         self._currentState = MapProxy.ServerStatus.Starting
         try:
-            self._shutdownEvent = multiprocessing.Event()
-            self._service = multiprocessing.Process(
+            self._shutdownEvent = self._mpContext.Event()
+            self._service = self._mpContext.Process(
                 target=MapProxy._serviceCallback,
                 args=[
                     self._listenPort,
