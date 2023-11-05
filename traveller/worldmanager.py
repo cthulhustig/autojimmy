@@ -377,6 +377,7 @@ class WorldManager(object):
             if not code or not name:
                 continue
 
+            # NOTE: Unlike most other places, it's intentional that this is upper
             code = code.upper()
             assert(code in subsectorMap)
             subsectorMap[code] = name
@@ -385,7 +386,8 @@ class WorldManager(object):
             if not code or not name:
                 continue
 
-            code = code.upper()
+            # NOTE: The code here is intentionally left with the case as it appears int metadata as
+            # there are some sectors where allegiances vary only by case (see AllegianceManager)
             allegianceMap[code] = name
 
         worlds = []

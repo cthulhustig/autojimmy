@@ -87,6 +87,8 @@ class AllegianceCodeInfo(object):
             ) -> str:
         return f'{self._code} ({sectorName})'
 
+# NOTE: Mapping allegiance codes to names needs to be case sensitive as some sectors have
+# allegiances that differ only by case (e.g. Knaeleng, Kharrthon, Phlange, Kruse)
 class AllegianceManager(object):
     _instance = None # Singleton instance
     _allegianceMap: typing.Dict[str, AllegianceCodeInfo] = {}

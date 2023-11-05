@@ -151,6 +151,14 @@ _T5Row_ColumnNameToAttributeMap = {
     'Stars': WorldAttribute.Stellar
 }
 
+def _isAllDashes(string: str) -> bool:
+    if not string:
+        return False # Empty string isn't all dashes
+    for c in string:
+        if c != '-':
+            return False
+    return True
+
 def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
     hasSeparator = False
@@ -294,7 +302,7 @@ def _parseT5ColumnWorld(
         finishIndex = startIndex + width
         if attribute != None:
             data = line[startIndex:finishIndex].strip()
-            if data and all(ch == '-' for ch in data):
+            if data and _isAllDashes(data):
                 data = '' # Replace no data marker with empty string
 
             worldData.setAttribute(
@@ -365,7 +373,7 @@ def _parseT5RowWorld(
 
     worldData = RawWorld(lineNumber=lineNumber)
     for attribute, data in itertools.zip_longest(columnAttributes, columnData):
-        if data and all(ch == '-' for ch in data):
+        if data and _isAllDashes(data):
             data = '' # Replace no data marker with empty string
 
         worldData.setAttribute(
@@ -441,7 +449,10 @@ def parseXMLMetadata(
         if code == None:
             logging.warning(f'Skipping allegiance with no Code element in {identifier} metadata')
             continue
-        allegiances[code] = element.text
+
+        # Ignore allegiances that are just a sequence of '-'
+        if code and not _isAllDashes(code):
+            allegiances[code] = element.text
 
     return RawMetadata(
         canonicalName=names[0],
@@ -528,7 +539,9 @@ def parseJSONMetadata(
                 continue
             code = str(code)
 
-            allegiances[code] = name
+            # Ignore allegiances that are just a sequence of '-'
+            if code and not _isAllDashes(code):
+                allegiances[code] = name
 
     return RawMetadata(
         canonicalName=names[0],
