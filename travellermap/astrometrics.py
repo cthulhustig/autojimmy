@@ -1,3 +1,4 @@
+import enum
 import math
 import typing
 
@@ -128,3 +129,54 @@ def hexDistance(
     max = ody if ody > adx else adx
     adx -= ody
     return adx if adx > max else max
+
+class NeighbourDirs(enum.Enum):
+    Upper = 0
+    UpperRight = 1
+    LowerRight = 2
+    Lower = 3
+    LowerLeft = 4
+    UpperLeft = 5
+
+def neighbourRelativeHex(
+        origin: typing.Tuple[int, int, int, int],
+        direction: NeighbourDirs
+        ) -> typing.Tuple[int, int, int, int]:
+    sectorX = origin[0]
+    sectorY = origin[1]
+    hexX = origin[2]
+    hexY = origin[3]
+    
+    if direction == NeighbourDirs.Upper:
+        hexY -= 1
+    elif direction == NeighbourDirs.UpperRight:
+        hexY += -1 if (hexX % 2) else 0
+        hexX += 1
+    elif direction == NeighbourDirs.LowerRight:
+        hexY += 0 if (hexX % 2) else 1
+        hexX += 1
+    elif direction == NeighbourDirs.Lower:
+        hexY += 1
+    elif direction == NeighbourDirs.LowerLeft:
+        hexY += 0 if (hexX % 2) else 1
+        hexX -= 1
+    elif direction == NeighbourDirs.UpperLeft:
+        hexY += -1 if (hexX % 2) else 0
+        hexX -= 1
+    else:
+        raise ValueError('Invalid neighbour direction')
+
+    if hexX == 0:
+        hexX = 32
+        sectorX -= 1
+    if hexX == 33:
+        hexX = 1
+        sectorX += 1
+    if hexY == 0:
+        hexY = 40
+        sectorY -= 1
+    if hexY == 41:
+        hexY = 1
+        sectorY += 1
+
+    return (sectorX, sectorY, hexX, hexY)

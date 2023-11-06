@@ -408,6 +408,7 @@ def main() -> None:
                 installMapsDir=installMapDir,
                 overlayMapsDir=overlayMapDir,
                 customMapsDir=customMapDir,
+                mainsMilieu=app.Config.instance().milieu(),
                 logDir=logDirectory,
                 logLevel=logLevel)
             proxy.MapProxy.instance().run()

@@ -130,6 +130,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             localFileStore: _LocalFileStore,
             tileCache: _TileCache,
             compositor: typing.Optional[proxy.Compositor],
+            mainsMilieu: typing.Optional[travellermap.Milieu],
             *args,
             **kwargs
             ) -> None:
@@ -137,6 +138,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         self._localFileStore = localFileStore
         self._tileCache = tileCache
         self._compositor = compositor
+        self._mainsMilieu = mainsMilieu
 
         # BaseHTTPRequestHandler calls do_GET **inside** __init__ !!!
         # So we have to call super().__init__ after setting attributes.
@@ -177,6 +179,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if path == '' or path == '/':
                 path = '/index.html'
 
+            # TODO: I should probably use the local copies of sophont and allegiance files for those requests
             localFileData = self._localFileStore.lookup(path)
             if localFileData:
                 self._handleLocalFileRequest(
@@ -184,6 +187,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                     fileData=localFileData)
             elif path == '/api/tile':
                 self._handleTileRequest(parsedUrl=parsedUrl)
+            elif path == '/res/mains.json':
+                self._handleMainsRequest(parsedUrl=parsedUrl)
             else:
                 # Act as a proxy for all other requests and just forward them to the
                 # configured Traveller Map instance
@@ -392,15 +397,54 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         if tileBytes:
             self.wfile.write(tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes)
 
-    def _handleProxyRequest(
+    def _handleMainsRequest(
             self,
             parsedUrl: urllib.parse.ParseResult
+            ) -> None:
+        mainsData = None
+        if self._mainsMilieu:
+            try:
+                mainsData = travellermap.DataStore.instance().mainsData(
+                    milieu=self._mainsMilieu)
+                if not mainsData:
+                    raise RuntimeError('Empty mains data returned')
+            except Exception as ex:
+                logging.error(f'Failed to retrieve mains data from data store', exc_info=ex)
+                # Continue to fall back to traveller map
+
+        if not mainsData:
+            self._handleProxyRequest(
+                parsedUrl=parsedUrl,
+                # Allow browser to cache it for the session but not store it on disk
+                forceCacheControl='no-store')
+            return
+        mainsData = mainsData.encode()
+
+        logging.debug(f'Serving local mains data')
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', len(mainsData))
+        # Tell the client not to cache tiles. Assuming the browser respects the request, it
+        # should prevent stale tiles being displayed if the user modifies data
+        self.send_header('Cache-Control', 'no-store, no-cache') # Served locally so never cache
+        self.end_headers()
+        self.wfile.write(mainsData)
+
+    def _handleProxyRequest(
+            self,
+            parsedUrl: urllib.parse.ParseResult,
+            forceCacheControl: typing.Optional[str] = None
             ) -> None:
         content, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
 
         self.send_response(200)
         for header, value in headers.items():
+            if (forceCacheControl != None) and (header.lower() == 'cache-control'):
+                continue # Don't proxy cache setting
             self.send_header(header, value)
+        if forceCacheControl: # if forceCacheControl is an empty string, don't add the header
+            self.send_header('Cache-Control', forceCacheControl)
         self.end_headers()
         self.wfile.write(content)
 
@@ -465,6 +509,7 @@ class MapProxy(object):
     _installMapsDir = None
     _overlayMapsDir = None
     _customMapsDir = None
+    _mainsMilieu = None
     _logDir = None
     _logLevel = logging.INFO
     _service = None
@@ -502,6 +547,7 @@ class MapProxy(object):
             installMapsDir: str,
             overlayMapsDir: str,
             customMapsDir: str,
+            mainsMilieu: travellermap.Milieu,
             logDir: str,
             logLevel: int
             ) -> None:
@@ -515,6 +561,7 @@ class MapProxy(object):
         MapProxy._installMapsDir = installMapsDir
         MapProxy._overlayMapsDir = overlayMapsDir
         MapProxy._customMapsDir = customMapsDir
+        MapProxy._mainsMilieu = mainsMilieu
         MapProxy._logDir = logDir
         MapProxy._logLevel = logLevel
 
@@ -534,6 +581,7 @@ class MapProxy(object):
                     self._installMapsDir,
                     self._overlayMapsDir,
                     self._customMapsDir,
+                    self._mainsMilieu,
                     self._logDir,
                     self._logLevel,
                     self._shutdownEvent,
@@ -575,6 +623,7 @@ class MapProxy(object):
             installMapsDir: str,
             overlayMapsDir: str,
             customMapsDir: str,
+            mainsMilieu: travellermap.Milieu,
             logDir: str,
             logLevel: int,
             shutdownEvent: multiprocessing.Event,
@@ -597,21 +646,26 @@ class MapProxy(object):
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
 
-            # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
-            # then it's important that we continue setting up the proxy so it can at least return the
-            # default tiles to the client
-            compositor = None
-            try:
-                compositor = proxy.Compositor(customMapsDir=customMapsDir)
-            except Exception as ex:
-                logging.error('Exception occurred while compositing tile', exc_info=ex)
+            
+            # Create the compositor if there are custom sectors for any milieu, not just the one that
+            # is currently selected in the main app.
+            compositor = None            
+            if travellermap.DataStore.instance().hasCustomSectors():
+                # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
+                # then it's important that we continue setting up the proxy so it can at least return the
+                # default tiles to the client
+                try:
+                    compositor = proxy.Compositor(customMapsDir=customMapsDir)
+                except Exception as ex:
+                    logging.error('Exception occurred while compositing tile', exc_info=ex)
 
             handler = functools.partial(
                 _HttpGetRequestHandler,
                 travellerMapUrl,
                 localFileStore,
                 tileCache,
-                compositor)
+                compositor,
+                mainsMilieu)
 
             # Only listen on loopback for security. Allow address reuse to prevent issues if the
             # app is restarted

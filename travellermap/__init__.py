@@ -5,5 +5,6 @@ from .url import *
 from .astrometrics import *
 from .sectorparsers import *
 from .mapimage import *
+from .mains import *
 from .datastore import *
 from .tileclient import *

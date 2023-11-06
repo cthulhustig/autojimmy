@@ -272,6 +272,7 @@ def createWorldToolTip(
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(world.subsectorName())}<li>'
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
+    toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
 
     if world.isAnomaly():
         style = formatStyle(app.tagColour(app.TagLevel.Danger))

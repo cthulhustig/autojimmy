@@ -103,6 +103,7 @@ class DataStore(object):
     _UniverseFileName = 'universe.json'
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
+    _MainsFileName = 'mains.json'
     _DataFormatFileName = 'dataformat.txt'
     _TimestampFileName = 'timestamp.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -111,8 +112,9 @@ class DataStore(object):
     _DataArchiveMapPath = 'autojimmy-data-main/map/'
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _TimestampCheckTimeout = 3 # Seconds
+    _MainsBaseMilieu = travellermap.Milieu.M1105
 
-    _MinDataFormatVersion = 2
+    _MinDataFormatVersion = 3
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -123,7 +125,7 @@ class DataStore(object):
         travellermap.MetadataFormat.XML: 'xml'}
 
     _instance = None # Singleton instance
-    _lock = threading.RLock()
+    _lock = threading.RLock() # Recursive lock
     _installDir = None
     _overlayDir = None
     _customDir = None
@@ -162,7 +164,7 @@ class DataStore(object):
             self,
             milieu: travellermap.Milieu
             ) -> int:
-        self._loadAllSectors()
+        self._loadSectors()
         with self._lock:
             return len(self._milieuMap[milieu])
 
@@ -170,7 +172,7 @@ class DataStore(object):
             self,
             milieu: travellermap.Milieu
             ) -> typing.Iterable[SectorInfo]:
-        self._loadAllSectors()
+        self._loadSectors()
         with self._lock:
             return list(self._milieuMap[milieu].values())
 
@@ -179,7 +181,7 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu
             ) -> typing.Optional[SectorInfo]:
-        self._loadAllSectors()
+        self._loadSectors()
         with self._lock:
             sectors = self._milieuMap[milieu]
             return sectors.get(sectorName)
@@ -190,7 +192,7 @@ class DataStore(object):
             sectorY: int,
             milieu: travellermap.Milieu
             ) -> typing.Optional[SectorInfo]:
-        self._loadAllSectors()
+        self._loadSectors()
         with self._lock:
             # TODO: Iterating over all sectors is inefficient
             for sector in self._milieuMap[milieu].values():
@@ -204,7 +206,7 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu
             ) -> str:
-        self._loadAllSectors()
+        self._loadSectors()
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
@@ -222,7 +224,7 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu
             ) -> str:
-        self._loadAllSectors()
+        self._loadSectors()
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
@@ -241,7 +243,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             scale: int
             ) -> travellermap.MapImage:
-        self._loadAllSectors()
+        self._loadSectors()
 
         sectorMap = self._milieuMap[milieu]
         if sectorName not in sectorMap:
@@ -266,6 +268,23 @@ class DataStore(object):
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readFile(
             relativeFilePath=self._AllegiancesFileName))
+    
+    def mainsData(
+            self,
+            milieu: travellermap.Milieu
+            ) -> str:
+        if self.hasCustomSectors(milieu=milieu):
+            try:
+                return self._bytesToString(bytes=self._readMilieuFile(
+                    fileName=DataStore._MainsFileName,
+                    milieu=milieu,
+                    useCustomMapDir=True))
+            except Exception as ex:
+                logging.error(f'Data store failed to read custom mains data for {milieu.value}', exc_info=ex)
+                # Continue to load default file
+
+        return self._bytesToString(bytes=self._readFile(
+            relativeFilePath=self._MainsFileName))    
 
     def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
@@ -356,6 +375,40 @@ class DataStore(object):
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
+            
+            # Clear out the milieu map to trigger a reload (which will happen immediately
+            # due to regenerating mains)
+            if self._milieuMap:
+                self._milieuMap.clear()
+            
+            # Regenerate the custom mains for _ALL_ milieu
+            # TODO: Progress should probably take this into account somehow
+            self._regenerateCustomMains()
+            
+    def hasCustomSectors(
+            self,
+            milieu: typing.Optional[travellermap.Milieu] = None,
+            ) -> bool:
+        milieuList = [milieu] if milieu else travellermap.Milieu
+        with self._lock:        
+            for milieu in milieuList:
+                for sector in self.sectors(milieu=milieu):
+                    if sector.isCustomSector():
+                        return True
+        return False
+    
+    def customSectors(
+            self,
+            milieu: typing.Optional[travellermap.Milieu] = None,
+            ) -> typing.Iterable[SectorInfo]:
+        milieuList = [milieu] if milieu else travellermap.Milieu
+        sectorList = []
+        with self._lock:
+            for milieu in milieuList:
+                for sector in self.sectors(milieu=milieu):
+                    if sector.isCustomSector():
+                        sectorList.append(sector)
+        return sectorList
 
     def createCustomSector(
             self,
@@ -366,7 +419,7 @@ class DataStore(object):
             customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
             customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
-        self._loadAllSectors()
+        self._loadSectors()
 
         # Load metadata, currently only XML format is supported. The Poster API also supports
         # MSEC metadata but that format doesn't include the sector position. Strangely the docs
@@ -395,21 +448,24 @@ class DataStore(object):
 
         with self._lock:
             sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu)
+            replacedSector = None
             if sectors:
                 # Check for custom sectors at the same location
                 for existingSector in sectors.values():
                     assert(isinstance(existingSector, SectorInfo))
-                    if not existingSector.isCustomSector():
-                        continue
-
                     if (metadata.x() == existingSector.x()) and (metadata.y() == existingSector.y()):
-                        raise RuntimeError(
-                            'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
-                                newName=metadata.canonicalName(),
-                                milieu=milieu.value,
-                                existingName=existingSector.canonicalName(),
-                                x=metadata.x(),
-                                y=metadata.y()))
+                        if existingSector.isCustomSector():
+                            raise RuntimeError(
+                                'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
+                                    newName=metadata.canonicalName(),
+                                    milieu=milieu.value,
+                                    existingName=existingSector.canonicalName(),
+                                    x=metadata.x(),
+                                    y=metadata.y()))
+                        
+                        replacedSector = existingSector
+                        break
+
 
                 # Check for sectors with the same name but different locations
                 existingSector = sectors.get(metadata.canonicalName())
@@ -458,9 +514,17 @@ class DataStore(object):
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,
                 customMapLevels=mapLevels)
+            
+            if replacedSector:
+                # Remove the sector at the same location as the custom sector. It may have a different name
+                # or may have the same name (which means it needs to be deleted before adding the new one)
+                del sectors[replacedSector.canonicalName()]
             sectors[sector.canonicalName()] = sector
 
             self._saveCustomSectors(milieu=milieu)
+
+            # Regenerate the mains for the affected milieu
+            self._regenerateCustomMains(milieu=milieu)            
 
             return sector
 
@@ -469,7 +533,7 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu
             ) -> None:
-        self._loadAllSectors()
+        self._loadSectors()
 
         milieuDirPath = os.path.join(
             self._customDir,
@@ -515,6 +579,13 @@ class DataStore(object):
                             file=filePath,
                             milieu=milieu.value),
                         exc_info=ex)
+                    
+            # Force reload of sectors for this milieu in order to load details of any
+            # sector that had been replaced by the custom sector that was deleted
+            self._loadSectors(milieu=milieu, reload=True)
+                    
+            # Regenerate the mains for the affected milieu
+            self._regenerateCustomMains(milieu=milieu)
 
     class SectorMetadataValidationError(Exception):
         def __init__(self, reason) -> None:
@@ -546,18 +617,22 @@ class DataStore(object):
         if root.find('./Y') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain Y element')
 
-    def _loadAllSectors(self) -> None:
-        if self._milieuMap:
-            # Already loaded, nothing to do
-            return
-
+    def _loadSectors(
+            self,
+            milieu: typing.Optional[travellermap.Milieu] = None,
+            reload: bool = False
+            ) -> None:
         with self._lock:
-            if self._milieuMap:
-                # Another thread loaded the sectors while this one was waiting on the lock
-                return
+            if (not reload) and self._milieuMap and ((not milieu) or self._milieuMap.get(milieu)):
+                return # Already loaded
+            
+            if not self._milieuMap:
+                self._milieuMap = {}
 
-            self._milieuMap = {}
-            for milieu in travellermap.Milieu:
+            milieuList = [milieu] if milieu else travellermap.Milieu
+            for milieu in milieuList:
+                logging.debug(f'Loading sector info for {milieu.value}')
+
                 customSectorPosMap: typing.Dict[typing.Tuple[int, int], SectorInfo] = {}
                 customSectorNameMap: typing.Dict[str, SectorInfo] = {}
                 loadedSectorNameMap: typing.Dict[str, SectorInfo] = {}
@@ -678,7 +753,7 @@ class DataStore(object):
             relativeFilePath)
         with open(filePath, 'rb') as file:
             return file.read()
-
+        
     def _readMilieuFile(
             self,
             fileName: str,
@@ -692,6 +767,102 @@ class DataStore(object):
                 return file.read()
 
         return self._readFile(relativeFilePath=relativePath)
+    
+    # NOTE: This assumes the lock is already held to give consistent results
+    def _regenerateCustomMains(
+            self,
+            milieu: typing.Optional[travellermap.Milieu] = None
+            ) -> None:
+        baseSectorWorlds = self._loadSectorWorlds(
+            milieu=DataStore._MainsBaseMilieu)
+
+        milieuList = [milieu] if milieu else travellermap.Milieu
+        for milieu in milieuList:
+            logging.info(f'Regenerating mains for {milieu.value}')
+
+            customMainsFilePath = os.path.join(
+                self._customDir,
+                DataStore._MilieuBaseDir,
+                milieu.value,
+                DataStore._MainsFileName)
+
+            if not self.hasCustomSectors(milieu=milieu):
+                # This milieu has no custom sectors so delete any mains file for that custom sector
+                # if it exists to cause the default file from Traveller Map
+                try:
+                    if os.path.isfile(customMainsFilePath):
+                        os.remove(customMainsFilePath)
+                except Exception as ex:
+                    logging.error(f'Failed to delete custom mains file for {milieu.value}', exc_info=ex)
+                continue # Keep going and try to update the next milieu
+
+            try:
+                mainsGenerator = travellermap.MainGenerator()
+
+                # If the milieu being updated isn't the base milieu then use worlds from the base milieu
+                # for any locations where the base milieu has a sector but the current milieu doesn't.
+                # This mimics the behaviour of Traveller Map but with support for custom sectors
+                # TODO: There is a bug here, custom sectors for the base milieu will be used but they won't
+                # be used visible or used for any other calculations when the current configured mileu is not
+                # the base milieu
+                if milieu != DataStore._MainsBaseMilieu:
+                    sectorWorlds = self._loadSectorWorlds(milieu=milieu)
+                    seenSectors = set()
+                    for sectorInfo in sectorWorlds.keys():
+                        seenSectors.add((sectorInfo.x(), sectorInfo.y()))
+                    for sectorInfo in baseSectorWorlds.keys():
+                        if (sectorInfo.x(), sectorInfo.y()) not in seenSectors:
+                            sectorWorlds[sectorInfo] = baseSectorWorlds[sectorInfo]
+                else:
+                    sectorWorlds = baseSectorWorlds
+
+                for sectorInfo, worldList in sectorWorlds.items():
+                    for world in worldList:
+                        worldHex = world.attribute(travellermap.WorldAttribute.Hex)
+                        if len(worldHex) != 4:
+                            pass # TODO: Do something
+
+                        mainsGenerator.addWorld(
+                            sectorX=sectorInfo.x(),
+                            sectorY=sectorInfo.y(),
+                            hexX=int(worldHex[:2]),
+                            hexY=int(worldHex[2:]))
+                        
+                mains = mainsGenerator.generate()
+                outputData = []
+                for main in mains:
+                    outputMain = []
+                    for sectorX, sectorY, hexX, hexY in main:
+                        outputMain.append(f'{sectorX}/{sectorY}/{hexX:02d}{hexY:02d}')
+                    outputData.append(outputMain)
+            except Exception as ex:
+                logging.error(f'Failed to generate custom mains file for {milieu.value}', exc_info=ex)
+                continue # Keep going and try to update the next milieu
+
+            try:
+                with open(customMainsFilePath, 'w', encoding='utf-8') as file:
+                    json.dump(outputData, file)
+            except Exception as ex:
+                logging.error(f'Failed to write custom mains file for {milieu.value}', exc_info=ex)
+                continue # Keep going and try to update the next milieu
+
+    def _loadSectorWorlds(
+            self,
+            milieu: travellermap.Milieu
+            ) -> typing.Mapping[SectorInfo, typing.Iterable[travellermap.RawWorld]]:
+        sectorWorldMap = {}
+        for sectorInfo in self.sectors(milieu):
+            sectorData = self.sectorFileData(
+                sectorName=sectorInfo.canonicalName(),
+                milieu=milieu)
+            if not sectorData:
+                continue
+            sectorWorldMap[sectorInfo] = travellermap.parseSector(
+                content=sectorData,
+                fileFormat=sectorInfo.sectorFormat(),
+                identifier=sectorInfo.canonicalName())
+        return sectorWorldMap
+
 
     @staticmethod
     def _makeWorkingDir(overlayDirPath: str) -> str:
