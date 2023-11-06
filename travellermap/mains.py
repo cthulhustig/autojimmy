@@ -17,38 +17,33 @@ class MainGenerator(object):
             ) -> None:
         self._worlds.add((sectorX, sectorY, hexX, hexY))
 
-    # Based on the algorithm used by Traveller Map (tools\mains.js)
+    # Optimised version of algorithm used by Traveller Map (tools\mains.js)
     def generate(self) -> typing.Iterable[typing.Iterable[typing.Tuple[int, int, int, int]]]:
-        mainIndex = 0
-        seenPositions = {}
+        seen = set()
+        mains = []
 
         for world in self._worlds:
-            if world in seenPositions:
+            if world in seen:
                 continue
-            mainIndex += 1
 
-            stack = [world]
-            while stack:
-                check = stack.pop() # TODO: Not sure if this is removing from correct end (does it matter???)
-                seenPositions[check] = mainIndex
-                for neighbour in self._neighbours(world=check):
-                    if neighbour not in seenPositions:
-                         stack.append(neighbour)
+            main = [world]
+            mains.append(main)
 
-        mains = [[] for _ in range(0, mainIndex + 1)]
-        for world, mainIndex in seenPositions.items():
-            mains[mainIndex].append(world)
+            index = 0
+            while index < len(main):
+                world = main[index]
+                seen.add(world)
+                index += 1
+
+                for direction in travellermap.NeighbourDirs:
+                    neighbour = travellermap.neighbourRelativeHex(origin=world, direction=direction)
+                    if (neighbour in self._worlds) and (neighbour not in seen):
+                        main.append(neighbour)
+                        seen.add(neighbour)
+
+        # Drop mains that are under the required size
         mains = [main for main in mains if len(main) > MainGenerator._MinMainWorlds]
+
+        # Sort mains from largest to smallest for consistency with how Traveller Map generates them
         mains = sorted(mains, key=lambda element: -len(element))
         return mains
-
-    def _neighbours(
-            self,
-            world: typing.Tuple[int, int, int, int]
-            ) -> typing.Iterable[typing.Tuple[int, int, int, int]]:
-        neighbours = []
-        for direction in travellermap.NeighbourDirs:
-            neighbour = travellermap.neighbourRelativeHex(origin=world, direction=direction)
-            if neighbour in self._worlds:
-                neighbours.append(neighbour)
-        return neighbours
