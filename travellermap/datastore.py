@@ -16,6 +16,12 @@ import xmlschema
 import xml.etree.ElementTree
 import zipfile
 
+# TODO: There is something not right with process memory usage. If you run without the debugger
+# there are 2 python processes with ~800MiB of memory, not sure why there are 2
+# TODO: Shouldn't create secondary process pool if SVG support is disabled
+# TODO: I know daemon processes can't spawn other processes but could the secondary pool processes
+# be daemons process (of the proxy process) so there aren't so many processes shown in task manager
+
 class CustomMapLevel(object):
     def __init__(
             self,
@@ -413,6 +419,7 @@ class DataStore(object):
     _overlayDir = None
     _customDir = None
     _universeMap = None
+    _filesystemCache = common.FileSystemCache()
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -448,7 +455,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> int:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
         with self._lock:
             universe = self._universeMap[milieu]
             if not universe:
@@ -460,7 +467,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> typing.Iterable[SectorInfo]:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
         with self._lock:
             universe = self._universeMap[milieu]
             if not universe:
@@ -473,7 +480,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
         with self._lock:
             universe = self._universeMap[milieu]
             if not universe:
@@ -489,7 +496,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
         with self._lock:
             universe = self._universeMap[milieu]
             if not universe:
@@ -504,7 +511,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> str:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         with self._lock:
             universe = self._universeMap[milieu]
@@ -524,7 +531,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             stockOnly: bool = False
             ) -> str:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         sector = self.sector(
             sectorName=sectorName,
@@ -545,7 +552,7 @@ class DataStore(object):
             milieu: travellermap.Milieu,
             scale: int
             ) -> travellermap.MapImage:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         sector = self.sector(
             sectorName=sectorName,
@@ -671,10 +678,11 @@ class DataStore(object):
 
                 logging.info(f'Extracting {subPath}')
                 directoryHierarchy = os.path.dirname(targetPath)
-                if not os.path.exists(directoryHierarchy):
-                    os.makedirs(directoryHierarchy, exist_ok=True)
-                with open(targetPath, 'wb') as outputFile:
-                    outputFile.write(zipData.read(fileInfo.filename))
+                if not self._filesystemCache.exists(directoryHierarchy):
+                    self._filesystemCache.makedirs(directoryHierarchy, canExist=True)
+                self._filesystemCache.write(
+                    path=targetPath,
+                    data=zipData.read(fileInfo.filename))
 
             logging.info('Replacing old universe snapshot')
             self._replaceDir(
@@ -692,7 +700,7 @@ class DataStore(object):
             self,
             milieu: typing.Optional[travellermap.Milieu] = None,
             ) -> bool:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         milieuList = [milieu] if milieu else travellermap.Milieu
         with self._lock:        
@@ -713,7 +721,7 @@ class DataStore(object):
             customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
             customMapImages: typing.Mapping[int, travellermap.MapImage]
             ) -> SectorInfo:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         # Load metadata, currently only XML format is supported. The Poster API also supports
         # MSEC metadata but that format doesn't include the sector position. Strangely the docs
@@ -738,7 +746,7 @@ class DataStore(object):
             self._customDir,
             DataStore._MilieuBaseDir,
             milieu.value)
-        os.makedirs(milieuDirPath, exist_ok=True)
+        self._filesystemCache.makedirs(milieuDirPath, canExist=True)
 
         with self._lock:
             universe = self._universeMap[milieu]
@@ -755,12 +763,14 @@ class DataStore(object):
 
             sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
             sectorFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{sectorExtension}')
-            with open(sectorFilePath, 'w', encoding='utf-8') as file:
-                file.write(sectorContent)
+            self._filesystemCache.write(
+                path=sectorFilePath,
+                data=sectorContent)
 
             metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.xml')
-            with open(metadataFilePath, 'w', encoding='utf-8') as file:
-                file.write(metadataContent)
+            self._filesystemCache.write(
+                path=metadataFilePath,
+                data=metadataContent)
 
             mapLevels = {}
             for scale, mapImage in customMapImages.items():
@@ -774,8 +784,16 @@ class DataStore(object):
                     format=mapFormat)
                 mapLevels[mapLevel.scale()] = mapLevel
 
-                with open(mapLevelFilePath, 'wb') as file:
-                    file.write(mapImage.bytes())
+                # TODO: Need to check if this going into the cache is resulting in multiple
+                # copies being help in memory of if they all work out to be the same byte array.
+                # If there are multiple copies I need to add a non-cache option as this could eat
+                # a lot of memory (may not be needed if I add cache eviction with a max memory
+                # limit).
+                # TODO: The cache should probably also have some kind of hard limit on the max
+                # file size it caches (10MiB maybe)
+                self._filesystemCache.write(
+                    path=mapLevelFilePath,
+                    data=mapImage.bytes())
 
             sector = SectorInfo(
                 canonicalName=metadata.canonicalName(),
@@ -802,7 +820,7 @@ class DataStore(object):
             sectorName: str,
             milieu: travellermap.Milieu
             ) -> None:
-        self._loadSectors()
+        self._loadSectors(milieu=milieu)
 
         milieuDirPath = os.path.join(
             self._customDir,
@@ -841,7 +859,7 @@ class DataStore(object):
             for file in files:
                 try:
                     filePath = os.path.join(milieuDirPath, file)
-                    os.remove(filePath)
+                    self._filesystemCache.remove(filePath)
                 except Exception as ex:
                     logging.warning(
                         'Failed to delete custom sector file {file} from {milieu}'.format(
@@ -885,6 +903,10 @@ class DataStore(object):
 
         if root.find('./Y') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain Y element')
+
+    def clearCachedData(self):
+        # No need to lock as cache is thread safe
+        self._filesystemCache.clearCache()
 
     def _loadSectors(
             self,
@@ -942,21 +964,20 @@ class DataStore(object):
                             f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value}', exc_info=ex)
 
     def _checkOverlayVersion(self) -> None:
-        if not os.path.exists(self._overlayDir):
+        if not self._filesystemCache.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
         overlayDataFormatPath = os.path.join(self._overlayDir, self._DataFormatFileName)
 
         # The data format file might not exist if the overlay was created by an older version.
         # In that situation the current overlay should be deleted
-        if os.path.exists(overlayDataFormatPath):
+        if self._filesystemCache.exists(overlayDataFormatPath):
             try:
-                with open(overlayDataFormatPath, 'rb') as file:
-                    # TODO: This is NOT finished, it's just a hack to get things working. It needs
-                    # updated to do proper major/minor version numbers rather than just forcing a
-                    # float to an int
-                    overlayDataFormat = int(float(file.read()))
-
+                overlayDataFormat = self._filesystemCache.read(overlayDataFormatPath)
+                # TODO: This is NOT finished, it's just a hack to get things working. It needs
+                # updated to do proper major/minor version numbers rather than just forcing a
+                # float to an int                
+                overlayDataFormat = int(float(overlayDataFormat.decode()))
                 if overlayDataFormat >= self._MinDataFormatVersion:
                     # The current overlay meets the required data format
                     return
@@ -968,24 +989,24 @@ class DataStore(object):
         self._deleteOverlayDir()
 
     def _checkOverlayAge(self) -> None:
-        if not os.path.exists(self._overlayDir):
+        if not self._filesystemCache.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
         overlayTimestampPath = os.path.join(self._overlayDir, self._TimestampFileName)
-        if not os.path.exists(overlayTimestampPath):
+        if not self._filesystemCache.exists(overlayTimestampPath):
             # Overlay timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Overlay timestamp file "{overlayTimestampPath}" not found')
             return
 
         installTimestampPath = os.path.join(self._installDir, self._TimestampFileName)
-        if not os.path.exists(installTimestampPath):
+        if not self._filesystemCache.exists(installTimestampPath):
             # Install timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Install timestamp file "{installTimestampPath}" not found')
             return
 
         try:
-            with open(overlayTimestampPath, 'rb') as file:
-                overlayTimestamp = DataStore._parseSnapshotTimestamp(data=file.read())
+            overlayTimestamp = DataStore._parseSnapshotTimestamp(
+                data=self._filesystemCache.read(overlayTimestampPath))
         except Exception as ex:
             logging.error(
                 f'Failed to load overlay timestamp from "{overlayTimestampPath}"',
@@ -993,8 +1014,8 @@ class DataStore(object):
             return
 
         try:
-            with open(installTimestampPath, 'rb') as file:
-                installTimestamp = DataStore._parseSnapshotTimestamp(data=file.read())
+            installTimestamp = DataStore._parseSnapshotTimestamp(
+                data=self._filesystemCache.read(installTimestampPath))
         except Exception as ex:
             logging.error(
                 f'Failed to load install timestamp from "{installTimestampPath}"',
@@ -1010,7 +1031,7 @@ class DataStore(object):
     def _deleteOverlayDir(self) -> None:
         logging.info(f'Deleting overlay directory "{self._overlayDir}"')
         try:
-            shutil.rmtree(self._overlayDir)
+            self._filesystemCache.rmtree(path=self._overlayDir)
         except Exception as ex:
             logging.error(
                 f'Failed to delete overlay directory "{self._overlayDir}"',
@@ -1025,8 +1046,7 @@ class DataStore(object):
         filePath = os.path.join(
             self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
             relativeFilePath)
-        with open(filePath, 'rb') as file:
-            return file.read()
+        return self._filesystemCache.read(filePath)
         
     def _readMilieuFile(
             self,
@@ -1037,12 +1057,10 @@ class DataStore(object):
         relativePath = os.path.join(self._MilieuBaseDir, milieu.value, fileName)
         if useCustomMapDir:
             absolutePath = os.path.join(self._customDir, relativePath)
-            with open(absolutePath, 'rb') as file:
-                return file.read()
+            return self._filesystemCache.read(absolutePath)
 
         return self._readFile(relativeFilePath=relativePath)
     
-    # NOTE: This assumes the lock is already held to give consistent results
     def _regenerateCustomMains(
             self,
             milieu: typing.Optional[travellermap.Milieu] = None
@@ -1065,8 +1083,8 @@ class DataStore(object):
                 # This milieu has no custom sectors so delete any mains file for that custom sector
                 # if it exists to cause the default file from Traveller Map
                 try:
-                    if os.path.isfile(customMainsFilePath):
-                        os.remove(customMainsFilePath)
+                    if self._filesystemCache.isfile(customMainsFilePath):
+                        self._filesystemCache.remove(customMainsFilePath)
                 except Exception as ex:
                     logging.error(f'Failed to delete custom mains file for {milieu.value}', exc_info=ex)
                 continue # Keep going and try to update the next milieu
@@ -1112,8 +1130,9 @@ class DataStore(object):
                 continue # Keep going and try to update the next milieu
 
             try:
-                with open(customMainsFilePath, 'w', encoding='utf-8') as file:
-                    json.dump(outputData, file)
+                self._filesystemCache.write(
+                    path=customMainsFilePath,
+                    data=json.dumps(outputData))
             except Exception as ex:
                 logging.error(f'Failed to write custom mains file for {milieu.value}', exc_info=ex)
                 continue # Keep going and try to update the next milieu
@@ -1137,44 +1156,35 @@ class DataStore(object):
                 identifier=sectorInfo.canonicalName())
         return sectorWorldMap
 
-
-    @staticmethod
-    def _makeWorkingDir(overlayDirPath: str) -> str:
+    def _makeWorkingDir(
+            self,
+            overlayDirPath: str
+            ) -> str:
         workingDir = overlayDirPath + '_working'
-        if os.path.exists(workingDir):
+        if self._filesystemCache.exists(workingDir):
             # Delete any previous working directory that may have been left kicking about
-            shutil.rmtree(workingDir)
-        os.makedirs(workingDir)
+            self._filesystemCache.rmtree(workingDir)
+        self._filesystemCache.makedirs(workingDir)
         return workingDir
 
-    @staticmethod
     def _replaceDir(
-            workingDirPath,
-            currentDirPath
+            self,
+            workingDirPath: str,
+            currentDirPath: str
             ) -> None:
         oldDirPath = None
-        if os.path.exists(currentDirPath):
+        if self._filesystemCache.exists(currentDirPath):
             oldDirPath = currentDirPath + '_old'
-            if os.path.exists(oldDirPath):
-                shutil.rmtree(oldDirPath)
-            os.rename(currentDirPath, oldDirPath)
+            if self._filesystemCache.exists(oldDirPath):
+                self._filesystemCache.rmtree(oldDirPath)
+            self._filesystemCache.rename(currentDirPath, oldDirPath)
 
         try:
-            os.rename(workingDirPath, currentDirPath)
+            self._filesystemCache.rename(workingDirPath, currentDirPath)
         except Exception:
             if oldDirPath:
-                os.rename(oldDirPath, currentDirPath)
+                self._filesystemCache.rename(oldDirPath, currentDirPath)
             raise
-
-    @staticmethod
-    def _bytesToString(bytes: bytes) -> str:
-        return bytes.decode('utf-8-sig') # Use utf-8-sig to strip BOM from unicode files
-
-    @staticmethod
-    def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
-        return datetime.datetime.strptime(
-            DataStore._bytesToString(data),
-            DataStore._TimestampFormat)
 
     def _loadMilieuSectors(
             self,
@@ -1387,5 +1397,16 @@ class DataStore(object):
 
             universeData = {'Sectors': sectorListData}
 
-            with open(universeFilePath, 'w', encoding='utf-8') as file:
-                json.dump(universeData, file, indent=4)
+            self._filesystemCache.write(
+                path=universeFilePath,
+                data=json.dumps(universeData, indent=4))
+
+    @staticmethod
+    def _bytesToString(bytes: bytes) -> str:
+        return bytes.decode('utf-8-sig') # Use utf-8-sig to strip BOM from unicode files
+
+    @staticmethod
+    def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
+        return datetime.datetime.strptime(
+            DataStore._bytesToString(data),
+            DataStore._TimestampFormat)

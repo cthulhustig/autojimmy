@@ -663,6 +663,10 @@ class MapProxy(object):
             # a custom sector before they've opened any traveller map widgets. The updated mains will be loaded
             # but it won't match the sector data
 
+            # Clear out cached data from the data store now that things should have loaded the required data.
+            # This is an attempt to keep the memory footprint of the proxy down
+            travellermap.DataStore.instance().clearCachedData()
+
             handler = functools.partial(
                 _HttpGetRequestHandler,
                 travellerMapUrl,
