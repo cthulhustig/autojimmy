@@ -94,6 +94,288 @@ class SectorInfo(object):
     def customMapOptions(self) -> typing.Optional[typing.List[travellermap.Option]]:
         return self._customMapOptions.copy() if self._customMapOptions else None
 
+class SectorLookupMaps(object):
+    def __init__(self) -> None:
+        self._sectors = set()
+        self._positionMap = {}
+        self._nameMap = {} # NOTE: Names are lower case as search is case insensitive
+
+    def sectors(self) -> typing.Iterable[SectorInfo]:
+        return self._sectors
+    
+    def count(self) -> int:
+        return len(self._sectors)
+
+    def addSector(
+            self,
+            sector: SectorInfo
+            ) -> None:
+        self._sectors.add(sector)
+        self._positionMap[(sector.x(), sector.y())] = sector
+        self._nameMap[sector.canonicalName().lower()] = sector
+
+    def removeSector(
+            self,
+            sector: SectorInfo
+            ) -> None:
+        if sector not in self._sectors:
+            return
+        
+        self._sectors.remove(sector)
+
+        # Only remove position & name maps if it was found in the main list of sectors. This
+        # is a safety net to avoid removing the world form only a single map if a sector with
+        # the same name or position is passed in. Still play it safe and don't assume that
+        # there is an entry in either of the maps.
+        position = (sector.x(), sector.y())
+        if position in self._positionMap:
+            del self._positionMap[position]
+
+        name = sector.canonicalName().lower()
+        if name in self._nameMap:
+            del self._nameMap[name]
+
+    def clear(self) -> None:
+        self._sectors.clear()
+        self._positionMap.clear()
+        self._nameMap.clear()
+
+    def containsSector(
+            self,
+            sector: SectorInfo
+            ) -> bool:
+        return sector in self._sectors
+
+    def lookupPosition(
+            self,
+            pos: typing.Tuple[int, int]
+            ) -> typing.Optional[SectorInfo]:
+        return self._positionMap.get(pos)
+
+    def lookupName(
+            self,
+            name: str
+            ) -> typing.Optional[SectorInfo]:
+        return self._nameMap.get(name.lower())
+
+class SectorConflictException(RuntimeError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+class UniverseInfo(object):
+    def __init__(
+            self,
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._milieu = milieu
+        self._stockSectorMap = SectorLookupMaps()
+        self._customSectorMap = SectorLookupMaps()
+        self._mergedSectorMap = SectorLookupMaps()
+
+    def milieu(self) -> travellermap.Milieu:
+        return self._milieu
+    
+    def conflictCheck(
+            self,
+            sectorName: str,
+            sectorX: int,
+            sectorY: int,
+            isCustomSector: bool
+            ) -> None:
+        if isCustomSector:
+            # Prevent adding the custom sector if it has the same name as another custom sector
+            conflictSector = self._customSectorMap.lookupName(sectorName)
+            if conflictSector:
+                raise SectorConflictException(
+                    'Sector has same name as custom sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+            
+            # Prevent adding the custom sector if it has the same name as a stock sector at a different location
+            conflictSector = self._stockSectorMap.lookupName(sectorName)
+            if conflictSector and ((sectorX != conflictSector.x()) or (sectorY != conflictSector.y())):
+                raise SectorConflictException(
+                    'Sector has same name as stock sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+            
+            # Prevent adding the custom sector if it has the same position as another custom sector
+            conflictSector = self._customSectorMap.lookupPosition((sectorX, sectorY))
+            if conflictSector:
+                raise SectorConflictException(
+                    'Sector has same position as custom sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+        else:
+            # Prevent adding the stock sector if it has the same name as a custom sector at a different location
+            conflictSector = self._customSectorMap.lookupName(sectorName)
+            if conflictSector and ((sectorX != conflictSector.x()) or (sectorY != conflictSector.y())):
+                raise SectorConflictException(
+                    'Sector has same name as custom sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+            
+            # Prevent adding the stock sector if it has the same name as another stock sector
+            conflictSector = self._stockSectorMap.lookupName(sectorName)
+            if conflictSector:
+                raise SectorConflictException(
+                    'Sector has same name as stock sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+
+            # Prevent adding the stock sector if it has the same position as another stock sector
+            conflictSector = self._stockSectorMap.lookupPosition((sectorX, sectorY))
+            if conflictSector:
+                raise SectorConflictException(
+                    'Sector has same position as stock sector {conflictName} at {conflictX},{conflictY}'.format(
+                        conflictName=conflictSector.canonicalName(),
+                        conflictX=conflictSector.x(),
+                        conflictY=conflictSector.y()))
+    
+    def addSector(
+            self,
+            sector: SectorInfo
+            ) -> None:
+        # This will throw if the sector can't be added due to a conflict
+        self.conflictCheck(
+            sectorName=sector.canonicalName(),
+            sectorX=sector.x(),
+            sectorY=sector.y(),
+            isCustomSector=sector.isCustomSector())
+        
+        if sector.isCustomSector():
+            self._customSectorMap.addSector(sector)
+        else:
+            self._stockSectorMap.addSector(sector)
+        self._updateMergedSectors(sector)
+
+    def removeSector(
+            self,
+            sector: SectorInfo
+            ) -> None:
+        if sector.isCustomSector():
+            self._customSectorMap.removeSector(sector)
+        else:
+            self._stockSectorMap.removeSector(sector)
+        self._updateMergedSectors(sector)
+
+    def clear(self):
+        self._stockSectorMap.clear()
+        self._customSectorMap.clear()
+        self._mergedSectorMap.clear()
+
+    def hasCustomSectors(self) -> bool:
+        return self._customSectorMap.count() != 0
+
+    def sectorCount(
+            self,
+            stockOnly: bool
+            ) -> int:
+        return self._stockSectorMap.count() if stockOnly else self._mergedSectorMap.count()
+    
+    def sectors(
+            self,
+            stockOnly: bool
+            ) -> typing.Iterable[SectorInfo]:
+        return list(self._stockSectorMap.sectors() if stockOnly else self._mergedSectorMap.sectors())
+
+    def lookupPosition(
+            self,
+            position: typing.Tuple[int, int],
+            stockOnly: bool
+            ) -> typing.Optional[SectorInfo]:
+        if stockOnly:
+            return self._stockSectorMap.lookupPosition(position)
+        return self._mergedSectorMap.lookupPosition(position)
+        
+    def lookupName(
+            self,
+            name: str,
+            stockOnly: bool
+            ) -> typing.Optional[SectorInfo]:
+        if stockOnly:
+            return self._stockSectorMap.lookupName(name)
+        return self._mergedSectorMap.lookupName(name)
+            
+    def _updateMergedSectors(
+            self,
+            sector: SectorInfo
+            ) -> None:
+        position = (sector.x(), sector.y())
+        if sector.isCustomSector():
+            if self._customSectorMap.containsSector(sector):
+                # The custom sector has been added so remove any sector at the same location
+                # and add the custom sector to the merged map
+                existingSector = self._mergedSectorMap.lookupPosition(position)
+                if existingSector:
+                    logging.info('Replacing sector {existingName} at {sectorX},{sectorY} in {milieu} with custom sector {customName}'.format(
+                        existingName=existingSector.canonicalName(),
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        milieu=self._milieu.value,
+                        customName=sector.canonicalName()))
+                    self._mergedSectorMap.removeSector(existingSector)
+                else:
+                    logging.info('Adding custom sector {customName} at {sectorX},{sectorY} to {milieu}'.format(
+                        customName=sector.canonicalName(),
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        milieu=self._milieu.value))
+                self._mergedSectorMap.addSector(sector)
+            else:
+                # The custom sector has been removed so remove it from the merged map and
+                # reinstate any stock sector at the same location
+                logging.info('Removing custom sector {customName} at {sectorX},{sectorY} from {milieu}'.format(
+                    customName=sector.canonicalName(),
+                    sectorX=sector.x(),
+                    sectorY=sector.y(),
+                    milieu=self._milieu.value))                
+                self._mergedSectorMap.removeSector(sector)
+
+                stockSector = self._stockSectorMap.lookupPosition(position)
+                if stockSector:
+                    logging.info('Reinstating stock sector {stockName} at {sectorX},{sectorY} in {milieu}'.format(
+                        stockName=stockSector.canonicalName(),
+                        sectorX=stockSector.x(),
+                        sectorY=stockSector.y(),
+                        milieu=self._milieu.value))
+                    self._mergedSectorMap.addSector(stockSector)
+        else:
+            if self._stockSectorMap.containsSector(sector):
+                # The stock sector is being added, only add it to the merge map if there isn't
+                # a sector at the same location
+                conflictSector = self._mergedSectorMap.lookupPosition(position)
+                if conflictSector:
+                    logging.info('Ignoring stock sector {stockName} at {sectorX},{sectorY} in {milieu} as it has been replaced by custom sector {conflictName}'.format(
+                        stockName=sector.canonicalName(),
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        milieu=self._milieu.value,
+                        conflictName=conflictSector.canonicalName()))
+                else:
+                    logging.debug('Adding stock sector {stockName} at {sectorX},{sectorY} to {milieu}'.format(
+                        stockName=sector.canonicalName(),
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        milieu=self._milieu.value))
+                    self._mergedSectorMap.addSector(sector)
+            else:
+                # The stock sector is being removed, only remove it from the merge map if it's
+                # actually the sector at that location
+                currentSector = self._mergedSectorMap.lookupPosition(position)
+                if sector is currentSector:
+                    logging.debug('Removing stock sector {stockName} at {sectorX},{sectorY} from {milieu}'.format(
+                        stockName=sector.canonicalName(),
+                        sectorX=sector.x(),
+                        sectorY=sector.y(),
+                        milieu=self._milieu.value))
+                    self._mergedSectorMap.removeSector(sector)
+
 class DataStore(object):
     class UpdateStage(enum.Enum):
         DownloadStage = 0,
@@ -112,8 +394,9 @@ class DataStore(object):
     _DataArchiveMapPath = 'autojimmy-data-main/map/'
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _TimestampCheckTimeout = 3 # Seconds
-    _MainsBaseMilieu = travellermap.Milieu.M1105
+    _DefaultSectorsMilieu = travellermap.Milieu.M1105
 
+    # TODO: This should be 3.1 for the next version
     _MinDataFormatVersion = 3
 
     _SectorFormatExtensions = {
@@ -129,7 +412,7 @@ class DataStore(object):
     _installDir = None
     _overlayDir = None
     _customDir = None
-    _milieuMap = None
+    _universeMap = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -162,56 +445,72 @@ class DataStore(object):
 
     def sectorCount(
             self,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> int:
         self._loadSectors()
         with self._lock:
-            return len(self._milieuMap[milieu])
+            universe = self._universeMap[milieu]
+            if not universe:
+                return 0
+            return universe.sectorCount(stockOnly=stockOnly)
 
     def sectors(
             self,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> typing.Iterable[SectorInfo]:
         self._loadSectors()
         with self._lock:
-            return list(self._milieuMap[milieu].values())
+            universe = self._universeMap[milieu]
+            if not universe:
+                return []
+            return universe.sectors(stockOnly=stockOnly)
 
     def sector(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors()
         with self._lock:
-            sectors = self._milieuMap[milieu]
-            return sectors.get(sectorName)
+            universe = self._universeMap[milieu]
+            if not universe:
+                return None
+            return universe.lookupName(
+                name=sectorName,
+                stockOnly=stockOnly)
 
     def sectorAt(
             self,
             sectorX: int,
             sectorY: int,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> typing.Optional[SectorInfo]:
         self._loadSectors()
         with self._lock:
-            # TODO: Iterating over all sectors is inefficient
-            for sector in self._milieuMap[milieu].values():
-                assert(isinstance(sector, SectorInfo))
-                if (sectorX == sector.x()) and (sectorY == sector.y()):
-                    return sector
-        return None
+            universe = self._universeMap[milieu]
+            if not universe:
+                return None
+            return universe.lookupPosition(
+                position=(sectorX, sectorY),
+                stockOnly=stockOnly)
 
     def sectorFileData(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> str:
         self._loadSectors()
 
-        sectorMap = self._milieuMap[milieu]
-        if sectorName not in sectorMap:
+        with self._lock:
+            universe = self._universeMap[milieu]
+            sector = universe.lookupName(name=sectorName, stockOnly=stockOnly)
+        if not sector:
             raise RuntimeError(f'Unable to retrieve sector file data for unknown sector {sectorName}')
-        sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
         extension = DataStore._SectorFormatExtensions[sector.sectorFormat()]
         return self._bytesToString(bytes=self._readMilieuFile(
@@ -222,14 +521,17 @@ class DataStore(object):
     def sectorMetaData(
             self,
             sectorName: str,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> str:
         self._loadSectors()
 
-        sectorMap = self._milieuMap[milieu]
-        if sectorName not in sectorMap:
+        sector = self.sector(
+            sectorName=sectorName,
+            milieu=milieu,
+            stockOnly=stockOnly)
+        if not sector:
             raise RuntimeError(f'Unable to retrieve sector meta data for unknown sector {sectorName}')
-        sector: SectorInfo = sectorMap[sectorName]
         escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
         extension = DataStore._MetadataFormatExtensions[sector.metadataFormat()]
         return self._bytesToString(bytes=self._readMilieuFile(
@@ -245,10 +547,12 @@ class DataStore(object):
             ) -> travellermap.MapImage:
         self._loadSectors()
 
-        sectorMap = self._milieuMap[milieu]
-        if sectorName not in sectorMap:
+        sector = self.sector(
+            sectorName=sectorName,
+            milieu=milieu,
+            stockOnly=False) # Stock only doesn't make sense for map images
+        if not sector:
             raise RuntimeError(f'Unable to retrieve sector map data for unknown sector {sectorName}')
-        sector: SectorInfo = sectorMap[sectorName]
         mapLevel = sector.customMapLevel(scale=scale)
         if not mapLevel:
             raise RuntimeError(f'Unable to retrieve {scale} scale sector map data for {sectorName}')
@@ -271,9 +575,10 @@ class DataStore(object):
     
     def mainsData(
             self,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool = False
             ) -> str:
-        if self.hasCustomSectors(milieu=milieu):
+        if (not stockOnly) and self.hasCustomSectors(milieu=milieu):
             try:
                 return self._bytesToString(bytes=self._readMilieuFile(
                     fileName=DataStore._MainsFileName,
@@ -311,7 +616,7 @@ class DataStore(object):
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> None:
         with self._lock:
-            logging.info('Downloading universe data archive')
+            logging.info('Downloading universe snapshot')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.DownloadStage, 0)
 
@@ -338,7 +643,7 @@ class DataStore(object):
                             DataStore.UpdateStage.DownloadStage,
                             int((downloaded / length) * 100))
 
-            logging.info('Extracting universe data archive')
+            logging.info('Extracting universe snapshot')
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.ExtractStage, 0)
 
@@ -371,45 +676,34 @@ class DataStore(object):
                 with open(targetPath, 'wb') as outputFile:
                     outputFile.write(zipData.read(fileInfo.filename))
 
-            logging.info('Replacing old universe data')
+            logging.info('Replacing old universe snapshot')
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
             
-            # Clear out the milieu map to trigger a reload (which will happen immediately
-            # due to regenerating mains)
-            if self._milieuMap:
-                self._milieuMap.clear()
+            # Force reload of all sector data
+            self._loadSectors(reload=True)
             
             # Regenerate the custom mains for _ALL_ milieu
-            # TODO: Progress should probably take this into account somehow
+            # TODO: Progress should probably take this into account somehow (if I can't get the time down)
             self._regenerateCustomMains()
             
     def hasCustomSectors(
             self,
             milieu: typing.Optional[travellermap.Milieu] = None,
             ) -> bool:
+        self._loadSectors()
+
         milieuList = [milieu] if milieu else travellermap.Milieu
         with self._lock:        
             for milieu in milieuList:
-                for sector in self.sectors(milieu=milieu):
-                    if sector.isCustomSector():
-                        return True
+                universe = self._universeMap[milieu]
+                if not universe:
+                    continue
+                if universe.hasCustomSectors():
+                    return True
         return False
     
-    def customSectors(
-            self,
-            milieu: typing.Optional[travellermap.Milieu] = None,
-            ) -> typing.Iterable[SectorInfo]:
-        milieuList = [milieu] if milieu else travellermap.Milieu
-        sectorList = []
-        with self._lock:
-            for milieu in milieuList:
-                for sector in self.sectors(milieu=milieu):
-                    if sector.isCustomSector():
-                        sectorList.append(sector)
-        return sectorList
-
     def createCustomSector(
             self,
             milieu: travellermap.Milieu,
@@ -447,35 +741,15 @@ class DataStore(object):
         os.makedirs(milieuDirPath, exist_ok=True)
 
         with self._lock:
-            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu)
-            replacedSector = None
-            if sectors:
-                # Check for custom sectors at the same location
-                for existingSector in sectors.values():
-                    assert(isinstance(existingSector, SectorInfo))
-                    if (metadata.x() == existingSector.x()) and (metadata.y() == existingSector.y()):
-                        if existingSector.isCustomSector():
-                            raise RuntimeError(
-                                'Unable to create custom sector {newName} in {milieu} as custom sector {existingName} is already located at ({x}, {y})'.format(
-                                    newName=metadata.canonicalName(),
-                                    milieu=milieu.value,
-                                    existingName=existingSector.canonicalName(),
-                                    x=metadata.x(),
-                                    y=metadata.y()))
-                        
-                        replacedSector = existingSector
-                        break
+            universe = self._universeMap[milieu]
 
-
-                # Check for sectors with the same name but different locations
-                existingSector = sectors.get(metadata.canonicalName())
-                if existingSector:
-                    assert(isinstance(existingSector, SectorInfo))
-                    if (metadata.x() != existingSector.x()) or (metadata.y() != existingSector.y()):
-                        raise RuntimeError(
-                            'Unable to create custom sector {newName} in {milieu} as there is a already a sector with that name'.format(
-                                newName=metadata.canonicalName(),
-                                milieu=milieu.value))
+            # This will throw if the custom sector has a name/position conflicts with an existing sector.
+            # It's done now to prevent files being updated if the sector isn't going to be addable
+            universe.conflictCheck(
+                sectorName=metadata.canonicalName(),
+                sectorX=metadata.x(),
+                sectorY=metadata.y(),
+                isCustomSector=True)
 
             escapedSectorName = common.encodeFileName(rawFileName=metadata.canonicalName())
 
@@ -514,13 +788,8 @@ class DataStore(object):
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,
                 customMapLevels=mapLevels)
+            universe.addSector(sector)
             
-            if replacedSector:
-                # Remove the sector at the same location as the custom sector. It may have a different name
-                # or may have the same name (which means it needs to be deleted before adding the new one)
-                del sectors[replacedSector.canonicalName()]
-            sectors[sector.canonicalName()] = sector
-
             self._saveCustomSectors(milieu=milieu)
 
             # Regenerate the mains for the affected milieu
@@ -541,17 +810,17 @@ class DataStore(object):
             milieu.value)
 
         with self._lock:
-            sectors: typing.Optional[typing.Mapping[str, SectorInfo]] = self._milieuMap.get(milieu, None)
-            sector = sectors.get(sectorName) if sectors else None
+            universe = self._universeMap[milieu]
+            sector = universe.lookupName(name=sectorName, stockOnly=False)
             if not sector:
                 raise RuntimeError(
                     'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
                         name=sectorName,
                         milieu=milieu.value))
-
+            
             # Remove the sector from the custom universe file first. That way we don't leave a partially
             # populated sector if deleting a file fails
-            del sectors[sectorName]
+            universe.removeSector(sector)
             self._saveCustomSectors(milieu=milieu)
 
             escapedSectorName = common.encodeFileName(rawFileName=sector.canonicalName())
@@ -623,52 +892,54 @@ class DataStore(object):
             reload: bool = False
             ) -> None:
         with self._lock:
-            if (not reload) and self._milieuMap and ((not milieu) or self._milieuMap.get(milieu)):
+            if (not reload) and self._universeMap and ((not milieu) or self._universeMap.get(milieu)):
                 return # Already loaded
             
-            if not self._milieuMap:
-                self._milieuMap = {}
+            logging.info('{operation} sector info'.format(operation='Reloading' if reload else 'Loading'))
+
+            if not self._universeMap:
+                self._universeMap: typing.Dict[travellermap.Milieu, UniverseInfo] = {}
 
             milieuList = [milieu] if milieu else travellermap.Milieu
             for milieu in milieuList:
                 logging.debug(f'Loading sector info for {milieu.value}')
 
-                customSectorPosMap: typing.Dict[typing.Tuple[int, int], SectorInfo] = {}
-                customSectorNameMap: typing.Dict[str, SectorInfo] = {}
-                loadedSectorNameMap: typing.Dict[str, SectorInfo] = {}
-
+                universe = self._universeMap.get(milieu)
+                if universe:
+                    universe.clear()
+                else:
+                    universe = UniverseInfo(milieu=milieu)
+                    self._universeMap[milieu] = universe
+                     
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     customSectors=True)
                 for sector in loadedSectors:
                     logging.debug(
                         f'Loaded custom sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
-                    customSectorPosMap[(sector.x(), sector.y())] = sector
-                    customSectorNameMap[sector.canonicalName()] = sector
-                    loadedSectorNameMap[sector.canonicalName()] = sector
+                    try:
+                        universe.addSector(sector)
+                    except SectorConflictException as ex:
+                        logging.error(
+                            f'Failed to add custom sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value} ({ex})')
+                    except Exception as ex:
+                        logging.error(
+                            f'Failed to add custom sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value}', exc_info=ex)
 
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     customSectors=False)
-
                 for sector in loadedSectors:
-                    conflictSector = customSectorPosMap.get((sector.x(), sector.y()))
-                    if conflictSector:
-                        logging.warning(
-                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same position as custom sector {conflictSector.canonicalName()}')
-                        continue
-
-                    conflictSector = customSectorNameMap.get(sector.canonicalName())
-                    if conflictSector:
-                        logging.warning(
-                            f'Ignoring sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value} as it has the same name as a custom sector at ({conflictSector.x()}, {conflictSector.y()})')
-                        continue
-
                     logging.debug(
-                        f'Loaded sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
-                    loadedSectorNameMap[sector.canonicalName()] = sector
-
-                self._milieuMap[milieu] = loadedSectorNameMap
+                        f'Loaded stock sector info for {sector.canonicalName()} at {sector.x()},{sector.y()} in {milieu.value}')
+                    try:
+                        universe.addSector(sector)
+                    except SectorConflictException as ex:
+                        logging.error(
+                            f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value} ({ex})')
+                    except Exception as ex:
+                        logging.error(
+                            f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value}', exc_info=ex)
 
     def _checkOverlayVersion(self) -> None:
         if not os.path.exists(self._overlayDir):
@@ -681,7 +952,10 @@ class DataStore(object):
         if os.path.exists(overlayDataFormatPath):
             try:
                 with open(overlayDataFormatPath, 'rb') as file:
-                    overlayDataFormat = int(file.read())
+                    # TODO: This is NOT finished, it's just a hack to get things working. It needs
+                    # updated to do proper major/minor version numbers rather than just forcing a
+                    # float to an int
+                    overlayDataFormat = int(float(file.read()))
 
                 if overlayDataFormat >= self._MinDataFormatVersion:
                     # The current overlay meets the required data format
@@ -773,8 +1047,9 @@ class DataStore(object):
             self,
             milieu: typing.Optional[travellermap.Milieu] = None
             ) -> None:
-        baseSectorWorlds = self._loadSectorWorlds(
-            milieu=DataStore._MainsBaseMilieu)
+        defaultSectors = self._loadSectorWorlds(
+            milieu=DataStore._DefaultSectorsMilieu,
+            stockOnly=True) # Custom sectors shouldn't be used for default sector data
 
         milieuList = [milieu] if milieu else travellermap.Milieu
         for milieu in milieuList:
@@ -798,23 +1073,20 @@ class DataStore(object):
 
             try:
                 mainsGenerator = travellermap.MainGenerator()
-
+                sectorWorlds = self._loadSectorWorlds(
+                    milieu=milieu,
+                    stockOnly=False) # Load custom sectors
+                    
                 # If the milieu being updated isn't the base milieu then use worlds from the base milieu
                 # for any locations where the base milieu has a sector but the current milieu doesn't.
                 # This mimics the behaviour of Traveller Map but with support for custom sectors
-                # TODO: There is a bug here, custom sectors for the base milieu will be used but they won't
-                # be used visible or used for any other calculations when the current configured mileu is not
-                # the base milieu
-                if milieu != DataStore._MainsBaseMilieu:
-                    sectorWorlds = self._loadSectorWorlds(milieu=milieu)
+                if milieu != DataStore._DefaultSectorsMilieu:
                     seenSectors = set()
                     for sectorInfo in sectorWorlds.keys():
                         seenSectors.add((sectorInfo.x(), sectorInfo.y()))
-                    for sectorInfo in baseSectorWorlds.keys():
+                    for sectorInfo in defaultSectors.keys():
                         if (sectorInfo.x(), sectorInfo.y()) not in seenSectors:
-                            sectorWorlds[sectorInfo] = baseSectorWorlds[sectorInfo]
-                else:
-                    sectorWorlds = baseSectorWorlds
+                            sectorWorlds[sectorInfo] = defaultSectors[sectorInfo]
 
                 for sectorInfo, worldList in sectorWorlds.items():
                     for world in worldList:
@@ -848,13 +1120,15 @@ class DataStore(object):
 
     def _loadSectorWorlds(
             self,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            stockOnly: bool
             ) -> typing.Mapping[SectorInfo, typing.Iterable[travellermap.RawWorld]]:
         sectorWorldMap = {}
-        for sectorInfo in self.sectors(milieu):
+        for sectorInfo in self.sectors(milieu=milieu, stockOnly=stockOnly):
             sectorData = self.sectorFileData(
                 sectorName=sectorInfo.canonicalName(),
-                milieu=milieu)
+                milieu=milieu,
+                stockOnly=stockOnly)
             if not sectorData:
                 continue
             sectorWorldMap[sectorInfo] = travellermap.parseSector(
@@ -1070,9 +1344,9 @@ class DataStore(object):
             DataStore._UniverseFileName)
 
         with self._lock:
-            sectors: typing.Mapping[str, SectorInfo] = self._milieuMap.get(milieu, {})
+            universe = self._universeMap[milieu]
             sectorListData = []
-            for sectorInfo in sectors.values():
+            for sectorInfo in universe.sectors(stockOnly=False):
                 if not sectorInfo.isCustomSector():
                     continue
 

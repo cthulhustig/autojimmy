@@ -683,6 +683,9 @@ class _NewSectorDialog(gui.DialogEx):
 
                 # Check that there aren't any sectors with the same name at a different location (a sector
                 # with the same name at the same location is allowed as it will be replaced)
+                # TODO: There is a hole here, it won't catch stock sectors with the same name that are currently
+                # replaced by another custom sector (with a different name). This will result in a name conflict if
+                # the other custom sector is ever removed
                 existingSector = travellermap.DataStore.instance().sector(
                     sectorName=rawMetadata.canonicalName(),
                     milieu=app.Config.instance().milieu())

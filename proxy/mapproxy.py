@@ -659,6 +659,10 @@ class MapProxy(object):
                 except Exception as ex:
                     logging.error('Exception occurred while compositing tile', exc_info=ex)
 
+            # TODO: Should load all mains files now to avoid consistency issues if the user was to add/remove
+            # a custom sector before they've opened any traveller map widgets. The updated mains will be loaded
+            # but it won't match the sector data
+
             handler = functools.partial(
                 _HttpGetRequestHandler,
                 travellerMapUrl,
