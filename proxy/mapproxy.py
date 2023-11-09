@@ -305,29 +305,24 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             if targetFormat and (overlapType != proxy.Compositor.OverlapType.NoOverlap):
                 try:
                     if overlapType == proxy.Compositor.OverlapType.PartialOverlap:
-                        # TODO: This could be simplified now that I've dropped support for SVG tiles
-                        tile = self._compositor.createCompositorImage(
-                            mapImage=travellermap.MapImage(bytes=tileBytes, format=sourceFormat),
-                            scale=tileScale)
+                        tileImage = PIL.Image.open(io.BytesIO(tileBytes))
 
                         try:
                             self._compositor.partialOverlap(
-                                tileImage=tile.mainImage(),
-                                tileText=tile.textImage(),
+                                tileImage=tileImage,
                                 tileX=tileX,
                                 tileY=tileY,
                                 tileWidth=tileWidth,
                                 tileHeight=tileHeight,
                                 tileScale=tileScale,
                                 milieu=milieu)
-
-                            tileImage = tile.mainImage()
-                            tileBytes = io.BytesIO()
-                            tileImage.save(tileBytes, format=targetFormat.value)
-                            tileBytes.seek(0)
-                            tileBytes = tileBytes.read()
+                            
+                            newBytes = io.BytesIO() # New variable to prevent loss of bytes if save, seek or read throws
+                            tileImage.save(newBytes, format=targetFormat.value)
+                            newBytes.seek(0)
+                            tileBytes = newBytes.read()
                         finally:
-                            del tile
+                            del tileImage
                     else:
                         assert(overlapType == proxy.Compositor.OverlapType.CompleteOverlap)
                         tileImage = self._compositor.fullOverlap(

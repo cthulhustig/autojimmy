@@ -73,12 +73,12 @@ class CompositorImage(object):
             self,
             imageType: ImageType,
             mainImage: typing.Union[PIL.Image.Image, bytes],
-            textImage: typing.Optional[typing.Union[PIL.Image.Image, bytes]],
+            textMask: typing.Optional[typing.Union[PIL.Image.Image, bytes]],
             scale: int
             ) -> None:
         self._imageType = imageType
         self._mainImage = mainImage
-        self._textImage = textImage
+        self._textMask = textMask
         self._scale = scale
 
     def imageType(self) -> ImageType:
@@ -87,9 +87,9 @@ class CompositorImage(object):
     def mainImage(self) -> typing.Union[PIL.Image.Image, bytes]:
         return self._mainImage
 
-    def textImage(self) -> typing.Optional[typing.Union[PIL.Image.Image, bytes]]:
-        return self._textImage
-
+    def textMask(self) -> typing.Optional[typing.Union[PIL.Image.Image, bytes]]:
+        return self._textMask
+    
     def scale(self) -> int:
         return self._scale
 
@@ -103,8 +103,8 @@ class CompositorImage(object):
             if self._mainImage:
                 self._mainImage.close()
 
-            if self._textImage:
-                self._textImage.close()
+            if self._textMask:
+                self._textMask.close()
 
 class _CustomSector(object):
     def __init__(
@@ -217,7 +217,7 @@ class Compositor(object):
             if _FullSvgRendering:
                 imageType = CompositorImage.ImageType.SVG
                 mainImage = mapBytes
-                textImage = None
+                textMask = None
             else:
                 imageType = CompositorImage.ImageType.Bitmap
                 width, height = _extractSvgSize(mapBytes)
@@ -232,6 +232,8 @@ class Compositor(object):
                     Compositor._renderSvgTask,
                     args=[textSvg])
                 textImage = PIL.Image.frombytes('RGBA', (width, height), imageBytes)
+                textMask = textImage.split()[-1] # Extract alpha channel as Image
+                del textImage
         else:
             imageType = CompositorImage.ImageType.Bitmap
             # Image.load isn't thread safe so make sure to call it now so it doesn't get called
@@ -243,12 +245,12 @@ class Compositor(object):
             except:
                 mainImage.close()
                 raise
-            textImage = None
+            textMask = None
 
         return CompositorImage(
             imageType=imageType,
             mainImage=mainImage,
-            textImage=textImage,
+            textMask=textMask,
             scale=scale)
 
     def createMultipleCompositorImages(
@@ -289,11 +291,13 @@ class Compositor(object):
 
                 mainImage = PIL.Image.frombytes('RGBA', svgDim, results[index * 2])
                 textImage = PIL.Image.frombytes('RGBA', svgDim, results[(index * 2) + 1])
+                textMask = textImage.split()[-1] # Extract alpha channel as Image
+                del textImage
 
                 compositorImages.append(CompositorImage(
                     imageType=CompositorImage.ImageType.Bitmap,
                     mainImage=mainImage,
-                    textImage=textImage,
+                    textMask=textMask,
                     scale=scale))
 
         return compositorImages
@@ -341,7 +345,6 @@ class Compositor(object):
     def partialOverlap(
             self,
             tileImage: PIL.Image.Image,
-            tileText: typing.Optional[PIL.Image.Image],
             tileX: float,
             tileY: float,
             tileWidth: int,
@@ -425,21 +428,15 @@ class Compositor(object):
             if mapPoster.imageType() == CompositorImage.ImageType.SVG:
                 pass # TODO: Do something about text layer for SVG
             else:
-                textImage = mapPoster.textImage()
-                if textImage:
+                textMask = mapPoster.textMask()
+                if textMask:
                     self._overlayBitmapCustomSector(
-                        srcImage=textImage,
+                        srcImage=mapPoster.mainImage(),
                         srcPixelRect=srcPixelRect,
                         tgtPixelDim=tgtPixelDim,
                         tgtPixelOffset=tgtPixelOffset,
-                        tgtImage=tileImage)
-
-        if tileText and overlappedSectors:
-            # Overlay original tile text layer over the top of the tile to fill in any text that
-            # was overwritten by custom sector tiles
-            tileImage.paste(tileText, (0, 0), tileText)
-
-        return tileImage
+                        tgtImage=tileImage,
+                        maskImage=textMask)
 
     def fullOverlap(
             self,
@@ -506,14 +503,15 @@ class Compositor(object):
             if mapPoster.imageType() == CompositorImage.ImageType.SVG:
                 pass # TODO: Do something with text layer for svg
             else:
-                textImage = mapPoster.textImage()
-                if textImage:
+                textMask = mapPoster.textMask()
+                if textMask:
                     self._overlayBitmapCustomSector(
-                        srcImage=textImage,
+                        srcImage=mapPoster.mainImage(),
                         srcPixelRect=srcPixelRect,
                         tgtPixelDim=tgtPixelDim,
                         tgtPixelOffset=(0, 0),
-                        tgtImage=tileImage)
+                        tgtImage=tileImage,
+                        maskImage=textMask)
 
             return tileImage
 
@@ -574,7 +572,8 @@ class Compositor(object):
             srcPixelRect: typing.Tuple[int, int, int, int],
             tgtPixelDim: typing.Tuple[int, int],
             tgtPixelOffset: typing.Tuple[int, int],
-            tgtImage: typing.Optional[PIL.Image.Image] = None
+            tgtImage: typing.Optional[PIL.Image.Image] = None,
+            maskImage: typing.Optional[PIL.Image.Image] = None # NOTE: Must be the same size as srcImage and tgtImage must not be None
             ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image
         overlayImage = srcImage
         srcPixelDim = (
@@ -582,11 +581,18 @@ class Compositor(object):
             srcPixelRect[3] - srcPixelRect[1])
         croppedImage = None
         resizedImage = None
+        croppedMask = None
+        resizedMask = None
         try:
             # Crop the source image if required
             if ((overlayImage.width != srcPixelDim[0]) or (overlayImage.height != srcPixelDim[1])):
                 croppedImage = overlayImage.crop(srcPixelRect)
                 overlayImage = croppedImage
+
+                if maskImage is not None:
+                    croppedMask = maskImage.crop(srcPixelRect)
+                    maskImage = croppedMask
+
 
             # Scale the source image if required
             if (overlayImage.width != tgtPixelDim[0]) or (overlayImage.height != tgtPixelDim[1]):
@@ -595,7 +601,13 @@ class Compositor(object):
                     resample=PIL.Image.Resampling.BICUBIC)
                 overlayImage = resizedImage
 
-            if tgtImage == None:
+                if maskImage is not None:
+                    resizedMask = maskImage.resize(
+                        tgtPixelDim,
+                        resample=PIL.Image.Resampling.BICUBIC)
+                    maskImage = resizedMask
+
+            if tgtImage is None:
                 # No target was specified to overlay the custom sector on so just return the
                 # cropped and resized section of the source image.
                 # NOTE: If no cropping or resizing performed a copy MUST be made as the source
@@ -604,8 +616,10 @@ class Compositor(object):
                 # in the finally clause
                 tgtImage = overlayImage if overlayImage is not srcImage else overlayImage.copy()
             else:
-                # Copy custom sector section over current tile using it's alpha channel as a mask
-                tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage)
+                # Overlay custom sector section on current tile
+                if maskImage is None:
+                    maskImage = overlayImage
+                tgtImage.paste(overlayImage, tgtPixelOffset, maskImage)
         finally:
             if (croppedImage is not None) and (croppedImage is not tgtImage):
                 croppedImage.close()
@@ -613,6 +627,12 @@ class Compositor(object):
             if (resizedImage is not None) and (resizedImage is not tgtImage):
                 resizedImage.close()
                 del resizedImage
+            if croppedMask is not None:
+                croppedMask.close()
+                del croppedMask
+            if resizedMask is not None:
+                resizedMask.close()
+                del resizedMask
 
         return tgtImage
 
