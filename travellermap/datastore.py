@@ -712,6 +712,24 @@ class DataStore(object):
                     return True
         return False
     
+    # This will throw a SectorConflictException if there is a conflict
+    def customSectorConflictCheck(
+            self,
+            sectorName: str,
+            sectorX: int,
+            sectorY: int,
+            milieu: travellermap.Milieu
+            ) -> None:
+        self._loadSectors(milieu=milieu)
+
+        with self._lock:
+            universe = self._universeMap[milieu]
+            return universe.conflictCheck(
+                sectorName=sectorName,
+                sectorX=sectorX,
+                sectorY=sectorY,
+                isCustomSector=True)
+    
     def createCustomSector(
             self,
             milieu: travellermap.Milieu,

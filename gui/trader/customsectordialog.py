@@ -670,29 +670,15 @@ class _NewSectorDialog(gui.DialogEx):
                 rawMetadata = travellermap.parseXMLMetadata(
                     content=self._sectorMetadata,
                     identifier=metadataFilePath)
-                sectorX = rawMetadata.x()
-                sectorY = rawMetadata.y()
 
-                # Check that there aren't any custom sectors at the same location
-                existingSector = travellermap.DataStore.instance().sectorAt(
-                    sectorX=sectorX,
-                    sectorY=sectorY,
-                    milieu=app.Config.instance().milieu())
-                if existingSector and existingSector.isCustomSector():
-                    raise RuntimeError(f'There is already a custom sector located at ({sectorX}, {sectorY})')
-
-                # Check that there aren't any sectors with the same name at a different location (a sector
-                # with the same name at the same location is allowed as it will be replaced)
-                # TODO: There is a hole here, it won't catch stock sectors with the same name that are currently
-                # replaced by another custom sector (with a different name). This will result in a name conflict if
-                # the other custom sector is ever removed
-                existingSector = travellermap.DataStore.instance().sector(
+                # This will throw if there is a conflict with an existing sector
+                travellermap.DataStore.instance().customSectorConflictCheck(
                     sectorName=rawMetadata.canonicalName(),
+                    sectorX=rawMetadata.x(),
+                    sectorY=rawMetadata.y(),
                     milieu=app.Config.instance().milieu())
-                if existingSector and ((sectorX != existingSector.x()) or (sectorY != existingSector.y())):
-                    raise RuntimeError(f'There is already a sector named {rawMetadata.canonicalName()}')
             except Exception as ex:
-                message = 'Metadata file validation failed.'
+                message = 'Metadata validation failed.'
                 logging.critical(message, exc_info=ex)
                 gui.MessageBoxEx.critical(
                     parent=self,
@@ -716,7 +702,7 @@ class _NewSectorDialog(gui.DialogEx):
                     fileFormat=sectorFormat,
                     identifier=sectorFilePath)
             except Exception as ex:
-                message = 'Sector file validation failed.'
+                message = 'Sector validation failed.'
                 logging.critical(message, exc_info=ex)
                 gui.MessageBoxEx.critical(
                     parent=self,
