@@ -62,8 +62,6 @@ def _extractSvgSize(
         int(root.attrib.get('width')),
         int(root.attrib.get('height')))
 
-# TODO: If using bitmaps the text image could maybe be a single channel image used
-# as the alpha channel for pasting with the main image as the source
 class CompositorImage(object):
     class ImageType(enum.Enum):
         Bitmap = 0,

@@ -16,8 +16,6 @@ import xmlschema
 import xml.etree.ElementTree
 import zipfile
 
-# TODO: There is something not right with process memory usage. If you run without the debugger
-# there are 2 python processes with ~800MiB of memory, not sure why there are 2
 # TODO: Shouldn't create secondary process pool if SVG support is disabled
 # TODO: I know daemon processes can't spawn other processes but could the secondary pool processes
 # be daemons process (of the proxy process) so there aren't so many processes shown in task manager
