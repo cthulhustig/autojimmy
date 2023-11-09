@@ -349,6 +349,7 @@ class _LintJobResultsDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
 
 class _NewSectorDialog(gui.DialogEx):
+    _SectorFileFilter = 'Sector Files(*.sec *.tab *.t5 *.t5col *.t5row)'
     _XmlFileFilter = 'XML Files(*.xml)'
     _AllFileFilter = 'All Files(*.*)'
 
@@ -614,7 +615,7 @@ class _NewSectorDialog(gui.DialogEx):
     def _sectorFileBrowseClicked(self) -> None:
         path = self._showFileSelect(
             caption='Sector File',
-            filter=_NewSectorDialog._AllFileFilter)
+            filter=f'{_NewSectorDialog._SectorFileFilter};;{_NewSectorDialog._AllFileFilter}')
         if not path:
             return # User cancelled
         self._sectorFileLineEdit.setText(path)
