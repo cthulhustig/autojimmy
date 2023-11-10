@@ -6,8 +6,6 @@ try:
 except Exception as ex:
     _HasSvgSupport = False
 
-import copy
-import datetime
 import enum
 import io
 import logging
@@ -17,7 +15,6 @@ import numpy
 import PIL.Image
 import travellermap
 import typing
-import threading
 import xml.etree.ElementTree
 
 _FullSvgRendering = False
@@ -234,16 +231,20 @@ class Compositor(object):
                 imageType = CompositorImage.ImageType.Bitmap
                 width, height = _extractSvgSize(mapBytes)
 
-                imageBytes = self._processPool.apply(
+                result = self._processPool.apply(
                     Compositor._renderSvgTask,
                     args=[mapBytes])
-                mainImage = PIL.Image.frombytes('RGBA', (width, height), imageBytes)
+                if isinstance(result, Exception):
+                    raise RuntimeError('Worker process exception when render map SVG') from result                
+                mainImage = PIL.Image.frombytes('RGBA', (width, height), result)
 
                 textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
-                imageBytes = self._processPool.apply(
+                result = self._processPool.apply(
                     Compositor._renderSvgTask,
                     args=[textSvg])
-                textImage = PIL.Image.frombytes('RGBA', (width, height), imageBytes)
+                if isinstance(result, Exception):
+                    raise RuntimeError('Worker process exception when render text SVG') from result
+                textImage = PIL.Image.frombytes('RGBA', (width, height), result)
                 textMask = textImage.split()[-1] # Extract alpha channel as Image
                 del textImage
         else:
@@ -494,6 +495,7 @@ class Compositor(object):
         self._milieuSectorMap.clear()
         
         svgMapData: typing.List[typing.Tuple[
+            travellermap.Milieu,
             _CustomSector,
             travellermap.MapImage,
             int]] = []        
@@ -506,7 +508,7 @@ class Compositor(object):
 
                 mapLevels = sectorInfo.customMapLevels()
                 if not mapLevels:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no map levels')
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no map levels')
                     continue
 
                 mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
@@ -517,16 +519,16 @@ class Compositor(object):
                             milieu=milieu,
                             scale=scale)
                         if (mapImage.format() == travellermap.MapFormat.SVG) and (not _HasSvgSupport):
-                            logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} as SVG support is disabled')
+                            logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} in {milieu.value} as SVG support is disabled')
                             continue
 
                         mapImages.append((mapImage, scale))
                     except Exception as ex:
-                        logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
+                        logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
                         continue
 
                 if not mapImages:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no usable map levels')
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no usable map levels')
                     continue
 
                 customSector = _CustomSector(
@@ -537,14 +539,14 @@ class Compositor(object):
                 for mapImage, scale in mapImages:
                     mapFormat = mapImage.format()
                     if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
-                        svgMapData.append((customSector, mapImage, scale))
+                        svgMapData.append((milieu, customSector, mapImage, scale))
                     else:
                         try:       
                             customSector.addMapPoster(self.createCompositorImage(
                                 mapImage=mapImage,
                                 scale=scale))
                         except Exception as ex:
-                            logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()}', exc_info=ex)
+                            logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
                             continue
 
             if milieuSectors:
@@ -554,7 +556,7 @@ class Compositor(object):
             return # Nothing more to do
         
         svgTaskData = []
-        for index, (customSector, mapImage, scale) in enumerate(svgMapData):
+        for index, (milieu, customSector, mapImage, scale) in enumerate(svgMapData):
             try:
                 svgMapBytes = mapImage.bytes()
                 svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
@@ -562,7 +564,7 @@ class Compositor(object):
                 svgTaskData.append((svgMapBytes, ))
                 svgTaskData.append((svgTextBytes, ))
             except:
-                logging.warning(f'Compositor failed to set up SVG task for {scale} composition image for {customSector.name()}', exc_info=ex)
+                logging.warning(f'Compositor failed to set up SVG task for {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
                 continue
 
         logging.info(f'Compositor converting {len(svgTaskData)} SVG maps')
@@ -570,12 +572,19 @@ class Compositor(object):
             Compositor._renderSvgTask,
             iterable=svgTaskData)
 
-        for index, (customSector, mapImage, scale) in enumerate(svgMapData):
+        for index, (milieu, customSector, mapImage, scale) in enumerate(svgMapData):
             try:
-                svgDim = _extractSvgSize(svgData=mapImage.bytes())
+                mapResult = svgTaskResults[index * 2]
+                if isinstance(mapResult, Exception):
+                    raise RuntimeError('Worker process exception when render map SVG') from mapResult
 
-                mainImage = PIL.Image.frombytes('RGBA', svgDim, svgTaskResults[index * 2])
-                textImage = PIL.Image.frombytes('RGBA', svgDim, svgTaskResults[(index * 2) + 1])
+                textResult = svgTaskResults[(index * 2) + 1]
+                if isinstance(textResult, Exception):
+                    raise RuntimeError('Worker process exception when render text SVG') from textResult
+
+                svgDim = _extractSvgSize(svgData=mapImage.bytes())
+                mainImage = PIL.Image.frombytes('RGBA', svgDim, mapResult)
+                textImage = PIL.Image.frombytes('RGBA', svgDim, textResult)
                 textMask = textImage.split()[-1] # Extract alpha channel as Image
                 del textImage
 
@@ -585,7 +594,7 @@ class Compositor(object):
                     textMask=textMask,
                     scale=scale))
             except Exception as ex:
-                logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()}', exc_info=ex)
+                logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
                 continue
 
     def _overlayBitmapCustomSector(
@@ -668,10 +677,13 @@ class Compositor(object):
             ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image
         overlayImage = None
         try:
-            overlayBytes = self._processPool.apply(
+            result = self._processPool.apply(
                 Compositor._renderSvgRegionTask,
                 args=[svgData, srcPixelRect, tgtPixelDim])
-            overlayImage = PIL.Image.frombytes('RGBA', tgtPixelDim, overlayBytes)
+            if isinstance(result, Exception):
+                raise RuntimeError('Worker process encountered an exception when render SVG region') from result
+                
+            overlayImage = PIL.Image.frombytes('RGBA', tgtPixelDim, result)
 
             if tgtImage == None:
                 # No target was specified to overlay the custom sector on so just return the
@@ -709,8 +721,11 @@ class Compositor(object):
             elif child.tag != '{http://www.w3.org/2000/svg}text':
                 element.remove(child)
 
+    # This function is executed in a worker process
     @staticmethod
-    def _renderSvgTask(svgData: bytes) -> bytes:
+    def _renderSvgTask(
+        svgData: bytes
+        ) -> typing.Union[bytes, Exception]:
         try:
             tree = cairosvg.parser.Tree(bytestring=svgData)
             width = int(tree['width'])
@@ -732,17 +747,17 @@ class Compositor(object):
             finally:
                 del surface
         except Exception as ex:
-            print(ex) # TODO: Do something better
-            return None
+            return ex
 
         return result
 
+    # This function is executed in a worker process
     @staticmethod
     def _renderSvgRegionTask(
             svgData: bytes,
             srcPixelRect: typing.Tuple[int, int, int, int],
             tgtPixelDim: typing.Tuple[int, int],
-            ) -> bytes:
+            ) -> typing.Union[bytes, Exception]:
         try:
             tree = cairosvg.parser.Tree(bytestring=svgData)
             tree['viewBox'] = \
@@ -765,8 +780,7 @@ class Compositor(object):
             finally:
                 del surface
         except Exception as ex:
-            print(ex) # TODO: Do something better
-            return None
+            return ex
 
         return result
 
