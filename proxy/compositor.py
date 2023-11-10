@@ -203,11 +203,12 @@ class Compositor(object):
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
         self._processPool = None # Make sure variable exists for destructor in case creation fails
 
-        # Construct the pool of processes that can be used for SVG rendering (or other long jobs).
-        # A context is used so we can force processes to be spawned, this keeps the behaviour
-        # the same on all OS and avoids issues with singletons when using fork
-        self._mpContext = multiprocessing.get_context('spawn')
-        self._processPool = self._mpContext.Pool()
+        if _HasSvgSupport:
+            # Construct the pool of processes that can be used for SVG rendering.
+            # A context is used so we can force processes to be spawned, this keeps the behaviour
+            # the same on all OS and avoids issues with singletons when using fork
+            self._mpContext = multiprocessing.get_context('spawn')
+            self._processPool = self._mpContext.Pool()
 
         self._loadCustomUniverse()
 
@@ -223,6 +224,9 @@ class Compositor(object):
         mapBytes = mapImage.bytes()
         mapFormat = mapImage.format()
         if mapFormat == travellermap.MapFormat.SVG:
+            if not _HasSvgSupport:
+                raise RuntimeError('Unable to generate SVG compositor image (SVG support is disabled)')
+
             if _FullSvgRendering:
                 imageType = CompositorImage.ImageType.SVG
                 mainImage = mapBytes
@@ -275,6 +279,10 @@ class Compositor(object):
             ) -> OverlapType:
         if tileScale < Compositor._MinCompositionScale:
             return Compositor.OverlapType.NoOverlap
+        
+        sectorList = self._milieuSectorMap.get(milieu)
+        if not sectorList:
+            return Compositor.OverlapType.NoOverlap
 
         # Calculate tile rect in map space
         tileMapUL = travellermap.tileSpaceToMapSpace(
@@ -290,8 +298,6 @@ class Compositor(object):
             tileMapUL[1], # Top
             tileMapBR[0], # Right
             tileMapBR[1]) # Bottom
-
-        sectorList = self._milieuSectorMap.get(milieu)
 
         for sector in sectorList:
             sectorMapRect = sector.interiorRect()
@@ -318,6 +324,10 @@ class Compositor(object):
             ) -> None:
         if tileScale < Compositor._MinCompositionScale:
             return # Nothing to do (shouldn't happen if correctly checking which operation to use)
+        
+        sectorList = self._milieuSectorMap.get(milieu)
+        if not sectorList:
+            return # Nothing to do (shouldn't happen if correctly checking which operation to use)
 
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
@@ -340,7 +350,7 @@ class Compositor(object):
             typing.Tuple[int, int], # Size to scale section of custom sector to
             typing.Tuple[int, int], # Tile offset to place scaled section of custom sector
             ]] = []
-        for sector in self._milieuSectorMap.get(milieu):
+        for sector in sectorList:
             sectorMapRect = sector.boundingRect()
             intersection = _calculateIntersection(sectorMapRect, tileMapRect)
             if not intersection:
@@ -414,6 +424,13 @@ class Compositor(object):
             tileScale: float,
             milieu: travellermap.Milieu
             ) -> typing.Optional[PIL.Image.Image]:
+        if tileScale < Compositor._MinCompositionScale:
+            return None # Nothing to do (shouldn't happen if correctly checking which operation to use)
+        
+        sectorList = self._milieuSectorMap.get(milieu)
+        if not sectorList:
+            return None # Nothing to do (shouldn't happen if correctly checking which operation to use)
+
         tileMapUL = travellermap.tileSpaceToMapSpace(
             tileX=tileX,
             tileY=tileY + 1,
@@ -428,7 +445,6 @@ class Compositor(object):
             tileMapBR[0], # Right
             tileMapBR[1]) # Bottom
 
-        sectorList = self._milieuSectorMap.get(milieu)
         for sector in sectorList:
             if not _isContained(tileMapRect, sector.interiorRect()):
                 continue
