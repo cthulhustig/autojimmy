@@ -109,11 +109,12 @@ class _CustomSector(object):
             self,
             name: str,
             position: typing.Tuple[int, int],
-            mapPosters: typing.Iterable[CompositorImage]
+            mapPosters: typing.Optional[typing.Iterable[CompositorImage]] = None
             ) -> None:
         self._name = name
         self._position = position
-        self._mapPosters = sorted(mapPosters)
+        self._mapPosters = list(mapPosters) if mapPosters else []
+        self._mapPosters.sort() # Sorting is important for map selection algorithm
 
         absoluteRect = travellermap.sectorBoundingRect(position[0], position[1])
         mapSpaceUL = travellermap.absoluteHexToMapSpace(
@@ -140,6 +141,12 @@ class _CustomSector(object):
             mapSpaceUL[1], # Top
             mapSpaceBR[0], # Right
             mapSpaceBR[1]) # Bottom
+        
+    def name(self) -> str:
+        return self._name
+    
+    def position(self) -> typing.Tuple[int, int]:
+        return self._position
 
     # Returned rect is in map space and ordered (left, top, right, bottom)
     def boundingRect(self) -> typing.Tuple[float, float, float, float]:
@@ -148,6 +155,13 @@ class _CustomSector(object):
     # Returned rect is in map space and ordered (left, top, right, bottom)
     def interiorRect(self) -> typing.Tuple[float, float, float, float]:
         return self._interiorRect
+    
+    def addMapPoster(
+            self,
+            poster: CompositorImage
+            ) -> None:
+        self._mapPosters.append(poster)
+        self._mapPosters.sort() # Sorting is important for map selection algorithm
 
     def findMapPoster(
             self,
@@ -250,55 +264,6 @@ class Compositor(object):
             mainImage=mainImage,
             textMask=textMask,
             scale=scale)
-
-    def createMultipleCompositorImages(
-            self,
-            mapImages: typing.Mapping[int, travellermap.MapImage]
-            ) -> typing.Iterable[CompositorImage]:
-        compositorImages: typing.List[CompositorImage] = []
-        svgMapImages: typing.List[travellermap.MapImage] = []
-        svgMapScales: typing.List[int] = []
-
-        for scale, mapImage in mapImages.items():
-            mapFormat = mapImage.format()
-            if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
-                svgMapImages.append(mapImage)
-                svgMapScales.append(scale)
-            else:
-                compositorImages.append(self.createCompositorImage(
-                    mapImage=mapImage,
-                    scale=scale))
-
-        if svgMapImages:
-            taskData = []
-            for mapImage in svgMapImages:
-                svgMapBytes = mapImage.bytes()
-                taskData.append((svgMapBytes, ))
-
-                svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
-                taskData.append((svgTextBytes, ))
-
-            results = self._processPool.starmap(
-                Compositor._renderSvgTask,
-                iterable=taskData)
-
-            for index, scale in enumerate(svgMapScales):
-                mapImage = svgMapImages[index]
-
-                svgDim = _extractSvgSize(svgData=mapImage.bytes())
-
-                mainImage = PIL.Image.frombytes('RGBA', svgDim, results[index * 2])
-                textImage = PIL.Image.frombytes('RGBA', svgDim, results[(index * 2) + 1])
-                textMask = textImage.split()[-1] # Extract alpha channel as Image
-                del textImage
-
-                compositorImages.append(CompositorImage(
-                    imageType=CompositorImage.ImageType.Bitmap,
-                    mainImage=mainImage,
-                    textMask=textMask,
-                    scale=scale))
-
-        return compositorImages
 
     def overlapType(
             self,
@@ -525,13 +490,15 @@ class Compositor(object):
 
         return None
 
-    # TODO: This is still not optimal as SVGs are rendered in per custom sector groups which may not
-    # utilise all cores
     def _loadCustomUniverse(self) -> None:
         self._milieuSectorMap.clear()
+        
+        # TODO: I don't think I should need two separate lists
+        svgMapImages: typing.List[travellermap.MapImage] = []
+        svgMapData: typing.List[typing.Tuple[_CustomSector, int]] = []        
 
         for milieu in travellermap.Milieu:
-            sectors = []
+            milieuSectors = []
             for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
                 if not sectorInfo.isCustomSector():
                     continue # Only interested in custom sectors
@@ -541,7 +508,7 @@ class Compositor(object):
                     logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no map levels')
                     continue
 
-                mapImages = {}
+                mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
                 for scale in mapLevels.keys():
                     try:
                         mapImage = travellermap.DataStore.instance().sectorMapImage(
@@ -552,27 +519,76 @@ class Compositor(object):
                             logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} as SVG support is disabled')
                             continue
 
-                        mapImages[scale] = mapImage
+                        mapImages.append((mapImage, scale))
                     except Exception as ex:
                         logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()}', exc_info=ex)
                         continue
 
                 if not mapImages:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as no map levels loaded')
+                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it has no usable map levels')
                     continue
 
-                try:
-                    mapPosters = self.createMultipleCompositorImages(mapImages)
-                except Exception as ex:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} as it failed to create compositor images', exc_info=ex)
-                    continue
-
-                sectors.append(_CustomSector(
+                customSector = _CustomSector(
                     name=sectorInfo.canonicalName(),
-                    position=(sectorInfo.x(), sectorInfo.y()),
-                    mapPosters=mapPosters))
+                    position=(sectorInfo.x(), sectorInfo.y()))
+                milieuSectors.append(customSector)
 
-            self._milieuSectorMap[milieu] = sectors
+                for mapImage, scale in mapImages:
+                    mapFormat = mapImage.format()
+                    if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
+                        svgMapImages.append(mapImage)
+                        svgMapData.append((customSector, scale))
+                    else:
+                        try:       
+                            customSector.addMapPoster(self.createCompositorImage(
+                                mapImage=mapImage,
+                                scale=scale))
+                        except Exception as ex:
+                            logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()}', exc_info=ex)
+                            continue
+
+            if milieuSectors:
+                self._milieuSectorMap[milieu] = milieuSectors
+    
+        if not svgMapImages:
+            return # Nothing more to do
+        
+        svgTaskData = []
+        for index, (customSector, scale) in enumerate(svgMapData):
+            try:
+                mapImage = svgMapImages[index]
+                svgMapBytes = mapImage.bytes()
+                svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
+
+                svgTaskData.append((svgMapBytes, ))
+                svgTaskData.append((svgTextBytes, ))
+            except:
+                logging.warning(f'Compositor failed to set up SVG task for {scale} composition image for {customSector.name()}', exc_info=ex)
+                continue
+
+        logging.info(f'Compositor converting {len(svgTaskData)} SVG maps')
+        svgTaskResults = self._processPool.starmap(
+            Compositor._renderSvgTask,
+            iterable=svgTaskData)
+
+        for index, (customSector, scale) in enumerate(svgMapData):
+            try:
+                mapImage = svgMapImages[index]
+                svgDim = _extractSvgSize(svgData=mapImage.bytes())
+
+                mainImage = PIL.Image.frombytes('RGBA', svgDim, svgTaskResults[index * 2])
+                textImage = PIL.Image.frombytes('RGBA', svgDim, svgTaskResults[(index * 2) + 1])
+                textMask = textImage.split()[-1] # Extract alpha channel as Image
+                del textImage
+
+                customSector.addMapPoster(CompositorImage(
+                    imageType=CompositorImage.ImageType.Bitmap,
+                    mainImage=mainImage,
+                    textMask=textMask,
+                    scale=scale))
+            except Exception as ex:
+                logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()}', exc_info=ex)
+                continue
 
     def _overlayBitmapCustomSector(
             self,
