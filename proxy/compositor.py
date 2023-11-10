@@ -215,7 +215,7 @@ class Compositor(object):
             if _FullSvgRendering:
                 imageType = CompositorImage.ImageType.SVG
                 mainImage = mapBytes
-                textMask = None
+                textMask = Compositor._createTextSvg(mapBytes=mapBytes)
             else:
                 imageType = CompositorImage.ImageType.Bitmap
                 width, height = _extractSvgSize(mapBytes)
@@ -423,11 +423,16 @@ class Compositor(object):
 
         # Overlay custom sector text on tile
         for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
-            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                pass # TODO: Do something about text layer for SVG
-            else:
-                textMask = mapPoster.textMask()
-                if textMask:
+            textMask = mapPoster.textMask()
+            if textMask:            
+                if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                    self._overlaySvgCustomSector(
+                        svgData=textMask,
+                        srcPixelRect=srcPixelRect,
+                        tgtPixelDim=tgtPixelDim,
+                        tgtPixelOffset=tgtPixelOffset,
+                        tgtImage=tileImage)
+                else:
                     self._overlayBitmapCustomSector(
                         srcImage=mapPoster.mainImage(),
                         srcPixelRect=srcPixelRect,
@@ -498,11 +503,16 @@ class Compositor(object):
                     tgtPixelOffset=(0, 0))
 
             # Overlay custom sector text on tile
-            if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                pass # TODO: Do something with text layer for svg
-            else:
-                textMask = mapPoster.textMask()
-                if textMask:
+            textMask = mapPoster.textMask()
+            if textMask:
+                if mapPoster.imageType() == CompositorImage.ImageType.SVG:
+                    self._overlaySvgCustomSector(
+                        svgData=textMask,
+                        srcPixelRect=srcPixelRect,
+                        tgtPixelDim=tgtPixelDim,
+                        tgtPixelOffset=(0, 0),
+                        tgtImage=tileImage)
+                else:
                     self._overlayBitmapCustomSector(
                         srcImage=mapPoster.mainImage(),
                         srcPixelRect=srcPixelRect,
