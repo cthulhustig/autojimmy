@@ -493,9 +493,10 @@ class Compositor(object):
     def _loadCustomUniverse(self) -> None:
         self._milieuSectorMap.clear()
         
-        # TODO: I don't think I should need two separate lists
-        svgMapImages: typing.List[travellermap.MapImage] = []
-        svgMapData: typing.List[typing.Tuple[_CustomSector, int]] = []        
+        svgMapData: typing.List[typing.Tuple[
+            _CustomSector,
+            travellermap.MapImage,
+            int]] = []        
 
         for milieu in travellermap.Milieu:
             milieuSectors = []
@@ -536,8 +537,7 @@ class Compositor(object):
                 for mapImage, scale in mapImages:
                     mapFormat = mapImage.format()
                     if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
-                        svgMapImages.append(mapImage)
-                        svgMapData.append((customSector, scale))
+                        svgMapData.append((customSector, mapImage, scale))
                     else:
                         try:       
                             customSector.addMapPoster(self.createCompositorImage(
@@ -550,13 +550,12 @@ class Compositor(object):
             if milieuSectors:
                 self._milieuSectorMap[milieu] = milieuSectors
     
-        if not svgMapImages:
+        if not svgMapData:
             return # Nothing more to do
         
         svgTaskData = []
-        for index, (customSector, scale) in enumerate(svgMapData):
+        for index, (customSector, mapImage, scale) in enumerate(svgMapData):
             try:
-                mapImage = svgMapImages[index]
                 svgMapBytes = mapImage.bytes()
                 svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
 
@@ -571,9 +570,8 @@ class Compositor(object):
             Compositor._renderSvgTask,
             iterable=svgTaskData)
 
-        for index, (customSector, scale) in enumerate(svgMapData):
+        for index, (customSector, mapImage, scale) in enumerate(svgMapData):
             try:
-                mapImage = svgMapImages[index]
                 svgDim = _extractSvgSize(svgData=mapImage.bytes())
 
                 mainImage = PIL.Image.frombytes('RGBA', svgDim, svgTaskResults[index * 2])
