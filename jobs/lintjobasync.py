@@ -98,7 +98,7 @@ class LintJobAsync(QtCore.QObject):
 
             self._results[LintJobAsync.Stage.Sector] = LintJobAsync.LinterResult(
                 content=result.content().decode(),
-                mimeType=result.header(header='Content-Type'))
+                mimeType=result.header(header='content-type'))
         elif isinstance(result, Exception):
             self.complete[object].emit(result)
             return
@@ -138,7 +138,7 @@ class LintJobAsync(QtCore.QObject):
 
             self._results[LintJobAsync.Stage.Metadata] = LintJobAsync.LinterResult(
                 content=result.content().decode(),
-                mimeType=result.header(header='Content-Type'))
+                mimeType=result.header(header='content-type'))
         elif isinstance(result, Exception):
             self.complete[object].emit(result)
             return

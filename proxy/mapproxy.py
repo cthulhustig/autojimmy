@@ -226,8 +226,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_response(200)
         if contentType:
-            self.send_header('Content-Type', contentType)
-        self.send_header('Content-Length', len(fileData))
+            self.send_header('content-type', contentType)
+        self.send_header('content-length', len(fileData))
         self.end_headers()
         self.wfile.write(fileData)
 
@@ -383,11 +383,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_response(200)
         if contentType:
-            self.send_header('Content-Type', contentType)
-        self.send_header('Content-Length', len(tileBytes) if tileBytes else 0)
+            self.send_header('content-type', contentType)
+        self.send_header('content-length', len(tileBytes) if tileBytes else 0)
         # Tell the client not to cache tiles. Assuming the browser respects the request, it
         # should prevent stale tiles being displayed if the user modifies data
-        self.send_header('Cache-Control', 'no-store, no-cache')
+        self.send_header('cache-control', 'no-store, no-cache')
         self.end_headers()
         if tileBytes:
             self.wfile.write(tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes)
@@ -418,11 +418,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
         logging.debug(f'Serving local mains data')
 
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', len(mainsData))
+        self.send_header('content-type', 'application/json')
+        self.send_header('content-length', len(mainsData))
         # Tell the client not to cache tiles. Assuming the browser respects the request, it
         # should prevent stale tiles being displayed if the user modifies data
-        self.send_header('Cache-Control', 'no-store, no-cache') # Served locally so never cache
+        self.send_header('cache-control', 'no-store, no-cache') # Served locally so never cache
         self.end_headers()
         self.wfile.write(mainsData)
 
@@ -449,11 +449,11 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
         tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
 
-        contentType = headers.get('Content-Type') # TODO: Is this check case sensitive?
+        contentType = headers.get('content-type')
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
         if not tileFormat:
             # Log this at debug as it could happen a lot if something goes wrong
-            logging.debug(f'Unexpected Content-Type {contentType} for tile {parsedUrl.query}')
+            logging.debug(f'Unexpected content-type {contentType} for tile {parsedUrl.query}')
 
         return tileBytes, contentType, tileFormat
 
