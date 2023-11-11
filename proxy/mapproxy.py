@@ -1,8 +1,8 @@
+import aiohttp.web
+import asyncio
 import app
 import collections
 import enum
-import functools
-import http.server
 import io
 import logging
 import multiprocessing
@@ -10,15 +10,12 @@ import os
 import PIL.Image
 import PIL.ImageDraw
 import proxy
-import socketserver
 import travellermap
 import urllib.error
 import urllib.parse
 import urllib.request
 import threading
 import typing
-
-_MultiThreaded = True
 
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
 
@@ -51,6 +48,10 @@ class _LocalFileStore(object):
 
             logging.debug(f'Local file store loaded {filePath}')
             self._cache['/' + fileName] = data # Add '/' to the key for easier mapping later
+
+    def contains(self, filePath: str) -> bool:
+        with self._lock:
+            return filePath in self._cache
 
     def lookup(self, filePath: str) -> bytes:
         with self._lock:
@@ -98,163 +99,93 @@ class _TileCache(object):
             self._cache.move_to_end(key, last=True)
             return data
 
-
-if _MultiThreaded:
-    class _HTTPServerBase(socketserver.ThreadingMixIn, http.server.HTTPServer):
-        pass
-else:
-    class _HTTPServerBase(http.server.HTTPServer):
-        pass
-
-class _HTTPServer(_HTTPServerBase):
-    def __init__(
-            self,
-            serverAddress: str,
-            requestHandlerClass: typing.Type[http.server.BaseHTTPRequestHandler],
-            shutdownEvent: multiprocessing.Event
-            ) -> None:
-        super().__init__(serverAddress, requestHandlerClass)
-        self._shutdownEvent = shutdownEvent
-
-    def service_actions(self) -> None:
-        super().service_actions()
-        if self._shutdownEvent.is_set():
-            logging.debug('Tile map shutdown event received')
-            # https://stackoverflow.com/questions/10085996/shutdown-socketserver-serve-forever-in-one-thread-python-application
-            self._BaseServer__shutdown_request = True
-
-class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
+# TODO: Support shutdown signal
+# TODO: Logging of requests and errors
+class _HttpRequestHandler(object):
     def __init__(
             self,
             travellerMapUrl: str,
             localFileStore: _LocalFileStore,
             tileCache: _TileCache,
             compositor: typing.Optional[proxy.Compositor],
-            mainsMilieu: typing.Optional[travellermap.Milieu],
-            *args,
-            **kwargs
+            mainsMilieu: typing.Optional[travellermap.Milieu]
             ) -> None:
+        super().__init__()
         self._travellerMapUrl = travellerMapUrl
         self._localFileStore = localFileStore
         self._tileCache = tileCache
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
 
-        # BaseHTTPRequestHandler calls do_GET **inside** __init__ !!!
-        # So we have to call super().__init__ after setting attributes.
-        super().__init__(*args, **kwargs)
-
-    def log_error(self, format: str, *args: typing.Any) -> None:
-        logging.error('{address}: {message}'.format(
-            address=self.address_string(),
-            message=format % args))
-
-    def log_request(
+    async def handleRequest(
             self,
-            code: typing.Union[int, str, http.HTTPStatus] = "-",
-            size: typing.Union[int, str] = "-"
-            ) -> None:
-        if isinstance(code, http.HTTPStatus):
-            code = code.value
-        logging.debug('{address}: "{request}" {code} {size}'.format(
-            address=self.address_string(),
-            request=self.requestline,
-            code=str(code),
-            size=str(size)))
+            request: aiohttp.web.Request
+            ) -> aiohttp.web.Response:
+        path = request.path
+        if path == '' or path == '/':
+            path = '/index.html'
 
-    def log_message(self, format, *args):
-        logging.info('{address}: {message}'.format(
-            address=self.address_string(),
-            message=format % args))
+        # TODO: I should probably use the local copies of sophont and allegiance files for those requests
+        if self._localFileStore.contains(path):
+            return await self._handleLocalFileRequest(path)
+        elif path == '/api/tile':
+            return await self._handleTileRequest(request)
+        elif path == '/res/mains.json':
+            return await self._handleMainsRequest(request)
+        else:
+            # Act as a proxy for all other requests and just forward them to the
+            # configured Traveller Map instance
+            return await self._handleProxyRequest(request)
 
-    # This is the string the gets returned as the Server HTTP header
-    def version_string(self) -> str:
-        return f'Traveller Map Proxy {app.AppVersion}'
-
-    def do_GET(self) -> None:
-        try:
-            parsedUrl = urllib.parse.urlparse(self.path)
-
-            path = parsedUrl.path
-            if path == '' or path == '/':
-                path = '/index.html'
-
-            # TODO: I should probably use the local copies of sophont and allegiance files for those requests
-            localFileData = self._localFileStore.lookup(path)
-            if localFileData:
-                self._handleLocalFileRequest(
-                    filePath=path,
-                    fileData=localFileData)
-            elif path == '/api/tile':
-                self._handleTileRequest(parsedUrl=parsedUrl)
-            elif path == '/res/mains.json':
-                self._handleMainsRequest(parsedUrl=parsedUrl)
-            else:
-                # Act as a proxy for all other requests and just forward them to the
-                # configured Traveller Map instance
-                self._handleProxyRequest(parsedUrl=parsedUrl)
-        except urllib.error.HTTPError as ex:
-            logging.error(f'HTTP Error {ex.code} when handling GET request for {self.path}')
-            self.send_response(ex.code)
-            self.end_headers()
-        except urllib.error.URLError as ex:
-            logging.error(f'URL Error {ex.reason} when handling GET request for {self.path}')
-            if hasattr(ex, 'code'):
-                code = ex.code
-            else:
-                code = 500
-            self.send_response(code)
-            self.end_headers()
-        except ConnectionAbortedError as ex:
-            # Log this at debug as it's expected that it can happen if the client closes
-            # the connection while the proxy is handling the request
-            logging.debug(f'Connection aborted when handling GET request for {self.path}', exc_info=ex)
-        except Exception as ex:
-            logging.error(f'Exception occurred when handling GET request for {self.path}', exc_info=ex)
-            self.send_response(500)
-            self.end_headers()
-
-    def _handleLocalFileRequest(
+    async def _handleLocalFileRequest(
             self,
-            filePath: urllib.parse.ParseResult,
-            fileData: str
-            ) -> None:
-        logging.debug(f'Serving local data for {filePath}')
+            path: str,
+            ) -> aiohttp.web.Response:
+        logging.debug(f'Serving local data for {path}')
 
-        _, extension = os.path.splitext(filePath)
+        body = self._localFileStore.lookup(path)
+        if body == None:
+            raise RuntimeError(f'Unknown local file {path}')        
+
+        _, extension = os.path.splitext(path)
         contentType = _ExtensionToContentTypeMap.get(extension)
+        if contentType == None:
+            raise RuntimeError(f'Unknown local file extension {extension}')
 
-        self.send_response(200)
+        headers = {
+            'Content-Length': str(len(body)),
+            'Cache-Control':  'no-store, no-cache'}
         if contentType:
-            self.send_header('content-type', contentType)
-        self.send_header('content-length', len(fileData))
-        self.end_headers()
-        self.wfile.write(fileData)
+            headers['Content-Type'] = contentType
+
+        return aiohttp.web.Response(
+            status=200,
+            headers=headers,
+            body=body)
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
-    def _handleTileRequest(
+    async def _handleTileRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult
-            ) -> None:
-        parsedQuery = urllib.parse.parse_qs(parsedUrl.query)
-        cacheKey = self._generateCacheKey(queryMap=parsedQuery)
+            request: aiohttp.web.Request
+            ) -> aiohttp.web.Response:
+        cacheKey = self._generateCacheKey(request)
 
         tileImage = self._tileCache.lookup(key=cacheKey)
         if tileImage:
-            logging.debug(f'Serving cached response for tile {parsedUrl.query}')
+            logging.debug(f'Serving cached response for tile {request.query}')
             tileBytes = tileImage.bytes()
             contentType = travellermap.mapFormatToMimeType(tileImage.format())
         else:
-            logging.debug(f'Creating tile for {parsedUrl.query}')
+            logging.debug(f'Creating tile for {request.query}')
 
-            tileX = float(parsedQuery['x'][0])
-            tileY = float(parsedQuery['y'][0])
-            tileScale = float(parsedQuery['scale'][0])
-            tileWidth = int(parsedQuery.get('w', [256])[0])
-            tileHeight = int(parsedQuery.get('h', [256])[0])
-            milieu = str(parsedQuery.get('milieu', ['M1105'])[0])
-            style = str(parsedQuery.get('style', 'poster'))
+            tileX = float(request.query['x'])
+            tileY = float(request.query['y'])
+            tileScale = float(request.query['scale'])
+            tileWidth = int(request.query.get('w', 256))
+            tileHeight = int(request.query.get('h', 256))
+            milieu = str(request.query.get('milieu', 'M1105'))
+            style = str(request.query.get('style', 'poster'))
             if milieu.upper() in travellermap.Milieu.__members__:
                 milieu = travellermap.Milieu.__members__[milieu]
             else:
@@ -276,7 +207,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # TODO: I suspect this is creating a new TCP connection for each request. If so it
                 # would be better to use a connection pull if possible
 
-                tileBytes, contentType, sourceFormat = self._makeTileRequest(parsedUrl=parsedUrl)
+                tileBytes, contentType, sourceFormat = await self._makeTileRequest(request)
 
                 # Set the target format, by default the source format is used, this can be None if we
                 # got something unexpected back from Traveller Map. In that case the tile will be
@@ -343,7 +274,7 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                     # Log this at a low level as it could happen a LOT if something goes wrong
                     logging.debug('Failed to composite tile', exc_info=ex)
             else:
-                logging.debug(f'Serving live response for tile {parsedUrl.query}')
+                logging.debug(f'Serving live response for tile {request.query}')
 
             # Enable this to add a red boundary to all tiles in order to highlight where they are
             # TODO: When I add disk caching this overlay shouldn't be included in the image that is cached
@@ -366,8 +297,8 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # If we get to here with no tile bytes it means something wen't wrong performing a simple
                 # copy. In this situation the only real option is to request the tile from Traveller Map and
                 # return that
-                logging.debug(f'Requesting fallback tile for {parsedUrl.query}')
-                tileBytes, contentType, targetFormat = self._makeTileRequest(parsedUrl=parsedUrl)
+                logging.debug(f'Requesting fallback tile for {request.query}')
+                tileBytes, contentType, targetFormat = await self._makeTileRequest(request)
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
@@ -381,24 +312,27 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                     format=targetFormat)
                 self._tileCache.add(key=cacheKey, image=tileImage)
 
-        self.send_response(200)
+        headers = {
+            'Content-Length': str(len(tileBytes) if tileBytes else 0),
+            # Tell the client not to cache tiles. Assuming the browser respects the request, it
+            # should prevent stale tiles being displayed if the user modifies data
+            'Cache-Control': 'no-store, no-cache'}
         if contentType:
-            self.send_header('content-type', contentType)
-        self.send_header('content-length', len(tileBytes) if tileBytes else 0)
-        # Tell the client not to cache tiles. Assuming the browser respects the request, it
-        # should prevent stale tiles being displayed if the user modifies data
-        self.send_header('cache-control', 'no-store, no-cache')
-        self.end_headers()
-        if tileBytes:
-            self.wfile.write(tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes)
+            headers['Content-Type'] = contentType
 
-    def _handleMainsRequest(
+        return aiohttp.web.Response(
+            status=200,
+            headers=headers,
+            body=tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes) # TODO: Can this ever be io.BytesIO
+
+    async def _handleMainsRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult
-            ) -> None:
+            request: aiohttp.web.Request
+            ) -> aiohttp.web.Response:
         mainsData = None
         if self._mainsMilieu:
             try:
+                # TODO: This should be an async read
                 mainsData = travellermap.DataStore.instance().mainsData(
                     milieu=self._mainsMilieu)
                 if not mainsData:
@@ -408,86 +342,106 @@ class _HttpGetRequestHandler(http.server.BaseHTTPRequestHandler):
                 # Continue to fall back to traveller map
 
         if not mainsData:
-            self._handleProxyRequest(
-                parsedUrl=parsedUrl,
+            return await self._handleProxyRequest(
+                request=request,
                 # Allow browser to cache it for the session but not store it on disk
                 forceCacheControl='no-store')
-            return
         mainsData = mainsData.encode()
 
         logging.debug(f'Serving local mains data')
 
-        self.send_response(200)
-        self.send_header('content-type', 'application/json')
-        self.send_header('content-length', len(mainsData))
-        # Tell the client not to cache tiles. Assuming the browser respects the request, it
-        # should prevent stale tiles being displayed if the user modifies data
-        self.send_header('cache-control', 'no-store, no-cache') # Served locally so never cache
-        self.end_headers()
-        self.wfile.write(mainsData)
+        headers = {
+            'Content-Type': 'application/json',
+            'Content-Length': str(len(mainsData)),
+            # Tell the client not to cache tiles. Assuming the browser respects the request, it
+            # should prevent stale tiles being displayed if the user modifies data
+            'Cache-Control': 'no-store, no-cache'}
 
-    def _handleProxyRequest(
+        return aiohttp.web.Response(
+            status=200,
+            headers=headers,
+            body=mainsData)        
+
+    async def _handleProxyRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult,
+            request: aiohttp.web.Request,
             forceCacheControl: typing.Optional[str] = None
-            ) -> None:
-        content, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
+            ) -> aiohttp.web.Response:
+        status, reason, headers, body = await self._makeProxyRequest(request)
 
-        self.send_response(200)
-        for header, value in headers.items():
-            if (forceCacheControl != None) and (header.lower() == 'cache-control'):
-                continue # Don't proxy cache setting
-            self.send_header(header, value)
         if forceCacheControl: # if forceCacheControl is an empty string, don't add the header
-            self.send_header('Cache-Control', forceCacheControl)
-        self.end_headers()
-        self.wfile.write(content)
+            headers['Cache-Control'] = forceCacheControl
 
-    def _makeTileRequest(
+        return aiohttp.web.Response(
+            status=status,
+            reason=reason,
+            headers=headers,
+            body=body)
+
+    async def _makeTileRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult
+            request: aiohttp.web.Request
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
-        tileBytes, headers = self._makeProxyRequest(parsedUrl=parsedUrl)
+        status, reason, headers, body = await self._makeProxyRequest(request)
+        if status != 200:
+            raise RuntimeError(f'Request for tile {request.query} filed (status: {status}, reason: {reason})')
 
-        contentType = headers.get('content-type')
+        contentType = headers.get('Content-Type')
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
         if not tileFormat:
             # Log this at debug as it could happen a lot if something goes wrong
-            logging.debug(f'Unexpected content-type {contentType} for tile {parsedUrl.query}')
+            logging.debug(f'Request for tile {request.query} returned unexpected Content-Type {contentType}')
 
-        return tileBytes, contentType, tileFormat
+        return body, contentType, tileFormat
 
-    def _makeProxyRequest(
+    async def _makeProxyRequest(
             self,
-            parsedUrl: urllib.parse.ParseResult,
-            headers: typing.Optional[typing.Mapping[str, str]] = None
-            ) -> typing.Tuple[bytes, typing.Dict[str, str]]:
-        requestUrl = urllib.parse.urljoin(self._travellerMapUrl, parsedUrl.path)
-        if parsedUrl.query:
-            requestUrl += '?' + parsedUrl.query
-        logging.debug(f'Making proxied request for {requestUrl}')
+            request: aiohttp.web.Request
+            ) -> typing.Tuple[
+                int, # Status code
+                str, # Reason
+                typing.Dict[str, str], # Headers
+                bytes: # Body
+                ]:
+        targetUrl = urllib.parse.urljoin(self._travellerMapUrl, request.path)
+        query = request.query
+        body = await request.read()
 
-        request = urllib.request.Request(requestUrl)
-        if headers:
-            for key, value in headers.items():
-                request.add_header(key, value)
+        headers = dict(request.headers)
+        if 'Host' in headers: # TODO: Check case sensitivity
+            del headers['Host']
 
-        with urllib.request.urlopen(request) as response:
-            return (response.read(), response.info())
+        async with aiohttp.ClientSession() as session:
+            async with session.request(request.method, targetUrl, headers=headers, params=query, data=body) as response:
+                body = await response.read()
+                headers = dict(response.headers)
+                if response.content_type:
+                    headers['Content-Type'] = response.content_type
+                return (response.status, response.reason, headers, body)
 
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
     # This is done so that the order the options are specified in the URL don't mater when it comes
-    # to checking for a cache hit. This makes the assumption the parameter order doesn't mater make
-    # a difference to the response that is being cached. This is the case for the Traveller Map API.
+    # to checking for a cache hit.
     @staticmethod
-    def _generateCacheKey(queryMap: typing.Dict[str, typing.List[str]]) -> str:
+    def _generateCacheKey(request: aiohttp.web.Request) -> str:
         options = []
-        for key, values in queryMap.items():
+        for key in request.query:
+            values=request.query.getall(key)
             for value in values:
                 options.append(key + '=' + value)
         options.sort()
-        return '&'.join(options)
+        return request.path + '&'.join(options)
+    
+# TODO: I don't think this is working for errors due to internal exceptions
+@aiohttp.web.middleware
+async def _serverHeaderMiddleware(
+    request: aiohttp.web.Request,
+    handler
+    ):
+    response: aiohttp.web.Response = await handler(request)
+    response.headers['Server'] = f'Traveller Map Proxy {app.AppVersion}'
+    return response    
 
 class MapProxy(object):
     class ServerStatus(enum.Enum):
@@ -662,24 +616,27 @@ class MapProxy(object):
             # This is an attempt to keep the memory footprint of the proxy down
             travellermap.DataStore.instance().clearCachedData()
 
-            handler = functools.partial(
-                _HttpGetRequestHandler,
-                travellerMapUrl,
-                localFileStore,
-                tileCache,
-                compositor,
-                mainsMilieu)
-
             # Only listen on loopback for security. Allow address reuse to prevent issues if the
             # app is restarted
-            httpd = _HTTPServer(
-                serverAddress=('127.0.0.1', listenPort),
-                requestHandlerClass=handler,
-                shutdownEvent=shutdownEvent)
-            httpd.allow_reuse_address = True
+            handler = _HttpRequestHandler(
+                travellerMapUrl=travellerMapUrl,
+                localFileStore=localFileStore,
+                tileCache=tileCache,
+                compositor=compositor,
+                mainsMilieu=mainsMilieu)
+            webApp = aiohttp.web.Application(
+                middlewares=[_serverHeaderMiddleware])
+            webApp.router.add_route('*', '/{path:.*?}', handler.handleRequest)
+
+            loop = asyncio.get_event_loop()
+            webServer = loop.create_server(
+                protocol_factory=webApp.make_handler(),
+                host='127.0.0.1',
+                port=app.Config.instance().mapProxyPort())
+            loop.run_until_complete(webServer)
 
             messageQueue.put((MapProxy.ServerStatus.Started, None))
-            httpd.serve_forever(poll_interval=0.5)
+            loop.run_forever()
 
             messageQueue.put((MapProxy.ServerStatus.Stopped, None))
             logging.info('Map proxy shutdown complete')
