@@ -204,14 +204,25 @@ class Compositor(object):
             ) -> OverlapType:
         self._customMapsDir = customMapsDir
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
-        self._processPoolExecutor = None
+        self._processExecutor = None
 
         if _HasSvgSupport:
             # Construct the pool of processes that can be used for SVG rendering.
             # A context is used so we can force processes to be spawned, this keeps the behaviour
             # the same on all OS and avoids issues with singletons when using fork
             mpContext = multiprocessing.get_context('spawn')
-            self._processPoolExecutor = concurrent.futures.ProcessPoolExecutor(mp_context=mpContext)
+            self._processExecutor = concurrent.futures.ProcessPoolExecutor(mp_context=mpContext)
+
+    def __enter__(self) -> 'Compositor':
+        return self
+    
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        self.shutdown()
+
+    # NOTE: Shutting down the executor is important as otherwise the app hangs on shutdown
+    def shutdown(self):
+        if self._processExecutor:
+            self._processExecutor.shutdown(wait=True, cancel_futures=True)
 
     async def createCompositorImageAsync(
             self,
@@ -235,13 +246,13 @@ class Compositor(object):
                 # Run map & text mask rendering concurrently in worker processes
                 loop = asyncio.get_running_loop()
                 mapTask = loop.run_in_executor(
-                    self._processPoolExecutor,
+                    self._processExecutor,
                     Compositor._renderSvgTask,
                     mapBytes)
                 
                 textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
                 textTask = loop.run_in_executor(
-                    self._processPoolExecutor,
+                    self._processExecutor,
                     Compositor._renderSvgTask,
                     textSvg)                
 
@@ -583,6 +594,8 @@ class Compositor(object):
         if not svgMapData:
             return # Nothing more to do
         
+        assert(self._processExecutor)
+        
         loop = asyncio.get_running_loop()
         taskList: typing.List[asyncio.Future] = []
         for milieu, customSector, mapImage, scale in svgMapData:
@@ -591,12 +604,12 @@ class Compositor(object):
                 svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
 
                 taskList.append(loop.run_in_executor(
-                    self._processPoolExecutor,
+                    self._processExecutor,
                     Compositor._renderSvgTask,
                     svgMapBytes))
                 
                 taskList.append(loop.run_in_executor(
-                    self._processPoolExecutor,
+                    self._processExecutor,
                     Compositor._renderSvgTask,
                     svgTextBytes))
             except:
@@ -633,6 +646,12 @@ class Compositor(object):
             except Exception as ex:
                 logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
                 continue
+
+        if not _FullSvgRendering:
+            # If full SVG rendering is disabled there process poll won't be used any more so may
+            # as well shut it down
+            self._processExecutor.shutdown(wait=True, cancel_futures=True)
+            self._processExecutor = None
 
     def _overlayBitmapCustomSector(
             self,
@@ -716,7 +735,7 @@ class Compositor(object):
         try:
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
-                self._processPoolExecutor,
+                self._processExecutor,
                 Compositor._renderSvgRegionTask,
                 svgData,
                 srcPixelRect,

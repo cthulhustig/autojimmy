@@ -599,52 +599,54 @@ class MapProxy(object):
                 customDir=customMapsDir)
             
             loop = asyncio.get_event_loop()
-            
-            # Create the compositor if there are custom sectors for any milieu, not just the one that
-            # is currently selected in the main app.
-            compositor = None    
-            if travellermap.DataStore.instance().hasCustomSectors():
-                # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
-                # then it's important that we continue setting up the proxy so it can at least return the
-                # default tiles to the client
-                try:
-                    compositor = proxy.Compositor(customMapsDir=customMapsDir)
 
-                    # NOTE: This will block until the universe is loaded
-                    loop.run_until_complete(compositor.loadUniverseAsync())
-                except Exception as ex:
-                    logging.error('Exception occurred while compositing tile', exc_info=ex)
+            with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
+                # NOTE: This will block until the universe is loaded
+                loop.run_until_complete(compositor.loadUniverseAsync())
 
-            # TODO: Should load all mains files now to avoid consistency issues if the user was to add/remove
-            # a custom sector before they've opened any traveller map widgets. The updated mains will be loaded
-            # but it won't match the sector data
+                # TODO: Should load all mains files now to avoid consistency issues if the user was to add/remove
+                # a custom sector before they've opened any traveller map widgets. The updated mains will be loaded
+                # but it won't match the sector data
 
-            # Clear out cached data from the data store now that things should have loaded the required data.
-            # This is an attempt to keep the memory footprint of the proxy down
-            travellermap.DataStore.instance().clearCachedData()
+                # Clear out cached data from the data store now that things should have loaded the required data.
+                # This is an attempt to keep the memory footprint of the proxy down
+                # TODO: Would probably be better if you could disable caching of files when setting up the data store
+                travellermap.DataStore.instance().clearCachedData()
 
-            # Start web server
-            handler = _HttpRequestHandler(
-                travellerMapUrl=travellerMapUrl,
-                localFileStore=localFileStore,
-                tileCache=tileCache,
-                compositor=compositor,
-                mainsMilieu=mainsMilieu)
-            webApp = aiohttp.web.Application(
-                middlewares=[_setServerHeaderAsync])
-            webApp.router.add_route('*', '/{path:.*?}', handler.handleRequestAsync)
+                # Start web server
+                handler = _HttpRequestHandler(
+                    travellerMapUrl=travellerMapUrl,
+                    localFileStore=localFileStore,
+                    tileCache=tileCache,
+                    compositor=compositor,
+                    mainsMilieu=mainsMilieu)
+                webApp = aiohttp.web.Application(
+                    middlewares=[_setServerHeaderAsync])
+                webApp.router.add_route('*', '/{path:.*?}', handler.handleRequestAsync)
 
-            webServer = loop.create_server(
-                protocol_factory=webApp.make_handler(),
-                host='127.0.0.1', # Only listen on loopback for security
-                port=app.Config.instance().mapProxyPort())
-            loop.run_until_complete(webServer)
+                webServer = loop.create_server(
+                    protocol_factory=webApp.make_handler(),
+                    host='127.0.0.1', # Only listen on loopback for security
+                    port=app.Config.instance().mapProxyPort())
+                loop.run_until_complete(webServer)
 
-            messageQueue.put((MapProxy.ServerStatus.Started, None))
-            loop.run_forever()
+                messageQueue.put((MapProxy.ServerStatus.Started, None))
+                loop.run_until_complete(
+                    MapProxy._shutdownMonitorAsync(shutdownEvent, webApp))
 
-            messageQueue.put((MapProxy.ServerStatus.Stopped, None))
-            logging.info('Map proxy shutdown complete')
+                messageQueue.put((MapProxy.ServerStatus.Stopped, None))
+                logging.info('Map proxy shutdown complete')
         except Exception as ex:
             logging.error('Exception occurred while running map proxy', exc_info=ex)
             messageQueue.put((MapProxy.ServerStatus.Error, str(ex)))
+
+    async def _shutdownMonitorAsync(
+            shutdownEvent: multiprocessing.Event,
+            webApp: aiohttp.web.Application
+            ) -> None:
+        while True:
+            await asyncio.sleep(0.5)
+            if shutdownEvent.is_set():
+                await webApp.shutdown()
+                await webApp.cleanup()
+                return
