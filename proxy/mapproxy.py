@@ -32,7 +32,6 @@ class _LocalFileStore(object):
             self,
             localFileDir: str
             ) -> None:
-        self._lock = threading.Lock()
         self._cache = {}
 
         for fileName in os.listdir(localFileDir):
@@ -46,58 +45,68 @@ class _LocalFileStore(object):
                 logging.error(f'Local file store failed to load {filePath}', exc_info=ex)
                 continue
 
+            _, extension = os.path.splitext(filePath)
+            mimeType = _ExtensionToContentTypeMap.get(extension)
+            if not mimeType:
+                logging.warning(f'Local file store ignoring {filePath} as it has an unknown extension {extension}')
+                continue
+
             logging.debug(f'Local file store loaded {filePath}')
-            self._cache['/' + fileName] = data # Add '/' to the key for easier mapping later
+            self._cache['/' + fileName] = (data, mimeType) # Add '/' to the key for easier mapping later
 
     def contains(self, filePath: str) -> bool:
-        with self._lock:
-            return filePath in self._cache
+        return filePath in self._cache
 
-    def lookup(self, filePath: str) -> bytes:
-        with self._lock:
-            return self._cache.get(filePath)
+    def lookup(
+            self,
+            filePath: str
+            ) -> typing.Tuple[typing.Optional[bytes], typing.Optional[str]]: # File Data, Mime Type
+        return self._cache.get(filePath, (None, None))
+    
+    def addAlias(self, filePath, alias) -> None:
+        if not filePath in self._cache:
+            raise RuntimeError(f'Unable to create alias for unknown local file {filePath}')
+        logging.debug(f'Local file store added alias "{alias}" for {filePath}')
+        self._cache[alias] = self._cache[filePath]
 
 class _TileCache(object):
     def __init__(
             self,
             maxBytes: typing.Optional[int] # None means no max
             ) -> None:
-        self._lock = threading.Lock()
         self._cache = collections.OrderedDict()
         self._maxBytes = maxBytes
         self._currentBytes = 0
 
     def add(self, key: str, image: travellermap.MapImage) -> None:
-        with self._lock:
-            size = image.size()
+        size = image.size()
 
-            startingBytes = self._currentBytes
-            evictionCount = 0
-            while self._cache and ((self._currentBytes + size) > self._maxBytes):
-                # The item at the start of the cache is the one that was used longest ago
-                oldKey, oldData = self._cache.popitem(last=False)
-                evictionCount += 1
-                self._currentBytes -= len(oldData)
-                assert(self._currentBytes > 0)
+        startingBytes = self._currentBytes
+        evictionCount = 0
+        while self._cache and ((self._currentBytes + size) > self._maxBytes):
+            # The item at the start of the cache is the one that was used longest ago
+            oldKey, oldData = self._cache.popitem(last=False)
+            evictionCount += 1
+            self._currentBytes -= len(oldData)
+            assert(self._currentBytes > 0)
 
-            if evictionCount:
-                evictionBytes = startingBytes - self._currentBytes
-                logging.debug(f'Tile cache evicted {evictionCount} tiles for {evictionBytes} bytes')
+        if evictionCount:
+            evictionBytes = startingBytes - self._currentBytes
+            logging.debug(f'Tile cache evicted {evictionCount} tiles for {evictionBytes} bytes')
 
-            # Add the image to the cache, this will automatically add it at the end of the cache
-            # to indicate it's the most recently used
-            self._cache[key] = image
-            self._currentBytes += size
+        # Add the image to the cache, this will automatically add it at the end of the cache
+        # to indicate it's the most recently used
+        self._cache[key] = image
+        self._currentBytes += size
 
     def lookup(self, key: str) -> typing.Optional[travellermap.MapImage]:
-        with self._lock:
-            data = self._cache.get(key)
-            if not data:
-                return None
+        data = self._cache.get(key)
+        if not data:
+            return None
 
-            # Move most recently used item to end of cache so it will be evicted last
-            self._cache.move_to_end(key, last=True)
-            return data
+        # Move most recently used item to end of cache so it will be evicted last
+        self._cache.move_to_end(key, last=True)
+        return data
 
 # TODO: Support shutdown signal
 # TODO: Logging of requests and errors
@@ -121,16 +130,12 @@ class _HttpRequestHandler(object):
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
-        path = request.path
-        if path == '' or path == '/':
-            path = '/index.html'
-
         # TODO: I should probably use the local copies of sophont and allegiance files for those requests
-        if self._localFileStore.contains(path):
-            return await self._handleLocalFileRequestAsync(path)
-        elif path == '/api/tile':
+        if self._localFileStore.contains(request.path):
+            return await self._handleLocalFileRequestAsync(request)
+        elif request.path == '/api/tile':
             return await self._handleTileRequestAsync(request)
-        elif path == '/res/mains.json':
+        elif request.path == '/res/mains.json':
             return await self._handleMainsRequestAsync(request)
         else:
             # Act as a proxy for all other requests and just forward them to the
@@ -139,29 +144,23 @@ class _HttpRequestHandler(object):
 
     async def _handleLocalFileRequestAsync(
             self,
-            path: str,
+            request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
-        logging.debug(f'Serving local data for {path}')
+        logging.debug(f'Serving local data for {request.path}')
 
-        body = self._localFileStore.lookup(path)
-        if body == None:
-            raise RuntimeError(f'Unknown local file {path}')        
-
-        _, extension = os.path.splitext(path)
-        contentType = _ExtensionToContentTypeMap.get(extension)
-        if contentType == None:
-            raise RuntimeError(f'Unknown local file extension {extension}')
+        body, contentType = self._localFileStore.lookup(request.path)
+        if body == None or contentType == None:
+            raise RuntimeError(f'Unknown local file {request.path}')        
 
         headers = {
             'Content-Length': str(len(body)),
-            'Cache-Control':  'no-store, no-cache'}
-        if contentType:
-            headers['Content-Type'] = contentType
+            'Cache-Control': 'no-store, no-cache', # Don't cache locally served files
+            'Content-Type': contentType}
 
         return aiohttp.web.Response(
             status=200,
             headers=headers,
-            body=body)
+            body=body) 
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
@@ -590,6 +589,8 @@ class MapProxy(object):
 
         try:
             localFileStore = _LocalFileStore(localFileDir=localFilesDir)
+            localFileStore.addAlias(filePath='/index.html', alias='/')
+
             tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
 
             travellermap.DataStore.setSectorDirs(
@@ -597,8 +598,7 @@ class MapProxy(object):
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
             
-            loop = asyncio.get_event_loop()            
-
+            loop = asyncio.get_event_loop()
             
             # Create the compositor if there are custom sectors for any milieu, not just the one that
             # is currently selected in the main app.

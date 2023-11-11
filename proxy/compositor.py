@@ -265,7 +265,6 @@ class Compositor(object):
             # Image.load isn't thread safe so make sure to call it now so it doesn't get called
             # when cropping the image during composition
             # https://github.com/python-pillow/Pillow/issues/4848
-            # TODO: Loading the file should be done with asyncio
             mainImage = PIL.Image.open(io.BytesIO(mapBytes))
             try:
                 mainImage.load()
