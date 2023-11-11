@@ -108,9 +108,12 @@ class _TileCache(object):
         self._cache.move_to_end(key, last=True)
         return data
 
-# TODO: Support shutdown signal
 # TODO: Logging of requests and errors
 class _HttpRequestHandler(object):
+    # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15 seconds.
+    # I'm overriding this to make navigation of the map more responsive
+    _ConnectionKeepAliveSeconds = 60
+
     def __init__(
             self,
             travellerMapUrl: str,
@@ -125,6 +128,13 @@ class _HttpRequestHandler(object):
         self._tileCache = tileCache
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
+        self._connector = aiohttp.TCPConnector(
+            keepalive_timeout=_HttpRequestHandler._ConnectionKeepAliveSeconds)
+        self._session = aiohttp.ClientSession(connector=self._connector)
+
+    async def shutdown(self) -> None:
+        if self._session:
+            await self._session.close()
 
     async def handleRequestAsync(
             self,
@@ -411,13 +421,12 @@ class _HttpRequestHandler(object):
         if 'Host' in headers: # TODO: Check case sensitivity
             del headers['Host']
 
-        async with aiohttp.ClientSession() as session:
-            async with session.request(request.method, targetUrl, headers=headers, params=query, data=body) as response:
-                body = await response.read()
-                headers = dict(response.headers)
-                if response.content_type:
-                    headers['Content-Type'] = response.content_type
-                return (response.status, response.reason, headers, body)
+        async with self._session.request(request.method, targetUrl, headers=headers, params=query, data=body) as response:
+            body = await response.read()
+            headers = dict(response.headers)
+            if response.content_type:
+                headers['Content-Type'] = response.content_type
+            return (response.status, response.reason, headers, body)
 
     # The key used for the tile cache is based on the request options. Rather than just use the raw
     # request string, a new string is generated with the parameters arranged in alphabetic order.
@@ -440,7 +449,7 @@ async def _setServerHeaderAsync(
     handler
     ):
     response: aiohttp.web.Response = await handler(request)
-    response.headers['Server'] = f'Traveller Map Proxy {app.AppVersion}'
+    response.headers['Server'] = f'{app.AppName} Map Proxy {app.AppVersion}'
     return response    
 
 class MapProxy(object):
@@ -614,7 +623,7 @@ class MapProxy(object):
                 travellermap.DataStore.instance().clearCachedData()
 
                 # Start web server
-                handler = _HttpRequestHandler(
+                requestHandler = _HttpRequestHandler(
                     travellerMapUrl=travellerMapUrl,
                     localFileStore=localFileStore,
                     tileCache=tileCache,
@@ -622,7 +631,7 @@ class MapProxy(object):
                     mainsMilieu=mainsMilieu)
                 webApp = aiohttp.web.Application(
                     middlewares=[_setServerHeaderAsync])
-                webApp.router.add_route('*', '/{path:.*?}', handler.handleRequestAsync)
+                webApp.router.add_route('*', '/{path:.*?}', requestHandler.handleRequestAsync)
 
                 webServer = loop.create_server(
                     protocol_factory=webApp.make_handler(),
@@ -631,8 +640,10 @@ class MapProxy(object):
                 loop.run_until_complete(webServer)
 
                 messageQueue.put((MapProxy.ServerStatus.Started, None))
-                loop.run_until_complete(
-                    MapProxy._shutdownMonitorAsync(shutdownEvent, webApp))
+                loop.run_until_complete(MapProxy._shutdownMonitorAsync(
+                    shutdownEvent=shutdownEvent,
+                    webApp=webApp,
+                    requestHandler=requestHandler))
 
                 messageQueue.put((MapProxy.ServerStatus.Stopped, None))
                 logging.info('Map proxy shutdown complete')
@@ -642,11 +653,13 @@ class MapProxy(object):
 
     async def _shutdownMonitorAsync(
             shutdownEvent: multiprocessing.Event,
-            webApp: aiohttp.web.Application
+            webApp: aiohttp.web.Application,
+            requestHandler: _HttpRequestHandler
             ) -> None:
         while True:
             await asyncio.sleep(0.5)
             if shutdownEvent.is_set():
                 await webApp.shutdown()
                 await webApp.cleanup()
+                await requestHandler.shutdown()
                 return

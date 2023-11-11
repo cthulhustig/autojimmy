@@ -733,6 +733,7 @@ class Compositor(object):
             ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image
         overlayImage = None
         try:
+            assert(self._processExecutor)
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 self._processExecutor,
