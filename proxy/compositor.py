@@ -6,6 +6,8 @@ try:
 except Exception as ex:
     _HasSvgSupport = False
 
+import asyncio
+import concurrent.futures
 import enum
 import io
 import logging
@@ -175,6 +177,7 @@ class _CustomSector(object):
 
         return bestPoster
 
+# TODO: All async functions should be named blahAsync
 class Compositor(object):
     class OverlapType(enum.Enum):
         # The tile doesn't overlap any custom sectors so the required tile is just the source tile
@@ -201,22 +204,16 @@ class Compositor(object):
             ) -> OverlapType:
         self._customMapsDir = customMapsDir
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
-        self._processPool = None # Make sure variable exists for destructor in case creation fails
+        self._processPoolExecutor = None
 
         if _HasSvgSupport:
             # Construct the pool of processes that can be used for SVG rendering.
             # A context is used so we can force processes to be spawned, this keeps the behaviour
             # the same on all OS and avoids issues with singletons when using fork
-            self._mpContext = multiprocessing.get_context('spawn')
-            self._processPool = self._mpContext.Pool()
+            mpContext = multiprocessing.get_context('spawn')
+            self._processPoolExecutor = concurrent.futures.ProcessPoolExecutor(mp_context=mpContext)
 
-        self._loadCustomUniverse()
-
-    def __del__(self):
-        if self._processPool:
-            self._processPool.close()
-
-    def createCompositorImage(
+    async def createCompositorImageAsync(
             self,
             mapImage: travellermap.MapImage,
             scale: int
@@ -235,17 +232,29 @@ class Compositor(object):
                 imageType = CompositorImage.ImageType.Bitmap
                 width, height = _extractSvgSize(mapBytes)
 
-                result = self._processPool.apply(
+                # Run map & text mask rendering concurrently in worker processes
+                loop = asyncio.get_running_loop()
+                mapTask = loop.run_in_executor(
+                    self._processPoolExecutor,
                     Compositor._renderSvgTask,
-                    args=[mapBytes])
+                    mapBytes)
+                
+                textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
+                textTask = loop.run_in_executor(
+                    self._processPoolExecutor,
+                    Compositor._renderSvgTask,
+                    textSvg)                
+
+                # Process map task results
+                await mapTask
+                result = mapTask.result()
                 if isinstance(result, Exception):
                     raise RuntimeError('Worker process exception when render map SVG') from result                
                 mainImage = PIL.Image.frombytes('RGBA', (width, height), result)
 
-                textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
-                result = self._processPool.apply(
-                    Compositor._renderSvgTask,
-                    args=[textSvg])
+                # Process text task results
+                await textTask
+                result = textTask.result()
                 if isinstance(result, Exception):
                     raise RuntimeError('Worker process exception when render text SVG') from result
                 textImage = PIL.Image.frombytes('RGBA', (width, height), result)
@@ -256,6 +265,7 @@ class Compositor(object):
             # Image.load isn't thread safe so make sure to call it now so it doesn't get called
             # when cropping the image during composition
             # https://github.com/python-pillow/Pillow/issues/4848
+            # TODO: Loading the file should be done with asyncio
             mainImage = PIL.Image.open(io.BytesIO(mapBytes))
             try:
                 mainImage.load()
@@ -312,7 +322,7 @@ class Compositor(object):
 
         return Compositor.OverlapType.NoOverlap
 
-    def partialOverlap(
+    async def partialOverlapAsync(
             self,
             tileImage: PIL.Image.Image,
             tileX: float,
@@ -383,7 +393,7 @@ class Compositor(object):
         # Overlay custom sector graphics on tile
         for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
             if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                self._overlaySvgCustomSector(
+                await self._overlaySvgCustomSectorAsync(
                     svgData=mapPoster.mainImage(),
                     srcPixelRect=srcPixelRect,
                     tgtPixelDim=tgtPixelDim,
@@ -402,7 +412,7 @@ class Compositor(object):
             textMask = mapPoster.textMask()
             if textMask:            
                 if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                    self._overlaySvgCustomSector(
+                    await self._overlaySvgCustomSectorAsync(
                         svgData=textMask,
                         srcPixelRect=srcPixelRect,
                         tgtPixelDim=tgtPixelDim,
@@ -417,7 +427,7 @@ class Compositor(object):
                         tgtImage=tileImage,
                         maskImage=textMask)
 
-    def fullOverlap(
+    async def fullOverlapAsync(
             self,
             tileX: float,
             tileY: float,
@@ -472,7 +482,7 @@ class Compositor(object):
 
             # Overlay custom sector poster on tile
             if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                tileImage = self._overlaySvgCustomSector(
+                tileImage = await self._overlaySvgCustomSectorAsync(
                     svgData=mapPoster.mainImage(),
                     srcPixelRect=srcPixelRect,
                     tgtPixelDim=tgtPixelDim,
@@ -488,7 +498,7 @@ class Compositor(object):
             textMask = mapPoster.textMask()
             if textMask:
                 if mapPoster.imageType() == CompositorImage.ImageType.SVG:
-                    self._overlaySvgCustomSector(
+                    await self._overlaySvgCustomSectorAsync(
                         svgData=textMask,
                         srcPixelRect=srcPixelRect,
                         tgtPixelDim=tgtPixelDim,
@@ -507,7 +517,7 @@ class Compositor(object):
 
         return None
 
-    def _loadCustomUniverse(self) -> None:
+    async def loadUniverseAsync(self) -> None:
         self._milieuSectorMap.clear()
         
         svgMapData: typing.List[typing.Tuple[
@@ -518,6 +528,7 @@ class Compositor(object):
 
         for milieu in travellermap.Milieu:
             milieuSectors = []
+            # TODO: Getting sectors should be async
             for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
                 if not sectorInfo.isCustomSector():
                     continue # Only interested in custom sectors
@@ -530,6 +541,7 @@ class Compositor(object):
                 mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
                 for scale in mapLevels.keys():
                     try:
+                        # TODO: Loading custom sector map should use asyncio
                         mapImage = travellermap.DataStore.instance().sectorMapImage(
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
@@ -557,10 +569,11 @@ class Compositor(object):
                     if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
                         svgMapData.append((milieu, customSector, mapImage, scale))
                     else:
-                        try:       
-                            customSector.addMapPoster(self.createCompositorImage(
+                        try: 
+                            poster = await self.createCompositorImageAsync(
                                 mapImage=mapImage,
-                                scale=scale))
+                                scale=scale)  
+                            customSector.addMapPoster(poster)
                         except Exception as ex:
                             logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
                             continue
@@ -571,30 +584,39 @@ class Compositor(object):
         if not svgMapData:
             return # Nothing more to do
         
-        svgTaskData = []
-        for index, (milieu, customSector, mapImage, scale) in enumerate(svgMapData):
+        loop = asyncio.get_running_loop()
+        taskList: typing.List[asyncio.Future] = []
+        for milieu, customSector, mapImage, scale in svgMapData:
             try:
                 svgMapBytes = mapImage.bytes()
                 svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
 
-                svgTaskData.append((svgMapBytes, ))
-                svgTaskData.append((svgTextBytes, ))
+                taskList.append(loop.run_in_executor(
+                    self._processPoolExecutor,
+                    Compositor._renderSvgTask,
+                    svgMapBytes))
+                
+                taskList.append(loop.run_in_executor(
+                    self._processPoolExecutor,
+                    Compositor._renderSvgTask,
+                    svgTextBytes))
             except:
                 logging.warning(f'Compositor failed to set up SVG task for {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
                 continue
 
-        logging.info(f'Compositor converting {len(svgTaskData)} SVG maps')
-        svgTaskResults = self._processPool.starmap(
-            Compositor._renderSvgTask,
-            iterable=svgTaskData)
+        logging.info(f'Compositor converting {len(taskList)} SVG maps')
 
         for index, (milieu, customSector, mapImage, scale) in enumerate(svgMapData):
             try:
-                mapResult = svgTaskResults[index * 2]
+                mapTask = taskList[index * 2]
+                await mapTask
+                mapResult = mapTask.result()
                 if isinstance(mapResult, Exception):
                     raise RuntimeError('Worker process exception when render map SVG') from mapResult
 
-                textResult = svgTaskResults[(index * 2) + 1]
+                textTask = taskList[(index * 2) + 1]
+                await textTask
+                textResult = textTask.result()
                 if isinstance(textResult, Exception):
                     raise RuntimeError('Worker process exception when render text SVG') from textResult
 
@@ -683,7 +705,7 @@ class Compositor(object):
 
         return tgtImage
 
-    def _overlaySvgCustomSector(
+    async def _overlaySvgCustomSectorAsync(
             self,
             svgData: bytes,
             srcPixelRect: typing.Tuple[int, int, int, int],
@@ -693,9 +715,13 @@ class Compositor(object):
             ) -> PIL.Image.Image: # Returns the target if specified otherwise returns the cropped and resized section of the source image
         overlayImage = None
         try:
-            result = self._processPool.apply(
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                self._processPoolExecutor,
                 Compositor._renderSvgRegionTask,
-                args=[svgData, srcPixelRect, tgtPixelDim])
+                svgData,
+                srcPixelRect,
+                tgtPixelDim)
             if isinstance(result, Exception):
                 raise RuntimeError('Worker process encountered an exception when render SVG region') from result
                 

@@ -117,7 +117,7 @@ class _HttpRequestHandler(object):
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
 
-    async def handleRequest(
+    async def handleRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
@@ -127,17 +127,17 @@ class _HttpRequestHandler(object):
 
         # TODO: I should probably use the local copies of sophont and allegiance files for those requests
         if self._localFileStore.contains(path):
-            return await self._handleLocalFileRequest(path)
+            return await self._handleLocalFileRequestAsync(path)
         elif path == '/api/tile':
-            return await self._handleTileRequest(request)
+            return await self._handleTileRequestAsync(request)
         elif path == '/res/mains.json':
-            return await self._handleMainsRequest(request)
+            return await self._handleMainsRequestAsync(request)
         else:
             # Act as a proxy for all other requests and just forward them to the
             # configured Traveller Map instance
-            return await self._handleProxyRequest(request)
+            return await self._handleProxyRequestAsync(request)
 
-    async def _handleLocalFileRequest(
+    async def _handleLocalFileRequestAsync(
             self,
             path: str,
             ) -> aiohttp.web.Response:
@@ -165,7 +165,7 @@ class _HttpRequestHandler(object):
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
-    async def _handleTileRequest(
+    async def _handleTileRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
@@ -207,7 +207,7 @@ class _HttpRequestHandler(object):
                 # TODO: I suspect this is creating a new TCP connection for each request. If so it
                 # would be better to use a connection pull if possible
 
-                tileBytes, contentType, sourceFormat = await self._makeTileRequest(request)
+                tileBytes, contentType, sourceFormat = await self._makeTileRequestAsync(request)
 
                 # Set the target format, by default the source format is used, this can be None if we
                 # got something unexpected back from Traveller Map. In that case the tile will be
@@ -239,7 +239,7 @@ class _HttpRequestHandler(object):
                         tileImage = PIL.Image.open(io.BytesIO(tileBytes))
 
                         try:
-                            self._compositor.partialOverlap(
+                            await self._compositor.partialOverlapAsync(
                                 tileImage=tileImage,
                                 tileX=tileX,
                                 tileY=tileY,
@@ -256,7 +256,7 @@ class _HttpRequestHandler(object):
                             del tileImage
                     else:
                         assert(overlapType == proxy.Compositor.OverlapType.CompleteOverlap)
-                        tileImage = self._compositor.fullOverlap(
+                        tileImage = await self._compositor.fullOverlapAsync(
                             tileX=tileX,
                             tileY=tileY,
                             tileScale=tileScale,
@@ -272,7 +272,8 @@ class _HttpRequestHandler(object):
                                 del tileImage
                 except Exception as ex:
                     # Log this at a low level as it could happen a LOT if something goes wrong
-                    logging.debug('Failed to composite tile', exc_info=ex)
+                    # TODO: This should be logging at debug as it could get very spammy
+                    logging.info('Failed to composite tile', exc_info=ex)
             else:
                 logging.debug(f'Serving live response for tile {request.query}')
 
@@ -298,7 +299,7 @@ class _HttpRequestHandler(object):
                 # copy. In this situation the only real option is to request the tile from Traveller Map and
                 # return that
                 logging.debug(f'Requesting fallback tile for {request.query}')
-                tileBytes, contentType, targetFormat = await self._makeTileRequest(request)
+                tileBytes, contentType, targetFormat = await self._makeTileRequestAsync(request)
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
@@ -325,7 +326,7 @@ class _HttpRequestHandler(object):
             headers=headers,
             body=tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes) # TODO: Can this ever be io.BytesIO
 
-    async def _handleMainsRequest(
+    async def _handleMainsRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
@@ -342,7 +343,7 @@ class _HttpRequestHandler(object):
                 # Continue to fall back to traveller map
 
         if not mainsData:
-            return await self._handleProxyRequest(
+            return await self._handleProxyRequestAsync(
                 request=request,
                 # Allow browser to cache it for the session but not store it on disk
                 forceCacheControl='no-store')
@@ -362,12 +363,12 @@ class _HttpRequestHandler(object):
             headers=headers,
             body=mainsData)        
 
-    async def _handleProxyRequest(
+    async def _handleProxyRequestAsync(
             self,
             request: aiohttp.web.Request,
             forceCacheControl: typing.Optional[str] = None
             ) -> aiohttp.web.Response:
-        status, reason, headers, body = await self._makeProxyRequest(request)
+        status, reason, headers, body = await self._makeProxyRequestAsync(request)
 
         if forceCacheControl: # if forceCacheControl is an empty string, don't add the header
             headers['Cache-Control'] = forceCacheControl
@@ -378,11 +379,11 @@ class _HttpRequestHandler(object):
             headers=headers,
             body=body)
 
-    async def _makeTileRequest(
+    async def _makeTileRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
-        status, reason, headers, body = await self._makeProxyRequest(request)
+        status, reason, headers, body = await self._makeProxyRequestAsync(request)
         if status != 200:
             raise RuntimeError(f'Request for tile {request.query} filed (status: {status}, reason: {reason})')
 
@@ -394,7 +395,7 @@ class _HttpRequestHandler(object):
 
         return body, contentType, tileFormat
 
-    async def _makeProxyRequest(
+    async def _makeProxyRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> typing.Tuple[
@@ -435,7 +436,7 @@ class _HttpRequestHandler(object):
     
 # TODO: I don't think this is working for errors due to internal exceptions
 @aiohttp.web.middleware
-async def _serverHeaderMiddleware(
+async def _setServerHeaderAsync(
     request: aiohttp.web.Request,
     handler
     ):
@@ -580,7 +581,8 @@ class MapProxy(object):
             ) -> None:
         try:
             app.setupLogger(logDir=logDir, logFile='mapproxy.log')
-            app.setLogLevel(logLevel=logLevel)
+            #app.setLogLevel(logLevel=logLevel) # TODO: Reinstate correct logging
+            app.setLogLevel(logLevel=logging.WARNING)
         except Exception as ex:
             logging.error('Failed to set up map proxy logging', exc_info=ex)
 
@@ -594,17 +596,22 @@ class MapProxy(object):
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
+            
+            loop = asyncio.get_event_loop()            
 
             
             # Create the compositor if there are custom sectors for any milieu, not just the one that
             # is currently selected in the main app.
-            compositor = None            
+            compositor = None    
             if travellermap.DataStore.instance().hasCustomSectors():
                 # If creation of the compositor fails (e.g. if it fails to parse the custom sector data)
                 # then it's important that we continue setting up the proxy so it can at least return the
                 # default tiles to the client
                 try:
                     compositor = proxy.Compositor(customMapsDir=customMapsDir)
+
+                    # NOTE: This will block until the universe is loaded
+                    loop.run_until_complete(compositor.loadUniverseAsync())
                 except Exception as ex:
                     logging.error('Exception occurred while compositing tile', exc_info=ex)
 
@@ -616,8 +623,7 @@ class MapProxy(object):
             # This is an attempt to keep the memory footprint of the proxy down
             travellermap.DataStore.instance().clearCachedData()
 
-            # Only listen on loopback for security. Allow address reuse to prevent issues if the
-            # app is restarted
+            # Start web server
             handler = _HttpRequestHandler(
                 travellerMapUrl=travellerMapUrl,
                 localFileStore=localFileStore,
@@ -625,13 +631,12 @@ class MapProxy(object):
                 compositor=compositor,
                 mainsMilieu=mainsMilieu)
             webApp = aiohttp.web.Application(
-                middlewares=[_serverHeaderMiddleware])
-            webApp.router.add_route('*', '/{path:.*?}', handler.handleRequest)
+                middlewares=[_setServerHeaderAsync])
+            webApp.router.add_route('*', '/{path:.*?}', handler.handleRequestAsync)
 
-            loop = asyncio.get_event_loop()
             webServer = loop.create_server(
                 protocol_factory=webApp.make_handler(),
-                host='127.0.0.1',
+                host='127.0.0.1', # Only listen on loopback for security
                 port=app.Config.instance().mapProxyPort())
             loop.run_until_complete(webServer)
 
