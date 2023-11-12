@@ -177,7 +177,6 @@ class _CustomSector(object):
 
         return bestPoster
 
-# TODO: All async functions should be named blahAsync
 class Compositor(object):
     class OverlapType(enum.Enum):
         # The tile doesn't overlap any custom sectors so the required tile is just the source tile
@@ -538,7 +537,6 @@ class Compositor(object):
 
         for milieu in travellermap.Milieu:
             milieuSectors = []
-            # TODO: Getting sectors should be async
             for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
                 if not sectorInfo.isCustomSector():
                     continue # Only interested in custom sectors

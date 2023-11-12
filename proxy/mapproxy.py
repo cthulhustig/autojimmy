@@ -5,6 +5,7 @@ import collections
 import enum
 import io
 import logging
+import multidict
 import multiprocessing
 import os
 import PIL.Image
@@ -38,12 +39,6 @@ class _LocalFileStore(object):
             filePath = os.path.join(localFileDir, fileName)
             if not os.path.isfile(filePath):
                 continue
-            try:
-                with open(filePath, 'rb') as file:
-                    data = file.read()
-            except Exception as ex:
-                logging.error(f'Local file store failed to load {filePath}', exc_info=ex)
-                continue
 
             _, extension = os.path.splitext(filePath)
             mimeType = _ExtensionToContentTypeMap.get(extension)
@@ -51,8 +46,33 @@ class _LocalFileStore(object):
                 logging.warning(f'Local file store ignoring {filePath} as it has an unknown extension {extension}')
                 continue
 
-            logging.debug(f'Local file store loaded {filePath}')
-            self._cache['/' + fileName] = (data, mimeType) # Add '/' to the key for easier mapping later
+            try:
+                self.addFile(filePath=filePath, route='/' + fileName, mimeType=mimeType)
+            except Exception as ex:
+                logging.error(f'Local file store failed to add {filePath}', exc_info=ex)
+                continue
+
+    def addFile(self, filePath: str, route: str, mimeType: str) -> None:
+        with open(filePath, 'rb') as file:
+            data = file.read()
+
+        self._cache[route] = (data, mimeType)
+        logging.debug(f'Local file store cached {filePath} for {route}')
+
+    def addFileData(
+            self,
+            data: typing.Union[bytes, str],
+            route: str,
+            mimeType: str
+            ) -> None:
+        self._cache[route] = (data, mimeType)
+        logging.debug(f'Local file store cached data for {route}')
+
+    def addAlias(self, route: str, alias: str) -> None:
+        if not route in self._cache:
+            raise RuntimeError(f'Unable to create alias for unknown route {route}')
+        self._cache[alias] = self._cache[route]            
+        logging.debug(f'Local file store aliased {route} to {alias}')
 
     def contains(self, filePath: str) -> bool:
         return filePath in self._cache
@@ -60,14 +80,8 @@ class _LocalFileStore(object):
     def lookup(
             self,
             filePath: str
-            ) -> typing.Tuple[typing.Optional[bytes], typing.Optional[str]]: # File Data, Mime Type
+            ) -> typing.Tuple[typing.Optional[typing.Union[bytes, str]], typing.Optional[str]]: # File Data, Mime Type
         return self._cache.get(filePath, (None, None))
-    
-    def addAlias(self, filePath, alias) -> None:
-        if not filePath in self._cache:
-            raise RuntimeError(f'Unable to create alias for unknown local file {filePath}')
-        logging.debug(f'Local file store added alias "{alias}" for {filePath}')
-        self._cache[alias] = self._cache[filePath]
 
 class _TileCache(object):
     def __init__(
@@ -212,10 +226,6 @@ class _HttpRequestHandler(object):
             if overlapType != proxy.Compositor.OverlapType.CompleteOverlap:
                 # Request the tile from Traveller Map. If it's a partial overlap request an SVG so
                 # the text can be processed to avoid truncation by overlaid sectors
-
-                # TODO: I suspect this is creating a new TCP connection for each request. If so it
-                # would be better to use a connection pull if possible
-
                 tileBytes, contentType, sourceFormat = await self._makeTileRequestAsync(request)
 
                 # Set the target format, by default the source format is used, this can be None if we
@@ -333,7 +343,7 @@ class _HttpRequestHandler(object):
         return aiohttp.web.Response(
             status=200,
             headers=headers,
-            body=tileBytes.read() if isinstance(tileBytes, io.BytesIO) else tileBytes) # TODO: Can this ever be io.BytesIO
+            body=tileBytes)
 
     async def _handleMainsRequestAsync(
             self,
@@ -372,6 +382,10 @@ class _HttpRequestHandler(object):
             headers=headers,
             body=mainsData)        
 
+    _ProxyRequestCopyHeaders = [
+        'Content-Type',
+        'Cache-Control'
+    ]
     async def _handleProxyRequestAsync(
             self,
             request: aiohttp.web.Request,
@@ -379,13 +393,18 @@ class _HttpRequestHandler(object):
             ) -> aiohttp.web.Response:
         status, reason, headers, body = await self._makeProxyRequestAsync(request)
 
+        responseHeaders = {'Content-Length': str(len(body))}
+        for header in _HttpRequestHandler._ProxyRequestCopyHeaders:
+            if header in headers:
+                responseHeaders[header] = headers[header]
+
         if forceCacheControl: # if forceCacheControl is an empty string, don't add the header
-            headers['Cache-Control'] = forceCacheControl
+            responseHeaders['Cache-Control'] = forceCacheControl            
 
         return aiohttp.web.Response(
             status=status,
             reason=reason,
-            headers=headers,
+            headers=responseHeaders,
             body=body)
 
     async def _makeTileRequestAsync(
@@ -410,20 +429,24 @@ class _HttpRequestHandler(object):
             ) -> typing.Tuple[
                 int, # Status code
                 str, # Reason
-                typing.Dict[str, str], # Headers
+                multidict.CIMultiDict, # Headers
                 bytes: # Body
                 ]:
         targetUrl = urllib.parse.urljoin(self._travellerMapUrl, request.path)
         query = request.query
         body = await request.read()
 
-        headers = dict(request.headers)
-        if 'Host' in headers: # TODO: Check case sensitivity
+        # The headers from the incoming request are used as the headers for the outgoing request.
+        # The Host header should be removed if present as, if it's passed on, Traveller Map doesn't
+        # like the fact it's set to the address of the proxy
+        headers = request.headers
+        if 'Host' in headers:
+            headers = headers.copy()
             del headers['Host']
 
         async with self._session.request(request.method, targetUrl, headers=headers, params=query, data=body) as response:
             body = await response.read()
-            headers = dict(response.headers)
+            headers = response.headers.copy()
             if response.content_type:
                 headers['Content-Type'] = response.content_type
             return (response.status, response.reason, headers, body)
@@ -597,15 +620,15 @@ class MapProxy(object):
         logging.info(f'Map proxy starting on port {listenPort}')
 
         try:
-            localFileStore = _LocalFileStore(localFileDir=localFilesDir)
-            localFileStore.addAlias(filePath='/index.html', alias='/')
-
-            tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
-
             travellermap.DataStore.setSectorDirs(
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
+
+            localFileStore = _LocalFileStore(localFileDir=localFilesDir)
+            localFileStore.addAlias(route='/index.html', alias='/')
+
+            tileCache = _TileCache(maxBytes=_MaxTileCacheBytes)
             
             loop = asyncio.get_event_loop()
 
