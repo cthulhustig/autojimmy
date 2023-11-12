@@ -2,6 +2,7 @@ import argparse
 
 AppName = 'Auto-Jimmy'
 AppVersion = '0.9'
+AppURL = 'https://github.com/cthulhustig/autojimmy'
 
 # This is a hack so that the script that builds the installer can call this to get the current
 # application version number

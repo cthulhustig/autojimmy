@@ -51,8 +51,8 @@ def _applicationDirectory() -> str:
         return os.path.join(os.getenv('APPDATA'), app.AppName)
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
-
-def _cairoSvgCheck() -> bool: # True if the application should continue, or False if it should exit
+    
+def _cairoSvgInstallCheck() -> bool: # True if the application should continue, or False if it should exit
     if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
         return True # CairoSVG is working so app should continue
 
@@ -125,6 +125,71 @@ def _cairoSvgCheck() -> bool: # True if the application should continue, or Fals
             rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
 
     return answer == QtWidgets.QMessageBox.StandardButton.Yes
+
+def _snapshotUpdateCheck(
+        automaticUpdate: bool = False,
+        noUpdateMessage: typing.Optional[str] = None,
+        successMessage: typing.Optional[str] = None
+        ) -> bool: # True if the application should continue, or False if it should exit
+    try:
+        snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
+    except Exception as ex:
+        message = 'An error occurred when checking for new universe data.'
+        logging.error(message, exc_info=ex)
+        gui.AutoSelectMessageBox.critical(
+            text=message,
+            exception=ex,
+            stateKey='UniverseUpdateErrorWhenChecking')
+        return True # Continue loading the app
+        
+    if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
+        if noUpdateMessage:
+            gui.MessageBoxEx.information(text=noUpdateMessage)
+        return True # No update available so just continue loading
+    
+    if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+        promptMessage = 'New universe data is available, however this version of {app} is to {age} to use it.'.format(
+            app=app.AppName,
+            age='old' if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld:
+            promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
+                url=app.AppURL)
+            stateKey = 'UniverseUpdateAppToOld'
+        else:
+            promptMessage += ' Either your a time traveller or your\'re running a dev branch, either way, I\'ll assume you know what your\'re doing.'
+            stateKey = 'UniverseUpdateAppToNew'
+        promptMessage += '<br><br>Do you want to continue loading {app}?<br>'.format(
+            app=app.AppName)
+
+        answer = gui.AutoSelectMessageBox.question(
+            text='<html>' + promptMessage + '<html>',
+            stateKey=stateKey,
+            rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
+        return answer == QtWidgets.QMessageBox.StandardButton.Yes
+    
+    if not automaticUpdate:
+        # TODO: At some point in the future I can remove the note about it being faster
+        answer = gui.AutoSelectMessageBox.question(
+            text='<html>New universe data is available. Do you want to update?<br>' \
+                'Custom sectors will not be affected<br><br>' \
+                'Don\'t worry, updating is a LOT faster than it used to be.</html>',
+            stateKey='DownloadUniverseAtStartup')
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return True # User chose not to install update so just continue loading the app with the old data
+
+    # Update the snapshot
+    updateProgress = gui.DownloadProgressDialog()
+    result = updateProgress.exec()
+    if (result == QtWidgets.QDialog.DialogCode.Accepted) and successMessage:
+        gui.MessageBoxEx.information(text=successMessage)
+
+    # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+    # when exec is called on the application
+    # https://doc.qt.io/qt-6/qobject.html#deleteLater
+    updateProgress.deleteLater()
+
+    return True # Update is complete so continue loading
+
 
 class _MapProxyMonitor(QtCore.QObject):
     error = QtCore.pyqtSignal()
@@ -296,13 +361,14 @@ class MainWindow(QtWidgets.QMainWindow):
         configDialog.exec()
 
     def _downloadUniverse(self) -> None:
-        downloadProgress = gui.DownloadProgressDialog()
-        if downloadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return
-
-        gui.MessageBoxEx.information(
-            parent=self,
-            text=f'Download complete.\n{app.AppName} will load the new data when next started.')
+        try:
+            _snapshotUpdateCheck(
+                automaticUpdate=True, # Automatically install the update if one is available
+                noUpdateMessage=f'There is no new universe data to download.',
+                successMessage=f'Universe update complete.\n{app.AppName} will load the new data when next started.')
+        except Exception as ex:
+            gui.MessageBoxEx.critical(
+                text='Failed to update universe data', exception=ex)
 
     def _showAbout(self) -> None:
         licenseDir = os.path.join(_installDirectory(), 'Licenses')
@@ -376,23 +442,13 @@ def main() -> None:
         # Check if CairoSVG is working, possibly prompting the user if it's not. This needs to be
         # done after the DataStore singleton has been set up so it can check if there are any
         # existing SVG custom sectors
-        if not _cairoSvgCheck():
+        if not _cairoSvgInstallCheck():
             sys.exit(0)
 
         # Check if there is new universe data available BEFORE the app loads the local snapshot so it
         # can be updated without restarting
-        if travellermap.DataStore.instance().checkForNewSnapshot():
-            # TODO: At some point in the future I can remove the note about it being faster
-            answer = gui.AutoSelectMessageBox.question(
-                text='New universe data is available. Do you want to update?\nCustom sectors will not be affected\n\nDon\'t worry, updating is a LOT faster than it used to be.',
-                stateKey='DownloadUniverseAtStartup')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                updateProgress = gui.DownloadProgressDialog()
-                updateProgress.exec()
-                # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
-                # when exec is called on the application
-                # https://doc.qt.io/qt-6/qobject.html#deleteLater
-                updateProgress.deleteLater()
+        if not _snapshotUpdateCheck():
+            sys.exit(0)
 
         # Set up map proxy now to give it time to start its child process while data is being loaded.
         # It's important this is done after the check for new map data. If new data is downloaded it

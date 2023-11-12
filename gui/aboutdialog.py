@@ -35,7 +35,7 @@ class AboutDialog(gui.DialogEx):
 
         self._licenseDir = licenseDir
 
-        universeTimestamp = travellermap.DataStore.instance().snapshotTimestamp()
+        universeTimestamp = travellermap.DataStore.instance().universeTimestamp()
         if universeTimestamp:
             universeTimestamp = universeTimestamp.astimezone()
             universeTimestamp = universeTimestamp.strftime('%c')

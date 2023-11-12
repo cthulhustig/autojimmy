@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import threading
 import travellermap
@@ -18,6 +19,62 @@ import zipfile
 
 # TODO: I know daemon processes can't spawn other processes but could the secondary pool processes
 # be daemons process (of the proxy process) so there aren't so many processes shown in task manager
+
+class UniverseDataFormat(object):
+    def __init__(self, major: int, minor: int) -> None:
+        self._major = major
+        self._minor = minor
+
+    def major(self) -> int:
+        return self._major
+    
+    def minor(self) -> int:
+        return self._minor
+    
+    def __str__(self) -> str:
+        return f'{self._major}.{self._minor}'
+    
+    def __eq__(self, other: 'UniverseDataFormat') -> bool:
+        if self.__class__ is other.__class__:
+            return (self._major == other._major) and (self._minor == other._minor)
+        return False
+    
+    def __lt__(self, other: 'UniverseDataFormat') -> bool:
+        if self.__class__ is other.__class__:
+            if self._major < other._major:
+                return True
+            if self._major > other._major:
+                return False
+            return self._minor < other._minor
+        return NotImplemented
+    
+    def __le__(self, other: 'UniverseDataFormat') -> bool:
+        if self.__class__ is other.__class__:
+            if self._major < other._major:
+                return True
+            if self._major > other._major:
+                return False
+            return self._minor <= other._minor
+        return NotImplemented    
+    
+    def __gt__(self, other: 'UniverseDataFormat') -> bool:
+        if self.__class__ is other.__class__:
+            if self._major > other._major:
+                return True
+            if self._major < other._major:
+                return False
+            return self._minor > other._minor
+        return NotImplemented
+    
+    def __ge__(self, other: 'UniverseDataFormat') -> bool:
+        if self.__class__ is other.__class__:
+            if self._major > other._major:
+                return True
+            if self._major < other._major:
+                return False
+            return self._minor >= other._minor
+        return NotImplemented      
+
 
 class CustomMapLevel(object):
     def __init__(
@@ -380,8 +437,14 @@ class UniverseInfo(object):
                     self._mergedSectorMap.removeSector(sector)
 
 class DataStore(object):
+    class SnapshotAvailability(enum.Enum):
+        NewSnapshotAvailable = 0
+        NoNewSnapshot = 1
+        AppToOld = 2
+        AppToNew = 3
+
     class UpdateStage(enum.Enum):
-        DownloadStage = 0,
+        DownloadStage = 0
         ExtractStage = 1
 
     _MilieuBaseDir = 'milieu'
@@ -389,18 +452,23 @@ class DataStore(object):
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
     _MainsFileName = 'mains.json'
-    _DataFormatFileName = 'dataformat.txt'
     _TimestampFileName = 'timestamp.txt'
+    _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
     _TimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
     _DataArchiveUrl = 'https://github.com/cthulhustig/autojimmy-data/archive/refs/heads/main.zip'
-    _DataArchiveMapPath = 'autojimmy-data-main/map/'
+    _DataArchiveMapPath = 'autojimmy-data-main/map/' # Trailing slash is important
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
-    _TimestampCheckTimeout = 3 # Seconds
+    _DataFormatUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/dataformat.txt'
+    _SnapshotCheckTimeout = 3 # Seconds
     _DefaultSectorsMilieu = travellermap.Milieu.M1105
+    # NOTE: Pattern for matching data version treats the second digit as optional, if not specified it's
+    # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
+    # all instances of the app everywhere
+    _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
 
-    # TODO: This should be 3.1 for the next version
-    _MinDataFormatVersion = 3
+    # TODO: This should be 3.1 for the next version (snapshot with sector name disambiguation)
+    _MinDataFormatVersion = UniverseDataFormat(3, 0)
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -431,7 +499,7 @@ class DataStore(object):
                     cls._instance = cls.__new__(cls)
                     # Check the overlay version and age, the overlay directory will be deleted if
                     # it's no longer valid
-                    cls._instance._checkOverlayVersion()
+                    cls._instance._checkOverlayDataFormat()
                     cls._instance._checkOverlayAge()
         return cls._instance
 
@@ -595,24 +663,59 @@ class DataStore(object):
         return self._bytesToString(bytes=self._readFile(
             relativeFilePath=self._MainsFileName))    
 
-    def snapshotTimestamp(self) -> typing.Optional[datetime.datetime]:
+    def universeTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
-            return DataStore._parseSnapshotTimestamp(
+            return DataStore._parseUniverseTimestamp(
                 data=self._readFile(relativeFilePath=self._TimestampFileName))
-        except Exception:
+        except Exception as ex:
+            logging.error(f'Failed to read universe timestamp', exc_info=ex)
             return None
-
-    def checkForNewSnapshot(self) -> bool:
-        currentTimestamp = self.snapshotTimestamp()
+        
+    def universeDataFormat(self) -> typing.Optional[UniverseDataFormat]:
+        try:
+            return DataStore._parseUniverseDataFormat(
+                data=self._readFile(relativeFilePath=self._DataFormatFileName))
+        except Exception as ex:
+            logging.error(f'Failed to read universe data format', exc_info=ex)
+            return None
+        
+    # NOTE: This will block while it downloads the latest snapshot timestamp from the github repo
+    def checkForNewSnapshot(self) -> SnapshotAvailability:
+        currentTimestamp = self.universeTimestamp()
         try:
             response = urllib.request.urlopen(
                 DataStore._TimestampUrl,
-                timeout=DataStore._TimestampCheckTimeout)
-            repoTimestamp = DataStore._parseSnapshotTimestamp(data=response.read())
+                timeout=DataStore._SnapshotCheckTimeout)
+            repoTimestamp = DataStore._parseUniverseTimestamp(data=response.read())
         except Exception as ex:
-            return False
+            raise RuntimeError(f'Failed to retrieve snapshot timestamp ({str(ex)})')
 
-        return (not currentTimestamp) or (repoTimestamp > currentTimestamp)
+        if currentTimestamp and (repoTimestamp <= currentTimestamp):
+            # No new snapshot available
+            return DataStore.SnapshotAvailability.NoNewSnapshot
+        
+        try:
+            response = urllib.request.urlopen(
+                DataStore._DataFormatUrl,
+                timeout=DataStore._SnapshotCheckTimeout)
+            repoDataFormat = DataStore._parseUniverseDataFormat(data=response.read())
+        except Exception as ex:
+            raise RuntimeError(f'Failed to retrieve snapshot data format ({str(ex)})')
+        
+        if repoDataFormat < DataStore._MinDataFormatVersion:
+            # The repo contains data in an older format than the app is expecting. This should
+            # only happen when running a dev branch
+            return DataStore.SnapshotAvailability.AppToNew
+        
+        # The data format is versioned such that the minor version increments should be backwards
+        # compatible. If the major version is higher then the app is to old to use the data
+        nextMajorVersion = UniverseDataFormat(
+            major=DataStore._MinDataFormatVersion.major() + 1,
+            minor=0)
+        if repoDataFormat >= nextMajorVersion:
+            return DataStore.SnapshotAvailability.AppToOld
+
+        return DataStore.SnapshotAvailability.NewSnapshotAvailable
 
     def downloadSnapshot(
             self,
@@ -654,6 +757,27 @@ class DataStore(object):
             workingDirPath = self._makeWorkingDir(overlayDirPath=self._overlayDir)
             zipData = zipfile.ZipFile(dataBuffer)
             fileInfoList = zipData.infolist()
+
+            # Find the data format file to sanity check that the snapshot is compatible
+            dataFormatPath = DataStore._DataArchiveMapPath + DataStore._DataFormatFileName
+            dataFormatInfo = None
+            for fileInfo in fileInfoList:
+                if fileInfo.is_dir():
+                    continue # Skip directories
+                if fileInfo.filename == dataFormatPath:
+                    dataFormatInfo = fileInfo
+                    break
+            
+            if not dataFormatInfo:
+                raise RuntimeError('Universe snapshot has no data format file')
+            try:
+                dataFormat = self._parseUniverseDataFormat(
+                    data=zipData.read(dataFormatInfo.filename))
+            except Exception as ex:
+                raise RuntimeError(f'Unable to read universe snapshot data format file ({str(ex)})')
+            if not self._isDataFormatCompatible(dataFormat):
+                raise RuntimeError(f'Universe snapshot is incompatible')     
+            
             extractIndex = 0
             for fileInfo in fileInfoList:
                 if isCancelledCallback and isCancelledCallback():
@@ -978,31 +1102,31 @@ class DataStore(object):
                         logging.error(
                             f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value}', exc_info=ex)
 
-    def _checkOverlayVersion(self) -> None:
+    def _checkOverlayDataFormat(self) -> None:
         if not self._filesystemCache.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
-        overlayDataFormatPath = os.path.join(self._overlayDir, self._DataFormatFileName)
+        overlayDataFormat = self.universeDataFormat()
+        if self._isDataFormatCompatible(checkFormat=overlayDataFormat):
+            # The overlay data format meets the min requirements for this version of the app and
+            # it's still within the same major version so it should be compatible
+            return
 
-        # The data format file might not exist if the overlay was created by an older version.
-        # In that situation the current overlay should be deleted
-        if self._filesystemCache.exists(overlayDataFormatPath):
-            try:
-                overlayDataFormat = self._filesystemCache.read(overlayDataFormatPath)
-                # TODO: This is NOT finished, it's just a hack to get things working. It needs
-                # updated to do proper major/minor version numbers rather than just forcing a
-                # float to an int                
-                overlayDataFormat = int(float(overlayDataFormat.decode()))
-                if overlayDataFormat >= self._MinDataFormatVersion:
-                    # The current overlay meets the required data format
-                    return
-            except Exception as ex:
-                logging.warning(
-                    f'Failed to load overlay data format from "{overlayDataFormatPath}"',
-                    exc_info=ex)
-
+        # The overlay is using an incompatible data format (either to old or to new), delete the
+        # directory to fall back to the install data (which should always be valid)
         self._deleteOverlayDir()
 
+    def _isDataFormatCompatible(
+            self,
+            checkFormat: UniverseDataFormat
+            ) -> bool:
+        nextMajorVersion = UniverseDataFormat(
+            major=DataStore._MinDataFormatVersion.major() + 1,
+            minor=0)
+        
+        return (checkFormat >= DataStore._MinDataFormatVersion) and \
+            (checkFormat < nextMajorVersion)
+        
     def _checkOverlayAge(self) -> None:
         if not self._filesystemCache.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
@@ -1020,7 +1144,7 @@ class DataStore(object):
             return
 
         try:
-            overlayTimestamp = DataStore._parseSnapshotTimestamp(
+            overlayTimestamp = DataStore._parseUniverseTimestamp(
                 data=self._filesystemCache.read(overlayTimestampPath))
         except Exception as ex:
             logging.error(
@@ -1029,7 +1153,7 @@ class DataStore(object):
             return
 
         try:
-            installTimestamp = DataStore._parseSnapshotTimestamp(
+            installTimestamp = DataStore._parseUniverseTimestamp(
                 data=self._filesystemCache.read(installTimestampPath))
         except Exception as ex:
             logging.error(
@@ -1037,10 +1161,12 @@ class DataStore(object):
                 exc_info=ex)
             return
 
-        if installTimestamp <= overlayTimestamp:
-            # The install copy of the sectors is older than the overlay copy so there is nothing to do
+        if overlayTimestamp >= installTimestamp:
+            # The overlay data is newer (or equal) to the install timestamp so keep the overlay
             return
 
+        # The overlay data is older than the install data so delete the overlay to fall back to
+        # the install
         self._deleteOverlayDir()
 
     def _deleteOverlayDir(self) -> None:
@@ -1421,7 +1547,21 @@ class DataStore(object):
         return bytes.decode('utf-8-sig') # Use utf-8-sig to strip BOM from unicode files
 
     @staticmethod
-    def _parseSnapshotTimestamp(data: bytes) -> datetime.datetime:
+    def _parseUniverseTimestamp(data: bytes) -> datetime.datetime:
         return datetime.datetime.strptime(
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
+    
+    # NOTE: The data format is a major.minor version number with the minor number
+    # being optional (assumed 0 if not present)
+    @staticmethod
+    def _parseUniverseDataFormat(data: bytes) -> UniverseDataFormat:
+        result = DataStore._DataVersionPattern.match(
+            DataStore._bytesToString(data))
+        if not result:
+            raise RuntimeError('Invalid data format')
+        major = result.group(1)
+        minor = result.group(2)
+        return UniverseDataFormat(
+            major=int(major),
+            minor=int(minor) if minor else 0)
