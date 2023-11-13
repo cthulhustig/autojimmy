@@ -1250,14 +1250,24 @@ class DataStore(object):
                 for sectorInfo, worldList in sectorWorlds.items():
                     for world in worldList:
                         worldHex = world.attribute(travellermap.WorldAttribute.Hex)
-                        if len(worldHex) != 4:
-                            pass # TODO: Do something
+                        try:
+                            if len(worldHex) != 4:
+                                raise RuntimeError('Invalid hex length')
+                            hexX = int(worldHex[:2])
+                            hexY = int(worldHex[2:])
+                        except Exception as ex:
+                            message = 'Mains generation skipping {world} ({sector}) due to invalid hex {hex}'.format(
+                                world=world.attribute(travellermap.WorldAttribute.Name),
+                                sector=sectorInfo.canonicalName(),
+                                hex=worldHex)
+                            logging.warning(message, exc_info=ex)
+                            continue
 
                         mainsGenerator.addWorld(
                             sectorX=sectorInfo.x(),
                             sectorY=sectorInfo.y(),
-                            hexX=int(worldHex[:2]),
-                            hexY=int(worldHex[2:]))
+                            hexX=hexX,
+                            hexY=hexY)
                         
                 mains = mainsGenerator.generate()
                 outputData = []

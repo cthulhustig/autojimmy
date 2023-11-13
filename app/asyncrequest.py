@@ -171,7 +171,7 @@ class AsyncRequest(QtCore.QObject):
                     reason = response.reason
                     headers = response.headers.copy()
 
-                    size = headers.get('content-length', 0)
+                    size = int(headers.get('Content-Length', '0'))
                     self._updateDownloadProgress(0, size)
 
                     content = bytearray()
@@ -221,7 +221,7 @@ class AsyncRequest(QtCore.QObject):
                     reason = response.reason
                     headers = response.headers.copy()
 
-                    size = headers.get('content-length', 0)
+                    size = int(headers.get('Content-Length', '0'))
                     self._updateDownloadProgress(0, size)
 
                     content = bytearray()

@@ -122,7 +122,6 @@ class _TileCache(object):
         self._cache.move_to_end(key, last=True)
         return data
 
-# TODO: Logging of requests and errors
 class _HttpRequestHandler(object):
     # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15 seconds.
     # I'm overriding this to make navigation of the map more responsive
@@ -478,7 +477,7 @@ class _HttpRequestHandler(object):
 @aiohttp.web.middleware
 async def _setServerHeaderAsync(
     request: aiohttp.web.Request,
-    handler
+    handler: typing.Callable[[aiohttp.web.Request], aiohttp.web.Response]
     ):
     response: aiohttp.web.Response = await handler(request)
     response.headers['Server'] = f'{app.AppName} Map Proxy {app.AppVersion}'
