@@ -142,8 +142,17 @@ class _HttpRequestHandler(object):
         self._tileCache = tileCache
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
-        self._connector = aiohttp.TCPConnector(
-            keepalive_timeout=_HttpRequestHandler._ConnectionKeepAliveSeconds)
+
+        # As far as I can tell connection reuse requires HTTP/2 which in turns requires
+        # SSL (https://caniuse.com/http2). I was seeing exceptions when using my local
+        # Traveller Map over HTTP but not when accessing the main site over HTTPS.
+        parsedUrl = urllib.parse.urlparse(travellerMapUrl)
+        if parsedUrl.scheme.lower() == 'https':
+            self._connector = aiohttp.TCPConnector(
+                keepalive_timeout=_HttpRequestHandler._ConnectionKeepAliveSeconds)
+        else:            
+            self._connector = aiohttp.TCPConnector(force_close=True)
+
         self._session = aiohttp.ClientSession(connector=self._connector)
 
     async def shutdown(self) -> None:
