@@ -995,6 +995,34 @@ class ContentSizedTextEdit(TextEditEx):
         # Force an update of the layout if the content changes
         self.updateGeometry()
 
+class ContentSizedTextBrowser(QtWidgets.QTextBrowser):
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, text: str, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
+        self.document().contentsChanged.connect(self._contentChanged)
+
+    def sizeHint(self) -> QtCore.QSize:
+        docSize = self.document().size().toSize()
+        margins = self.contentsMargins()
+        return QtCore.QSize(
+            docSize.width() + margins.left() + margins.right(),
+            docSize.height() + margins.top() + margins.bottom())
+
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        # If the widget has been resized then the size hint will also have changed.
+        # Call updateGeometry to make sure any layouts are notified of the change.
+        self.updateGeometry()
+        return super().resizeEvent(a0)
+
+    def _contentChanged(self):
+        # Force an update of the layout if the content changes
+        self.updateGeometry()        
+
 # https://lists.qt-project.org/pipermail/qt-interest-old/2010-May/022744.html
 class ContentSizedLineEdit(LineEditEx):
     # For reasons I don't understand, when calculating the content width, the margins
