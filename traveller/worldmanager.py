@@ -363,32 +363,36 @@ class WorldManager(object):
         for code in list(map(chr, range(ord('A'), ord('P') + 1))):
             subsectorMap[code] = f'{sectorName} Subsector {code}'
 
-        rawMetadata = travellermap.parseMetadata(
+        rawMetadata = travellermap.readMetadata(
             content=metadataContent,
-            metadataFormat=sectorInfo.metadataFormat(),
+            format=sectorInfo.metadataFormat(),
             identifier=sectorName)
 
-        rawWorlds = travellermap.parseSector(
+        rawWorlds = travellermap.readSector(
             content=sectorContent,
-            fileFormat=sectorInfo.sectorFormat(),
+            format=sectorInfo.sectorFormat(),
             identifier=sectorName)
 
-        for code, name in rawMetadata.subsectorNames().items():
-            if not code or not name:
-                continue
+        subsectorNames = rawMetadata.subsectorNames()
+        if subsectorNames:
+            for code, name in subsectorNames.items():
+                if not code or not name:
+                    continue
 
-            # NOTE: Unlike most other places, it's intentional that this is upper
-            code = code.upper()
-            assert(code in subsectorMap)
-            subsectorMap[code] = name
+                # NOTE: Unlike most other places, it's intentional that this is upper
+                code = code.upper()
+                assert(code in subsectorMap)
+                subsectorMap[code] = name
 
-        for code, name in rawMetadata.allegiances().items():
-            if not code or not name:
-                continue
+        allegiances = rawMetadata.allegiances()
+        if allegiances:
+            for code, name in allegiances.items():
+                if not code or not name:
+                    continue
 
-            # NOTE: The code here is intentionally left with the case as it appears int metadata as
-            # there are some sectors where allegiances vary only by case (see AllegianceManager)
-            allegianceMap[code] = name
+                # NOTE: The code here is intentionally left with the case as it appears int metadata as
+                # there are some sectors where allegiances vary only by case (see AllegianceManager)
+                allegianceMap[code] = name
 
         worlds = []
         for rawWorld in rawWorlds:

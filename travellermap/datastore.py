@@ -865,7 +865,7 @@ class DataStore(object):
         # Load metadata, currently only XML format is supported. The Poster API also supports
         # MSEC metadata but that format doesn't include the sector position. Strangely the docs
         # don't say it supports JSON format
-        metadata = travellermap.parseXMLMetadata(
+        metadata = travellermap.readXMLMetadata(
             content=metadataContent,
             identifier='Custom Metadata')
 
@@ -876,9 +876,9 @@ class DataStore(object):
         # Do a full parse of the custom sector data based on the detected file format. If it fails
         # an exception will be raised an allowed to pass back to the called. Doing this check is
         # important as it prevents bad data causing the app to barf when loading
-        travellermap.parseSector(
+        travellermap.readSector(
             content=sectorContent,
-            fileFormat=sectorFormat,
+            format=sectorFormat,
             identifier=f'Custom Sector {metadata.canonicalName()}')
 
         milieuDirPath = os.path.join(
@@ -1301,9 +1301,9 @@ class DataStore(object):
                 stockOnly=stockOnly)
             if not sectorData:
                 continue
-            sectorWorldMap[sectorInfo] = travellermap.parseSector(
+            sectorWorldMap[sectorInfo] = travellermap.readSector(
                 content=sectorData,
-                fileFormat=sectorInfo.sectorFormat(),
+                format=sectorInfo.sectorFormat(),
                 identifier=sectorInfo.canonicalName())
         return sectorWorldMap
 

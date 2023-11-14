@@ -695,7 +695,7 @@ class _NewSectorDialog(gui.DialogEx):
 
                 travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
 
-                rawMetadata = travellermap.parseXMLMetadata(
+                rawMetadata = travellermap.readXMLMetadata(
                     content=self._sectorMetadata,
                     identifier=metadataFilePath)
 
@@ -725,9 +725,9 @@ class _NewSectorDialog(gui.DialogEx):
                 sectorFormat = travellermap.sectorFileFormatDetect(content=self._sectorData)
                 if not sectorFormat:
                     raise RuntimeError('Unknown sector file format')
-                travellermap.parseSector(
+                travellermap.readSector(
                     content=self._sectorData,
-                    fileFormat=sectorFormat,
+                    format=sectorFormat,
                     identifier=sectorFilePath)
             except Exception as ex:
                 message = 'Sector validation failed.'

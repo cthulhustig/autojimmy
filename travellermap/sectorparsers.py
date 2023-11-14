@@ -54,6 +54,211 @@ class RawWorld(object):
             ) -> None:
         self._attributes[attribute] = value
 
+class RawRoute(object):
+    def __init__(
+            self,
+            startHex: str,
+            endHex: str,
+            startOffsetX: typing.Optional[int],
+            startOffsetY: typing.Optional[int],
+            endOffsetX: typing.Optional[int],
+            endOffsetY: typing.Optional[int],
+            allegiance: typing.Optional[str],
+            type: typing.Optional[str],
+            style: typing.Optional[str],
+            colour: typing.Optional[str],
+            width: typing.Optional[float]
+            ) -> None:
+        self._startHex = startHex
+        self._endHex = endHex
+        self._startOffsetX = startOffsetX      
+        self._startOffsetY = startOffsetY    
+        self._endOffsetX = endOffsetX            
+        self._endOffsetY = endOffsetY       
+        self._allegiance = allegiance       
+        self._type = type       
+        self._style = style         
+        self._colour = colour        
+        self._width = width
+
+    def startHex(self) -> str:
+        return self._startHex
+    
+    def endHex(self) -> str:
+        return self._endHex
+    
+    def startOffsetX(self) -> typing.Optional[int]:
+        return self._startOffsetX
+    
+    def startOffsetY(self) -> typing.Optional[int]:
+        return self._startOffsetY
+    
+    def endOffsetX(self) -> typing.Optional[int]:
+        return self._endOffsetX
+    
+    def endOffsetY(self) -> typing.Optional[int]:
+        return self._endOffsetY
+    
+    def allegiance(self) -> typing.Optional[str]:
+        return self._allegiance
+    
+    def type(self) -> typing.Optional[str]:
+        return self._type
+    
+    def style(self) -> typing.Optional[str]:
+        return self._style
+    
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+    
+    def width(self) -> typing.Optional[float]:
+        return self._width
+
+# NOTE: If I'm ever generating borders then there are rules about the "winding" of the hex list
+# https://travellermap.com/doc/metadata#borders
+class RawBorder(object):
+    def __init__(
+            self,
+            hexList: typing.Iterable[str],
+            allegiance: typing.Optional[str],
+            showLabel: typing.Optional[bool],
+            wrapLabel: typing.Optional[bool],
+            labelHex: typing.Optional[str],
+            labelOffsetX: typing.Optional[int],
+            labelOffsetY: typing.Optional[int],
+            label: typing.Optional[str],
+            style: typing.Optional[str],
+            colour: typing.Optional[str],
+            ) -> None:
+        self._hexList = hexList
+        self._allegiance = allegiance
+        self._showLabel = showLabel
+        self._wrapLabel = wrapLabel   
+        self._labelHex = labelHex      
+        self._labelOffsetX = labelOffsetX           
+        self._labelOffsetY = labelOffsetY
+        self._label = label          
+        self._style = style        
+        self._colour = colour
+
+    def hexList(self) -> typing.Iterable[str]:
+        return self._hexList
+
+    def allegiance(self) -> typing.Optional[str]:
+        return self._allegiance
+    
+    def showLabel(self) -> typing.Optional[bool]:
+        return self._showLabel
+    
+    def wrapLabel(self) -> typing.Optional[bool]:
+        return self._wrapLabel
+    
+    def labelHex(self) -> typing.Optional[str]:
+        return self._labelHex
+    
+    def labelOffsetX(self) -> typing.Optional[int]:
+        return self._labelOffsetX
+    
+    def labelOffsetY(self) -> typing.Optional[int]:
+        return self._labelOffsetY
+    
+    def label(self) -> typing.Optional[str]:
+        return self._label
+    
+    def style(self) -> typing.Optional[str]:
+        return self._style
+    
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
+class RawLabel(object):
+    def __init__(
+            self,
+            text: str,
+            hex: str,
+            colour: str,
+            size: typing.Optional[str],
+            wrap: typing.Optional[bool],
+            offsetX: typing.Optional[int],
+            offsetY: typing.Optional[int]
+            ) -> None:
+        self._text = text
+        self._hex = hex
+        self._colour = colour
+        self._size = size
+        self._wrap = wrap
+        self._offsetX = offsetX
+        self._offsetY = offsetY
+
+    def text(self) -> str:
+        return self._text
+
+    def hex(self) -> str:
+        return self._hex
+    
+    def colour(self) -> str:
+        return self._colour
+    
+    def size(self) -> typing.Optional[str]:
+        return self._size 
+
+    def wrap(self) -> typing.Optional[bool]:
+        return self._wrap
+    
+    def offsetX(self) -> typing.Optional[int]:
+        return self._offsetX  
+
+    def offsetY(self) -> typing.Optional[int]:
+        return self._offsetY 
+    
+# NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
+# https://travellermap.com/doc/metadata#borders
+# TODO: The base JSON format metadata doesn't have any examples of regions
+class RawRegion(object):
+    def __init__(
+            self,
+            hexList: typing.Iterable[str],
+            showLabel: typing.Optional[bool],
+            wrapLabel: typing.Optional[bool],
+            labelHex: typing.Optional[str],
+            labelOffsetX: typing.Optional[int],
+            labelOffsetY: typing.Optional[int],
+            label: typing.Optional[str],
+            colour: typing.Optional[str],
+            ) -> None:
+        self._hexList = hexList
+        self._showLabel = showLabel
+        self._wrapLabel = wrapLabel
+        self._labelHex = labelHex
+        self._labelOffsetX = labelOffsetX
+        self._labelOffsetY = labelOffsetY
+        self._label = label
+        self._colour = colour
+
+    def hexList(self) -> typing.Iterable[str]:
+        return self._hexList
+    
+    def showLabel(self) -> typing.Optional[bool]:
+        return self._showLabel
+    
+    def wrapLabel(self) -> typing.Optional[bool]:
+        return self._wrapLabel
+    
+    def labelHex(self) -> typing.Optional[str]:
+        return self._labelHex
+    
+    def labelOffsetX(self) -> typing.Optional[int]:
+        return self._labelOffsetX
+    
+    def labelOffsetY(self) -> typing.Optional[int]:
+        return self._labelOffsetY
+    
+    def label(self) -> typing.Optional[str]:
+        return self._label
+        
+    def colour(self) -> typing.Optional[str]:
+        return self._colour
+
 class RawMetadata(object):
     def __init__(
             self,
@@ -64,8 +269,13 @@ class RawMetadata(object):
             subsectorNames: typing.Optional[typing.Mapping[str, str]], # Maps subsector code (A-P) to the name of that sector
             x: int,
             y: int,
-            tags: typing.Optional[typing.Iterable[str]],
+            tags: typing.Optional[str],
             allegiances: typing.Optional[typing.Mapping[str, str]], # Maps allegiance code to the name of the allegiance
+            routes: typing.Optional[typing.Iterable[RawRoute]],
+            borders: typing.Optional[typing.Iterable[RawBorder]],
+            labels: typing.Optional[typing.Iterable[RawLabel]],
+            regions: typing.Optional[typing.Iterable[RawRegion]],
+            styleSheet: typing.Optional[str]
             ) -> None:
         self._canonicalName = canonicalName
         self._alternateNames = alternateNames
@@ -76,6 +286,11 @@ class RawMetadata(object):
         self._y = y
         self._tags = tags
         self._allegiances = allegiances
+        self._routes = routes
+        self._borders = borders
+        self._labels = labels
+        self._regions = regions
+        self._styleSheet = styleSheet
 
     def canonicalName(self) -> str:
         return self._canonicalName
@@ -109,11 +324,26 @@ class RawMetadata(object):
     def y(self) -> int:
         return self._y
 
-    def tags(self) -> typing.Optional[typing.Iterable[str]]:
-        return list(self._tags) if self._tags else None
+    def tags(self) -> typing.Optional[str]:
+        return self._tags
 
     def allegiances(self) -> typing.Optional[typing.Mapping[str, str]]:
         return self._allegiances
+    
+    def routes(self) -> typing.Optional[typing.Iterable[RawRoute]]:
+        return self._routes
+    
+    def borders(self) -> typing.Optional[typing.Iterable[RawBorder]]:
+        return self._borders
+    
+    def labels(self) -> typing.Optional[typing.Iterable[RawLabel]]:
+        return self._labels
+
+    def regions(self) -> typing.Optional[typing.Iterable[RawRegion]]:
+        return self._regions
+    
+    def styleSheet(self) -> typing.Optional[str]:
+        return self._styleSheet
 
 
 _HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
@@ -158,6 +388,48 @@ def _isAllDashes(string: str) -> bool:
         if c != '-':
             return False
     return True
+
+def _optionalConvertToBool(
+        value: typing.Optional[typing.Any],
+        attributeName: str,
+        elementName: str,
+        identifier: str
+        ) -> typing.Optional[int]:
+    if value == None:
+        return None
+    
+    try:
+        return str(value).lower() == 'true'
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to bool for {elementName} in {identifier} ({str(ex)})')
+    
+def _optionalConvertToInt(
+        value: typing.Optional[typing.Any],
+        attributeName: str,
+        elementName: str,
+        identifier: str
+        ) -> typing.Optional[int]:
+    if value == None:
+        return None
+    
+    try:
+        return int(value)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to int for {elementName} in {identifier} ({str(ex)})')
+    
+def _optionalConvertToFloat(
+        value: typing.Optional[typing.Any],
+        attributeName: str,
+        elementName: str,
+        identifier: str
+        ) -> typing.Optional[int]:
+    if value == None:
+        return None
+    
+    try:
+        return float(value)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to float for {elementName} in {identifier} ({str(ex)})')        
 
 def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
@@ -206,23 +478,23 @@ def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
 
     return None
 
-def parseSector(
+def readSector(
         content: str,
-        fileFormat: SectorFormat,
+        format: SectorFormat,
         identifier: str, # File name or some other identifier, used for logging and error generation
         ) -> typing.Iterable[RawWorld]:
-    if fileFormat == SectorFormat.T5Column:
-        return parseT5ColumnSector(
+    if format == SectorFormat.T5Column:
+        return readT5ColumnSector(
             content=content,
             identifier=identifier)
-    elif fileFormat == SectorFormat.T5Tab:
-        return parseT5RowSector(
+    elif format == SectorFormat.T5Tab:
+        return readT5RowSector(
             content=content,
             identifier=identifier)
     else:
-        raise RuntimeError(f'Unknown sector format {fileFormat} for {identifier}')
+        raise RuntimeError(f'Unknown sector format {format} for {identifier}')
 
-def parseT5ColumnSector(
+def readT5ColumnSector(
         content: str,
         identifier: str
         ) -> typing.Iterable[RawWorld]:
@@ -274,7 +546,7 @@ def parseT5ColumnSector(
 
         # Parse the line as a world definition
         try:
-            worlds.append(_parseT5ColumnWorld(
+            worlds.append(_readT5ColumnWorld(
                 line=line,
                 lineNumber=lineNumber,
                 columnAttributes=columnAttributes,
@@ -285,7 +557,7 @@ def parseT5ColumnSector(
             continue
     return worlds
 
-def _parseT5ColumnWorld(
+def _readT5ColumnWorld(
         line: str,
         lineNumber: int,
         columnAttributes: typing.Iterable[WorldAttribute],
@@ -311,7 +583,7 @@ def _parseT5ColumnWorld(
         startIndex = finishIndex + 1
     return worldData
 
-def parseT5RowSector(
+def readT5RowSector(
         content: str,
         identifier: str
         ) -> typing.Iterable[RawWorld]:
@@ -352,7 +624,7 @@ def parseT5RowSector(
 
         # Parse the line as a world definition
         try:
-            worlds.append(_parseT5RowWorld(
+            worlds.append(_readT5RowWorld(
                 line=line,
                 lineNumber=lineNumber,
                 columnAttributes=columnAttributes))
@@ -362,7 +634,7 @@ def parseT5RowSector(
             continue
     return worlds
 
-def _parseT5RowWorld(
+def _readT5RowWorld(
         line: str,
         lineNumber: int,
         columnAttributes: typing.Iterable[WorldAttribute],
@@ -381,29 +653,29 @@ def _parseT5RowWorld(
             value=data)
     return worldData
 
-def parseMetadata(
+def readMetadata(
         content: str,
-        metadataFormat: MetadataFormat,
+        format: MetadataFormat,
         identifier: str
         ) -> RawMetadata:
-    if metadataFormat == MetadataFormat.XML:
-        return parseXMLMetadata(
+    if format == MetadataFormat.XML:
+        return readXMLMetadata(
             content=content,
             identifier=identifier)
-    elif metadataFormat == MetadataFormat.JSON:
-        return parseJSONMetadata(
+    elif format == MetadataFormat.JSON:
+        return readJSONMetadata(
             content=content,
             identifier=identifier)
     else:
-        raise RuntimeError(f'Unknown metadata format {metadataFormat} for {identifier}')
+        raise RuntimeError(f'Unknown metadata format {format} for {identifier}')
 
-def parseXMLMetadata(
+def readXMLMetadata(
         content: str,
         identifier: str
         ) -> RawMetadata:
-    root = xml.etree.ElementTree.fromstring(content)
+    sectorElement = xml.etree.ElementTree.fromstring(content)
 
-    nameElements = root.findall('./Name')
+    nameElements = sectorElement.findall('./Name')
     if not nameElements:
         raise RuntimeError(f'Failed to find Name element in {identifier} metadata')
 
@@ -417,61 +689,180 @@ def parseXMLMetadata(
         if lang != None:
             nameLanguages[name] = lang
 
-    xElement = root.find('./X')
+    xElement = sectorElement.find('./X')
     if xElement == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
-    x = int(xElement.text)
+    try:
+        x = int(xElement.text)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert X value "{xElement.text}" to int in {identifier} metadata ({str(ex)})')
 
-    yElement = root.find('./Y')
+    yElement = sectorElement.find('./Y')
     if yElement == None:
         raise RuntimeError(f'Failed to find Y element in {identifier} metadata')
-    y = int(yElement.text)
+    try:
+        y = int(yElement.text)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert Y value "{yElement.text}" to int in {identifier} metadata ({str(ex)})')
 
-    subsectorNames = {}
-    for element in root.findall('./Subsectors/Subsector'):
-        code = element.get('Index')
-        if code == None:
-            logging.warning(f'Skipping subsector with no Index element in {identifier} metadata')
-            continue
+    subsectorElements = sectorElement.findall('./Subsectors/Subsector')
+    subsectorNames = None
+    if subsectorElements:
+        subsectorNames = {}
+        for element in subsectorElements:
+            code = element.get('Index')
+            if code == None:
+                raise RuntimeError(f'Failed to find Index attribute for Subsector in {identifier} metadata')
 
-        upperCode = code.upper()
-        if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
-            logging.warning(f'Skipping subsector with invalid Index value in {identifier} metadata')
-            continue
+            upperCode = code.upper()
+            if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
+                raise RuntimeError(f'Invalid Index attribute "{code}" for Subsector in {identifier} metadata')
 
-        subsectorNames[code] = element.text
+            subsectorNames[code] = element.text
 
     # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
     # with at the moment, not sure what it's used for
-    allegiances = {}
-    for element in root.findall('./Allegiances/Allegiance'):
-        code = element.get('Code')
-        if code == None:
-            logging.warning(f'Skipping allegiance with no Code element in {identifier} metadata')
-            continue
+    allegianceElements = sectorElement.findall('./Allegiances/Allegiance')
+    allegiances = None
+    if allegianceElements:
+        allegiances = {}
+        for element in allegianceElements:
+            code = element.get('Code')
+            if code == None:
+                raise RuntimeError(f'Failed to find Code attribute for Allegiance in {identifier} metadata')
+            
+            # Ignore allegiances that are just a sequence of '-'
+            if code and not _isAllDashes(code):
+                allegiances[code] = element.text
 
-        # Ignore allegiances that are just a sequence of '-'
-        if code and not _isAllDashes(code):
-            allegiances[code] = element.text
+    routeElements = sectorElement.findall('./Routes/Route')
+    routes = None
+    if routeElements:
+        routes = []
+        for element in routeElements:
+            startHex = element.get('Start')
+            if not startHex:
+                raise RuntimeError(f'Failed to find Start attribute for Route in {identifier} metadata')
+            
+            endHex = element.get('End')
+            if not endHex:
+                raise RuntimeError(f'Failed to find End attribute for Route in {identifier} metadata')
+            
+            startOffsetX = _optionalConvertToInt(element.get('StartOffsetX'), 'StartOffsetX', 'Route', identifier)
+            startOffsetY = _optionalConvertToInt(element.get('StartOffsetY'), 'StartOffsetY', 'Route', identifier)
+            endOffsetX = _optionalConvertToInt(element.get('EndOffsetX'), 'EndOffsetX', 'Route', identifier)
+            endOffsetY = _optionalConvertToInt(element.get('EndOffsetY'), 'EndOffsetY', 'Route', identifier)
+            width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)
+
+            routes.append(RawRoute(
+                startHex=startHex,
+                endHex=endHex,
+                startOffsetX=startOffsetX,
+                startOffsetY=startOffsetY,
+                endOffsetX=endOffsetX,
+                endOffsetY=endOffsetY,
+                allegiance=element.get('Allegiance'),
+                type=element.get('Type'),
+                style=element.get('Style'),
+                colour=element.get('Color'),
+                width=width))
+        
+    borderElements = sectorElement.findall('./Borders/Border')
+    borders = None
+    if borderElements:
+        borders = []
+        for element in borderElements:
+            path = element.text.split(' ')
+            showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Border', identifier)
+            wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
+            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
+            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
+            
+            borders.append(RawBorder(
+                hexList=path,
+                allegiance=element.get('Allegiance'),
+                showLabel=showLabel,
+                wrapLabel=wrapLabel,
+                labelHex=element.get('LabelPosition'),
+                labelOffsetX=labelOffsetX,
+                labelOffsetY=labelOffsetY,
+                label=element.get('Label'),
+                style=element.get('Style'),
+                colour=element.get('Color')))
+
+    labelElements = sectorElement.findall('./Labels/Label')
+    labels = None
+    if labelElements:
+        labels = []
+        for element in labelElements:
+            hex = element.get('Hex')
+            if hex == None:
+                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')             
+
+            colour = element.get('Color')
+            if colour == None:
+                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')  
+
+            wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
+            offsetX = _optionalConvertToInt(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
+            offsetY = _optionalConvertToInt(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
+
+            labels.append(RawLabel(
+                text=element.text,
+                hex=hex,
+                colour=colour,
+                size=element.get('Size'),
+                wrap=wrap,
+                offsetX=offsetX,
+                offsetY=offsetY))
+
+    regionElements = sectorElement.findall('./Regions/Region')
+    regions = None
+    if regionElements:
+        regions = []
+        for element in regionElements:
+            path = element.text.split(' ')
+            showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Region', identifier)
+            wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Region', identifier)
+            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
+            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
+
+            regions.append(RawRegion(
+                hexList=path,
+                showLabel=showLabel,
+                wrapLabel=wrapLabel,
+                labelHex=element.get('LabelPosition'),
+                labelOffsetX=labelOffsetX,
+                labelOffsetY=labelOffsetY,
+                label=element.get('Label'),
+                colour=element.get('Color')))
+
+    styleSheetElement = sectorElement.find('./Stylesheet')
+    styleSheet = styleSheetElement.text if styleSheetElement else None
 
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
-        abbreviation=root.get('Abbreviation'),
+        abbreviation=sectorElement.get('Abbreviation'),
         subsectorNames=subsectorNames,
         x=x,
         y=y,
-        tags=root.get('Tags'),
-        allegiances=allegiances)
+        tags=sectorElement.get('Tags'),
+        allegiances=allegiances,
+        routes=routes,
+        borders=borders,
+        labels=labels,
+        regions=regions,
+        styleSheet=styleSheet)
 
-def parseJSONMetadata(
+def readJSONMetadata(
         content: str,
         identifier: str
         ) -> RawMetadata:
-    root = json.loads(content)
+    sectorElement = json.loads(content)
 
-    nameElements = root.get('Names')
+    nameElements = sectorElement.get('Names')
     if not nameElements:
         raise RuntimeError(f'Failed to find Names element in {identifier} metadata')
 
@@ -488,68 +879,514 @@ def parseJSONMetadata(
         if lang != None:
             nameLanguages[name] = str(lang)
 
-    x = root.get('X')
+    x = sectorElement.get('X')
     if x == None:
         raise RuntimeError(f'Failed to find X element in {identifier} metadata')
-    x = int(x)
+    try:
+        x = int(x)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert X value "{x}" to int in {identifier} metadata ({str(ex)})')
 
-    y = root.get('Y')
+    y = sectorElement.get('Y')
     if y == None:
         raise RuntimeError(f'Failed to find Y element in {identifier} metadata')
-    y = int(y)
+    try:
+        y = int(y)
+    except Exception as ex:
+        raise RuntimeError(f'Failed to convert Y value "{y}" to int in {identifier} metadata ({str(ex)})')
 
-    subsectorElements = root.get('Subsectors')
-    subsectorNames = {}
+    subsectorElements = sectorElement.get('Subsectors')
+    subsectorNames = None
     if subsectorElements:
-        for element in subsectorElements:
-            name = element.get('Name')
-            if name == None:
-                logging.warning(f'Skipping subsector with no Name element in {identifier} metadata')
-                continue
-            name = str(name)
+        subsectorNames = {}
+        if subsectorElements:
+            for element in subsectorElements:
+                name = element.get('Name')
+                if name == None:
+                    raise RuntimeError(f'Failed to find Name element for Subsector in {identifier} metadata')
 
-            code = element.get('Index')
-            if code == None:
-                logging.warning(f'Skipping subsector with no Index element in {identifier} metadata')
-                continue
-            code = str(code)
+                code = element.get('Index')
+                if code == None:
+                    raise RuntimeError(f'Failed to find Index element for Subsector in {identifier} metadata')
 
-            upperCode = code.upper()
-            if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
-                logging.warning(f'Skipping subsector with invalid Index value in {identifier} metadata')
-                continue
+                upperCode = code.upper()
+                if len(code) != 1 or (ord(upperCode) < ord('A') or ord(upperCode) > ord('P')):
+                    raise RuntimeError(f'Invalid Index attribute "{code}" for Subsector in {identifier} metadata')
 
-            subsectorNames[code] = name
+                subsectorNames[code] = name
 
     # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
     # with at the moment, not sure what it's used for
-    allegianceElements = root.get('Allegiances')
-    allegiances = {}
-    if allegianceElements:
-        for element in allegianceElements:
-            name = element.get('Name')
-            if name == None:
-                logging.warning(f'Skipping allegianceE with no Name element in {identifier} metadata')
-                continue
-            name = str(name)
+    allegianceElements = sectorElement.get('Allegiances')
+    allegiances = None
+    if allegiances:
+        allegiances = {}
+        if allegianceElements:
+            for element in allegianceElements:
+                name = element.get('Name')
+                if name == None:
+                    raise RuntimeError(f'Failed to find Name element for Allegiance in {identifier} metadata')
 
-            code = element.get('Code')
-            if code == None:
-                logging.warning(f'Skipping allegianceE with no Code element in {identifier} metadata')
-                continue
-            code = str(code)
+                code = element.get('Code')
+                if code == None:
+                    raise RuntimeError(f'Failed to find Code element for Allegiance in {identifier} metadata')
 
-            # Ignore allegiances that are just a sequence of '-'
-            if code and not _isAllDashes(code):
-                allegiances[code] = name
+                # Ignore allegiances that are just a sequence of '-'
+                if code and not _isAllDashes(code):
+                    allegiances[code] = name
+
+    routeElements = sectorElement.get('Routes')
+    routes = None
+    if routeElements:
+        routes = []
+        for element in routeElements:
+            startHex = element.get('Start')
+            if startHex == None:
+                raise RuntimeError(f'Failed to find Start element for Route in {identifier} metadata')
+            
+            endHex = element.get('End')
+            if endHex == None:
+                raise RuntimeError(f'Failed to find End element for Route in {identifier} metadata')
+            
+            startOffsetX = _optionalConvertToInt(element.get('StartOffsetX'), 'StartOffsetX', 'Route', identifier)
+            startOffsetY = _optionalConvertToInt(element.get('StartOffsetY'), 'StartOffsetY', 'Route', identifier)
+            endOffsetX = _optionalConvertToInt(element.get('EndOffsetX'), 'EndOffsetX', 'Route', identifier)
+            endOffsetY = _optionalConvertToInt(element.get('EndOffsetY'), 'EndOffsetY', 'Route', identifier)
+            width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)            
+            
+            routes.append(RawRoute(
+                startHex=startHex,
+                endHex=endHex,
+                startOffsetX=startOffsetX,
+                startOffsetY=startOffsetY,
+                endOffsetX=endOffsetX,
+                endOffsetY=endOffsetY,
+                allegiance=element.get('Allegiance'),
+                type=element.get('Type'),
+                style=element.get('Style'),
+                colour=element.get('Color'),
+                width=width))
+
+    borderElements = sectorElement.get('Borders')
+    borders = None
+    if borderElements:
+        borders = []
+        for element in borderElements:
+            path = element.get('Path')
+            if path == None:
+                raise RuntimeError(f'Failed to find Path element for Border in {identifier} metadata')
+            path = path.split(' ')
+
+            showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Border', identifier)
+            wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
+            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
+            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
+
+            borders.append(RawBorder(
+                hexList=path,
+                allegiance=element.get('Allegiance'),
+                showLabel=showLabel,
+                wrapLabel=wrapLabel,
+                labelHex=element.get('LabelPosition'),
+                labelOffsetX=labelOffsetX,
+                labelOffsetY=labelOffsetY,
+                label=element.get('Label'),
+                style=element.get('Style'),
+                colour=element.get('Color')))           
+
+    labelElements = sectorElement.get('Labels')
+    labels = None
+    if labelElements:
+        labels = []
+        for element in labelElements:
+            text = element.get('Text')
+            if text == None:
+                raise RuntimeError(f'Failed to find Text element for Label in {identifier} metadata')
+            
+            hex = element.get('Hex')
+            if hex == None:
+                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')             
+
+            colour = element.get('Color')
+            if colour == None:
+                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')            
+
+            wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
+            offsetX = _optionalConvertToInt(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
+            offsetY = _optionalConvertToInt(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
+
+            labels.append(RawLabel(
+                text=text,
+                hex=hex,
+                colour=colour,
+                size=element.get('Size'),
+                wrap=wrap,
+                offsetX=offsetX,
+                offsetY=offsetY))
+
+    regionElements = sectorElement.get('Region')
+    regions = None
+    if regionElements:
+        regions = []
+        for element in regionElements:
+            path = element.get('Path')
+            if path == None:
+                raise RuntimeError(f'Failed to find Path element for Region in {identifier} metadata')
+            path = path.split(' ')
+
+            showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Region', identifier)
+            wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Region', identifier)
+            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
+            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
+
+            regions.append(RawRegion(
+                hexList=path,
+                showLabel=showLabel,
+                wrapLabel=wrapLabel,
+                labelHex=element.get('LabelPosition'),
+                labelOffsetX=labelOffsetX,
+                labelOffsetY=labelOffsetY,
+                label=element.get('Label'),
+                colour=element.get('Color')))
 
     return RawMetadata(
         canonicalName=names[0],
         alternateNames=names[1:],
         nameLanguages=nameLanguages,
-        abbreviation=root.get('Abbreviation'),
+        abbreviation=sectorElement.get('Abbreviation'),
         subsectorNames=subsectorNames,
         x=x,
         y=y,
-        tags=root.get('Tags'),
-        allegiances=allegiances)
+        tags=sectorElement.get('Tags'),
+        allegiances=allegiances,
+        routes=routes,
+        borders=borders,
+        labels=labels,
+        regions=regions,
+        styleSheet=sectorElement.get('StyleSheet'))
+
+def writeMetadata(
+        metadata: RawMetadata,
+        metadataFormat: MetadataFormat,
+        identifier: str
+        ) -> bytes:
+    if metadataFormat == MetadataFormat.XML:
+        return writeXMLMetadata(
+            metadata=metadata,
+            identifier=identifier)
+    elif metadataFormat == MetadataFormat.JSON:
+        return writeJSONMetadata(
+            metadata=metadata,
+            identifier=identifier)
+    else:
+        raise RuntimeError(f'Unknown metadata format {metadataFormat} for {identifier}')
+
+def writeXMLMetadata(
+        metadata: RawMetadata,
+        identifier: str
+        ) -> bytes:
+    sectorAttributes = {}
+
+    # NOTE: The Traveller Map documentation doesn't mention Tags or Abbreviation for the XML
+    # format but the XSD does have them
+    # https://travellermap.com/doc/metadata
+    if metadata.tags() != None:
+        sectorAttributes['Tags'] = metadata.tags()
+
+    if metadata.abbreviation() != None:
+        sectorAttributes['Abbreviation'] = metadata.abbreviation()
+
+    sectorElement = xml.etree.ElementTree.Element('Sector', sectorAttributes)
+
+    names = [metadata.canonicalName()] + metadata.alternateNames()
+    for name in names:
+        attributes = {}
+        language = metadata.nameLanguage(name)
+        if language:
+            attributes['Lang'] = language
+
+        nameElement = xml.etree.ElementTree.SubElement(sectorElement, 'Name', attributes)
+        nameElement.text = name
+
+    xElement = xml.etree.ElementTree.SubElement(sectorElement, 'X')
+    xElement.text = str(metadata.x())
+
+    yElement = xml.etree.ElementTree.SubElement(sectorElement, 'Y')
+    yElement.text = str(metadata.y())
+
+    subsectorNames = metadata.subsectorNames()
+    if subsectorNames:
+        subsectorsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Subsectors')
+        for code, name in subsectorNames.items():
+            attributes = {'Index': code}
+            subsectorElement = xml.etree.ElementTree.SubElement(subsectorsElement, 'Subsector', attributes)
+            subsectorElement.text = name
+
+    allegiances = metadata.allegiances()
+    if allegiances:
+        allegiancesElement = xml.etree.ElementTree.SubElement(sectorElement, 'Allegiances')
+        for code, name in allegiances.items():
+            # TODO: Handle Base attribute
+            attributes = {'Code': code}
+            allegianceElement = xml.etree.ElementTree.SubElement(allegiancesElement, 'Allegiance', attributes)
+            allegianceElement.text = name
+
+    routes = metadata.routes()
+    if routes:
+        routesElement = xml.etree.ElementTree.SubElement(sectorElement, 'Routes')
+        for route in routes:
+            attributes = {
+                'Start': route.startHex(),
+                'End': route.endHex()}
+            if route.startOffsetX() != None:
+                attributes['StartOffsetX'] = str(route.startOffsetX())
+            if route.startOffsetY() != None:
+                attributes['StartOffsetY'] = str(route.startOffsetY())
+            if route.endOffsetX() != None:
+                attributes['EndOffsetX'] = str(route.endOffsetX())
+            if route.endOffsetY() != None:
+                attributes['EndOffsetY'] = str(route.endOffsetY())
+            if route.allegiance() != None:
+                attributes['Allegiance'] = route.allegiance()
+            if route.type() != None:
+                attributes['Type'] = route.type()
+            if route.style() != None:
+                attributes['Style'] = route.style()
+            if route.colour() != None:
+                attributes['Color'] = route.colour()
+            if route.width() != None:
+                attributes['Width'] = str(route.width())
+
+            xml.etree.ElementTree.SubElement(routesElement, 'Route', attributes)
+
+    borders = metadata.borders()
+    if borders:
+        bordersElement = xml.etree.ElementTree.SubElement(sectorElement, 'Borders')
+        for border in borders:
+            attributes = {}
+            if border.allegiance() != None:
+                attributes['Allegiance'] = border.allegiance()
+            if border.showLabel() != None:
+                attributes['ShowLabel'] = str(border.showLabel()).lower()
+            if border.wrapLabel() != None:
+                attributes['WrapLabel'] = str(border.wrapLabel()).lower()
+            if border.labelHex() != None:
+                attributes['LabelPosition'] = border.labelHex()
+            if border.labelOffsetX() != None:
+                attributes['LabelOffsetX'] = str(border.labelOffsetX())
+            if border.labelOffsetY() != None:
+                attributes['LabelOffsetY'] = str(border.labelOffsetY())
+            if border.label() != None:
+                attributes['Label'] = border.label()
+            if border.style() != None:
+                attributes['Style'] = border.style() 
+            if border.colour() != None:
+                attributes['Color'] = border.colour()       
+
+            borderElement = xml.etree.ElementTree.SubElement(bordersElement, 'Border', attributes)
+            borderElement.text = ' '.join(border.hexList())
+
+    labels = metadata.labels()
+    if labels:
+        labelsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Labels')
+        for label in labels:
+            attributes = {
+                'Hex': label.hex(),
+                'Color': label.colour()}
+            if label.size() != None:
+                attributes['Size'] = label.size()
+            if label.wrap() != None:
+                attributes['Wrap'] = str(label.wrap()).lower()
+            if label.offsetX() != None:
+                attributes['OffsetX'] = str(label.offsetX())
+            if label.offsetY() != None:
+                attributes['OffsetY'] = str(label.offsetY())
+
+            labelElement = xml.etree.ElementTree.SubElement(labelsElement, 'Label', attributes)
+            labelElement.text = label.text()
+
+    regions = metadata.regions()
+    if regions:
+        regionsElement = xml.etree.ElementTree.SubElement(sectorElement, 'Regions')
+        for region in regions:
+            attributes = {}
+            if region.showLabel() != None:
+                attributes['ShowLabel'] = str(region.showLabel()).lower()
+            if region.wrapLabel() != None:
+                attributes['WrapLabel'] = str(region.wrapLabel()).lower()
+            if region.labelHex() != None:
+                attributes['LabelPosition'] = region.labelHex()
+            if region.labelOffsetX() != None:
+                attributes['LabelOffsetX'] = str(region.labelOffsetX())
+            if region.labelOffsetY() != None:
+                attributes['LabelOffsetY'] = str(region.labelOffsetY())
+            if region.label() != None:
+                attributes['Label'] = region.label()
+            if region.colour() != None:
+                attributes['Color'] = region.colour()       
+
+            regionElement = xml.etree.ElementTree.SubElement(regionsElement, 'Region', attributes)
+            regionElement.text = ' '.join(region.hexList())
+
+    if metadata.styleSheet() != None:
+        styleSheetElement = xml.etree.ElementTree.SubElement(labelsElement, 'StyleSheet')
+        styleSheetElement.text = metadata.styleSheet()
+
+    xml.etree.ElementTree.indent(sectorElement, space="\t", level=0)
+    return xml.etree.ElementTree.tostring(
+        element=sectorElement,
+        encoding='utf-8',
+        xml_declaration=True)
+
+def writeJSONMetadata(
+        metadata: RawMetadata,
+        identifier: str
+        ) -> bytes:
+    sectorElement = {}
+
+    if metadata.tags() != None:
+        sectorElement['Tags'] = metadata.tags()
+
+    if metadata.abbreviation() != None:
+        sectorElement['Abbreviation'] = metadata.abbreviation()
+
+    namesElement = []
+    sectorElement['Names'] = namesElement
+
+    names = [metadata.canonicalName()] + metadata.alternateNames()
+    for name in names:
+        nameElement = {'Text': name}
+        language = metadata.nameLanguage(name)
+        if language:
+            nameElement['Lang'] = language
+        namesElement.append(nameElement)
+
+    sectorElement['X'] = str(metadata.x())
+    sectorElement['Y'] = str(metadata.y())
+
+    subsectorNames = metadata.subsectorNames()
+    if subsectorNames:
+        subsectorsElement = []
+        sectorElement['Subsectors'] = subsectorsElement
+        for code, name in subsectorNames.items():
+            subsectorElement = {
+                'Name': name,
+                'Index': code,
+                'IndexNumber': ord(code) - ord('A')}
+            subsectorsElement.append(subsectorElement)
+
+    allegiances = metadata.allegiances()
+    if allegiances:
+        allegiancesElement = []
+        sectorElement['Allegiances'] = allegiancesElement
+        for code, name in allegiances.items():
+            # TODO: Handle Base attribute
+            allegianceElement = {
+                'Name': name,
+                'Code': code}
+            allegiancesElement.append(allegianceElement)
+
+    routes = metadata.routes()
+    if routes:
+        routesElement = []
+        sectorElement['Routes'] = routesElement
+        for route in routes:
+            routeElement = {
+                'Start': route.startHex(),
+                'End': route.endHex()}
+            if route.startOffsetX() != None:
+                routeElement['StartOffsetX'] = route.startOffsetX()
+            if route.startOffsetY() != None:
+                routeElement['StartOffsetY'] = route.startOffsetY()
+            if route.endOffsetX() != None:
+                routeElement['EndOffsetX'] = route.endOffsetX()
+            if route.endOffsetY() != None:
+                routeElement['EndOffsetY'] = route.endOffsetY()
+            if route.allegiance() != None:
+                routeElement['Allegiance'] = route.allegiance()
+            if route.type() != None:
+                routeElement['Type'] = route.type()
+            if route.style() != None:
+                routeElement['Style'] = route.style()
+            if route.colour() != None:
+                routeElement['Color'] = route.colour()
+            if route.width() != None:
+                routeElement['Width'] = route.width()
+
+            routesElement.append(routeElement)
+
+    borders = metadata.borders()
+    if borders:
+        bordersElement = []
+        sectorElement['Borders'] = bordersElement
+        for border in borders:
+            borderElement = {'Path': ' '.join(border.hexList())}
+            if border.allegiance() != None:
+                borderElement['Allegiance'] = border.allegiance()
+            if border.showLabel() != None:
+                borderElement['ShowLabel'] = border.showLabel()
+            if border.wrapLabel() != None:
+                borderElement['WrapLabel'] = border.wrapLabel()
+            if border.labelHex() != None:
+                borderElement['LabelPosition'] = border.labelHex()
+            if border.labelOffsetX() != None:
+                borderElement['LabelOffsetX'] = border.labelOffsetX()
+            if border.labelOffsetY() != None:
+                borderElement['LabelOffsetY'] = border.labelOffsetY()
+            if border.label() != None:
+                borderElement['Label'] = border.label()
+            if border.style() != None:
+                borderElement['Style'] = border.style() 
+            if border.colour() != None:
+                borderElement['Color'] = border.colour()       
+
+            bordersElement.append(borderElement)
+
+    labels = metadata.labels()
+    if labels:
+        labelsElement = []
+        sectorElement['Labels'] = labelsElement
+        for label in labels:
+            labelElement = {
+                'Text': label.text(), # TODO: I'm not sure what the element is called in the JSON format
+                'Hex': label.hex(),
+                'Color': label.colour()}
+            if label.size() != None:
+                labelElement['Size'] = label.size()
+            if label.wrap() != None:
+                labelElement['Wrap'] = label.wrap()
+            if label.offsetX() != None:
+                labelElement['OffsetX'] = label.offsetX()
+            if label.offsetY() != None:
+                labelElement['OffsetY'] = label.offsetY()
+
+            labelsElement.append(labelsElement)
+
+    regions = metadata.regions()
+    if regions:
+        regionsElement = []
+        sectorElement['Regions'] = regionsElement
+        for region in regions:
+            regionElement = {'Path': ' '.join(region.hexList())}
+            if region.showLabel() != None:
+                regionElement['ShowLabel'] = region.showLabel()
+            if region.wrapLabel() != None:
+                regionElement['WrapLabel'] = region.wrapLabel()
+            if region.labelHex() != None:
+                regionElement['LabelPosition'] = region.labelHex()
+            if region.labelOffsetX() != None:
+                regionElement['LabelOffsetX'] = region.labelOffsetX()
+            if region.labelOffsetY() != None:
+                regionElement['LabelOffsetY'] = region.labelOffsetY()
+            if region.label() != None:
+                regionElement['Label'] = region.label()
+            if region.colour() != None:
+                regionElement['Color'] = region.colour()       
+
+            regionsElement.append(regionElement)
+
+    # TODO: It doesn't look like the JSON format supports style sheets
+    if metadata.styleSheet() != None:
+        sectorElement['StyleSheet'] = metadata.styleSheet()
+
+    return json.dumps(sectorElement, indent=4)
