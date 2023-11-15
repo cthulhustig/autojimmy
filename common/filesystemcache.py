@@ -1,3 +1,4 @@
+import collections
 import os
 import shutil
 import threading
@@ -6,14 +7,25 @@ import typing
 # NOTE: This is NOT a general purpose solution. It's holds a lock for all filesystem access so isn't
 # suited to general multithreaded access.
 # NOTE: The cache assumes that all access to the files it's managing go through it
-# TODO: Need some kind of cache eviction (probably based on a max cache size and last read/write time)
 class FileSystemCache(object):
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            maxCacheSize: int
+            ) -> None:
         # The cache is a dictionary hierarchy that maps to filesystem elements. If an entry is a file
         # it maps to a bytes object, if it's a directory it maps to another dict for the cache of that
         # directory
         self._cache: typing.Dict[str, dict] = {}
         self._lock = threading.Lock()
+
+        self._maxCacheSize = maxCacheSize
+        self._currentCacheSize = 0
+
+        # Ordered dict that maps file path strings to split element lists with the map being kept in
+        # order of file usage
+        # NOTE: This can contain entries that are no longer in the cache. This can happen if a directory
+        # containing 
+        self._usageHistory: typing.OrderedDict[str, typing.Iterable[str]] = collections.OrderedDict()
 
     def read(self, path: str) -> bytes:
         elements = FileSystemCache._splitPath(path)
@@ -78,6 +90,8 @@ class FileSystemCache(object):
         else:
             with self._lock:
                 self._cache.clear()
+                self._currentCacheSize = 0
+                self._usageHistory.clear()
 
     # NOTE: The following methods are just here to give consumers a single consistent interface for
     # the filesystem. They don't have anything to do with the cache so don't take the lock
@@ -93,6 +107,7 @@ class FileSystemCache(object):
     def isdir(self, path) -> bool:
         return os.path.isdir(path)
 
+    # NOTE: The cache access functions assume the lock is already held
     def _readCache(
             self,
             elements: typing.Iterable[str]
@@ -102,18 +117,35 @@ class FileSystemCache(object):
             next = next.get(element)
             if next == None:
                 break
-        return next if isinstance(next, bytes) else None
+        if not isinstance(next, bytes):
+            return None
+        
+        # Update usage history (* is to unpack the list)
+        self._usageHistory[os.path.join(*elements)] = elements
+
+        return next
 
     def _storeCache(
             self,
             elements: typing.Iterable[str],
             data: bytes
             ) -> None:
+        dataSize = len(data)
+        if dataSize > self._maxCacheSize:
+            # This data is to big to fit in the cache even if we clear it out completely
+            return
+        if (self._currentCacheSize + dataSize) > self._maxCacheSize:
+            self._freeCache(elements, dataSize)
+
         last = len(elements) - 1
         dir = self._cache
         for index, element in enumerate(elements):
             if index == last:
                 dir[element] = data
+                self._currentCacheSize += dataSize
+
+                # Update usage history (* is to unpack the list)
+                self._usageHistory[os.path.join(*elements)] = elements
             else:
                 next = dir.get(element)
                 if not isinstance(next, dict): # Also handles next being none
@@ -129,13 +161,39 @@ class FileSystemCache(object):
         dir = self._cache
         for index, element in enumerate(elements):
             if index == last:
-                if element in dir:
+                child = dir.get(element)
+                if isinstance(child, bytes):
+                    del dir[element]
+                    self._currentCacheSize -= len(child)
+
+                    # NOTE: This may already have been removed if this was called as part of freeing cache space
+                    # Update usage history (* is to unpack the list)
+                    path = os.path.join(*elements)
+                    if path in self._usageHistory:
+                        del self._usageHistory[path]
+                elif isinstance(child, dict):
                     del dir[element]
             else:
                 next = dir.get(element)
                 if next == None:
                     return
                 dir = next
+
+    def _freeCache(
+            self,
+            elements: typing.Iterable[str], # The file to be added to the cache
+            dataSize: int # The number of bytes to be added to the cache
+            ) -> None:
+        # First try removing any old cached version of the file to be added
+        self._removeCache(elements)
+        if (self._currentCacheSize + dataSize) <= self._maxCacheSize:
+            return # Enough space has been freed
+        
+        # Start removing items from the cache starting with the ones that were
+        # used longest ago
+        while self._usageHistory and ((self._currentCacheSize + dataSize) > self._maxCacheSize):
+            oldestPath, oldestElements = self._usageHistory.popitem(last=False)
+            self._removeCache(oldestElements)
 
     @staticmethod
     def _splitPath(path) -> typing.Iterable[str]:
