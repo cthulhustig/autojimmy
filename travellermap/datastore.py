@@ -467,6 +467,7 @@ class DataStore(object):
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = UniverseDataFormat(3, 0)
+    _FileSystemCacheSize = 256 * 1024 * 1024 # 256MiB
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -482,7 +483,7 @@ class DataStore(object):
     _overlayDir = None
     _customDir = None
     _universeMap = None
-    _filesystemCache = common.FileSystemCache()
+    _filesystemCache = common.FileSystemCache(maxCacheSize=_FileSystemCacheSize)
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
