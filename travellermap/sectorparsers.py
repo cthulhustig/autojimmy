@@ -1348,7 +1348,7 @@ def writeJSONMetadata(
         sectorElement['Labels'] = labelsElement
         for label in labels:
             labelElement = {
-                'Text': label.text(), # TODO: I'm not sure what the element is called in the JSON format
+                'Text': label.text(),
                 'Hex': label.hex(),
                 'Color': label.colour()}
             if label.size() != None:
@@ -1385,8 +1385,11 @@ def writeJSONMetadata(
 
             regionsElement.append(regionElement)
 
-    # TODO: It doesn't look like the JSON format supports style sheets
+    # NOTE: The JSON metadata returned by Traveller Map doesn't include
+    # style sheet information
+    """
     if metadata.styleSheet() != None:
         sectorElement['StyleSheet'] = metadata.styleSheet()
+    """
 
     return json.dumps(sectorElement, indent=4)
