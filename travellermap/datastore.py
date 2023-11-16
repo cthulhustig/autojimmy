@@ -861,16 +861,19 @@ class DataStore(object):
             ) -> SectorInfo:
         self._loadSectors(milieu=milieu)
 
-        # Load metadata, currently only XML format is supported. The Poster API also supports
-        # MSEC metadata but that format doesn't include the sector position. Strangely the docs
-        # don't say it supports JSON format
-        metadata = travellermap.readXMLMetadata(
-            content=metadataContent,
-            identifier='Custom Metadata')
-
         sectorFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
+        
+        metadataFormat = travellermap.metadataFileFormatDetect(content=metadataContent)
+        if not metadataFormat:
+            raise RuntimeError('Sector metadata content has an unknown format')
+        
+        metadata = travellermap.readMetadata(
+            content=metadataContent,
+            format=metadataFormat,
+            identifier='Custom Metadata')        
+
 
         # Do a full parse of the custom sector data based on the detected file format. If it fails
         # an exception will be raised an allowed to pass back to the called. Doing this check is
@@ -905,7 +908,8 @@ class DataStore(object):
                 path=sectorFilePath,
                 data=sectorContent)
 
-            metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.xml')
+            metadataExtension = DataStore._MetadataFormatExtensions[metadataFormat]
+            metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{metadataExtension}')
             self._filesystemCache.write(
                 path=metadataFilePath,
                 data=metadataContent)
@@ -939,7 +943,7 @@ class DataStore(object):
                 x=metadata.x(),
                 y=metadata.y(),
                 sectorFormat=sectorFormat,
-                metadataFormat=travellermap.MetadataFormat.XML, # Only XML metadata is supported for custom sectors
+                metadataFormat=metadataFormat,
                 isCustomSector=True,
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,

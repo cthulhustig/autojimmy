@@ -38,6 +38,16 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+_JsonMetadataWarning = """
+    <html>
+    <p>You\'re using JSON metadata which isn\'t supported by the Traveller Map Poster API that {name} uses
+    to generate custom sector maps. The metadata will be automatically converted to XML format before
+    uploading it to Traveller Map. This is mostly a transparent process, however any parsing errors
+    returned by Traveller Map will refer to the XML representation of the data.</p>
+    </html>
+""".format(name=app.AppName)
+_JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
+
 # This defines the scales of the different map images that will be generated. The values
 # are specifically chosen to match up with the scales that the Traveller Map rendering
 # code makes significant changes to how it renders the sector (e.g. transitioning from
@@ -377,7 +387,7 @@ class _LintJobResultsDialog(gui.DialogEx):
 
 class _NewSectorDialog(gui.DialogEx):
     _SectorFileFilter = 'Sector Files(*.sec *.tab *.t5 *.t5col *.t5row)'
-    _XmlFileFilter = 'XML Files(*.xml)'
+    _MetadataFileFilter = 'Metadata Files(*.xml *.json)'
     _AllFileFilter = 'All Files(*.*)'
 
     _CandyStyleWarning = \
@@ -395,8 +405,6 @@ class _NewSectorDialog(gui.DialogEx):
             parent=parent)
 
         self._recentDirectoryPath = None
-        self._sectorData = None
-        self._sectorMetadata = None
         self._sector = None
 
         self._setupFileSelectControls()
@@ -650,7 +658,7 @@ class _NewSectorDialog(gui.DialogEx):
     def _metadataFileBrowseClicked(self) -> None:
         path = self._showFileSelect(
             caption='Metadata File',
-            filter=f'{_NewSectorDialog._XmlFileFilter};;{_NewSectorDialog._AllFileFilter}')
+            filter=f'{_NewSectorDialog._MetadataFileFilter};;{_NewSectorDialog._AllFileFilter}')
         if not path:
             return # User cancelled
         self._metadataFileLineEdit.setText(path)
@@ -688,16 +696,34 @@ class _NewSectorDialog(gui.DialogEx):
             # to add support for proxying multipart/form-data
             mapUrl = app.Config.instance().travellerMapUrl()
 
+            xmlMetadata = None
             try:
                 metadataFilePath = self._metadataFileLineEdit.text()
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
-                    self._sectorMetadata = file.read()
+                    sectorMetadata = file.read()
 
-                travellermap.DataStore.instance().validateSectorMetadataXML(self._sectorMetadata)
-
-                rawMetadata = travellermap.readXMLMetadata(
-                    content=self._sectorMetadata,
-                    identifier=metadataFilePath)
+                metadataFormat = travellermap.metadataFileFormatDetect(
+                    content=sectorMetadata)
+                if not metadataFormat:
+                    raise RuntimeError('Unable to detect metadata format')
+                
+                rawMetadata = travellermap.readMetadata(
+                    content=sectorMetadata,
+                    format=metadataFormat,
+                    identifier=metadataFilePath)                
+                
+                if metadataFormat == travellermap.MetadataFormat.XML:
+                    xmlMetadata = sectorMetadata
+                    travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+                else:
+                    gui.AutoSelectMessageBox.information(
+                        parent=self,
+                        text=_JsonMetadataWarning,
+                        stateKey=_JsonMetadataWarningNoShowStateKey)
+                                        
+                    xmlMetadata = travellermap.writeXMLMetadata(
+                        metadata=rawMetadata,
+                        identifier='Generated XML metadata')
 
                 # This will throw if there is a conflict with an existing sector
                 travellermap.DataStore.instance().customSectorConflictCheck(
@@ -720,13 +746,13 @@ class _NewSectorDialog(gui.DialogEx):
             try:
                 sectorFilePath = self._sectorFileLineEdit.text()
                 with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
-                    self._sectorData = file.read()
+                    sectorData = file.read()
 
-                sectorFormat = travellermap.sectorFileFormatDetect(content=self._sectorData)
+                sectorFormat = travellermap.sectorFileFormatDetect(content=sectorData)
                 if not sectorFormat:
                     raise RuntimeError('Unknown sector file format')
                 travellermap.readSector(
-                    content=self._sectorData,
+                    content=sectorData,
                     format=sectorFormat,
                     identifier=sectorFilePath)
             except Exception as ex:
@@ -741,8 +767,8 @@ class _NewSectorDialog(gui.DialogEx):
             posterJob = jobs.PosterJobAsync(
                 parent=self,
                 mapUrl=mapUrl,
-                sectorData=self._sectorData,
-                sectorMetadata=self._sectorMetadata,
+                sectorData=sectorData,
+                xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
                 style=renderStyle,
                 options=self._renderOptionList(),
                 scales=_CustomMapScales,
@@ -765,8 +791,8 @@ class _NewSectorDialog(gui.DialogEx):
         try:
             self._sector = travellermap.DataStore.instance().createCustomSector(
                 milieu=app.Config.instance().milieu(),
-                sectorContent=self._sectorData,
-                metadataContent=self._sectorMetadata,
+                sectorContent=sectorData,
+                metadataContent=sectorMetadata, # Write the users metadata, not the xml metadata if it was converted
                 customMapStyle=renderStyle,
                 customMapOptions=self._renderOptionList(),
                 customMapImages=posters)
@@ -794,7 +820,7 @@ class _NewSectorDialog(gui.DialogEx):
             try:
                 sectorFilePath = self._sectorFileLineEdit.text()
                 with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
-                    self._sectorData = file.read()
+                    sectorData = file.read()
             except Exception as ex:
                 message = 'Failed to load sector file.'
                 logging.critical(message, exc_info=ex)
@@ -807,7 +833,30 @@ class _NewSectorDialog(gui.DialogEx):
             try:
                 metadataFilePath = self._metadataFileLineEdit.text()
                 with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
-                    self._sectorMetadata = file.read()
+                    sectorMetadata = file.read()
+
+                metadataFormat = travellermap.metadataFileFormatDetect(
+                    content=sectorMetadata)
+                if not metadataFormat:
+                    raise RuntimeError('Unable to detect metadata format')                
+                
+                if metadataFormat == travellermap.MetadataFormat.XML:
+                    xmlMetadata = sectorMetadata
+                    travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+                else:
+                    gui.AutoSelectMessageBox.information(
+                        parent=self,
+                        text=_JsonMetadataWarning,
+                        stateKey=_JsonMetadataWarningNoShowStateKey)
+
+                    rawMetadata = travellermap.readMetadata(
+                        content=sectorMetadata,
+                        format=metadataFormat,
+                        identifier=metadataFilePath)
+                    xmlMetadata = travellermap.writeXMLMetadata(
+                        metadata=rawMetadata,
+                        identifier='Generated XML metadata')
+
             except Exception as ex:
                 message = 'Failed to load metadata file.'
                 logging.critical(message, exc_info=ex)
@@ -820,8 +869,8 @@ class _NewSectorDialog(gui.DialogEx):
             lintJob = jobs.LintJobAsync(
                 parent=self,
                 mapUrl=mapUrl,
-                sectorData=self._sectorData,
-                sectorMetadata=self._sectorMetadata)
+                sectorData=sectorData,
+                xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(
                 title='Linting',
                 job=lintJob)

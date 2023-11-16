@@ -40,14 +40,14 @@ class LintJobAsync(QtCore.QObject):
             self,
             parent: QtCore.QObject,
             mapUrl: str,
-            sectorData: str,
-            sectorMetadata: typing.Optional[str]
+            sectorData: typing.Union[str, bytes],
+            xmlMetadata: typing.Optional[typing.Union[str, bytes]] # Must be XML format metadata
             ) -> None:
         super().__init__(parent=parent)
 
         self._mapUrl = mapUrl
-        self._sectorBytes = sectorData.encode()
-        self._metadataBytes = sectorMetadata.encode()
+        self._sectorBytes = sectorData.encode() if isinstance(sectorData, str) else sectorData
+        self._metadataBytes = xmlMetadata.encode() if isinstance(xmlMetadata, str) else xmlMetadata
 
         self._request = None
         self._results = None

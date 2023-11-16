@@ -653,6 +653,21 @@ def _readT5RowWorld(
             value=data)
     return worldData
 
+def metadataFileFormatDetect(content: str) -> typing.Optional[MetadataFormat]:
+    try:
+        xml.etree.ElementTree.fromstring(content)
+        return MetadataFormat.XML
+    except:
+        pass
+
+    try:
+        json.loads(content)
+        return MetadataFormat.JSON
+    except:
+        pass
+
+    return None    
+
 def readMetadata(
         content: str,
         format: MetadataFormat,

@@ -28,7 +28,7 @@ class PosterJobAsync(QtCore.QObject):
             parent: QtCore.QObject,
             mapUrl: str,
             sectorData: str,
-            sectorMetadata: typing.Optional[str],
+            xmlMetadata: typing.Optional[str], # Must be XML format metadata
             style: typing.Optional[travellermap.Style],
             options: typing.Optional[typing.Iterable[travellermap.Option]],
             scales: typing.Iterable[typing.Union[float, int]],
@@ -36,8 +36,8 @@ class PosterJobAsync(QtCore.QObject):
             ) -> None:
         super().__init__(parent=parent)
 
-        sectorBytes = sectorData.encode()
-        metadataBytes = sectorMetadata.encode()
+        sectorBytes = sectorData.encode() if isinstance(sectorData, str) else sectorData
+        metadataBytes = xmlMetadata.encode() if isinstance(xmlMetadata, str) else xmlMetadata
 
         self._mapUrl = mapUrl
         # NOTE: Use file for the sector data as AsyncRequest wraps the uploaded data in a byte
