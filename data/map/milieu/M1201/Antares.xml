@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Anta">
+  <Name>Antares</Name>
+  <Name Lang="vi">Mikasirka</Name>
+  <Credits>
+
+             &lt;b&gt;Antares&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+             
+             Adapted from details CARI (http://www.downport.com/bard/bard/cari/cari9009.html) 
+             and collapsed by Mark Humphreys
+
+    </Credits>
+  <X>1</X>
+  <Y>-1</Y>
+  <DataFile Source="CARI" Milieu="M1201" Ref="http://www.downport.com/bard/bard/cari/cari9009.html" />
+  <Subsectors>
+    <Subsector Source="Challenge #49" Index="A">Pelusium</Subsector>
+    <Subsector Source="Challenge #49" Index="B">Ninik</Subsector>
+    <Subsector Source="Challenge #49" Index="C">Dartho</Subsector>
+    <Subsector Source="Challenge #49" Index="D">Oulduktak</Subsector>
+    <Subsector Source="Challenge #69" Index="E">Shurlarlem</Subsector>
+    <Subsector Source="The Zhodani Base" Index="F">Sarar</Subsector>
+    <Subsector Source="The Zhodani Base" Index="G">Gimgir</Subsector>
+    <Subsector Source="The Zhodani Base" Index="H">Kiirkandin</Subsector>
+    <Subsector Source="The Zhodani Base" Index="I">Urunishu</Subsector>
+    <Subsector Source="The Zhodani Base" Index="J">Uradnim</Subsector>
+    <Subsector Source="The Zhodani Base" Index="K">Antares</Subsector>
+    <Subsector Source="The Zhodani Base" Index="L">Mukusi</Subsector>
+    <Subsector Source="The Zhodani Base" Index="M">Urgusap</Subsector>
+    <Subsector Source="The Zhodani Base" Index="N">Gaakish</Subsector>
+    <Subsector Source="The Zhodani Base" Index="O">Sakhag</Subsector>
+    <Subsector Source="The Zhodani Base" Index="P">Celebes</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="??">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#949599" Allegiance="Bi" LabelPosition="0538">0035 0136 0236 0237 0238 0339 0340 0440 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035</Border>
+  </Borders>
+</Sector>

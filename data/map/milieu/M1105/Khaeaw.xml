@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Khae">
+  <Name Lang="as">Khaeaw</Name>
+  <Credits />
+  <X>-8</X>
+  <Y>2</Y>
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/h4.htm" />
+  <Subsectors>
+    <Subsector Index="A">Hloeaoaa</Subsector>
+    <Subsector Index="B">Houkhtearl</Subsector>
+    <Subsector Index="C">Styehfyeao</Subsector>
+    <Subsector Index="D">Ihohea</Subsector>
+    <Subsector Index="E">Til</Subsector>
+    <Subsector Index="F">Hteikhea</Subsector>
+    <Subsector Index="G">Herealarl</Subsector>
+    <Subsector Index="H">Liyhiyea</Subsector>
+    <Subsector Index="I">Hfaaohkah</Subsector>
+    <Subsector Index="J">Khtuktiyh</Subsector>
+    <Subsector Index="K">Elahakh</Subsector>
+    <Subsector Index="L">Oiee</Subsector>
+    <Subsector Index="M">Uiwour</Subsector>
+    <Subsector Index="N">Uahtoealre</Subsector>
+    <Subsector Index="O">Ktourah</Subsector>
+    <Subsector Index="P">Fteisaueiea</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

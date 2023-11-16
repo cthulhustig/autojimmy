@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Vila">
+  <Name Source="Riftsedge Transit">Vilaakasii</Name>
+  <Credits />
+  <X>-11</X>
+  <Y>2</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Faoh">
+  <Name Lang="as">Faoheiroi'iyhao</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>2</Y>
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/h5.htm" />
+  <Subsectors>
+    <Subsector Index="A">Oiailau</Subsector>
+    <Subsector Index="B">Esuawa</Subsector>
+    <Subsector Index="C">Kektaiw</Subsector>
+    <Subsector Index="D">Waoasi</Subsector>
+    <Subsector Index="E">Uileftotia</Subsector>
+    <Subsector Index="F">Uasiy'</Subsector>
+    <Subsector Index="G">Wyoiyioi</Subsector>
+    <Subsector Index="H">Hwoirahwai</Subsector>
+    <Subsector Index="I">Yelrakhakh</Subsector>
+    <Subsector Index="J">Keaseawah</Subsector>
+    <Subsector Index="K">Taeafaiiha</Subsector>
+    <Subsector Index="L">Htauiroaei</Subsector>
+    <Subsector Index="M">Eakhatriy</Subsector>
+    <Subsector Index="N">Kawa</Subsector>
+    <Subsector Index="O">Fiyreas</Subsector>
+    <Subsector Index="P">Ealoi</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+  </Allegiances>
+</Sector>

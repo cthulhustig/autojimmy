@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Jontell</Name>
+  <Credits>
+      &lt;b&gt;Jontell&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>49</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Et">Empire of Thrax</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Et { color: blue }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="2308" Color="Gray" Size="large" Wrap="false">Jewelled Void</Label>
+    <Label Hex="2338" Color="Gray" Size="small" Wrap="false">RSS
+Jo2337</Label>
+  </Labels>
+  <Borders>
+    <Border ShowLabel="false" WrapLabel="true" Allegiance="Et" LabelPosition="2140">1940 2039 2038 2037 2137 2236 2336 2436 2437 2338 2238 2239 2340 2341 2241 2141 2041 1941 1940</Border>
+  </Borders>
+  <Regions>
+    <Region Color="DarkViolet" LabelPosition="0427" Label="Claw of Jontell">0126 0225 0224 0225 0226 0327 0427 0527 0626 0625 0624 0524 0624 0725 0726 0727 0627 0628 0529 0429 0430 0331 0230 0330 0329 0328 0227 0127 0126</Region>
+  </Regions>
+</Sector>

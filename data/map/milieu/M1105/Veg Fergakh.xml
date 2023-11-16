@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Vegf">
+  <Name Lang="va">Veg Fergakh</Name>
+  <Name Lang="va" Source="Underdeveloped">Veg Vergakh</Name>
+  <Credits />
+  <X>0</X>
+  <Y>-5</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+  </Allegiances>
+</Sector>

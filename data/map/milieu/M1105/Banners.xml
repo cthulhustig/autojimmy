@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Bann">
+  <Name>Banners</Name>
+  <Name Lang="as">Iyiyukhtoi'</Name>
+  <Credits />
+  <X>-2</X>
+  <Y>5</Y>
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/kE.htm" />
+  <Subsectors>
+    <Subsector Index="A">Htai'asta</Subsector>
+    <Subsector Index="B">Estoc</Subsector>
+    <Subsector Index="C">Warliyir</Subsector>
+    <Subsector Index="D">Dante</Subsector>
+    <Subsector Index="E">Hkaihwya</Subsector>
+    <Subsector Index="F">Thalkharl</Subsector>
+    <Subsector Index="G">Woal</Subsector>
+    <Subsector Index="H">Grange</Subsector>
+    <Subsector Index="I">Sander</Subsector>
+    <Subsector Index="J">Hiyakhyes</Subsector>
+    <Subsector Index="K">Roakh</Subsector>
+    <Subsector Index="L">Gobi</Subsector>
+    <Subsector Index="M">Mendon</Subsector>
+    <Subsector Index="N">Delsun</Subsector>
+    <Subsector Index="O">Virian</Subsector>
+    <Subsector Index="P">Harmond</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Ar">Aoiftu Roakh</Allegiance>
+    <Allegiance Code="Dc">Delsun Comagistrant</Allegiance>
+    <Allegiance Code="Ww">Woal Warliylr</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Goldenrod" Allegiance="Ar" LabelPosition="1726">1123 1223 1324 1424 1525 1625 1725 1824 1924 2024 2125 2224 2324 2224 2125 2126 2026 1927 1827 1728 1627 1527 1427 1327 1226 1126 1125 1124 1123</Border>
+    <Border Color="BurlyWood" Allegiance="Dc" LabelPosition="1236">1137 1236 1235 1336 1337 1236 1137</Border>
+    <Border Color="Khaki" Allegiance="Ww" LabelPosition="1911">1514 1613 1612 1712 1811 1911 1910 1909 2008 2007 2006 2106 2107 2207 2208 2209 2210 2211 2212 2313 2213 2114 2014 2015 1916 1815 1715 1615 1614 1514</Border>
+  </Borders>
+</Sector>

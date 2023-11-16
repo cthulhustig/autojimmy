@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Mugh">
+  <Name Lang="kk">Mugheen't</Name>
+  <Name Lang="va">Ogadogorz</Name>
+  <Credits />
+  <X>4</X>
+  <Y>-3</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="VC">Hezeraek Connective</Allegiance>
+    <Allegiance Code="VM">Mazaroegh Dominion</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Ko">Korsumug Empire</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="VC" LabelPosition="0914">0011 0111 0210 0310 0409 0408 0508 0607 0707 0806 0805 0905 1004 1105 1205 1305 1405 1506 1507 1607 1708 1709 1710 1711 1611 1612 1613 1614 1615 1516 1416 1417 1318 1218 1119 1019 0919 0819 0720 0619 0520 0420 0321 0221 0222 0223 0124 0024 0023 0022 0021 0020 0019 0018 0017 0016 0015 0014 0013 0012 0011</Border>
+    <Border Color="OliveDrab" Allegiance="VM" LabelPosition="0725">0423 0523 0622 0723 0823 0924 0925 0926 0826 0727 0627 0527 0526 0425 0424 0423</Border>
+  </Borders>
+</Sector>

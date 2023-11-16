@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Hint">
+  <Name>Hinterworlds</Name>
+  <Credits>
+
+             &lt;b&gt;Hinterworlds&lt;/b&gt; sector was designed by Marc W. Miller
+             and appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by Rob Caswell and Karl Johnson and
+             appears in &lt;cite&gt;Challenge Magazine&lt;/cite&gt;.
+             
+             TNE data from http://www.downport.com/bard/bard/opal/opal10412.html and 
+             http://www.downport.com/bard/bard/opal/opal10413.html by Eamon Watters
+
+    </Credits>
+  <X>2</X>
+  <Y>2</Y>
+  <DataFile Author="Rob Caswell and Karl Johnson" Source="OPAL" Milieu="M1201" Ref="http://www.downport.com/bard/bard/opal/opal10416.html" />
+  <Subsectors>
+    <Subsector Index="A">Adar</Subsector>
+    <Subsector Index="B">Tlianke</Subsector>
+    <Subsector Index="C">Anubis</Subsector>
+    <Subsector Index="D">Pendiash Ginshar</Subsector>
+    <Subsector Index="E">Cimeon</Subsector>
+    <Subsector Index="F">Darvis</Subsector>
+    <Subsector Index="G">Cromar</Subsector>
+    <Subsector Index="H">Menere's Reach</Subsector>
+    <Subsector Index="I">Nullia</Subsector>
+    <Subsector Index="J">Bruia</Subsector>
+    <Subsector Index="K">Silver Laurel</Subsector>
+    <Subsector Index="L">Sontra</Subsector>
+    <Subsector Index="M">Hashi</Subsector>
+    <Subsector Index="N">Kandra</Subsector>
+    <Subsector Index="O">Tempri</Subsector>
+    <Subsector Index="P">Aquila</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="??">Unknown</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Wi">Wilds</Allegiance>
+    <Allegiance Code="Rp">Ring Pact</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Rp { color: purple; }
+    route.Rp { color: lightyellow; }
+  </Stylesheet>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Rp" LabelPosition="1435" Label="Ring Pact">1134 1133 1132 1231 1332 1432 1532 1531 1532 1632 1733 1633 1634 1635 1536 1537 1538 1539 1538 1537 1436 1336 1235 1234 1134</Border>
+  </Borders>
+</Sector>

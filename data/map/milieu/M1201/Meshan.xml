@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Mesh">
+  <Name>Meshan</Name>
+  <Credits>
+
+             &lt;b&gt;Meshan&lt;/b&gt; sector was designed by Michael R. Mikesh
+             and appears in &lt;cite&gt;The Meshan Saga Magazine&lt;/cite&gt;.
+
+             Stellar positions were developed by Joe D. Fugate Sr. and
+             appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1: Vilani
+             &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications, 1990).
+
+             M1201 data from "The Meshan Saga" - https://books.google.co.uk/books/about/The_Original_Meshan_Saga.html?id=u0Vjh5vtL7kC&amp;redir_esc=y
+             and http://www.dedzone.net/traveller/sectors/meshan/
+    </Credits>
+  <X>0</X>
+  <Y>-2</Y>
+  <DataFile Author="Michael R. Mikesh" Source="Traveller 5 Sector Survey" Milieu="M1201" />
+  <Subsectors>
+    <Subsector Index="A">Raen</Subsector>
+    <Subsector Index="B">Lues</Subsector>
+    <Subsector Index="C">Ungersol</Subsector>
+    <Subsector Source="Challenge #49" Index="D">Dekesh</Subsector>
+    <Subsector Index="E">Yonder</Subsector>
+    <Subsector Index="F">Arena</Subsector>
+    <Subsector Index="G">Varson</Subsector>
+    <Subsector Source="Challenge #49" Index="H">Maramar</Subsector>
+    <Subsector Index="I">Mersol</Subsector>
+    <Subsector Index="J">Zisran</Subsector>
+    <Subsector Index="K">Tokho</Subsector>
+    <Subsector Source="Challenge #49" Index="L">Ogaros</Subsector>
+    <Subsector Index="M">Khuulu</Subsector>
+    <Subsector Index="N">Faengfel</Subsector>
+    <Subsector Index="O">Ekso</Subsector>
+    <Subsector Source="Challenge #49" Index="P">Sudzum</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="??">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="Tu">Tokho Union</Allegiance>
+    <Allegiance Code="Ki">Kisiidi</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Tu { color: lightblue; }
+    border.Ki { color: lightgreen; }
+  </Stylesheet>
+  <Borders>
+    <Border Allegiance="Ki" LabelPosition="2028">1829 1929 1928 1927 1926 1927 1928 2028 2129 2028 1929 1829</Border>
+    <Border Allegiance="Tu" LabelPosition="1925">1725 1824 1924 2023 1924 1824 1725 1726 1727 1726 1725</Border>
+  </Borders>
+</Sector>

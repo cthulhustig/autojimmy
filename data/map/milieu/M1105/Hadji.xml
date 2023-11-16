@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Hadj">
+  <Name>Hadji</Name>
+  <Credits />
+  <X>1</X>
+  <Y>5</Y>
+  <DataFile Author="Jo Grant" Milieu="M1105" Ref="http://www.zho.berka.com/data/CLASSIC/sector.pl?sector=HADJI" />
+  <Subsectors>
+    <Subsector Index="A">Winston</Subsector>
+    <Subsector Index="B">Charles</Subsector>
+    <Subsector Index="C">Josef</Subsector>
+    <Subsector Index="D">Franklin</Subsector>
+    <Subsector Index="E">Dubhghall</Subsector>
+    <Subsector Index="F">Ackerman</Subsector>
+    <Subsector Index="G">Jerome</Subsector>
+    <Subsector Index="H">Slava</Subsector>
+    <Subsector Index="I">Consuela</Subsector>
+    <Subsector Index="J">Jonson</Subsector>
+    <Subsector Index="K">Remi</Subsector>
+    <Subsector Index="L">Wise</Subsector>
+    <Subsector Index="M">Peter</Subsector>
+    <Subsector Index="N">Michelle</Subsector>
+    <Subsector Index="O">Baris</Subsector>
+    <Subsector Index="P">Robert</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Pb">Parity of Brothers</Allegiance>
+    <Allegiance Code="Cn">Creation of Nonpareil</Allegiance>
+    <Allegiance Code="Wd">Winston Democracy</Allegiance>
+    <Allegiance Code="Jf">Jonson-Bowes Federation</Allegiance>
+    <Allegiance Code="Wc">Council of the Wise</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Purple" Allegiance="Cn" LabelPosition="0121">0020 0120 0219 0220 0221 0122 0021 0020</Border>
+    <Border Color="Blue" Allegiance="Jf" LabelPosition="1121">1020 1121 1221 1222 1221 1121 1020</Border>
+    <Border Color="Brown" Allegiance="Pb" LabelPosition="0114">0013 0014 0115 0014 0013</Border>
+    <Border Color="Green" Allegiance="Wc" LabelPosition="2826">2525 2625 2725 2824 2924 3023 3123 3124 3024 2925 2825 2826 2827 2728 2627 2527 2526 2525</Border>
+    <Border Color="Purple" Allegiance="Wd" LabelPosition="0402">0000 0100 0200 0301 0401 0502 0601 0702 0703 0602 0503 0402 0302 0201 0101 0000</Border>
+  </Borders>
+</Sector>

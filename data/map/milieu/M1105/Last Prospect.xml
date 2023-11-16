@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Last">
+  <Name Source="Near Side of Yonder">Last Prospect</Name>
+  <Credits />
+  <X>-20</X>
+  <Y>4</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

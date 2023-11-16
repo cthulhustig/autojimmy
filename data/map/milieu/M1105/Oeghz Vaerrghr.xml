@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Oegh">
+  <Name Lang="va">Oeghz Vaerrghr</Name>
+  <Credits />
+  <X>1</X>
+  <Y>-4</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="VX">Vaoekghirkhr Exchange</Allegiance>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="VX" LabelPosition="0238">0038 0138 0237 0337 0336 0337 0338 0238 0139 0039 0040 0039 0038</Border>
+  </Borders>
+</Sector>

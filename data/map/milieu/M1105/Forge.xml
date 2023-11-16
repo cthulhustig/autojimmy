@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Forge</Name>
+  <Credits>
+      &lt;b&gt;Forge&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>52</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2224" Color="Gray" Wrap="false">Heart of the Night</Label>
+    <Label Hex="1719" Color="Gray" Size="large" Wrap="false">Ribbon Rift</Label>
+    <Label Hex="2137" Color="Gray" Wrap="false">Phanic Gap</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="1405" Label="Calavin Cloud">1106 1205 1204 1304 1404 1505 1605 1606 1707 1607 1608 1607 1507 1406 1307 1207 1208 1309 1408 1309 1208 1207 1107 1106</Region>
+    <Region Color="DarkBlue" LabelPosition="1307">1206 1307 1207 1208 1207 1206</Region>
+  </Regions>
+</Sector>

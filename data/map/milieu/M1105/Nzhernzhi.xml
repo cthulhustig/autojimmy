@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Nzhernzhi</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-46</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Enchinzh</Subsector>
+    <Subsector Index="B">Vevlvripl</Subsector>
+    <Subsector Index="C">Eklplats</Subsector>
+    <Subsector Index="D">Franzhbre</Subsector>
+    <Subsector Index="E">Aapl</Subsector>
+    <Subsector Index="F">Iej</Subsector>
+    <Subsector Index="G">Zhevldiable</Subsector>
+    <Subsector Index="H">Tizoie</Subsector>
+    <Subsector Index="I">Qlavlntenjabr</Subsector>
+    <Subsector Index="J">Tsafshins</Subsector>
+    <Subsector Index="K">Tliaplapliel</Subsector>
+    <Subsector Index="L">Dliapldebafl</Subsector>
+    <Subsector Index="M">Chtivnjanzjebl</Subsector>
+    <Subsector Index="N">Iaqrad</Subsector>
+    <Subsector Index="O">Qretstsijet</Subsector>
+    <Subsector Index="P">Yienjflee</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1325" End="1422" Type="Core Route" />
+    <Route Start="1325" End="1428" Type="Core Route" />
+    <Route Start="1422" End="1720" Type="Core Route" />
+    <Route Start="1428" End="1731" Type="Core Route" />
+    <Route Start="1610" End="1807" Type="Core Route" />
+    <Route Start="1610" End="1913" Type="Core Route" />
+    <Route Start="1720" End="1816" Type="Core Route" />
+    <Route Start="1731" End="2033" Type="Core Route" />
+    <Route Start="1807" End="1905" Type="Core Route" />
+    <Route Start="1816" End="1913" Type="Core Route" />
+    <Route Start="1905" End="2202" Type="Core Route" />
+    <Route Start="1937" End="1901" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1937" End="2033" Type="Core Route" />
+    <Route Start="2202" End="2039" EndOffsetY="-1" Type="Core Route" />
+  </Routes>
+</Sector>

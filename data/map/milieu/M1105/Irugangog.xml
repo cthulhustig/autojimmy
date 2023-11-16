@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Irug">
+  <Name Lang="va">Irugangog</Name>
+  <Name Lang="va" Source="Underdeveloped">Irugangong</Name>
+  <Name Lang="va">Ksongrru</Name>
+  <Credits />
+  <X>2</X>
+  <Y>-5</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+  </Allegiances>
+</Sector>

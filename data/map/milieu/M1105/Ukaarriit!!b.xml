@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Ukaa">
+  <Name Lang="kk">Ukaarriit!!b</Name>
+  <Name Lang="kk">Ukoarriit!!b</Name>
+  <Credits>
+
+               &lt;b&gt;Ukaarriit!!b&lt;/b&gt; sector was designed by WG Zeist.
+
+      </Credits>
+  <X>6</X>
+  <Y>-3</Y>
+  <DataFile Author="WG Zeist" Source="explorerbase" Milieu="M1105" Ref="https://explorerbase.wordpress.com/ukaarriitb-sector-data/" />
+  <Subsectors>
+    <Subsector Index="A">Upward Void</Subsector>
+    <Subsector Index="B">System Solo</Subsector>
+    <Subsector Index="C">Above Corner</Subsector>
+    <Subsector Index="D">Inside Island</Subsector>
+    <Subsector Index="E">Snowballs</Subsector>
+    <Subsector Index="F">Surrounded Space</Subsector>
+    <Subsector Index="G">The Corner</Subsector>
+    <Subsector Index="H">Edge Starside</Subsector>
+    <Subsector Index="I">Beltspot</Subsector>
+    <Subsector Index="J">Ring on Edge</Subsector>
+    <Subsector Index="K">Between Stars</Subsector>
+    <Subsector Index="L">Island Fringe</Subsector>
+    <Subsector Index="M">The Fork</Subsector>
+    <Subsector Index="N">Shallow Depths</Subsector>
+    <Subsector Index="O">Shore Barrens</Subsector>
+    <Subsector Index="P">Alsnias</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

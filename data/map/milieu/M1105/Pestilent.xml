@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Pestilent</Name>
+  <Credits>
+      &lt;b&gt;Pestilent&lt;/b&gt; sector was designed by Ade Stewart as part of Where the Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>58</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="F">Ward</Subsector>
+    <Subsector Index="G">Damned</Subsector>
+    <Subsector Index="H">Scourge</Subsector>
+    <Subsector Index="K">Blighted</Subsector>
+    <Subsector Index="L">Spur</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+    <Allegiance Code="La">League of Asclepius</Allegiance>
+    <Allegiance Code="Cu">The Cursed</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Cu { color: Darkred; style: dotted }
+    border.La { color: green; style: dotted }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="1815" Color="DarkRed" Size="small" Wrap="false">Path of
+The Cursed</Label>
+    <Label Hex="1308" Color="Gray" Wrap="false">Black Reach</Label>
+    <Label Hex="2105" Color="Gray" Wrap="false">Empty Space</Label>
+    <Label Hex="1633" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+    <Label Hex="1821" Color="Gray" Wrap="false">Ion Gate</Label>
+    <Label Hex="1518" Color="Gray" Wrap="false">RSS
+Pe1517</Label>
+  </Labels>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="La" LabelPosition="1320">1118 1217 1317 1416 1516 1616 1617 1518 1519 1419 1320 1219 1119 1118</Border>
+    <Border Allegiance="Cu" LabelPosition="2418">2115 2214 2314 2414 2415 2516 2517 2617 2718 2719 2720 2620 2521 2522 2523 2423 2323 2222 2221 2220 2219 2119 2118 2117 2116 2115</Border>
+  </Borders>
+  <Routes>
+    <Route Start="1517" End="1716" Style="Dashed" Color="DarkRed" />
+    <Route Start="1716" End="1814" Style="Dashed" Color="DarkRed" />
+    <Route Start="1814" End="1914" Style="Dashed" Color="DarkRed" />
+    <Route Start="1914" End="2215" Style="Dashed" Color="DarkRed" />
+  </Routes>
+</Sector>

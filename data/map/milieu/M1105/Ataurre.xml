@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Atau">
+  <Name>Ataurre</Name>
+  <Credits />
+  <X>5</X>
+  <Y>5</Y>
+  <DataFile Author="Bari Z. Stafford Sr." Source="The Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <Subsectors>
+    <Subsector Index="A">Ataur</Subsector>
+    <Subsector Index="B">Baurre</Subsector>
+    <Subsector Index="C">Catauk</Subsector>
+    <Subsector Index="D">Daurtee</Subsector>
+    <Subsector Index="E">Erruat</Subsector>
+    <Subsector Index="F">Flataur</Subsector>
+    <Subsector Index="G">Ghaurrge</Subsector>
+    <Subsector Index="H">Hurrek</Subsector>
+    <Subsector Index="I">Itaurres</Subsector>
+    <Subsector Index="J">Jataum</Subsector>
+    <Subsector Index="K">Klatau</Subsector>
+    <Subsector Index="L">Laurrex</Subsector>
+    <Subsector Index="M">Muarred</Subsector>
+    <Subsector Index="N">Natuaan</Subsector>
+    <Subsector Index="O">Otauna</Subsector>
+    <Subsector Index="P">Pretau</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

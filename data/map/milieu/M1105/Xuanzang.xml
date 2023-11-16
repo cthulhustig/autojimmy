@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU Unreviewed" Abbreviation="Xuan">
+  <Name>Xuanzang</Name>
+  <Credits>
+
+             &lt;b&gt;Xuanzang&lt;/b&gt; sector was designed by Martin Dougherty
+             and appears (partially) in &lt;cite&gt;Rim Expeditions&lt;/cite&gt; (Mongoose, 2023).
+
+    </Credits>
+  <X>-2</X>
+  <Y>15</Y>
+  <Product Author="Martin J. Dougherty" Title="Rim Expeditions" Publisher="Mongoose Publishing" Ref="https://www.mongoosepublishing.com/products/rim-expeditions" />
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">A</Subsector>
+    <Subsector Index="B">B</Subsector>
+    <Subsector Index="C">C</Subsector>
+    <Subsector Index="D">D</Subsector>
+    <Subsector Index="E">E</Subsector>
+    <Subsector Index="F">F</Subsector>
+    <Subsector Index="G">G</Subsector>
+    <Subsector Index="H">H</Subsector>
+    <Subsector Index="I">I</Subsector>
+    <Subsector Index="J">J</Subsector>
+    <Subsector Index="K">K</Subsector>
+    <Subsector Index="L">L</Subsector>
+    <Subsector Index="M">Moksadeva</Subsector>
+    <Subsector Index="N">N</Subsector>
+    <Subsector Index="O">O</Subsector>
+    <Subsector Index="P">P</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="So" Base="So">Solomani Confederation</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Blue" Allegiance="SoXE" LabelPosition="0735" Label="Xuanzang Enclave">0536 0636 0737 0636 0537 0536</Border>
+  </Borders>
+</Sector>

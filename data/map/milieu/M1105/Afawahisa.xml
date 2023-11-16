@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="InReview OTU" Abbreviation="Afaw">
+  <Name Lang="as">Afawahisa</Name>
+  <Credits>
+
+             &lt;b&gt;Afawahisa&lt;/b&gt; sector was designed by Jo Grant
+             with further refinement by Joshua Bell
+             and Martin J. Dougherty.
+
+             Stellar positions were developed by Joe D. Fugate Sr. and
+             appear in &lt;cite&gt;The MegaTraveller Alien, Volume 2: Solomani
+             &amp;amp; Aslan&lt;/cite&gt; (Digest Group Publications, 1991).
+
+    </Credits>
+  <X>-5</X>
+  <Y>2</Y>
+  <Product Author="Martin J. Dougherty" Title="The Great Rift, Book 3: Touchstone &amp; Afawahisa" Publisher="Mongoose Publishing" Ref="https://www.mongoosepublishing.com/products/the-great-rift" />
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/hB.htm" />
+  <Subsectors>
+    <Subsector Index="A">Hkao</Subsector>
+    <Subsector Index="B">Steakheya</Subsector>
+    <Subsector Index="C">Etaa</Subsector>
+    <Subsector Index="D">Aoaakhaowea</Subsector>
+    <Subsector Index="E">Hkyewaol</Subsector>
+    <Subsector Index="F">Khtoueaesih</Subsector>
+    <Subsector Index="G">Hahkuleiea</Subsector>
+    <Subsector Index="H">Ahesailiyhah</Subsector>
+    <Subsector Index="I">Yuyahtao</Subsector>
+    <Subsector Index="J">Iuatyeleahoi</Subsector>
+    <Subsector Index="K">Oarua</Subsector>
+    <Subsector Index="L">Ryuwahah</Subsector>
+    <Subsector Index="M">Htaoeasee</Subsector>
+    <Subsector Index="N">Tousyosyesoh</Subsector>
+    <Subsector Index="O">Hkiyiyfteah</Subsector>
+    <Subsector Index="P">Ehrelew</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="AsTv" Base="As">Aslan Hierate, Tlaukhu vassal clan dominates</Allegiance>
+    <Allegiance Code="AsT1" Base="As">Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)</Allegiance>
+    <Allegiance Code="AsMw" Base="As">Aslan Hierate, single multiple-world clan dominates</Allegiance>
+    <Allegiance Code="AsSc" Base="As">Aslan Hierate, multiple clans split control</Allegiance>
+    <Allegiance Code="AsVc" Base="As">Aslan Hierate, vassal clan dominates</Allegiance>
+    <Allegiance Code="AsT9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
+    <Allegiance Code="AsWc" Base="As">Aslan Hierate, single one-world clan dominates</Allegiance>
+    <Allegiance Code="AsT2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
+    <Allegiance Code="AsT3" Base="As">Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)</Allegiance>
+    <Allegiance Code="AsT0" Base="As">Aslan Hierate, Tlaukhu control, Yerlyaruiwo (1), Hrawoao (13), Eisohiyw (14), Ferekhearl (19)</Allegiance>
+    <Allegiance Code="AsT5" Base="As">Aslan Hierate, Tlaukhu control, Hlyueawi (6), Isoitiyro (15)</Allegiance>
+    <Allegiance Code="AsT8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okunir (29)</Allegiance>
+    <Allegiance Code="AsXX" Base="As">Aslan Hierate, unknown</Allegiance>
+    <Allegiance Code="AsT7" Base="As">Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerfearlyo (20), Yehtahikh (24)</Allegiance>
+    <Allegiance Code="AsT6" Base="As">Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)</Allegiance>
+    <Allegiance Code="AsTz" Base="As">Aslan Hierate, Zodia clan</Allegiance>
+    <Allegiance Code="AsT4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="As" LabelPosition="1729">0031 0131 0230 0331 0430 0530 0629 0729 0728 0828 0928 1027 1128 1228 1329 1428 1528 1628 1728 1827 1928 2027 2127 2226 2326 2425 2525 2524 2624 2724 2823 2923 3022 3122 3121 3120 3119 3218 3217 3216 3316 3317 3318 3319 3320 3321 3322 3323 3324 3325 3326 3327 3328 3329 3330 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2041 1941 1841 1741 1641 1541 1441 1341 1241 1141 1041 0941 0841 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031</Border>
+  </Borders>
+  <Regions>
+    <Region Color="Indigo" LabelPosition="0308" Label="Rinean Shoal">0110 0209 0309 0308 0407 0406 0405 0506 0507 0407 0408 0309 0310 0210 0110</Region>
+  </Regions>
+  <Routes>
+    <Route Start="3219" End="0117" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3219" End="0220" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3122" End="0222" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3229" End="0330" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3229" End="0131" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3132" End="0131" EndOffsetX="1" Allegiance="As" />
+    <Route Start="3132" End="0133" EndOffsetX="1" Allegiance="As" />
+    <Route Start="1340" End="1201" EndOffsetY="1" Allegiance="As" />
+    <Route Start="1440" End="1402" EndOffsetY="1" Allegiance="As" />
+    <Route Start="2039" End="2101" EndOffsetY="1" Allegiance="As" />
+    <Route Start="1040" End="0902" EndOffsetY="1" Allegiance="As" />
+    <Route Start="3140" End="2902" EndOffsetY="1" Allegiance="As" />
+    <Route Start="3140" End="3202" EndOffsetY="1" Allegiance="As" />
+    <Route Start="1340" End="1040" Allegiance="As" />
+    <Route Start="3219" End="3119" Allegiance="As" />
+    <Route Start="3219" End="3122" Allegiance="As" />
+    <Route Start="3122" End="3022" Allegiance="As" />
+    <Route Start="3022" End="3025" Allegiance="As" />
+    <Route Start="3025" End="3127" Allegiance="As" />
+    <Route Start="3127" End="3028" Allegiance="As" />
+    <Route Start="3028" End="2927" Allegiance="As" />
+    <Route Start="2927" End="3025" Allegiance="As" />
+    <Route Start="3025" End="2725" Allegiance="As" />
+    <Route Start="2725" End="2624" Allegiance="As" />
+    <Route Start="2927" End="2628" Allegiance="As" />
+    <Route Start="2628" End="2629" Allegiance="As" />
+    <Route Start="2628" End="2328" Allegiance="As" />
+    <Route Start="2328" End="2131" Allegiance="As" />
+    <Route Start="2328" End="2027" Allegiance="As" />
+    <Route Start="2131" End="1833" Allegiance="As" />
+    <Route Start="1833" End="1736" Allegiance="As" />
+    <Route Start="1833" End="1734" Allegiance="As" />
+    <Route Start="1734" End="1736" Allegiance="As" />
+    <Route Start="1736" End="1538" Allegiance="As" />
+    <Route Start="1538" End="1539" Allegiance="As" />
+    <Route Start="1539" End="1440" Allegiance="As" />
+    <Route Start="1340" End="1538" Allegiance="As" />
+    <Route Start="3028" End="3229" Allegiance="As" />
+    <Route Start="2933" End="3132" Allegiance="As" />
+    <Route Start="1432" End="1734" Allegiance="As" />
+    <Route Start="2131" End="2234" Allegiance="As" />
+    <Route Start="1736" End="2136" Allegiance="As" />
+    <Route Start="2136" End="2234" Allegiance="As" />
+    <Route Start="2136" End="2139" Allegiance="As" />
+    <Route Start="2139" End="2039" Allegiance="As" />
+  </Routes>
+</Sector>

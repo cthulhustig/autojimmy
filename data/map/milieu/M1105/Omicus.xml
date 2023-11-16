@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Omicus</Name>
+  <Credits>
+      &lt;b&gt;Omicus&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>54</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="O">Vacuous</Subsector>
+    <Subsector Index="P">Jannasta</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+    <Allegiance Code="Bw">Bone Worlds</Allegiance>
+    <Allegiance Code="Dr">Dominion of Ruins</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Bw { color: green; style: dotted }
+    border.Dr { color: blue; style: dotted }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="2517" Color="Gray" Size="large" Wrap="false">Cauda Rift</Label>
+    <Label Hex="2231" Color="Gray" Wrap="false">Little Split</Label>
+  </Labels>
+  <Borders>
+    <Border ShowLabel="false" Allegiance="Bw" LabelPosition="2340">2041 2141 2140 2239 2339 2439 2540 2541 2441 2341 2241 2141 2041</Border>
+    <Border ShowLabel="false" Allegiance="Dr" LabelPosition="3138">2837 2937 2936 3035 3136 3236 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2940 2839 2838 2837</Border>
+  </Borders>
+</Sector>

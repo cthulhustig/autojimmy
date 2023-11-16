@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Gulf</Name>
+  <Credits>
+      &lt;b&gt;Gulf&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>54</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Liradi</Subsector>
+    <Subsector Index="D">Ikhasha</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+    <Allegiance Code="Sx">Sath Exploration</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1621" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+  </Labels>
+</Sector>

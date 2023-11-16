@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Mikh">
+  <Name>Mikhail</Name>
+  <Name>Gamesh Nandroze</Name>
+  <Credits />
+  <X>3</X>
+  <Y>5</Y>
+  <DataFile Author="Mark Humphreys" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Androze</Subsector>
+    <Subsector Index="B">Bandroze</Subsector>
+    <Subsector Index="C">Candroze</Subsector>
+    <Subsector Index="D">Dandroze</Subsector>
+    <Subsector Index="E">Eendroze</Subsector>
+    <Subsector Index="F">Fandroze</Subsector>
+    <Subsector Index="G">Gandroze</Subsector>
+    <Subsector Index="H">Handroze</Subsector>
+    <Subsector Index="I">Iindroze</Subsector>
+    <Subsector Index="J">Jamdross</Subsector>
+    <Subsector Index="K">Kandrose</Subsector>
+    <Subsector Index="L">Landross</Subsector>
+    <Subsector Index="M">Mandroze</Subsector>
+    <Subsector Index="N">Nandroze</Subsector>
+    <Subsector Index="O">Oinkhail</Subsector>
+    <Subsector Index="P">Phikhail</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+</Sector>

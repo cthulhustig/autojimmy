@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Range</Name>
+  <Credits>
+      &lt;b&gt;Range&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>57</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1312" Color="Gray" Wrap="false">Desolate Space</Label>
+    <Label Hex="2025" Color="Gray" Size="large" Wrap="false">Basilisk Rift</Label>
+    <Label Hex="2233" Color="Gray" Wrap="false">Wrongshore</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="0516" Label="Hawk Cloud">0216 0316 0416 0516 0515 0414 0413 0514 0614 0715 0814 0914 1014 0914 0814 0715 0716 0616 0617 0718 0617 0517 0417 0317 0216</Region>
+  </Regions>
+</Sector>

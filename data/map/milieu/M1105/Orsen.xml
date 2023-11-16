@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Orsen</Name>
+  <Credits>
+      &lt;b&gt;Orsen&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>51</X>
+  <Y>28</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1008" Color="Gray" Size="large" Wrap="false">Auline Gulf</Label>
+    <Label Hex="2821" Color="Gray" Size="small" Wrap="false">RSS
+Or2820</Label>
+  </Labels>
+</Sector>

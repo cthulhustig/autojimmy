@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Rift">
+  <Name>Riftspan Reaches</Name>
+  <Name Lang="as">Iiyoihakh</Name>
+  <Credits>
+
+             &lt;b&gt;Riftspan Reaches&lt;/b&gt; sector was designed by Marc W.
+             Miller and appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt;
+             (GDW, 1984).
+
+             It was refined by James Holden and appears in &lt;cite&gt;The
+             Travellers Digest&lt;/cite&gt;.
+
+             It was extracted based on information derived from
+             &lt;cite&gt;1248 Sourcebook 3: The Spinward States&lt;/cite&gt;
+             (ComStar Media/Avenger Enterprises, 2008).
+    </Credits>
+  <X>-4</X>
+  <Y>1</Y>
+  <Product Author="Mike West" Title="1248 Sourcebook 3: The Spinward States" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1201" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="A4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Yellow" Allegiance="As" LabelPosition="0604">0000 0100 0200 0300 0400 0500 0600 0700 0800 0900 1000 1100 1200 1201 1202 1103 1003 0904 0905 0805 0706 0606 0507 0407 0308 0208 0109 0008 0007 0006 0005 0004 0003 0002 0001 0000</Border>
+  </Borders>
+</Sector>

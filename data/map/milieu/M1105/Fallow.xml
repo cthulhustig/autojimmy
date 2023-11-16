@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Fallow</Name>
+  <Credits>
+      &lt;b&gt;Fallow&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>52</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="L">Colsarin</Subsector>
+    <Subsector Index="O">Tzura</Subsector>
+    <Subsector Index="P">Nambe</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1628" Color="Gray" Size="large" Wrap="false">Moat Rifts</Label>
+  </Labels>
+</Sector>

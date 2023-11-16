@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Cros">
+  <Name Source="The Far Side of Nowhere">Crossing</Name>
+  <Credits />
+  <X>-19</X>
+  <Y>5</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

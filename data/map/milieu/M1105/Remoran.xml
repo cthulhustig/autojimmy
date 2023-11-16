@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Remoran</Name>
+  <Credits>
+      &lt;b&gt;Remoran&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>48</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="0823" Color="Gray" Size="large" Wrap="false">The Rift</Label>
+    <Label Hex="3022" Color="Gray" Size="small" Wrap="false">RSS
+Ra3021</Label>
+  </Labels>
+</Sector>

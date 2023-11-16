@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Deep">
+  <Name Source="Riftsedge Transit">Deepnight</Name>
+  <Credits />
+  <X>-12</X>
+  <Y>2</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

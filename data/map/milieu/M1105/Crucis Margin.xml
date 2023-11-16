@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="InReview OTU" Abbreviation="Cruc">
+  <Name>Crucis Margin</Name>
+  <Credits>
+
+             &lt;b&gt;Crucis Margin&lt;/b&gt; sector was designed by Dave Sering
+             and appears in &lt;cite&gt;Crucis Margin&lt;/cite&gt; (Judges Guild,
+             1981). It was later revised by Martin J. Dougherty and
+             Hunter Gordon and appears in &lt;cite&gt;Gateway to
+             Destiny&lt;/cite&gt; (QuickLink Interactive, 2006).
+
+    </Credits>
+  <X>3</X>
+  <Y>1</Y>
+  <DataFile Author="Martin J. Dougherty and Hunter Gordon" Source="Traveller 5 Second Survey" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Ostermann</Subsector>
+    <Subsector Index="B">Vandir</Subsector>
+    <Subsector Index="C">Outrun</Subsector>
+    <Subsector Index="D">Chin Shan</Subsector>
+    <Subsector Index="E">Raidermarch</Subsector>
+    <Subsector Index="F">NewSun</Subsector>
+    <Subsector Index="G">Old Worlds</Subsector>
+    <Subsector Index="H">Peril's Edge</Subsector>
+    <Subsector Index="I">Kobe</Subsector>
+    <Subsector Index="J">Bright Heavens</Subsector>
+    <Subsector Index="K">Reach</Subsector>
+    <Subsector Index="L">No Return</Subsector>
+    <Subsector Index="M">Syzlin</Subsector>
+    <Subsector Index="N">Taitin</Subsector>
+    <Subsector Index="O">Scatter</Subsector>
+    <Subsector Index="P">Kixum</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="GlFe">Glimmerdrift Federation</Allegiance>
+    <Allegiance Code="KaWo">Karhyri Worlds</Allegiance>
+    <Allegiance Code="GdKa">Grand Duchy of Kalradin</Allegiance>
+    <Allegiance Code="MiCo">Mische Conglomerate</Allegiance>
+    <Allegiance Code="SyRe">Syzlin Republic</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="OlWo">Old Worlds</Allegiance>
+    <Allegiance Code="FeAm">Federation of Amil</Allegiance>
+    <Allegiance Code="KaCo">Katowice Conquest</Allegiance>
+    <Allegiance Code="Reac">The Reach</Allegiance>
+    <Allegiance Code="MrCo">Mercantile Concord</Allegiance>
+    <Allegiance Code="NaDr">Non-Aligned, Droyne-dominated</Allegiance>
+    <Allegiance Code="CsIm">Client state, Third Imperium</Allegiance>
+    <Allegiance Code="CsHv">Client state, Hive Federation</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" WrapLabel="true" Color="Blue" Allegiance="GlFe" LabelPosition="0122">0020 0121 0122 0222 0122 0022 0021 0020</Border>
+    <Border WrapLabel="true" Color="DarkRed" Allegiance="MiCo" LabelPosition="0703">0601 0702 0801 0901 1001 1102 1002 0903 0904 0804 0704 0703 0702 0601</Border>
+    <Border Color="OliveDrab" Allegiance="FeAm" LabelPosition="1703">1502 1601 1701 1801 1902 1802 1702 1602 1502</Border>
+    <Border Color="DarkKhaki" Allegiance="GdKa" LabelPosition="0413">0214 0314 0413 0412 0413 0514 0614 0615 0616 0617 0517 0416 0316 0215 0214</Border>
+    <Border Color="DarkSlateGray" Allegiance="OlWo" LabelPosition="1820">1417 1517 1516 1616 1717 1816 1817 1918 2018 2019 2020 2021 2122 2021 1922 1822 1722 1622 1523 1522 1521 1520 1519 1518 1417</Border>
+    <Border Color="DarkBlue" Allegiance="KaCo" LabelPosition="2114">1813 1913 2012 2013 2114 2214 2215 2316 2215 2116 2016 2015 2014 1914 1813</Border>
+    <Border WrapLabel="true" Color="Purple" Allegiance="MrCo" LabelPosition="3005">2405 2505 2504 2603 2602 2702 2701 2801 2902 3002 3103 3202 3203 3204 3205 3106 3107 3108 3008 2909 2809 2810 2811 2812 2813 2713 2612 2611 2610 2609 2608 2508 2407 2406 2405</Border>
+    <Border Color="DarkBlue" Allegiance="SyRe" LabelPosition="0936">0729 0829 0929 1029 1130 1131 1132 1133 1233 1134 1135 1136 1137 1037 1038 1037 0937 0836 0736 0835 0834 0833 0832 0831 0830 0829 0729</Border>
+    <Border Color="DarkKhaki" Allegiance="KaWo" LabelPosition="0639">0140 0239 0238 0339 0439 0540 0640 0540 0440 0340 0240 0140</Border>
+    <Border Color="Orange" Allegiance="Reac" LabelPosition="2729">2329 2428 2528 2627 2728 2627 2528 2428 2329</Border>
+  </Borders>
+</Sector>

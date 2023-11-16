@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Plia">
+  <Name Lang="zh">Pliabriebl</Name>
+  <Credits />
+  <X>-9</X>
+  <Y>-2</Y>
+  <DataFile Author="Marc Miller" Milieu="M1105" Ref="https://farfuture.net/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

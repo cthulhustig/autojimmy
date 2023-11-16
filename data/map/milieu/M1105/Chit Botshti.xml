@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Chit">
+  <Name Lang="zh">Chit Botshti</Name>
+  <Name Lang="va">Ugoede</Name>
+  <Credits>
+
+             &lt;b&gt;Chit Botshti&lt;/b&gt; sector was designed by John G.
+             Wood and WG Zeist, with updates by Michael Gonzalez
+             and Adrian Tymes.
+
+             Stellar positions were developed by Joe D. Fugate Sr.
+             and appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1:
+             Vilani &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications,
+             1990).
+
+    </Credits>
+  <X>-5</X>
+  <Y>-4</Y>
+  <DataFile Author="John G. Wood, WG Zeist" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors>
+    <Subsector Index="A">Otrapl</Subsector>
+    <Subsector Index="B">Zhanzhaieb</Subsector>
+    <Subsector Index="C">Tsezats</Subsector>
+    <Subsector Index="D">Airoch</Subsector>
+    <Subsector Index="E">Itla</Subsector>
+    <Subsector Index="F">Izhdiazapent</Subsector>
+    <Subsector Index="G">Peqleav</Subsector>
+    <Subsector Index="H">Taakasiev</Subsector>
+    <Subsector Index="I">Anje</Subsector>
+    <Subsector Index="J">Betszdiefla</Subsector>
+    <Subsector Index="K">Pleriae</Subsector>
+    <Subsector Index="L">Mie</Subsector>
+    <Subsector Index="M">Vlitlchad</Subsector>
+    <Subsector Index="N">Dlinzievie</Subsector>
+    <Subsector Index="O">Zdieitlinzh</Subsector>
+    <Subsector Index="P">Zhipliaoql</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+    <Allegiance Code="Wc">Wave Chasers</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="TY">Taakas Yh'Drak</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="0510" Allegiance="Wc" Color="#FFCC00" Wrap="true">Wave Chaser Migration</Label>
+  </Labels>
+  <Borders>
+    <Border Color="Purple" Allegiance="TY" LabelPosition="3024">2722 2821 2922 3022 3122 3221 3321 3322 3323 3324 3325 3326 3226 3127 3027 3026 3025 3024 3023 2923 2822 2722</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0640" End="0603" StartOffsetY="-1" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+    <Route Start="0603" End="0606" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+    <Route Start="0606" End="0508" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+    <Route Start="0508" End="0511" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+    <Route Start="0511" End="0513" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+    <Route Start="0513" End="0516" Color="#0080FF" Allegiance="Wc" Type="Migration" />
+  </Routes>
+</Sector>

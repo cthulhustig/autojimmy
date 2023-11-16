@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Hirada</Name>
+  <Credits>
+      &lt;b&gt;Hirada&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>49</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="0624" Color="Gray" Size="large" Wrap="false">The Rift</Label>
+    <Label Hex="2608" Color="Gray" Size="large" Wrap="false">Nebula Void</Label>
+    <Label Hex="1823" Color="Gray" Size="small" Wrap="false">RSS
+Hi1822</Label>
+  </Labels>
+  <Regions>
+    <Region Color="Red" LabelPosition="3125" Label="Lesser&#10;Curtain Nebula">3124 3223 3224 3125 3126 3226 3126 3125 3124</Region>
+    <Region Color="Red" LabelPosition="3022">3022</Region>
+    <Region Color="DarkViolet" LabelPosition="0236">0134 0234 0334 0234 0235 0236 0337 0237 0137 0136 0135 0134</Region>
+    <Region Color="DarkViolet" LabelPosition="1017" Label="Hirada Shoal">0715 0814 0914 1014 1114 1115 1015 1016 1117 1118 1018 1019 1020 1121 1221 1122 1021 1020 0920 0820 0819 0919 0918 0917 0816 0815 0715</Region>
+  </Regions>
+</Sector>

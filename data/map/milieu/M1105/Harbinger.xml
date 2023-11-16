@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Harb">
+  <Name>Harbinger</Name>
+  <Credits />
+  <X>7</X>
+  <Y>-5</Y>
+  <DataFile Author="David Blalock" Milieu="M1105" Ref="https://travellermap.com/data/Harbinger" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+</Sector>

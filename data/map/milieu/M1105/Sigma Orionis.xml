@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OrionOB1">
+  <Name>Sigma Orionis</Name>
+  <Credits>
+
+             &lt;b&gt;Sigma Orionis&lt;/b&gt; sector was designed by WG Zeist.
+
+    </Credits>
+  <X>5</X>
+  <Y>11</Y>
+  <DataFile Author="WG Zeist" Milieu="M1105" Ref="https://explorerbase.wordpress.com" />
+  <Subsectors>
+    <Subsector Index="A">Sigma Orionis</Subsector>
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G">63 Orionis</Subsector>
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J">Orion Nebula</Subsector>
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N">Trapezium Cluster</Subsector>
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Mc">M'norr Client State</Allegiance>
+  </Allegiances>
+  <Regions>
+    <Region Color="Red" LabelPosition="1229" Label="Orion Nebula">0933 0932 0931 0930 1029 1028 1027 1127 1226 1327 1426 1427 1428 1529 1530 1531 1532 1533 1433 1334 1233 1134 1033 0933</Region>
+  </Regions>
+  <Routes>
+    <Route Start="0226" End="3027" StartOffsetX="1" Color="Orange" />
+    <Route Start="1132" End="1231" />
+    <Route Start="1231" End="1232" />
+    <Route Start="1232" End="1332" />
+    <Route Start="1332" End="1132" />
+    <Route Start="1232" End="1132" />
+    <Route Start="1332" End="1231" />
+    <Route Start="3027" End="2627" Color="Orange" />
+    <Route Start="2627" End="2331" Color="Orange" />
+    <Route Start="2331" End="2033" Color="Orange" />
+    <Route Start="2033" End="1634" Color="Orange" />
+    <Route Start="1634" End="1232" Color="Orange" />
+    <Route Start="1232" End="0832" Color="Orange" />
+    <Route Start="0832" End="0532" Color="Orange" />
+    <Route Start="0532" End="0131" Color="Orange" />
+    <Route Start="0131" End="2928" EndOffsetX="-1" Color="Orange" />
+  </Routes>
+</Sector>

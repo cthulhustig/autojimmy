@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway">
+  <Name>Rigel</Name>
+  <Credits>
+      &lt;p&gt;
+        &lt;b&gt;Rigel&lt;/b&gt; subsector appears in Queskania, Issue 3 and was created by Douglas Webb. &lt;b&gt;Oranite&lt;/b&gt; subsector was created by Graham Donald.
+      &lt;/p&gt;
+      &lt;p&gt;
+        Data for Rigel subsector was transcribed and edited by Graham Donald.
+      &lt;/p&gt;
+    </Credits>
+  <X>69</X>
+  <Y>60</Y>
+  <DataFile Author="Douglas Webb" Source="Queskania, Issue 3" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="C">Oranite</Subsector>
+    <Subsector Index="D">Rigel</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="OC">Oranite Confederation</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="SP">Skania Pact</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border { color: gray }
+    route.TradeMinor { Color: gray; style: dashed; width: 0.5 }
+  </Stylesheet>
+  <Borders>
+    <Border Allegiance="OC" LabelPosition="2003">1700 1800 1901 2001 2101 2200 2201 2202 2203 2204 2105 2005 1906 1806 1805 1804 1803 1802 1801 1701 1700</Border>
+    <Border Allegiance="SP" LabelPosition="2908">2507 2606 2706 2707 2807 2908 3007 3006 3007 3108 3208 3108 3008 2909 2910 2809 2709 2609 2510 2509 2508 2507</Border>
+  </Borders>
+  <Routes>
+    <Route Start="2604" End="2403" Type="TradeMinor" />
+    <Route Start="2403" End="2204" Type="TradeMinor" />
+    <Route Start="2204" End="2003" Type="TradeMinor" />
+    <Route Start="1904" End="2003" Type="TradeMinor" />
+    <Route Start="1904" End="1803" Type="TradeMinor" />
+    <Route Start="1904" End="1906" Type="TradeMinor" />
+    <Route Start="2204" End="2203" Type="TradeMinor" />
+    <Route Start="2201" End="2203" Type="TradeMinor" />
+    <Route Start="2201" End="2101" Type="TradeMinor" />
+    <Route Start="2101" End="1901" Type="TradeMinor" />
+    <Route Start="1901" End="1701" Type="TradeMinor" />
+    <Route Start="2507" End="2307" Type="TradeMinor" />
+    <Route Start="2307" End="2308" Type="TradeMinor" />
+    <Route Start="2308" End="2209" Type="TradeMinor" />
+    <Route Start="2509" End="2308" Type="TradeMinor" />
+    <Route Start="2209" End="2110" Type="TradeMinor" />
+    <Route Start="1910" End="2110" Type="TradeMinor" />
+    <Route Start="1910" End="1810" Type="TradeMinor" />
+    <Route Start="3208" End="3108" Type="TradeMinor" />
+    <Route Start="3008" End="3108" Type="TradeMinor" />
+    <Route Start="3008" End="3009" Type="TradeMinor" />
+    <Route Start="2910" End="3009" Type="TradeMinor" />
+    <Route Start="2910" End="2808" Type="TradeMinor" />
+    <Route Start="2910" End="3006" Type="TradeMinor" />
+    <Route Start="2808" End="2807" Type="TradeMinor" />
+    <Route Start="2807" End="2907" Type="TradeMinor" />
+    <Route Start="2907" End="3006" Type="TradeMinor" />
+    <Route Start="2907" End="2706" Type="TradeMinor" />
+    <Route Start="2806" End="2805" Type="TradeMinor" />
+    <Route Start="2805" End="2507" Type="TradeMinor" />
+    <Route Start="2507" End="2808" Type="TradeMinor" />
+    <Route Start="2607" End="2509" Type="TradeMinor" />
+    <Route Start="2507" End="2509" Type="TradeMinor" />
+    <Route Start="2509" End="2510" Type="TradeMinor" />
+    <Route Start="2604" End="2802" Type="TradeMinor" />
+    <Route Start="2703" End="2802" Type="TradeMinor" />
+    <Route Start="2802" End="2801" Type="TradeMinor" />
+    <Route Start="2801" End="2901" Type="TradeMinor" />
+    <Route Start="2901" End="2802" Type="TradeMinor" />
+    <Route Start="2901" End="3002" Type="TradeMinor" />
+    <Route Start="3002" End="3203" Type="TradeMinor" />
+    <Route Start="3203" End="3104" Type="TradeMinor" />
+    <Route Start="3104" End="3105" Type="TradeMinor" />
+    <Route Start="3104" End="3101" Type="TradeMinor" />
+    <Route Start="3101" End="3002" Type="TradeMinor" />
+    <Route Start="3101" End="2901" Type="TradeMinor" />
+  </Routes>
+</Sector>

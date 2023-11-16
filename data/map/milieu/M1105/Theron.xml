@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Ther">
+  <Name>Theron</Name>
+  <Credits>
+      Jo Grant, CORE, The Zhodani Base (basic data updated by Ade Stewart).
+    </Credits>
+  <X>-7</X>
+  <Y>1</Y>
+  <DataFile Author="Jo Grant" Source="CORE, The Zhodani Base" Milieu="M1105" Ref="http://zho.berka.com/data/CLASSIC/sector.pl?sector=THERON" />
+  <Subsectors>
+    <Subsector Index="A">Terrelay</Subsector>
+    <Subsector Index="B">Ronodik</Subsector>
+    <Subsector Index="C">Babs</Subsector>
+    <Subsector Index="D">Mirdika</Subsector>
+    <Subsector Index="E">Chang-Tu</Subsector>
+    <Subsector Index="F">Olpinures</Subsector>
+    <Subsector Index="G">Plok</Subsector>
+    <Subsector Index="H">Lisqitama</Subsector>
+    <Subsector Index="I">Ubagil</Subsector>
+    <Subsector Index="J">Babadur</Subsector>
+    <Subsector Index="K">Tynvegi</Subsector>
+    <Subsector Index="L">Joseph</Subsector>
+    <Subsector Index="M">Quadrant 01-569</Subsector>
+    <Subsector Index="N">Pozzy</Subsector>
+    <Subsector Index="O">Virtanen</Subsector>
+    <Subsector Index="P">WillWlmo</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="Rm">Regency of Muirimi</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Rm { color: green }
+    route.Bl { color: white; style: dotted; }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="3004" Color="Red" Wrap="false">Idella Rift</Label>
+  </Labels>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Rm" LabelPosition="3127">2734 2833 2832 2831 2830 2829 2828 2827 2927 3026 3126 3125 3225 3325 3326 3327 3328 3329 3330 3331 3332 3333 3232 3132 3032 2933 2934 2935 2936 2937 2836 2737 2736 2735 2734</Border>
+  </Borders>
+  <Routes>
+    <Route Start="3216" End="0215" StartOffsetX="-1" Allegiance="Bl" />
+    <Route Start="0215" End="0114" Allegiance="Bl" />
+    <Route Start="0114" End="0212" Allegiance="Bl" />
+  </Routes>
+</Sector>

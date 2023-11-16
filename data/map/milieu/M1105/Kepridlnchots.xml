@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Kepridlnchots</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-154</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Apre</Subsector>
+    <Subsector Index="B">Vietlibriats</Subsector>
+    <Subsector Index="C">Nzhente</Subsector>
+    <Subsector Index="D">Iebvlianzh</Subsector>
+    <Subsector Index="E">Sontsnzhizh'a</Subsector>
+    <Subsector Index="F">Benchninzi</Subsector>
+    <Subsector Index="G">Zdenzhjatsie</Subsector>
+    <Subsector Index="H">Ezia</Subsector>
+    <Subsector Index="I">Prinshzenzhzivr</Subsector>
+    <Subsector Index="J">Sianzhnevlzhie</Subsector>
+    <Subsector Index="K">Iazho</Subsector>
+    <Subsector Index="L">Shiaa</Subsector>
+    <Subsector Index="M">Zhdevlzhee</Subsector>
+    <Subsector Index="N">Jinzhriafl</Subsector>
+    <Subsector Index="O">Nzietsnzach</Subsector>
+    <Subsector Index="P">Lianchnshonch</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="0129" End="0231" Type="Core Route" />
+    <Route Start="0129" End="0327" Type="Core Route" />
+    <Route Start="0224" End="0321" Type="Core Route" />
+    <Route Start="0224" End="0327" Type="Core Route" />
+    <Route Start="0231" End="0434" Type="Core Route" />
+    <Route Start="0237" End="0201" EndOffsetY="1" Type="Core Route" />
+    <Route Start="0237" End="0434" Type="Core Route" />
+    <Route Start="0321" End="0621" Type="Core Route" />
+    <Route Start="0621" End="1021" Type="Core Route" />
+    <Route Start="0902" End="0939" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="0902" End="1204" Type="Core Route" />
+    <Route Start="0911" End="1108" Type="Core Route" />
+    <Route Start="0911" End="1213" Type="Core Route" />
+    <Route Start="1015" End="1018" Type="Core Route" />
+    <Route Start="1015" End="1213" Type="Core Route" />
+    <Route Start="1018" End="1021" Type="Core Route" />
+    <Route Start="1108" End="1204" Type="Core Route" />
+  </Routes>
+</Sector>

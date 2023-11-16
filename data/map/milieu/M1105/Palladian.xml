@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Palladian</Name>
+  <Credits>
+      &lt;b&gt;Palladian&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>51</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2125" Color="Gray" Size="large" Wrap="false">Bow Rift</Label>
+  </Labels>
+</Sector>

@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Revenant</Name>
+  <Credits>
+      &lt;b&gt;Revenant&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>59</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1602" Color="Gray" Size="large" Wrap="false">Inner Void</Label>
+    <Label Hex="0621" Color="Gray" Size="large" Wrap="false">Laurentine
+Gulf</Label>
+    <Label Hex="2422" Color="Gray" Wrap="false">Halfdown Divide</Label>
+    <Label Hex="1336" Color="Gray" Wrap="false">Bight of Burda</Label>
+    <Label Hex="2739" Color="Gray" Wrap="false">RSS
+Rv2738</Label>
+  </Labels>
+</Sector>

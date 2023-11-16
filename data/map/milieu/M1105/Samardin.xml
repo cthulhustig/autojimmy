@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Samardin</Name>
+  <Credits>
+      &lt;b&gt;Samardin&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>57</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2222" Color="Gray" Wrap="false">The Cyst</Label>
+    <Label Hex="2035" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="0432" Label="The Ring">0233 0333 0332 0432 0532 0533 0432 0333 0233 0234 0235 0336 0436 0337 0336 0235 0234 0233</Region>
+    <Region Color="DarkBlue" LabelPosition="0635">0436 0536 0635 0634 0633 0533 0632 0633 0634 0735 0635 0636 0537 0436</Region>
+  </Regions>
+</Sector>

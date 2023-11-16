@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Unreviewed OTU" Abbreviation="Corr">
+  <Name>Corridor</Name>
+  <Name Lang="vi">Amshagi</Name>
+  <Name Lang="vi">Eneri</Name>
+  <Name Lang="va">Roughantz</Name>
+  <Name Lang="va">Llananae Tourz</Name>
+  <Credits>
+
+             &lt;b&gt;Corridor&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by David Riddell. Portions appear in
+             &lt;cite&gt;The Travellers Digest&lt;/cite&gt;.
+
+             It was refined for Milieu 0 by Marc Miller and appears in
+             &lt;cite&gt;First Survey&lt;/cite&gt; (Imperium Games, 1996).
+
+    </Credits>
+  <X>-2</X>
+  <Y>-1</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1231">0931</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2630">2733</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2735">2735</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2833">2833</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2836">2836</Border>
+  </Borders>
+</Sector>

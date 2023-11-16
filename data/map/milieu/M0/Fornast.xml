@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Preserve OTU" Abbreviation="Forn">
+  <Name>Fornast</Name>
+  <Name Lang="vi">Rishurir</Name>
+  <Credits>
+
+             &lt;b&gt;Fornast&lt;/b&gt; sector was "reserved for referee and
+             player expansion: players can explore these territories with
+             confidence that adventures will not be published for worlds in
+             these sectors."
+
+             &lt;b&gt;Fornast&lt;/b&gt; stellar postions derived from
+             T5 Second Survey Data
+
+  </Credits>
+  <X>1</X>
+  <Y>0</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+</Sector>

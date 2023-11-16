@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Tlya">
+  <Name Lang="as">Tlyasea</Name>
+  <Credits>
+
+               &lt;b&gt;Tlyasea&lt;/b&gt; sector was designed by WG Zeist.
+
+      </Credits>
+  <X>-9</X>
+  <Y>3</Y>
+  <DataFile Author="WG Zeist" Source="explorerbase" Milieu="M1105" Ref="https://explorerbase.wordpress.com/tlyasea-sector-data/" />
+  <Subsectors>
+    <Subsector Index="A">Waroheya</Subsector>
+    <Subsector Index="B">Hewew</Subsector>
+    <Subsector Index="C">Hka'youk</Subsector>
+    <Subsector Index="D">Roueal</Subsector>
+    <Subsector Index="E">Rkalhourou</Subsector>
+    <Subsector Index="F">Eaheyata</Subsector>
+    <Subsector Index="G">Kawafteiyh</Subsector>
+    <Subsector Index="H">Yeawe</Subsector>
+    <Subsector Index="I">Fteiyoulourou</Subsector>
+    <Subsector Index="J">Akafutah</Subsector>
+    <Subsector Index="K">Theaiwatak</Subsector>
+    <Subsector Index="L">Staroulr</Subsector>
+    <Subsector Index="M">Khara'tak</Subsector>
+    <Subsector Index="N">Oitourar</Subsector>
+    <Subsector Index="O">Houklkhaeaw</Subsector>
+    <Subsector Index="P">Aohahwe</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+</Sector>

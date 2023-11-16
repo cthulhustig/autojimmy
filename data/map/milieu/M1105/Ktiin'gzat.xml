@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Ktii">
+  <Name Lang="kk">Ktiin'gzat</Name>
+  <Name Lang="va">Ogzuekhfos</Name>
+  <Credits>
+
+               &lt;b&gt;Ktiin'gzat&lt;/b&gt; sector was designed by Leroy W. L. Guatney.
+
+               Stellar positions were developed by Joe D. Fugate Sr. and
+               appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1: Vilani
+               &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications, 1990).
+
+      </Credits>
+  <X>3</X>
+  <Y>-3</Y>
+  <DataFile Author="Leroy W. L. Guatney" Source="Federation Development Agency" Milieu="M1105" Ref="https://web.archive.org/web/20071029174129/http://home.earthlink.net/~ngc5139/FDA/" />
+  <Subsectors>
+    <Subsector Index="A">Gaengrerdhoerk</Subsector>
+    <Subsector Index="B">Kikakhamkishis</Subsector>
+    <Subsector Index="C">Madaakuklunaa</Subsector>
+    <Subsector Index="D">Ithesea</Subsector>
+    <Subsector Index="E">Mikikuma</Subsector>
+    <Subsector Index="F">Ru Lan</Subsector>
+    <Subsector Index="G">Eru Atso</Subsector>
+    <Subsector Index="H">Asotonitrodes</Subsector>
+    <Subsector Index="I">Ilakhegiki</Subsector>
+    <Subsector Index="J">Andakeg</Subsector>
+    <Subsector Index="K">Mming</Subsector>
+    <Subsector Index="L">Ad Esfazapo</Subsector>
+    <Subsector Index="M">Uztsaadzuelleng</Subsector>
+    <Subsector Index="N">Gzeengoumez</Subsector>
+    <Subsector Index="O">Lalurderzirkuda</Subsector>
+    <Subsector Index="P">Inunugishshaa</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="J-" Base="Jp">Julian Protectorate</Allegiance>
+    <Allegiance Code="Ef">Enclave Famuurueroergoghz</Allegiance>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="VC">Hezeraek Connective</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Purple" Allegiance="Ef" LabelPosition="0737">0339 0438 0437 0537 0636 0736 0735 0734 0633 0734 0833 0934 1033 1134 1034 1035 1036 1037 1038 1139 1140 1039 0939 0839 0740 0640 0540 0439 0339</Border>
+    <Border Color="OliveDrab" Allegiance="VC" LabelPosition="2715">2019 2119 2218 2318 2317 2316 2315 2314 2313 2312 2311 2310 2209 2208 2308 2407 2507 2506 2505 2604 2704 2804 2905 3005 3006 3007 3008 3009 3010 3011 3112 3211 3311 3312 3313 3314 3315 3316 3317 3318 3319 3320 3321 3322 3323 3324 3224 3124 3023 2924 2824 2725 2625 2626 2526 2425 2325 2224 2124 2024 2023 2022 2021 2020 2019</Border>
+    <Border ShowLabel="false" Color="Blue" Allegiance="JuPr" LabelPosition="0137">0033 0134 0135 0235 0236 0237 0238 0239 0240 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033</Border>
+    <Border ShowLabel="false" Color="Blue" Allegiance="JuPr" LabelPosition="1240">1041 1141 1240 1239 1238 1239 1340 1341 1241 1141 1041</Border>
+    <Border ShowLabel="false" Color="Blue" Allegiance="JuPr" LabelPosition="1137">1137</Border>
+  </Borders>
+</Sector>
