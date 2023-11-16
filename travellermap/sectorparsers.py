@@ -124,8 +124,8 @@ class RawBorder(object):
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHex: typing.Optional[str],
-            labelOffsetX: typing.Optional[int],
-            labelOffsetY: typing.Optional[int],
+            labelOffsetX: typing.Optional[float],
+            labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],
             style: typing.Optional[str],
             colour: typing.Optional[str],
@@ -156,10 +156,10 @@ class RawBorder(object):
     def labelHex(self) -> typing.Optional[str]:
         return self._labelHex
     
-    def labelOffsetX(self) -> typing.Optional[int]:
+    def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
     
-    def labelOffsetY(self) -> typing.Optional[int]:
+    def labelOffsetY(self) -> typing.Optional[float]:
         return self._labelOffsetY
     
     def label(self) -> typing.Optional[str]:
@@ -179,8 +179,8 @@ class RawLabel(object):
             colour: str,
             size: typing.Optional[str],
             wrap: typing.Optional[bool],
-            offsetX: typing.Optional[int],
-            offsetY: typing.Optional[int]
+            offsetX: typing.Optional[float],
+            offsetY: typing.Optional[float]
             ) -> None:
         self._text = text
         self._hex = hex
@@ -205,10 +205,10 @@ class RawLabel(object):
     def wrap(self) -> typing.Optional[bool]:
         return self._wrap
     
-    def offsetX(self) -> typing.Optional[int]:
+    def offsetX(self) -> typing.Optional[float]:
         return self._offsetX  
 
-    def offsetY(self) -> typing.Optional[int]:
+    def offsetY(self) -> typing.Optional[float]:
         return self._offsetY 
     
 # NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
@@ -221,8 +221,8 @@ class RawRegion(object):
             showLabel: typing.Optional[bool],
             wrapLabel: typing.Optional[bool],
             labelHex: typing.Optional[str],
-            labelOffsetX: typing.Optional[int],
-            labelOffsetY: typing.Optional[int],
+            labelOffsetX: typing.Optional[float],
+            labelOffsetY: typing.Optional[float],
             label: typing.Optional[str],
             colour: typing.Optional[str],
             ) -> None:
@@ -247,10 +247,10 @@ class RawRegion(object):
     def labelHex(self) -> typing.Optional[str]:
         return self._labelHex
     
-    def labelOffsetX(self) -> typing.Optional[int]:
+    def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
     
-    def labelOffsetY(self) -> typing.Optional[int]:
+    def labelOffsetY(self) -> typing.Optional[float]:
         return self._labelOffsetY
     
     def label(self) -> typing.Optional[str]:
@@ -775,8 +775,8 @@ def readXMLMetadata(
             path = element.text.split(' ')
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Border', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
-            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
-            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
+            labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
+            labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
             
             borders.append(RawBorder(
                 hexList=path,
@@ -804,8 +804,8 @@ def readXMLMetadata(
                 raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')  
 
             wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
-            offsetX = _optionalConvertToInt(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
-            offsetY = _optionalConvertToInt(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
+            offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
+            offsetY = _optionalConvertToFloat(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
 
             labels.append(RawLabel(
                 text=element.text,
@@ -824,8 +824,8 @@ def readXMLMetadata(
             path = element.text.split(' ')
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Region', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Region', identifier)
-            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
-            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
+            labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
+            labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
 
             regions.append(RawRegion(
                 hexList=path,
@@ -979,8 +979,8 @@ def readJSONMetadata(
 
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Border', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
-            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
-            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
+            labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
+            labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
 
             borders.append(RawBorder(
                 hexList=path,
@@ -1012,8 +1012,8 @@ def readJSONMetadata(
                 raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')            
 
             wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
-            offsetX = _optionalConvertToInt(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
-            offsetY = _optionalConvertToInt(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
+            offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
+            offsetY = _optionalConvertToFloat(element.get('OffsetY'), 'OffsetY', 'Label', identifier)
 
             labels.append(RawLabel(
                 text=text,
@@ -1036,8 +1036,8 @@ def readJSONMetadata(
 
             showLabel = _optionalConvertToBool(element.get('ShowLabel'), 'ShowLabel', 'Region', identifier)
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Region', identifier)
-            labelOffsetX = _optionalConvertToInt(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
-            labelOffsetY = _optionalConvertToInt(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
+            labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Region', identifier)
+            labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Region', identifier)
 
             regions.append(RawRegion(
                 hexList=path,
@@ -1173,9 +1173,9 @@ def writeXMLMetadata(
             if border.labelHex() != None:
                 attributes['LabelPosition'] = border.labelHex()
             if border.labelOffsetX() != None:
-                attributes['LabelOffsetX'] = str(border.labelOffsetX())
+                attributes['LabelOffsetX'] = str(border.labelOffsetX()) # TODO: Might need to be explicit about precision
             if border.labelOffsetY() != None:
-                attributes['LabelOffsetY'] = str(border.labelOffsetY())
+                attributes['LabelOffsetY'] = str(border.labelOffsetY()) # TODO: Might need to be explicit about precision
             if border.label() != None:
                 attributes['Label'] = border.label()
             if border.style() != None:
@@ -1198,9 +1198,9 @@ def writeXMLMetadata(
             if label.wrap() != None:
                 attributes['Wrap'] = str(label.wrap()).lower()
             if label.offsetX() != None:
-                attributes['OffsetX'] = str(label.offsetX())
+                attributes['OffsetX'] = str(label.offsetX()) # TODO: Might need to be explicit about precision
             if label.offsetY() != None:
-                attributes['OffsetY'] = str(label.offsetY())
+                attributes['OffsetY'] = str(label.offsetY()) # TODO: Might need to be explicit about precision
 
             labelElement = xml.etree.ElementTree.SubElement(labelsElement, 'Label', attributes)
             labelElement.text = label.text()
@@ -1217,9 +1217,9 @@ def writeXMLMetadata(
             if region.labelHex() != None:
                 attributes['LabelPosition'] = region.labelHex()
             if region.labelOffsetX() != None:
-                attributes['LabelOffsetX'] = str(region.labelOffsetX())
+                attributes['LabelOffsetX'] = str(region.labelOffsetX()) # TODO: Might need to be explicit about precision
             if region.labelOffsetY() != None:
-                attributes['LabelOffsetY'] = str(region.labelOffsetY())
+                attributes['LabelOffsetY'] = str(region.labelOffsetY()) # TODO: Might need to be explicit about precision
             if region.label() != None:
                 attributes['Label'] = region.label()
             if region.colour() != None:

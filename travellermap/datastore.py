@@ -1413,9 +1413,9 @@ class DataStore(object):
                         sectorFormat)
 
                 # If the universe doesn't specify the metadata format it must be a standard traveller map
-                # universe file which means the corresponding metadata files all use JSON format
+                # universe file which means the corresponding metadata files all use XML format
                 metadataFormatTag = sectorElement.get('MetadataFormat')
-                metadataFormat = travellermap.MetadataFormat.JSON
+                metadataFormat = travellermap.MetadataFormat.XML
                 if metadataFormatTag != None:
                     metadataFormat = travellermap.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
