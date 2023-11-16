@@ -28,6 +28,7 @@ _ExtensionToContentTypeMap = {
 
 # This is an extremely crude in memory cache of all the locally served files. It assumes
 # files don't change during run time and doesn't support files in sub-directories
+# TODO: This should probably be flattened into _HttpRequestHandler
 class _LocalFileStore(object):
     def __init__(
             self,
@@ -99,7 +100,7 @@ class _TileCache(object):
         evictionCount = 0
         while self._cache and ((self._currentBytes + size) > self._maxBytes):
             # The item at the start of the cache is the one that was used longest ago
-            oldKey, oldData = self._cache.popitem(last=False)
+            oldKey, oldData = self._cache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
             evictionCount += 1
             self._currentBytes -= len(oldData)
             assert(self._currentBytes > 0)
