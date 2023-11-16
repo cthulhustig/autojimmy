@@ -58,7 +58,7 @@ _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 # Once you get to a scale lower than 4 the poster API stops generating posters that really
 # look like what is rendered by the tile API. You don't get the red sector overlay and
 # the background colour can be noticeably different.
-_CustomMapScales = [128, 64, 32, 16]
+_CustomMapScales = [128, 64, 32, 16, 4]
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
