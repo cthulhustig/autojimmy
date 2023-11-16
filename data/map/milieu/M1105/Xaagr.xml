@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Xaag">
+  <Name Lang="kk">Xaagr</Name>
+  <Credits>
+
+             &lt;b&gt;Xaagr&lt;/b&gt; sector was designed by Jim Kundert.
+
+    </Credits>
+  <X>7</X>
+  <Y>-2</Y>
+  <DataFile Author="Jim Kundert" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">!Roo</Subsector>
+    <Subsector Index="B">Kooree</Subsector>
+    <Subsector Index="C">Zanend</Subsector>
+    <Subsector Index="D">Path</Subsector>
+    <Subsector Index="E">Thek'rek</Subsector>
+    <Subsector Index="F">Tolraa</Subsector>
+    <Subsector Index="G">Salamander</Subsector>
+    <Subsector Index="H">Hoarde</Subsector>
+    <Subsector Index="I">Oxe Ir'</Subsector>
+    <Subsector Index="J">Jedex</Subsector>
+    <Subsector Index="K">Pavaas</Subsector>
+    <Subsector Index="L">Aarktroth</Subsector>
+    <Subsector Index="M">Tukrakk'</Subsector>
+    <Subsector Index="N">Ixiaroo</Subsector>
+    <Subsector Index="O">P'krami</Subsector>
+    <Subsector Index="P">Ronootra</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="KC">Client state, Two Thousand Worlds</Allegiance>
+    <Allegiance Code="Kk">The Two Thousand Worlds</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Kk" LabelPosition="0238">0841 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0133 0132 0133 0233 0334 0335 0336 0436 0537 0538 0539 0639 0740 0839 0940 0941</Border>
+  </Borders>
+</Sector>

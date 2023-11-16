@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Stand</Name>
+  <Credits>
+      &lt;b&gt;Stand&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>56</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1621" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+  </Labels>
+</Sector>

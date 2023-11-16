@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Lon Beon</Name>
+  <Credits>
+      &lt;b&gt;Lon Beon&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>48</X>
+  <Y>28</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Lb">Lon Beon</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Lb { color: green }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="0508" Color="Gray" Size="large" Wrap="false">The Rift</Label>
+    <Label Hex="0838" Color="Gray" Size="large" Wrap="false">Maw of The Rift</Label>
+    <Label Hex="1938" Color="Gray" Size="small" Wrap="false">RSS
+LB1937</Label>
+    <Label Hex="2015" Color="Gray" Size="small" Wrap="false">RSS
+LB2014</Label>
+    <Label Hex="2134" Color="Gray" Size="small" Wrap="false">RSS
+LB2133</Label>
+    <Label Hex="2829" Color="Gray" Size="small" Wrap="false">RSS
+LB2828</Label>
+    <Label Hex="2832" Color="Gray" Size="small" Wrap="false">RSS
+LB2831</Label>
+    <Label Hex="3030" Color="Gray" Size="small" Wrap="false">RSS
+LB3029</Label>
+  </Labels>
+  <Borders>
+    <Border Allegiance="Lb" LabelPosition="2432">1431 1531 1630 1731 1830 1930 1929 1928 2027 2127 2227 2327 2426 2526 2626 2727 2826 2927 2928 3028 3129 3130 3030 3031 3032 2933 2934 2935 2835 2836 2737 2636 2536 2436 2336 2236 2237 2138 2037 1938 1837 1836 1736 1636 1536 1535 1534 1533 1432 1431</Border>
+  </Borders>
+</Sector>

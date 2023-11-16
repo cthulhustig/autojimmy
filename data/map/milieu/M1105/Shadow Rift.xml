@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Shadow Rift</Name>
+  <Credits>
+      &lt;b&gt;Shadow Rift&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>54</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="C">Wastes</Subsector>
+    <Subsector Index="D">Abandon</Subsector>
+    <Subsector Index="H">Forsaken</Subsector>
+    <Subsector Index="P">Brink</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+    <Allegiance Code="Bw">Bone Worlds</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Dr">Dominion of Ruins</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Bw { color: green; style: dotted }
+    border.Dr { color: blue; style: dotted }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="2119" Color="Gray" Size="large" Wrap="false">Moat Rifts</Label>
+  </Labels>
+  <Borders>
+    <Border ShowLabel="false" WrapLabel="true" Allegiance="Bw" LabelPosition="2201">2001 2101 2100 2200 2300 2400 2500 2501 2502 2503 2403 2304 2204 2104 2003 2002 2001</Border>
+    <Border ShowLabel="false" WrapLabel="true" Allegiance="Dr" LabelPosition="0439">2801 2901 2900 3000 3100 3200 3300 3301 3302 3303 3304 3305 3205 3206 3107 3007 2907 2806 2805 2804 2904 2903 2802 2801</Border>
+  </Borders>
+  <Regions>
+    <Region WrapLabel="true" Color="DarkBlue" LabelPosition="2531" Label="Bukanja Cloud">2527 2627 2628 2729 2828 2729 2730 2629 2530 2531 2530 2629 2628 2528 2527</Region>
+    <Region Color="DarkBlue" LabelPosition="2329">2227 2328 2427 2428 2329 2330 2430 2431 2430 2330 2230 2229 2329 2328 2227</Region>
+  </Regions>
+</Sector>

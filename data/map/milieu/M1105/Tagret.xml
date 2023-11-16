@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway">
+  <Name>Tagret</Name>
+  <Credits>
+               &lt;p&gt;
+               Tagret Sector was designed by Edward Kuns and appeared in
+               &lt;cite&gt;Pegasus IX&lt;/cite&gt;, Judges Guild.
+               &lt;/p&gt;
+
+               &lt;p&gt;
+               Data transcribed and edited by Graham Donald.
+               &lt;/p&gt;
+
+      </Credits>
+  <X>163</X>
+  <Y>0</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Void Reaches</Subsector>
+    <Subsector Index="B">Ahrus</Subsector>
+    <Subsector Index="C">Phoena</Subsector>
+    <Subsector Index="D">Mandal</Subsector>
+    <Subsector Index="E">Centurian</Subsector>
+    <Subsector Index="F">Remlak</Subsector>
+    <Subsector Index="G">Star Path</Subsector>
+    <Subsector Index="H">Tisman</Subsector>
+    <Subsector Index="I">Rimward Extents</Subsector>
+    <Subsector Index="J">Arium</Subsector>
+    <Subsector Index="K">Jarnell</Subsector>
+    <Subsector Index="L">Vrop*ni</Subsector>
+    <Subsector Index="M">Knifepoint</Subsector>
+    <Subsector Index="N">Zaffra</Subsector>
+    <Subsector Index="O">Argic</Subsector>
+    <Subsector Index="P">Istda</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Cs">Client state, Third Imperium</Allegiance>
+    <Allegiance Code="Im">Third Imperium</Allegiance>
+    <Allegiance Code="Ah">Ahrus Domain</Allegiance>
+    <Allegiance Code="Rc">Remlik Confederation</Allegiance>
+    <Allegiance Code="Pr">Psalmea Republic</Allegiance>
+  </Allegiances>
+</Sector>

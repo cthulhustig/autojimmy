@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Bliaazh</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-57</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Viedbriapla</Subsector>
+    <Subsector Index="B">Tsochnchekr</Subsector>
+    <Subsector Index="C">Zechplebl</Subsector>
+    <Subsector Index="D">Zheshjabriench</Subsector>
+    <Subsector Index="E">Iajbli</Subsector>
+    <Subsector Index="F">Kifatsibl</Subsector>
+    <Subsector Index="G">Eve</Subsector>
+    <Subsector Index="H">Drafrnsible</Subsector>
+    <Subsector Index="I">Zdotsivlie</Subsector>
+    <Subsector Index="J">Bloshnzhieblpliej</Subsector>
+    <Subsector Index="K">Rievblatlipl</Subsector>
+    <Subsector Index="L">Plikleonz</Subsector>
+    <Subsector Index="M">Nzhaa</Subsector>
+    <Subsector Index="N">Ziatsiz</Subsector>
+    <Subsector Index="O">Zdiananjdle</Subsector>
+    <Subsector Index="P">Rieabr</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1031" End="1129" Type="Core Route" />
+    <Route Start="1031" End="1134" Type="Core Route" />
+    <Route Start="1129" End="1225" Type="Core Route" />
+    <Route Start="1134" End="1337" Type="Core Route" />
+    <Route Start="1225" End="1623" Type="Core Route" />
+    <Route Start="1337" End="1636" Type="Core Route" />
+    <Route Start="1623" End="1720" Type="Core Route" />
+    <Route Start="1636" End="1839" Type="Core Route" />
+    <Route Start="1720" End="2017" Type="Core Route" />
+    <Route Start="1839" End="1802" EndOffsetY="1" Type="Core Route" />
+    <Route Start="2001" End="2138" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="2001" End="2303" Type="Core Route" />
+    <Route Start="2017" End="2316" Type="Core Route" />
+    <Route Start="2303" End="2504" Type="Core Route" />
+    <Route Start="2313" End="2316" Type="Core Route" />
+    <Route Start="2313" End="2611" Type="Core Route" />
+    <Route Start="2504" End="2804" Type="Core Route" />
+    <Route Start="2611" End="2709" Type="Core Route" />
+    <Route Start="2709" End="3006" Type="Core Route" />
+    <Route Start="2804" End="3006" Type="Core Route" />
+  </Routes>
+</Sector>

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Extent</Name>
+  <Credits>
+      &lt;b&gt;Extent&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>53</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="I">Juluti</Subsector>
+    <Subsector Index="M">Parsalax</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2036" Color="Gray" Size="large" Wrap="false">Moat Rifts</Label>
+  </Labels>
+  <Regions>
+    <Region WrapLabel="true" Color="DarkBlue" LabelPosition="1615" Label="Shade Cloud">1314 1413 1412 1512 1612 1713 1714 1715 1615 1515 1414 1314</Region>
+  </Regions>
+</Sector>

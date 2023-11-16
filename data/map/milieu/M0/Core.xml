@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Unreviewed OTU" Abbreviation="Core">
+  <Name>Core</Name>
+  <Name Lang="vi">Ukan</Name>
+  <Credits>
+
+             &lt;b&gt;Core&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined for Milieu 0 by Marc Miller and appears in
+             &lt;cite&gt;First Survey&lt;/cite&gt; (Imperium Games, 1996).
+
+    </Credits>
+  <X>0</X>
+  <Y>0</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C">Ameros</Subsector>
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G">Core</Subsector>
+    <Subsector Index="H" />
+    <Subsector Index="I">Bunkeria</Subsector>
+    <Subsector Index="J">Cemplas</Subsector>
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Sy">Sylean Federation</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0537">0537</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0603">0603</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0806">0806</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0808">0808</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0811">0811</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0910">0910</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0911">0911</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0915">0915</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1022">1022</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1023">1023</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1123">1123</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1124">1124</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1314">1314</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2416">2416</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2913">2913</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2938">2938</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="3034">3034</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="3133">3133</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="3238">3238</Border>
+    <Border Color="Red" Allegiance="Sy" LabelPosition="2116">1815 1915 2014 2114 2213 2314 2315 2316 2317 2318 2217 2118 2018 1919 1819 1818 1817 1816 1815</Border>
+  </Borders>
+</Sector>

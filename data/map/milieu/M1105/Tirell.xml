@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Tirell</Name>
+  <Credits>
+      &lt;b&gt;Tirell&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>55</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1116" Color="Gray" Wrap="false">Darken Long</Label>
+    <Label Hex="2325" Color="Gray" Wrap="false">Kidney Rift</Label>
+    <Label Hex="0735" Color="Gray" Wrap="false">The Cleft</Label>
+  </Labels>
+</Sector>

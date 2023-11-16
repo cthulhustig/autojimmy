@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Kato">
+  <Name>Katoonah</Name>
+  <Credits />
+  <X>6</X>
+  <Y>5</Y>
+  <DataFile Author="Thomas W. Jenkins" Source="Undiscovered Sectors" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Altare</Subsector>
+    <Subsector Index="B">Kherrou</Subsector>
+    <Subsector Index="C">Pycus</Subsector>
+    <Subsector Index="D">Chydra</Subsector>
+    <Subsector Index="E">Aluvia</Subsector>
+    <Subsector Index="F">Verili</Subsector>
+    <Subsector Index="G">Katoonah</Subsector>
+    <Subsector Index="H">Alpitascyn</Subsector>
+    <Subsector Index="I">Mohennan</Subsector>
+    <Subsector Index="J">Draconia</Subsector>
+    <Subsector Index="K">Mythdranor</Subsector>
+    <Subsector Index="L">Duur Imar</Subsector>
+    <Subsector Index="M">Kayla</Subsector>
+    <Subsector Index="N">Narveen</Subsector>
+    <Subsector Index="O">Kouevi</Subsector>
+    <Subsector Index="P">Kietalli</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Gr">Geanak Republic</Allegiance>
+    <Allegiance Code="Aa">Aluvial Alliance</Allegiance>
+    <Allegiance Code="Hl">Human League</Allegiance>
+    <Allegiance Code="Sa">Sylvan Alliance</Allegiance>
+    <Allegiance Code="De">Draconian Empire</Allegiance>
+    <Allegiance Code="Rv">Reavers</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Orange" Allegiance="Aa" LabelPosition="0312">0211 0312 0211</Border>
+    <Border Color="Blue" Allegiance="De" LabelPosition="1929">1426 1527 1626 1727 1826 1927 2027 2127 2227 2328 2428 2429 2430 2431 2331 2330 2329 2328 2227 2128 2028 1929 1828 1728 1628 1529 1528 1427 1426</Border>
+    <Border Color="Green" Allegiance="Gr" LabelPosition="0504">0201 0302 0402 0502 0602 0603 0604 0705 0805 0705 0604 0505 0405 0306 0305 0304 0303 0302 0201</Border>
+    <Border Color="Cyan" Allegiance="Hl" LabelPosition="1917">1314 1413 1514 1613 1714 1814 1915 2015 2116 2216 2316 2416 2517 2518 2519 2520 2419 2320 2220 2219 2119 2118 2017 1917 1816 1716 1616 1517 1416 1316 1315 1314</Border>
+    <Border Color="Red" Allegiance="Rv" LabelPosition="2133">2031 2032 2033 2034 2135 2034 2033 2032 2031</Border>
+    <Border ShowLabel="false" Color="Red" Allegiance="Rv" LabelPosition="2437">2437</Border>
+    <Border Color="Yellow" Allegiance="Sa" LabelPosition="1721">1320 1420 1520 1619 1719 1818 1817 1818 1819 1920 2020 1921 1922 1923 1823 1724 1624 1525 1424 1325 1324 1323 1322 1321 1320</Border>
+  </Borders>
+</Sector>

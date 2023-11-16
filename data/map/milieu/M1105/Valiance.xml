@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Valiance</Name>
+  <Credits>
+      &lt;b&gt;Valiance&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>56</X>
+  <Y>28</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2732" Color="Gray" Size="large" Wrap="false">Fools Gate</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="2625" Label="Puffball Cloud">2424 2525 2625 2725 2824 2825 2826 2727 2627 2527 2526 2425 2424</Region>
+    <Region Color="DarkBlue" LabelPosition="2622">2420 2521 2522 2622 2623 2724 2623 2524 2423 2523 2522 2421 2420</Region>
+    <Region Color="Plum" LabelPosition="1739">1337 1436 1537 1637 1737 1738 1838 1939 1839 1840 1941 2041 1941 1841 1741 1640 1541 1640 1639 1638 1538 1437 1338 1337</Region>
+  </Regions>
+</Sector>

@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Inc2">
+  <Name Source="Riftsedge Transit">Incognita Citerior</Name>
+  <Credits />
+  <X>-10</X>
+  <Y>2</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

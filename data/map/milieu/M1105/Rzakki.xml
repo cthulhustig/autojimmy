@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Rzak">
+  <Name Lang="va">Rzakki</Name>
+  <Credits />
+  <X>-2</X>
+  <Y>-5</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="VU">Union of Seekers</Allegiance>
+    <Allegiance Code="VZ">Ruzz Confederation</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="VU" LabelPosition="1529">1330 1429 1529 1528 1529 1629 1529 1429 1330</Border>
+    <Border Color="OliveDrab" Allegiance="VZ" LabelPosition="2632">2631 2632 2633 2632 2631</Border>
+  </Borders>
+</Sector>

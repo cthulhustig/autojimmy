@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Official OTU" Abbreviation="Corr">
+  <Name>Corridor</Name>
+  <Name Lang="vi">Amshagi</Name>
+  <Name Lang="vi">Eneri</Name>
+  <Name Lang="va">Roughantz</Name>
+  <Name Lang="va">Llananae Tourz</Name>
+  <Credits>
+
+             &lt;b&gt;Corridor&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by David Riddell. Portions appear in
+             &lt;cite&gt;The Travellers Digest&lt;/cite&gt;.
+
+    </Credits>
+  <X>-2</X>
+  <Y>-1</Y>
+  <Product Author="Martin J. Dougherty" Title="The Great Rift, Book 1: The Great Rift" Publisher="Mongoose Publishing" Ref="https://www.mongoosepublishing.com/products/the-great-rift" />
+  <DataFile Source="Traveller 5 Second Survey" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Khouth</Subsector>
+    <Subsector Index="B">Khukish</Subsector>
+    <Subsector Index="C">Lemish</Subsector>
+    <Subsector Index="D">The Narrows</Subsector>
+    <Subsector Index="E">Ian</Subsector>
+    <Subsector Index="F">Strand</Subsector>
+    <Subsector Index="G">Naadi</Subsector>
+    <Subsector Index="H">Uantil</Subsector>
+    <Subsector Index="I">Shush</Subsector>
+    <Subsector Index="J">The Empty Void</Subsector>
+    <Subsector Index="K">Atu'l</Subsector>
+    <Subsector Index="L">Kivu</Subsector>
+    <Subsector Index="M">Two Worlds</Subsector>
+    <Subsector Index="N">Ashishinipar</Subsector>
+    <Subsector Index="O">Sinta</Subsector>
+    <Subsector Index="P">Sashrakusha</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="ImDv" Base="Im">Third Imperium, Domain of Vland</Allegiance>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="NaVa" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="CsIm">Client state, Third Imperium</Allegiance>
+    <Allegiance Code="ImLc" Base="Im">Third Imperium, Lancian Cultural Region</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="ImDv" LabelPosition="1312" Label="Third Imperium">0004 0104 0103 0102 0201 0301 0401 0502 0601 0602 0603 0604 0705 0805 0906 1005 1106 1205 1306 1405 1506 1605 1706 1805 1905 2005 2106 2205 2306 2405 2505 2605 2706 2805 2905 3005 3105 3204 3304 3303 3302 3301 3302 3303 3304 3305 3306 3307 3308 3309 3310 3209 3110 3010 2911 2811 2711 2611 2511 2411 2312 2212 2112 2012 1913 1813 1714 1614 1515 1415 1316 1216 1116 1015 0916 0816 0717 0617 0517 0417 0318 0218 0119 0019 0020 0019 0018 0017 0016 0015 0014 0013 0012 0011 0010 0009 0008 0007 0006 0005 0004</Border>
+    <Border WrapLabel="true" Allegiance="ImDv" LabelPosition="2431" Label="Third Imperium">1840 1940 2039 2038 2037 2137 2136 2135 2234 2334 2333 2432 2532 2631 2731 2830 2930 3029 3129 3229 3230 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2041 1941 1841 1840</Border>
+    <Border ShowLabel="false" Color="OliveDrab" Allegiance="VDzF" LabelPosition="0101">0000 0100 0200 0101 0001 0000 0000</Border>
+    <Border WrapLabel="true" Allegiance="ImLc" LabelPosition="2839" Label="Lancian Cultural Region">2341 2441 2541 2641 2741 2840 2839 2838 2738 2837 2836 2835 2834 2833 2733 2632 2631 2732 2831 2932 3031 3131 3132 3232 3233 3234 3235 3236 3237 3238 3239 3240 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0104" End="0306" />
+    <Route Start="0306" End="0606" />
+    <Route Start="0606" End="0906" />
+    <Route Start="0906" End="1005" />
+    <Route Start="1005" End="1205" />
+    <Route Start="1205" End="1405" />
+    <Route Start="1405" End="1606" />
+    <Route Start="1606" End="1808" />
+    <Route Start="1808" End="2108" />
+    <Route Start="2108" End="2208" />
+    <Route Start="2208" End="2511" />
+    <Route Start="2511" End="2710" />
+    <Route Start="2710" End="2908" />
+    <Route Start="2908" End="3208" />
+    <Route Start="2908" End="2806" />
+    <Route Start="2806" End="2505" />
+    <Route Start="2806" End="2906" />
+    <Route Start="2108" End="2006" />
+    <Route Start="2006" End="1905" />
+    <Route Start="1808" End="1711" />
+    <Route Start="1711" End="1511" />
+    <Route Start="1511" End="1209" />
+    <Route Start="1209" End="1109" />
+    <Route Start="1109" End="0906" />
+    <Route Start="0606" End="0307" />
+    <Route Start="0307" End="0209" />
+    <Route Start="0209" End="0112" />
+    <Route Start="0112" End="0113" />
+    <Route Start="0113" End="0213" />
+    <Route Start="0213" End="0416" />
+    <Route Start="0416" End="0816" />
+    <Route Start="0816" End="0916" />
+    <Route Start="0916" End="1216" />
+    <Route Start="0916" End="1013" />
+    <Route Start="1013" End="1112" />
+    <Route Start="1112" End="1209" />
+    <Route Start="1112" End="1511" />
+    <Route Start="1112" End="0913" />
+    <Route Start="1112" End="0912" />
+    <Route Start="3232" End="3129" />
+    <Route Start="3232" End="2933" />
+    <Route Start="2933" End="2733" />
+    <Route Start="2733" End="2632" />
+    <Route Start="2733" End="2634" />
+    <Route Start="2634" End="2335" />
+    <Route Start="2335" End="2235" />
+    <Route Start="2235" End="2137" />
+    <Route Start="2137" End="2037" />
+    <Route Start="2137" End="2338" />
+    <Route Start="2338" End="2040" />
+    <Route Start="2040" End="1840" />
+    <Route Start="2338" End="2537" />
+    <Route Start="2537" End="2634" />
+    <Route Start="2537" End="2538" />
+    <Route Start="3040" End="3139" />
+    <Route Start="3139" End="3240" />
+    <Route Start="3139" End="3136" />
+    <Route Start="3136" End="2933" />
+    <Route Start="3136" End="3232" />
+    <Route Start="0104" End="3005" EndOffsetX="-1" />
+    <Route Start="0113" End="3116" EndOffsetX="-1" />
+    <Route Start="3208" End="0107" EndOffsetX="1" />
+    <Route Start="3232" End="0234" EndOffsetX="1" />
+    <Route Start="1840" End="1801" EndOffsetY="1" />
+    <Route Start="2538" End="2701" EndOffsetY="1" />
+    <Route Start="3040" End="2701" EndOffsetY="1" />
+    <Route Start="3240" End="0402" EndOffsetX="1" EndOffsetY="1" />
+  </Routes>
+</Sector>

@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Driebliepl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-67</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Pleiz</Subsector>
+    <Subsector Index="B">Zhoploflbriqr</Subsector>
+    <Subsector Index="C">Dlizanapr</Subsector>
+    <Subsector Index="D">Blinje</Subsector>
+    <Subsector Index="E">Avlebr</Subsector>
+    <Subsector Index="F">Drianjnjofljapl</Subsector>
+    <Subsector Index="G">Zotsntsatsa</Subsector>
+    <Subsector Index="H">Saziazzi</Subsector>
+    <Subsector Index="I">Driapriedlflez</Subsector>
+    <Subsector Index="J">Sizbraa</Subsector>
+    <Subsector Index="K">Shechansvrie</Subsector>
+    <Subsector Index="L">Ieda</Subsector>
+    <Subsector Index="M">Dridrdlosha</Subsector>
+    <Subsector Index="N">Iflplafl</Subsector>
+    <Subsector Index="O">Ieiel</Subsector>
+    <Subsector Index="P">Ieflie</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1404" End="1407" Type="Core Route" />
+    <Route Start="1404" End="1601" Type="Core Route" />
+    <Route Start="1407" End="1610" Type="Core Route" />
+    <Route Start="1601" End="1538" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1610" End="1713" Type="Core Route" />
+    <Route Start="1713" End="2015" Type="Core Route" />
+    <Route Start="2015" End="2317" Type="Core Route" />
+    <Route Start="2317" End="2518" Type="Core Route" />
+    <Route Start="2338" End="2301" EndOffsetY="1" Type="Core Route" />
+    <Route Start="2338" End="2737" Type="Core Route" />
+    <Route Start="2518" End="2522" Type="Core Route" />
+    <Route Start="2522" End="2824" Type="Core Route" />
+    <Route Start="2737" End="3135" Type="Core Route" />
+    <Route Start="2824" End="3126" Type="Core Route" />
+    <Route Start="3029" End="3126" Type="Core Route" />
+    <Route Start="3029" End="3232" Type="Core Route" />
+    <Route Start="3135" End="3232" Type="Core Route" />
+  </Routes>
+</Sector>

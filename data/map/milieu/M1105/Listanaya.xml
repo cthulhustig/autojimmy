@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="List">
+  <Name Lang="va">Listanaya</Name>
+  <Credits />
+  <X>-1</X>
+  <Y>-5</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="VE">Agents of Eloeghoe</Allegiance>
+    <Allegiance Code="VL">League Alliance</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="VE" LabelPosition="1717">1615 1716 1717 1718 1618 1619 1618 1617 1616 1615</Border>
+    <Border Color="OliveDrab" Allegiance="VL" LabelPosition="2432">1931 2030 2130 2230 2331 2430 2530 2630 2731 2830 2931 2932 2933 2833 2733 2632 2532 2432 2332 2232 2132 2032 1933 1932 1931</Border>
+  </Borders>
+</Sector>

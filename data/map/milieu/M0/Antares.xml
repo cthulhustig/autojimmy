@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Unreviewed OTU" Abbreviation="Anta">
+  <Name>Antares</Name>
+  <Name Lang="vi">Mikasirka</Name>
+  <Credits>
+
+             &lt;b&gt;Antares&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined for Milieu 0 by Marc Miller and appears in
+             &lt;cite&gt;First Survey&lt;/cite&gt; (Imperium Games, 1996).
+
+    </Credits>
+  <X>1</X>
+  <Y>-1</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1525">1525</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1624">1624</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1625">1625</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1718">1718</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1719">1719</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1722">1722</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1723">1723</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1726">1726</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1815">1815</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1816">1816</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1817">1817</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1818">1818</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1819">1819</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1820">1820</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1920">1920</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1921">1921</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1923">1923</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1925">1925</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1926">1926</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2021">2021</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2022">2022</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2024">2024</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2025">2025</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2026">2026</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2121">2121</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2122">2122</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2126">2126</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2127">2127</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2128">2128</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2218">2218</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2219">2219</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2220">2220</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2223">2223</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2224">2224</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2227">2227</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2228">2228</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2229">2229</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2320">2320</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2624">2324</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2326">2326</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2421">2421</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2422">2422</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2425">2425</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2426">2426</Border>
+  </Borders>
+</Sector>

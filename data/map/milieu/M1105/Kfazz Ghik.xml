@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Kfaz">
+  <Name Lang="va">Kfazz Ghik</Name>
+  <Credits>
+
+               &lt;b&gt;Kfazz Ghik&lt;/b&gt; sector was designed by John G.
+               Wood and WG Zeist.
+
+               Stellar positions were developed by Joe D. Fugate Sr.
+               and appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1:
+               Vilani &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications,
+               1990).
+
+      </Credits>
+  <X>2</X>
+  <Y>-4</Y>
+  <DataFile Author="John G. Wood, WG Zeist" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="VJ">Authority of Joekghr</Allegiance>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="VJ" LabelPosition="2334">2033 2133 2232 2231 2332 2333 2433 2534 2634 2635 2536 2537 2436 2337 2236 2136 2036 2035 2034 2033</Border>
+  </Borders>
+</Sector>

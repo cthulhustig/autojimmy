@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Pliajenzh</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-112</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Ansiv</Subsector>
+    <Subsector Index="B">Jdedqrenshets</Subsector>
+    <Subsector Index="C">Qefvezhe</Subsector>
+    <Subsector Index="D">'iebrach</Subsector>
+    <Subsector Index="E">Zdiflfriantskepr</Subsector>
+    <Subsector Index="F">Injnsia</Subsector>
+    <Subsector Index="G">Artsofr</Subsector>
+    <Subsector Index="H">Njashients</Subsector>
+    <Subsector Index="I">Njeflmanch</Subsector>
+    <Subsector Index="J">Tiblazhravl</Subsector>
+    <Subsector Index="K">Iei</Subsector>
+    <Subsector Index="L">Nchiaienzh</Subsector>
+    <Subsector Index="M">Kidlfreqre</Subsector>
+    <Subsector Index="N">Na'vazhchiapl</Subsector>
+    <Subsector Index="O">Iabri</Subsector>
+    <Subsector Index="P">Tlachnjieshiedl</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1316" End="1419" Type="Core Route" />
+    <Route Start="1316" End="1613" Type="Core Route" />
+    <Route Start="1329" End="1526" Type="Core Route" />
+    <Route Start="1329" End="1532" Type="Core Route" />
+    <Route Start="1406" End="1503" Type="Core Route" />
+    <Route Start="1406" End="1510" Type="Core Route" />
+    <Route Start="1419" End="1422" Type="Core Route" />
+    <Route Start="1422" End="1526" Type="Core Route" />
+    <Route Start="1435" End="1532" Type="Core Route" />
+    <Route Start="1435" End="1539" Type="Core Route" />
+    <Route Start="1503" End="1439" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1510" End="1613" Type="Core Route" />
+    <Route Start="1539" End="1502" EndOffsetY="1" Type="Core Route" />
+  </Routes>
+</Sector>

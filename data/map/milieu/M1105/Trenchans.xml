@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="InReview OTU" Abbreviation="Tren">
+  <Name>Trenchans</Name>
+  <Name>Trenchan</Name>
+  <Name Lang="va">Rukhs Dall</Name>
+  <Credits>
+
+               &lt;b&gt;Trenchans&lt;/b&gt; sector was designed by Jeff Zeitlin.
+
+               Stellar positions were developed by Joe D. Fugate Sr. and
+               appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1: Vilani
+               &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications, 1990).
+
+      </Credits>
+  <X>2</X>
+  <Y>-3</Y>
+  <DataFile Author="Jeff Zeitlin" Source="The Zhodani Base" Milieu="M1105" Ref="http://www.zho.berka.com/data/CLASSIC/sector.pl?sector=TRENCHAN" />
+  <Subsectors>
+    <Subsector Index="A">Mumari</Subsector>
+    <Subsector Index="B">Liiriirda</Subsector>
+    <Subsector Index="C">Karlanshi</Subsector>
+    <Subsector Index="D">Kaginaku</Subsector>
+    <Subsector Index="E">Iishur</Subsector>
+    <Subsector Index="F">Shasedimini</Subsector>
+    <Subsector Index="G">Ugamipli</Subsector>
+    <Subsector Index="H">Alariki</Subsector>
+    <Subsector Index="I">Gaar</Subsector>
+    <Subsector Index="J">Akir</Subsector>
+    <Subsector Index="K">Didushilii</Subsector>
+    <Subsector Index="L">Namirkika</Subsector>
+    <Subsector Index="M">Nankishii</Subsector>
+    <Subsector Index="N">Ikii</Subsector>
+    <Subsector Index="O">Ishbigii</Subsector>
+    <Subsector Index="P">Idudika</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="3EoG">Third Empire of Gashikan</Allegiance>
+    <Allegiance Code="VTrA" Base="Va">Trae Aggregation</Allegiance>
+    <Allegiance Code="JuPr" Base="Jp">Julian Protectorate</Allegiance>
+    <Allegiance Code="JRar" Base="Jp">Julian Protectorate, Rar Errall/Wolves Warren</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Yellow" Allegiance="3EoG" LabelPosition="1627">0014 0115 0215 0316 0416 0516 0615 0614 0715 0815 0916 0917 1017 1118 1218 1319 1418 1519 1618 1718 1817 1917 2016 2015 2014 1914 2013 2114 2213 2313 2413 2514 2614 2715 2815 2916 3015 3116 3216 3217 3118 3018 3019 3020 3021 3022 3123 3124 3024 3025 3026 3027 3028 3029 3130 3030 3031 2932 2933 2833 2834 2734 2634 2535 2434 2334 2233 2134 2034 1935 1835 1736 1636 1537 1538 1539 1438 1338 1237 1138 1038 0939 0838 0739 0639 0539 0439 0339 0239 0140 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029 0028 0027 0026 0025 0024 0023 0022 0021 0020 0019 0018 0017 0016 0015 0014</Border>
+    <Border Color="OliveDrab" Allegiance="VTrA" LabelPosition="0308">0207 0308 0208 0209 0208 0207</Border>
+    <Border WrapLabel="true" Color="OliveDrab" Allegiance="JRar" LabelPosition="2639" Label="Rar Errall">2338 2437 2537 2637 2738 2837 2838 2839 2840 2941 2841 2741 2641 2541 2540 2539 2438 2338</Border>
+    <Border ShowLabel="false" Color="Blue" Allegiance="JuPr" LabelPosition="2237">1140 1239 1339 1439 1540 1640 1741 1840 1940 1939 1938 2037 2036 2037 2138 2238 2338 2437 2537 2637 2738 2837 2937 3036 3136 3135 3134 3233 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2241 2141 2041 1941 1841 1741 1641 1541 1441 1341 1241 1141 1140</Border>
+  </Borders>
+</Sector>

@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Kataran</Name>
+  <Credits>
+      &lt;b&gt;Kataran&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes social details for only a few worlds: the region has been remotely surveyed, which has provided extensive physical information about the other stars, features, and worlds that lie within it.
+    </Credits>
+  <X>56</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Manifest</Subsector>
+    <Subsector Index="E">Trail</Subsector>
+    <Subsector Index="I">Frontier</Subsector>
+    <Subsector Index="L">Excalisor</Subsector>
+    <Subsector Index="M">Skirt</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+    <Allegiance Code="Lh">Lords of the High Realm</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Lh { color: green; style: dotted }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="0612" Color="DarkRed" Size="small" Wrap="false">Jannasta's
+Path</Label>
+    <Label Hex="1722" Color="Gray" Wrap="false">Jerox Abyss</Label>
+    <Label Hex="2133" Color="Gray" Wrap="false">Kataran Void</Label>
+  </Labels>
+  <Borders>
+    <Border ShowLabel="false" WrapLabel="true" Allegiance="Lh" LabelPosition="3127">3024 3124 3123 3222 3322 3323 3324 3325 3225 3126 3025 3024</Border>
+  </Borders>
+  <Routes>
+    <Route Start="3210" End="0111" StartOffsetX="-1" Color="DarkRed" />
+    <Route Start="0111" End="0211" Color="DarkRed" />
+    <Route Start="0211" End="0411" Color="DarkRed" />
+    <Route Start="0411" End="0513" Color="DarkRed" />
+    <Route Start="0513" End="0613" Color="DarkRed" />
+    <Route Start="0613" End="0614" Color="DarkRed" />
+    <Route Start="0614" End="0516" Color="DarkRed" />
+    <Route Start="0516" End="0317" Color="DarkRed" />
+    <Route Start="0317" End="0217" Color="DarkRed" />
+    <Route Start="0217" End="3217" EndOffsetX="-1" Color="DarkRed" />
+  </Routes>
+</Sector>

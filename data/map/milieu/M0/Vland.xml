@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Unreviewed OTU" Abbreviation="Vlan">
+  <Name>Vland</Name>
+  <Credits>
+
+             &lt;b&gt;Vland&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by Joe D. Fugate Sr. and appears in
+             &lt;cite&gt;The Travellers Digest&lt;/cite&gt; and &lt;cite&gt;The
+             MegaTraveller Alien, Volume 1: Vilani &amp;amp; Vargr&lt;/cite&gt;
+             (DGP, 1990)
+
+             It was refined for Milieu 0 by Marc Miller and appears in
+             &lt;cite&gt;First Survey&lt;/cite&gt; (Imperium Games, 1996).
+
+    </Credits>
+  <X>-1</X>
+  <Y>-1</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1519">1519</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1520">1520</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1619">1619</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1716">1716</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1717">1717</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1718">1718</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1719">1719</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1816">1816</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1817">1817</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1819">1819</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1820">1820</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1821">1821</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1822">1822</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1915">1915</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1916">1916</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1918">1918</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1919">1919</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="1920">1920</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2008">2008</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2013">2013</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2016">2016</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2017">2017</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2115">2115</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2117">2117</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2120">2120</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2122">2122</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2123">2123</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2124">2124</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2125">2125</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2126">2126</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2216">2216</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2221">2221</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2222">2222</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2223">2223</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2316">2316</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2319">2319</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2320">2320</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2321">2321</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2322">2322</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2323">2323</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2324">2324</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2325">2325</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2416">2416</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2419">2419</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2425">2425</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2426">2426</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2518">2518</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2519">2519</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2520">2520</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2615">2615</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2616">2616</Border>
+  </Borders>
+</Sector>

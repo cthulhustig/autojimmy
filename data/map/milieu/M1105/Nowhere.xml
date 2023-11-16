@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway">
+  <Name>Nowhere</Name>
+  <Credits>
+      &lt;p&gt;
+        &lt;b&gt;Nowhere&lt;/b&gt; Sector appears in the documentation for the sub2ps MegaTraveller mapping software and was created by Travis McCord.
+      &lt;/p&gt;
+      &lt;p&gt;
+        Data was transcribed and edited by Graham Donald. 
+      &lt;/p&gt;
+     </Credits>
+  <X>71</X>
+  <Y>61</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="B">Universe</Subsector>
+    <Subsector Index="E">Unseen</Subsector>
+    <Subsector Index="F">Unknown</Subsector>
+    <Subsector Index="G">Undocumented</Subsector>
+    <Subsector Index="J">Constellation</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Im">Third Imperium</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="Im" LabelPosition="1315">0911 1010 1011 1012 1113 1213 1313 1412 1512 1611 1610 1611 1612 1613 1614 1615 1616 1617 1618 1518 1418 1419 1320 1219 1120 1019 0920 0919 0918 0917 0916 0915 0914 0913 0912 0911</Border>
+  </Borders>
+  <Routes>
+    <Route Start="1718" End="1617" />
+    <Route Start="1616" End="1617" />
+    <Route Start="1617" End="1215" />
+    <Route Start="1215" End="1016" />
+    <Route Start="1215" End="1014" />
+    <Route Start="1014" End="1012" />
+    <Route Start="1012" End="1010" />
+  </Routes>
+</Sector>

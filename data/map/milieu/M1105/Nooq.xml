@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Nooq">
+  <Name Lang="Hv">Nooq</Name>
+  <Name Lang="Kk">Hkimbiipam</Name>
+  <Credits>
+
+             &lt;b&gt;Nooq&lt;/b&gt; sector was designed by Mark Humphreys.
+
+    </Credits>
+  <X>7</X>
+  <Y>2</Y>
+  <DataFile Author="Mark Humphreys" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Iakkhe</Subsector>
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E">Uakoia</Subsector>
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I">Urnace</Subsector>
+    <Subsector Index="J">Regawrat</Subsector>
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M">Amnega</Subsector>
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="CsHv">Client state, Hive Federation</Allegiance>
+    <Allegiance Code="HvFd" Base="Hv">Hive Federation</Allegiance>
+    <Allegiance Code="Ux">Uxiteck Trading Alliance</Allegiance>
+    <Allegiance Code="Ax">Axanatglar Free State</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="HvFd" LabelPosition="0433">0013 0114 0214 0315 0316 0216 0217 0218 0219 0320 0420 0520 0620 0621 0622 0723 0724 0725 0726 0727 0827 0828 0829 0830 0831 0832 0933 1033 1034 1035 1036 1037 1138 1139 1140 1141 1041 0941 0841 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029 0028 0027 0026 0025 0024 0023 0022 0021 0020 0019 0018 0017 0016 0015 0014 0013</Border>
+    <Border Color="Green" Allegiance="Ax" LabelPosition="1428">1227 1328 1427 1528 1627 1528 1428 1329 1229 1228 1227</Border>
+    <Border Color="Green" Allegiance="Ux" LabelPosition="0914">0714 0713 0813 0914 1014 0915 0814 0714</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0121" End="0222" Type="Trade" />
+    <Route Start="0521" End="0121" Type="Trade" />
+    <Route Start="0125" End="0222" Type="Trade" />
+    <Route Start="0324" End="0222" Type="Trade" />
+    <Route Start="0237" End="3237" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0237" End="0637" Type="Trade" />
+    <Route Start="0637" End="0738" Type="Trade" />
+    <Route Start="0237" End="0139" Type="Trade" />
+    <Route Start="0101" End="0139" StartOffsetY="1" Type="Trade" />
+    <Route Start="0324" End="0526" Type="Trade" />
+    <Route Start="0526" End="0627" Type="Trade" />
+    <Route Start="0637" End="0735" Type="Trade" />
+    <Route Start="0732" End="0735" Type="Trade" />
+    <Route Start="0738" End="0940" Type="Trade" />
+  </Routes>
+</Sector>

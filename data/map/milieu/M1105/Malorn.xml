@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Malo">
+  <Name>Malorn</Name>
+  <Credits />
+  <X>0</X>
+  <Y>5</Y>
+  <DataFile Author="CORE" Source="The Zhodani Base" Milieu="M1105" Ref="http://zho.berka.com/data/CLASSIC/sector.pl?sector=MALORN" />
+  <Subsectors>
+    <Subsector Index="A">Malorn</Subsector>
+    <Subsector Index="B">Maiste</Subsector>
+    <Subsector Index="C">Heiligebet</Subsector>
+    <Subsector Index="D">Oberer</Subsector>
+    <Subsector Index="E">Frankfurt</Subsector>
+    <Subsector Index="F">Amorine</Subsector>
+    <Subsector Index="G">Volxenke</Subsector>
+    <Subsector Index="H">Geheim</Subsector>
+    <Subsector Index="I">Gesetz</Subsector>
+    <Subsector Index="J">Lords</Subsector>
+    <Subsector Index="K">Toh</Subsector>
+    <Subsector Index="L">Attacotti</Subsector>
+    <Subsector Index="M">Kiel</Subsector>
+    <Subsector Index="N">Ustov</Subsector>
+    <Subsector Index="O">Saar</Subsector>
+    <Subsector Index="P">Terese</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Mu">Malorn Union</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Lv">Lords of Vision</Allegiance>
+    <Allegiance Code="Gt">Great Terbah</Allegiance>
+    <Allegiance Code="Tr">Toh Republic</Allegiance>
+    <Allegiance Code="Jd">Joie De Vivre</Allegiance>
+    <Allegiance Code="Bs">Bright Star Cooperate</Allegiance>
+    <Allegiance Code="Dj">Daprolix Juncture of Suns</Allegiance>
+    <Allegiance Code="Pb">Parity of Brothers</Allegiance>
+    <Allegiance Code="Cn">Creation of Nonpareil</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Green" Allegiance="Bs" LabelPosition="2723">2520 2620 2721 2821 2722 2723 2724 2725 2624 2623 2523 2522 2521 2520</Border>
+    <Border Color="Purple" Allegiance="Cn" LabelPosition="3221">3121 3220 3320 3321 3322 3221 3121</Border>
+    <Border Color="OliveDrab" Allegiance="Dj" LabelPosition="3026">2926 3026 3126 3125 3126 3026 2926</Border>
+    <Border Color="Lime" Allegiance="Gt" LabelPosition="2111">1508 1607 1708 1808 1909 2009 2109 2208 2309 2409 2510 2610 2611 2612 2613 2614 2514 2513 2512 2411 2312 2212 2213 2113 2013 1913 1812 1712 1611 1610 1510 1509 1508</Border>
+    <Border Color="Blue" Allegiance="Jd" LabelPosition="1918">1817 1917 2017 2018 2019 2018 1918 1817</Border>
+    <Border Color="Cyan" Allegiance="Lv" LabelPosition="1125">0923 0924 1024 1025 1126 1226 1227 1127 1126 1025 0925 0924 0923</Border>
+    <Border Color="White" Allegiance="Mu" LabelPosition="0604">0000 0100 0200 0300 0400 0500 0501 0502 0503 0603 0704 0804 0905 1005 1105 1204 1205 1106 1107 1108 1007 0907 0806 0707 0607 0508 0407 0308 0208 0108 0007 0006 0005 0004 0003 0002 0001 0000</Border>
+    <Border Color="Brown" Allegiance="Pb" LabelPosition="3214">3115 3214 3213 3214 3315 3214 3115</Border>
+    <Border Color="HotPink" Allegiance="Tr" LabelPosition="2026">1727 1826 1926 2025 2125 2224 2325 2225 2126 2026 1927 1827 1828 1827 1727</Border>
+  </Borders>
+</Sector>

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Thrax</Name>
+  <Credits>
+      &lt;b&gt;Thrax&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>49</X>
+  <Y>28</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Et">Empire of Thrax</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Et { color: blue }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="2427" Color="Gray" Size="large" Wrap="false">Hopes Jump</Label>
+    <Label Hex="1503" Color="Gray" Size="small" Wrap="false">RSS
+Tx1503</Label>
+    <Label Hex="2005" Color="Gray" Size="small" Wrap="false">RSS
+Tx2004</Label>
+    <Label Hex="2405" Color="Gray" Size="small" Wrap="false">RSS
+Tx2404</Label>
+  </Labels>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Et" LabelPosition="1902">1105 1204 1203 1202 1302 1401 1501 1601 1702 1801 1901 1900 2000 2100 2200 2300 2301 2302 2402 2502 2601 2702 2703 2704 2604 2605 2506 2507 2407 2308 2207 2107 2007 2008 1909 1808 1807 1707 1607 1608 1509 1408 1308 1307 1206 1106 1105</Border>
+  </Borders>
+</Sector>

@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Reav">
+  <Name>Reaver's Deep</Name>
+  <Name>Reavers' Deep</Name>
+  <Name>Reavers Deep</Name>
+  <Name Lang="as">Aeitle Sakh</Name>
+  <Credits>
+
+             &lt;b&gt;Reaver's Deep&lt;/b&gt; sector was designed by J. Andrew
+             Keith. Portions of Reaver's Deep sector appear in
+             &lt;cite&gt;High Passage Magazine&lt;/cite&gt;, and in &lt;cite&gt;Far
+             Traveller Magazine&lt;/cite&gt;.
+             
+             The Gralyn Union and details of the Drinsaar Loop from Traveller Chronicle Issue 6 
+
+    </Credits>
+  <X>-2</X>
+  <Y>2</Y>
+  <DataFile Author="J. Andrew Keith" Milieu="M1201" />
+  <Subsectors>
+    <Subsector Index="A">Farift</Subsector>
+    <Subsector Index="B">Riftdeep</Subsector>
+    <Subsector Index="C">Riftrim</Subsector>
+    <Subsector Index="D">Gulf</Subsector>
+    <Subsector Index="E">Hryaroaa</Subsector>
+    <Subsector Index="F">Scotian Deep</Subsector>
+    <Subsector Index="G">Caledon</Subsector>
+    <Subsector Index="H">Nightrim</Subsector>
+    <Subsector Index="I">Keiar</Subsector>
+    <Subsector Index="J">Ea</Subsector>
+    <Subsector Index="K">Drexilthar</Subsector>
+    <Subsector Index="L">Urlaqqash</Subsector>
+    <Subsector Index="M">Uhtaa</Subsector>
+    <Subsector Index="N">Eakoi</Subsector>
+    <Subsector Index="O">Drinsaar</Subsector>
+    <Subsector Index="P">Fahlnar</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="??">Unknown</Allegiance>
+    <Allegiance Code="Wi">Wilds</Allegiance>
+    <Allegiance Code="Gu">Gralyn Union</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Gu { color: lightgreen; }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="2132" Color="Red" Wrap="false">Drinsaar Loop</Label>
+  </Labels>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Gu" LabelPosition="1835" Label="Gralyn Union">1734 1735 1734</Border>
+  </Borders>
+</Sector>

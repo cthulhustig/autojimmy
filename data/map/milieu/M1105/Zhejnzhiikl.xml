@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Zhejnzhiikl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-116</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Virdliao</Subsector>
+    <Subsector Index="B">Etach</Subsector>
+    <Subsector Index="C">Nsheplntsiz</Subsector>
+    <Subsector Index="D">Chiadnziencha</Subsector>
+    <Subsector Index="E">Zdaninshet</Subsector>
+    <Subsector Index="F">Kentsadla</Subsector>
+    <Subsector Index="G">Efrkried</Subsector>
+    <Subsector Index="H">Tlianzhncheklnzhel</Subsector>
+    <Subsector Index="I">Qredlblaklnche</Subsector>
+    <Subsector Index="J">Flezjavents</Subsector>
+    <Subsector Index="K">Ievie</Subsector>
+    <Subsector Index="L">Ebrne</Subsector>
+    <Subsector Index="M">Vlanjzhe</Subsector>
+    <Subsector Index="N">Ienzhofl</Subsector>
+    <Subsector Index="O">Aekl</Subsector>
+    <Subsector Index="P">Anzhnjabr</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1303" End="1239" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1303" End="1605" Type="Core Route" />
+    <Route Start="1605" End="1709" Type="Core Route" />
+    <Route Start="1709" End="1812" Type="Core Route" />
+    <Route Start="1736" End="1839" Type="Core Route" />
+    <Route Start="1736" End="2033" Type="Core Route" />
+    <Route Start="1812" End="1916" Type="Core Route" />
+    <Route Start="1839" End="1703" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1916" End="2019" Type="Core Route" />
+    <Route Start="2019" End="2123" Type="Core Route" />
+    <Route Start="2026" End="2123" Type="Core Route" />
+    <Route Start="2026" End="2130" Type="Core Route" />
+    <Route Start="2033" End="2130" Type="Core Route" />
+  </Routes>
+</Sector>

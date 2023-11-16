@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Reikan</Name>
+  <Credits>
+      &lt;b&gt;Reikan&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>49</X>
+  <Y>24</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1623" Color="Gray" Size="large" Wrap="false">The Rift</Label>
+  </Labels>
+</Sector>

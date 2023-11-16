@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Fahr">
+  <Name Lang="as">Fahreahluis</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>5</Y>
+  <DataFile Source="Solomani and Aslan" Milieu="M1105" Ref="https://travellermap.com/data/fahreahluis" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="A9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
+    <Allegiance Code="A1" Base="As">Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)</Allegiance>
+    <Allegiance Code="Sa">Sea'ai'teluarliyh</Allegiance>
+    <Allegiance Code="Hy">Hreahiyouea</Allegiance>
+    <Allegiance Code="A3" Base="As">Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)</Allegiance>
+    <Allegiance Code="Kt">Ktouho'as</Allegiance>
+    <Allegiance Code="A2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
+    <Allegiance Code="A7" Base="As">Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerfearlyo (20), Yehtahikh (24)</Allegiance>
+    <Allegiance Code="A6" Base="As">Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="As" LabelPosition="0213">0006 0106 0105 0205 0305 0306 0307 0407 0408 0409 0410 0311 0211 0112 0113 0114 0115 0215 0316 0216 0217 0218 0219 0120 0121 0020 0019 0018 0017 0016 0015 0014 0013 0012 0011 0010 0009 0008 0007 0006</Border>
+    <Border Allegiance="As" LabelPosition="2710">2216 2316 2315 2314 2313 2312 2311 2310 2309 2308 2307 2306 2406 2507 2606 2706 2805 2905 2904 2903 3003 3104 3203 3104 3105 3106 3107 3108 3109 3009 3010 3011 2912 2913 2914 2915 2916 3016 2916 2816 2717 2617 2517 2416 2316 2216</Border>
+    <Border Color="Khaki" Allegiance="Hy" LabelPosition="0629">0428 0528 0527 0526 0527 0627 0728 0828 0829 0730 0731 0732 0731 0730 0629 0529 0428</Border>
+    <Border Color="Goldenrod" Allegiance="Kt" LabelPosition="2933">2536 2635 2735 2834 2833 2832 2932 3031 3030 3029 3028 3027 3128 3228 3229 3230 3231 3232 3233 3234 3135 3035 3036 2937 2837 2738 2739 2738 2637 2537 2536</Border>
+    <Border Color="Orange" Allegiance="Sa" LabelPosition="0818">0313 0412 0513 0613 0713 0714 0814 0915 1015 1116 1215 1216 1317 1217 1218 1219 1120 1020 0921 0821 0822 0723 0622 0522 0521 0520 0519 0518 0417 0416 0415 0414 0314 0313</Border>
+  </Borders>
+</Sector>

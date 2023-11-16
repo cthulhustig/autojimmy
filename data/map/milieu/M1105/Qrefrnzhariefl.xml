@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Qrefrnzhariefl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-40</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Nchitsiavl</Subsector>
+    <Subsector Index="B">Semaak</Subsector>
+    <Subsector Index="C">Zhdiplzijinj</Subsector>
+    <Subsector Index="D">Nchadra</Subsector>
+    <Subsector Index="E">Shtabrnjansa</Subsector>
+    <Subsector Index="F">Tse'nchiabr</Subsector>
+    <Subsector Index="G">Shatsblefle</Subsector>
+    <Subsector Index="H">Shenzhpleplfliedl</Subsector>
+    <Subsector Index="I">Rebloa</Subsector>
+    <Subsector Index="J">Katlqrizap</Subsector>
+    <Subsector Index="K">Chtatsnzebra</Subsector>
+    <Subsector Index="L">Ensia</Subsector>
+    <Subsector Index="M">Zdintsamnchinzh</Subsector>
+    <Subsector Index="N">Fenzhjiantsa</Subsector>
+    <Subsector Index="O">Broshiansqri</Subsector>
+    <Subsector Index="P">Aqra</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1735" End="1832" Type="Core Route" />
+    <Route Start="1735" End="1838" Type="Core Route" />
+    <Route Start="1805" End="1902" Type="Core Route" />
+    <Route Start="1805" End="1909" Type="Core Route" />
+    <Route Start="1832" End="2029" Type="Core Route" />
+    <Route Start="1838" End="1702" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1902" End="2038" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1909" End="1912" Type="Core Route" />
+    <Route Start="1912" End="2113" Type="Core Route" />
+    <Route Start="1916" End="2019" Type="Core Route" />
+    <Route Start="1916" End="2113" Type="Core Route" />
+    <Route Start="1926" End="2022" Type="Core Route" />
+    <Route Start="1926" End="2029" Type="Core Route" />
+    <Route Start="2019" End="2022" Type="Core Route" />
+  </Routes>
+</Sector>

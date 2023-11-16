@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Mbil">
+  <Name Lang="kk">Mbil!!gh</Name>
+  <Credits />
+  <X>8</X>
+  <Y>-3</Y>
+  <DataFile Author="Jim Kundert" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

@@ -1,0 +1,144 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Folg">
+  <Name Lang="Hv">Folgore</Name>
+  <Credits>
+
+             &lt;b&gt;Folgore&lt;/b&gt; sector was designed by Mark Humphreys.
+
+    </Credits>
+  <X>6</X>
+  <Y>3</Y>
+  <DataFile Author="Mark Humphreys" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Aghan</Subsector>
+    <Subsector Index="B">Eloqim</Subsector>
+    <Subsector Index="C">Pirno</Subsector>
+    <Subsector Index="D">Gortol</Subsector>
+    <Subsector Index="E">Kamuke</Subsector>
+    <Subsector Index="F">Ornepoonog</Subsector>
+    <Subsector Index="G">Uxathoqil</Subsector>
+    <Subsector Index="H">Pocaanir</Subsector>
+    <Subsector Index="I">Aceriq</Subsector>
+    <Subsector Index="J">Aaxxaa</Subsector>
+    <Subsector Index="K">Afadroc</Subsector>
+    <Subsector Index="L">Koonet</Subsector>
+    <Subsector Index="M">Phleqaar</Subsector>
+    <Subsector Index="N">Nodanum</Subsector>
+    <Subsector Index="O">Kkatoo</Subsector>
+    <Subsector Index="P">Axwrax</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="HvFd" Base="Hv">Hive Federation</Allegiance>
+    <Allegiance Code="Hf">Hive FDA Uplift/Observation Site</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="CsHv">Client state, Hive Federation</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="HvFd" LabelPosition="1322">1035 0936 0937 0837 0838 0739 0740 0640 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029 0028 0027 0026 0025 0024 0023 0022 0021 0020 0019 0018 0017 0016 0015 0014 0013 0012 0011 0010 0009 0008 0007 0006 0005 0004 0003 0002 0001 0000 0100 0200 0300 0400 0500 0600 0700 0800 0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2400 2500 2600 2700 2800 2900 3000 3100 3200 3300 3301 3302 3303 3304 3305 3306 3307 3308 3309 3310 3311 3312 3313 3314 3315 3316 3317 3318 3319 3320 3321 3322 3323 3324 3325 3326 3327 3328 3329 3229 3130 3131 3031 2931 2831 2731 2630 2531 2431 2332 2232 2132 2031 1931 1831 1732 1632 1532 1432 1333 1334 1233 1134 1135 1035</Border>
+  </Borders>
+  <Regions>
+    <Region WrapLabel="true" Color="Aquamarine" LabelPosition="0805" Label="Gurvin Interstellar Democratic Republic">0102 0202 0302 0401 0502 0601 0701 0801 0901 1001 1102 1201 1302 1402 1502 1402 1403 1404 1505 1506 1406 1307 1207 1108 1008 0909 0808 0709 0708 0607 0606 0506 0406 0306 0205 0204 0104 0103</Region>
+    <Region WrapLabel="true" Color="Aquamarine" LabelPosition="0517" Label="Kamuke People's Collective">0118 0117 0116 0115 0215 0216 0317 0416 0516 0515 0615 0616 0717 0817 0818 0719 0618 0518 0417 0318 0218 0118</Region>
+    <Region WrapLabel="true" Color="Aquamarine" LabelPosition="2517" Label="Pocaanir Cultural Reserve">2318 2417 2416 2516 2615 2616 2617 2518 2519 2418 2318</Region>
+    <Region WrapLabel="true" Color="Aquamarine" LabelPosition="0733" Label="Dagaut Cultural Locality">0632 0732 0832 0733 0632</Region>
+  </Regions>
+  <Routes>
+    <Route Start="0112" End="3211" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0112" End="3212" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0125" End="3224" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0125" End="0425" Type="Trade" />
+    <Route Start="0425" End="0423" Type="Trade" />
+    <Route Start="0423" End="0221" Type="Trade" />
+    <Route Start="0221" End="0218" Type="Trade" />
+    <Route Start="0218" End="0416" Type="Trade" />
+    <Route Start="0416" End="0513" Type="Trade" />
+    <Route Start="0312" End="0112" Type="Trade" />
+    <Route Start="0312" End="0513" Type="Trade" />
+    <Route Start="0513" End="0812" Type="Trade" />
+    <Route Start="0312" End="0409" Type="Trade" />
+    <Route Start="0409" End="0406" Type="Trade" />
+    <Route Start="0406" End="0605" Type="Trade" />
+    <Route Start="0605" End="0703" Type="Trade" />
+    <Route Start="0703" End="0901" Type="Trade" />
+    <Route Start="2615" End="2617" Type="Trade" />
+    <Route Start="2417" End="2617" Type="Trade" />
+    <Route Start="0425" End="0428" Type="Trade" />
+    <Route Start="0428" End="0430" Type="Trade" />
+    <Route Start="0430" End="0534" Type="Trade" />
+    <Route Start="0534" End="0637" Type="Trade" />
+    <Route Start="0637" End="0740" Type="Trade" />
+    <Route Start="0430" End="0729" Type="Trade" />
+    <Route Start="0729" End="1128" Type="Trade" />
+    <Route Start="1128" End="1426" Type="Trade" />
+    <Route Start="0812" End="1012" Type="Trade" />
+    <Route Start="1012" End="1313" Type="Trade" />
+    <Route Start="1313" End="1511" Type="Trade" />
+    <Route Start="0605" End="0805" Type="Trade" />
+    <Route Start="1005" End="0805" Type="Trade" />
+    <Route Start="1005" End="1205" Type="Trade" />
+    <Route Start="1205" End="1505" Type="Trade" />
+    <Route Start="2118" End="2417" Type="Trade" />
+    <Route Start="1904" End="1505" Type="Trade" />
+    <Route Start="1904" End="2202" Type="Trade" />
+    <Route Start="2202" End="2601" Type="Trade" />
+    <Route Start="1313" End="1614" Type="Trade" />
+    <Route Start="2720" End="2820" Type="Trade" />
+    <Route Start="1426" End="1627" Type="Trade" />
+    <Route Start="1627" End="1829" Type="Trade" />
+    <Route Start="1426" End="1625" Type="Trade" />
+    <Route Start="1829" End="2030" Type="Trade" />
+    <Route Start="2030" End="2331" Type="Trade" />
+    <Route Start="1625" End="1925" Type="Trade" />
+    <Route Start="1925" End="2223" Type="Trade" />
+    <Route Start="2223" End="2622" Type="Trade" />
+    <Route Start="2118" End="2320" Type="Trade" />
+    <Route Start="2320" End="2622" Type="Trade" />
+    <Route Start="1520" End="1819" Type="Trade" />
+    <Route Start="2118" End="1819" Type="Trade" />
+    <Route Start="3128" End="0127" EndOffsetX="1" Type="Trade" />
+    <Route Start="2417" End="2615" Type="Trade" />
+    <Route Start="2615" End="2813" Type="Trade" />
+    <Route Start="2813" End="3212" Type="Trade" />
+    <Route Start="2813" End="2911" Type="Trade" />
+    <Route Start="2911" End="3208" Type="Trade" />
+    <Route Start="2411" End="2813" Type="Trade" />
+    <Route Start="2411" End="2509" Type="Trade" />
+    <Route Start="2601" End="3002" Type="Trade" />
+    <Route Start="3002" End="0101" EndOffsetX="1" Type="Trade" />
+    <Route Start="1614" End="1517" Type="Trade" />
+    <Route Start="1517" End="1218" Type="Trade" />
+    <Route Start="1218" End="0817" Type="Trade" />
+    <Route Start="0817" End="0416" Type="Trade" />
+    <Route Start="1218" End="1520" Type="Trade" />
+    <Route Start="1520" End="1821" Type="Trade" />
+    <Route Start="1821" End="2124" Type="Trade" />
+    <Route Start="1829" End="2129" Type="Trade" />
+    <Route Start="2129" End="2528" Type="Trade" />
+    <Route Start="2509" End="2706" Type="Trade" />
+    <Route Start="2403" End="2706" Type="Trade" />
+    <Route Start="2403" End="2202" Type="Trade" />
+    <Route Start="0740" End="0502" EndOffsetY="1" Type="Trade" />
+    <Route Start="0305" End="0406" Type="Trade" />
+    <Route Start="0305" End="0304" Type="Trade" />
+    <Route Start="0102" End="0304" Type="Trade" />
+    <Route Start="1511" End="1509" Type="Trade" />
+    <Route Start="1509" End="1607" Type="Trade" />
+    <Route Start="1706" End="1607" Type="Trade" />
+    <Route Start="1505" End="1706" Type="Trade" />
+    <Route Start="0117" End="3218" StartOffsetX="1" Type="Trade" />
+    <Route Start="3019" End="3218" Type="Trade" />
+    <Route Start="3019" End="3221" Type="Trade" />
+    <Route Start="0122" End="3221" StartOffsetX="1" Type="Trade" />
+    <Route Start="2622" End="2820" Type="Trade" />
+    <Route Start="3019" End="2820" Type="Trade" />
+    <Route Start="0218" End="3218" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0134" End="3233" EndOffsetX="-1" Type="Trade" />
+    <Route Start="0134" End="0335" Type="Trade" />
+    <Route Start="0335" End="0436" Type="Trade" />
+    <Route Start="0637" End="0436" Type="Trade" />
+    <Route Start="0436" End="0337" Type="Trade" />
+    <Route Start="0337" End="0139" Type="Trade" />
+    <Route Start="3239" End="0139" StartOffsetX="-1" Type="Trade" />
+  </Routes>
+</Sector>

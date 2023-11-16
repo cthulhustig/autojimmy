@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Perfection</Name>
+  <Credits>
+      &lt;b&gt;Perfection&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>57</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1407" Color="Gray" Size="large" Wrap="false">Coreward Drift</Label>
+    <Label Hex="2415" Color="Gray" Wrap="false">Drifts End</Label>
+    <Label Hex="1633" Color="Gray" Size="large" Wrap="false">Rimward Deep</Label>
+  </Labels>
+</Sector>

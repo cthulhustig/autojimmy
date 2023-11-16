@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Ftao">
+  <Name Lang="as">Ftaoiyekyu</Name>
+  <Credits />
+  <X>-6</X>
+  <Y>2</Y>
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/hA.htm" />
+  <Subsectors>
+    <Subsector Index="A">Uir</Subsector>
+    <Subsector Index="B">Yerler</Subsector>
+    <Subsector Index="C">Oua</Subsector>
+    <Subsector Index="D">Kouyelaos</Subsector>
+    <Subsector Index="E">Iylileal</Subsector>
+    <Subsector Index="F">Ftealr</Subsector>
+    <Subsector Index="G">Hroarlalesoa</Subsector>
+    <Subsector Index="H">Sur</Subsector>
+    <Subsector Index="I">Aieauo</Subsector>
+    <Subsector Index="J">Leahoilrihe</Subsector>
+    <Subsector Index="K">Easou</Subsector>
+    <Subsector Index="L">Aiworlaisaoh</Subsector>
+    <Subsector Index="M">Iewyu</Subsector>
+    <Subsector Index="N">Ktyaoireikh</Subsector>
+    <Subsector Index="O">Iaeyaiy</Subsector>
+    <Subsector Index="P">Aeaiy</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="As" LabelPosition="2336">1341 1440 1439 1539 1638 1738 1838 1938 2037 2138 2237 2337 2436 2536 2535 2635 2736 2835 2935 3034 3134 3233 3232 3231 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2041 1941 1841 1741 1641 1541 1441 1341</Border>
+  </Borders>
+</Sector>

@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Peklprozqratl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-140</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Penchtiaplfi</Subsector>
+    <Subsector Index="B">Prorvaplnziav</Subsector>
+    <Subsector Index="C">Lefltsiapr</Subsector>
+    <Subsector Index="D">Dlifrzhievia</Subsector>
+    <Subsector Index="E">Pleia</Subsector>
+    <Subsector Index="F">Bablozzins</Subsector>
+    <Subsector Index="G">Echia</Subsector>
+    <Subsector Index="H">Chteflnchinzha</Subsector>
+    <Subsector Index="I">Zdeshbletiezh</Subsector>
+    <Subsector Index="J">Briklbriafr</Subsector>
+    <Subsector Index="K">Ninzhpleprliaz</Subsector>
+    <Subsector Index="L">Dobrplianenzh</Subsector>
+    <Subsector Index="M">Tsaiefl</Subsector>
+    <Subsector Index="N">Jdazprivonch</Subsector>
+    <Subsector Index="O">Shavrlachanj</Subsector>
+    <Subsector Index="P">Plerie</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="0817" End="0821" Type="Core Route" />
+    <Route Start="0817" End="1116" Type="Core Route" />
+    <Route Start="0821" End="0825" Type="Core Route" />
+    <Route Start="0825" End="0827" Type="Core Route" />
+    <Route Start="0827" End="0931" Type="Core Route" />
+    <Route Start="0931" End="1233" Type="Core Route" />
+    <Route Start="1116" End="1213" Type="Core Route" />
+    <Route Start="1210" End="1213" Type="Core Route" />
+    <Route Start="1210" End="1407" Type="Core Route" />
+    <Route Start="1233" End="1435" Type="Core Route" />
+    <Route Start="1403" End="1340" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1403" End="1407" Type="Core Route" />
+    <Route Start="1435" End="1439" Type="Core Route" />
+    <Route Start="1439" End="1201" EndOffsetY="1" Type="Core Route" />
+  </Routes>
+</Sector>

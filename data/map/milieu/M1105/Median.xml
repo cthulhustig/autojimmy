@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Median</Name>
+  <Credits>
+      &lt;b&gt;Median&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>54</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1533" Color="Gray" Size="large" Wrap="false">Ribbon</Label>
+    <Label Hex="1938" Color="Gray" Size="large" Wrap="false">Rift</Label>
+    <Label Hex="2105" Color="Gray" Wrap="false">Dry Stars</Label>
+    <Label Hex="1718" Color="Gray" Wrap="false">The Disjoin</Label>
+    <Label Hex="0428" Color="Gray" Wrap="false">Lacuna Reach</Label>
+    <Label Hex="1936" Color="Gray" Wrap="false">Sutters Bridge</Label>
+    <Label Hex="2713" Color="Gray" Wrap="false">RSS
+Me2712</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="0506" Label="Outer Veil">0306 0405 0506 0605 0705 0804 0803 0903 0904 0804 0705 0605 0606 0607 0708 0709 0809 0910 0810 0710 0709 0608 0607 0507 0407 0406 0306</Region>
+    <Region Color="DarkBlue" LabelPosition="0709">0708 0709 0708</Region>
+    <Region Color="DarkBlue" LabelPosition="1107" Label="Inner Veil">0906 1005 1006 1107 1207 1208 1109 1110 1109 1108 1107 1006 0906</Region>
+  </Regions>
+</Sector>

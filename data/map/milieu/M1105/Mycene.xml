@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Mycene</Name>
+  <Credits>
+      &lt;b&gt;Mycene&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>50</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="2022" Color="Gray" Size="large" Wrap="false">Grand Arc</Label>
+    <Label Hex="0530" Color="Gray" Size="small" Wrap="false">RSS
+My0529</Label>
+    <Label Hex="1204" Color="Gray" Size="small" Wrap="false">RSS
+My1203</Label>
+  </Labels>
+</Sector>

@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Zhetsefr</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-124</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Dlentsnzhinzh</Subsector>
+    <Subsector Index="B">Asha</Subsector>
+    <Subsector Index="C">Dliepiatsia</Subsector>
+    <Subsector Index="D">Letsiqr</Subsector>
+    <Subsector Index="E">Iblprievr</Subsector>
+    <Subsector Index="F">Raa</Subsector>
+    <Subsector Index="G">Iafef</Subsector>
+    <Subsector Index="H">Aents</Subsector>
+    <Subsector Index="I">Dlichonjiensh</Subsector>
+    <Subsector Index="J">Kitlchatlie</Subsector>
+    <Subsector Index="K">Krentsqrielriabl</Subsector>
+    <Subsector Index="L">Chtizvliafrietl</Subsector>
+    <Subsector Index="M">Driedrtiflve</Subsector>
+    <Subsector Index="N">Iva</Subsector>
+    <Subsector Index="O">Aits</Subsector>
+    <Subsector Index="P">Atliech</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="0516" End="0612" Type="Core Route" />
+    <Route Start="0516" End="0619" Type="Core Route" />
+    <Route Start="0523" End="0619" Type="Core Route" />
+    <Route Start="0523" End="0626" Type="Core Route" />
+    <Route Start="0612" End="0809" Type="Core Route" />
+    <Route Start="0626" End="0730" Type="Core Route" />
+    <Route Start="0633" End="0730" Type="Core Route" />
+    <Route Start="0633" End="0737" Type="Core Route" />
+    <Route Start="0640" End="0504" EndOffsetY="1" Type="Core Route" />
+    <Route Start="0640" End="0737" Type="Core Route" />
+    <Route Start="0706" End="0802" Type="Core Route" />
+    <Route Start="0706" End="0809" Type="Core Route" />
+    <Route Start="0802" End="0640" EndOffsetY="-1" Type="Core Route" />
+  </Routes>
+</Sector>

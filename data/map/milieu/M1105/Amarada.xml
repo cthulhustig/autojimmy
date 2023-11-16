@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Amarada</Name>
+  <Credits>
+      &lt;b&gt;Amarada&lt;/b&gt; sector was designed by Ade Stewart as part of Where the Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>57</X>
+  <Y>24</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1602" Color="Gray" Size="large" Wrap="false">Inner Void</Label>
+    <Label Hex="1415" Color="Gray" Size="large" Wrap="false">Coreward</Label>
+    <Label Hex="1417" Color="Gray" Size="large" Wrap="false">Drift</Label>
+    <Label Hex="2825" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+    <Label Hex="1735" Color="Gray" Wrap="false">The Separation</Label>
+    <Label Hex="2604" Color="Gray" Wrap="false">RSS
+Am2603</Label>
+  </Labels>
+  <Regions>
+    <Region Color="Purple" LabelPosition="0223">0123 0222 0221 0322 0323 0223 0124 0125 0124 0123</Region>
+    <Region Color="Purple" LabelPosition="1027" Label="Amaric Shoal">0524 0623 0624 0725 0825 0926 1026 1126 1226 1326 1425 1424 1425 1326 1327 1227 1128 1129 1029 0929 0928 0827 0826 0726 0626 0625 0525 0524</Region>
+  </Regions>
+</Sector>
