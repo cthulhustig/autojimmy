@@ -934,7 +934,7 @@ def readJSONMetadata(
     # with at the moment, not sure what it's used for
     allegianceElements = sectorElement.get('Allegiances')
     allegiances = None
-    if allegiances:
+    if allegianceElements:
         allegiances = {}
         if allegianceElements:
             for element in allegianceElements:
@@ -1039,7 +1039,7 @@ def readJSONMetadata(
                 offsetX=offsetX,
                 offsetY=offsetY))
 
-    regionElements = sectorElement.get('Region')
+    regionElements = sectorElement.get('Regions')
     regions = None
     if regionElements:
         regions = []
