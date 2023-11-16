@@ -1,3 +1,4 @@
+import common
 import enum
 import itertools
 import json
@@ -5,6 +6,8 @@ import logging
 import re
 import typing
 import xml.etree.ElementTree
+
+_XmlFloatDecimalPlaces = 2
 
 class SectorFormat(enum.Enum):
     T5Column = 0, # aka Second Survey format
@@ -53,6 +56,26 @@ class RawWorld(object):
             value: str
             ) -> None:
         self._attributes[attribute] = value
+
+class RawAllegiance(object):
+    def __init__(
+            self,
+            code: str,
+            name: str,
+            base: typing.Optional[str]
+            ) -> None:
+        self._code = code
+        self._name = name
+        self._base = base
+
+    def code(self) -> str:
+        return self._code
+    
+    def name(self) -> str:
+        return self._name
+    
+    def base(self) -> typing.Optional[str]:
+        return self._base
 
 class RawRoute(object):
     def __init__(
@@ -213,7 +236,6 @@ class RawLabel(object):
     
 # NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
 # https://travellermap.com/doc/metadata#borders
-# TODO: The base JSON format metadata doesn't have any examples of regions
 class RawRegion(object):
     def __init__(
             self,
@@ -270,7 +292,7 @@ class RawMetadata(object):
             x: int,
             y: int,
             tags: typing.Optional[str],
-            allegiances: typing.Optional[typing.Mapping[str, str]], # Maps allegiance code to the name of the allegiance
+            allegiances: typing.Optional[typing.Iterable[RawAllegiance]],
             routes: typing.Optional[typing.Iterable[RawRoute]],
             borders: typing.Optional[typing.Iterable[RawBorder]],
             labels: typing.Optional[typing.Iterable[RawLabel]],
@@ -327,7 +349,7 @@ class RawMetadata(object):
     def tags(self) -> typing.Optional[str]:
         return self._tags
 
-    def allegiances(self) -> typing.Optional[typing.Mapping[str, str]]:
+    def allegiances(self) -> typing.Optional[typing.Iterable[RawAllegiance]]:
         return self._allegiances
     
     def routes(self) -> typing.Optional[typing.Iterable[RawRoute]]:
@@ -735,12 +757,10 @@ def readXMLMetadata(
 
             subsectorNames[code] = element.text
 
-    # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
-    # with at the moment, not sure what it's used for
     allegianceElements = sectorElement.findall('./Allegiances/Allegiance')
     allegiances = None
     if allegianceElements:
-        allegiances = {}
+        allegiances = []
         for element in allegianceElements:
             code = element.get('Code')
             if code == None:
@@ -748,7 +768,10 @@ def readXMLMetadata(
             
             # Ignore allegiances that are just a sequence of '-'
             if code and not _isAllDashes(code):
-                allegiances[code] = element.text
+                allegiances.append(RawAllegiance(
+                    code=code,
+                    name=element.text,
+                    base=element.get('Base')))
 
     routeElements = sectorElement.findall('./Routes/Route')
     routes = None
@@ -930,12 +953,10 @@ def readJSONMetadata(
 
                 subsectorNames[code] = name
 
-    # TODO: Allegiances have an additional 'Base' attribute that I'm not doing anything
-    # with at the moment, not sure what it's used for
     allegianceElements = sectorElement.get('Allegiances')
     allegiances = None
     if allegianceElements:
-        allegiances = {}
+        allegiances = []
         if allegianceElements:
             for element in allegianceElements:
                 name = element.get('Name')
@@ -948,7 +969,10 @@ def readJSONMetadata(
 
                 # Ignore allegiances that are just a sequence of '-'
                 if code and not _isAllDashes(code):
-                    allegiances[code] = name
+                    allegiances.append(RawAllegiance(
+                        code=code,
+                        name=name,
+                        base=element.get('Base')))
 
     routeElements = sectorElement.get('Routes')
     routes = None
@@ -1140,11 +1164,12 @@ def writeXMLMetadata(
     allegiances = metadata.allegiances()
     if allegiances:
         allegiancesElement = xml.etree.ElementTree.SubElement(sectorElement, 'Allegiances')
-        for code, name in allegiances.items():
-            # TODO: Handle Base attribute
-            attributes = {'Code': code}
+        for allegiance in allegiances:
+            attributes = {'Code': allegiance.code()}
+            if allegiance.base():
+                attributes['Base'] = allegiance.base()
             allegianceElement = xml.etree.ElementTree.SubElement(allegiancesElement, 'Allegiance', attributes)
-            allegianceElement.text = name
+            allegianceElement.text = allegiance.name()
 
     routes = metadata.routes()
     if routes:
@@ -1188,9 +1213,13 @@ def writeXMLMetadata(
             if border.labelHex() != None:
                 attributes['LabelPosition'] = border.labelHex()
             if border.labelOffsetX() != None:
-                attributes['LabelOffsetX'] = str(border.labelOffsetX()) # TODO: Might need to be explicit about precision
+                attributes['LabelOffsetX'] = common.formatNumber(
+                    number=border.labelOffsetX(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
             if border.labelOffsetY() != None:
-                attributes['LabelOffsetY'] = str(border.labelOffsetY()) # TODO: Might need to be explicit about precision
+                attributes['LabelOffsetY'] = common.formatNumber(
+                    number=border.labelOffsetY(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
             if border.label() != None:
                 attributes['Label'] = border.label()
             if border.style() != None:
@@ -1213,9 +1242,13 @@ def writeXMLMetadata(
             if label.wrap() != None:
                 attributes['Wrap'] = str(label.wrap()).lower()
             if label.offsetX() != None:
-                attributes['OffsetX'] = str(label.offsetX()) # TODO: Might need to be explicit about precision
+                attributes['OffsetX'] = common.formatNumber(
+                    number=label.offsetX(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
             if label.offsetY() != None:
-                attributes['OffsetY'] = str(label.offsetY()) # TODO: Might need to be explicit about precision
+                attributes['OffsetY'] = common.formatNumber(
+                    number=label.offsetY(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
 
             labelElement = xml.etree.ElementTree.SubElement(labelsElement, 'Label', attributes)
             labelElement.text = label.text()
@@ -1232,9 +1265,13 @@ def writeXMLMetadata(
             if region.labelHex() != None:
                 attributes['LabelPosition'] = region.labelHex()
             if region.labelOffsetX() != None:
-                attributes['LabelOffsetX'] = str(region.labelOffsetX()) # TODO: Might need to be explicit about precision
+                attributes['LabelOffsetX'] = common.formatNumber(
+                    number=region.labelOffsetX(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
             if region.labelOffsetY() != None:
-                attributes['LabelOffsetY'] = str(region.labelOffsetY()) # TODO: Might need to be explicit about precision
+                attributes['LabelOffsetY'] = common.formatNumber(
+                    number=region.labelOffsetY(),
+                    decimalPlaces=_XmlFloatDecimalPlaces)
             if region.label() != None:
                 attributes['Label'] = region.label()
             if region.colour() != None:
@@ -1294,11 +1331,12 @@ def writeJSONMetadata(
     if allegiances:
         allegiancesElement = []
         sectorElement['Allegiances'] = allegiancesElement
-        for code, name in allegiances.items():
-            # TODO: Handle Base attribute
+        for allegiance in allegiances:
             allegianceElement = {
-                'Name': name,
-                'Code': code}
+                'Name': allegiance.name(),
+                'Code': allegiance.code()}
+            if allegiance.base():
+                allegianceElement['Base'] = allegiance.base()
             allegiancesElement.append(allegianceElement)
 
     routes = metadata.routes()

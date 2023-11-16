@@ -386,13 +386,13 @@ class WorldManager(object):
 
         allegiances = rawMetadata.allegiances()
         if allegiances:
-            for code, name in allegiances.items():
-                if not code or not name:
+            for allegiance in allegiances:
+                if not allegiance.code() or not allegiance.name():
                     continue
 
                 # NOTE: The code here is intentionally left with the case as it appears int metadata as
                 # there are some sectors where allegiances vary only by case (see AllegianceManager)
-                allegianceMap[code] = name
+                allegianceMap[allegiance.code()] = allegiance.name()
 
         worlds = []
         for rawWorld in rawWorlds:
