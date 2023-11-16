@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Newo">
+  <Name>Neworld</Name>
+  <Credits>
+
+             &lt;b&gt;Neworld&lt;/b&gt; sector was designed by Randy Dorman.
+
+             Stellar positions were developed by Joe D. Fugate Sr. and
+             appear in &lt;cite&gt;The MegaTraveller Alien, Volume 2:
+             Solomani &amp;amp; Aslan&lt;/cite&gt; (Digest Group Publications,
+             1991).
+
+             &lt;b&gt;Neworld&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>1</X>
+  <Y>4</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#F79779" Allegiance="Si" LabelPosition="1821">0006 0106 0205 0204 0304 0403 0504 0603 0703 0803 0904 1003 1104 1203 1303 1403 1503 1603 1704 1804 1904 2003 2002 2001 2000 2100 2200 2300 2400 2500 2600 2700 2701 2702 2802 2803 2804 2905 2906 2907 3007 3008 3009 3010 3011 3012 3013 3014 3015 3016 3017 3018 3119 3120 3121 3122 3123 3124 3224 3225 3126 3026 2927 2827 2728 2628 2529 2429 2329 2228 2128 2028 1928 1827 1728 1628 1529 1429 1330 1331 1231 1132 1133 1033 1034 0935 0835 0736 0635 0535 0434 0334 0233 0133 0132 0131 0130 0129 0128 0127 0126 0125 0224 0324 0323 0322 0321 0420 0419 0418 0417 0416 0415 0315 0214 0114 0013 0012 0011 0010 0009 0008 0007 0006</Border>
+  </Borders>
+</Sector>

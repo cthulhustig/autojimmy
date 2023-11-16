@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Amdu">
+  <Name>Amdukan</Name>
+  <Name Lang="va">Outhofos</Name>
+  <Credits>
+
+             &lt;b&gt;Amdukan&lt;/b&gt; sector was designed by Michael R. Mikesh.
+             One subsector appears &lt;cite&gt;Challenge Magazine&lt;/cite&gt;.
+
+             Stellar positions were developed by Joe D. Fugate Sr. and
+             appear in &lt;cite&gt;The MegaTraveller Alien, Volume 1: Vilani
+             &amp;amp; Vargr&lt;/cite&gt; (Digest Group Publications, 1990).
+
+             &lt;b&gt;Amdukan&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>2</X>
+  <Y>-2</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#F7941D" Allegiance="Jp" LabelPosition="0337">0033 0134 0234 0235 0236 0237 0238 0239 0140 0040 0039 0038 0037 0036 0035 0034 0033</Border>
+    <Border ShowLabel="false" Color="#00A650" Allegiance="Vs" LabelPosition="0201">0000 0100 0200 0300 0200 0201 0102 0002 0001 0000</Border>
+    <Border Color="#00A650" Allegiance="Vs" LabelPosition="0417">0008 0109 0209 0310 0410 0411 0412 0413 0414 0415 0416 0417 0318 0218 0118 0018 0017 0016 0015 0014 0013 0012 0011 0010 0009 0008</Border>
+  </Borders>
+</Sector>

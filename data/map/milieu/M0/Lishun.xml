@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Selected="true" Tags="Unreviewed OTU" Abbreviation="Lish">
+  <Name>Lishun</Name>
+  <Credits>
+
+             &lt;b&gt;Lishun&lt;/b&gt; sector was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by Joe D. Fugate Sr., and portions appear
+             in &lt;cite&gt;The Travellers Digest&lt;/cite&gt;, &lt;cite&gt;The Flaming
+             Eye&lt;/cite&gt; (DGP, 1991) and &lt;cite&gt;Challenge
+             Magazine&lt;/cite&gt;.
+
+             It was refined for Milieu 0 by Marc Miller and appears in
+             &lt;cite&gt;First Survey&lt;/cite&gt; (Imperium Games, 1996).
+
+    </Credits>
+  <X>0</X>
+  <Y>-1</Y>
+  <Product Author="Marc Miller" Title="First Survey" Publisher="Game Designers' Workshop" Ref="https://www.drivethrurpg.com/product/130/T4-First-Survey?it=1" />
+  <DataFile Source="Marc Miller's Traveller: First Survey" Milieu="M0" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0411">0411</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0412">0412</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0414">0414</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0505">0505</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0614">0614</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="0616">0616</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2538">2538</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2703">2703</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2723">2723</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2810">2810</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="2918">2918</Border>
+    <Border ShowLabel="false" Color="Orange" Allegiance="Fd" LabelPosition="3006">3006</Border>
+  </Borders>
+</Sector>

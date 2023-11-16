@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Sis2">
+  <Name Source="Near Side of Yonder">Sisyphus Citerior</Name>
+  <Credits />
+  <X>-18</X>
+  <Y>3</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

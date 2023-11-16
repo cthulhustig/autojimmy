@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Koli">
+  <Name Lang="hv">Kolire</Name>
+  <Credits />
+  <X>8</X>
+  <Y>3</Y>
+  <DataFile Author="Mark Humphreys" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Biggum</Subsector>
+    <Subsector Index="B">Kolier</Subsector>
+    <Subsector Index="C">Corial</Subsector>
+    <Subsector Index="D">Forial</Subsector>
+    <Subsector Index="E">Erokoal</Subsector>
+    <Subsector Index="F">Flooria</Subsector>
+    <Subsector Index="G">(Void)</Subsector>
+    <Subsector Index="H">Keir</Subsector>
+    <Subsector Index="I">Lonesome</Subsector>
+    <Subsector Index="J">Jolira</Subsector>
+    <Subsector Index="K">Gloriah</Subsector>
+    <Subsector Index="L">Lyre</Subsector>
+    <Subsector Index="M">Reial</Subsector>
+    <Subsector Index="N">Nollire</Subsector>
+    <Subsector Index="O">Kolire</Subsector>
+    <Subsector Index="P">Polire</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+</Sector>

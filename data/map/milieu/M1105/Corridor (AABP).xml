@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway" Abbreviation="AABC">
+  <Name>Corridor (AABP)</Name>
+  <Credits>
+      &lt;p&gt;
+      &lt;b&gt;Corridor (AABP)&lt;/b&gt; was created by Clayton R. Bush, inspired by material published in the Traveller 4 'Milieu 0 Campaign' edited by Lester Smith, and presented in AABP issues 37 - 40.
+      &lt;/p&gt;
+      &lt;p&gt;Data was transcribed and edited by Graham Donald&lt;/p&gt;
+    </Credits>
+  <X>156</X>
+  <Y>-1</Y>
+  <DataFile Author="Clayton R. Bush" Publisher="AABP" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Na">Non-Aligned, Human Dominated</Allegiance>
+    <Allegiance Code="__">Unpopulated</Allegiance>
+    <Allegiance Code="Vs">Client State, Empire of Freebooters</Allegiance>
+    <Allegiance Code="EF">Empire of Freebooters</Allegiance>
+    <Allegiance Code="Va">Non-Aligned, Vargr Dominated</Allegiance>
+    <Allegiance Code="Cs">Client State, Third Imperium</Allegiance>
+    <Allegiance Code="Im">Third Imperium</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.EF { Color: green}
+    route.Im, route.SoCf { Color: green }
+    route.TradeMajor { Color: gray; style: dashed}
+    route.TradeMinor { Color: gray; style: dashed; width: 0.5 }
+    border.Hazard { Color: #C02020; style: dotted }
+    region.Nebula { Color: purple }
+  </Stylesheet>
+  <Borders>
+    <Border Allegiance="EF" LabelPosition="1111">0910 1009 1109 1208 1309 1310 1210 1211 1112 1113 1013 0913 0912 0911 0910</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0714" End="0913" Type="TradeMajor" />
+    <Route Start="0913" End="1013" Type="TradeMajor" />
+    <Route Start="1013" End="1213" Type="TradeMajor" />
+    <Route Start="1213" End="1414" Type="TradeMajor" />
+    <Route Start="1414" End="1613" Type="TradeMajor" />
+    <Route Start="0913" End="0912" Type="TradeMinor" />
+    <Route Start="0912" End="0910" Type="TradeMinor" />
+  </Routes>
+</Sector>

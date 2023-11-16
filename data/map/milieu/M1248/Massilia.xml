@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Mass">
+  <Name Source="DGP">Massilia</Name>
+  <Name Source="GDW">Massila</Name>
+  <Name Lang="vi">Masilaa</Name>
+  <Credits>
+
+             &lt;b&gt;Massilia&lt;/b&gt; sector was designed by Marc W. Miller
+             and appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by Joe D. Fugate Sr. and appears &lt;cite&gt;The
+             Travellers Digest&lt;/cite&gt; and in &lt;cite&gt;Knightfall&lt;/cite&gt;
+             (GDW, 1990).
+
+             &lt;b&gt;Massilia&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>0</X>
+  <Y>1</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Nw">New Worlds Alliance</Allegiance>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#EE1C25" Allegiance="Ga" LabelPosition="0433">0032 0133 0134 0234 0235 0135 0035 0034 0033 0032</Border>
+    <Border ShowLabel="false" Color="#EE1C25" Allegiance="Nw" LabelPosition="0101">0000 0100 0200 0201 0101 0001</Border>
+    <Border Color="#EE1C25" Allegiance="Nw" LabelPosition="0305">0004 0105 0205 0206 0207 0108 0109 0110 0010 0009 0008 0007 0006 0005 0004</Border>
+  </Borders>
+</Sector>

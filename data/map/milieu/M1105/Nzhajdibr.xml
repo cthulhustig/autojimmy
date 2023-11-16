@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Nzhajdibr</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-110</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Zdozhaezh</Subsector>
+    <Subsector Index="B">Zenich</Subsector>
+    <Subsector Index="C">Iadrnshiafr</Subsector>
+    <Subsector Index="D">Zhrvrbriensants</Subsector>
+    <Subsector Index="E">Iantschivl</Subsector>
+    <Subsector Index="F">Itsens</Subsector>
+    <Subsector Index="G">Refe</Subsector>
+    <Subsector Index="H">Zhetabr</Subsector>
+    <Subsector Index="I">Shietsal</Subsector>
+    <Subsector Index="J">Chipriardlef</Subsector>
+    <Subsector Index="K">Chefritlvri</Subsector>
+    <Subsector Index="L">Choza</Subsector>
+    <Subsector Index="M">Rizransenzh</Subsector>
+    <Subsector Index="N">Iatszhia</Subsector>
+    <Subsector Index="O">Eflib</Subsector>
+    <Subsector Index="P">Zhajiaktsel</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1104" End="1201" Type="Core Route" />
+    <Route Start="1104" End="1307" Type="Core Route" />
+    <Route Start="1201" End="1338" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1307" End="1409" Type="Core Route" />
+    <Route Start="1312" End="1409" Type="Core Route" />
+    <Route Start="1312" End="1613" Type="Core Route" />
+    <Route Start="1613" End="1815" Type="Core Route" />
+    <Route Start="1815" End="2118" Type="Core Route" />
+    <Route Start="1834" End="1932" Type="Core Route" />
+    <Route Start="1834" End="1937" Type="Core Route" />
+    <Route Start="1925" End="2021" Type="Core Route" />
+    <Route Start="1925" End="2028" Type="Core Route" />
+    <Route Start="1932" End="2028" Type="Core Route" />
+    <Route Start="1937" End="2040" Type="Core Route" />
+    <Route Start="2021" End="2118" Type="Core Route" />
+    <Route Start="2040" End="1904" EndOffsetY="1" Type="Core Route" />
+  </Routes>
+</Sector>

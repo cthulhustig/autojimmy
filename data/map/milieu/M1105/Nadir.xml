@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Nadi">
+  <Name>Nadir</Name>
+  <Credits />
+  <X>6</X>
+  <Y>-5</Y>
+  <DataFile Author="David Blalock" Milieu="M1105" Ref="https://travellermap.com/data/Nadir" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="XXXX">Unknown</Allegiance>
+  </Allegiances>
+</Sector>

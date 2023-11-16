@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Bige">
+  <Name Source="Riftsedge Transit">Big Empty</Name>
+  <Credits />
+  <X>-10</X>
+  <Y>3</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

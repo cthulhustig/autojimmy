@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Nzhiaapl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-109</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Blieblabe</Subsector>
+    <Subsector Index="B">Fitstsaz</Subsector>
+    <Subsector Index="C">Zhinchnchoflench</Subsector>
+    <Subsector Index="D">Tletsozhib</Subsector>
+    <Subsector Index="E">Edlzhieb</Subsector>
+    <Subsector Index="F">Anzhaz</Subsector>
+    <Subsector Index="G">Atli</Subsector>
+    <Subsector Index="H">Zdiazabe</Subsector>
+    <Subsector Index="I">Iejqrev</Subsector>
+    <Subsector Index="J">Brietlntsanchi</Subsector>
+    <Subsector Index="K">Chavretli</Subsector>
+    <Subsector Index="L">Flozechpliepl</Subsector>
+    <Subsector Index="M">'affre</Subsector>
+    <Subsector Index="N">Eiach</Subsector>
+    <Subsector Index="O">Blashntenzha</Subsector>
+    <Subsector Index="P">Nepriabl</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1230" End="1327" Type="Core Route" />
+    <Route Start="1230" End="1333" Type="Core Route" />
+    <Route Start="1237" End="1301" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1237" End="1435" Type="Core Route" />
+    <Route Start="1327" End="1624" Type="Core Route" />
+    <Route Start="1333" End="1435" Type="Core Route" />
+    <Route Start="1624" End="2023" Type="Core Route" />
+    <Route Start="1807" End="1904" Type="Core Route" />
+    <Route Start="1807" End="1911" Type="Core Route" />
+    <Route Start="1904" End="2040" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1911" End="2014" Type="Core Route" />
+    <Route Start="1917" End="2014" Type="Core Route" />
+    <Route Start="1917" End="2020" Type="Core Route" />
+    <Route Start="2020" End="2023" Type="Core Route" />
+  </Routes>
+</Sector>

@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Leon">
+  <Name>Leonidae</Name>
+  <Credits>
+
+             &lt;b&gt;Leonidae&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>3</X>
+  <Y>2</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1201" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border WrapLabel="true" Color="Pink" Allegiance="Ia" LabelPosition="2837">2240 2340 2439 2438 2539 2638 2739 2838 2938 3037 3036 3035 3135 3234 3233 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2840 2741 2641 2541 2441 2341 2240</Border>
+  </Borders>
+</Sector>

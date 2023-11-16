@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Course</Name>
+  <Credits>
+      &lt;b&gt;Course&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>55</X>
+  <Y>28</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Ragol</Subsector>
+    <Subsector Index="I">Sandazar</Subsector>
+    <Subsector Index="M">As'Kaa</Subsector>
+    <Subsector Index="N">Aasa'tha</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Sx">Sath Exploration</Allegiance>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    route { style: dashed }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="1517" Color="Gray" Size="large" Wrap="false">Moat Rifts</Label>
+    <Label Hex="1636" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+    <Label Hex="0323" Color="Green" Size="small" Wrap="false">Outland
+Run</Label>
+    <Label Hex="1530" Color="Red" Size="small" Wrap="false">Fuel
+cache</Label>
+    <Label Hex="0234" Color="Red" Size="small" Wrap="false">Fuel
+cache</Label>
+    <Label Hex="0434" Color="Red" Size="small" Wrap="false">Fuel
+cache</Label>
+    <Label Hex="1431" Color="Red" Size="small" Wrap="false">Fuel
+cache</Label>
+  </Labels>
+  <Regions>
+    <Region Color="DarkBlue" LabelPosition="0722" Label="Shadow Cloud">0421 0521 0620 0619 0618 0518 0517 0616 0615 0616 0717 0816 0717 0718 0818 0819 0720 0721 0821 0921 1021 1022 0923 0823 0824 0825 0726 0727 0627 0727 0726 0725 0624 0623 0523 0422 0421</Region>
+  </Regions>
+  <Routes>
+    <Route Start="3222" End="0223" StartOffsetX="-1" />
+    <Route Start="0223" End="0325" />
+  </Routes>
+</Sector>

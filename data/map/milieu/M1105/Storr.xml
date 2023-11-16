@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Stor">
+  <Name>Storr</Name>
+  <Credits>
+      The &lt;b&gt;Storr&lt;/b&gt; sector was created by Geir Lanesskog from the DGP Solomani and Aslan dotmap
+    </Credits>
+  <X>2</X>
+  <Y>5</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Zaru</Subsector>
+    <Subsector Index="B">Aiken</Subsector>
+    <Subsector Index="C">Champian</Subsector>
+    <Subsector Index="D">Sapphire</Subsector>
+    <Subsector Index="E">Durango</Subsector>
+    <Subsector Index="F">Cerulean</Subsector>
+    <Subsector Index="G">Aeratan</Subsector>
+    <Subsector Index="H">Fatima</Subsector>
+    <Subsector Index="I">Elenoor</Subsector>
+    <Subsector Index="J">Malzaena</Subsector>
+    <Subsector Index="K">Srual</Subsector>
+    <Subsector Index="L">Iras</Subsector>
+    <Subsector Index="M">Koridon</Subsector>
+    <Subsector Index="N">Skeria</Subsector>
+    <Subsector Index="O">Saros</Subsector>
+    <Subsector Index="P">Bead</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="Ge">Great Eye</Allegiance>
+    <Allegiance Code="Bp">Bareen Protectorate</Allegiance>
+    <Allegiance Code="Mr">Menri Republic</Allegiance>
+    <Allegiance Code="Me">Malzaenan Expanse</Allegiance>
+    <Allegiance Code="Ar">Aurean Republic</Allegiance>
+    <Allegiance Code="Ou">Orandur Union</Allegiance>
+    <Allegiance Code="Su">Saros Union</Allegiance>
+    <Allegiance Code="CsHv">Client state, Hive Federation</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Bp { color: green; }
+    border.Ar { color: gold; }
+    border.Me { color: orange; }
+    border.Su { color: purple; }
+    border.Mr { color: pink; }
+    border.Ou { color: olive; }
+    border.Ge { color: red; }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="0708" Color="Firebrick" Size="small" Wrap="true">Raskennen Main</Label>
+    <Label Hex="0906" Color="Firebrick" Size="small" Wrap="true" OffsetY="-0.7">Back Door</Label>
+    <Label Hex="2218" Color="Firebrick" Size="small" Wrap="true">Aeratan Main</Label>
+    <Label Hex="1210" Color="Firebrick" Size="small" Wrap="true">Karpal Tail</Label>
+    <Label Hex="2916" Color="Firebrick" Size="small" Wrap="false">Vance Gap</Label>
+    <Label Hex="0425" Color="Firebrick" Size="small" Wrap="true">Elenoor Main</Label>
+    <Label Hex="1320" Color="Firebrick" Size="small" Wrap="true">Yisttans Cluster</Label>
+    <Label Hex="1623" Color="Firebrick" Size="small" Wrap="true">Malzaena Main</Label>
+    <Label Hex="1134" Color="Firebrick" Size="small" Wrap="true">Koridon Claw</Label>
+    <Label Hex="1829" Color="Firebrick" Size="small" Wrap="true">Laurentine Tail</Label>
+    <Label Hex="2628" Color="Firebrick" Size="small" Wrap="true">Iras Gap</Label>
+    <Label Hex="2138" Color="Firebrick" Size="small" Wrap="true">Kalingna Void</Label>
+    <Label Hex="3138" Color="Firebrick" Size="small" Wrap="true">Storr Void</Label>
+  </Labels>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Bp" LabelPosition="0517">0516 0615 0614 0615 0616 0617 0718 0817 0816 0815 0814 0914 0814 0815 0816 0817 0718 0719 0720 0719 0718 0617 0616 0516</Border>
+    <Border WrapLabel="true" Allegiance="Ar" LabelPosition="1504">1303 1402 1502 1503 1603 1604 1605 1706 1707 1807 1908 1909 1808 1708 1607 1606 1506 1405 1305 1304 1303</Border>
+    <Border WrapLabel="true" Allegiance="Me" LabelPosition="1621">1224 1324 1323 1422 1421 1420 1421 1522 1422 1423 1424 1525 1424 1324 1224</Border>
+    <Border WrapLabel="true" Allegiance="Su" LabelPosition="2132">1931 2031 2132 2232 2332 2232 2233 2133 2033 1934 1933 1932 1931</Border>
+    <Border WrapLabel="true" Allegiance="Mr" LabelPosition="0427">0527 0626 0726 0626 0527 0528 0527</Border>
+    <Border ShowLabel="false" Allegiance="Mr" LabelPosition="0631">0631</Border>
+    <Border WrapLabel="true" Allegiance="Ou" LabelPosition="2019">1518 1618 1719 1819 1920 2020 2120 2220 2120 2020 1920 1819 1719 1618 1518</Border>
+    <Border ShowLabel="false" Allegiance="Ou" LabelPosition="1821">1821</Border>
+    <Border WrapLabel="true" Allegiance="Ge" LabelPosition="0407">0507</Border>
+    <Border ShowLabel="false" Allegiance="Ge" LabelPosition="0510">0510</Border>
+  </Borders>
+  <Regions>
+    <Region Color="Blue" LabelPosition="2902" Label="Sapphire Nebula">2901 3001 3002 2902 2901</Region>
+    <Region WrapLabel="true" Color="LightSkyBlue" LabelPosition="3006" Label="Phoenix Nebula">2906 3006 3007 3006 2906</Region>
+  </Regions>
+</Sector>

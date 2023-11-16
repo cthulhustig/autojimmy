@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Hkak">
+  <Name Lang="as">Hkakhaeaw</Name>
+  <Credits />
+  <X>-8</X>
+  <Y>3</Y>
+  <DataFile Source="CORE" Milieu="M1105" Ref="http://www.ocean-of-storms.com/core/astrogat/i4.htm" />
+  <Subsectors>
+    <Subsector Index="A">Iyye</Subsector>
+    <Subsector Index="B">Yow</Subsector>
+    <Subsector Index="C">Ieaaololi'</Subsector>
+    <Subsector Index="D">Eisyekhye</Subsector>
+    <Subsector Index="E">Kaalakhi</Subsector>
+    <Subsector Index="F">Hkear</Subsector>
+    <Subsector Index="G">Aihte'yah</Subsector>
+    <Subsector Index="H">Iytoir</Subsector>
+    <Subsector Index="I">Aoowea</Subsector>
+    <Subsector Index="J">Oeasuihye</Subsector>
+    <Subsector Index="K">Atyeiykhye</Subsector>
+    <Subsector Index="L">Eawoaaaoiy</Subsector>
+    <Subsector Index="M">Khuitaosal</Subsector>
+    <Subsector Index="N">Aiei</Subsector>
+    <Subsector Index="O">Aikhui</Subsector>
+    <Subsector Index="P">Feiko</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="As" LabelPosition="2935">2539 2638 2637 2636 2635 2634 2633 2733 2832 2831 2830 2931 3030 3130 3229 3330 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2540 2539</Border>
+  </Borders>
+</Sector>

@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Ijidl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-61</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Fremnsha</Subsector>
+    <Subsector Index="B">Tsavlnzha</Subsector>
+    <Subsector Index="C">Chadea</Subsector>
+    <Subsector Index="D">Liavrap</Subsector>
+    <Subsector Index="E">Zdidrnzitsop</Subsector>
+    <Subsector Index="F">Chiezianzha</Subsector>
+    <Subsector Index="G">Qriashjazhntset</Subsector>
+    <Subsector Index="H">Flievqriapre</Subsector>
+    <Subsector Index="I">Klenzichblinzh</Subsector>
+    <Subsector Index="J">Drievshantsa</Subsector>
+    <Subsector Index="K">Jekle</Subsector>
+    <Subsector Index="L">Pliajiabl</Subsector>
+    <Subsector Index="M">Shtaplbrefradl</Subsector>
+    <Subsector Index="N">Aqrenzh</Subsector>
+    <Subsector Index="O">Stabldrinja</Subsector>
+    <Subsector Index="P">Idlple</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="0111" End="0114" Type="Core Route" />
+    <Route Start="0111" End="0209" Type="Core Route" />
+    <Route Start="0114" End="0414" Type="Core Route" />
+    <Route Start="0126" End="0129" Type="Core Route" />
+    <Route Start="0126" End="0423" Type="Core Route" />
+    <Route Start="0129" End="0529" Type="Core Route" />
+    <Route Start="0209" End="0406" Type="Core Route" />
+    <Route Start="0406" End="0704" Type="Core Route" />
+    <Route Start="0414" End="0517" Type="Core Route" />
+    <Route Start="0423" End="0821" Type="Core Route" />
+    <Route Start="0517" End="0918" Type="Core Route" />
+    <Route Start="0529" End="0931" Type="Core Route" />
+    <Route Start="0704" End="0903" Type="Core Route" />
+    <Route Start="0821" End="0918" Type="Core Route" />
+    <Route Start="0903" End="1202" Type="Core Route" />
+    <Route Start="0931" End="1231" Type="Core Route" />
+    <Route Start="1202" End="1439" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1231" End="1632" Type="Core Route" />
+    <Route Start="1632" End="1833" Type="Core Route" />
+    <Route Start="1833" End="2136" Type="Core Route" />
+    <Route Start="2136" End="2140" Type="Core Route" />
+    <Route Start="2140" End="2103" EndOffsetY="1" Type="Core Route" />
+  </Routes>
+</Sector>

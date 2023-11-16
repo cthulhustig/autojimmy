@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Kernzhez'a</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-132</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Nshozhfie</Subsector>
+    <Subsector Index="B">Zinjievl</Subsector>
+    <Subsector Index="C">Fliebrnjien</Subsector>
+    <Subsector Index="D">Otsnzhens</Subsector>
+    <Subsector Index="E">Etsidr</Subsector>
+    <Subsector Index="F">Netncheatl</Subsector>
+    <Subsector Index="G">Frieprajikl</Subsector>
+    <Subsector Index="H">Zezoia</Subsector>
+    <Subsector Index="I">Vrefke</Subsector>
+    <Subsector Index="J">Zirianj</Subsector>
+    <Subsector Index="K">Entstsia</Subsector>
+    <Subsector Index="L">Zhetsnsaaj</Subsector>
+    <Subsector Index="M">Teblivshints</Subsector>
+    <Subsector Index="N">Denzhains</Subsector>
+    <Subsector Index="O">Zdiashntsefrbor</Subsector>
+    <Subsector Index="P">Renchziet</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1728" End="1830" Type="Core Route" />
+    <Route Start="1728" End="1925" Type="Core Route" />
+    <Route Start="1739" End="1802" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1739" End="1936" Type="Core Route" />
+    <Route Start="1818" End="1915" Type="Core Route" />
+    <Route Start="1818" End="2021" Type="Core Route" />
+    <Route Start="1830" End="2032" Type="Core Route" />
+    <Route Start="1903" End="1839" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1903" End="2205" Type="Core Route" />
+    <Route Start="1915" End="2212" Type="Core Route" />
+    <Route Start="1925" End="2021" Type="Core Route" />
+    <Route Start="1936" End="2032" Type="Core Route" />
+    <Route Start="2205" End="2309" Type="Core Route" />
+    <Route Start="2212" End="2309" Type="Core Route" />
+  </Routes>
+</Sector>

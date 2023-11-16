@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Tlabraplzhied</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-96</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Kentsabliej</Subsector>
+    <Subsector Index="B">Flinzhvieots</Subsector>
+    <Subsector Index="C">Biprma</Subsector>
+    <Subsector Index="D">Prablshiasha</Subsector>
+    <Subsector Index="E">Etsifr</Subsector>
+    <Subsector Index="F">Ada</Subsector>
+    <Subsector Index="G">Tsizhbriapla</Subsector>
+    <Subsector Index="H">Dralchanssha</Subsector>
+    <Subsector Index="I">Yefnjiafopr</Subsector>
+    <Subsector Index="J">Blienttsiedlqri</Subsector>
+    <Subsector Index="K">Iele</Subsector>
+    <Subsector Index="L">Riafrnzantsbransh</Subsector>
+    <Subsector Index="M">Dlafrzientsnze</Subsector>
+    <Subsector Index="N">Daprntiaqrdlaj</Subsector>
+    <Subsector Index="O">Najrier</Subsector>
+    <Subsector Index="P">Tlanzhbralsha</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1701" End="1838" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1701" End="1903" Type="Core Route" />
+    <Route Start="1903" End="2205" Type="Core Route" />
+    <Route Start="1923" End="2019" Type="Core Route" />
+    <Route Start="1923" End="2325" Type="Core Route" />
+    <Route Start="1931" End="2027" Type="Core Route" />
+    <Route Start="1931" End="2233" Type="Core Route" />
+    <Route Start="2008" End="2112" Type="Core Route" />
+    <Route Start="2008" End="2205" Type="Core Route" />
+    <Route Start="2019" End="2116" Type="Core Route" />
+    <Route Start="2027" End="2325" Type="Core Route" />
+    <Route Start="2112" End="2116" Type="Core Route" />
+    <Route Start="2139" End="2102" EndOffsetY="1" Type="Core Route" />
+    <Route Start="2139" End="2236" Type="Core Route" />
+    <Route Start="2233" End="2236" Type="Core Route" />
+  </Routes>
+</Sector>

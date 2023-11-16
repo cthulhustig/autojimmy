@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Span">
+  <Name>Spangele</Name>
+  <Credits>
+
+               &lt;b&gt;Spangele&lt;/b&gt; sector was designed by WG Zeist.
+
+      </Credits>
+  <X>5</X>
+  <Y>-5</Y>
+  <DataFile Author="WG Zeist" Source="explorerbase" Milieu="M1105" Ref="https://explorerbase.wordpress.com/spangele-sector-data/" />
+  <Subsectors>
+    <Subsector Index="A">Upper Icons</Subsector>
+    <Subsector Index="B">Divisions</Subsector>
+    <Subsector Index="C">Triplets</Subsector>
+    <Subsector Index="D">Hyeean Fringe</Subsector>
+    <Subsector Index="E">Temples</Subsector>
+    <Subsector Index="F">Pathways</Subsector>
+    <Subsector Index="G">Inner Bay</Subsector>
+    <Subsector Index="H">Beyond Life</Subsector>
+    <Subsector Index="I">Clusterdance</Subsector>
+    <Subsector Index="J">Wavebreaker</Subsector>
+    <Subsector Index="K">The Fringe</Subsector>
+    <Subsector Index="L">Floater</Subsector>
+    <Subsector Index="M">Narrow Edge</Subsector>
+    <Subsector Index="N">The Wharf</Subsector>
+    <Subsector Index="O">The Bridge</Subsector>
+    <Subsector Index="P">Lone Pair</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Narr">
+  <Name Source="Near Side of Yonder">Narrow Transit</Name>
+  <Credits />
+  <X>-19</X>
+  <Y>2</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

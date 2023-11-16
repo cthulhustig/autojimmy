@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed Faraway" Abbreviation="Cali">
+  <Name>Calidan</Name>
+  <Credits>
+
+             The &lt;b&gt;Athwa&lt;/b&gt; subsector of &lt;b&gt;Calidan&lt;/b&gt; sector was
+             designed by Martin J. Dougherty and appears in
+             &lt;cite&gt;Traveller Starter Set, Book 3: The Fall of Tinath&lt;/cite&gt;,
+             Mongoose Publishing, 2017.
+
+    </Credits>
+  <X>247</X>
+  <Y>-248</Y>
+  <Product Author="Martin J. Dougherty" Title="Traveller Starter Set" Publisher="Mongoose Publishing" Ref="https://www.drivethrurpg.com/product/210198/Traveller-Starter-Set" />
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="G">Athwa</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="CF">Calida Federation</Allegiance>
+  </Allegiances>
+</Sector>

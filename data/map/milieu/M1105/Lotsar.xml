@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Lotsar</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-137</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Nzhifre</Subsector>
+    <Subsector Index="B">Tletsiaevl</Subsector>
+    <Subsector Index="C">Achiev</Subsector>
+    <Subsector Index="D">Tsanzhiech</Subsector>
+    <Subsector Index="E">Tlazhtsevla</Subsector>
+    <Subsector Index="F">Shaiar</Subsector>
+    <Subsector Index="G">Bliefzilshins</Subsector>
+    <Subsector Index="H">Shazhfrinzipr</Subsector>
+    <Subsector Index="I">Dliejplrzia</Subsector>
+    <Subsector Index="J">Blifiepra</Subsector>
+    <Subsector Index="K">Tsibrkreia</Subsector>
+    <Subsector Index="L">Kiazhevrzodr</Subsector>
+    <Subsector Index="M">Iblbli</Subsector>
+    <Subsector Index="N">Iezhenz</Subsector>
+    <Subsector Index="O">Frivlchiapr</Subsector>
+    <Subsector Index="P">Zhienchiavrofr</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="0604" End="0801" Type="Core Route" />
+    <Route Start="0604" End="0806" Type="Core Route" />
+    <Route Start="0639" End="0603" EndOffsetY="1" Type="Core Route" />
+    <Route Start="0639" End="1039" Type="Core Route" />
+    <Route Start="0801" End="0837" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="0806" End="1008" Type="Core Route" />
+    <Route Start="0913" End="1115" Type="Core Route" />
+    <Route Start="0913" End="1211" Type="Core Route" />
+    <Route Start="1008" End="1211" Type="Core Route" />
+    <Route Start="1039" End="1338" Type="Core Route" />
+    <Route Start="1115" End="1416" Type="Core Route" />
+    <Route Start="1338" End="1537" Type="Core Route" />
+    <Route Start="1416" End="1520" Type="Core Route" />
+    <Route Start="1520" End="1723" Type="Core Route" />
+    <Route Start="1537" End="1935" Type="Core Route" />
+    <Route Start="1723" End="1825" Type="Core Route" />
+    <Route Start="1825" End="1928" Type="Core Route" />
+    <Route Start="1928" End="2131" Type="Core Route" />
+    <Route Start="1935" End="2034" Type="Core Route" />
+    <Route Start="2034" End="2131" Type="Core Route" />
+  </Routes>
+</Sector>

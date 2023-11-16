@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Alde">
+  <Name>Aldebaran</Name>
+  <Credits>
+
+             &lt;b&gt;Aldebaran&lt;/b&gt; sector was designed by Randy Dorman.
+
+             Stellar positions were developed by Joe D. Fugate Sr. and
+             appear in &lt;cite&gt;The MegaTraveller Alien, Volume 2:
+             Solomani &amp;amp; Aslan&lt;/cite&gt; (Digest Group Publications,
+             1991).
+
+             &lt;b&gt;Aldebaran&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>0</X>
+  <Y>4</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#F79779" Allegiance="Si" LabelPosition="2612">1708 1808 1909 2009 2109 2208 2309 2408 2508 2608 2709 2808 2908 3007 3107 3206 3306 3307 3308 3309 3310 3311 3312 3313 3314 3213 3113 3012 2913 2812 2713 2613 2514 2414 2315 2214 2114 2013 2012 2011 1911 1810 1710 1709 1708</Border>
+    <Border Color="#00ADEE" Allegiance="Te" LabelPosition="1501">1300 1400 1500 1600 1700 1600 1501 1401 1301 1300</Border>
+  </Borders>
+</Sector>

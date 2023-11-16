@@ -1,0 +1,288 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway" Abbreviation="JGGR">
+  <Name>Glimmerdrift Reaches (Judges Guild)</Name>
+  <Credits />
+  <X>160</X>
+  <Y>1</Y>
+  <DataFile Author="Dave Sering and Steve Crow" Publisher="Judges Guild" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Darkling</Subsector>
+    <Subsector Index="B">Thorstone</Subsector>
+    <Subsector Index="C">Tri-Empire</Subsector>
+    <Subsector Index="D">Marla</Subsector>
+    <Subsector Index="E">Glowing</Subsector>
+    <Subsector Index="F">Kraxin</Subsector>
+    <Subsector Index="G">Williamsburg</Subsector>
+    <Subsector Index="H">Tasman</Subsector>
+    <Subsector Index="I">Even</Subsector>
+    <Subsector Index="J">Poonch</Subsector>
+    <Subsector Index="K">Sosie</Subsector>
+    <Subsector Index="L">Ryazan</Subsector>
+    <Subsector Index="M">Verge</Subsector>
+    <Subsector Index="N">Zairae</Subsector>
+    <Subsector Index="O">Sepik</Subsector>
+    <Subsector Index="P">Daro</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na">Non-aligned</Allegiance>
+    <Allegiance Code="Im">The Imperium</Allegiance>
+    <Allegiance Code="Kx">Krax Confederation</Allegiance>
+    <Allegiance Code="Cs">Client State</Allegiance>
+    <Allegiance Code="Za">Zarian Realm</Allegiance>
+    <Allegiance Code="Gl">Ginlenchy Concordance</Allegiance>
+    <Allegiance Code="Ma">Marlan Primate</Allegiance>
+    <Allegiance Code="Mn">Mandanin Co-Dominion</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="Rn">Rm Nai</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border { color: salmon; style: dashed; }
+    border.Im { color: lightblue; style: dashed; }
+    border.Hazard { color: red; style: dotted; }
+
+    route.Independent { color: darkblue; style: dashed; }
+    route.Special { color: steelblue; width: 3; }
+    route.Trade { color: red; width: 0.5; }
+  </Stylesheet>
+  <Borders>
+    <Border WrapLabel="true" Allegiance="Gl" LabelPosition="2010">1007 1107 1206 1306 1406 1506 1605 1706 1806 1906 2005 2006 2107 2108 2109 2209 2210 2211 2112 2113 2114 2014 1914 1814 1715 1614 1515 1414 1314 1213 1212 1112 1111 1010 1009 1008 1007</Border>
+    <Border Allegiance="Im" LabelPosition="1601">1100 1200 1300 1400 1500 1600 1700 1800 1900 1901 1902 1802 1702 1602 1502 1402 1303 1203 1104 1103 1102 1101 1100</Border>
+    <Border Allegiance="Im" LabelPosition="0535">0028 0129 0229 0230 0331 0332 0432 0433 0534 0535 0635 0636 0637 0738 0739 0740 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029 0028</Border>
+    <Border WrapLabel="true" Allegiance="Kx" LabelPosition="1221">0224 0324 0423 0523 0622 0621 0620 0720 0819 0818 0918 1017 1016 1117 1216 1317 1417 1517 1617 1717 1817 1918 1919 1920 2020 2021 1922 1822 1823 1723 1623 1523 1423 1323 1223 1124 1024 0925 0926 0927 0928 0929 0930 0931 0932 0831 0731 0730 0629 0529 0428 0328 0227 0226 0225 0224</Border>
+    <Border Allegiance="Ma" LabelPosition="2603">2202 2302 2402 2502 2602 2702 2802 2903 3002 3003 3004 3005 2906 2806 2807 2708 2608 2509 2508 2507 2406 2405 2404 2403 2303 2202</Border>
+    <Border WrapLabel="true" Allegiance="Mn" LabelPosition="3015">2315 2414 2413 2513 2612 2611 2711 2710 2810 2911 3011 3112 3212 3313 3314 3315 3316 3317 3318 3319 3320 3321 3322 3323 3324 3323 3222 3122 3021 2921 2820 2720 2619 2519 2418 2318 2317 2316 2315</Border>
+    <Border Allegiance="Rn" LabelPosition="3139">3039 3139 3238 3339 3340 3341 3241 3141 3041 3040 3039</Border>
+    <Border Allegiance="Za" LabelPosition="1337">0935 1034 1134 1133 1232 1231 1230 1229 1329 1429 1530 1630 1731 1732 1832 1733 1734 1735 1736 1737 1738 1638 1538 1438 1339 1238 1237 1137 1036 0936 0935</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0236" End="0333" />
+    <Route Start="0236" End="0339" />
+    <Route Start="0331" End="0333" />
+    <Route Start="0339" End="0637" />
+    <Route Start="0339" End="3201" EndOffsetX="-1" EndOffsetY="1" />
+    <Route Start="0534" End="0733" Type="Independent" />
+    <Route Start="0730" End="0731" Type="Independent" />
+    <Route Start="0731" End="0733" Type="Independent" />
+    <Route Start="1127" End="1225" Type="Independent" />
+    <Route Start="1127" End="1327" Type="Independent" />
+    <Route Start="1225" End="1327" Type="Independent" />
+    <Route Start="1327" End="1527" Type="Independent" />
+    <Route Start="1527" End="1528" Type="Independent" />
+    <Route Start="1725" End="1926" Type="Independent" />
+    <Route Start="1817" End="1918" Type="Independent" />
+    <Route Start="1918" End="2118" Type="Independent" />
+    <Route Start="1926" End="2026" Type="Independent" />
+    <Route Start="1929" End="2128" Type="Independent" />
+    <Route Start="1934" End="2134" Type="Independent" />
+    <Route Start="1935" End="2134" Type="Independent" />
+    <Route Start="2026" End="2128" Type="Independent" />
+    <Route Start="2117" End="2118" Type="Independent" />
+    <Route Start="2118" End="2219" Type="Independent" />
+    <Route Start="2128" End="2327" Type="Independent" />
+    <Route Start="2128" End="2329" Type="Independent" />
+    <Route Start="2132" End="2134" Type="Independent" />
+    <Route Start="2134" End="2435" Type="Independent" />
+    <Route Start="2627" End="2628" Type="Independent" />
+    <Route Start="2628" End="2827" Type="Independent" />
+    <Route Start="2628" End="2829" Type="Independent" />
+    <Route Start="2722" End="2822" Type="Independent" />
+    <Route Start="2822" End="2824" Type="Independent" />
+    <Route Start="0225" End="0427" Type="Special" />
+    <Route Start="0423" End="0624" Type="Special" />
+    <Route Start="0427" End="0628" Type="Special" />
+    <Route Start="0621" End="0624" Type="Special" />
+    <Route Start="0624" End="0626" Type="Special" />
+    <Route Start="0624" End="0924" Type="Special" />
+    <Route Start="0626" End="0628" Type="Special" />
+    <Route Start="0628" End="0730" Type="Special" />
+    <Route Start="0818" End="1120" Type="Special" />
+    <Route Start="0921" End="0924" Type="Special" />
+    <Route Start="0921" End="1120" Type="Special" />
+    <Route Start="1120" End="1420" Type="Special" />
+    <Route Start="1317" End="1519" Type="Special" />
+    <Route Start="1420" End="1422" Type="Special" />
+    <Route Start="1420" End="1519" Type="Special" />
+    <Route Start="1519" End="1817" Type="Special" />
+    <Route Start="1519" End="1820" Type="Special" />
+    <Route Start="1820" End="1922" Type="Special" />
+    <Route Start="0628" End="0728" Style="Dotted" Type="Special" />
+    <Route Start="0129" End="0229" Type="Trade" />
+    <Route Start="0132" End="0333" Type="Trade" />
+    <Route Start="0134" End="0333" Type="Trade" />
+    <Route Start="0225" End="0525" Type="Trade" />
+    <Route Start="0229" End="0331" Type="Trade" />
+    <Route Start="0331" End="0432" Type="Trade" />
+    <Route Start="0333" End="0433" Type="Trade" />
+    <Route Start="0337" End="0436" Type="Trade" />
+    <Route Start="0432" End="0433" Type="Trade" />
+    <Route Start="0433" End="0435" Type="Trade" />
+    <Route Start="0433" End="0534" Type="Trade" />
+    <Route Start="0436" End="0637" Type="Trade" />
+    <Route Start="0525" End="0624" Type="Trade" />
+    <Route Start="0527" End="0626" Type="Trade" />
+    <Route Start="0534" End="0635" Type="Trade" />
+    <Route Start="0620" End="0621" Type="Trade" />
+    <Route Start="0620" End="0720" Type="Trade" />
+    <Route Start="0620" End="0621" Type="Trade" />
+    <Route Start="0626" End="0826" Type="Trade" />
+    <Route Start="0635" End="0637" Type="Trade" />
+    <Route Start="0720" End="0818" Type="Trade" />
+    <Route Start="0935" End="0936" Type="Trade" />
+    <Route Start="0935" End="1134" Type="Trade" />
+    <Route Start="1016" End="1118" Type="Trade" />
+    <Route Start="1019" End="1118" Type="Trade" />
+    <Route Start="1107" End="1109" Type="Trade" />
+    <Route Start="1107" End="1206" Type="Trade" />
+    <Route Start="1109" End="1210" Type="Trade" />
+    <Route Start="1112" End="1211" Type="Trade" />
+    <Route Start="1118" End="1119" Type="Trade" />
+    <Route Start="1118" End="1216" Type="Trade" />
+    <Route Start="1119" End="1120" Type="Trade" />
+    <Route Start="1120" End="1220" Type="Trade" />
+    <Route Start="1134" End="1135" Type="Trade" />
+    <Route Start="1134" End="1335" Type="Trade" />
+    <Route Start="1203" End="1306" Type="Trade" />
+    <Route Start="1203" End="1402" Type="Trade" />
+    <Route Start="1206" End="1306" Type="Trade" />
+    <Route Start="1210" End="1211" Type="Trade" />
+    <Route Start="1211" End="1212" Type="Trade" />
+    <Route Start="1211" End="1411" Type="Trade" />
+    <Route Start="1212" End="1213" Type="Trade" />
+    <Route Start="1213" End="1314" Type="Trade" />
+    <Route Start="1216" End="1317" Type="Trade" />
+    <Route Start="1220" End="1420" Type="Trade" />
+    <Route Start="1229" End="1331" Type="Trade" />
+    <Route Start="1306" End="1406" Type="Trade" />
+    <Route Start="1308" End="1406" Type="Trade" />
+    <Route Start="1308" End="1408" Type="Trade" />
+    <Route Start="1314" End="1515" Type="Trade" />
+    <Route Start="1317" End="1517" Type="Trade" />
+    <Route Start="1229" End="1331" Type="Trade" />
+    <Route Start="1331" End="1333" Type="Trade" />
+    <Route Start="1331" End="1430" Type="Trade" />
+    <Route Start="1333" End="1434" Type="Trade" />
+    <Route Start="1335" End="1434" Type="Trade" />
+    <Route Start="1401" End="1402" Type="Trade" />
+    <Route Start="1402" End="1602" Type="Trade" />
+    <Route Start="1408" End="1608" Type="Trade" />
+    <Route Start="1411" End="1412" Type="Trade" />
+    <Route Start="1411" End="1511" Type="Trade" />
+    <Route Start="1412" End="1612" Type="Trade" />
+    <Route Start="1420" End="1620" Type="Trade" />
+    <Route Start="1331" End="1430" Type="Trade" />
+    <Route Start="1434" End="1534" Type="Trade" />
+    <Route Start="1434" End="1536" Type="Trade" />
+    <Route Start="1510" End="1511" Type="Trade" />
+    <Route Start="1510" End="1609" Type="Trade" />
+    <Route Start="1510" End="1511" Type="Trade" />
+    <Route Start="1517" End="1618" Type="Trade" />
+    <Route Start="1430" End="1530" Type="Trade" />
+    <Route Start="1534" End="1633" Type="Trade" />
+    <Route Start="1536" End="1537" Type="Trade" />
+    <Route Start="1537" End="1736" Type="Trade" />
+    <Route Start="1602" End="1802" Type="Trade" />
+    <Route Start="1605" End="1606" Type="Trade" />
+    <Route Start="1606" End="1607" Type="Trade" />
+    <Route Start="1607" End="1608" Type="Trade" />
+    <Route Start="1607" End="1707" Type="Trade" />
+    <Route Start="1608" End="1609" Type="Trade" />
+    <Route Start="1609" End="1710" Type="Trade" />
+    <Route Start="1618" End="1719" Type="Trade" />
+    <Route Start="1633" End="1733" Type="Trade" />
+    <Route Start="1607" End="1707" Type="Trade" />
+    <Route Start="1707" End="1906" Type="Trade" />
+    <Route Start="1609" End="1710" Type="Trade" />
+    <Route Start="1710" End="1810" Type="Trade" />
+    <Route Start="1618" End="1719" Type="Trade" />
+    <Route Start="1732" End="1733" Type="Trade" />
+    <Route Start="1633" End="1733" Type="Trade" />
+    <Route Start="1733" End="1735" Type="Trade" />
+    <Route Start="1735" End="1736" Type="Trade" />
+    <Route Start="1537" End="1736" Type="Trade" />
+    <Route Start="1602" End="1802" Type="Trade" />
+    <Route Start="1802" End="1902" Type="Trade" />
+    <Route Start="1810" End="1811" Type="Trade" />
+    <Route Start="1810" End="1909" Type="Trade" />
+    <Route Start="1810" End="1811" Type="Trade" />
+    <Route Start="1811" End="1912" Type="Trade" />
+    <Route Start="1901" End="1902" Type="Trade" />
+    <Route Start="1901" End="1940" EndOffsetY="-1" Type="Trade" />
+    <Route Start="1902" End="2202" Type="Trade" />
+    <Route Start="1906" End="2107" Type="Trade" />
+    <Route Start="1909" End="2109" Type="Trade" />
+    <Route Start="1912" End="1913" Type="Trade" />
+    <Route Start="1912" End="2112" Type="Trade" />
+    <Route Start="1913" End="1914" Type="Trade" />
+    <Route Start="1914" End="2114" Type="Trade" />
+    <Route Start="2107" End="2109" Type="Trade" />
+    <Route Start="2109" End="2209" Type="Trade" />
+    <Route Start="2112" End="2211" Type="Trade" />
+    <Route Start="2113" End="2114" Type="Trade" />
+    <Route Start="2117" End="2316" Type="Trade" />
+    <Route Start="2202" End="2302" Type="Trade" />
+    <Route Start="2202" End="2303" Type="Trade" />
+    <Route Start="2209" End="2211" Type="Trade" />
+    <Route Start="2209" End="2407" Type="Trade" />
+    <Route Start="2302" End="2303" Type="Trade" />
+    <Route Start="2303" End="2403" Type="Trade" />
+    <Route Start="2303" End="2502" Type="Trade" />
+    <Route Start="2315" End="2316" Type="Trade" />
+    <Route Start="2315" End="2413" Type="Trade" />
+    <Route Start="2316" End="2416" Type="Trade" />
+    <Route Start="2403" End="2404" Type="Trade" />
+    <Route Start="2404" End="2406" Type="Trade" />
+    <Route Start="2404" End="2604" Type="Trade" />
+    <Route Start="2406" End="2407" Type="Trade" />
+    <Route Start="2407" End="2509" Type="Trade" />
+    <Route Start="2407" End="2606" Type="Trade" />
+    <Route Start="2413" End="2513" Type="Trade" />
+    <Route Start="2416" End="2417" Type="Trade" />
+    <Route Start="2416" End="2516" Type="Trade" />
+    <Route Start="2303" End="2502" Type="Trade" />
+    <Route Start="2407" End="2509" Type="Trade" />
+    <Route Start="2509" End="2708" Type="Trade" />
+    <Route Start="2413" End="2513" Type="Trade" />
+    <Route Start="2513" End="2612" Type="Trade" />
+    <Route Start="2416" End="2516" Type="Trade" />
+    <Route Start="2516" End="2615" Type="Trade" />
+    <Route Start="2404" End="2604" Type="Trade" />
+    <Route Start="2604" End="2606" Type="Trade" />
+    <Route Start="2604" End="2804" Type="Trade" />
+    <Route Start="2407" End="2606" Type="Trade" />
+    <Route Start="2606" End="2708" Type="Trade" />
+    <Route Start="2612" End="2613" Type="Trade" />
+    <Route Start="2612" End="2711" Type="Trade" />
+    <Route Start="2613" End="2615" Type="Trade" />
+    <Route Start="2613" End="2714" Type="Trade" />
+    <Route Start="2615" End="2715" Type="Trade" />
+    <Route Start="2708" End="2807" Type="Trade" />
+    <Route Start="2711" End="2810" Type="Trade" />
+    <Route Start="2714" End="2715" Type="Trade" />
+    <Route Start="2715" End="2814" Type="Trade" />
+    <Route Start="2715" End="2816" Type="Trade" />
+    <Route Start="2804" End="2903" Type="Trade" />
+    <Route Start="2804" End="2906" Type="Trade" />
+    <Route Start="2807" End="2906" Type="Trade" />
+    <Route Start="2711" End="2810" Type="Trade" />
+    <Route Start="2810" End="2912" Type="Trade" />
+    <Route Start="2816" End="2918" Type="Trade" />
+    <Route Start="2906" End="3005" Type="Trade" />
+    <Route Start="2810" End="2912" Type="Trade" />
+    <Route Start="2912" End="3112" Type="Trade" />
+    <Route Start="2918" End="2919" Type="Trade" />
+    <Route Start="2918" End="3016" Type="Trade" />
+    <Route Start="2919" End="2920" Type="Trade" />
+    <Route Start="2920" End="3121" Type="Trade" />
+    <Route Start="3016" End="3215" Type="Trade" />
+    <Route Start="3112" End="3212" Type="Trade" />
+    <Route Start="3121" End="0121" EndOffsetX="1" Type="Trade" />
+    <Route Start="2920" End="3121" Type="Trade" />
+    <Route Start="3121" End="3122" Type="Trade" />
+    <Route Start="3212" End="0113" EndOffsetX="1" Type="Trade" />
+    <Route Start="3212" End="3214" Type="Trade" />
+    <Route Start="3214" End="0214" EndOffsetX="1" Type="Trade" />
+    <Route Start="3214" End="3215" Type="Trade" />
+    <Route Start="3238" End="3239" Type="Trade" />
+    <Route Start="3239" End="0140" EndOffsetX="1" Type="Trade" />
+  </Routes>
+</Sector>

@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway">
+  <Name>Ares</Name>
+  <Credits>
+      &lt;p&gt;
+      &lt;b&gt;Tyber&lt;/b&gt; subsector was published &lt;i&gt;The Guildsman #5&lt;/i&gt;. It was created by Jim Vassilakos.
+      &lt;/p&gt;
+      &lt;p&gt;Data was transcribed and edited by Graham Donald&lt;/p&gt;
+    </Credits>
+  <X>74</X>
+  <Y>60</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Arcadia</Subsector>
+    <Subsector Index="B">Tyber</Subsector>
+    <Subsector Index="C">Ares</Subsector>
+    <Subsector Index="D">Stanton</Subsector>
+    <Subsector Index="E">Mao</Subsector>
+    <Subsector Index="F">Poseidon</Subsector>
+    <Subsector Index="G">Oceanos</Subsector>
+    <Subsector Index="H">Pelston</Subsector>
+    <Subsector Index="I">Crystalight</Subsector>
+    <Subsector Index="J">Natal</Subsector>
+    <Subsector Index="K">Siri</Subsector>
+    <Subsector Index="L">Lurak</Subsector>
+    <Subsector Index="M">Bermuda</Subsector>
+    <Subsector Index="N">Dimstar</Subsector>
+    <Subsector Index="O">Sebastian</Subsector>
+    <Subsector Index="P">Ventura</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="SI">Second Imperium</Allegiance>
+    <Allegiance Code="DC">Draconian Corporation</Allegiance>
+    <Allegiance Code="PA">Pansentient Alliance</Allegiance>
+    <Allegiance Code="TC">Tyber Corporation</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

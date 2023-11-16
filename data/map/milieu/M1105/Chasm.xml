@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Chasm</Name>
+  <Credits>
+      &lt;b&gt;Chasm&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>53</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1621" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+  </Labels>
+</Sector>

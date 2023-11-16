@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Mageera</Name>
+  <Credits>
+      &lt;b&gt;Mageera&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>53</X>
+  <Y>24</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1602" Color="Gray" Size="large" Wrap="false">Inner Void</Label>
+    <Label Hex="1716" Color="Gray" Wrap="false">Big Empty</Label>
+    <Label Hex="1522" Color="Gray" Size="large" Wrap="false">Grand Arc</Label>
+    <Label Hex="1835" Color="Gray" Wrap="false">Kluber Divide</Label>
+    <Label Hex="0736" Color="Gray" Wrap="false">RSS
+Ma0735</Label>
+  </Labels>
+</Sector>

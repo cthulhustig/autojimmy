@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Koog">
+  <Name Lang="kk">Koog</Name>
+  <Credits>
+
+             &lt;b&gt;Koog&lt;/b&gt; sector was designed by David Blalock..
+
+    </Credits>
+  <X>7</X>
+  <Y>-4</Y>
+  <DataFile Author="David Blalock" Milieu="M1105" Ref="https://travellermap.com/data/Koog" />
+  <Subsectors>
+    <Subsector Index="A">Koth'kae</Subsector>
+    <Subsector Index="B">Kia'tae</Subsector>
+    <Subsector Index="C">Tan'lang</Subsector>
+    <Subsector Index="D">Divok</Subsector>
+    <Subsector Index="E">Kek'loth</Subsector>
+    <Subsector Index="F">K'jarg</Subsector>
+    <Subsector Index="G">Mar'gak</Subsector>
+    <Subsector Index="H">T'lanak</Subsector>
+    <Subsector Index="I">Kar'ank</Subsector>
+    <Subsector Index="J">K'shin</Subsector>
+    <Subsector Index="K">K'retok</Subsector>
+    <Subsector Index="L">Kor'atath</Subsector>
+    <Subsector Index="M">Nik'rel</Subsector>
+    <Subsector Index="N">Mor'tah</Subsector>
+    <Subsector Index="O">D'ghor</Subsector>
+    <Subsector Index="P">Mor'tah</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+</Sector>

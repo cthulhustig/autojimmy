@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Darr">
+  <Name>Darret</Name>
+  <Credits />
+  <X>4</X>
+  <Y>5</Y>
+  <DataFile Author="Bari Z. Stafford Sr." Source="The Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <Subsectors>
+    <Subsector Index="A">Arret</Subsector>
+    <Subsector Index="B">Barrec</Subsector>
+    <Subsector Index="C">Chirrn</Subsector>
+    <Subsector Index="D">Drret</Subsector>
+    <Subsector Index="E">Eretd</Subsector>
+    <Subsector Index="F">Freddet</Subsector>
+    <Subsector Index="G">Gherr</Subsector>
+    <Subsector Index="H">Herrem</Subsector>
+    <Subsector Index="I">Ierrol</Subsector>
+    <Subsector Index="J">Jerrbole</Subsector>
+    <Subsector Index="K">Kherrez</Subsector>
+    <Subsector Index="L">Lerrin</Subsector>
+    <Subsector Index="M">Mreete</Subsector>
+    <Subsector Index="N">Nerveen</Subsector>
+    <Subsector Index="O">Orrvek</Subsector>
+    <Subsector Index="P">Prerr</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+</Sector>

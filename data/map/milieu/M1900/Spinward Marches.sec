@@ -91,24 +91,24 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1402 Farreach             A200300-B Lo Va                              { 1 }  (C21-4) [348B] B    -  - 915 10 Wild M3 III M0 V   
 1510 Lee                  E722000-0 Ba He Po                           { -3 } (200-4) [0000] B    -  - 001 7  NaXX M3 V M8 V     
 1604 Louzy                D422000-8 Di He Po                           { -3 } (D00+2) [0000] B    -  - 010 7  Rr   M2 V          
-1607 Grant                X664100-3 Lo Re                              { -3 } (300+1) [1181] B    -  R 122 13 Na   K6 V          
+1607 Grant                X664100-3 Lo Re                              { -3 } (300+1) [1181] B    -  - 122 13 Na   K6 V          
 1705 Efate                A646944-G An Hi In                           { 6 }  (B8E-1) [7F5E] BEf  NW - 400 8  Rr   F8 V          
-1706 Alell                B567894-A Pa Ri Ph                           { 3 }  (B7A+3) [8B5E] BcCe -  A 210 6  Rr   M1 V M7 V     
+1706 Alell                B567894-A Pa Ri Ph                           { 3 }  (B7A+3) [8B5E] BcCe -  - 210 6  Rr   M1 V M7 V     
 1802 Yres                 EAC6000-9 Di Fl                              { -2 } (H00+1) [0000] B    -  - 035 13 Wild G5 V          
 1803 Menorb               C6529DG-9 Hi Po                              { 1 }  (C88+4) [5A86] BE   -  - 110 7  Wild K2 V          
 1805 Uakye                B4395AE-D Ni                                 { 1 }  (946+1) [566B] B    -  - 120 12 Rr   M3 V          
 1806 Whanga               E676147-7 Lo                                 { -3 } (300-1) [114A] B    -  - 224 14 Rr   G1 V M1 V     
 1807 Knorbes              E888876-2 An Re Pa Ri Ph                     { -1 } (977+1) [B763] BcCe -  - 134 15 Rr   G3 V          
 1808 Forboldn             D893638-5 Ni                                 { -3 } (850+3) [8388] B    -  - 212 14 Rr   G0 V          
-1809 Ruie                 C7769AA-8 (Daccamites) Hi In                 { 1 }  (B83-2) [8A88] BE   -  A 701 9  Rr   G5 V          
+1809 Ruie                 C7769AA-8 (Daccamites) Hi In                 { 1 }  (B83-2) [8A88] BE   -  - 701 9  Rr   G5 V          
 1810 Diakria              C799776-9 (Amindii)9 Pi                      { 0 }  (D68+2) [7714] BD   S  - 223 11 Rr   M0 V          
 1903 Pixie                D100000-D An Di Va                           { -1 } (400+3) [0000] B    -  - 001 14 Wild K1 V M0 V     
 1904 Boughene             B8B333A-H An RsC Fl Lo                       { 2 }  (822+1) [156E] B    -  - 701 13 Cs   M1 V          
 1909 Hefry's Law          C200487-7 Ni Va                              { -2 } (631-5) [6285] B    S  - 320 13 Rr   K6 II M2 V    
 1910 Regina               A788976-G An (Amindii)2 Varg0 Asla0 Sa Hi Pr { 5 }  (D8B+3) [8E2F] BcEf NS - 703 8  Rr   F7 V BD M3 V  
 2005 Feri                 B584853-C Pa Ri Ph                           { 3 }  (C7C-2) [8B7E] BcCe S  - 520 14 Rr   G4 V M3 V     
-2007 Roup                 C77A975-7 Hi In Wa                           { 1 }  (B85+1) [BA77] BE   S  A 523 14 Rr   F9 V          
-2106 Pscias               X555410-2 Ni Pa                              { -3 } (633-1) [1141] Bc   -  R 501 14 Rr   K5 V          
+2007 Roup                 C77A975-7 Hi In Wa                           { 1 }  (B85+1) [BA77] BE   S  - 523 14 Rr   F9 V          
+2106 Pscias               X555410-2 Ni Pa                              { -3 } (633-1) [1141] Bc   -  - 501 14 Rr   K5 V          
 2110 Yori                 C560797-9 An (Zhurphani)6 RsB De Ri          { 1 }  (D69+2) [3879] BC   -  - 713 15 Rr   F1 V          
 2201 Dentus               X979000-A Di                                 { -1 } (900+1) [0000] B    -  - 020 10 Wild M2 V          
 2202 Kinorb               A663623-A Ni Ri                              { 2 }  (854-4) [483B] BC   -  - 422 7  Rr   G7 V          
@@ -116,40 +116,40 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2205 Enope                C411998-7 Hi Ic Na In                        { 1 }  (B84-3) [6A59] BE   -  - 800 8  Rr   K6 V M5 V     
 2207 Wochiers             EAC2899-9 Fl He Ph                           { -1 } (D74-1) [772A] Be   -  R 703 16 Rr   F0 V          
 2303 Yorbund              C7C6575-8 Fl Ni                              { -2 } (940-3) [6396] B    -  - 220 9  Rr   M3 V          
-2306 Shionthy             C0007AA-8 An As Va Na Pi                     { -1 } (E68-3) [8665] BD   -  R 714 14 Rr   F6 V          
-2308 Algine               X7669DF-6 Ga Hi Pr                           { -1 } (B85+1) [7868] BcE  -  R 623 11 Rr   G9 V          
+2306 Shionthy             C0007AA-8 An As Va Na Pi                     { -1 } (E68-3) [8665] BD   -  A 714 14 Rr   F6 V          
+2308 Algine               X7669DF-6 Ga Hi Pr                           { -1 } (B85+1) [7868] BcE  -  - 623 11 Rr   G9 V          
 2309 Yurst                E7B4676-8 (Ursty) Fl Ni Px                   { -3 } (E52+1) [131B] B    -  - 924 13 Rr   K9 V          
 2402 Heya                 B6877BA-5 Ag Ri Ga                           { 2 }  (96A-1) [7941] BC   -  - 534 16 Rr   K6 III M3 V   
-2405 Keng                 E5718D8-7 He Ph Pi                           { -2 } (A77-5) [6686] BDe  -  A 812 6  Na   G5 V M9 V     
+2405 Keng                 E5718D8-7 He Ph Pi                           { -2 } (A77-5) [6686] BDe  -  - 812 6  Na   G5 V M9 V     
 2406 Moughas              CA5A547-B Ni Oc                              { 0 }  (844+1) [5557] B    -  - 801 13 Na   K9 V M9 V     
-2408 Rethe                E430ABB-8 De Hi Na Po                        { -1 } (H99-2) [C95B] BE   -  - 223 11 Rr   G7 V          
+2408 Rethe                E430ABB-8 (Llellewyloly)5 De Hi Na Po        { -1 } (H99-2) [C95B] BE   -  - 223 11 Rr   G7 V          
 2410 Inthe                B57577B-9 Ag Pi An                           { 3 }  (E6F+2) [AA9A] BCD  NW - 323 8  Rr   F8 V          
 2509 Paya                 A655200-A Ga Lo                              { 1 }  (711-1) [438A] B    N  - 803 14 Rr   F3 V          
-2510 Dhian                C9A7656-9 Fl Ni                              { -1 } (A51+1) [7579] B    -  A 202 13 Rr   K5 V          
-2602 Corfu                C895679-8 Ag An Ni                           { -1 } (C54-1) [158B] BC   -  A 222 7  Na   M0 V          
+2510 Dhian                C9A7656-9 Fl Ni                              { -1 } (A51+1) [7579] B    -  - 202 13 Rr   K5 V          
+2602 Corfu                C895679-8 Ag An Ni                           { -1 } (C54-1) [158B] BC   -  - 222 7  Na   M0 V          
 2607 Focaline             EA88533-7 Ag Pr Ni                           { -2 } (744-2) [7398] BcC  -  - 824 11 Na   F3 V          
 2701 Lablon               B64667A-D Ag Ni                              { 2 }  (A56-2) [488H] BC   -  - 503 14 Rr   M2 III M4 V   
 2706 Heguz                E66A200-A Lo Wa                              { -1 } (510+1) [1167] B    -  - 510 10 Na   K2 V M7 V     
 2708 Violante             C669455-A Ni                                 { 0 }  (832+3) [3459] B    -  - 220 10 Rr   G2 V          
 2905 Pavanne              E310000-0 Ba                                 { -3 } (200+2) [0000] B    -  - 025 12 Na   M0 V          
 2906 Carsten              C427403-B Ni                                 { 0 }  (A32+2) [747D] B    -  - 804 15 Na   M1 V          
-2908 Zila                 E556779-7 Ag                                 { -1 } (96A-1) [7685] BC   -  A 701 8  Rr   K6 V M3 V     
+2908 Zila                 E556779-7 Ag                                 { -1 } (96A-1) [7685] BC   -  - 701 8  Rr   K6 V M3 V     
 3001 Jesedipere           D775000-7 Di                                 { -3 } (500+1) [0000] B    -  - 011 12 Wild F4 V          
 3002 Yebab                C9A48BB-8 (Ebokin) Fl Ph                     { -1 } (D73+2) [6726] Be   -  - 712 10 Na   G9 V          
 3003 Nasemin              B98A443-B Ni Wa                              { 1 }  (935+1) [456E] B    S  - 812 10 Rr   F5 V          
-3004 Zykoca               D994520-6 Ag Ni                              { -2 } (741-3) [3362] BC   -  A 320 12 Rr   K9 V          
-3005 Aramanx              B6579BB-7 Ga Hi                              { 1 }  (B87+4) [7A85] BE   -  A 210 13 Rr   G0 V          
-3008 Pysadi               C576597-4 Ag Ni                              { -1 } (841+1) [1424] BC   -  A 901 8  Rr   F9 V M1 V     
+3004 Zykoca               D994520-6 Ag Ni                              { -2 } (741-3) [3362] BC   -  - 320 12 Rr   K9 V          
+3005 Aramanx              B6579BB-7 Ga Hi                              { 1 }  (B87+4) [7A85] BE   -  - 210 13 Rr   G0 V          
+3008 Pysadi               C576597-4 Ag Ni                              { -1 } (841+1) [1424] BC   -  - 901 8  Rr   F9 V M1 V     
 3010 L'oeul d'Dieu        B98A535-B Ni Pr Wa                           { 1 }  (944-1) [861B] Bc   N  - 702 6  Rr   G1 V M9 V     
 3102 Rugbird              DAC5000-A Di Fl                              { -1 } (A00+2) [0000] B    -  - 011 14 Wild M1 V          
 3103 Towers               B544435-A Ni Pa                              { 1 }  (E34+2) [3519] Bc   S  A 835 11 Na   G8 V K6 V     
 3104 Feneteman            C422311-B He Lo Po                           { 0 }  (520+5) [338C] B    -  - 210 4  Na   G4 V M7 V     
-3107 Lewis                D427412-6 Ni                                 { -3 } (630+1) [9158] B    -  R 701 9  Na   F8 V          
+3107 Lewis                D427412-6 Ni                                 { -3 } (630+1) [9158] B    -  - 701 9  Na   F8 V          
 3110 Aramis               A5A0736-F He                                 { 3 }  (86B-1) [4A6F] B    NS - 810 9  Rr   M2 V          
 3202 Junidy               B434973-B (Llellewyloly)9 Hi                 { 3 }  (D8B+4) [BC19] BE   -  - 510 14 Wild F7 V M2 V     
 3207 Patinir              C0006BC-9 An As Va Na Ni                     { -1 } (C53+1) [4589] B    -  - 213 15 Rr   F3 V          
 3209 Natoko               B582377-8 Lo                                 { -1 } (520+3) [127B] B    N  - 101 14 Na   M2 V M6 V     
-3210 Reacher              C9A8475-8 Fl Ni                              { -2 } (D30-3) [4276] B    -  A 933 12 Na   G4 V          
+3210 Reacher              C9A8475-8 Fl Ni                              { -2 } (D30-3) [4276] B    -  - 933 12 Na   G4 V          
 0111 Atson                B310479-8 Ni                                 { -1 } (D33+2) [2324] B    -  - 433 10 Wild K8 V          
 0114 Yiktor               D6B6000-A Di Fl                              { -1 } (B00-2) [0000] B    -  - 023 12 Wild G4 V M4 V     
 0115 Xhosa                EA95000-5 Di                                 { -3 } (300+4) [0000] B    -  - 010 8  Wild M0 V          
@@ -193,7 +193,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1413 Denotam              B739778-A                                    { 2 }  (D6E-3) [9977] B    N  - 224 9  Na   M2 V          
 1417 Ficant               E567376-4 Lo                                 { -3 } (520-1) [1168] B    -  - 810 13 Na   M0 V M1 V     
 1511 Tionale              C674375-8 (minor) Lo                         { -2 } (620+1) [4127] B    -  A 810 11 CsIm M2 V M5 V     
-1515 Calit                C434877-7 Ph                                 { -1 } (A76+1) [7749] Be   -  - 701 4  Na   K9 V M1 V     
+1515 Calit                C434877-7 (Llellewyloly)2 Ph                 { -1 } (A76+1) [7749] Be   -  - 701 4  Na   K9 V M1 V     
 1519 Asgard               X54379B-5 Pi Po                              { -2 } (964+1) [A556] BD   -  R 420 13 Na   F5 V M1 V     
 1520 Tavonni              E567000-0 Ba                                 { -3 } (200+3) [0000] B    -  - 034 10 Na   G6 V          
 1611 Phlume               C887620-8 Ag Ri Ga Ni                        { 0 }  (956+1) [9646] BC   -  - 710 5  Na   G5 V M8 V     
@@ -201,20 +201,20 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1719 Lanth                A879589-B Ni                                 { 2 }  (843+4) [674A] B    NS - 610 14 Na   F5 IV M1 V    
 1811 Dinom                D300545-A Ni Sa Va                           { -1 } (842-1) [3497] B    -  - 401 14 Rr   A4 V          
 1815 Ghandi               B311459-A Ic Ni                              { 1 }  (934-2) [6549] B    N  - 503 13 Na   F8 V M3 V     
-1817 Victoria             D6D7615-2 An Ni                              { -3 } (950+5) [63A4] B    -  R 812 8  Na   K6 V          
+1817 Victoria             D6D7615-2 An Ni                              { -3 } (950+5) [63A4] B    -  - 812 8  Na   K6 V          
 1912 Dinomn               B674521-A Ag Ni                              { 2 }  (C46+2) [574C] BC   S  - 904 11 Rr   G8 V          
 1916 Ylaven               X587674-2 Droy7 Ag Ri Ni                     { -1 } (753+1) [7563] BC   -  - 422 11 Na   F9 V          
-1918 Sonthert             D626653-8 Ni                                 { -3 } (D50+3) [A36A] B    -  A 114 8  Na   K6 V M0 V     
+1918 Sonthert             D626653-8 Ni                                 { -3 } (D50+3) [A36A] B    -  - 114 8  Na   K6 V M0 V     
 1920 D'Ganzio             B42048B-D De He Ni Po                        { 1 }  (937+2) [7538] B    N  - 312 6  Na   M0 V M3 V     
-2011 Wypoc                E9C4625-8 Fl Ni                              { -3 } (B50+2) [3377] B    -  A 122 9  Rr   M3 V          
-2111 Djinni               X559000-0 Ba                                 { -3 } (200+1) [0000] B    -  R 022 11 Rr   K5 V          
-2112 Rancke               D995777-6 Ag Pi                              { -1 } (967-3) [C659] BCD  -  A 401 14 Rr   M0 V          
+2011 Wypoc                E9C4625-8 Fl Ni                              { -3 } (B50+2) [3377] B    -  - 122 9  Rr   M3 V          
+2111 Djinni               X559000-0 Ba                                 { -3 } (200+1) [0000] B    -  - 022 11 Rr   K5 V          
+2112 Rancke               D995777-6 Ag Pi                              { -1 } (967-3) [C659] BCD  -  - 401 14 Rr   M0 V          
 2212 K'Kirka              CAA5332-8 Fl Lo                              { -2 } (720+5) [216B] B    -  - 302 7  Rr   M2 V          
 2215 Quopist              D551000-A Di Po                              { -1 } (B00+4) [0000] B    -  - 021 8  Na   M3 V          
-2311 Treece               D432840-8 Na Po Ph                           { -2 } (B77-4) [A657] Be   -  - 810 9  Rr   M1 V          
+2311 Treece               D432840-8 (Llellewyloly)5 Na Po Ph           { -2 } (B77-4) [A657] Be   -  - 810 9  Rr   M1 V          
 2313 Echiste              C53A300-B Lo Wa                              { 0 }  (720+1) [136D] B    -  - 520 10 Rr   G4 V          
 2314 Pirema               D691102-6 He Lo                              { -3 } (300-1) [11AB] B    -  - 602 7  Rr   M2 V          
-2317 Rhise                C100575-A Ni Va                              { 0 }  (842+1) [1549] B    -  A 510 8  Na   K7 V          
+2317 Rhise                C100575-A Ni Va                              { 0 }  (842+1) [1549] B    -  - 510 8  Na   K7 V          
 2319 Ivendo               B424578-A Ni Px                              { 2 }  (B44+3) [771B] B    NS - 812 11 Na   A9 V          
 2411 Keanou               C792213-7 He Lo                              { -2 } (510-3) [1128] B    S  - 913 12 Rr   M3 III M2 V   
 2414 Tureded              C565542-9 Ag Pr Ni                           { 0 }  (C43+2) [A53A] BcC  -  - 514 11 Rr   M3 V          
@@ -230,30 +230,30 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2520 Garrincski           B632586-7 Ni Px Po                           { -1 } (741-5) [5473] B    S  - 410 9  Na   M0 V M7 V     
 2612 Macene               B000578-D As Va Ni                           { 1 }  (743+1) [467G] B    S  - 201 11 Rr   G8 V M8 V     
 2613 Fulacin              A674255-E An Lo                              { 1 }  (511-1) [239A] B    -  - 910 12 Rr   G3 V          
-2620 Natoko               C8879CB-9 An Ga Hi Pr                        { 1 }  (F89+1) [6A4C] BcE  -  A 304 9  Na   F4 V          
+2620 Natoko               C8879CB-9 An Ga Hi Pr                        { 1 }  (F89+1) [6A4C] BcE  -  - 304 9  Na   F4 V          
 2712 Risek                A425589-A Ni Px                              { 1 }  (847-3) [368A] B    N  - 501 11 Rr   M2 V M3 V     
 2715 Porozlo              B867983-F Ga Hi Pr                           { 3 }  (D8B+1) [BD5C] BcEf -  - 901 11 Rr   M1 V M9 V     
-2716 Rhylanor             A434A58-G Hi Llel4                           { 5 }  (C99+1) [9F5F] BEf  NS - 810 12 Rr   M2 V          
+2716 Rhylanor             A434A58-G (Llellewyloly)5 Hi                 { 5 }  (C99+1) [9F5F] BEf  NS - 810 12 Rr   M2 V          
 2720 Loneseda             C86A212-7 Lo Wa                              { -2 } (410+1) [1148] B    -  - 805 14 Na   K9 V          
 2811 Valhalla             E565430-5 Ni Pa                              { -3 } (630-1) [6136] Bc   -  - 822 9  Rr   G4 V          
-2812 Zivije               C6B1988-B Fl He Hi In                        { 3 }  (E87+1) [8C56] BE   -  A 521 11 Rr   G6 V          
+2812 Zivije               C6B1988-B Fl He Hi In                        { 3 }  (E87+1) [8C56] BE   -  - 521 11 Rr   G6 V          
 2814 Jae Tellona          A560677-B De Ni Ri                           { 2 }  (B55+2) [687B] BC   N  - 713 9  Rr   F9 V          
-2818 Gerome               X573000-0 Ba                                 { -3 } (200+1) [0000] B    -  R 001 11 Na   K2 V          
+2818 Gerome               X573000-0 Ba                                 { -3 } (200+1) [0000] B    -  - 001 11 Na   K2 V          
 2912 Henoz                A545583-B Ag Ni                              { 2 }  (D48-1) [175B] BC   S  - 824 11 Rr   F3 V          
 2913 Celepina             B434420-8 Ni                                 { -1 } (735-2) [733B] B    -  - 201 13 Rr   M2 V          
 2918 Gitosy               B00068C-9 As Va Na Ni                        { 0 }  (953+4) [1649] B    -  - 510 6  Na   G6 V M3 V     
 3015 Belizo               B895988-C Hi In Asla7                        { 4 }  (888-1) [9D38] BEf  -  - 723 11 Rr   K1 V          
-3016 Kegena               E869552-4 Ni Pr                              { -3 } (742-2) [5295] Bc   -  A 224 12 Na   F6 V          
+3016 Kegena               E869552-4 Ni Pr                              { -3 } (742-2) [5295] Bc   -  - 224 12 Na   F6 V          
 3017 Heroni               E7A067C-8 He Ni                              { -3 } (A50-4) [433B] B    -  - 720 8  Na   G5 V          
-3019 457-973              X57279A-5 (minor) He Pi                      { -2 } (964-1) [6527] BD   -  R 334 10 Na   G9 V          
+3019 457-973              X57279A-5 (minor) He Pi                      { -2 } (964-1) [6527] BD   -  - 334 10 Na   G9 V          
 3020 Somem                C301300-C Ic Va Lo                           { 0 }  (620+5) [134E] B    -  - 201 14 Na   M2 V M7 V     
 3111 Vinorian             B879631-9 Ni                                 { 0 }  (951+3) [865B] B    -  - 610 13 Rr   M3 V M4 V     
 3112 Nutema               B864320-8 Lo                                 { -1 } (920-1) [2229] B    N  - 622 7  Rr   M3 V          
-3114 Huderu               X575000-0 Ba                                 { -3 } (200-5) [0000] B    -  R 020 10 Na   M0 V          
+3114 Huderu               X575000-0 Ba                                 { -3 } (200-5) [0000] B    -  - 020 10 Na   M0 V          
 3118 Cipatwe              B55877A-6 Ag                                 { 1 }  (96C+2) [2898] BC   -  - 423 12 Na   M1 V          
 3119 Vanejen              C68689B-4 Droy2 RsG Ga Pa Ri Ph              { 0 }  (A73-2) [C863] BcCe -  - 520 11 Na   G1 V M0 V     
 3212 Margesi              A576447-B Ni Pa                              { 1 }  (632+1) [147D] B    -  - 920 12 Na   F0 V          
-3216 Bevey                D42099A-A De He Hi Na In Po                  { 2 }  (H8B+1) [CB5A] BE   S  A 324 9  Na   F4 V          
+3216 Bevey                D42099A-A De He Hi Na In Po                  { 2 }  (H8B+1) [CB5A] BE   S  - 324 9  Na   F4 V          
 3218 Tacaxeb              C430503-C De Ni Po                           { 0 }  (743-4) [5539] B    -  - 101 10 Na   A5 V M2 V     
 3220 Powaza               C787522-5 Ag Pr Ga Ni                        { -1 } (741+1) [3456] BcC  -  - 232 13 Na   K4 V M2 V     
 0122 Junction             D550400-5 De Ni Po                           { -3 } (631-3) [7154] B    -  - 210 10 Wild M2 V M3 V     
@@ -317,8 +317,8 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1727 Wardn                A756686-B Ga Ni Ag                           { 2 }  (853+2) [665B] B    -  - 402 7  Wild K2 V          
 1728 Olympia              D428000-7 Di                                 { -3 } (500+1) [0000] B    -  - 020 6  Wild M3 V          
 1729 Smoug                X540000-9 De He Di Po                        { -2 } (B00+1) [0000] BD   -  - 002 7  Wild M1 V M7 V     
-1822 Rabwhar              E5448BC-3 Pa Pi Ph                           { -2 } (A72-3) [8644] BcDe -  A 413 12 Na   K5 V          
-1824 Adabicci             D5717C7-6 He Pi                              { -2 } (B6A+1) [A55A] BEf  -  A 701 6  Na   K8 V M8 V     
+1822 Rabwhar              E5448BC-3 Pa Pi Ph                           { -2 } (A72-3) [8644] BcDe -  - 413 12 Na   K5 V          
+1824 Adabicci             D5717C7-6 He Pi                              { -2 } (B6A+1) [A55A] BEf  -  - 701 6  Na   K8 V M8 V     
 1825 Zaibon               D000000-B Di As Va                           { -1 } (900+3) [0000] B    -  - 002 9  Wild M6 III M3 V   
 1826 Tenalphi             X774000-D Di An                              { -1 } (A00+1) [0000] BCD  -  - 010 12 Wild F7 V          
 1924 Ianic                D5607A8-5 De Ri                              { -1 } (864+1) [7454] BC   S  - 724 9  Na   M3 V M7 V     
@@ -331,22 +331,22 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2224 Ranther              D564598-5 Ni Ag Pr                           { -2 } (641+3) [32A5] B    -  - 601 13 Na   M3 V M6 V     
 2228 Gatina               C765876-7 Ga Pa Ph Ri                        { 0 }  (87C+2) [5B68] BcDe -  - 822 10 Na   M2 V          
 2321 Koilei               D565365-8 Lo Px Asla7                        { -3 } (A20-3) [7275] B    -  - 723 9  Na   M3 V          
-2322 Gorram               D554311-3 Lo                                 { -3 } (420+2) [4123] B    -  R 101 9  Na   K8 V M6 V     
+2322 Gorram               D554311-3 Lo                                 { -3 } (420+2) [4123] B    -  - 101 9  Na   K8 V M6 V     
 2323 Resten               D310423-8 Ni Llel5                           { -3 } (431+1) [1278] B    S  - 601 10 Na   K5 V M8 V     
 2324 Capon                B74774C-8 Ag Pi                              { 1 }  (A69-2) [8A69] BCD  -  - 510 10 Na   F9 V          
 2325 Sharrip              D575120-7 Lo                                 { -3 } (600-5) [1199] B    -  - 303 16 Na   K5 V          
 2327 Strouden             D745578-9 Ni Ag                              { -1 } (D45-2) [A49E] BEf  -  - 620 8  Na   G5 V M4 V     
 2425 Gandr                D000000-8 As Va Di                           { -3 } (800+1) [0000] B    -  - 003 9  Na   M1 V          
 2426 Drolraw              XAB6000-8 Fl Di                              { -3 } (900+2) [0000] B    -  - 004 12 Na   F1 V          
-2521 Heroni               B6449A8-8 Hi In                              { 2 }  (E86+2) [9B89] BE   -  A 521 14 Na   F3 V          
+2521 Heroni               B6449A8-8 Hi In                              { 2 }  (E86+2) [9B89] BE   -  - 521 14 Na   F3 V          
 2523 Byret                B58567A-6 (Larianz) Ag Ri Ni                 { 1 }  (854+1) [5736] BC   -  - 612 7  Na   G9 V          
 2527 Pimane               E500412-7 Ni Va                              { -3 } (533-3) [8116] B    -  - 203 10 Na   K0 V          
 2621 Fosey                A633644-9 Na Po Ni                           { 0 }  (A54+4) [964E] B    -  - 520 11 Na   M3 V          
 2624 Mercury              B658637-8 Ag Ni                              { 1 }  (C56+2) [576A] BC   NS - 404 13 Na   F7 V          
 2627 Tivid                C534425-8 Ni                                 { -2 } (732+2) [1245] B    -  - 401 11 Na   M3 V          
 2726 Carey                C579214-9 Lo                                 { -1 } (510-4) [5159] B    -  - 710 4  Na   M2 V M2 V     
-2728 Duale                A54377B-B Pi Po RsA                          { 2 }  (A6A+4) [9938] BD   -  A 601 5  Na   M0 V M2 V     
-2824 Catuz                C420459-A De He Ni Po                        { 0 }  (731+1) [4429] B    -  A 510 5  Du   K8 V M6 V     
+2728 Duale                A54377B-B Pi Po RsA                          { 2 }  (A6A+4) [9938] BD   -  - 601 5  Na   M0 V M2 V     
+2824 Catuz                C420459-A De He Ni Po                        { 0 }  (731+1) [4429] B    -  - 510 5  Du   K8 V M6 V     
 2827 Meleto               C675143-4 Lo                                 { -2 } (300+2) [31A3] B    S  - 524 9  Na   F9 V          
 2828 Hexos                B534437-8 Ni Px                              { -1 } (B30-1) [2347] B    N  - 123 10 Na   K1 V M2 V     
 2830 Pedase               C415333-7 Ic Lo                              { -2 } (520+2) [2155] B    S  - 201 11 Na   M2 V M7 V     
@@ -355,15 +355,15 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2930 Mainz                C553320-9 Lo Po                              { -1 } (820-2) [4258] B    S  - 603 11 Na   K2 V M7 V     
 3021 Brodie               C410488-7 Ni                                 { -2 } (631+2) [6256] B    -  - 314 15 Du   M1 III M7 V   
 3022 Rorise               D994000-9 Di                                 { -2 } (500-3) [0000] B    -  - 002 8  Du   M1 V          
-3024 Jokotre              B6548A8-5 Pa Ph                              { 0 }  (A75+1) [A856] Bce  -  A 710 9  Du   K6 V          
+3024 Jokotre              B6548A8-5 Pa Ph                              { 0 }  (A75+1) [A856] Bce  -  - 710 9  Du   K6 V          
 3025 Fornice              A554A72-C Hi                                 { 3 }  (E96+1) [7D17] BE   -  - 402 13 Du   M0 V          
 3026 Grille               E410385-7 Lo                                 { -3 } (520+2) [5157] B    -  - 801 12 Du   M2 V M2 V     
-3029 Pallique             E5119A8-5 Hi Ic Na In                        { 0 }  (B87-2) [C922] BE   -  A 220 5  Na   M0 V M1 V     
+3029 Pallique             E5119A8-5 Hi Ic Na In                        { 0 }  (B87-2) [C922] BE   -  - 220 5  Na   M0 V M1 V     
 3030 Nexine               D97A000-8 (Nexxies) Di Wa                    { -3 } (700+1) [0000] B    -  - 001 12 Wild G9 V M2 V     
 3123 Nadrin               D420242-6 De He Lo Po                        { -3 } (410-1) [3115] B    S  - 720 15 Du   K5 V M1 V     
 3124 Mora                 AA99A9D-C Hi In                              { 5 }  (F9E+2) [9F6D] BEf  NS - 312 9  Du   F0 V          
 3223 Dojodo               C512331-7 Ic Lo                              { -2 } (520+1) [6147] B    S  - 710 14 Na   M0 V          
-3228 Fen's Gren           C647334-9 Lo                                 { -1 } (A20+1) [524A] B    -  A 323 12 Na   K7 V          
+3228 Fen's Green          C647334-9 Lo                                 { -1 } (A20+1) [524A] B    -  - 323 12 Na   K7 V          
 0133 Emape                B564476-A Ni Pa                              { 1 }  (A37-3) [6558] Bc   -  - 403 6  Wild M0 V          
 0139 Raweh                X430000-B De Di Po                           { -1 } (700-4) [0000] B    -  - 020 5  Wild G3 V M1 V     
 0140 876-574              X687000-0 Ba Ga                              { -3 } (400-3) [0000] B    -  - 002 11 Wild K7 V          

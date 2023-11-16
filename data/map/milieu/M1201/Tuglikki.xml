@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Tugl">
+  <Name Lang="va">Tuglikki</Name>
+  <Name Lang="zh">Dravr</Name>
+  <Credits>
+
+             &lt;b&gt;Tuglikki&lt;/b&gt; sector was designed by David Drazul.
+
+             M1201 data from http://zho.berka.com/data/TNE/sector.pl?sector=TUGLIKKI and
+             http://www.dedzone.net/traveller/sectors/tuglikki/
+
+    </Credits>
+  <X>-3</X>
+  <Y>-2</Y>
+  <DataFile Author="David Drazul" Source="Traveller 5 Sector Survey" Milieu="M1201" />
+  <Subsectors>
+    <Subsector Index="A">Dokh</Subsector>
+    <Subsector Index="B">Saerrgh</Subsector>
+    <Subsector Index="C">Orrgueg</Subsector>
+    <Subsector Index="D">Knoukhs</Subsector>
+    <Subsector Index="E">Darrgouts</Subsector>
+    <Subsector Index="F">Uerrul</Subsector>
+    <Subsector Index="G">Tsaerlon</Subsector>
+    <Subsector Index="H">Gaerith</Subsector>
+    <Subsector Index="I">Kaeng</Subsector>
+    <Subsector Index="J">Ludzghaeth</Subsector>
+    <Subsector Index="K">Aenkazarr</Subsector>
+    <Subsector Index="L">Onrakae</Subsector>
+    <Subsector Index="M">Dhukhaegz</Subsector>
+    <Subsector Index="N">Ogaeka</Subsector>
+    <Subsector Index="O">Ourrvikh</Subsector>
+    <Subsector Index="P">Aegaek</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Wi">Wilds</Allegiance>
+    <Allegiance Code="??">Unknown</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="V2" Base="Va">Windhorn Pact of Two</Allegiance>
+    <Allegiance Code="Vu" Base="Va">United Followers of Augurgh</Allegiance>
+    <Allegiance Code="Vf" Base="Va">Dzarrgh Federate</Allegiance>
+  </Allegiances>
+</Sector>

@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Reav">
+  <Name>Reaver's Deep</Name>
+  <Name>Reavers' Deep</Name>
+  <Name>Reavers Deep</Name>
+  <Name Lang="as">Aeitle Sakh</Name>
+  <Credits>
+
+             &lt;b&gt;Reaver's Deep&lt;/b&gt; sector was designed by J. Andrew
+             Keith. Portions of Reaver's Deep sector appear in
+             &lt;cite&gt;High Passage Magazine&lt;/cite&gt;, and in &lt;cite&gt;Far
+             Traveller Magazine&lt;/cite&gt;.
+
+             &lt;b&gt;Reaver's Deep&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+    </Credits>
+  <X>-2</X>
+  <Y>2</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="As" LabelPosition="0824">0011 0112 0212 0313 0412 0512 0611 0711 0811 0812 0813 0814 0915 0916 0917 0918 0919 0920 0921 0922 0923 1023 1124 1224 1225 1226 1327 1328 1428 1329 1229 1230 1231 1332 1333 1433 1434 1435 1436 1537 1538 1539 1540 1640 1641 1541 1441 1341 1241 1141 1041 0941 0841 0741 0641 0541 0441 0341 0241 0141 0041 0040 0039 0038 0037 0036 0035 0034 0033 0032 0031 0030 0029 0028 0027 0026 0025 0024 0023 0022 0021 0020 0019 0018 0017 0016 0015 0014 0013 0012 0011</Border>
+  </Borders>
+</Sector>

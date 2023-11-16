@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Far3">
+  <Name Source="The Far Side of Nowhere">Far Shore 2</Name>
+  <Credits />
+  <X>-17</X>
+  <Y>5</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

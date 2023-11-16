@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Mavu">
+  <Name>Mavuzog</Name>
+  <Credits>
+      &lt;b&gt;Mavuzog&lt;/b&gt; sector was designed by Ade Stewart.
+    </Credits>
+  <X>-9</X>
+  <Y>1</Y>
+  <DataFile Author="Ade Stewart" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Bride</Subsector>
+    <Subsector Index="B">Galaxa</Subsector>
+    <Subsector Index="C">Cho Vari</Subsector>
+    <Subsector Index="D">Tangal</Subsector>
+    <Subsector Index="E">Coldedge</Subsector>
+    <Subsector Index="F">Siridor</Subsector>
+    <Subsector Index="G">Shimmerskip</Subsector>
+    <Subsector Index="H">Pyruvat</Subsector>
+    <Subsector Index="I">Mavuzo</Subsector>
+    <Subsector Index="J">Riftspin</Subsector>
+    <Subsector Index="K">Mainsend</Subsector>
+    <Subsector Index="L">Taltan</Subsector>
+    <Subsector Index="M">Darkshade</Subsector>
+    <Subsector Index="N">Talokan Void</Subsector>
+    <Subsector Index="O">Oscuro</Subsector>
+    <Subsector Index="P">Trichal</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na">Non-aligned Human dominated</Allegiance>
+    <Allegiance Code="Nx">Non-aligned unclaimed</Allegiance>
+    <Allegiance Code="Nm">Non-aligned Mavuzo dominated</Allegiance>
+    <Allegiance Code="Sh">Sorority of Hygiea</Allegiance>
+    <Allegiance Code="Pm">Principality of Mavuzo</Allegiance>
+    <Allegiance Code="Ns">Non-aligned Sophont dominated</Allegiance>
+    <Allegiance Code="Ko">Korsumug Empire</Allegiance>
+    <Allegiance Code="As">Non-aligned Aslan dominated</Allegiance>
+    <Allegiance Code="Tm">Tenjada Moralitate</Allegiance>
+  </Allegiances>
+  <Stylesheet>
+    border.Ko { color: white }
+    border.Pm { color: white }
+    border.Sh { color: white }
+    border.Tm { color: white }
+  </Stylesheet>
+  <Labels>
+    <Label Hex="1131" Color="Gray" Wrap="false">Talokan Void</Label>
+  </Labels>
+  <Borders>
+    <Border Allegiance="Ko" LabelPosition="2219">1318 1417 1517 1516 1515 1514 1413 1412 1411 1410 1510 1610 1611 1712 1812 1912 2011 2112 2212 2313 2412 2512 2612 2613 2714 2814 2915 3015 3115 3214 3314 3315 3316 3317 3318 3319 3320 3321 3322 3323 3324 3325 3326 3327 3328 3329 3330 3230 3131 3130 3029 2929 2828 2729 2629 2529 2428 2328 2228 2129 2028 1928 1827 1826 1726 1725 1824 1924 1923 1922 1921 1820 1720 1619 1519 1419 1319 1318</Border>
+    <Border Allegiance="Pm" LabelPosition="0720">0417 0518 0618 0719 0818 0919 1019 1020 1021 1122 1123 1023 0924 0823 0724 0624 0524 0523 0422 0421 0420 0419 0418 0417</Border>
+    <Border Allegiance="Sh" LabelPosition="0710">0408 0508 0607 0707 0807 0908 1008 1109 1110 1010 1011 0912 0812 0712 0611 0511 0410 0409 0408</Border>
+    <Border Allegiance="Tm" LabelPosition="2803">2502 2601 2701 2801 2902 3002 3103 3203 3204 3105 3005 2906 2805 2706 2605 2604 2504 2503 2502</Border>
+  </Borders>
+  <Routes>
+    <Route Start="2011" End="2313" Color="Red" />
+    <Route Start="2313" End="2513" Color="Red" />
+    <Route Start="2513" End="2814" Color="Red" />
+    <Route Start="2814" End="2917" Color="Red" />
+    <Route Start="2917" End="3118" Color="Red" />
+    <Route Start="3118" End="0119" EndOffsetX="1" Color="Red" />
+    <Route Start="3118" End="3120" Color="Red" />
+    <Route Start="3120" End="2922" Color="Red" />
+    <Route Start="2022" End="2221" Color="Red" />
+    <Route Start="2221" End="2521" Color="Red" />
+    <Route Start="2521" End="2719" Color="Red" />
+    <Route Start="2521" End="2418" Color="Red" />
+    <Route Start="2719" End="2917" Color="Red" />
+    <Route Start="2328" End="2627" Color="Red" />
+    <Route Start="2627" End="2827" Color="Red" />
+    <Route Start="2827" End="3128" Color="Red" />
+    <Route Start="3128" End="0127" EndOffsetX="1" Color="Red" />
+  </Routes>
+</Sector>

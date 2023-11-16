@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Gisk">
+  <Name Source="Riftsedge Transit">Giskakii</Name>
+  <Credits />
+  <X>-11</X>
+  <Y>1</Y>
+  <DataFile Author="Geir Lanesskog" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances />
+</Sector>

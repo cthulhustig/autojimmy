@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Tarx">
+  <Name Lang="kk">Tar'G'kell'p</Name>
+  <Credits>
+
+               &lt;b&gt;Tar'G'kell'p&lt;/b&gt; sector was designed by WG Zeist.
+
+      </Credits>
+  <X>5</X>
+  <Y>-4</Y>
+  <DataFile Author="WG Zeist" Source="explorerbase" Milieu="M1105" Ref="https://explorerbase.wordpress.com/targkellp-sector-data/" />
+  <Subsectors>
+    <Subsector Index="A">Alpha Zone</Subsector>
+    <Subsector Index="B">Bravo Zone</Subsector>
+    <Subsector Index="C">Charlie Zone</Subsector>
+    <Subsector Index="D">Delta Zone</Subsector>
+    <Subsector Index="E">Echo Zone</Subsector>
+    <Subsector Index="F">Foxtrot Zone</Subsector>
+    <Subsector Index="G">Golf Zone</Subsector>
+    <Subsector Index="H">Hotel Zone</Subsector>
+    <Subsector Index="I">India Zone</Subsector>
+    <Subsector Index="J">Juliet Zone</Subsector>
+    <Subsector Index="K">Kilo Zone</Subsector>
+    <Subsector Index="L">Lima Zone</Subsector>
+    <Subsector Index="M">Mike Zone</Subsector>
+    <Subsector Index="N">November Zone</Subsector>
+    <Subsector Index="O">Oscar Zone</Subsector>
+    <Subsector Index="P">Papa Zone</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+</Sector>

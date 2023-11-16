@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Grik">
+  <Name Lang="kk">Grikr!ng</Name>
+  <Credits>
+
+               &lt;b&gt;Grikr!ng&lt;/b&gt; sector was designed by WG Zeist.
+
+      </Credits>
+  <X>5</X>
+  <Y>-3</Y>
+  <DataFile Author="WG Zeist" Source="explorerbase" Milieu="M1105" Ref="https://explorerbase.wordpress.com/grikrng-sector-data/" />
+  <Subsectors>
+    <Subsector Index="A">Upper Edge</Subsector>
+    <Subsector Index="B">Barren Edge</Subsector>
+    <Subsector Index="C">One System</Subsector>
+    <Subsector Index="D">Above Rock</Subsector>
+    <Subsector Index="E">Hoeknaeth</Subsector>
+    <Subsector Index="F">Starlord Trail</Subsector>
+    <Subsector Index="G">Jungleworld</Subsector>
+    <Subsector Index="H">Rock and Ring</Subsector>
+    <Subsector Index="I">Perdumon</Subsector>
+    <Subsector Index="J">Umsky</Subsector>
+    <Subsector Index="K">Densky Void</Subsector>
+    <Subsector Index="L">Densky</Subsector>
+    <Subsector Index="M">Grikr!ng</Subsector>
+    <Subsector Index="N">Norlee</Subsector>
+    <Subsector Index="O">World Pair</Subsector>
+    <Subsector Index="P">Waterdrop</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="V-">Worlds of the Nine Starlords</Allegiance>
+    <Allegiance Code="KO">K'kree Outpost</Allegiance>
+    <Allegiance Code="Pe">Perdumon Alliance</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="V-" LabelPosition="0715">0413 0514 0614 0715 0815 0915 0916 1016 0917 0816 0716 0615 0515 0415 0316 0415 0414 0413</Border>
+    <Border Color="Yellow" Allegiance="Pe" LabelPosition="0628">0527 0528 0628 0629 0529 0528 0527</Border>
+    <Border Color="LightGreen" Allegiance="KO" LabelPosition="0438">0337 0437 0538 0437 0337</Border>
+  </Borders>
+</Sector>

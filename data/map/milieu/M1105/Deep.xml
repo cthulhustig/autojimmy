@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Deep</Name>
+  <Credits>
+      &lt;b&gt;Deep&lt;/b&gt; sector was designed by Ade Stewart as part of the Distant Fringe.
+    </Credits>
+  <X>55</X>
+  <Y>29</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Hak'tha</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Sx">Sath Exploration</Allegiance>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1621" Color="Gray" Size="large" Wrap="false">Great Void</Label>
+  </Labels>
+</Sector>

@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Pofdriblnchitl</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-22</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Nshanchienzh</Subsector>
+    <Subsector Index="B">Oflar</Subsector>
+    <Subsector Index="C">Shtenshavredl</Subsector>
+    <Subsector Index="D">Ontsa</Subsector>
+    <Subsector Index="E">Koplazva</Subsector>
+    <Subsector Index="F">Shafre</Subsector>
+    <Subsector Index="G">Bienzhbravlenz</Subsector>
+    <Subsector Index="H">Tlientsia</Subsector>
+    <Subsector Index="I">Ebribr</Subsector>
+    <Subsector Index="J">Oqriavl</Subsector>
+    <Subsector Index="K">Antszietl</Subsector>
+    <Subsector Index="L">Qreqra</Subsector>
+    <Subsector Index="M">Priefrnzheqrapl</Subsector>
+    <Subsector Index="N">Prilnzhiefre</Subsector>
+    <Subsector Index="O">Zanziabrtse</Subsector>
+    <Subsector Index="P">Chavlinzhtsetl</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0720">0718 0719 0720 0721 0722 0721 0720 0719 0718</Border>
+    <Border Allegiance="ZhVQ" LabelPosition="1135">0834 0934 1033 1032 1133 1233 1234 1335 1435 1336 1236 1137 1037 1036 1035 0935 0834</Border>
+    <Border Allegiance="ZhVQ" LabelPosition="1406">1109 1208 1207 1307 1306 1305 1304 1303 1302 1301 1302 1303 1304 1404 1505 1605 1506 1507 1508 1509 1609 1510 1410 1310 1209 1109</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0528">0528</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0625">0625</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0631">0631</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0814">0814</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="0911">0911</Border>
+    <Border ShowLabel="false" Allegiance="ZhVQ" LabelPosition="1340">1340</Border>
+  </Borders>
+  <Routes>
+    <Route Start="0528" End="0625" Type="Core Route" />
+    <Route Start="0528" End="0631" Type="Core Route" />
+    <Route Start="0625" End="0722" Type="Core Route" />
+    <Route Start="0631" End="0834" Type="Core Route" />
+    <Route Start="0718" End="0722" Type="Core Route" />
+    <Route Start="0718" End="0814" Type="Core Route" />
+    <Route Start="0814" End="0911" Type="Core Route" />
+    <Route Start="0834" End="0935" Allegiance="ZhCo" />
+    <Route Start="0834" End="1032" Allegiance="ZhCo" />
+    <Route Start="0834" End="1037" Type="Core Route" />
+    <Route Start="0911" End="1208" Type="Core Route" />
+    <Route Start="0935" End="1035" Allegiance="ZhCo" />
+    <Route Start="1032" End="1035" Allegiance="ZhCo" />
+    <Route Start="1032" End="1133" Allegiance="ZhCo" />
+    <Route Start="1035" End="1336" Allegiance="ZhCo" />
+    <Route Start="1037" End="1336" Allegiance="ZhCo" />
+    <Route Start="1037" End="1340" Type="Core Route" />
+    <Route Start="1133" End="1336" Allegiance="ZhCo" />
+    <Route Start="1208" End="1305" Type="Core Route" />
+    <Route Start="1208" End="1307" Allegiance="ZhCo" />
+    <Route Start="1208" End="1309" Allegiance="ZhCo" />
+    <Route Start="1301" End="1237" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="1301" End="1305" Type="Core Route" />
+    <Route Start="1305" End="1505" Allegiance="ZhCo" />
+    <Route Start="1307" End="1505" Allegiance="ZhCo" />
+    <Route Start="1307" End="1509" Allegiance="ZhCo" />
+    <Route Start="1309" End="1410" Allegiance="ZhCo" />
+    <Route Start="1340" End="1203" EndOffsetY="1" Type="Core Route" />
+    <Route Start="1410" End="1509" Allegiance="ZhCo" />
+  </Routes>
+</Sector>

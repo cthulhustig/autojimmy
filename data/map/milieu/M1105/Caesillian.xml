@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Official OTU" Abbreviation="Caes">
+  <Name>Caesillian</Name>
+  <Credits />
+  <X>0</X>
+  <Y>-21</Y>
+  <DataFile Author="Marc Miller" Source="Agent of the Imperium" Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+  </Allegiances>
+</Sector>

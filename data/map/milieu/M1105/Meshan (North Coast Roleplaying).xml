@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway" Abbreviation="MNCR">
+  <Name>Meshan (North Coast Roleplaying)</Name>
+  <Credits>
+      &lt;p&gt;
+      &lt;b&gt;Oksall Dhkigvga&lt;/b&gt; subsector was published in
+      &lt;cite&gt;North Coast Roleplaying #4&lt;/cite&gt;, edited by Barry Osser.
+      &lt;/p&gt;
+
+      &lt;p&gt;Data transcribed Graham Donald.&lt;/o&gt;
+    </Credits>
+  <X>75</X>
+  <Y>68</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="I">Arrgh Vikegv</Subsector>
+    <Subsector Index="M">Oksall Dhkigvga</Subsector>
+    <Subsector Index="N">Avghae Graghe</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="NaVa" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+    <Allegiance Code="Im">Third Imperium</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="Im" LabelPosition="0539">0139 0238 0339 0438 0539 0639 0739 0839 0840 0740 0640 0540 0440 0340 0240 0140 0139</Border>
+  </Borders>
+</Sector>

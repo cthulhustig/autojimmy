@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Coraline</Name>
+  <Credits>
+      &lt;b&gt;Coraline&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>55</X>
+  <Y>24</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1602" Color="Gray" Size="large" Wrap="false">Inner Void</Label>
+    <Label Hex="1609" Color="Gray" Wrap="false">Gates of Nowhere</Label>
+    <Label Hex="0925" Color="Gray" Wrap="false">Tail of the Arc</Label>
+    <Label Hex="2322" Color="Gray" Size="large" Wrap="false">Entropic Void</Label>
+  </Labels>
+</Sector>

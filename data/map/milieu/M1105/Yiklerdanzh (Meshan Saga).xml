@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Apocryphal Faraway" Abbreviation="MSYK">
+  <Name>Yiklerdanzh (Meshan Saga)</Name>
+  <Credits>
+      &lt;p&gt;
+      &lt;b&gt;Storm&lt;/b&gt; subsector was designed by Martin Rait for inclusion in Yiklerdanzh. Ultimately not selected, it was printed in the fourth issue of Meshan Saga magazine. Some of the material created for this verion was incorporated into the Wyld Worlds SubSector of the published version of Yiklerdanzh.
+      &lt;/p&gt;
+      &lt;p&gt;Data was transcribed and edited by Graham Donald&lt;/p&gt;
+    </Credits>
+  <X>151</X>
+  <Y>-1</Y>
+  <DataFile Author="Martin Rait" Publisher="Meshan Saga" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="N">Storm</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="CF">Federation Client State</Allegiance>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Fd">Federation</Allegiance>
+    <Allegiance Code="CZ">Zhodani Client State</Allegiance>
+    <Allegiance Code="ZC">Zhodani Colonial Region</Allegiance>
+    <Allegiance Code="In">Independent</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Allegiance="Fd" LabelPosition="1132">1031 1132 1231 1132 1133 1132 1031</Border>
+    <Border Allegiance="ZC" LabelPosition="1538">1437 1537 1636 1637 1638 1639 1638 1538 1437</Border>
+  </Borders>
+</Sector>

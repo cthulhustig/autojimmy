@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Zort">
+  <Name>Zortakh</Name>
+  <Credits />
+  <X>4</X>
+  <Y>-5</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+</Sector>

@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Hans">
+  <Name>Hanstone</Name>
+  <Name Lang="as">Ftetlao'</Name>
+  <Credits />
+  <X>-1</X>
+  <Y>5</Y>
+  <DataFile Author="Jo Grant, Jeff Zeitlin, and Matthew Collins" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Grieg</Subsector>
+    <Subsector Index="B">Nadon</Subsector>
+    <Subsector Index="C">Mozart</Subsector>
+    <Subsector Index="D">Dvorak</Subsector>
+    <Subsector Index="E">Jarre</Subsector>
+    <Subsector Index="F">Fteiheiel</Subsector>
+    <Subsector Index="G">Heads</Subsector>
+    <Subsector Index="H">Bach</Subsector>
+    <Subsector Index="I">Eha</Subsector>
+    <Subsector Index="J">Auftei</Subsector>
+    <Subsector Index="K">Prokofiev</Subsector>
+    <Subsector Index="L">Lennon</Subsector>
+    <Subsector Index="M">Wonder</Subsector>
+    <Subsector Index="N">Anderson</Subsector>
+    <Subsector Index="O">Jangole</Subsector>
+    <Subsector Index="P">Thomson</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Ak">Auftei Ktaih</Allegiance>
+    <Allegiance Code="Fo">Fteiheiel Oih</Allegiance>
+    <Allegiance Code="As">Aslan Hierate</Allegiance>
+    <Allegiance Code="Jn">Jurisdiction of Nadon</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="Hc">Council of Heads</Allegiance>
+    <Allegiance Code="Mu">Malorn Union</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="BurlyWood" Allegiance="Ak" LabelPosition="0825">0624 0725 0824 0924 1024 0925 0825 0726 0725 0624</Border>
+    <Border Color="Khaki" Allegiance="Fo" LabelPosition="1016">0815 0915 1015 1116 1015 0916 0815</Border>
+    <Border Color="Blue" Allegiance="Hc" LabelPosition="2314">2214 2314 2414 2314 2214</Border>
+    <Border Color="Pink" Allegiance="Jn" LabelPosition="1603">1400 1500 1600 1701 1601 1602 1603 1504 1505 1404 1403 1402 1401 1400</Border>
+    <Border Color="White" Allegiance="Mu" LabelPosition="3104">2900 3000 3100 3200 3300 3301 3302 3303 3304 3305 3306 3307 3308 3207 3107 3106 3105 3104 3103 3002 2902 2901 2900</Border>
+  </Borders>
+</Sector>

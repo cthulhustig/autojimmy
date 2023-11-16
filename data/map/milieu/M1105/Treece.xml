@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Tree">
+  <Name>Treece</Name>
+  <Credits>
+
+             &lt;b&gt;Treece&lt;/b&gt; sector was designed by Mark Humphreys.
+
+    </Credits>
+  <X>7</X>
+  <Y>4</Y>
+  <DataFile Author="Mark Humphreys" Milieu="M1105" />
+  <Subsectors>
+    <Subsector Index="A">Areece</Subsector>
+    <Subsector Index="B">Breece</Subsector>
+    <Subsector Index="C">Creece</Subsector>
+    <Subsector Index="D">Dreece</Subsector>
+    <Subsector Index="E">Treece</Subsector>
+    <Subsector Index="F">Freece</Subsector>
+    <Subsector Index="G">Greece</Subsector>
+    <Subsector Index="H">Hreece</Subsector>
+    <Subsector Index="I">IReece</Subsector>
+    <Subsector Index="J">J'reece</Subsector>
+    <Subsector Index="K">Kreece</Subsector>
+    <Subsector Index="L">Lreece</Subsector>
+    <Subsector Index="M">Mreece</Subsector>
+    <Subsector Index="N">Nreece</Subsector>
+    <Subsector Index="O">Oreece</Subsector>
+    <Subsector Index="P">Preece</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="0508" Color="White" Wrap="false">Kolir-Kidunal Sparsity</Label>
+  </Labels>
+</Sector>

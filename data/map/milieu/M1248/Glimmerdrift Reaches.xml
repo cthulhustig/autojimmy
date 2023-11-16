@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Glim">
+  <Name>Glimmerdrift Reaches</Name>
+  <Name>Glimmerdrift</Name>
+  <Credits>
+
+             &lt;b&gt;Glimmerdrift Reaches&lt;/b&gt; sector was designed by Marc
+             W. Miller and appears in &lt;cite&gt;Atlas of the
+             Imperium&lt;/cite&gt; (GDW, 1984).
+
+             It was refined by Martin J. Dougherty and Hunter Gordon
+             and appears in &lt;cite&gt;Gateway to Destiny&lt;/cite&gt; (QuickLink
+             Interactive, 2006).
+
+             &lt;b&gt;Glimmerdrift Reaches&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>2</X>
+  <Y>1</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#98B127" Allegiance="Gd" LabelPosition="2305">1207 1307 1306 1305 1404 1403 1402 1401 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2400 2500 2600 2700 2800 2900 3000 3100 3200 3300 3301 3302 3303 3304 3305 3205 3105 3005 2905 2805 2706 2605 2506 2405 2306 2206 2107 2007 1907 1807 1708 1608 1509 1510 1409 1309 1209 1208 1207</Border>
+  </Borders>
+</Sector>

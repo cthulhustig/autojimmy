@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Unreviewed OTU" Abbreviation="Ley">
+  <Name>Ley</Name>
+  <Name>Ley Sector</Name>
+  <Name Lang="vi">Makhuniim</Name>
+  <Credits>
+
+             &lt;b&gt;Ley Sector&lt;/b&gt; was designed by Marc W. Miller and
+             appears in &lt;cite&gt;Atlas of the Imperium&lt;/cite&gt; (GDW,
+             1984).
+
+             It was refined by Martin J. Dougherty and Hunter Gordon
+             and appears in &lt;cite&gt;Gateway to Destiny&lt;/cite&gt; (QuickLink
+             Interactive, 2006).
+
+             &lt;b&gt;Ley&lt;/b&gt; sector 1248 borders designed by Shane MacLean,
+             Eric O'Dell and Michael Taylor and appears in  &lt;cite&gt;1248 Sourcebook 1: Out of
+             Darkness&lt;/cite&gt;(ComStar Media/Avenger Enterprises, 2006).
+
+  </Credits>
+  <X>2</X>
+  <Y>0</Y>
+  <Product Author="Martin J. Dougherty" Title="1248 Sourcebook 1: Out of Darkness" Publisher="Avenger Enterprises in association with Comstar Media, LLC." Ref="https://farfuture.net/Contents%20CDROM%20TNE-2.pdf" />
+  <DataFile Author="Martin J. Dougherty" Source="1248 Sourcebook 1: Out of Darkness" Milieu="M1248" />
+  <Subsectors>
+    <Subsector Index="A" />
+    <Subsector Index="B" />
+    <Subsector Index="C" />
+    <Subsector Index="D" />
+    <Subsector Index="E" />
+    <Subsector Index="F" />
+    <Subsector Index="G" />
+    <Subsector Index="H" />
+    <Subsector Index="I" />
+    <Subsector Index="J" />
+    <Subsector Index="K" />
+    <Subsector Index="L" />
+    <Subsector Index="M" />
+    <Subsector Index="N" />
+    <Subsector Index="O" />
+    <Subsector Index="P" />
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="#98B127" Allegiance="Gd" LabelPosition="1827">0216 0316 0315 0314 0414 0515 0615 0716 0816 0917 1017 1117 1217 1317 1417 1517 1616 1716 1815 1915 1914 2014 2114 2213 2313 2314 2315 2316 2317 2318 2319 2320 2420 2421 2522 2622 2723 2823 2924 3024 3125 3225 3325 3326 3327 3328 3329 3330 3331 3332 3333 3334 3335 3336 3337 3338 3339 3340 3341 3241 3141 3041 2941 2841 2741 2641 2541 2441 2341 2241 2141 2041 1941 1841 1741 1641 1541 1441 1440 1540 1539 1538 1437 1436 1336 1235 1234 1134 1033 0933 0932 0931 0930 0929 0928 0927 0926 0825 0824 0724 0723 0622 0621 0521 0420 0320 0219 0218 0217 0216</Border>
+  </Borders>
+</Sector>

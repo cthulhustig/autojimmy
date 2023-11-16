@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Celeste</Name>
+  <Credits>
+      &lt;b&gt;Celeste&lt;/b&gt; sector was designed by Ade Stewart as part of Infinitys Shore.
+    </Credits>
+  <X>51</X>
+  <Y>26</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="0409" Color="Gray" Size="large" Wrap="false">Grand Arc</Label>
+    <Label Hex="1014" Color="Gray" Size="small" Wrap="false">RSS
+Cs1013</Label>
+    <Label Hex="2633" Color="Gray" Size="small" Wrap="false">RSS
+Cs2632</Label>
+  </Labels>
+</Sector>

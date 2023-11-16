@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="ZCR">
+  <Name Lang="zh">Nili</Name>
+  <Credits />
+  <X>-7</X>
+  <Y>-87</Y>
+  <DataFile Author="Clifford Linehan" Source="Zhodani Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20050828212346/http://www.geocities.com/traveller_core_route/proj001/proj001.html" />
+  <Subsectors>
+    <Subsector Index="A">Chiachibr</Subsector>
+    <Subsector Index="B">Aznzha</Subsector>
+    <Subsector Index="C">Vlivlofr</Subsector>
+    <Subsector Index="D">Konjrenzhkia</Subsector>
+    <Subsector Index="E">Inzhliej</Subsector>
+    <Subsector Index="F">Zirkrenchvriak</Subsector>
+    <Subsector Index="G">Nchavli</Subsector>
+    <Subsector Index="H">Atse</Subsector>
+    <Subsector Index="I">Brifrnchash</Subsector>
+    <Subsector Index="J">Klienchiaj</Subsector>
+    <Subsector Index="K">Iavltsian</Subsector>
+    <Subsector Index="L">Zhdedlfrebla</Subsector>
+    <Subsector Index="M">Brefrat</Subsector>
+    <Subsector Index="N">Tsaplvli</Subsector>
+    <Subsector Index="O">Ijej</Subsector>
+    <Subsector Index="P">Entsjeqr</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
+    <Allegiance Code="Dr">Droyne</Allegiance>
+    <Allegiance Code="Zc">Zhodani Client</Allegiance>
+  </Allegiances>
+  <Routes>
+    <Route Start="1731" End="1827" Type="Core Route" />
+    <Route Start="1731" End="1934" Type="Core Route" />
+    <Route Start="1827" End="1924" Type="Core Route" />
+    <Route Start="1924" End="2323" Type="Core Route" />
+    <Route Start="1934" End="2137" Type="Core Route" />
+    <Route Start="2137" End="2240" Type="Core Route" />
+    <Route Start="2203" End="2340" EndOffsetY="-1" Type="Core Route" />
+    <Route Start="2203" End="2405" Type="Core Route" />
+    <Route Start="2212" End="2309" Type="Core Route" />
+    <Route Start="2212" End="2316" Type="Core Route" />
+    <Route Start="2240" End="2003" EndOffsetY="1" Type="Core Route" />
+    <Route Start="2309" End="2405" Type="Core Route" />
+    <Route Start="2316" End="2419" Type="Core Route" />
+    <Route Start="2323" End="2419" Type="Core Route" />
+  </Routes>
+</Sector>

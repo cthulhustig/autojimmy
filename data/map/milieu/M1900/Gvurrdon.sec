@@ -33,6 +33,7 @@
 
 # Alleg: Cs: "Client state, Third Imperium"
 # Alleg: NaHu: "Non-Aligned, Human-dominated"
+# Alleg: NaVa: "Non-Aligned, Vargr-dominated"
 # Alleg: Va: "Kusae Gnak"
 # Alleg: Vb: "Taeg Dzaegh (Reformed)"
 # Alleg: Vd: "Oevall Khollaz"
@@ -225,7 +226,7 @@ Hex  Name                   UWP       Remarks                 {Ix}   (Ex)    [Cx
 0727 Roegou Khaghoe         B554547-7 Ag Ni                   { 0 }  (A43+1) [453A] BC   - - 502 10 Va   K0 V M9 V     
 0728 Oredzaeng              A436740-D                         { 2 }  (869+2) [799F] B    - - 702 6  Va   K4 V M6 V     
 0729 Ghin Uerr              B8659CF-7 Ga Hi Pr                { 1 }  (48A+4) [CAA2] BcE  - - 121 10 Va   K3 V          
-0730 Kison                  E5A4744-6 Fl                      { -2 } (A66-1) [8556] B    - - 824 14 Vb   F7 V          
+0730 Kison                  E5A4744-6 Fl                      { -2 } (A66-1) [8556] B    - - 824 14 NaVa F7 V          
 0821 Gvurrdon               B756744-B Ag Ga                   { 3 }  (E68+4) [473B] BC   - - 203 9  Va   K4 V          
 0824 Aerrigha               C688631-3 Ag Ri Ni                { 0 }  (A55+1) [9643] BC   - - 924 13 Va   K4 V          
 0926 Daerrg                 D6367CG-7                         { -2 } (866+1) [9517] B    - - 523 13 Va   G4 V          

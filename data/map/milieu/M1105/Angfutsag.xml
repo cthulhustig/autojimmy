@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Angf">
+  <Name Lang="va">Angfutsag</Name>
+  <Name Lang="va">Gzerzarssou</Name>
+  <Name>Puragaaku</Name>
+  <Credits />
+  <X>3</X>
+  <Y>-4</Y>
+  <DataFile Author="John G. Wood" Source="Underdeveloped Sectors" Milieu="M1105" Ref="https://web.archive.org/web/20160205040546/http://homepage.ntlworld.com/elvwood/Traveller/Sectors/" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="--">Unknown</Allegiance>
+    <Allegiance Code="Va" Base="Va">Non-Aligned, Vargr-dominated</Allegiance>
+  </Allegiances>
+</Sector>

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Garadin</Name>
+  <Credits>
+      &lt;b&gt;Garadin&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>53</X>
+  <Y>25</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1625" Color="Gray" Size="large" Wrap="false">Ribbon Rift</Label>
+    <Label Hex="1835" Color="Gray" Wrap="false">Pender Void</Label>
+  </Labels>
+  <Regions>
+    <Region WrapLabel="true" Color="DarkViolet" LabelPosition="1116" Label="Garadin Irregularity">0814 0914 0915 1015 1115 1215 1216 1317 1417 1418 1519 1520 1419 1319 1318 1217 1216 1116 1016 1015 0915 0814</Region>
+  </Regions>
+</Sector>

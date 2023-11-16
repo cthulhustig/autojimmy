@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="Faraway DistantFringe">
+  <Name>Kalash</Name>
+  <Credits>
+      &lt;b&gt;Kalash&lt;/b&gt; sector was designed by Ade Stewart as part of Where The Stars End.
+
+      The data provided for the sector includes no social details: the region has been remotely surveyed, which has provided extensive physical information about the stars, features, and worlds that lie within it.
+    </Credits>
+  <X>58</X>
+  <Y>27</Y>
+  <DataFile Milieu="M1105" />
+  <Subsectors />
+  <Allegiances>
+    <Allegiance Code="Nx">Non-aligned, unclaimed</Allegiance>
+  </Allegiances>
+  <Labels>
+    <Label Hex="1806" Color="Gray" Wrap="false">Stiletto Void</Label>
+    <Label Hex="1219" Color="Gray" Wrap="false">Kalash Basin</Label>
+    <Label Hex="2514" Color="Gray" Size="large" Wrap="false">Empty Reach</Label>
+    <Label Hex="1227" Color="Gray" Wrap="false">Langeflach Rift</Label>
+    <Label Hex="2237" Color="Gray" Wrap="false">The Straights</Label>
+  </Labels>
+  <Regions>
+    <Region Color="Plum" LabelPosition="2221" Label="Laurent's Reef">2927 3026 3126 3225 3224 3223 3222 3322 3321 3320 3321 3322 3323 3324 3325 3326 3327 3328 3329 3330 3230 3131 3130 3129 3028 2928 2927</Region>
+    <Region Color="Plum" LabelPosition="3128" Label="Long Reef">1920 2019 2120 2219 2319 2320 2420 2421 2422 2323 2223 2124 2123 2122 2021 1921 1920</Region>
+  </Regions>
+</Sector>
