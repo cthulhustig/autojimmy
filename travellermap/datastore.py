@@ -466,7 +466,7 @@ class DataStore(object):
     # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
-    _MinDataFormatVersion = UniverseDataFormat(3, 0)
+    _MinDataFormatVersion = UniverseDataFormat(4, 0)
     _FileSystemCacheSize = 256 * 1024 * 1024 # 256MiB
 
     _SectorFormatExtensions = {
