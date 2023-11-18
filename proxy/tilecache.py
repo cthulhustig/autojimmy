@@ -14,7 +14,7 @@ _TileCacheFileExtension = '.dat'
 _CreateTileCacheTableQuery = \
 """
 CREATE TABLE IF NOT EXISTS tile_cache (
-    key TEXT PRIMARY KEY,
+    query TEXT PRIMARY KEY,
     mime TEXT,
     file TEXT,
     size INTEGER,
@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS tile_cache (
 """
 _AddToTileCacheQuery = \
 """
-INSERT INTO tile_cache(key, mime, file, size, overlap) VALUES (
+INSERT INTO tile_cache(query, mime, file, size, overlap) VALUES (
     "{0}", "{1}", "{2}", "{3}", "{4}");
 """
 _LoadTileCacheQuery = \
 """
-SELECT key, mime, file, size, overlap FROM tile_cache;
+SELECT query, mime, file, size, overlap FROM tile_cache;
 """
 # TODO: Implement clearing tile cache when custom sectors or snapshot change
 _ClearTileCacheQuery = \
@@ -40,20 +40,20 @@ class TileCache(object):
     class _DbEntry(object):
         def __init__(
                 self,
-                key: str,
+                tileQuery: str,
                 mapFormat: travellermap.MapFormat,
                 fileName: str,
                 fileSize: int,
                 overlapType: proxy.Compositor.OverlapType
                 ) -> None:
-            self._key = key
+            self._tileQuery = tileQuery
             self._mapFormat = mapFormat
             self._fileName = fileName
             self._fileSize = fileSize
             self._overlapType = overlapType
 
-        def key(self) -> str:
-            return self._key
+        def tileQuery(self) -> str:
+            return self._tileQuery
         
         def mapFormat(self) -> str:
             return self._mapFormat
@@ -91,19 +91,19 @@ class TileCache(object):
         logging.debug('Loading tile cache table contents')
         async with self._database.execute(_LoadTileCacheQuery) as cursor:
             results = await cursor.fetchall()
-            for key, mimeType, fileName, fileSize, overlapType in results:
+            for tileQuery, mimeType, fileName, fileSize, overlapType in results:
                 mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
                 if not mapFormat:
-                    logging.warning(f'Skipping tile cache entry for {key} (Unsupported mime type {mimeType})')
+                    logging.warning(f'Skipping tile cache entry for {tileQuery} (Unsupported mime type {mimeType})')
                     continue
 
                 if overlapType not in proxy.Compositor.OverlapType.__members__:
-                    logging.warning(f'Skipping tile cache entry for {key} (Unknown overlap type {overlapType})')
+                    logging.warning(f'Skipping tile cache entry for {tileQuery} (Unknown overlap type {overlapType})')
                     continue
                 overlapType = proxy.Compositor.OverlapType.__members__[overlapType]
 
-                self._dbCache[key] = TileCache._DbEntry(
-                    key=key,
+                self._dbCache[tileQuery] = TileCache._DbEntry(
+                    tileQuery=tileQuery,
                     mapFormat=mapFormat,
                     fileName=fileName,
                     fileSize=fileSize,
@@ -111,22 +111,22 @@ class TileCache(object):
 
     async def addAsync(
             self,
-            key: str, # TODO: Should I hash this?
-            image: travellermap.MapImage,
+            tileQuery: str,
+            tileImage: travellermap.MapImage,
             overlapType: proxy.Compositor.OverlapType,
             cacheToDisk: bool = True
             ) -> None:
-        if key in self._memCache:
+        if tileQuery in self._memCache:
             # The tile is already cached so nothing to do
             return
 
-        size = image.size()
+        size = tileImage.size()
 
         startingBytes = self._currentMemBytes
         evictionCount = 0
         while self._memCache and ((self._currentMemBytes + size) > self._maxBytes):
             # The item at the start of the cache is the one that was used longest ago
-            oldKey, oldData = self._memCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
+            _, oldData = self._memCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
             evictionCount += 1
             self._currentMemBytes -= len(oldData)
             assert(self._currentMemBytes > 0)
@@ -137,26 +137,26 @@ class TileCache(object):
 
         # Add the image to the cache, this will automatically add it at the end of the cache
         # to indicate it's the most recently used
-        self._memCache[key] = image
+        self._memCache[tileQuery] = tileImage
         self._currentMemBytes += size
 
-        if cacheToDisk and (key not in self._dbPendingAdds):
+        if cacheToDisk and (tileQuery not in self._dbPendingAdds):
             # Writing to the disk cache is fire and forget
-            self._dbPendingAdds.add(key)
+            self._dbPendingAdds.add(tileQuery)
             asyncio.ensure_future(self._updateDiskCacheAsync(
-                key=key, image=image,
+                key=tileQuery, image=tileImage,
                 overlapType=overlapType))
 
-    async def lookupAsync(self, key: str) -> typing.Optional[travellermap.MapImage]:
+    async def lookupAsync(self, tileQuery: str) -> typing.Optional[travellermap.MapImage]:
         # Check the memory cache first
-        data = self._memCache.get(key)
+        data = self._memCache.get(tileQuery)
         if data:
             # Move most recently used item to end of cache so it will be evicted last
-            self._memCache.move_to_end(key, last=True)
+            self._memCache.move_to_end(tileQuery, last=True)
             return data
         
         # Not in memory so check the database cache
-        dbEntry = self._dbCache.get(key)
+        dbEntry = self._dbCache.get(tileQuery)
         if dbEntry == None:
             return None # Tile isn't in database cache
         
@@ -172,8 +172,8 @@ class TileCache(object):
         # required to make space. It's important to specify that it shouldn't
         # be added to the disk cache as we know it's already there
         await self.addAsync(
-            key=key,
-            image=image,
+            tileQuery=tileQuery,
+            tileImage=image,
             cacheToDisk=False)
         return image
     
@@ -191,7 +191,7 @@ class TileCache(object):
             overlapType: proxy.Compositor.OverlapType,
             ) -> None:
         dbEntry = TileCache._DbEntry(
-            key=key,
+            tileQuery=key,
             mapFormat=image.format(),
             fileName=str(uuid.uuid4()) + _TileCacheFileExtension,
             fileSize=image.size(),
@@ -206,7 +206,7 @@ class TileCache(object):
             # Only update the database once the file has successfully been written
             # to disk
             query = _AddToTileCacheQuery.format(
-                dbEntry.key(),
+                dbEntry.tileQuery(),
                 mimeType,
                 dbEntry.fileName(),
                 dbEntry.fileSize(),
@@ -222,7 +222,7 @@ class TileCache(object):
             # important as they're not async so are effectively atomic from the
             # point of view of other async tasks.
             self._dbCache[key] = dbEntry
-            self._dbPendingAdds.remove(dbEntry.key())
+            self._dbPendingAdds.remove(dbEntry.tileQuery())
         except Exception as ex:
             print('EX ' + str(ex)) # TODO: Do something, should log here rather than letting the async loop log it
 

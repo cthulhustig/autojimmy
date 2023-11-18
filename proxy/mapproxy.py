@@ -178,26 +178,26 @@ class _HttpRequestHandler(object):
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
+        tileImage = None
         try:
-            cacheKey = self._generateCacheKey(request)
-            tileImage = await self._tileCache.lookupAsync(key=cacheKey)
+            tileImage = await self._tileCache.lookupAsync(tileQuery=request.query_string)
         except Exception as ex:
             # Log this at a low level as it could happen a LOT if something goes wrong
             # TODO: This should be logging at debug as it could get very spammy
             logging.info(
-                f'Error occurred when looking up tile {request.query} in tile cache',
+                f'Error occurred when looking up tile {request.query_string} in tile cache',
                 exc_info=ex)
             # Continue so tile is still generated
 
         shouldCacheTile = True
         overlapType = None
         if tileImage:
-            logging.debug(f'Serving cached response for tile {request.query}')
+            logging.debug(f'Serving cached response for tile {request.query_string}')
             tileBytes = tileImage.bytes()
             contentType = travellermap.mapFormatToMimeType(tileImage.format())
             shouldCacheTile = False # Already in the cache so no need to add
         else:
-            logging.debug(f'Creating tile for {request.query}')
+            logging.debug(f'Creating tile for {request.query_string}')
 
             tileX = float(request.query['x'])
             tileY = float(request.query['y'])
@@ -292,13 +292,13 @@ class _HttpRequestHandler(object):
                     logging.info('Failed to composite tile', exc_info=ex)
                     shouldCacheTile = False # Don't cache tiles if they failed to generate
             else:
-                logging.debug(f'Serving live response for tile {request.query}')
+                logging.debug(f'Serving live response for tile {request.query_string}')
 
             if not tileBytes:
                 # If we get to here with no tile bytes it means something wen't wrong performing a simple
                 # copy. In this situation the only real option is to request the tile from Traveller Map and
                 # return that
-                logging.debug(f'Requesting fallback tile for {request.query}')
+                logging.debug(f'Requesting fallback tile for {request.query_string}')
                 tileBytes, contentType, targetFormat = await self._makeTileRequestAsync(request)
                 shouldCacheTile = False # Don't cache tile when using a fallback tile
                 if not tileBytes:
@@ -313,8 +313,8 @@ class _HttpRequestHandler(object):
                     bytes=tileBytes,
                     format=targetFormat)
                 await self._tileCache.addAsync(
-                    key=cacheKey,
-                    image=tileImage,
+                    tileQuery=request.query_string,
+                    tileImage=tileImage,
                     overlapType=overlapType)
 
             # Enable this to add a red boundary to all tiles in order to highlight where they are
@@ -416,13 +416,13 @@ class _HttpRequestHandler(object):
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
         status, reason, headers, body = await self._makeProxyRequestAsync(request)
         if status != 200:
-            raise RuntimeError(f'Request for tile {request.query} filed (status: {status}, reason: {reason})')
+            raise RuntimeError(f'Request for tile {request.query_string} filed (status: {status}, reason: {reason})')
 
         contentType = headers.get('Content-Type')
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
         if not tileFormat:
             # Log this at debug as it could happen a lot if something goes wrong
-            logging.debug(f'Request for tile {request.query} returned unexpected Content-Type {contentType}')
+            logging.debug(f'Request for tile {request.query_string} returned unexpected Content-Type {contentType}')
 
         return body, contentType, tileFormat
 
@@ -453,20 +453,6 @@ class _HttpRequestHandler(object):
             if response.content_type:
                 headers['Content-Type'] = response.content_type
             return (response.status, response.reason, headers, body)
-
-    # The key used for the tile cache is based on the request options. Rather than just use the raw
-    # request string, a new string is generated with the parameters arranged in alphabetic order.
-    # This is done so that the order the options are specified in the URL don't mater when it comes
-    # to checking for a cache hit.
-    @staticmethod
-    def _generateCacheKey(request: aiohttp.web.Request) -> str:
-        options = []
-        for key in request.query:
-            values=request.query.getall(key)
-            for value in values:
-                options.append(key + '=' + value)
-        options.sort()
-        return request.path + '&'.join(options)
     
 # TODO: I don't think this is working for errors due to internal exceptions
 @aiohttp.web.middleware
