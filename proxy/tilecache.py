@@ -172,8 +172,9 @@ class TileCache(object):
         # required to make space. It's important to specify that it shouldn't
         # be added to the disk cache as we know it's already there
         await self.addAsync(
-            tileQuery=tileQuery,
+            tileQuery=dbEntry.tileQuery(),
             tileImage=image,
+            overlapType=dbEntry.overlapType(),
             cacheToDisk=False)
         return image
     
