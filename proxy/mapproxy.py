@@ -169,7 +169,7 @@ class _TileCache(object):
         self._dbCache: typing.Dict[str, _TileCache._DbEntry] = {}
         self._dbPendingAdds: typing.Set[str] = set() # Set of keys of entries waiting to written to the DB
 
-    async def initialiseAsync(self) -> None:
+    async def initAsync(self) -> None:
         async with self._database.execute(_LoadTileCacheQuery) as cursor:
             results = await cursor.fetchall()
             for key, mimeType, fileName, fileSize in results:
@@ -376,13 +376,23 @@ class _HttpRequestHandler(object):
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
-        cacheKey = self._generateCacheKey(request)
-        tileImage = await self._tileCache.lookupAsync(key=cacheKey)
+        try:
+            cacheKey = self._generateCacheKey(request)
+            tileImage = await self._tileCache.lookupAsync(key=cacheKey)
+        except Exception as ex:
+            # Log this at a low level as it could happen a LOT if something goes wrong
+            # TODO: This should be logging at debug as it could get very spammy
+            logging.info(
+                f'Error occurred when looking up tile {request.query} in tile cache',
+                exc_info=ex)
+            # Continue so tile is still generated
 
+        shouldCacheTile = True
         if tileImage:
             logging.debug(f'Serving cached response for tile {request.query}')
             tileBytes = tileImage.bytes()
             contentType = travellermap.mapFormatToMimeType(tileImage.format())
+            shouldCacheTile = False # Already in the cache so no need to add
         else:
             logging.debug(f'Creating tile for {request.query}')
 
@@ -477,11 +487,33 @@ class _HttpRequestHandler(object):
                     # Log this at a low level as it could happen a LOT if something goes wrong
                     # TODO: This should be logging at debug as it could get very spammy
                     logging.info('Failed to composite tile', exc_info=ex)
+                    shouldCacheTile = False # Don't cache tiles if they failed to generate
             else:
                 logging.debug(f'Serving live response for tile {request.query}')
 
+            if not tileBytes:
+                # If we get to here with no tile bytes it means something wen't wrong performing a simple
+                # copy. In this situation the only real option is to request the tile from Traveller Map and
+                # return that
+                logging.debug(f'Requesting fallback tile for {request.query}')
+                tileBytes, contentType, targetFormat = await self._makeTileRequestAsync(request)
+                shouldCacheTile = False # Don't cache tile when using a fallback tile
+                if not tileBytes:
+                    # We're having a bad day, something also wen't wrong getting the tile from Traveller
+                    # Map. Not much to do apart from bail
+                    raise RuntimeError('Proxied tile request returned no data')
+
+            # Add the tile to the cache. Depending on the logic above this could either be a tile
+            # as-is from Traveller Map or a composite tile
+            if tileBytes and targetFormat and shouldCacheTile:
+                tileImage = travellermap.MapImage(
+                    bytes=tileBytes,
+                    format=targetFormat)
+                await self._tileCache.addAsync(key=cacheKey, image=tileImage)
+
             # Enable this to add a red boundary to all tiles in order to highlight where they are
-            # TODO: When I add disk caching this overlay shouldn't be included in the image that is cached
+            # NOTE: This code should always be after tiles are added to the cache as we don't want
+            # to write tiles with the border to the disk cache
             """
             if targetFormat:
                 colour = 'red'
@@ -495,26 +527,7 @@ class _HttpRequestHandler(object):
                     image.save(tileBytes, format=targetFormat.value)
                     tileBytes.seek(0)
                     tileBytes = tileBytes.read()
-            """
-
-            if not tileBytes:
-                # If we get to here with no tile bytes it means something wen't wrong performing a simple
-                # copy. In this situation the only real option is to request the tile from Traveller Map and
-                # return that
-                logging.debug(f'Requesting fallback tile for {request.query}')
-                tileBytes, contentType, targetFormat = await self._makeTileRequestAsync(request)
-                if not tileBytes:
-                    # We're having a bad day, something also wen't wrong getting the tile from Traveller
-                    # Map. Not much to do apart from bail
-                    raise RuntimeError('Proxied tile request returned no data')
-
-            # Add the tile to the cache. Depending on the logic above this could either be a tile
-            # as-is from Traveller Map or a composite tile
-            if tileBytes and targetFormat:
-                tileImage = travellermap.MapImage(
-                    bytes=tileBytes,
-                    format=targetFormat)
-                await self._tileCache.addAsync(key=cacheKey, image=tileImage)
+            """                
 
         headers = {
             'Content-Length': str(len(tileBytes) if tileBytes else 0),
@@ -833,7 +846,7 @@ class MapProxy(object):
                     database=dbConnection,
                     cacheDir=tileCacheDir,
                     maxBytes=_MaxTileCacheBytes)
-                loop.run_until_complete(tileCache.initialiseAsync())
+                loop.run_until_complete(tileCache.initAsync())
 
                 # Start web server
                 requestHandler = _HttpRequestHandler(
