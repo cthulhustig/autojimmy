@@ -132,7 +132,7 @@ class _HttpRequestHandler(object):
 
         self._session = aiohttp.ClientSession(connector=self._connector)
 
-    async def shutdown(self) -> None:
+    async def shutdownAsync(self) -> None:
         if self._session:
             await self._session.close()
 
@@ -662,6 +662,7 @@ class MapProxy(object):
                     shutdownEvent=shutdownEvent,
                     webApp=webApp,
                     requestHandler=requestHandler,
+                    tileCache=tileCache,
                     dbConnection=dbConnection))
 
                 messageQueue.put((MapProxy.ServerStatus.Stopped, None))
@@ -701,6 +702,7 @@ class MapProxy(object):
             shutdownEvent: multiprocessing.Event,
             webApp: aiohttp.web.Application,
             requestHandler: _HttpRequestHandler,
+            tileCache: proxy.TileCache,
             dbConnection: aiosqlite.Connection
             ) -> None:
         while True:
@@ -711,8 +713,9 @@ class MapProxy(object):
                 # the async session used for outgoing connections
                 logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
 
-                await requestHandler.shutdown()
+                await requestHandler.shutdownAsync()
                 await webApp.shutdown()
                 await webApp.cleanup()
+                await tileCache.shutdownAsync()
                 await dbConnection.close()
                 return

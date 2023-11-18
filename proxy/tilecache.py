@@ -80,6 +80,7 @@ class TileCache(object):
         self._currentMemBytes = 0
         self._dbCache: typing.Dict[str, TileCache._DbEntry] = {}
         self._dbPendingAdds: typing.Set[str] = set() # Set of keys of entries waiting to written to the DB
+        self._shutdown = False
 
     async def initAsync(self) -> None:
         # Creating the table will be a no-op if it already exists
@@ -108,6 +109,9 @@ class TileCache(object):
                     fileName=fileName,
                     fileSize=fileSize,
                     overlapType=overlapType)
+                
+    async def shutdownAsync(self) -> None:
+        self._shutdown = True
 
     async def addAsync(
             self,
@@ -144,7 +148,8 @@ class TileCache(object):
             # Writing to the disk cache is fire and forget
             self._dbPendingAdds.add(tileQuery)
             asyncio.ensure_future(self._updateDiskCacheAsync(
-                key=tileQuery, image=tileImage,
+                tileQuery=tileQuery,
+                tileImage=tileImage,
                 overlapType=overlapType))
 
     async def lookupAsync(self, tileQuery: str) -> typing.Optional[travellermap.MapImage]:
@@ -165,7 +170,6 @@ class TileCache(object):
         async with aiofiles.open(cacheFilePath, 'rb') as file:
             data = await file.read()
 
-        # TODO: Handle unknown mime type
         image = travellermap.MapImage(bytes=data, format=dbEntry.mapFormat())
 
         # Add the cached file to the memory cache, removing other items if
@@ -187,33 +191,34 @@ class TileCache(object):
     # images of the same tile)
     async def _updateDiskCacheAsync(
             self,
-            key: str, # TODO: Should I hash this?
-            image: travellermap.MapImage,
+            tileQuery: str,
+            tileImage: travellermap.MapImage,
             overlapType: proxy.Compositor.OverlapType,
             ) -> None:
-        dbEntry = TileCache._DbEntry(
-            tileQuery=key,
-            mapFormat=image.format(),
-            fileName=str(uuid.uuid4()) + _TileCacheFileExtension,
-            fileSize=image.size(),
-            overlapType=overlapType)
-        mimeType = travellermap.mapFormatToMimeType(format=image.format())
-        filePath = os.path.join(self._cacheDir, dbEntry.fileName())
-
         try:
-            async with aiofiles.open(filePath, 'wb') as file:
-                await file.write(image.bytes())
-        
-            # Only update the database once the file has successfully been written
-            # to disk
+            dbEntry = TileCache._DbEntry(
+                tileQuery=tileQuery,
+                mapFormat=tileImage.format(),
+                fileName=str(uuid.uuid4()) + _TileCacheFileExtension,
+                fileSize=tileImage.size(),
+                overlapType=overlapType)
+            mimeType = travellermap.mapFormatToMimeType(format=tileImage.format())
+            filePath = os.path.join(self._cacheDir, dbEntry.fileName())
             query = _AddToTileCacheQuery.format(
                 dbEntry.tileQuery(),
                 mimeType,
                 dbEntry.fileName(),
                 dbEntry.fileSize(),
                 str(overlapType.name))
+
+            # Write the tile image to disk
+            async with aiofiles.open(filePath, 'wb') as file:
+                await file.write(tileImage.bytes())
+        
+            # Only update the database once the file has successfully been written
+            # to disk
             async with self._database.executescript(query) as cursor:
-                pass # TODO: Do something?????
+                pass
 
             # It's important that the entry is added to the database cache and
             # removed from the pending list AFTER the file has been written to
@@ -222,9 +227,16 @@ class TileCache(object):
             # entry is added to the cache and removed from the pending list isn't
             # important as they're not async so are effectively atomic from the
             # point of view of other async tasks.
-            self._dbCache[key] = dbEntry
+            self._dbCache[tileQuery] = dbEntry
             self._dbPendingAdds.remove(dbEntry.tileQuery())
         except Exception as ex:
-            print('EX ' + str(ex)) # TODO: Do something, should log here rather than letting the async loop log it
+            if self._shutdown:
+                return # Don't log anything after the tile cache has been shut down
+            
+            # Log the exception here rather than letting it be caught and logged by
+            # the async loop running the fire and forget function.
+            logging.error(
+                f'An error occurred while adding tile {tileQuery} to the tile cache',
+                exc_info=ex)
 
             
