@@ -1,10 +1,7 @@
-import aiofiles
 import aiohttp.web
 import aiosqlite
 import asyncio
 import app
-import collections
-import datetime
 import enum
 import io
 import logging
@@ -18,7 +15,6 @@ import travellermap
 import urllib.error
 import urllib.parse
 import urllib.request
-import uuid
 import threading
 import typing
 
@@ -32,7 +28,6 @@ _ExtensionToContentTypeMap = {
 
 _DatabaseFileName = 'map_proxy.db'
 _TileCacheDirName = 'tile_cache'
-_TileCacheFileExtension = '.dat'
 
 _DatabaseSchemaVersion = 1
 _DatabaseCacheKiB = 51200 # 50MiB
@@ -45,30 +40,6 @@ f"""
 PRAGMA synchronous = NORMAL;
 PRAGMA journal_mode = WAL;
 PRAGMA cache_size = -{_DatabaseCacheKiB};
-"""
-
-# TODO: I think sqlite auto commits by default so the commits in these queries are probably redundant
-_CreateTileCacheTableQuery = \
-"""
-CREATE TABLE IF NOT EXISTS tile_cache (
-    key TEXT PRIMARY KEY,
-    type TEXT,
-    file TEXT,
-    size INTEGER,
-    timestamp DATETIME DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')));
-"""
-_AddToTileCacheQuery = \
-"""
-INSERT INTO tile_cache(key, type, file, size) VALUES ("{0}", "{1}", "{2}", "{3}");
-"""
-_LoadTileCacheQuery = \
-"""
-SELECT key, type, file, size FROM tile_cache;
-"""
-# TODO: Implement clearing tile cache when custom sectors or snapshot change
-_ClearTileCacheQuery = \
-"""
-DELETE FROM tile_cache;
 """
 
 # This is an extremely crude in memory cache of all the locally served files. It assumes
@@ -129,175 +100,6 @@ class _LocalFileStore(object):
             ) -> typing.Tuple[typing.Optional[typing.Union[bytes, str]], typing.Optional[str]]: # File Data, Mime Type
         return self._cache.get(filePath, (None, None))
 
-class _TileCache(object):
-    class _DbEntry(object):
-        def __init__(
-                self,
-                key: str,
-                mapFormat: travellermap.MapFormat,
-                fileName: str,
-                fileSize: int
-                ) -> None:
-            self._key = key
-            self._mapFormat = mapFormat
-            self._fileName = fileName
-            self._fileSize = fileSize
-
-        def key(self) -> str:
-            return self._key
-        
-        def mapFormat(self) -> str:
-            return self._mapFormat
-        
-        def fileName(self) -> str:
-            return self._fileName
-        
-        def fileSize(self) -> str:
-            return self._fileSize
-
-    def __init__(
-            self,
-            database: aiosqlite.Connection,
-            cacheDir: str,
-            maxBytes: typing.Optional[int] # None means no max
-            ) -> None:
-        self._database = database
-        self._cacheDir = cacheDir
-        self._maxBytes = maxBytes
-        self._memCache: typing.OrderedDict[str, travellermap.MapImage] = collections.OrderedDict()
-        self._currentMemBytes = 0
-        self._dbCache: typing.Dict[str, _TileCache._DbEntry] = {}
-        self._dbPendingAdds: typing.Set[str] = set() # Set of keys of entries waiting to written to the DB
-
-    async def initAsync(self) -> None:
-        async with self._database.execute(_LoadTileCacheQuery) as cursor:
-            results = await cursor.fetchall()
-            for key, mimeType, fileName, fileSize in results:
-                mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
-                if not mapFormat:
-                    continue # TODO: Log something????
-
-                self._dbCache[key] = _TileCache._DbEntry(
-                    key=key,
-                    mapFormat=mapFormat,
-                    fileName=fileName,
-                    fileSize=fileSize)
-
-    async def addAsync(
-            self,
-            key: str, # TODO: Should I hash this?
-            image: travellermap.MapImage,
-            cacheToDisk: bool = True
-            ) -> None:
-        if key in self._memCache:
-            # The tile is already cached so nothing to do
-            return
-
-        size = image.size()
-
-        startingBytes = self._currentMemBytes
-        evictionCount = 0
-        while self._memCache and ((self._currentMemBytes + size) > self._maxBytes):
-            # The item at the start of the cache is the one that was used longest ago
-            oldKey, oldData = self._memCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
-            evictionCount += 1
-            self._currentMemBytes -= len(oldData)
-            assert(self._currentMemBytes > 0)
-
-        if evictionCount:
-            evictionBytes = startingBytes - self._currentMemBytes
-            logging.debug(f'Tile cache evicted {evictionCount} tiles for {evictionBytes} bytes')
-
-        # Add the image to the cache, this will automatically add it at the end of the cache
-        # to indicate it's the most recently used
-        self._memCache[key] = image
-        self._currentMemBytes += size
-
-        if cacheToDisk and (key not in self._dbPendingAdds):
-            # Writing to the disk cache is fire and forget
-            self._dbPendingAdds.add(key)
-            asyncio.ensure_future(self._updateDiskCacheAsync(key=key, image=image))
-
-    async def lookupAsync(self, key: str) -> typing.Optional[travellermap.MapImage]:
-        # Check the memory cache first
-        data = self._memCache.get(key)
-        if data:
-            # Move most recently used item to end of cache so it will be evicted last
-            self._memCache.move_to_end(key, last=True)
-            return data
-        
-        # Not in memory so check the database cache
-        dbEntry = self._dbCache.get(key)
-        if dbEntry == None:
-            return None # Tile isn't in database cache
-        
-        # Load cached file from disk
-        cacheFilePath = os.path.join(self._cacheDir, dbEntry.fileName())
-        async with aiofiles.open(cacheFilePath, 'rb') as file:
-            data = await file.read()
-
-        # TODO: Handle unknown mime type
-        image = travellermap.MapImage(bytes=data, format=dbEntry.mapFormat())
-
-        # Add the cached file to the memory cache, removing other items if
-        # required to make space. It's important to specify that it shouldn't
-        # be added to the disk cache as we know it's already there
-        await self.addAsync(
-            key=key,
-            image=image,
-            cacheToDisk=False)
-        return image
-    
-    # NOTE: This function is intended to be fire and forget so whatever async
-    # stream of execution adds something to the cache isn't blocked waiting
-    # for the file to be written and database updated. It should be noted that
-    # doing this (at least theoretically) introduces the possibility that two
-    # independent requests for the same tile may cause this function to be called
-    # in parallel for the same key but mapping to different images objects (but
-    # images of the same tile)
-    async def _updateDiskCacheAsync(
-            self,
-            key: str, # TODO: Should I hash this?
-            image: travellermap.MapImage,
-            ) -> None:
-        # TODO: An error updating the disk cache shouldn't prevent the generated tile being returned to the client
-        # TODO: Returning the response shouldn't be blocked waiting for stuff to be written to disk
-        dbEntry = _TileCache._DbEntry(
-            key=key,
-            mapFormat=image.format(),
-            fileName=str(uuid.uuid4()) + _TileCacheFileExtension,
-            fileSize=image.size())
-        mimeType = travellermap.mapFormatToMimeType(format=image.format())
-        filePath = os.path.join(self._cacheDir, dbEntry.fileName())
-
-        try:
-            async with aiofiles.open(filePath, 'wb') as file:
-                await file.write(image.bytes())
-        
-            # Only update the database once the file has successfully been written
-            # to disk
-            query = _AddToTileCacheQuery.format(
-                dbEntry.key(),
-                mimeType,
-                dbEntry.fileName(),
-                dbEntry.fileSize())
-            async with self._database.executescript(query) as cursor:
-                pass # TODO: Do something?????
-
-            # It's important that the entry is added to the database cache and
-            # removed from the pending list AFTER the file has been written to
-            # disk and the database has been updated. It's only at this point
-            # is it safe for something to use the cached entry. The order the
-            # entry is added to the cache and removed from the pending list isn't
-            # important as they're not async so are effectively atomic from the
-            # point of view of other async tasks.
-            self._dbCache[key] = dbEntry
-            self._dbPendingAdds.remove(dbEntry.key())
-        except Exception as ex:
-            print('EX ' + str(ex)) # TODO: Do something, should log here rather than letting the async loop log it
-
-            
-
 class _HttpRequestHandler(object):
     # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15 seconds.
     # I'm overriding this to make navigation of the map more responsive
@@ -307,7 +109,7 @@ class _HttpRequestHandler(object):
             self,
             travellerMapUrl: str,
             localFileStore: _LocalFileStore,
-            tileCache: _TileCache,
+            tileCache: proxy.TileCache,
             compositor: typing.Optional[proxy.Compositor],
             mainsMilieu: typing.Optional[travellermap.Milieu]
             ) -> None:
@@ -388,6 +190,7 @@ class _HttpRequestHandler(object):
             # Continue so tile is still generated
 
         shouldCacheTile = True
+        overlapType = None
         if tileImage:
             logging.debug(f'Serving cached response for tile {request.query}')
             tileBytes = tileImage.bytes()
@@ -505,11 +308,14 @@ class _HttpRequestHandler(object):
 
             # Add the tile to the cache. Depending on the logic above this could either be a tile
             # as-is from Traveller Map or a composite tile
-            if tileBytes and targetFormat and shouldCacheTile:
+            if shouldCacheTile and tileBytes and targetFormat and overlapType:
                 tileImage = travellermap.MapImage(
                     bytes=tileBytes,
                     format=targetFormat)
-                await self._tileCache.addAsync(key=cacheKey, image=tileImage)
+                await self._tileCache.addAsync(
+                    key=cacheKey,
+                    image=tileImage,
+                    overlapType=overlapType)
 
             # Enable this to add a red boundary to all tiles in order to highlight where they are
             # NOTE: This code should always be after tiles are added to the cache as we don't want
@@ -842,7 +648,7 @@ class MapProxy(object):
                 tileCacheDir = os.path.join(appDir, _TileCacheDirName)
                 os.makedirs(tileCacheDir, exist_ok=True)
                     
-                tileCache = _TileCache(
+                tileCache = proxy.TileCache(
                     database=dbConnection,
                     cacheDir=tileCacheDir,
                     maxBytes=_MaxTileCacheBytes)
@@ -891,9 +697,6 @@ class MapProxy(object):
             if schemaVersion < _DatabaseSchemaVersion:
                 async with connection.executescript(_ConfigureDatabaseQuery)as cursor:
                     logging.debug('Configured map proxy database')
-
-                async with connection.executescript(_CreateTileCacheTableQuery) as cursor:
-                    logging.debug('Created tile cache table')
 
                 async with connection.executescript(_SetSchemaVersionQuery) as cursor:
                     logging.info('Completed initialisation of map proxy database')
