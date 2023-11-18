@@ -397,11 +397,11 @@ def main() -> None:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
 
-        appDirectory = _applicationDirectory()
-        os.makedirs(appDirectory, exist_ok=True)
+        appDir = _applicationDirectory()
+        os.makedirs(appDir, exist_ok=True)
 
-        logDirectory = os.path.join(appDirectory, 'logs')
-        cacheDirectory = os.path.join(appDirectory, 'cache')
+        logDirectory = os.path.join(appDir, 'logs')
+        cacheDirectory = os.path.join(appDir, 'cache')
 
         app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
         # Log version before setting log level as it should always be logged
@@ -414,7 +414,7 @@ def main() -> None:
 
         app.Config.setDirs(
             installDir=installDir,
-            appDir=appDirectory)
+            appDir=appDir)
 
         # Set configured log level immediately after configuration has been setup
         logLevel = app.Config.instance().logLevel()
@@ -423,18 +423,18 @@ def main() -> None:
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        installMapDir = os.path.join(installDir, 'data', 'map')
-        overlayMapDir = os.path.join(appDirectory, 'map')
-        customMapDir = os.path.join(appDirectory, 'custom_map')
+        installMapsDir = os.path.join(installDir, 'data', 'map')
+        overlayMapsDir = os.path.join(appDir, 'map')
+        customMapsDir = os.path.join(appDir, 'custom_map')
         travellermap.DataStore.setSectorDirs(
-            installDir=installMapDir,
-            overlayDir=overlayMapDir,
-            customDir=customMapDir)
+            installDir=installMapsDir,
+            overlayDir=overlayMapsDir,
+            customDir=customMapsDir)
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
-            userWeaponDir=os.path.join(appDirectory, 'weapons'),
+            userWeaponDir=os.path.join(appDir, 'weapons'),
             exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         gui.configureAppStyle(application)
@@ -460,10 +460,8 @@ def main() -> None:
             proxy.MapProxy.configure(
                 listenPort=mapProxyPort,
                 travellerMapUrl=travellerMapUrl,
-                localFilesDir=os.path.join(installDir, 'data', 'web'),
-                installMapsDir=installMapDir,
-                overlayMapsDir=overlayMapDir,
-                customMapsDir=customMapDir,
+                installDir=installDir,
+                appDir=appDir,
                 mainsMilieu=app.Config.instance().milieu(),
                 logDir=logDirectory,
                 logLevel=logLevel)

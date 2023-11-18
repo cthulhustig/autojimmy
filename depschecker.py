@@ -16,6 +16,7 @@ _Requirements = [
     'reportlab',
     'PIL',
     'aiohttp',
+    'aiosqlite',
     'qasync',
     'xmlschema',
     'cairosvg',
