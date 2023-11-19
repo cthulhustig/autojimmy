@@ -26,6 +26,7 @@ _ExtensionToContentTypeMap = {
     '.css': 'text/css'
 }
 
+# TODO: If I go with having tiles stored in the db then it's probably better to make the database specific to tiles
 _DatabaseFileName = 'map_proxy.db'
 _TileCacheDirName = 'tile_cache'
 
@@ -629,12 +630,8 @@ class MapProxy(object):
                 # TODO: Would probably be better if you could disable caching of files when setting up the data store
                 travellermap.DataStore.instance().clearCachedData()
 
-                tileCacheDir = os.path.join(appDir, _TileCacheDirName)
-                os.makedirs(tileCacheDir, exist_ok=True)
-                    
                 tileCache = proxy.TileCache(
                     database=dbConnection,
-                    cacheDir=tileCacheDir,
                     maxBytes=_MaxTileCacheBytes)
                 loop.run_until_complete(tileCache.initAsync())
 
