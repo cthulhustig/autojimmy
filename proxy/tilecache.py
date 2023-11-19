@@ -80,12 +80,11 @@ class TileCache(object):
         def markUsed(self) -> None:
             self._usedTimestamp = common.utcnow()
 
+    _MaxDbCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
+    _MinDbCacheReapBytes = 10 * 1024 * 1024 # 10MiB
+    _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
+    _DbTimestampFormat = '%Y-%m-%d %H:%M:%f'
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
-    _MaxDiskCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
-    _MinDiskCacheReapBytes = 10 * 1024 * 1024 # 10MiB
-    _MaxDiskCacheExpiryAge = datetime.timedelta(days=30)
-    _TimestampFormat = '%Y-%m-%d %H:%M:%f'
-    _TileCacheFileExtension = '.dat'    
 
     def __init__(
             self,
@@ -394,7 +393,7 @@ class TileCache(object):
             self,
             requiredBytes: int
             ) -> None:
-        requiredBytes = min(requiredBytes, self._MinDiskCacheReapBytes)
+        requiredBytes = min(requiredBytes, self._MinDbCacheReapBytes)
         # TODO: Should probably log at debug
         logging.info(
             f'Purging tile disk cache entries to free {requiredBytes} bytes')
@@ -416,7 +415,7 @@ class TileCache(object):
         # TODO: Finish me
 
     async def _purgeByAgeAsync(self) -> None:
-        expiryTime = common.utcnow() - TileCache._MaxDiskCacheExpiryAge
+        expiryTime = common.utcnow() - TileCache._MaxDbCacheExpiryAge
         logging.debug(
             f'Purging tile disk cache entries up to {expiryTime}')
         
@@ -494,11 +493,11 @@ class TileCache(object):
     def _stringToTimestamp(string: str) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             string,
-            TileCache._TimestampFormat)
+            TileCache._DbTimestampFormat)
         return datetime.datetime.fromtimestamp(
             timestamp.timestamp(),
             tz=datetime.timezone.utc)
     
     @staticmethod
     def _timestampToString(timestamp: datetime.datetime) -> str:
-        return timestamp.strftime(TileCache._TimestampFormat)
+        return timestamp.strftime(TileCache._DbTimestampFormat)
