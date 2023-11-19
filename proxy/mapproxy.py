@@ -250,26 +250,18 @@ class _HttpRequestHandler(object):
                 contentType = travellermap.mapFormatToMimeType(targetFormat)
 
             if targetFormat and (overlapType != proxy.Compositor.OverlapType.NoOverlap):
+                tileImage = None
                 try:
                     if overlapType == proxy.Compositor.OverlapType.PartialOverlap:
                         tileImage = PIL.Image.open(io.BytesIO(tileBytes))
-
-                        try:
-                            await self._compositor.partialOverlapAsync(
-                                tileImage=tileImage,
-                                tileX=tileX,
-                                tileY=tileY,
-                                tileWidth=tileWidth,
-                                tileHeight=tileHeight,
-                                tileScale=tileScale,
-                                milieu=milieu)
-                            
-                            newBytes = io.BytesIO() # New variable to prevent loss of bytes if save, seek or read throws
-                            tileImage.save(newBytes, format=targetFormat.value)
-                            newBytes.seek(0)
-                            tileBytes = newBytes.read()
-                        finally:
-                            del tileImage
+                        await self._compositor.partialOverlapAsync(
+                            tileImage=tileImage,
+                            tileX=tileX,
+                            tileY=tileY,
+                            tileWidth=tileWidth,
+                            tileHeight=tileHeight,
+                            tileScale=tileScale,
+                            milieu=milieu)
                     else:
                         assert(overlapType == proxy.Compositor.OverlapType.CompleteOverlap)
                         tileImage = await self._compositor.fullOverlapAsync(
@@ -278,19 +270,25 @@ class _HttpRequestHandler(object):
                             tileScale=tileScale,
                             milieu=milieu)
 
-                        if tileImage != None:
-                            try:
-                                tileBytes = io.BytesIO()
-                                tileImage.save(tileBytes, format=targetFormat.value)
-                                tileBytes.seek(0)
-                                tileBytes = tileBytes.read()
-                            finally:
-                                del tileImage
+                    if tileImage != None:
+                        if (targetFormat == travellermap.MapFormat.JPEG) and (tileImage.mode == 'RGBA'):
+                            # JPEG doesn't support alpha and Image.save doesn't just ignore it :(
+                            rgbImage = tileImage.convert('RGB')
+                            del tileImage
+                            tileImage = rgbImage
+
+                        newBytes = io.BytesIO()
+                        tileImage.save(newBytes, format=targetFormat.value)
+                        newBytes.seek(0)
+                        tileBytes = newBytes.read()
                 except Exception as ex:
                     # Log this at a low level as it could happen a LOT if something goes wrong
                     # TODO: This should be logging at debug as it could get very spammy
-                    logging.info('Failed to composite tile', exc_info=ex)
+                    logging.warning('Failed to composite tile', exc_info=ex)
                     shouldCacheTile = False # Don't cache tiles if they failed to generate
+                finally:
+                    if tileImage:
+                        del tileImage
             else:
                 logging.debug(f'Serving live response for tile {request.query_string}')
 
@@ -304,7 +302,7 @@ class _HttpRequestHandler(object):
                 if not tileBytes:
                     # We're having a bad day, something also wen't wrong getting the tile from Traveller
                     # Map. Not much to do apart from bail
-                    raise RuntimeError('Proxied tile request returned no data')
+                    raise RuntimeError(f'Proxied tile request returned no data for tile {request.query_string}')
 
             # Add the tile to the cache. Depending on the logic above this could either be a tile
             # as-is from Traveller Map or a composite tile
