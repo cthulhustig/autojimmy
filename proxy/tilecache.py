@@ -12,6 +12,8 @@ import travellermap
 import uuid
 import typing
 
+# TODO: Not sure if overlap can be defined to only have specific values
+# TODO: I don't like the fact I'm using the enum names as the overlap value, should have table specific values that get mapped
 _CreateTableQuery = \
 """
 CREATE TABLE IF NOT EXISTS tile_cache (
@@ -25,12 +27,11 @@ CREATE TABLE IF NOT EXISTS tile_cache (
 """
 _AddTileQuery = \
 """
-INSERT OR REPLACE INTO tile_cache(query, mime, file, size, overlap, created, used) VALUES (
-    "{0}", "{1}", "{2}", "{3}", "{4}", "{5}", "{6}");
+INSERT OR REPLACE INTO tile_cache VALUES (:query, :mime, :file, :size, :overlap, :created, :used);
 """
 _UpdateTileUsedQuery = \
 """
-UPDATE tile_cache SET used="{1}" WHERE query = "{0}" AND used < "{1}";
+UPDATE tile_cache SET used = :used WHERE query = :query AND used < :used;
 """
 _LoadTilesQuery = \
 """
@@ -38,11 +39,11 @@ SELECT * FROM tile_cache;
 """
 _DeleteTileQuery = \
 """
-DELETE FROM tile_cache WHERE query = "{0}";
+DELETE FROM tile_cache WHERE query = :query;
 """
 _DeleteExpiredTilesQuery = \
 """
-DELETE FROM tile_cache WHERE created <= "{0}";
+DELETE FROM tile_cache WHERE created <= :expiry;
 """
 # TODO: Implement clearing tile cache when custom sectors or snapshot change
 _DeleteAllTilesQuery = \
@@ -122,8 +123,9 @@ class TileCache(object):
         # Creating the table will be a no-op if it already exists
         # TODO: If I have table creation here it means any future migration is going to need to be here
         # which in turn means I probably need to have a separate schema version just for the table
-        async with self._database.executescript(_CreateTableQuery) as cursor:
-            logging.debug('Created tile cache table')
+        async with self._database.execute(_CreateTableQuery):
+            pass
+        logging.debug('Created tile cache table')
 
         startTime = common.utcnow() # TODO: Remove debug code
 
@@ -188,18 +190,20 @@ class TileCache(object):
                 referencedFiles.add(fileName)
 
         # Remove invalid entries from the database
-        for tileQuery in invalidEntries:
-            try:
-                query = _DeleteTileQuery.format(tileQuery)
-                async with self._database.executescript(query) as cursor:
-                    pass
-                # TODO: Should be logged at info or debug
-                logging.warning(f'Deleted the invalid tile cache entry for {tileQuery}')                             
-            except Exception as ex:
-                # Log and continue
-                logging.error(
-                    f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
-                    exc_info=ex)
+        if invalidEntries:
+            for tileQuery in invalidEntries:
+                try:
+                    queryArgs = {'query': tileQuery}
+                    async with self._database.execute(_DeleteTileQuery, queryArgs):
+                        pass
+                    # TODO: Should be logged at info or debug
+                    logging.warning(f'Deleted the invalid tile cache entry for {tileQuery}')                             
+                except Exception as ex:
+                    # Log and continue
+                    logging.error(
+                        f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
+                        exc_info=ex)
+            await self._database.commit()
                 
         # Remove cache files not referenced by the database
         for fileName in cacheFiles:
@@ -354,8 +358,9 @@ class TileCache(object):
         self._diskPendingAdds.clear()
 
         # Remove tiles from the database
-        async with self._database.executescript(_DeleteAllTilesQuery) as cursor:
+        async with self._database.execute(_DeleteAllTilesQuery):
             pass
+        await self._database.commit()
 
         # Clear details of the disk cache from memory. This prevents other tasks
         # performing lookups trying to read the file while this task is trying
@@ -389,14 +394,14 @@ class TileCache(object):
             ) -> None:
         try:
             filePath = os.path.join(self._cacheDir, diskTile.fileName())
-            query = _AddTileQuery.format(
-                diskTile.tileQuery(),
-                travellermap.mapFormatToMimeType(format=diskTile.mapFormat()),
-                diskTile.fileName(),
-                diskTile.fileSize(),
-                str(diskTile.overlapType().name),
-                TileCache._timestampToString(timestamp=diskTile.createdTime()),
-                TileCache._timestampToString(timestamp=diskTile.usedTime()))
+            queryArgs = {
+                'query': diskTile.tileQuery(),
+                'mime': travellermap.mapFormatToMimeType(format=diskTile.mapFormat()),
+                'file': diskTile.fileName(),
+                'size': diskTile.fileSize(),
+                'overlap': str(diskTile.overlapType().name),
+                'created': TileCache._timestampToString(timestamp=diskTile.createdTime()),
+                'used': TileCache._timestampToString(timestamp=diskTile.usedTime())}
             
             # Write the tile image to disk
             async with aiofiles.open(filePath, 'wb') as file:
@@ -404,8 +409,9 @@ class TileCache(object):
         
             # Only update the database once the file has successfully been written
             # to disk
-            async with self._database.executescript(query) as cursor:
+            async with self._database.execute(_AddTileQuery, queryArgs):
                 pass
+            await self._database.commit()
 
             # It's important that the in memory copy of what disk cache tiles are
             # available is updated AFTER the file has been written to disk and the
@@ -438,12 +444,13 @@ class TileCache(object):
             diskTile: _DiskTile
             ) -> None:
         try:
-            query = _UpdateTileUsedQuery.format(
-                diskTile.tileQuery(),
-                TileCache._timestampToString(diskTile.usedTime()))
-            
-            async with self._database.executescript(query) as cursor:
+            queryArgs = {
+                'query': diskTile.tileQuery(),
+                'used': TileCache._timestampToString(diskTile.usedTime())}
+
+            async with self._database.execute(_UpdateTileUsedQuery, queryArgs):
                 pass
+            await self._database.commit()
 
             logging.debug(
                 f'Update last used time for tile {diskTile.tileQuery()} to {diskTile.usedTime()}')
@@ -510,10 +517,10 @@ class TileCache(object):
                 expiredEntries.append(diskTile)
 
         # Remove expired entries from database
-        query = _DeleteExpiredTilesQuery.format(
-            TileCache._timestampToString(timestamp=expiryTime))
-        async with self._database.executescript(query) as cursor:
+        queryArgs = {'expiry': TileCache._timestampToString(timestamp=expiryTime)}
+        async with self._database.execute(_DeleteExpiredTilesQuery, queryArgs):
             pass
+        await self._database.commit()
 
         # Remove expired tile files from disk
         for diskTile in expiredEntries:
