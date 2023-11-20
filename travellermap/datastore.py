@@ -637,11 +637,11 @@ class DataStore(object):
             format=mapLevel.format())
 
     def sophontsData(self) -> str:
-        return self._bytesToString(bytes=self._readFile(
+        return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._SophontsFileName))
 
     def allegiancesData(self) -> str:
-        return self._bytesToString(bytes=self._readFile(
+        return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._AllegiancesFileName))
     
     def mainsData(
@@ -659,13 +659,13 @@ class DataStore(object):
                 logging.error(f'Data store failed to read custom mains data for {milieu.value}', exc_info=ex)
                 # Continue to load default file
 
-        return self._bytesToString(bytes=self._readFile(
+        return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._MainsFileName))    
 
     def universeTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
-            return DataStore._parseUniverseTimestamp(
-                data=self._readFile(relativeFilePath=self._TimestampFileName))
+            return DataStore._parseTimestamp(
+                data=self._readStockFile(relativeFilePath=self._TimestampFileName))
         except Exception as ex:
             logging.error(f'Failed to read universe timestamp', exc_info=ex)
             return None
@@ -673,9 +673,18 @@ class DataStore(object):
     def universeDataFormat(self) -> typing.Optional[UniverseDataFormat]:
         try:
             return DataStore._parseUniverseDataFormat(
-                data=self._readFile(relativeFilePath=self._DataFormatFileName))
+                data=self._readStockFile(relativeFilePath=self._DataFormatFileName))
         except Exception as ex:
             logging.error(f'Failed to read universe data format', exc_info=ex)
+            return None
+        
+    def customSectorsTimestamp(self) -> typing.Optional[datetime.datetime]:
+        try:
+            timestampPath = os.path.join(self._customDir, self._TimestampFileName)
+            return DataStore._parseTimestamp(
+                data=self._filesystemCache.read(timestampPath))
+        except Exception as ex:
+            logging.error(f'Failed to read custom sectors timestamp', exc_info=ex)
             return None
         
     # NOTE: This will block while it downloads the latest snapshot timestamp from the github repo
@@ -685,7 +694,7 @@ class DataStore(object):
             response = urllib.request.urlopen(
                 DataStore._TimestampUrl,
                 timeout=DataStore._SnapshotCheckTimeout)
-            repoTimestamp = DataStore._parseUniverseTimestamp(data=response.read())
+            repoTimestamp = DataStore._parseTimestamp(data=response.read())
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot timestamp ({str(ex)})')
 
@@ -1147,7 +1156,7 @@ class DataStore(object):
             return
 
         try:
-            overlayTimestamp = DataStore._parseUniverseTimestamp(
+            overlayTimestamp = DataStore._parseTimestamp(
                 data=self._filesystemCache.read(overlayTimestampPath))
         except Exception as ex:
             logging.error(
@@ -1156,7 +1165,7 @@ class DataStore(object):
             return
 
         try:
-            installTimestamp = DataStore._parseUniverseTimestamp(
+            installTimestamp = DataStore._parseTimestamp(
                 data=self._filesystemCache.read(installTimestampPath))
         except Exception as ex:
             logging.error(
@@ -1181,7 +1190,7 @@ class DataStore(object):
                 f'Failed to delete overlay directory "{self._overlayDir}"',
                 exc_info=ex)
 
-    def _readFile(
+    def _readStockFile(
             self,
             relativeFilePath: str
             ) -> bytes:
@@ -1203,7 +1212,7 @@ class DataStore(object):
             absolutePath = os.path.join(self._customDir, relativePath)
             return self._filesystemCache.read(absolutePath)
 
-        return self._readFile(relativeFilePath=relativePath)
+        return self._readStockFile(relativeFilePath=relativePath)
     
     def _regenerateCustomMains(
             self,
@@ -1506,6 +1515,9 @@ class DataStore(object):
             DataStore._MilieuBaseDir,
             milieu.value,
             DataStore._UniverseFileName)
+        timestampPath = os.path.join(
+            self._customDir,
+            self._TimestampFileName)
 
         with self._lock:
             universe = self._universeMap[milieu]
@@ -1554,19 +1566,28 @@ class DataStore(object):
             self._filesystemCache.write(
                 path=universeFilePath,
                 data=json.dumps(universeData, indent=4))
+            
+            utcTime = common.utcnow()
+            self._filesystemCache.write(
+                path=timestampPath,
+                data=DataStore._formatTimestamp(timestamp=utcTime))
 
     @staticmethod
     def _bytesToString(bytes: bytes) -> str:
         return bytes.decode('utf-8-sig') # Use utf-8-sig to strip BOM from unicode files
 
     @staticmethod
-    def _parseUniverseTimestamp(data: bytes) -> datetime.datetime:
+    def _parseTimestamp(data: bytes) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
         return datetime.datetime.fromtimestamp(
             timestamp.timestamp(),
-            tz=datetime.timezone.utc)    
+            tz=datetime.timezone.utc)
+    
+    def _formatTimestamp(timestamp: datetime.datetime) -> bytes:
+        timestamp = timestamp.astimezone(datetime.timezone.utc)
+        return timestamp.strftime(DataStore._TimestampFormat).encode()
     
     # NOTE: The data format is a major.minor version number with the minor number
     # being optional (assumed 0 if not present)
