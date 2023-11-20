@@ -1058,15 +1058,15 @@ class DataStore(object):
         with self._lock:
             if (not reload) and self._universeMap and ((not milieu) or self._universeMap.get(milieu)):
                 return # Already loaded
-            
-            logging.info('{operation} sector info'.format(operation='Reloading' if reload else 'Loading'))
 
             if not self._universeMap:
                 self._universeMap: typing.Dict[travellermap.Milieu, UniverseInfo] = {}
 
             milieuList = [milieu] if milieu else travellermap.Milieu
             for milieu in milieuList:
-                logging.debug(f'Loading sector info for {milieu.value}')
+                logging.debug('{operation} sector info for {milieu}'.format(
+                    operation='Reloading' if reload else 'Loading',
+                    milieu=milieu.value))
 
                 universe = self._universeMap.get(milieu)
                 if universe:
@@ -1561,9 +1561,12 @@ class DataStore(object):
 
     @staticmethod
     def _parseUniverseTimestamp(data: bytes) -> datetime.datetime:
-        return datetime.datetime.strptime(
+        timestamp = datetime.datetime.strptime(
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
+        return datetime.datetime.fromtimestamp(
+            timestamp.timestamp(),
+            tz=datetime.timezone.utc)    
     
     # NOTE: The data format is a major.minor version number with the minor number
     # being optional (assumed 0 if not present)

@@ -575,12 +575,19 @@ class MapProxy(object):
             app.setupLogger(
                 logDir=os.path.join(appDir, 'logs'),
                 logFile='mapproxy.log')
-            #app.setLogLevel(logLevel=logLevel) # TODO: Reinstate correct logging
-            app.setLogLevel(logLevel=logging.WARNING)
+            app.setLogLevel(logLevel=logLevel)
         except Exception as ex:
             logging.error('Failed to set up map proxy logging', exc_info=ex)
 
         logging.info(f'Map proxy starting on port {listenPort}')
+
+        # This is a hack. The aiohttp server logs all requests at info level
+        # where as I only want it logged at debug. The best way I can see to 
+        # achieve this is to set the server logging to a level that won't log
+        # the request when the app log level is set to anything higher than
+        # debug
+        if logLevel > logging.DEBUG:
+            logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
         try:
             # TODO: This is duplicated from the app and should probably be shared

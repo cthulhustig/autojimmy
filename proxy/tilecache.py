@@ -18,12 +18,17 @@ _DatabasePageSizeBytes = 8192
 _ConfigTableName = 'config'
 _TilesTableName = 'tiles'
 
+_SchemaConfigKey = 'schema'
+_UniverseTimestampKey = 'universe_timestamp'
+
+# NOTE: Setting the page_size needs to be done before setting the journal_mode as
+# it can't be changed after entering WAL mode
 _SetDatabasePragmaScript = \
 f"""
-PRAGMA synchronous = NORMAL;
-PRAGMA journal_mode = WAL;
 PRAGMA cache_size = -{_DatabaseCacheKiB};
 PRAGMA page_size = {_DatabasePageSizeBytes};
+PRAGMA synchronous = NORMAL;
+PRAGMA journal_mode = WAL;
 """
 
 _CreateConfigTableQuery = \
@@ -47,6 +52,9 @@ _ReadConfigValue = \
     f'SELECT value FROM {_ConfigTableName} WHERE key = :key;'
 _WriteConfigValue = \
     f'INSERT OR REPLACE INTO {_ConfigTableName} VALUES (:key, :value);'
+_DeleteConfigValue = \
+    f'DELETE FROM {_ConfigTableName} WHERE key = :key;'
+
 _AddTileQuery = \
     f'INSERT OR REPLACE INTO {_TilesTableName} VALUES (:query, :mime, :size, :overlap, :created, :used, :data);'
 _UpdateTileUsedQuery = \
@@ -61,6 +69,8 @@ _DeleteTileQuery = \
     f'DELETE FROM {_TilesTableName} WHERE query = :query;'
 _DeleteExpiredTilesQuery = \
     f'DELETE FROM {_TilesTableName} WHERE created <= :expiry;'
+_DeleteUniverseTilesQuery = \
+    f'DELETE FROM {_TilesTableName} WHERE overlap != "complete"'
 # TODO: Implement clearing tile cache when custom sectors or snapshot change
 _DeleteAllTilesQuery = f'DELETE FROM {_TilesTableName};'
 
@@ -113,7 +123,7 @@ class TileCache(object):
     # TODO: Some of these should be configurable
     _MaxDbCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
     _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
-    _DbTimestampFormat = '%Y-%m-%d %H:%M:%f'
+    _DbTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
 
     def __init__(
@@ -147,7 +157,7 @@ class TileCache(object):
                 logging.debug('Creating tile cache config table')
                 async with self._dbConnection.execute(_CreateConfigTableQuery):
                     pass
-                await self._writeConfigValueAsync('schema', _DatabaseSchemaVersion)
+                await self._writeConfigValueAsync(_SchemaConfigKey, _DatabaseSchemaVersion)
             else:
                 # TODO: Read schema version from config and check it matches the expected version (not sure what to do if it doesn't)
                 pass
@@ -158,6 +168,9 @@ class TileCache(object):
                 logging.debug('Creating tile cache table')
                 async with self._dbConnection.execute(_CreateTileTableQuery):
                     pass
+
+            logging.debug('Checking tile cache validity')
+            await self._checkCacheValidity()
 
             logging.debug('Loading tile cache table contents')
             invalidEntries = []
@@ -280,7 +293,7 @@ class TileCache(object):
             _, oldData = self._memCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
             evictionCount += 1
             self._memTotalBytes -= len(oldData)
-            assert(self._memTotalBytes > 0)
+            assert(self._memTotalBytes >= 0)
 
         if evictionCount:
             evictionBytes = startingBytes - self._memTotalBytes
@@ -400,6 +413,70 @@ class TileCache(object):
         queryArgs = {'key': key, 'value': str(value)}
         async with self._dbConnection.execute(_WriteConfigValue, queryArgs):
             pass
+
+    async def _deleteConfigValueAsync(
+            self,
+            key: str
+            ) -> None:
+        queryArgs = {'key': key}
+        async with self._dbConnection.execute(_DeleteConfigValue, queryArgs):
+            pass
+
+    async def _checkCacheValidity(self) -> None:
+        try:
+            cacheUniverseTimestamp = await self._readConfigValueAsync(
+                key=_UniverseTimestampKey,
+                type=str)
+            if cacheUniverseTimestamp:
+                cacheUniverseTimestamp = TileCache._stringToTimestamp(
+                    string=cacheUniverseTimestamp)
+        except Exception as ex:
+            # Log and continue if unable to read map timestamp. Assume that cache is invalid
+            logging.error(
+                f'An exception occurred when reading the {_UniverseTimestampKey} key from the tile cache config',
+                exc_info=ex)
+            cacheUniverseTimestamp = None            
+            
+        try:
+            # TODO: Ideally this would be async
+            currentUniverseTimestamp = travellermap.DataStore.instance().universeTimestamp()
+        except Exception as ex:
+            # Log and continue if unable to read the current un
+            logging.error(
+                f'An exception occurred when reading the current universe timestamp',
+                exc_info=ex)            
+            currentUniverseTimestamp = None
+
+        # Delete tiles from the the disk cache if either of the timestamps
+        # couldn't be read or the timestamp stored in the database is not
+        # an exact match for the current universe timestamp. When clearing
+        # tiles we don't need to clear tiles that are completely within
+        # custom sectors
+        if (not cacheUniverseTimestamp) or (not currentUniverseTimestamp) or \
+                (cacheUniverseTimestamp != currentUniverseTimestamp):
+            logging.info(
+                'Tile cache detected universe timestamp change (Current: {current}, Cached: {cached})'.format(
+                    current=currentUniverseTimestamp,
+                    cached=cacheUniverseTimestamp))
+            
+            try:
+                async with self._dbConnection.execute(_DeleteUniverseTilesQuery) as cursor:
+                    if cursor.rowcount:
+                        logging.info(
+                            f'Purged {cursor.rowcount} universe tiles from the tile cache')
+                    
+                if currentUniverseTimestamp:
+                    await self._writeConfigValueAsync(
+                        key=_UniverseTimestampKey,
+                        value=self._timestampToString(currentUniverseTimestamp))
+                else:
+                    await self._deleteConfigValueAsync(
+                        key=_UniverseTimestampKey)
+            except Exception as ex:
+                logging.error(
+                    f'An exception occurred when purging universe tiles from tile cache',
+                    exc_info=ex)
+
     
     # NOTE: This function is intended to be fire and forget so whatever async
     # stream of execution adds something to the cache isn't blocked waiting
