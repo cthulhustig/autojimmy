@@ -26,22 +26,7 @@ _ExtensionToContentTypeMap = {
     '.css': 'text/css'
 }
 
-# TODO: If I go with having tiles stored in the db then it's probably better to make the database specific to tiles
-_DatabaseFileName = 'map_proxy.db'
-_TileCacheDirName = 'tile_cache'
-
-_DatabaseSchemaVersion = 1
-_DatabaseCacheKiB = 51200 # 50MiB
-
-_ReadSchemaVersionQuery = 'PRAGMA user_version;'
-_SetSchemaVersionQuery = f'PRAGMA user_version = {_DatabaseSchemaVersion};'
-
-_ConfigureDatabaseQuery = \
-f"""
-PRAGMA synchronous = NORMAL;
-PRAGMA journal_mode = WAL;
-PRAGMA cache_size = -{_DatabaseCacheKiB};
-"""
+_TileCacheDbFileName = 'tile_cache.db'
 
 # This is an extremely crude in memory cache of all the locally served files. It assumes
 # files don't change during run time and doesn't support files in sub-directories
@@ -614,10 +599,6 @@ class MapProxy(object):
             loop = asyncio.get_event_loop()
 
             with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
-                # TODO: Check what is logged if this fails
-                dbConnection = loop.run_until_complete(MapProxy._connectToDatabase(
-                    os.path.join(appDir, _DatabaseFileName)))
-
                 # NOTE: This will block until the universe is loaded
                 loop.run_until_complete(compositor.loadUniverseAsync())
 
@@ -631,8 +612,8 @@ class MapProxy(object):
                 travellermap.DataStore.instance().clearCachedData()
 
                 tileCache = proxy.TileCache(
-                    database=dbConnection,
-                    maxBytes=_MaxTileCacheBytes)
+                    dbPath=os.path.join(appDir, _TileCacheDbFileName),
+                    maxMemBytes=_MaxTileCacheBytes)
                 loop.run_until_complete(tileCache.initAsync())
 
                 # Start web server
@@ -657,8 +638,7 @@ class MapProxy(object):
                     shutdownEvent=shutdownEvent,
                     webApp=webApp,
                     requestHandler=requestHandler,
-                    tileCache=tileCache,
-                    dbConnection=dbConnection))
+                    tileCache=tileCache))
 
                 messageQueue.put((MapProxy.ServerStatus.Stopped, None))
                 logging.info('Map proxy shutdown complete')
@@ -666,39 +646,11 @@ class MapProxy(object):
             logging.error('Exception occurred while running map proxy', exc_info=ex)
             messageQueue.put((MapProxy.ServerStatus.Error, str(ex)))
 
-    async def _connectToDatabase(
-            databasePath: str
-            ) -> aiosqlite.Connection:
-        connection = await aiosqlite.connect(databasePath)
-        try:
-            logging.info('Connected to map proxy database')
-            async with connection.execute(_ReadSchemaVersionQuery) as cursor:
-                data = await cursor.fetchone()
-                schemaVersion = int(data[0])
-
-            if schemaVersion < _DatabaseSchemaVersion:
-                async with connection.executescript(_ConfigureDatabaseQuery)as cursor:
-                    logging.debug('Configured map proxy database')
-
-                async with connection.executescript(_SetSchemaVersionQuery) as cursor:
-                    logging.info('Completed initialisation of map proxy database')
-            elif schemaVersion > _DatabaseSchemaVersion:
-                # TODO: Not sure what to do here? Delete the db? but then what about the
-                # files in the cache? Will also making switching between versions more
-                # difficult.
-                pass
-        except:
-            await connection.close()
-            raise
-
-        return connection
-
     async def _shutdownMonitorAsync(
             shutdownEvent: multiprocessing.Event,
             webApp: aiohttp.web.Application,
             requestHandler: _HttpRequestHandler,
-            tileCache: proxy.TileCache,
-            dbConnection: aiosqlite.Connection
+            tileCache: proxy.TileCache
             ) -> None:
         while True:
             await asyncio.sleep(0.5)
@@ -712,5 +664,4 @@ class MapProxy(object):
                 await webApp.shutdown()
                 await webApp.cleanup()
                 await tileCache.shutdownAsync()
-                await dbConnection.close()
                 return
