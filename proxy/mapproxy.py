@@ -339,7 +339,7 @@ class _HttpRequestHandler(object):
         mainsData = None
         if self._mainsMilieu:
             try:
-                # TODO: This should be an async read
+                # TODO: Ideally this would be async
                 mainsData = travellermap.DataStore.instance().mainsData(
                     milieu=self._mainsMilieu)
                 if not mainsData:

@@ -73,7 +73,6 @@ _DeleteExpiredTilesQuery = \
     f'DELETE FROM {_TilesTableName} WHERE created <= :expiry;'
 _DeleteUniverseTilesQuery = \
     f'DELETE FROM {_TilesTableName} WHERE overlap != "complete"'
-# TODO: Implement clearing tile cache when custom sectors or snapshot change
 _DeleteAllTilesQuery = f'DELETE FROM {_TilesTableName};'
 
 _OverlapTypeToDbStringMap = {
@@ -163,7 +162,8 @@ class TileCache(object):
                     pass
                 await self._writeConfigValueAsync(_SchemaConfigKey, _DatabaseSchemaVersion)
             else:
-                # TODO: Read schema version from config and check it matches the expected version (not sure what to do if it doesn't)
+                # TODO: Read schema version from config and check it matches the expected version
+                # - not sure what to do if it doesn't match (possibly delete and recreate tiles table?)
                 pass
 
             if not await proxy.checkIfTableExistsAsync(
@@ -229,8 +229,7 @@ class TileCache(object):
                     queryArgs = {'query': tileQuery}
                     async with self._dbConnection.execute(_DeleteTileQuery, queryArgs):
                         pass
-                    # TODO: Should be logged at info or debug
-                    logging.warning(f'Deleted the invalid tile cache entry for {tileQuery}')
+                    logging.debug(f'Deleted the invalid tile cache entry for {tileQuery}')
                 except Exception as ex:
                     # Log and continue
                     logging.error(
@@ -597,8 +596,7 @@ class TileCache(object):
                 exc_info=ex)
             
     async def _purgeForSpaceAsync(self) -> None:
-        # TODO: Should probably log at debug
-        logging.warning('Purging tile disk cache entries to free space')
+        logging.debug('Purging tile disk cache entries to free space')
 
         # Remove expired tiles from the disk cache. This assumes the disk cache
         # is maintained in order of last usage (oldest to newest).

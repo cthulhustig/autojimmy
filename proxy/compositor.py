@@ -549,7 +549,7 @@ class Compositor(object):
                 mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
                 for scale in mapLevels.keys():
                     try:
-                        # TODO: Loading custom sector map should use asyncio
+                        # TODO: Ideally this would by async
                         mapImage = travellermap.DataStore.instance().sectorMapImage(
                             sectorName=sectorInfo.canonicalName(),
                             milieu=milieu,
