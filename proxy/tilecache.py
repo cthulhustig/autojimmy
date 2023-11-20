@@ -1,16 +1,12 @@
-import aiofiles
-import aiofiles.os
 import aiosqlite
 import asyncio
 import collections
 import common
 import datetime
 import logging
-import os
 import proxy
 import sqlite3
 import travellermap
-import uuid
 import typing
 
 # TODO: Not sure if overlap can be defined to only have specific values
@@ -30,8 +26,10 @@ _AddTileQuery = \
     'INSERT OR REPLACE INTO tile_cache VALUES (:query, :mime, :size, :overlap, :created, :used, :data);'
 _UpdateTileUsedQuery = \
     'UPDATE tile_cache SET used = :used WHERE query = :query AND used < :used;'
+# When loading the metadata have it sorted by used time (oldest to newest) as it makes it
+# easier to initialise the memory cache which is also kept in usage order
 _LoadAllMetadataQuery = \
-    'SELECT query, mime, size, overlap, created, used FROM tile_cache;'
+    'SELECT query, mime, size, overlap, created, used FROM tile_cache ORDER BY used ASC;'
 _LoadTileDataQuery = \
     'SELECT data FROM tile_cache WHERE query = :query;'
 _DeleteTileQuery = \
@@ -42,7 +40,7 @@ _DeleteExpiredTilesQuery = \
 _DeleteAllQuery = 'DELETE FROM tile_cache;'
 
 class TileCache(object):
-    class _DbEntry(object):
+    class _DiskEntry(object):
         def __init__(
                 self,
                 tileQuery: str,
@@ -80,8 +78,8 @@ class TileCache(object):
         def markUsed(self) -> None:
             self._usedTimestamp = common.utcnow()
 
+    # TODO: Restore correct values
     _MaxDbCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
-    _MinDbCacheReapBytes = 10 * 1024 * 1024 # 10MiB
     _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
     _DbTimestampFormat = '%Y-%m-%d %H:%M:%f'
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
@@ -95,19 +93,20 @@ class TileCache(object):
         self._maxBytes = maxBytes
         self._memCache: typing.OrderedDict[str, travellermap.MapImage] = collections.OrderedDict()
         self._memTotalBytes = 0
-        self._dbCache: typing.Dict[str, TileCache._DbEntry] = {}
-        self._dbTotalBytes = 0
-        self._dbPendingAdds: typing.Set[str] = set() # Tile query strings of adds that are pending
+        self._diskCache: typing.OrderedDict[str, TileCache._DiskEntry] = collections.OrderedDict()
+        self._diskTotalBytes = 0
+        self._diskPendingAdds: typing.Set[str] = set() # Tile query strings of adds that are pending
         self._backgroundTasks: typing.Set[asyncio.Task] = set()
         self._garbageCollectTask = None
 
+    # TODO: This should probably periodically compact the database to save space
     async def initAsync(self) -> None:
         # Creating the table will be a no-op if it already exists
         # TODO: If I have table creation here it means any future migration is going to need to be here
         # which in turn means I probably need to have a separate schema version just for the table
+        logging.debug('Setting up tile cache table')
         async with self._database.execute(_CreateTableQuery):
             pass
-        logging.debug('Created tile cache table')
 
         logging.debug('Loading tile cache table contents')
         invalidEntries = []
@@ -144,14 +143,17 @@ class TileCache(object):
                     invalidEntries.append(tileQuery)
                     continue
 
-                self._dbCache[tileQuery] = TileCache._DbEntry(
+                # NOTE: In order for items to be inserted into the ordered dict cache in the correct
+                # order, this assumes that the database query returns the rows ordered by used time
+                # (oldest to newest)
+                self._diskCache[tileQuery] = TileCache._DiskEntry(
                     tileQuery=tileQuery,
                     mapFormat=mapFormat,
                     fileSize=fileSize,
                     overlapType=overlapType,
                     createdTime=createdTime,
                     usedTime=usedTime)
-                self._dbTotalBytes += fileSize
+                self._diskTotalBytes += fileSize
 
         # Remove invalid entries from the database
         if invalidEntries:
@@ -192,8 +194,8 @@ class TileCache(object):
         self._memCache.clear()
         self._memTotalBytes = 0
 
-        self._dbCache.clear()
-        self._dbTotalBytes = 0
+        self._diskCache.clear()
+        self._diskTotalBytes = 0
 
     async def addAsync(
             self,
@@ -221,24 +223,23 @@ class TileCache(object):
             evictionBytes = startingBytes - self._memTotalBytes
             logging.debug(f'Tile cache evicted {evictionCount} tiles for {evictionBytes} bytes')
 
-        # Add the image to the cache, this will automatically add it at the end of the cache
+        # Add the image to the cache, this will automatically add it at the end of the ordered dict
         # to indicate it's the most recently used
         self._memCache[tileQuery] = tileImage
         self._memTotalBytes += size
 
-        if cacheToDisk and (tileQuery not in self._dbPendingAdds):
-            # Writing to the disk cache is done as a future so as not to block
-            # the caller
-            dbEntry = TileCache._DbEntry(
+        if cacheToDisk and (tileQuery not in self._diskPendingAdds):
+            # Writing to the database is done as a future so as not to block the caller
+            diskEntry = TileCache._DiskEntry(
                 tileQuery=tileQuery,
                 mapFormat=tileImage.format(),
                 fileSize=tileImage.size(),
                 overlapType=overlapType,
                 createdTime=common.utcnow())
-            self._dbPendingAdds.add(tileQuery)            
+            self._diskPendingAdds.add(tileQuery)            
             self._startBackgroundJob(
                 coro=self._storeTileAsync(
-                    dbEntry=dbEntry,
+                    diskEntry=diskEntry,
                     tileData=tileImage.bytes()))
 
     async def lookupAsync(self, tileQuery: str) -> typing.Optional[travellermap.MapImage]:
@@ -249,11 +250,11 @@ class TileCache(object):
             self._memCache.move_to_end(tileQuery, last=True)
             return data
         
-        # Not in memory so check the disk cache
-        dbEntry = self._dbCache.get(tileQuery)
-        if dbEntry == None:
-            return None # Tile isn't in disk cache or is in the process of being removed
-        
+        # Not in memory so check the database cache
+        diskEntry = self._diskCache.get(tileQuery)
+        if diskEntry == None:
+            return None # Tile isn't in database cache
+                
         # Load cached file from disk
         try:
             queryArgs = {'query': tileQuery}
@@ -261,33 +262,36 @@ class TileCache(object):
                 results = await cursor.fetchone()
                 data = results[0]
         except Exception as ex:
-            # Something wen't wrong with loading the file so delete remove the file from
-            # the disk cache to prevent anything trying to load it again in the future.
+            # Something went wrong with loading the tile from the disk cache. Remove the
+            # entry from memory to prevent anything trying to load it again in the future.
             # The check that it's still in the cache is important as in theory it could
             # have already been removed by another async task
             logging.warning(
                 f'Failed to load cached tile data for {tileQuery}',
                 exc_info=ex)            
-            if tileQuery in self._dbCache:
-                del self._dbCache[tileQuery]
+            if tileQuery in self._diskCache:
+                del self._diskCache[tileQuery]
             return None
         
-        # Mark the disk tile as used so it will be at the back of the queue if tiles need
-        # to be purged for space. An background task is started to push the update to the
-        # database
-        dbEntry.markUsed()
-        self._startBackgroundJob(
-            coro=self._updateTileUsedAsync(dbEntry=dbEntry))
-
         # Add the cached file to the memory cache, removing other items if
-        # required to make space. It's important to specify that it shouldn't
-        # be added to the disk cache as we know it's already there
-        image = travellermap.MapImage(bytes=data, format=dbEntry.mapFormat())
+        # required to make space.
+        image = travellermap.MapImage(bytes=data, format=diskEntry.mapFormat())
         await self.addAsync(
-            tileQuery=dbEntry.tileQuery(),
+            tileQuery=diskEntry.tileQuery(),
             tileImage=image,
-            overlapType=dbEntry.overlapType(),
-            cacheToDisk=False)
+            overlapType=diskEntry.overlapType(),
+            cacheToDisk=False) # Already on disk
+        
+        # Mark the disk entry as used and kick of a background job to push the update
+        # to the database
+        diskEntry.markUsed()
+        self._startBackgroundJob(
+            coro=self._updateTileUsedAsync(diskEntry=diskEntry))
+        
+        # Move the disk entry to the end of the cache so it will be purged last if
+        # space is required
+        self._diskCache.move_to_end(tileQuery, last=True)
+
         return image
 
     async def clearCacheAsync(self) -> None:
@@ -301,16 +305,16 @@ class TileCache(object):
         for task in self._backgroundTasks:
             task.cancel()
         self._backgroundTasks.clear()
-        self._dbPendingAdds.clear()
+        self._diskPendingAdds.clear()
 
         # Remove tiles from the database
         async with self._database.execute(_DeleteAllQuery):
             pass
         await self._database.commit()
 
-        # Clear details of the disk cache from memory.
-        self._dbCache.clear()
-        self._dbTotalBytes = 0
+        # Clear details of the database cache from memory.
+        self._diskCache.clear()
+        self._diskTotalBytes = 0
     
     # NOTE: This function is intended to be fire and forget so whatever async
     # stream of execution adds something to the cache isn't blocked waiting
@@ -321,130 +325,149 @@ class TileCache(object):
     # images of the same tile)
     async def _storeTileAsync(
             self,
-            dbEntry: _DbEntry,
+            diskEntry: _DiskEntry,
             tileData: bytes
             ) -> None:
         try:
             queryArgs = {
-                'query': dbEntry.tileQuery(),
-                'mime': travellermap.mapFormatToMimeType(format=dbEntry.mapFormat()),
-                'size': dbEntry.fileSize(),
-                'overlap': str(dbEntry.overlapType().name),
-                'created': TileCache._timestampToString(timestamp=dbEntry.createdTime()),
-                'used': TileCache._timestampToString(timestamp=dbEntry.usedTime()),
+                'query': diskEntry.tileQuery(),
+                'mime': travellermap.mapFormatToMimeType(format=diskEntry.mapFormat()),
+                'size': diskEntry.fileSize(),
+                'overlap': str(diskEntry.overlapType().name),
+                'created': TileCache._timestampToString(timestamp=diskEntry.createdTime()),
+                'used': TileCache._timestampToString(timestamp=diskEntry.usedTime()),
                 'data': sqlite3.Binary(tileData)}
-        
+                    
             async with self._database.execute(_AddTileQuery, queryArgs):
                 pass
             await self._database.commit()
 
-            # It's important that the in memory copy of what disk cache tiles are
-            # available is updated AFTER the database has been updated. It's only
-            # at this point is it safe for something to use the cached entry.
-            self._dbCache[dbEntry.tileQuery()] = dbEntry
-            self._dbTotalBytes += dbEntry.fileSize()
-            logging.debug(f'Added tile {dbEntry.tileQuery()} to disk cache')
+            # It's important that the database cache is only updated AFTER the tile has
+            # been written to the database. It's not until that point that it's safe for
+            # a lookup to try and load the tile
+            self._diskCache[diskEntry.tileQuery()] = diskEntry
+            self._diskTotalBytes += diskEntry.fileSize()
+            logging.debug(f'Added tile {diskEntry.tileQuery()} to disk cache')
         except asyncio.CancelledError:
             # Cancellation is expected at shutdown so only log at debug
             logging.debug(
-                f'Adding tile {dbEntry.tileQuery()} to the disk cache was cancelled')
+                f'Adding tile {diskEntry.tileQuery()} to the disk cache was cancelled')
         except Exception as ex:           
             # Log the exception here rather than letting it be caught and logged by
             # the async loop running the fire and forget function.
             logging.error(
-                f'An error occurred while adding tile {dbEntry.tileQuery()} to the disk cache',
+                f'An error occurred while adding tile {diskEntry.tileQuery()} to the disk cache',
                 exc_info=ex)
         finally:
             # No mater what happens, make sure we remove this tile form the list of
             # pending adds
-            if dbEntry.tileQuery() in self._dbPendingAdds:
-                self._dbPendingAdds.remove(dbEntry.tileQuery())
+            if diskEntry.tileQuery() in self._diskPendingAdds:
+                self._diskPendingAdds.remove(diskEntry.tileQuery())
             
     # NOTE: This function is intended to be fire and forget so whatever async
     # stream of execution adds something to the cache isn't blocked waiting
     # for the file to be written and database updated. 
     async def _updateTileUsedAsync(
             self,
-            dbEntry: _DbEntry
+            diskEntry: _DiskEntry
             ) -> None:
         try:
             queryArgs = {
-                'query': dbEntry.tileQuery(),
-                'used': TileCache._timestampToString(dbEntry.usedTime())}
+                'query': diskEntry.tileQuery(),
+                'used': TileCache._timestampToString(diskEntry.usedTime())}
 
             async with self._database.execute(_UpdateTileUsedQuery, queryArgs):
                 pass
             await self._database.commit()
 
             logging.debug(
-                f'Update last used time for tile {dbEntry.tileQuery()} to {dbEntry.usedTime()}')
+                f'Update last used time for tile {diskEntry.tileQuery()} to {diskEntry.usedTime()}')
         except asyncio.CancelledError:
             # Cancellation is expected at shutdown so only log at debug
             logging.debug(
-                f'Updating tile {dbEntry.tileQuery()} last used time was cancelled')
+                f'Updating tile {diskEntry.tileQuery()} last used time was cancelled')
         except Exception as ex:           
             # Log the exception here rather than letting it be caught and logged by
             # the async loop running the fire and forget function.
             logging.error(
-                f'An error occurred while updating last used time of tile {dbEntry.tileQuery()}',
+                f'An error occurred while updating last used time of tile {diskEntry.tileQuery()}',
                 exc_info=ex)
             
-    async def _purgeForSpaceAsync(
-            self,
-            requiredBytes: int
-            ) -> None:
-        requiredBytes = min(requiredBytes, self._MinDbCacheReapBytes)
+    async def _purgeForSpaceAsync(self) -> None:
         # TODO: Should probably log at debug
-        logging.info(
-            f'Purging tile disk cache entries to free {requiredBytes} bytes')
-    
-        # Create list of all disk tiles ordered by usage time, starting with
-        # the most recently used
-        metadataList = sorted(
-            self._dbCache.values(),
-            key=lambda dbEntry: dbEntry.usedTime().timestamp(),
-            reverse=True)
-        purgeAge = None
-        while requiredBytes > 0:
-            # Remove the tile that was used longest ago
-            dbEntry = metadataList.pop()
-            del self._dbCache[dbEntry.tileQuery()]
-            self._dbTotalBytes -= dbEntry.fileSize()
-            purgeAge = dbEntry.createdTime()
+        logging.warning('Purging tile disk cache entries to free space')
 
-        # TODO: Finish me
+        # Remove expired tiles from the disk cache. This assumes the disk cache
+        # is maintained in order of last usage (oldest to newest).
+        queryArgs = []
+        while self._diskTotalBytes > TileCache._MaxDbCacheSizeBytes:
+            _, diskEntry = self._diskCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
+            self._diskTotalBytes -= diskEntry.fileSize()
+            queryArgs.append({'query': diskEntry.tileQuery()})
+
+            # TODO: Should log at debug
+            logging.warning(
+                f'Purged tile disk cache entry for {diskEntry.tileQuery()} to free {diskEntry.fileSize()} bytes')   
+
+        if not queryArgs:
+            return # Nothing was purged so nothing more to do
+
+        # Remove expired tiles from the database
+        try:
+            async with self._database.executemany(_DeleteTileQuery, queryArgs):
+                pass
+            await self._database.commit()
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:
+            logging.error(
+                'An error occurred when purging tile cache entries to free space',
+                exc_info=ex)    
 
     async def _purgeByAgeAsync(self) -> None:
         expiryTime = common.utcnow() - TileCache._MaxDbCacheExpiryAge
         logging.debug(
             f'Purging tile disk cache entries up to {expiryTime}')
-        
-        # Remove expired entries from the in memory copy of the disk cache
-        # contents. This needs to be done first to prevent another task
-        # trying to read the tile wile it's being deleted
-        expiredEntries: typing.List[TileCache._DbEntry] = []
-        for tileQuery in list(self._dbCache.keys()):
-            dbEntry = self._dbCache[tileQuery]
 
-            # Used created time for this checking for tile age rather than
-            # used time. The intention is all tiles will eventually be
-            # purged even if they are getting used
-            if dbEntry.createdTime() <= expiryTime:
-                # TODO: Should probably log at debug
-                logging.warning(
-                    f'Purging expired tile disk cache entry for {dbEntry.tileQuery()} from {dbEntry.createdTime()}')
+        # Remove expired tiles from the disk cache
+        purged = 0
+        for tileQuery in list(self._diskCache.keys()):
+            diskEntry = self._diskCache.get(tileQuery)
+            if not diskEntry:
+                # Something else must have removed the entry while this task
+                # was running
+                continue
 
-                # Remove from cache, this will prevent any further lookups from
-                # loading the tile from the cache
-                del self._dbCache[tileQuery]
-                self._dbTotalBytes -= dbEntry.fileSize()
-                expiredEntries.append(dbEntry)
+            # Check if the disk entry has expired. The creation time is used
+            # for this as the intention is all entries should be purged eventually
+            if diskEntry.createdTime() > expiryTime:
+                continue # The entry hasn't expired
 
-        # Remove expired entries from database
-        queryArgs = {'expiry': TileCache._timestampToString(timestamp=expiryTime)}
-        async with self._database.execute(_DeleteExpiredTilesQuery, queryArgs):
-            pass
-        await self._database.commit()
+            # Remove entry from disk cache, this will prevent any further lookups from
+            # loading the tile from the cache
+            del self._diskCache[tileQuery]
+            self._diskTotalBytes -= diskEntry.fileSize()
+            purged += 1
+
+            # TODO: This should be logged at debug
+            logging.warning(
+                f'Purged expired tile disk cache entry for {diskEntry.tileQuery()} from {diskEntry.createdTime()}')
+
+        if not purged:
+            return # Nothing was purged so nothing more to do
+            
+        # Remove expired tiles from the database
+        try:
+            queryArgs = {'expiry': TileCache._timestampToString(timestamp=expiryTime)}
+            async with self._database.execute(_DeleteExpiredTilesQuery, queryArgs):
+                pass
+            await self._database.commit()
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:
+            logging.error(
+                f'An error occurred when purging disk cache entries up to {expiryTime}',
+                exc_info=ex)       
 
     async def _garbageCollectAsync(self) -> None:
         nextRunTime = common.utcnow() + TileCache._GarbageCollectInterval
@@ -460,6 +483,15 @@ class TileCache(object):
                 logging.warning(
                     'Garbage collector failed to purge expired cache entries',
                     exc_info=ex)
+                
+            try:
+                await self._purgeForSpaceAsync()
+            except asyncio.CancelledError:
+                raise
+            except Exception as ex:
+                logging.warning(
+                    'Garbage collector failed to purge change entries for space',
+                    exc_info=ex)
 
             sleepTime = nextRunTime.timestamp() - common.utcnow().timestamp()
             if sleepTime > 0:
@@ -472,9 +504,6 @@ class TileCache(object):
             ) -> None:
         task = asyncio.ensure_future(self._doBackgroundJobAsync(coro))
         self._backgroundTasks.add(task)
-
-        if task.done(): # TODO: Remove debug code
-            print('Hmmmmm, I guess this can happen!!!!!!!!!!!!!!!!!')
 
     async def _doBackgroundJobAsync(
             self,
