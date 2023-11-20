@@ -619,6 +619,7 @@ class MapProxy(object):
                 travellermap.DataStore.instance().clearCachedData()
 
                 tileCache = proxy.TileCache(
+                    travellerMapUrl=travellerMapUrl,
                     dbPath=os.path.join(appDir, _TileCacheDbFileName),
                     maxMemBytes=_MaxTileCacheBytes)
                 loop.run_until_complete(tileCache.initAsync())

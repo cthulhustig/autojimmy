@@ -19,8 +19,9 @@ _ConfigTableName = 'config'
 _TilesTableName = 'tiles'
 
 _SchemaConfigKey = 'schema'
-_UniverseTimestampKey = 'universe_timestamp'
-_CustomSectorTimestampKey = 'custom_timestamp'
+_UniverseTimestampConfigKey = 'universe_timestamp'
+_CustomSectorTimestampConfigKey = 'custom_timestamp'
+_MapUrlConfigKey = 'map_url'
 
 # NOTE: Setting the page_size needs to be done before setting the journal_mode as
 # it can't be changed after entering WAL mode
@@ -129,9 +130,11 @@ class TileCache(object):
 
     def __init__(
             self,
+            travellerMapUrl: str,
             dbPath: str,
             maxMemBytes: typing.Optional[int] # None means no max
             ) -> None:
+        self._travellerMapUrl = travellerMapUrl
         self._dbPath = dbPath
         self._dbConnection = None
         self._memCache: typing.OrderedDict[str, travellermap.MapImage] = collections.OrderedDict()
@@ -404,6 +407,9 @@ class TileCache(object):
             row = await cursor.fetchone()
             if row == None:
                 return default
+            
+            if type == datetime.datetime:
+                return TileCache._stringToTimestamp(row[0])
             return type(row[0])
 
     async def _writeConfigValueAsync(
@@ -411,6 +417,9 @@ class TileCache(object):
             key: str,
             value: typing.Any
             ) -> None:
+        if isinstance(value, datetime.datetime):
+            value = TileCache._timestampToString(timestamp=value)
+
         queryArgs = {'key': key, 'value': str(value)}
         async with self._dbConnection.execute(_WriteConfigValue, queryArgs):
             pass
@@ -426,77 +435,88 @@ class TileCache(object):
     async def _checkCacheValidityAsync(self) -> None:
         # If the universe timestamp has changed then delete tiles that aren't
         # completely within a custom sector
-        await self._checkTimestampValidityAsync(
-            configKey=_UniverseTimestampKey,
-            timestampFn=travellermap.DataStore.instance().universeTimestamp,
+        await self._checkKeyValidityAsync(
+            configKey=_UniverseTimestampConfigKey,
+            currentValueFn=travellermap.DataStore.instance().universeTimestamp,
+            valueType=datetime.datetime,
             deleteQuery=_DeleteUniverseTilesQuery,
-            identString='universe')
+            identString='universe timestamp')
         
         # If the custom sector timestamp has changed then delete all tiles.
         # TODO: Ideally this would be more selective but it's not trivial
-        await self._checkTimestampValidityAsync(
-            configKey=_CustomSectorTimestampKey,
-            timestampFn=travellermap.DataStore.instance().customSectorsTimestamp,
+        await self._checkKeyValidityAsync(
+            configKey=_CustomSectorTimestampConfigKey,
+            currentValueFn=travellermap.DataStore.instance().customSectorsTimestamp,
+            valueType=datetime.datetime,
             deleteQuery=_DeleteAllTilesQuery,
-            identString='custom sector')
+            identString='custom sector timestamp')
+        
+        # If the map host has changed delete all tiles
+        await self._checkKeyValidityAsync(
+            configKey=_MapUrlConfigKey,
+            currentValueFn=lambda: self._travellerMapUrl,
+            valueType=str,
+            deleteQuery=_DeleteAllTilesQuery,
+            identString='map url')        
                 
-    async def _checkTimestampValidityAsync(
+    async def _checkKeyValidityAsync(
             self,
             configKey: str,
-            timestampFn: typing.Callable[[], typing.Optional[datetime.datetime]],
+            currentValueFn: typing.Callable[[], typing.Optional[typing.Any]],
+            valueType: typing.Type[typing.Any],
             deleteQuery: str,
             identString: str
             ) -> None:
         try:
-            cacheTimestamp = await self._readConfigValueAsync(
+            cacheValue = await self._readConfigValueAsync(
                 key=configKey,
-                type=str)
-            if cacheTimestamp:
-                cacheTimestamp = TileCache._stringToTimestamp(
-                    string=cacheTimestamp)
+                type=valueType)
         except Exception as ex:
             # Log and continue if unable to read map timestamp. Assume that cache is invalid
             logging.error(
-                f'An exception occurred when reading the {configKey} key from the tile cache config',
+                'An exception occurred when reading the {key} entry from the tile cache config'.format(
+                    key=configKey),
                 exc_info=ex)
-            cacheTimestamp = None            
+            cacheValue = None            
             
         try:
             # TODO: Ideally this would be async
-            currentTimestamp = timestampFn()
+            currentValue = currentValueFn()
         except Exception as ex:
             # Log and continue if unable to read the current un
             logging.error(
-                f'An exception occurred when reading the current {identString} timestamp',
+                'An exception occurred when reading the current {ident}'.format(
+                    ident=identString),
                 exc_info=ex)            
-            currentTimestamp = None
+            currentValue = None
 
-        # Delete tiles from the the disk cache if either of the timestamps
-        # couldn't be read or the timestamp stored in the database is not
-        # an exact match for the current timestamp
-        if (not cacheTimestamp) or (not currentTimestamp) or \
-                (cacheTimestamp != currentTimestamp):
+        # Delete tiles from the the disk cache if either of the values couldn't
+        # be read or the value stored in the database is not an exact match for
+        # the current value
+        if (not cacheValue) or (not currentValue) or \
+                (cacheValue != currentValue):
             logging.info(
-                'Tile cache detected {ident} timestamp change (Current: {current}, Cached: {cached})'.format(
+                'Tile cache detected {ident} change (Current: {current}, Cached: {cached})'.format(
                     ident=identString,
-                    current=currentTimestamp,
-                    cached=cacheTimestamp))
+                    current=currentValue,
+                    cached=cacheValue))
             
             try:
                 async with self._dbConnection.execute(deleteQuery) as cursor:
                     if cursor.rowcount:
                         logging.info(
-                            f'Purged {cursor.rowcount} tiles from the tile cache')
+                            'Purged {count} tiles from the tile cache due to {ident} change'.format(
+                                count=cursor.rowcount,
+                                ident=identString))
                     
-                if currentTimestamp:
-                    await self._writeConfigValueAsync(
-                        key=configKey,
-                        value=self._timestampToString(currentTimestamp))
+                if currentValue:
+                    await self._writeConfigValueAsync(key=configKey, value=currentValue)
                 else:
                     await self._deleteConfigValueAsync(key=configKey)
             except Exception as ex:
                 logging.error(
-                    f'An exception occurred when purging tiles from tile cache due to {identString} timestamp change',
+                    'An exception occurred when purging tiles from tile cache due to {ident} change'.format(
+                        ident=identString),
                     exc_info=ex)
     
     # NOTE: This function is intended to be fire and forget so whatever async
