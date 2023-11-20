@@ -135,98 +135,105 @@ class TileCache(object):
     async def initAsync(self) -> None:
         logging.info(f'Connecting to tile cache database {self._dbPath}')
 
-        # TODO: CRITICAL BUG!!!!!if opening the db (possibly anything here) fails then the app doesn't shut down correctly
-        # The main app locks up when it calls join on this process so I assume it means this process isn't existing
-        #self._dbConnection = await aiosqlite.connect('C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\search - Copy.ini')
+        try:
+            # TODO: CRITICAL BUG!!!!!if opening the db (possibly anything here) fails then the app doesn't shut down correctly
+            # The main app locks up when it calls join on this process so I assume it means this process isn't existing
+            self._dbConnection = await aiosqlite.connect('C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\search - Copy.ini')
 
-        self._dbConnection = await aiosqlite.connect(self._dbPath)
+            #self._dbConnection = await aiosqlite.connect(self._dbPath)
 
-        async with self._dbConnection.executescript(_SetDatabasePragmaScript):
-            pass
-
-        if not await proxy.checkIfTableExistsAsync(
-                table=_ConfigTableName,
-                connection=self._dbConnection):
-            logging.debug('Creating tile cache config table')
-            async with self._dbConnection.execute(_CreateConfigTableQuery):
-                pass
-            await self._writeConfigValueAsync('schema', _DatabaseSchemaVersion)
-        else:
-            # TODO: Read schema version from config and check it matches the expected version (not sure what to do if it doesn't)
-            pass
-
-        if not await proxy.checkIfTableExistsAsync(
-                table=_TilesTableName,
-                connection=self._dbConnection):
-            logging.debug('Creating tile cache table')
-            async with self._dbConnection.execute(_CreateTileTableQuery):
+            async with self._dbConnection.executescript(_SetDatabasePragmaScript):
                 pass
 
-        logging.debug('Loading tile cache table contents')
-        invalidEntries = []
-        async with self._dbConnection.execute(_LoadAllMetadataQuery) as cursor:
-            results = await cursor.fetchall()
-            for tileQuery, mimeType, fileSize, overlapType, createdTime, usedTime in results:
-                mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
-                if not mapFormat:
-                    logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unsupported mime type {mimeType})')
-                    invalidEntries.append(tileQuery)
-                    continue
-
-                if overlapType not in _DbStringToOverlapTypeMap:
-                    logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unknown overlap type {overlapType})')
-                    invalidEntries.append(tileQuery)
-                    continue
-                overlapType = _DbStringToOverlapTypeMap[overlapType]
-
-                try:
-                    createdTime = TileCache._stringToTimestamp(string=createdTime)
-                except Exception as ex:
-                    logging.warning(
-                        f'Found invalid tile cache entry for {tileQuery} (Error while parsing created timestamp)',
-                        exc_info=ex)
-                    invalidEntries.append(tileQuery)
-                    continue
-
-                try:
-                    usedTime = TileCache._stringToTimestamp(string=usedTime)
-                except Exception as ex:
-                    logging.warning(
-                        f'Found invalid tile cache entry for {tileQuery} (Error while parsing used timestamp)',
-                        exc_info=ex)
-                    invalidEntries.append(tileQuery)
-                    continue
-
-                # NOTE: In order for items to be inserted into the ordered dict cache in the correct
-                # order, this assumes that the database query returns the rows ordered by used time
-                # (oldest to newest)
-                self._diskCache[tileQuery] = TileCache._DiskEntry(
-                    tileQuery=tileQuery,
-                    mapFormat=mapFormat,
-                    fileSize=fileSize,
-                    overlapType=overlapType,
-                    createdTime=createdTime,
-                    usedTime=usedTime)
-                self._diskTotalBytes += fileSize
-
-        # Remove invalid entries from the database
-        for tileQuery in invalidEntries:
-            try:
-                queryArgs = {'query': tileQuery}
-                async with self._dbConnection.execute(_DeleteTileQuery, queryArgs):
+            if not await proxy.checkIfTableExistsAsync(
+                    table=_ConfigTableName,
+                    connection=self._dbConnection):
+                logging.debug('Creating tile cache config table')
+                async with self._dbConnection.execute(_CreateConfigTableQuery):
                     pass
-                # TODO: Should be logged at info or debug
-                logging.warning(f'Deleted the invalid tile cache entry for {tileQuery}')
-            except Exception as ex:
-                # Log and continue
-                logging.error(
-                    f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
-                    exc_info=ex)
-                    
-        # Commit all changes to the database
-        await self._dbConnection.commit()
+                await self._writeConfigValueAsync('schema', _DatabaseSchemaVersion)
+            else:
+                # TODO: Read schema version from config and check it matches the expected version (not sure what to do if it doesn't)
+                pass
 
-        self._garbageCollectTask = asyncio.ensure_future(self._garbageCollectAsync())
+            if not await proxy.checkIfTableExistsAsync(
+                    table=_TilesTableName,
+                    connection=self._dbConnection):
+                logging.debug('Creating tile cache table')
+                async with self._dbConnection.execute(_CreateTileTableQuery):
+                    pass
+
+            logging.debug('Loading tile cache table contents')
+            invalidEntries = []
+            async with self._dbConnection.execute(_LoadAllMetadataQuery) as cursor:
+                results = await cursor.fetchall()
+                for tileQuery, mimeType, fileSize, overlapType, createdTime, usedTime in results:
+                    mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
+                    if not mapFormat:
+                        logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unsupported mime type {mimeType})')
+                        invalidEntries.append(tileQuery)
+                        continue
+
+                    if overlapType not in _DbStringToOverlapTypeMap:
+                        logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unknown overlap type {overlapType})')
+                        invalidEntries.append(tileQuery)
+                        continue
+                    overlapType = _DbStringToOverlapTypeMap[overlapType]
+
+                    try:
+                        createdTime = TileCache._stringToTimestamp(string=createdTime)
+                    except Exception as ex:
+                        logging.warning(
+                            f'Found invalid tile cache entry for {tileQuery} (Error while parsing created timestamp)',
+                            exc_info=ex)
+                        invalidEntries.append(tileQuery)
+                        continue
+
+                    try:
+                        usedTime = TileCache._stringToTimestamp(string=usedTime)
+                    except Exception as ex:
+                        logging.warning(
+                            f'Found invalid tile cache entry for {tileQuery} (Error while parsing used timestamp)',
+                            exc_info=ex)
+                        invalidEntries.append(tileQuery)
+                        continue
+
+                    # NOTE: In order for items to be inserted into the ordered dict cache in the correct
+                    # order, this assumes that the database query returns the rows ordered by used time
+                    # (oldest to newest)
+                    self._diskCache[tileQuery] = TileCache._DiskEntry(
+                        tileQuery=tileQuery,
+                        mapFormat=mapFormat,
+                        fileSize=fileSize,
+                        overlapType=overlapType,
+                        createdTime=createdTime,
+                        usedTime=usedTime)
+                    self._diskTotalBytes += fileSize
+
+            # Remove invalid entries from the database
+            for tileQuery in invalidEntries:
+                try:
+                    queryArgs = {'query': tileQuery}
+                    async with self._dbConnection.execute(_DeleteTileQuery, queryArgs):
+                        pass
+                    # TODO: Should be logged at info or debug
+                    logging.warning(f'Deleted the invalid tile cache entry for {tileQuery}')
+                except Exception as ex:
+                    # Log and continue
+                    logging.error(
+                        f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
+                        exc_info=ex)
+                        
+            # Commit all changes to the database
+            await self._dbConnection.commit()
+
+            self._garbageCollectTask = asyncio.ensure_future(self._garbageCollectAsync())
+        except:
+            # If something goes wrong call shutdown to tidy up. This is important as something
+            # needs to close the database connection (if it exists) otherwise the process won't
+            # exit causing the main app to lock up on shutdown
+            await self.shutdownAsync()
+            raise
                 
     async def shutdownAsync(self) -> None:
         # TODO: Not sure if this should close tasks or await them
@@ -245,9 +252,11 @@ class TileCache(object):
 
         if self._garbageCollectTask:
             self._garbageCollectTask.cancel()
+            self._garbageCollectTask = None
 
         if self._dbConnection:
             await self._dbConnection.close()
+            self._dbConnection = None
 
         self._memCache.clear()
         self._memTotalBytes = 0
