@@ -136,11 +136,7 @@ class TileCache(object):
         logging.info(f'Connecting to tile cache database {self._dbPath}')
 
         try:
-            # TODO: CRITICAL BUG!!!!!if opening the db (possibly anything here) fails then the app doesn't shut down correctly
-            # The main app locks up when it calls join on this process so I assume it means this process isn't existing
-            self._dbConnection = await aiosqlite.connect('C:\\Users\\GrooveStar\\AppData\\Roaming\\Auto-Jimmy\\search - Copy.ini')
-
-            #self._dbConnection = await aiosqlite.connect(self._dbPath)
+            self._dbConnection = await aiosqlite.connect(self._dbPath)
 
             async with self._dbConnection.executescript(_SetDatabasePragmaScript):
                 pass
