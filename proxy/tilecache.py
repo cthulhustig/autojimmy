@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS tile_cache (
     query TEXT PRIMARY KEY,
     mime TEXT,
     size INTEGER,
-    overlap TEXT,
+    overlap TEXT CHECK(overlap IN ("none", "partial", "complete")),
     created DATETIME,
     used DATETIME,
     data BLOB);
@@ -38,6 +38,13 @@ _DeleteExpiredTilesQuery = \
     'DELETE FROM tile_cache WHERE created <= :expiry;'
 # TODO: Implement clearing tile cache when custom sectors or snapshot change
 _DeleteAllQuery = 'DELETE FROM tile_cache;'
+
+_OverlapTypeToDbStringMap = {
+    proxy.Compositor.OverlapType.NoOverlap: 'none',
+    proxy.Compositor.OverlapType.PartialOverlap: 'partial',
+    proxy.Compositor.OverlapType.CompleteOverlap: 'complete',
+}
+_DbStringToOverlapTypeMap =  {v: k for k, v in _OverlapTypeToDbStringMap.items()}
 
 class TileCache(object):
     class _DiskEntry(object):
@@ -119,11 +126,11 @@ class TileCache(object):
                     invalidEntries.append(tileQuery)
                     continue
 
-                if overlapType not in proxy.Compositor.OverlapType.__members__:
+                if overlapType not in _DbStringToOverlapTypeMap:
                     logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unknown overlap type {overlapType})')
                     invalidEntries.append(tileQuery)
                     continue
-                overlapType = proxy.Compositor.OverlapType.__members__[overlapType]
+                overlapType = _DbStringToOverlapTypeMap[overlapType]
 
                 try:
                     createdTime = TileCache._stringToTimestamp(string=createdTime)
@@ -333,7 +340,7 @@ class TileCache(object):
                 'query': diskEntry.tileQuery(),
                 'mime': travellermap.mapFormatToMimeType(format=diskEntry.mapFormat()),
                 'size': diskEntry.fileSize(),
-                'overlap': str(diskEntry.overlapType().name),
+                'overlap': _OverlapTypeToDbStringMap[diskEntry.overlapType()],
                 'created': TileCache._timestampToString(timestamp=diskEntry.createdTime()),
                 'used': TileCache._timestampToString(timestamp=diskEntry.usedTime()),
                 'data': sqlite3.Binary(tileData)}
