@@ -2,7 +2,6 @@ import aiohttp.web
 import io
 import logging
 import multidict
-import os
 import PIL.Image
 import PIL.ImageDraw
 import proxy
@@ -12,71 +11,27 @@ import urllib.parse
 import urllib.request
 import typing
 
-_ExtensionToContentTypeMap = {
-    '.html': 'text/html',
-    '.js': 'text/javascript',
-    '.css': 'text/css'
-}
-
-# This is an extremely crude in memory cache of all the locally served files. It assumes
-# files don't change during run time and doesn't support files in sub-directories
-# TODO: This should probably be flattened into _HttpRequestHandler
-class LocalFileStore(object):
-    def __init__(
-            self,
-            localFileDir: str
-            ) -> None:
-        self._cache = {}
-
-        for fileName in os.listdir(localFileDir):
-            filePath = os.path.join(localFileDir, fileName)
-            if not os.path.isfile(filePath):
-                continue
-
-            _, extension = os.path.splitext(filePath)
-            mimeType = _ExtensionToContentTypeMap.get(extension)
-            if not mimeType:
-                logging.warning(f'Local file store ignoring {filePath} as it has an unknown extension {extension}')
-                continue
-
-            try:
-                self.addFile(filePath=filePath, route='/' + fileName, mimeType=mimeType)
-            except Exception as ex:
-                logging.error(f'Local file store failed to add {filePath}', exc_info=ex)
-                continue
-
-    def addFile(self, filePath: str, route: str, mimeType: str) -> None:
-        with open(filePath, 'rb') as file:
-            data = file.read()
-
-        self._cache[route] = (data, mimeType)
-        logging.debug(f'Local file store cached {filePath} for {route}')
-
-    def addFileData(
-            self,
-            data: typing.Union[bytes, str],
-            route: str,
-            mimeType: str
-            ) -> None:
-        self._cache[route] = (data, mimeType)
-        logging.debug(f'Local file store cached data for {route}')
-
-    def addAlias(self, route: str, alias: str) -> None:
-        if not route in self._cache:
-            raise RuntimeError(f'Unable to create alias for unknown route {route}')
-        self._cache[alias] = self._cache[route]            
-        logging.debug(f'Local file store aliased {route} to {alias}')
-
-    def contains(self, filePath: str) -> bool:
-        return filePath in self._cache
-
-    def lookup(
-            self,
-            filePath: str
-            ) -> typing.Tuple[typing.Optional[typing.Union[bytes, str]], typing.Optional[str]]: # File Data, Mime Type
-        return self._cache.get(filePath, (None, None))
-
 class RequestHandler(object):
+    class _StaticRouteData(object):
+        def __init__(
+                self,
+                route: str,
+                data: typing.Union[str, bytes],
+                mimeType: str
+                ) -> None:
+            self._route = route
+            self._data = data
+            self._mimeType = mimeType
+
+        def route(self) -> str:
+            return self._route
+        
+        def data(self) -> typing.Union[str, bytes]:
+            return self._data
+        
+        def mimeType(self) -> str:
+            return self._mimeType
+
     # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15 seconds.
     # I'm overriding this to make navigation of the map more responsive
     _ConnectionKeepAliveSeconds = 60
@@ -84,17 +39,16 @@ class RequestHandler(object):
     def __init__(
             self,
             travellerMapUrl: str,
-            localFileStore: LocalFileStore,
             tileCache: proxy.TileCache,
             compositor: typing.Optional[proxy.Compositor],
             mainsMilieu: typing.Optional[travellermap.Milieu]
             ) -> None:
         super().__init__()
         self._travellerMapUrl = travellerMapUrl
-        self._localFileStore = localFileStore
         self._tileCache = tileCache
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
+        self._staticRoutes: typing.Dict[str, RequestHandler._StaticRouteData] = {}
 
         # As far as I can tell connection reuse requires HTTP/2 which in turns requires
         # SSL (https://caniuse.com/http2). I was seeing exceptions when using my local
@@ -108,6 +62,17 @@ class RequestHandler(object):
 
         self._session = aiohttp.ClientSession(connector=self._connector)
 
+    def addStaticRoute(
+            self,
+            route: str,
+            data: typing.Union[str, bytes],
+            mimeType: typing.Optional[str] = None
+            ) -> None:
+        self._staticRoutes[route] = RequestHandler._StaticRouteData(
+            route=route,
+            data=data,
+            mimeType=mimeType)        
+
     async def shutdownAsync(self) -> None:
         if self._session:
             await self._session.close()
@@ -117,8 +82,8 @@ class RequestHandler(object):
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
         # TODO: I should probably use the local copies of sophont and allegiance files for those requests
-        if self._localFileStore.contains(request.path):
-            return await self._handleLocalFileRequestAsync(request)
+        if request.path in self._staticRoutes:
+            return await self._handleStaticRouteRequestAsync(request)
         elif request.path == '/api/tile':
             return await self._handleTileRequestAsync(request)
         elif request.path == '/res/mains.json':
@@ -128,16 +93,18 @@ class RequestHandler(object):
             # configured Traveller Map instance
             return await self._handleProxyRequestAsync(request)
 
-    async def _handleLocalFileRequestAsync(
+    async def _handleStaticRouteRequestAsync(
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
-        logging.debug(f'Serving local data for {request.path}')
+        logging.debug(f'Serving static content for {request.path}')
 
-        body, contentType = self._localFileStore.lookup(request.path)
-        if body == None or contentType == None:
-            raise RuntimeError(f'Unknown local file {request.path}')        
+        staticData = self._staticRoutes.get(request.path)
+        if not staticData:
+            raise RuntimeError(f'Failed to find static content for {request.path}')        
 
+        body = staticData.data()
+        contentType = staticData.mimeType()
         headers = {
             'Content-Length': str(len(body)),
             'Cache-Control': 'no-store, no-cache', # Don't cache locally served files

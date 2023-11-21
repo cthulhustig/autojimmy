@@ -13,6 +13,29 @@ import typing
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
 _TileCacheDbFileName = 'tile_cache.db'
 
+_ExtensionToContentTypeMap = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css'
+}
+
+def _enumerateWebFiles(
+        webDir: str
+        ) -> typing.Iterable[typing.Tuple[str, str]]: # Tuple is (file name, mime type)
+    fileList = []
+    for fileName in os.listdir(webDir):
+        filePath = os.path.join(webDir, fileName)
+        if not os.path.isfile(filePath):
+            continue
+
+        _, extension = os.path.splitext(filePath)
+        mimeType = _ExtensionToContentTypeMap.get(extension)
+        if not mimeType:
+            logging.warning(f'Ignoring web file {fileName} as it has an unknown extension {extension}')
+            continue
+        fileList.append((fileName, mimeType))
+    return fileList
+
 # TODO: I don't think this is working for errors due to internal exceptions
 @aiohttp.web.middleware
 async def _serverHeaderMiddlewareAsync(
@@ -173,13 +196,8 @@ class MapProxy(object):
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
-
-            localFileStore = proxy.LocalFileStore(
-                localFileDir=os.path.join(installDir, 'data', 'web'))
-            localFileStore.addAlias(route='/index.html', alias='/')
             
             loop = asyncio.get_event_loop()
-
             with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
                 # NOTE: This will block until the universe is loaded
                 loop.run_until_complete(compositor.loadUniverseAsync())
@@ -193,22 +211,53 @@ class MapProxy(object):
                 # TODO: Would probably be better if you could disable caching of files when setting up the data store
                 travellermap.DataStore.instance().clearCachedData()
 
+                # Clear tile cache
                 tileCache = proxy.TileCache(
                     travellerMapUrl=travellerMapUrl,
                     dbPath=os.path.join(appDir, _TileCacheDbFileName),
                     maxMemBytes=_MaxTileCacheBytes)
                 loop.run_until_complete(tileCache.initAsync())
 
-                # Start web server
+                # Create request handler
                 requestHandler = proxy.RequestHandler(
                     travellerMapUrl=travellerMapUrl,
-                    localFileStore=localFileStore,
                     tileCache=tileCache,
                     compositor=compositor,
                     mainsMilieu=mainsMilieu)
+                
+                webDir = os.path.join(installDir, 'data', 'web')
+                webFiles = _enumerateWebFiles(webDir=webDir)
+                for fileName, mimeType in webFiles:
+                    filePath = os.path.join(webDir, fileName)
+
+                    try:
+                        with open(filePath, 'rb') as file:
+                            data = file.read()
+                    except Exception as ex:
+                        logging.error(
+                            f'An exception occurred while loading web file {filePath}',
+                            exc_info=ex)
+                        continue
+
+                    requestHandler.addStaticRoute(
+                        route='/' + fileName,
+                        data=data,
+                        mimeType=mimeType)
+                    
+                    # Alias / to index.html
+                    if fileName == 'index.html':
+                        requestHandler.addStaticRoute(
+                            route='/',
+                            data=data,
+                            mimeType=mimeType)
+
+                # Start web server with all requests redirected to my handler
                 webApp = aiohttp.web.Application(
                     middlewares=[_serverHeaderMiddlewareAsync])
-                webApp.router.add_route('*', '/{path:.*?}', requestHandler.handleRequestAsync)
+                webApp.router.add_route(
+                    method='*',
+                    path='/{path:.*?}',
+                    handler=requestHandler.handleRequestAsync)
 
                 webServer = loop.create_server(
                     protocol_factory=webApp.make_handler(),
@@ -216,6 +265,7 @@ class MapProxy(object):
                     port=app.Config.instance().mapProxyPort())
                 loop.run_until_complete(webServer)
 
+                # Run event loop until proxy is shut down
                 messageQueue.put((MapProxy.ServerStatus.Started, None))
                 loop.run_until_complete(MapProxy._shutdownMonitorAsync(
                     shutdownEvent=shutdownEvent,
