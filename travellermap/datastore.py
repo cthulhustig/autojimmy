@@ -458,7 +458,6 @@ class DataStore(object):
     _TimestampUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/timestamp.txt'
     _DataFormatUrl = 'https://raw.githubusercontent.com/cthulhustig/autojimmy-data/main/map/dataformat.txt'
     _SnapshotCheckTimeout = 3 # Seconds
-    _DefaultSectorsMilieu = travellermap.Milieu.M1105
     # NOTE: Pattern for matching data version treats the second digit as optional, if not specified it's
     # assumed to be 0. It also allows white space at the end to stop an easy typo in the snapshot breaking
     # all instances of the app everywhere
@@ -1215,9 +1214,19 @@ class DataStore(object):
             self,
             milieu: typing.Optional[travellermap.Milieu] = None
             ) -> None:
-        defaultSectors = self._loadSectorWorlds(
-            milieu=DataStore._DefaultSectorsMilieu,
-            stockOnly=True) # Custom sectors shouldn't be used for default sector data
+        # Traveller Map generates mains from M1105 world positions. The same
+        # mains information is then use no mater which milieu you are viewing.
+        # The unwritten rule seems to be that world positions can't change
+        # between milieu. My addition of custom sectors breaks this logic as
+        # world positions for a give sector can change completely depending on
+        # the milieu. The approach used here is to use world positions from
+        # milieu specific stock and custom sectors then, for sector positions
+        # that don't have a milieu specific sector, take world locations from
+        # _stock_ M1105 sectors
+        if milieu != travellermap.Milieu.M1105:
+            defaultSectors = self._loadSectorWorlds(
+                milieu=travellermap.Milieu.M1105,
+                stockOnly=True) # Custom sectors shouldn't be used for default sector data
 
         milieuList = [milieu] if milieu else travellermap.Milieu
         for milieu in milieuList:
@@ -1248,7 +1257,7 @@ class DataStore(object):
                 # If the milieu being updated isn't the base milieu then use worlds from the base milieu
                 # for any locations where the base milieu has a sector but the current milieu doesn't.
                 # This mimics the behaviour of Traveller Map but with support for custom sectors
-                if milieu != DataStore._DefaultSectorsMilieu:
+                if milieu != travellermap.Milieu.M1105:
                     seenSectors = set()
                     for sectorInfo in sectorWorlds.keys():
                         seenSectors.add((sectorInfo.x(), sectorInfo.y()))
