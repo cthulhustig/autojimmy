@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS {_TilesTableName} (
     query TEXT NOT NULL PRIMARY KEY,
     mime TEXT NOT NULL,
     size INTEGER NOT NULL,
+    milieu TEXT NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    scale INTEGER NOT NULL,
     overlap TEXT NOT NULL CHECK(overlap IN ("none", "partial", "complete")),
     created DATETIME NOT NULL,
     used DATETIME NOT NULL,
@@ -58,13 +64,31 @@ _DeleteConfigValue = \
     f'DELETE FROM {_ConfigTableName} WHERE key = :key;'
 
 _AddTileQuery = \
-    f'INSERT OR REPLACE INTO {_TilesTableName} VALUES (:query, :mime, :size, :overlap, :created, :used, :data);'
+f"""
+    INSERT OR REPLACE INTO {_TilesTableName} VALUES (
+        :query,
+        :mime,
+        :size,
+        :milieu,
+        :x,
+        :y,
+        :width,
+        :height,
+        :scale,
+        :overlap,
+        :created,
+        :used,
+        :data);
+"""
 _UpdateTileUsedQuery = \
     f'UPDATE {_TilesTableName} SET used = :used WHERE query = :query AND used < :used;'
 # When loading the metadata have it sorted by used time (oldest to newest) as it makes it
 # easier to initialise the memory cache which is also kept in usage order
 _LoadAllMetadataQuery = \
-    f'SELECT query, mime, size, overlap, created, used FROM {_TilesTableName} ORDER BY used ASC;'
+f"""
+    SELECT query, mime, size, milieu, x, y, width, height, scale, overlap, created, used
+    FROM {_TilesTableName} ORDER BY used ASC;
+"""
 _LoadTileDataQuery = \
     f'SELECT data FROM {_TilesTableName} WHERE query = :query;'
 _DeleteTileQuery = \
@@ -89,6 +113,10 @@ class TileCache(object):
                 tileQuery: str,
                 mapFormat: travellermap.MapFormat,
                 fileSize: int,
+                tileMilieu: travellermap.milieu,
+                tilePosition: typing.Tuple[int, int],
+                tileDimensions: typing.Tuple[int, int],
+                tileScale: int,
                 overlapType: proxy.Compositor.OverlapType,
                 createdTime: datetime.datetime,
                 usedTime: typing.Optional[datetime.datetime] = None
@@ -96,6 +124,10 @@ class TileCache(object):
             self._tileQuery = tileQuery
             self._mapFormat = mapFormat
             self._fileSize = fileSize
+            self._tileMilieu = tileMilieu
+            self._tilePosition = tilePosition
+            self._tileDimensions = tileDimensions
+            self._tileScale = tileScale
             self._overlapType = overlapType
             self._createdTimestamp = createdTime
             self._usedTimestamp = usedTime if usedTime != None else createdTime
@@ -108,6 +140,30 @@ class TileCache(object):
         
         def fileSize(self) -> str:
             return self._fileSize
+        
+        def tileMilieu(self) -> travellermap.Milieu:
+            return self._tileMilieu
+        
+        def tileX(self) -> int:
+            return self._tilePosition[0]
+
+        def tileY(self) -> int:
+            return self._tilePosition[1]
+
+        def tilePosition(self) -> typing.Tuple[int, int]:
+            return self._tilePosition
+        
+        def tileWidth(self) -> int:
+            return self._tileDimensions[0]
+
+        def tileHeight(self) -> int:
+            return self._tileDimensions[1]
+        
+        def tileDimensions(self) -> typing.Tuple[int, int]:
+            return self._tileDimensions
+        
+        def tileScale(self) -> int:
+            return self._tileScale
         
         def overlapType(self) -> proxy.Compositor.OverlapType:
             return self._overlapType
@@ -180,7 +236,20 @@ class TileCache(object):
             invalidEntries = []
             async with self._dbConnection.execute(_LoadAllMetadataQuery) as cursor:
                 results = await cursor.fetchall()
-                for tileQuery, mimeType, fileSize, overlapType, createdTime, usedTime in results:
+                for row in results:
+                    tileQuery = row[0]
+                    mimeType = row[1]
+                    fileSize = row[2]
+                    tileMilieu = row[3]
+                    tileX = row[4]
+                    tileY = row[5]
+                    tileWidth = row[6]
+                    tileHeight = row[7]
+                    tileScale = row[8]
+                    overlapType = row[9]
+                    createdTime = row[10]
+                    usedTime = row[11]
+
                     mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
                     if not mapFormat:
                         logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unsupported mime type {mimeType})')
@@ -218,6 +287,10 @@ class TileCache(object):
                         tileQuery=tileQuery,
                         mapFormat=mapFormat,
                         fileSize=fileSize,
+                        tileMilieu=tileMilieu,
+                        tilePosition=(tileX, tileY),
+                        tileDimensions=(tileWidth, tileHeight),
+                        tileScale=tileScale,
                         overlapType=overlapType,
                         createdTime=createdTime,
                         usedTime=usedTime)
@@ -280,6 +353,10 @@ class TileCache(object):
             self,
             tileQuery: str,
             tileImage: travellermap.MapImage,
+            tileMilieu: str,
+            tilePosition: typing.Tuple[int, int],
+            tileDimensions: typing.Tuple[int, int],
+            tileScale: int,
             overlapType: proxy.Compositor.OverlapType,
             cacheToDisk: bool = True
             ) -> None:
@@ -313,6 +390,10 @@ class TileCache(object):
                 tileQuery=tileQuery,
                 mapFormat=tileImage.format(),
                 fileSize=tileImage.size(),
+                tileMilieu=tileMilieu,
+                tilePosition=tilePosition,
+                tileDimensions=tileDimensions,
+                tileScale=tileScale,
                 overlapType=overlapType,
                 createdTime=common.utcnow())
             self._diskPendingAdds.add(tileQuery)            
@@ -358,6 +439,9 @@ class TileCache(object):
         await self.addAsync(
             tileQuery=diskEntry.tileQuery(),
             tileImage=image,
+            tilePosition=diskEntry.tilePosition(),
+            tileDimensions=diskEntry.tileDimensions(),
+            tileScale=diskEntry.tileScale(),
             overlapType=diskEntry.overlapType(),
             cacheToDisk=False) # Already on disk
         
@@ -535,6 +619,12 @@ class TileCache(object):
                 'query': diskEntry.tileQuery(),
                 'mime': travellermap.mapFormatToMimeType(format=diskEntry.mapFormat()),
                 'size': diskEntry.fileSize(),
+                'milieu': diskEntry.tileMilieu().value,
+                'x': diskEntry.tileX(),
+                'y': diskEntry.tileY(),
+                'width': diskEntry.tileWidth(),
+                'height': diskEntry.tileHeight(),
+                'scale': diskEntry.tileScale(),
                 'overlap': _OverlapTypeToDbStringMap[diskEntry.overlapType()],
                 'created': TileCache._timestampToString(timestamp=diskEntry.createdTime()),
                 'used': TileCache._timestampToString(timestamp=diskEntry.usedTime()),

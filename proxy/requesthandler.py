@@ -256,6 +256,10 @@ class RequestHandler(object):
                 await self._tileCache.addAsync(
                     tileQuery=request.query_string,
                     tileImage=tileImage,
+                    tileMilieu=milieu,
+                    tilePosition=(tileX, tileY),
+                    tileDimensions=(tileWidth, tileHeight),
+                    tileScale=tileScale,
                     overlapType=overlapType)
 
             # Enable this to add a red boundary to all tiles in order to highlight where they are
