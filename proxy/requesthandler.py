@@ -2,6 +2,7 @@ import aiohttp.web
 import io
 import logging
 import multidict
+import os
 import PIL.Image
 import PIL.ImageDraw
 import proxy
@@ -10,6 +11,29 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import typing
+
+_ExtensionToContentTypeMap = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css'
+}
+
+def _enumerateFiles(
+        webDir: str
+        ) -> typing.Iterable[typing.Tuple[str, str]]: # Tuple is (file name, mime type)
+    fileList = []
+    for fileName in os.listdir(webDir):
+        filePath = os.path.join(webDir, fileName)
+        if not os.path.isfile(filePath):
+            continue
+
+        _, extension = os.path.splitext(filePath)
+        mimeType = _ExtensionToContentTypeMap.get(extension)
+        if not mimeType:
+            logging.warning(f'Ignoring web file {fileName} as it has an unknown extension {extension}')
+            continue
+        fileList.append((fileName, mimeType))
+    return fileList
 
 class RequestHandler(object):
     class _StaticRouteData(object):
@@ -39,12 +63,14 @@ class RequestHandler(object):
     def __init__(
             self,
             travellerMapUrl: str,
+            installDir: str,
             tileCache: proxy.TileCache,
             compositor: typing.Optional[proxy.Compositor],
             mainsMilieu: typing.Optional[travellermap.Milieu]
             ) -> None:
         super().__init__()
         self._travellerMapUrl = travellerMapUrl
+        self._installDir = installDir
         self._tileCache = tileCache
         self._compositor = compositor
         self._mainsMilieu = mainsMilieu
@@ -62,16 +88,7 @@ class RequestHandler(object):
 
         self._session = aiohttp.ClientSession(connector=self._connector)
 
-    def addStaticRoute(
-            self,
-            route: str,
-            data: typing.Union[str, bytes],
-            mimeType: typing.Optional[str] = None
-            ) -> None:
-        self._staticRoutes[route] = RequestHandler._StaticRouteData(
-            route=route,
-            data=data,
-            mimeType=mimeType)        
+        self._initStaticRoutes()
 
     async def shutdownAsync(self) -> None:
         if self._session:
@@ -86,12 +103,63 @@ class RequestHandler(object):
             return await self._handleStaticRouteRequestAsync(request)
         elif request.path == '/api/tile':
             return await self._handleTileRequestAsync(request)
-        elif request.path == '/res/mains.json':
-            return await self._handleMainsRequestAsync(request)
         else:
             # Act as a proxy for all other requests and just forward them to the
             # configured Traveller Map instance
             return await self._handleProxyRequestAsync(request)
+        
+    def _initStaticRoutes(self) -> None:
+        # Add static routes for Traveller Map web interface snapshot
+        webDir = os.path.join(self._installDir, 'data', 'web')
+        webFiles = _enumerateFiles(webDir=webDir)
+        for fileName, mimeType in webFiles:
+            filePath = os.path.join(webDir, fileName)
+
+            try:
+                with open(filePath, 'rb') as file:
+                    data = file.read()
+            except Exception as ex:
+                logging.error(
+                    f'An exception occurred while loading web file {filePath}',
+                    exc_info=ex)
+                continue
+
+            self._addStaticRoute(
+                route='/' + fileName,
+                data=data,
+                mimeType=mimeType)
+            
+            # Alias / to index.html
+            if fileName == 'index.html':
+                self._addStaticRoute(
+                    route='/',
+                    data=data,
+                    mimeType=mimeType)
+
+        # Add static route for /res/mains.json
+        try:
+            mainsGenerator = travellermap.MainsGenerator()
+            mainsData = mainsGenerator.generateMains(milieu=self._mainsMilieu)
+            self._addStaticRoute(
+                route='/res/mains.json',
+                data=mainsData,
+                mimeType='application/json')            
+        except Exception as ex:
+            logging.error(
+                f'An exception occurred while generating mains for {self._mainsMilieu.value}',
+                exc_info=ex)
+        
+    def _addStaticRoute(
+            self,
+            route: str,
+            data: typing.Union[str, bytes],
+            mimeType: typing.Optional[str] = None
+            ) -> None:
+        self._staticRoutes[route] = RequestHandler._StaticRouteData(
+            route=route,
+            data=data,
+            mimeType=mimeType)
+        logging.info(f'Added static route {route} (Type: {mimeType})')
 
     async def _handleStaticRouteRequestAsync(
             self,
@@ -113,7 +181,7 @@ class RequestHandler(object):
         return aiohttp.web.Response(
             status=200,
             headers=headers,
-            body=body) 
+            body=body)
 
     # NOTE: It's important that this function tries it's best to return something. If compositing
     # fails it should return the default tile
@@ -292,43 +360,6 @@ class RequestHandler(object):
             status=200,
             headers=headers,
             body=tileBytes)
-
-    async def _handleMainsRequestAsync(
-            self,
-            request: aiohttp.web.Request
-            ) -> aiohttp.web.Response:
-        mainsData = None
-        if self._mainsMilieu:
-            try:
-                # TODO: Ideally this would be async
-                mainsData = travellermap.DataStore.instance().mainsData(
-                    milieu=self._mainsMilieu)
-                if not mainsData:
-                    raise RuntimeError('Empty mains data returned')
-            except Exception as ex:
-                logging.error(f'Failed to retrieve mains data from data store', exc_info=ex)
-                # Continue to fall back to traveller map
-
-        if not mainsData:
-            return await self._handleProxyRequestAsync(
-                request=request,
-                # Allow browser to cache it for the session but not store it on disk
-                forceCacheControl='no-store')
-        mainsData = mainsData.encode()
-
-        logging.debug(f'Serving local mains data')
-
-        headers = {
-            'Content-Type': 'application/json',
-            'Content-Length': str(len(mainsData)),
-            # Tell the client not to cache tiles. Assuming the browser respects the request, it
-            # should prevent stale tiles being displayed if the user modifies data
-            'Cache-Control': 'no-store, no-cache'}
-
-        return aiohttp.web.Response(
-            status=200,
-            headers=headers,
-            body=mainsData)        
 
     _ProxyRequestCopyHeaders = [
         'Content-Type',

@@ -13,29 +13,6 @@ import typing
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
 _TileCacheDbFileName = 'tile_cache.db'
 
-_ExtensionToContentTypeMap = {
-    '.html': 'text/html',
-    '.js': 'text/javascript',
-    '.css': 'text/css'
-}
-
-def _enumerateWebFiles(
-        webDir: str
-        ) -> typing.Iterable[typing.Tuple[str, str]]: # Tuple is (file name, mime type)
-    fileList = []
-    for fileName in os.listdir(webDir):
-        filePath = os.path.join(webDir, fileName)
-        if not os.path.isfile(filePath):
-            continue
-
-        _, extension = os.path.splitext(filePath)
-        mimeType = _ExtensionToContentTypeMap.get(extension)
-        if not mimeType:
-            logging.warning(f'Ignoring web file {fileName} as it has an unknown extension {extension}')
-            continue
-        fileList.append((fileName, mimeType))
-    return fileList
-
 # TODO: I don't think this is working for errors due to internal exceptions
 @aiohttp.web.middleware
 async def _serverHeaderMiddlewareAsync(
@@ -202,15 +179,6 @@ class MapProxy(object):
                 # NOTE: This will block until the universe is loaded
                 loop.run_until_complete(compositor.loadUniverseAsync())
 
-                # TODO: Should load all mains files now to avoid consistency issues if the user was to add/remove
-                # a custom sector before they've opened any traveller map widgets. The updated mains will be loaded
-                # but it won't match the sector data
-
-                # Clear out cached data from the data store now that things should have loaded the required data.
-                # This is an attempt to keep the memory footprint of the proxy down
-                # TODO: Would probably be better if you could disable caching of files when setting up the data store
-                travellermap.DataStore.instance().clearCachedData()
-
                 # Clear tile cache
                 tileCache = proxy.TileCache(
                     travellerMapUrl=travellerMapUrl,
@@ -221,49 +189,26 @@ class MapProxy(object):
                 # Create request handler
                 requestHandler = proxy.RequestHandler(
                     travellerMapUrl=travellerMapUrl,
+                    installDir=installDir,
                     tileCache=tileCache,
                     compositor=compositor,
                     mainsMilieu=mainsMilieu)
-                
-                webDir = os.path.join(installDir, 'data', 'web')
-                webFiles = _enumerateWebFiles(webDir=webDir)
-                for fileName, mimeType in webFiles:
-                    filePath = os.path.join(webDir, fileName)
 
-                    try:
-                        with open(filePath, 'rb') as file:
-                            data = file.read()
-                    except Exception as ex:
-                        logging.error(
-                            f'An exception occurred while loading web file {filePath}',
-                            exc_info=ex)
-                        continue
-
-                    requestHandler.addStaticRoute(
-                        route='/' + fileName,
-                        data=data,
-                        mimeType=mimeType)
-                    
-                    # Alias / to index.html
-                    if fileName == 'index.html':
-                        requestHandler.addStaticRoute(
-                            route='/',
-                            data=data,
-                            mimeType=mimeType)
-
-                # Start web server with all requests redirected to my handler
+                # Set up web server with all requests redirected to my handler
                 webApp = aiohttp.web.Application(
                     middlewares=[_serverHeaderMiddlewareAsync])
                 webApp.router.add_route(
                     method='*',
                     path='/{path:.*?}',
                     handler=requestHandler.handleRequestAsync)
-
-                webServer = loop.create_server(
+                loop.run_until_complete(loop.create_server(
                     protocol_factory=webApp.make_handler(),
                     host='127.0.0.1', # Only listen on loopback for security
-                    port=app.Config.instance().mapProxyPort())
-                loop.run_until_complete(webServer)
+                    port=app.Config.instance().mapProxyPort()))
+                
+                # Now that set up is finished clear out cached data from that data
+                # store to keep the memory footprint down.
+                travellermap.DataStore.instance().clearCachedData()                
 
                 # Run event loop until proxy is shut down
                 messageQueue.put((MapProxy.ServerStatus.Started, None))

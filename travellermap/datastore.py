@@ -448,7 +448,6 @@ class DataStore(object):
     _UniverseFileName = 'universe.json'
     _SophontsFileName = 'sophonts.json'
     _AllegiancesFileName = 'allegiances.json'
-    _MainsFileName = 'mains.json'
     _TimestampFileName = 'timestamp.txt'
     _DataFormatFileName = 'dataformat.txt'
     _SectorMetadataXsdFileName = 'sectors.xsd'
@@ -639,24 +638,6 @@ class DataStore(object):
     def allegiancesData(self) -> str:
         return self._bytesToString(bytes=self._readStockFile(
             relativeFilePath=self._AllegiancesFileName))
-    
-    def mainsData(
-            self,
-            milieu: travellermap.Milieu,
-            stockOnly: bool = False
-            ) -> str:
-        if (not stockOnly) and self.hasCustomSectors(milieu=milieu):
-            try:
-                return self._bytesToString(bytes=self._readMilieuFile(
-                    fileName=DataStore._MainsFileName,
-                    milieu=milieu,
-                    useCustomMapDir=True))
-            except Exception as ex:
-                logging.error(f'Data store failed to read custom mains data for {milieu.value}', exc_info=ex)
-                # Continue to load default file
-
-        return self._bytesToString(bytes=self._readStockFile(
-            relativeFilePath=self._MainsFileName))    
 
     def universeTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
@@ -817,10 +798,6 @@ class DataStore(object):
             # Force reload of all sector data
             self._loadSectors(reload=True)
             
-            # Regenerate the custom mains for _ALL_ milieu
-            # TODO: Progress should probably take this into account somehow (if I can't get the time down)
-            self._regenerateCustomMains()
-            
     def hasCustomSectors(
             self,
             milieu: typing.Optional[travellermap.Milieu] = None,
@@ -955,10 +932,7 @@ class DataStore(object):
                 customMapLevels=mapLevels)
             universe.addSector(sector)
             
-            self._saveCustomSectors(milieu=milieu)
-
-            # Regenerate the mains for the affected milieu
-            self._regenerateCustomMains(milieu=milieu)            
+            self._saveCustomSectors(milieu=milieu)      
 
             return sector
 
@@ -1017,9 +991,6 @@ class DataStore(object):
             # Force reload of sectors for this milieu in order to load details of any
             # sector that had been replaced by the custom sector that was deleted
             self._loadSectors(milieu=milieu, reload=True)
-                    
-            # Regenerate the mains for the affected milieu
-            self._regenerateCustomMains(milieu=milieu)
 
     class SectorMetadataValidationError(Exception):
         def __init__(self, reason) -> None:
@@ -1209,121 +1180,6 @@ class DataStore(object):
             return self._filesystemCache.read(absolutePath)
 
         return self._readStockFile(relativeFilePath=relativePath)
-    
-    def _regenerateCustomMains(
-            self,
-            milieu: typing.Optional[travellermap.Milieu] = None
-            ) -> None:
-        # Traveller Map generates mains from M1105 world positions. The same
-        # mains information is then use no mater which milieu you are viewing.
-        # The unwritten rule seems to be that world positions can't change
-        # between milieu. My addition of custom sectors breaks this logic as
-        # world positions for a give sector can change completely depending on
-        # the milieu. The approach used here is to use world positions from
-        # milieu specific stock and custom sectors then, for sector positions
-        # that don't have a milieu specific sector, take world locations from
-        # _stock_ M1105 sectors
-        if milieu != travellermap.Milieu.M1105:
-            defaultSectors = self._loadSectorWorlds(
-                milieu=travellermap.Milieu.M1105,
-                stockOnly=True) # Custom sectors shouldn't be used for default sector data
-
-        milieuList = [milieu] if milieu else travellermap.Milieu
-        for milieu in milieuList:
-            logging.info(f'Regenerating mains for {milieu.value}')
-
-            customMainsFilePath = os.path.join(
-                self._customDir,
-                DataStore._MilieuBaseDir,
-                milieu.value,
-                DataStore._MainsFileName)
-
-            if not self.hasCustomSectors(milieu=milieu):
-                # This milieu has no custom sectors so delete any mains file for that custom sector
-                # if it exists to cause the default file from Traveller Map
-                try:
-                    if self._filesystemCache.isfile(customMainsFilePath):
-                        self._filesystemCache.remove(customMainsFilePath)
-                except Exception as ex:
-                    logging.error(f'Failed to delete custom mains file for {milieu.value}', exc_info=ex)
-                continue # Keep going and try to update the next milieu
-
-            try:
-                mainsGenerator = travellermap.MainGenerator()
-                sectorWorlds = self._loadSectorWorlds(
-                    milieu=milieu,
-                    stockOnly=False) # Load custom sectors
-                    
-                # If the milieu being updated isn't the base milieu then use worlds from the base milieu
-                # for any locations where the base milieu has a sector but the current milieu doesn't.
-                # This mimics the behaviour of Traveller Map but with support for custom sectors
-                if milieu != travellermap.Milieu.M1105:
-                    seenSectors = set()
-                    for sectorInfo in sectorWorlds.keys():
-                        seenSectors.add((sectorInfo.x(), sectorInfo.y()))
-                    for sectorInfo in defaultSectors.keys():
-                        if (sectorInfo.x(), sectorInfo.y()) not in seenSectors:
-                            sectorWorlds[sectorInfo] = defaultSectors[sectorInfo]
-
-                for sectorInfo, worldList in sectorWorlds.items():
-                    for world in worldList:
-                        worldHex = world.attribute(travellermap.WorldAttribute.Hex)
-                        try:
-                            if len(worldHex) != 4:
-                                raise RuntimeError('Invalid hex length')
-                            hexX = int(worldHex[:2])
-                            hexY = int(worldHex[2:])
-                        except Exception as ex:
-                            message = 'Mains generation skipping {world} ({sector}) due to invalid hex {hex}'.format(
-                                world=world.attribute(travellermap.WorldAttribute.Name),
-                                sector=sectorInfo.canonicalName(),
-                                hex=worldHex)
-                            logging.warning(message, exc_info=ex)
-                            continue
-
-                        mainsGenerator.addWorld(
-                            sectorX=sectorInfo.x(),
-                            sectorY=sectorInfo.y(),
-                            hexX=hexX,
-                            hexY=hexY)
-                        
-                mains = mainsGenerator.generate()
-                outputData = []
-                for main in mains:
-                    outputMain = []
-                    for sectorX, sectorY, hexX, hexY in main:
-                        outputMain.append(f'{sectorX}/{sectorY}/{hexX:02d}{hexY:02d}')
-                    outputData.append(outputMain)
-            except Exception as ex:
-                logging.error(f'Failed to generate custom mains file for {milieu.value}', exc_info=ex)
-                continue # Keep going and try to update the next milieu
-
-            try:
-                self._filesystemCache.write(
-                    path=customMainsFilePath,
-                    data=json.dumps(outputData))
-            except Exception as ex:
-                logging.error(f'Failed to write custom mains file for {milieu.value}', exc_info=ex)
-                continue # Keep going and try to update the next milieu
-
-    def _loadSectorWorlds(
-            self,
-            milieu: travellermap.Milieu,
-            stockOnly: bool
-            ) -> typing.Mapping[SectorInfo, typing.Iterable[travellermap.RawWorld]]:
-        sectorWorldMap = {}
-        for sectorInfo in self.sectors(milieu=milieu, stockOnly=stockOnly):
-            sectorData = self.sectorFileData(
-                sectorName=sectorInfo.canonicalName(),
-                milieu=milieu,
-                stockOnly=stockOnly)
-            if not sectorData:
-                continue
-            sectorWorldMap[sectorInfo] = travellermap.readSector(
-                content=sectorData,
-                format=sectorInfo.sectorFormat(),
-                identifier=sectorInfo.canonicalName())
-        return sectorWorldMap
 
     def _makeWorkingDir(
             self,
