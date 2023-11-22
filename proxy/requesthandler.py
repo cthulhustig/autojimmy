@@ -1,4 +1,5 @@
 import aiohttp.web
+import app
 import io
 import logging
 import multidict
@@ -365,7 +366,6 @@ class RequestHandler(object):
         'Content-Type',
         'Cache-Control'
     ]
-
     async def _handleProxyRequestAsync(
             self,
             request: aiohttp.web.Request,
@@ -416,13 +416,20 @@ class RequestHandler(object):
         query = request.query
         body = await request.read()
 
-        # The headers from the incoming request are used as the headers for the outgoing request.
-        # The Host header should be removed if present as, if it's passed on, Traveller Map doesn't
-        # like the fact it's set to the address of the proxy
-        headers = request.headers
+        # The headers from the incoming request are used as the base headers
+        # for the outgoing request.
+        headers = request.headers.copy()
+
+        # The Host header should be removed if present as, if it's passed on,
+        # Traveller Map doesn't like the fact it's set to the address of the
+        # proxy
         if 'Host' in headers:
-            headers = headers.copy()
             del headers['Host']
+
+        # The request User-Agent is set to a custom string
+        if 'User-Agent' in headers:
+            del headers['User-Agent']
+        headers['User-Agent'] = f'{app.AppName} Map Client {app.AppVersion}'
 
         async with self._session.request(request.method, targetUrl, headers=headers, params=query, data=body) as response:
             body = await response.read()

@@ -165,7 +165,6 @@ class MapProxy(object):
             logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
         try:
-            # TODO: This is duplicated from the app and should probably be shared
             installMapsDir = os.path.join(installDir, 'data', 'map')
             overlayMapsDir = os.path.join(appDir, 'map')
             customMapsDir = os.path.join(appDir, 'custom_map')

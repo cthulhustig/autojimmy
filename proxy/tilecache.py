@@ -540,7 +540,8 @@ class TileCache(object):
             identString='universe timestamp')
 
         # If the custom sector timestamp has changed then delete all tiles.
-        # TODO: Ideally this would be more selective but it's not trivial
+        # TODO: Ideally this would only delete tiles that touch custom sectors
+        # that have changed (added, deleted, modified) but it's not trivial
         await self._checkKeyValidityAsync(
             configKey=_CustomSectorTimestampConfigKey,
             currentValueFn=travellermap.DataStore.instance().customSectorsTimestamp,
