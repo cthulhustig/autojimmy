@@ -86,7 +86,7 @@ class CompositorImage(object):
 
     def textMask(self) -> typing.Optional[typing.Union[PIL.Image.Image, bytes]]:
         return self._textMask
-    
+
     def scale(self) -> int:
         return self._scale
 
@@ -140,10 +140,10 @@ class _CustomSector(object):
             mapSpaceUL[1], # Top
             mapSpaceBR[0], # Right
             mapSpaceBR[1]) # Bottom
-        
+
     def name(self) -> str:
         return self._name
-    
+
     def position(self) -> typing.Tuple[int, int]:
         return self._position
 
@@ -154,7 +154,7 @@ class _CustomSector(object):
     # Returned rect is in map space and ordered (left, top, right, bottom)
     def interiorRect(self) -> typing.Tuple[float, float, float, float]:
         return self._interiorRect
-    
+
     def addMapPoster(
             self,
             poster: CompositorImage
@@ -214,7 +214,7 @@ class Compositor(object):
 
     def __enter__(self) -> 'Compositor':
         return self
-    
+
     def __exit__(self, exception_type, exception_value, exception_traceback):
         self.shutdown()
 
@@ -248,18 +248,18 @@ class Compositor(object):
                     self._processExecutor,
                     Compositor._renderSvgTask,
                     mapBytes)
-                
+
                 textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
                 textTask = loop.run_in_executor(
                     self._processExecutor,
                     Compositor._renderSvgTask,
-                    textSvg)                
+                    textSvg)
 
                 # Process map task results
                 await mapTask
                 result = mapTask.result()
                 if isinstance(result, Exception):
-                    raise RuntimeError('Worker process exception when render map SVG') from result                
+                    raise RuntimeError('Worker process exception when render map SVG') from result
                 mainImage = PIL.Image.frombytes('RGBA', (width, height), result)
 
                 # Process text task results
@@ -298,7 +298,7 @@ class Compositor(object):
             ) -> OverlapType:
         if tileScale < Compositor._MinCompositionScale:
             return Compositor.OverlapType.NoOverlap
-        
+
         sectorList = self._milieuSectorMap.get(milieu)
         if not sectorList:
             return Compositor.OverlapType.NoOverlap
@@ -343,7 +343,7 @@ class Compositor(object):
             ) -> None:
         if tileScale < Compositor._MinCompositionScale:
             return # Nothing to do (shouldn't happen if correctly checking which operation to use)
-        
+
         sectorList = self._milieuSectorMap.get(milieu)
         if not sectorList:
             return # Nothing to do (shouldn't happen if correctly checking which operation to use)
@@ -419,7 +419,7 @@ class Compositor(object):
         # Overlay custom sector text on tile
         for mapPoster, srcPixelRect, tgtPixelDim, tgtPixelOffset in overlappedSectors:
             textMask = mapPoster.textMask()
-            if textMask:            
+            if textMask:
                 if mapPoster.imageType() == CompositorImage.ImageType.SVG:
                     await self._overlaySvgCustomSectorAsync(
                         svgData=textMask,
@@ -445,7 +445,7 @@ class Compositor(object):
             ) -> typing.Optional[PIL.Image.Image]:
         if tileScale < Compositor._MinCompositionScale:
             return None # Nothing to do (shouldn't happen if correctly checking which operation to use)
-        
+
         sectorList = self._milieuSectorMap.get(milieu)
         if not sectorList:
             return None # Nothing to do (shouldn't happen if correctly checking which operation to use)
@@ -528,12 +528,12 @@ class Compositor(object):
 
     async def loadUniverseAsync(self) -> None:
         self._milieuSectorMap.clear()
-        
+
         svgMapData: typing.List[typing.Tuple[
             travellermap.Milieu,
             _CustomSector,
             travellermap.MapImage,
-            int]] = []        
+            int]] = []
 
         for milieu in travellermap.Milieu:
             milieuSectors = []
@@ -577,10 +577,10 @@ class Compositor(object):
                     if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
                         svgMapData.append((milieu, customSector, mapImage, scale))
                     else:
-                        try: 
+                        try:
                             poster = await self.createCompositorImageAsync(
                                 mapImage=mapImage,
-                                scale=scale)  
+                                scale=scale)
                             customSector.addMapPoster(poster)
                         except Exception as ex:
                             logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
@@ -588,12 +588,12 @@ class Compositor(object):
 
             if milieuSectors:
                 self._milieuSectorMap[milieu] = milieuSectors
-    
+
         if not svgMapData:
             return # Nothing more to do
-        
+
         assert(self._processExecutor)
-        
+
         loop = asyncio.get_running_loop()
         taskList: typing.List[asyncio.Future] = []
         for milieu, customSector, mapImage, scale in svgMapData:
@@ -605,7 +605,7 @@ class Compositor(object):
                     self._processExecutor,
                     Compositor._renderSvgTask,
                     svgMapBytes))
-                
+
                 taskList.append(loop.run_in_executor(
                     self._processExecutor,
                     Compositor._renderSvgTask,
@@ -678,7 +678,6 @@ class Compositor(object):
                     croppedMask = maskImage.crop(srcPixelRect)
                     maskImage = croppedMask
 
-
             # Scale the source image if required
             if (overlayImage.width != tgtPixelDim[0]) or (overlayImage.height != tgtPixelDim[1]):
                 resizedImage = overlayImage.resize(
@@ -741,7 +740,7 @@ class Compositor(object):
                 tgtPixelDim)
             if isinstance(result, Exception):
                 raise RuntimeError('Worker process encountered an exception when render SVG region') from result
-                
+
             overlayImage = PIL.Image.frombytes('RGBA', tgtPixelDim, result)
 
             if tgtImage == None:
@@ -783,8 +782,8 @@ class Compositor(object):
     # This function is executed in a worker process
     @staticmethod
     def _renderSvgTask(
-        svgData: bytes
-        ) -> typing.Union[bytes, Exception]:
+            svgData: bytes
+            ) -> typing.Union[bytes, Exception]:
         try:
             tree = cairosvg.parser.Tree(bytestring=svgData)
             width = int(tree['width'])

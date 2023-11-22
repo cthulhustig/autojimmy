@@ -1021,7 +1021,7 @@ class ContentSizedTextBrowser(QtWidgets.QTextBrowser):
 
     def _contentChanged(self):
         # Force an update of the layout if the content changes
-        self.updateGeometry()        
+        self.updateGeometry()
 
 # https://lists.qt-project.org/pipermail/qt-interest-old/2010-May/022744.html
 class ContentSizedLineEdit(LineEditEx):

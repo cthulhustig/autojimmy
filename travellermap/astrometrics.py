@@ -146,7 +146,7 @@ def neighbourRelativeHex(
     sectorY = origin[1]
     hexX = origin[2]
     hexY = origin[3]
-    
+
     if direction == NeighbourDirs.Upper:
         hexY -= 1
     elif direction == NeighbourDirs.UpperRight:

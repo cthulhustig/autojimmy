@@ -16,9 +16,9 @@ _TileCacheDbFileName = 'tile_cache.db'
 # TODO: I don't think this is working for errors due to internal exceptions
 @aiohttp.web.middleware
 async def _serverHeaderMiddlewareAsync(
-    request: aiohttp.web.Request,
-    handler: typing.Callable[[aiohttp.web.Request], aiohttp.web.Response]
-    ):
+        request: aiohttp.web.Request,
+        handler: typing.Callable[[aiohttp.web.Request], aiohttp.web.Response]
+        ):
     response: aiohttp.web.Response = await handler(request)
     response.headers['Server'] = f'{app.AppName} Map Proxy {app.AppVersion}'
     return response
@@ -157,7 +157,7 @@ class MapProxy(object):
         logging.info(f'Map proxy starting on port {listenPort}')
 
         # This is a hack. The aiohttp server logs all requests at info level
-        # where as I only want it logged at debug. The best way I can see to 
+        # where as I only want it logged at debug. The best way I can see to
         # achieve this is to set the server logging to a level that won't log
         # the request when the app log level is set to anything higher than
         # debug
@@ -168,12 +168,12 @@ class MapProxy(object):
             # TODO: This is duplicated from the app and should probably be shared
             installMapsDir = os.path.join(installDir, 'data', 'map')
             overlayMapsDir = os.path.join(appDir, 'map')
-            customMapsDir = os.path.join(appDir, 'custom_map')            
+            customMapsDir = os.path.join(appDir, 'custom_map')
             travellermap.DataStore.setSectorDirs(
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
-            
+
             loop = asyncio.get_event_loop()
             with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
                 # NOTE: This will block until the universe is loaded
@@ -205,10 +205,10 @@ class MapProxy(object):
                     protocol_factory=webApp.make_handler(),
                     host='127.0.0.1', # Only listen on loopback for security
                     port=app.Config.instance().mapProxyPort()))
-                
+
                 # Now that set up is finished clear out cached data from that data
                 # store to keep the memory footprint down.
-                travellermap.DataStore.instance().clearCachedData()                
+                travellermap.DataStore.instance().clearCachedData()
 
                 # Run event loop until proxy is shut down
                 messageQueue.put((MapProxy.ServerStatus.Started, None))

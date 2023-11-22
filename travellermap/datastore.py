@@ -24,18 +24,18 @@ class UniverseDataFormat(object):
 
     def major(self) -> int:
         return self._major
-    
+
     def minor(self) -> int:
         return self._minor
-    
+
     def __str__(self) -> str:
         return f'{self._major}.{self._minor}'
-    
+
     def __eq__(self, other: 'UniverseDataFormat') -> bool:
         if self.__class__ is other.__class__:
             return (self._major == other._major) and (self._minor == other._minor)
         return False
-    
+
     def __lt__(self, other: 'UniverseDataFormat') -> bool:
         if self.__class__ is other.__class__:
             if self._major < other._major:
@@ -44,7 +44,7 @@ class UniverseDataFormat(object):
                 return False
             return self._minor < other._minor
         return NotImplemented
-    
+
     def __le__(self, other: 'UniverseDataFormat') -> bool:
         if self.__class__ is other.__class__:
             if self._major < other._major:
@@ -52,8 +52,8 @@ class UniverseDataFormat(object):
             if self._major > other._major:
                 return False
             return self._minor <= other._minor
-        return NotImplemented    
-    
+        return NotImplemented
+
     def __gt__(self, other: 'UniverseDataFormat') -> bool:
         if self.__class__ is other.__class__:
             if self._major > other._major:
@@ -62,7 +62,7 @@ class UniverseDataFormat(object):
                 return False
             return self._minor > other._minor
         return NotImplemented
-    
+
     def __ge__(self, other: 'UniverseDataFormat') -> bool:
         if self.__class__ is other.__class__:
             if self._major > other._major:
@@ -70,7 +70,7 @@ class UniverseDataFormat(object):
             if self._major < other._major:
                 return False
             return self._minor >= other._minor
-        return NotImplemented      
+        return NotImplemented
 
 
 class CustomMapLevel(object):
@@ -159,7 +159,7 @@ class SectorLookupMaps(object):
 
     def sectors(self) -> typing.Iterable[SectorInfo]:
         return self._sectors
-    
+
     def count(self) -> int:
         return len(self._sectors)
 
@@ -177,7 +177,7 @@ class SectorLookupMaps(object):
             ) -> None:
         if sector not in self._sectors:
             return
-        
+
         self._sectors.remove(sector)
 
         # Only remove position & name maps if it was found in the main list of sectors. This
@@ -231,7 +231,7 @@ class UniverseInfo(object):
 
     def milieu(self) -> travellermap.Milieu:
         return self._milieu
-    
+
     def conflictCheck(
             self,
             sectorName: str,
@@ -248,7 +248,7 @@ class UniverseInfo(object):
                         conflictName=conflictSector.canonicalName(),
                         conflictX=conflictSector.x(),
                         conflictY=conflictSector.y()))
-            
+
             # Prevent adding the custom sector if it has the same name as a stock sector at a different location
             conflictSector = self._stockSectorMap.lookupName(sectorName)
             if conflictSector and ((sectorX != conflictSector.x()) or (sectorY != conflictSector.y())):
@@ -257,7 +257,7 @@ class UniverseInfo(object):
                         conflictName=conflictSector.canonicalName(),
                         conflictX=conflictSector.x(),
                         conflictY=conflictSector.y()))
-            
+
             # Prevent adding the custom sector if it has the same position as another custom sector
             conflictSector = self._customSectorMap.lookupPosition((sectorX, sectorY))
             if conflictSector:
@@ -275,7 +275,7 @@ class UniverseInfo(object):
                         conflictName=conflictSector.canonicalName(),
                         conflictX=conflictSector.x(),
                         conflictY=conflictSector.y()))
-            
+
             # Prevent adding the stock sector if it has the same name as another stock sector
             conflictSector = self._stockSectorMap.lookupName(sectorName)
             if conflictSector:
@@ -293,7 +293,7 @@ class UniverseInfo(object):
                         conflictName=conflictSector.canonicalName(),
                         conflictX=conflictSector.x(),
                         conflictY=conflictSector.y()))
-    
+
     def addSector(
             self,
             sector: SectorInfo
@@ -304,7 +304,7 @@ class UniverseInfo(object):
             sectorX=sector.x(),
             sectorY=sector.y(),
             isCustomSector=sector.isCustomSector())
-        
+
         if sector.isCustomSector():
             self._customSectorMap.addSector(sector)
         else:
@@ -334,7 +334,7 @@ class UniverseInfo(object):
             stockOnly: bool
             ) -> int:
         return self._stockSectorMap.count() if stockOnly else self._mergedSectorMap.count()
-    
+
     def sectors(
             self,
             stockOnly: bool
@@ -349,7 +349,7 @@ class UniverseInfo(object):
         if stockOnly:
             return self._stockSectorMap.lookupPosition(position)
         return self._mergedSectorMap.lookupPosition(position)
-        
+
     def lookupName(
             self,
             name: str,
@@ -358,7 +358,7 @@ class UniverseInfo(object):
         if stockOnly:
             return self._stockSectorMap.lookupName(name)
         return self._mergedSectorMap.lookupName(name)
-            
+
     def _updateMergedSectors(
             self,
             sector: SectorInfo
@@ -391,7 +391,7 @@ class UniverseInfo(object):
                     customName=sector.canonicalName(),
                     sectorX=sector.x(),
                     sectorY=sector.y(),
-                    milieu=self._milieu.value))                
+                    milieu=self._milieu.value))
                 self._mergedSectorMap.removeSector(sector)
 
                 stockSector = self._stockSectorMap.lookupPosition(position)
@@ -646,7 +646,7 @@ class DataStore(object):
         except Exception as ex:
             logging.error(f'Failed to read universe timestamp', exc_info=ex)
             return None
-        
+
     def universeDataFormat(self) -> typing.Optional[UniverseDataFormat]:
         try:
             return DataStore._parseUniverseDataFormat(
@@ -654,7 +654,7 @@ class DataStore(object):
         except Exception as ex:
             logging.error(f'Failed to read universe data format', exc_info=ex)
             return None
-        
+
     def customSectorsTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
             timestampPath = os.path.join(self._customDir, self._TimestampFileName)
@@ -663,7 +663,7 @@ class DataStore(object):
         except Exception as ex:
             logging.error(f'Failed to read custom sectors timestamp', exc_info=ex)
             return None
-        
+
     # NOTE: This will block while it downloads the latest snapshot timestamp from the github repo
     def checkForNewSnapshot(self) -> SnapshotAvailability:
         currentTimestamp = self.universeTimestamp()
@@ -678,7 +678,7 @@ class DataStore(object):
         if currentTimestamp and (repoTimestamp <= currentTimestamp):
             # No new snapshot available
             return DataStore.SnapshotAvailability.NoNewSnapshot
-        
+
         try:
             response = urllib.request.urlopen(
                 DataStore._DataFormatUrl,
@@ -686,12 +686,12 @@ class DataStore(object):
             repoDataFormat = DataStore._parseUniverseDataFormat(data=response.read())
         except Exception as ex:
             raise RuntimeError(f'Failed to retrieve snapshot data format ({str(ex)})')
-        
+
         if repoDataFormat < DataStore._MinDataFormatVersion:
             # The repo contains data in an older format than the app is expecting. This should
             # only happen when running a dev branch
             return DataStore.SnapshotAvailability.AppToNew
-        
+
         # The data format is versioned such that the minor version increments should be backwards
         # compatible. If the major version is higher then the app is to old to use the data
         nextMajorVersion = UniverseDataFormat(
@@ -752,7 +752,7 @@ class DataStore(object):
                 if fileInfo.filename == dataFormatPath:
                     dataFormatInfo = fileInfo
                     break
-            
+
             if not dataFormatInfo:
                 raise RuntimeError('Universe snapshot has no data format file')
             try:
@@ -761,8 +761,8 @@ class DataStore(object):
             except Exception as ex:
                 raise RuntimeError(f'Unable to read universe snapshot data format file ({str(ex)})')
             if not self._isDataFormatCompatible(dataFormat):
-                raise RuntimeError(f'Universe snapshot is incompatible')     
-            
+                raise RuntimeError(f'Universe snapshot is incompatible')
+
             extractIndex = 0
             for fileInfo in fileInfoList:
                 if isCancelledCallback and isCancelledCallback():
@@ -794,10 +794,10 @@ class DataStore(object):
             self._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
-            
+
             # Force reload of all sector data
             self._loadSectors(reload=True)
-            
+
     def hasCustomSectors(
             self,
             milieu: typing.Optional[travellermap.Milieu] = None,
@@ -805,7 +805,7 @@ class DataStore(object):
         self._loadSectors(milieu=milieu)
 
         milieuList = [milieu] if milieu else travellermap.Milieu
-        with self._lock:        
+        with self._lock:
             for milieu in milieuList:
                 universe = self._universeMap[milieu]
                 if not universe:
@@ -813,7 +813,7 @@ class DataStore(object):
                 if universe.hasCustomSectors():
                     return True
         return False
-    
+
     # This will throw a SectorConflictException if there is a conflict
     def customSectorConflictCheck(
             self,
@@ -831,7 +831,7 @@ class DataStore(object):
                 sectorX=sectorX,
                 sectorY=sectorY,
                 isCustomSector=True)
-    
+
     def createCustomSector(
             self,
             milieu: travellermap.Milieu,
@@ -846,16 +846,15 @@ class DataStore(object):
         sectorFormat = travellermap.sectorFileFormatDetect(content=sectorContent)
         if not sectorFormat:
             raise RuntimeError('Sector file content has an unknown format')
-        
+
         metadataFormat = travellermap.metadataFileFormatDetect(content=metadataContent)
         if not metadataFormat:
             raise RuntimeError('Sector metadata content has an unknown format')
-        
+
         metadata = travellermap.readMetadata(
             content=metadataContent,
             format=metadataFormat,
-            identifier='Custom Metadata')        
-
+            identifier='Custom Metadata')
 
         # Do a full parse of the custom sector data based on the detected file format. If it fails
         # an exception will be raised an allowed to pass back to the called. Doing this check is
@@ -931,8 +930,8 @@ class DataStore(object):
                 customMapOptions=customMapOptions,
                 customMapLevels=mapLevels)
             universe.addSector(sector)
-            
-            self._saveCustomSectors(milieu=milieu)      
+
+            self._saveCustomSectors(milieu=milieu)
 
             return sector
 
@@ -956,7 +955,7 @@ class DataStore(object):
                     'Failed to delete custom sector {name} from {milieu} as it doesn\'t exist'.format(
                         name=sectorName,
                         milieu=milieu.value))
-            
+
             # Remove the sector from the custom universe file first. That way we don't leave a partially
             # populated sector if deleting a file fails
             universe.removeSector(sector)
@@ -987,7 +986,7 @@ class DataStore(object):
                             file=filePath,
                             milieu=milieu.value),
                         exc_info=ex)
-                    
+
             # Force reload of sectors for this milieu in order to load details of any
             # sector that had been replaced by the custom sector that was deleted
             self._loadSectors(milieu=milieu, reload=True)
@@ -1050,7 +1049,7 @@ class DataStore(object):
                 else:
                     universe = UniverseInfo(milieu=milieu)
                     self._universeMap[milieu] = universe
-                     
+
                 loadedSectors = self._loadMilieuSectors(
                     milieu=milieu,
                     customSectors=True)
@@ -1102,10 +1101,10 @@ class DataStore(object):
         nextMajorVersion = UniverseDataFormat(
             major=DataStore._MinDataFormatVersion.major() + 1,
             minor=0)
-        
+
         return (checkFormat >= DataStore._MinDataFormatVersion) and \
             (checkFormat < nextMajorVersion)
-        
+
     def _checkOverlayAge(self) -> None:
         if not self._filesystemCache.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
@@ -1167,7 +1166,7 @@ class DataStore(object):
             self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
             relativeFilePath)
         return self._filesystemCache.read(filePath)
-        
+
     def _readMilieuFile(
             self,
             fileName: str,
@@ -1428,7 +1427,7 @@ class DataStore(object):
             self._filesystemCache.write(
                 path=universeFilePath,
                 data=json.dumps(universeData, indent=4))
-            
+
             utcTime = common.utcnow()
             self._filesystemCache.write(
                 path=timestampPath,
@@ -1446,11 +1445,11 @@ class DataStore(object):
         return datetime.datetime.fromtimestamp(
             timestamp.timestamp(),
             tz=datetime.timezone.utc)
-    
+
     def _formatTimestamp(timestamp: datetime.datetime) -> bytes:
         timestamp = timestamp.astimezone(datetime.timezone.utc)
         return timestamp.strftime(DataStore._TimestampFormat).encode()
-    
+
     # NOTE: The data format is a major.minor version number with the minor number
     # being optional (assumed 0 if not present)
     @staticmethod

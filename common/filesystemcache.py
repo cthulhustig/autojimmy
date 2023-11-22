@@ -24,7 +24,7 @@ class FileSystemCache(object):
         # Ordered dict that maps file path strings to split element lists with the map being kept in
         # order of file usage
         # NOTE: This can contain entries that are no longer in the cache. This can happen if a directory
-        # containing 
+        # containing
         self._usageHistory: typing.OrderedDict[str, typing.Iterable[str]] = collections.OrderedDict()
 
     def read(self, path: str) -> bytes:
@@ -34,7 +34,7 @@ class FileSystemCache(object):
             data = self._readCache(elements=elements)
             if data != None:
                 return data
-  
+
             with open(path, 'rb') as file:
                 data = file.read()
 
@@ -95,12 +95,12 @@ class FileSystemCache(object):
 
     # NOTE: The following methods are just here to give consumers a single consistent interface for
     # the filesystem. They don't have anything to do with the cache so don't take the lock
-    def makedirs(self, path: str, canExist = False) -> None:
+    def makedirs(self, path: str, canExist=False) -> None:
         os.makedirs(path, exist_ok=canExist)
 
     def exists(self, path) -> bool:
         return os.path.exists(path)
-    
+
     def isfile(self, path) -> bool:
         return os.path.isfile(path)
 
@@ -119,7 +119,7 @@ class FileSystemCache(object):
                 break
         if not isinstance(next, bytes):
             return None
-        
+
         # Update usage history (* is to unpack the list)
         self._usageHistory[os.path.join(*elements)] = elements
 
@@ -188,7 +188,7 @@ class FileSystemCache(object):
         self._removeCache(elements)
         if (self._currentCacheSize + dataSize) <= self._maxCacheSize:
             return # Enough space has been freed
-        
+
         # Start removing items from the cache starting with the ones that were
         # used longest ago
         while self._usageHistory and ((self._currentCacheSize + dataSize) > self._maxCacheSize):

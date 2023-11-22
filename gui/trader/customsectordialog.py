@@ -706,12 +706,12 @@ class _NewSectorDialog(gui.DialogEx):
                     content=sectorMetadata)
                 if not metadataFormat:
                     raise RuntimeError('Unable to detect metadata format')
-                
+
                 rawMetadata = travellermap.readMetadata(
                     content=sectorMetadata,
                     format=metadataFormat,
-                    identifier=metadataFilePath)                
-                
+                    identifier=metadataFilePath)
+
                 if metadataFormat == travellermap.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
                     travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
@@ -720,7 +720,7 @@ class _NewSectorDialog(gui.DialogEx):
                         parent=self,
                         text=_JsonMetadataWarning,
                         stateKey=_JsonMetadataWarningNoShowStateKey)
-                                        
+
                     xmlMetadata = travellermap.writeXMLMetadata(
                         metadata=rawMetadata,
                         identifier='Generated XML metadata')
@@ -838,8 +838,8 @@ class _NewSectorDialog(gui.DialogEx):
                 metadataFormat = travellermap.metadataFileFormatDetect(
                     content=sectorMetadata)
                 if not metadataFormat:
-                    raise RuntimeError('Unable to detect metadata format')                
-                
+                    raise RuntimeError('Unable to detect metadata format')
+
                 if metadataFormat == travellermap.MetadataFormat.XML:
                     xmlMetadata = sectorMetadata
                     travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
@@ -1286,7 +1286,7 @@ class CustomSectorDialog(gui.DialogEx):
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
-        super().firstShowEvent(e)        
+        super().firstShowEvent(e)
 
     def _setupSectorListControls(self) -> None:
         self._sectorTable = _CustomSectorTable()

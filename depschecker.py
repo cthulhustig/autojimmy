@@ -7,6 +7,7 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
+
 # Mapping of library friendly name to the module to import to test it
 _Requirements = [
     'PyQt5',

@@ -76,6 +76,7 @@ def clamp(
 def utcnow() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
+
 # List of characters that are illegal in filenames on Windows, Linux and macOS.
 # Based on this post https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
 _WindowsIllegalCharacters = set(['/', '<', '>', ':', '"', '\\', '|', '?', '*'])

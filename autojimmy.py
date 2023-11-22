@@ -51,7 +51,7 @@ def _applicationDirectory() -> str:
         return os.path.join(os.getenv('APPDATA'), app.AppName)
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
-    
+
 def _cairoSvgInstallCheck() -> bool: # True if the application should continue, or False if it should exit
     if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
         return True # CairoSVG is working so app should continue
@@ -141,12 +141,12 @@ def _snapshotUpdateCheck(
             exception=ex,
             stateKey='UniverseUpdateErrorWhenChecking')
         return True # Continue loading the app
-        
+
     if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
         if noUpdateMessage:
             gui.MessageBoxEx.information(text=noUpdateMessage)
         return True # No update available so just continue loading
-    
+
     if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
         promptMessage = 'New universe data is available, however this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
@@ -166,13 +166,13 @@ def _snapshotUpdateCheck(
             stateKey=stateKey,
             rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
         return answer == QtWidgets.QMessageBox.StandardButton.Yes
-    
+
     if not automaticUpdate:
         # TODO: At some point in the future I can remove the note about it being faster
         answer = gui.AutoSelectMessageBox.question(
             text='<html>New universe data is available. Do you want to update?<br>' \
-                'Custom sectors will not be affected<br><br>' \
-                'Don\'t worry, updating is a LOT faster than it used to be.</html>',
+            'Custom sectors will not be affected<br><br>' \
+            'Don\'t worry, updating is a LOT faster than it used to be.</html>',
             stateKey='DownloadUniverseAtStartup')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return True # User chose not to install update so just continue loading the app with the old data

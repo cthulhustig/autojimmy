@@ -49,10 +49,10 @@ class RequestHandler(object):
 
         def route(self) -> str:
             return self._route
-        
+
         def data(self) -> typing.Union[str, bytes]:
             return self._data
-        
+
         def mimeType(self) -> str:
             return self._mimeType
 
@@ -83,7 +83,7 @@ class RequestHandler(object):
         if parsedUrl.scheme.lower() == 'https':
             self._connector = aiohttp.TCPConnector(
                 keepalive_timeout=RequestHandler._ConnectionKeepAliveSeconds)
-        else:            
+        else:
             self._connector = aiohttp.TCPConnector(force_close=True)
 
         self._session = aiohttp.ClientSession(connector=self._connector)
@@ -107,7 +107,7 @@ class RequestHandler(object):
             # Act as a proxy for all other requests and just forward them to the
             # configured Traveller Map instance
             return await self._handleProxyRequestAsync(request)
-        
+
     def _initStaticRoutes(self) -> None:
         # Add static routes for Traveller Map web interface snapshot
         webDir = os.path.join(self._installDir, 'data', 'web')
@@ -128,7 +128,7 @@ class RequestHandler(object):
                 route='/' + fileName,
                 data=data,
                 mimeType=mimeType)
-            
+
             # Alias / to index.html
             if fileName == 'index.html':
                 self._addStaticRoute(
@@ -143,12 +143,12 @@ class RequestHandler(object):
             self._addStaticRoute(
                 route='/res/mains.json',
                 data=mainsData,
-                mimeType='application/json')            
+                mimeType='application/json')
         except Exception as ex:
             logging.error(
                 f'An exception occurred while generating mains for {self._mainsMilieu.value}',
                 exc_info=ex)
-        
+
     def _addStaticRoute(
             self,
             route: str,
@@ -169,7 +169,7 @@ class RequestHandler(object):
 
         staticData = self._staticRoutes.get(request.path)
         if not staticData:
-            raise RuntimeError(f'Failed to find static content for {request.path}')        
+            raise RuntimeError(f'Failed to find static content for {request.path}')
 
         body = staticData.data()
         contentType = staticData.mimeType()
@@ -346,7 +346,7 @@ class RequestHandler(object):
                     image.save(tileBytes, format=targetFormat.value)
                     tileBytes.seek(0)
                     tileBytes = tileBytes.read()
-            """                
+            """
 
         headers = {
             'Content-Length': str(len(tileBytes) if tileBytes else 0),
@@ -365,6 +365,7 @@ class RequestHandler(object):
         'Content-Type',
         'Cache-Control'
     ]
+
     async def _handleProxyRequestAsync(
             self,
             request: aiohttp.web.Request,
@@ -378,7 +379,7 @@ class RequestHandler(object):
                 responseHeaders[header] = headers[header]
 
         if forceCacheControl: # if forceCacheControl is an empty string, don't add the header
-            responseHeaders['Cache-Control'] = forceCacheControl            
+            responseHeaders['Cache-Control'] = forceCacheControl
 
         return aiohttp.web.Response(
             status=status,

@@ -70,10 +70,10 @@ class RawAllegiance(object):
 
     def code(self) -> str:
         return self._code
-    
+
     def name(self) -> str:
         return self._name
-    
+
     def base(self) -> typing.Optional[str]:
         return self._base
 
@@ -94,46 +94,46 @@ class RawRoute(object):
             ) -> None:
         self._startHex = startHex
         self._endHex = endHex
-        self._startOffsetX = startOffsetX      
-        self._startOffsetY = startOffsetY    
-        self._endOffsetX = endOffsetX            
-        self._endOffsetY = endOffsetY       
-        self._allegiance = allegiance       
-        self._type = type       
-        self._style = style         
-        self._colour = colour        
+        self._startOffsetX = startOffsetX
+        self._startOffsetY = startOffsetY
+        self._endOffsetX = endOffsetX
+        self._endOffsetY = endOffsetY
+        self._allegiance = allegiance
+        self._type = type
+        self._style = style
+        self._colour = colour
         self._width = width
 
     def startHex(self) -> str:
         return self._startHex
-    
+
     def endHex(self) -> str:
         return self._endHex
-    
+
     def startOffsetX(self) -> typing.Optional[int]:
         return self._startOffsetX
-    
+
     def startOffsetY(self) -> typing.Optional[int]:
         return self._startOffsetY
-    
+
     def endOffsetX(self) -> typing.Optional[int]:
         return self._endOffsetX
-    
+
     def endOffsetY(self) -> typing.Optional[int]:
         return self._endOffsetY
-    
+
     def allegiance(self) -> typing.Optional[str]:
         return self._allegiance
-    
+
     def type(self) -> typing.Optional[str]:
         return self._type
-    
+
     def style(self) -> typing.Optional[str]:
         return self._style
-    
+
     def colour(self) -> typing.Optional[str]:
         return self._colour
-    
+
     def width(self) -> typing.Optional[float]:
         return self._width
 
@@ -156,12 +156,12 @@ class RawBorder(object):
         self._hexList = hexList
         self._allegiance = allegiance
         self._showLabel = showLabel
-        self._wrapLabel = wrapLabel   
-        self._labelHex = labelHex      
-        self._labelOffsetX = labelOffsetX           
+        self._wrapLabel = wrapLabel
+        self._labelHex = labelHex
+        self._labelOffsetX = labelOffsetX
         self._labelOffsetY = labelOffsetY
-        self._label = label          
-        self._style = style        
+        self._label = label
+        self._style = style
         self._colour = colour
 
     def hexList(self) -> typing.Iterable[str]:
@@ -169,28 +169,28 @@ class RawBorder(object):
 
     def allegiance(self) -> typing.Optional[str]:
         return self._allegiance
-    
+
     def showLabel(self) -> typing.Optional[bool]:
         return self._showLabel
-    
+
     def wrapLabel(self) -> typing.Optional[bool]:
         return self._wrapLabel
-    
+
     def labelHex(self) -> typing.Optional[str]:
         return self._labelHex
-    
+
     def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
-    
+
     def labelOffsetY(self) -> typing.Optional[float]:
         return self._labelOffsetY
-    
+
     def label(self) -> typing.Optional[str]:
         return self._label
-    
+
     def style(self) -> typing.Optional[str]:
         return self._style
-    
+
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
@@ -218,22 +218,22 @@ class RawLabel(object):
 
     def hex(self) -> str:
         return self._hex
-    
+
     def colour(self) -> str:
         return self._colour
-    
+
     def size(self) -> typing.Optional[str]:
-        return self._size 
+        return self._size
 
     def wrap(self) -> typing.Optional[bool]:
         return self._wrap
-    
+
     def offsetX(self) -> typing.Optional[float]:
-        return self._offsetX  
+        return self._offsetX
 
     def offsetY(self) -> typing.Optional[float]:
-        return self._offsetY 
-    
+        return self._offsetY
+
 # NOTE: If I'm ever generating routes then they follow the same "winding" rules for the hex list as borders
 # https://travellermap.com/doc/metadata#borders
 class RawRegion(object):
@@ -259,25 +259,25 @@ class RawRegion(object):
 
     def hexList(self) -> typing.Iterable[str]:
         return self._hexList
-    
+
     def showLabel(self) -> typing.Optional[bool]:
         return self._showLabel
-    
+
     def wrapLabel(self) -> typing.Optional[bool]:
         return self._wrapLabel
-    
+
     def labelHex(self) -> typing.Optional[str]:
         return self._labelHex
-    
+
     def labelOffsetX(self) -> typing.Optional[float]:
         return self._labelOffsetX
-    
+
     def labelOffsetY(self) -> typing.Optional[float]:
         return self._labelOffsetY
-    
+
     def label(self) -> typing.Optional[str]:
         return self._label
-        
+
     def colour(self) -> typing.Optional[str]:
         return self._colour
 
@@ -351,19 +351,19 @@ class RawMetadata(object):
 
     def allegiances(self) -> typing.Optional[typing.Iterable[RawAllegiance]]:
         return self._allegiances
-    
+
     def routes(self) -> typing.Optional[typing.Iterable[RawRoute]]:
         return self._routes
-    
+
     def borders(self) -> typing.Optional[typing.Iterable[RawBorder]]:
         return self._borders
-    
+
     def labels(self) -> typing.Optional[typing.Iterable[RawLabel]]:
         return self._labels
 
     def regions(self) -> typing.Optional[typing.Iterable[RawRegion]]:
         return self._regions
-    
+
     def styleSheet(self) -> typing.Optional[str]:
         return self._styleSheet
 
@@ -419,12 +419,12 @@ def _optionalConvertToBool(
         ) -> typing.Optional[int]:
     if value == None:
         return None
-    
+
     try:
         return str(value).lower() == 'true'
     except Exception as ex:
         raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to bool for {elementName} in {identifier} ({str(ex)})')
-    
+
 def _optionalConvertToInt(
         value: typing.Optional[typing.Any],
         attributeName: str,
@@ -433,12 +433,12 @@ def _optionalConvertToInt(
         ) -> typing.Optional[int]:
     if value == None:
         return None
-    
+
     try:
         return int(value)
     except Exception as ex:
         raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to int for {elementName} in {identifier} ({str(ex)})')
-    
+
 def _optionalConvertToFloat(
         value: typing.Optional[typing.Any],
         attributeName: str,
@@ -447,11 +447,11 @@ def _optionalConvertToFloat(
         ) -> typing.Optional[int]:
     if value == None:
         return None
-    
+
     try:
         return float(value)
     except Exception as ex:
-        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to float for {elementName} in {identifier} ({str(ex)})')        
+        raise RuntimeError(f'Failed to convert {attributeName} attribute "{value}" to float for {elementName} in {identifier} ({str(ex)})')
 
 def sectorFileFormatDetect(content: str) -> typing.Optional[SectorFormat]:
     hasComment = False
@@ -688,7 +688,7 @@ def metadataFileFormatDetect(content: str) -> typing.Optional[MetadataFormat]:
     except:
         pass
 
-    return None    
+    return None
 
 def readMetadata(
         content: str,
@@ -765,7 +765,7 @@ def readXMLMetadata(
             code = element.get('Code')
             if code == None:
                 raise RuntimeError(f'Failed to find Code attribute for Allegiance in {identifier} metadata')
-            
+
             # Ignore allegiances that are just a sequence of '-'
             if code and not _isAllDashes(code):
                 allegiances.append(RawAllegiance(
@@ -781,11 +781,11 @@ def readXMLMetadata(
             startHex = element.get('Start')
             if not startHex:
                 raise RuntimeError(f'Failed to find Start attribute for Route in {identifier} metadata')
-            
+
             endHex = element.get('End')
             if not endHex:
                 raise RuntimeError(f'Failed to find End attribute for Route in {identifier} metadata')
-            
+
             startOffsetX = _optionalConvertToInt(element.get('StartOffsetX'), 'StartOffsetX', 'Route', identifier)
             startOffsetY = _optionalConvertToInt(element.get('StartOffsetY'), 'StartOffsetY', 'Route', identifier)
             endOffsetX = _optionalConvertToInt(element.get('EndOffsetX'), 'EndOffsetX', 'Route', identifier)
@@ -804,7 +804,7 @@ def readXMLMetadata(
                 style=element.get('Style'),
                 colour=element.get('Color'),
                 width=width))
-        
+
     borderElements = sectorElement.findall('./Borders/Border')
     borders = None
     if borderElements:
@@ -815,7 +815,7 @@ def readXMLMetadata(
             wrapLabel = _optionalConvertToBool(element.get('WrapLabel'), 'WrapLabel', 'Border', identifier)
             labelOffsetX = _optionalConvertToFloat(element.get('LabelOffsetX'), 'LabelOffsetX', 'Border', identifier)
             labelOffsetY = _optionalConvertToFloat(element.get('LabelOffsetY'), 'LabelOffsetY', 'Border', identifier)
-            
+
             borders.append(RawBorder(
                 hexList=path,
                 allegiance=element.get('Allegiance'),
@@ -835,11 +835,11 @@ def readXMLMetadata(
         for element in labelElements:
             hex = element.get('Hex')
             if hex == None:
-                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')             
+                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')
 
             colour = element.get('Color')
             if colour == None:
-                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')  
+                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')
 
             wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
             offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
@@ -982,17 +982,17 @@ def readJSONMetadata(
             startHex = element.get('Start')
             if startHex == None:
                 raise RuntimeError(f'Failed to find Start element for Route in {identifier} metadata')
-            
+
             endHex = element.get('End')
             if endHex == None:
                 raise RuntimeError(f'Failed to find End element for Route in {identifier} metadata')
-            
+
             startOffsetX = _optionalConvertToInt(element.get('StartOffsetX'), 'StartOffsetX', 'Route', identifier)
             startOffsetY = _optionalConvertToInt(element.get('StartOffsetY'), 'StartOffsetY', 'Route', identifier)
             endOffsetX = _optionalConvertToInt(element.get('EndOffsetX'), 'EndOffsetX', 'Route', identifier)
             endOffsetY = _optionalConvertToInt(element.get('EndOffsetY'), 'EndOffsetY', 'Route', identifier)
-            width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)            
-            
+            width = _optionalConvertToFloat(element.get('Width'), 'Width', 'Route', identifier)
+
             routes.append(RawRoute(
                 startHex=startHex,
                 endHex=endHex,
@@ -1031,7 +1031,7 @@ def readJSONMetadata(
                 labelOffsetY=labelOffsetY,
                 label=element.get('Label'),
                 style=element.get('Style'),
-                colour=element.get('Color')))           
+                colour=element.get('Color')))
 
     labelElements = sectorElement.get('Labels')
     labels = None
@@ -1041,14 +1041,14 @@ def readJSONMetadata(
             text = element.get('Text')
             if text == None:
                 raise RuntimeError(f'Failed to find Text element for Label in {identifier} metadata')
-            
+
             hex = element.get('Hex')
             if hex == None:
-                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')             
+                raise RuntimeError(f'Failed to find Hex element for Label in {identifier} metadata')
 
             colour = element.get('Color')
             if colour == None:
-                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')            
+                raise RuntimeError(f'Failed to find Color element for Label in {identifier} metadata')
 
             wrap = _optionalConvertToBool(element.get('Wrap'), 'Wrap', 'Label', identifier)
             offsetX = _optionalConvertToFloat(element.get('OffsetX'), 'OffsetX', 'Label', identifier)
@@ -1223,9 +1223,9 @@ def writeXMLMetadata(
             if border.label() != None:
                 attributes['Label'] = border.label()
             if border.style() != None:
-                attributes['Style'] = border.style() 
+                attributes['Style'] = border.style()
             if border.colour() != None:
-                attributes['Color'] = border.colour()       
+                attributes['Color'] = border.colour()
 
             borderElement = xml.etree.ElementTree.SubElement(bordersElement, 'Border', attributes)
             borderElement.text = ' '.join(border.hexList())
@@ -1275,7 +1275,7 @@ def writeXMLMetadata(
             if region.label() != None:
                 attributes['Label'] = region.label()
             if region.colour() != None:
-                attributes['Color'] = region.colour()       
+                attributes['Color'] = region.colour()
 
             regionElement = xml.etree.ElementTree.SubElement(regionsElement, 'Region', attributes)
             regionElement.text = ' '.join(region.hexList())
@@ -1389,9 +1389,9 @@ def writeJSONMetadata(
             if border.label() != None:
                 borderElement['Label'] = border.label()
             if border.style() != None:
-                borderElement['Style'] = border.style() 
+                borderElement['Style'] = border.style()
             if border.colour() != None:
-                borderElement['Color'] = border.colour()       
+                borderElement['Color'] = border.colour()
 
             bordersElement.append(borderElement)
 
@@ -1434,7 +1434,7 @@ def writeJSONMetadata(
             if region.label() != None:
                 regionElement['Label'] = region.label()
             if region.colour() != None:
-                regionElement['Color'] = region.colour()       
+                regionElement['Color'] = region.colour()
 
             regionsElement.append(regionElement)
 

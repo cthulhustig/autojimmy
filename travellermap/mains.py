@@ -4,11 +4,11 @@ import travellermap
 import typing
 
 class MainsFinder(object):
-     # This is the value used by Traveller Map (tools\mains.js)
+    # This is the value used by Traveller Map (tools\mains.js)
     _MinMainWorlds = 5
 
     def __init__(self) -> None:
-        self._worlds:typing.Set[typing.Tuple[int, int, int, int]] = set()
+        self._worlds: typing.Set[typing.Tuple[int, int, int, int]] = set()
 
     def addWorld(
             self,
@@ -75,12 +75,12 @@ class MainsGenerator(object):
             self._defaultSectors = self._loadSectorWorlds(
                 milieu=travellermap.Milieu.M1105,
                 stockOnly=True) # Custom sectors shouldn't be used for default sector data
-            
+
         mainsGenerator = travellermap.MainsFinder()
         sectorWorlds = self._loadSectorWorlds(
             milieu=milieu,
             stockOnly=False) # Load custom sectors
-            
+
         # If the milieu being updated isn't the base milieu then use worlds from the base milieu
         # for any locations where the base milieu has a sector but the current milieu doesn't.
         # This mimics the behaviour of Traveller Map but with support for custom sectors
@@ -113,7 +113,7 @@ class MainsGenerator(object):
                     sectorY=sectorInfo.y(),
                     hexX=hexX,
                     hexY=hexY)
-                
+
         mains = mainsGenerator.generate()
         outputData = []
         for main in mains:
@@ -145,5 +145,5 @@ class MainsGenerator(object):
                 content=sectorData,
                 format=sectorInfo.sectorFormat(),
                 identifier=sectorInfo.canonicalName())
-        
+
         return sectorWorldMap
