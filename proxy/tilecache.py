@@ -440,11 +440,12 @@ class TileCache(object):
         await self.addAsync(
             tileQuery=diskEntry.tileQuery(),
             tileImage=image,
+            tileMilieu=diskEntry.tileMilieu(),
             tilePosition=diskEntry.tilePosition(),
             tileDimensions=diskEntry.tileDimensions(),
             tileScale=diskEntry.tileScale(),
             overlapType=diskEntry.overlapType(),
-            cacheToDisk=False) # Already on disk
+            cacheToDisk=False) # Already on disk so no need to add it
         
         # Mark the disk entry as used and kick of a background job to push the update
         # to the database
