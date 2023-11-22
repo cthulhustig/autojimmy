@@ -106,6 +106,8 @@ _OverlapTypeToDbStringMap = {
 }
 _DbStringToOverlapTypeMap =  {v: k for k, v in _OverlapTypeToDbStringMap.items()}
 
+_DbTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
+
 class TileCache(object):
     class _DiskEntry(object):
         def __init__(
@@ -180,7 +182,6 @@ class TileCache(object):
     # TODO: Some of these should be configurable
     _MaxDbCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
     _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
-    _DbTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
 
     def __init__(
@@ -813,11 +814,11 @@ class TileCache(object):
     def _stringToTimestamp(string: str) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             string,
-            TileCache._DbTimestampFormat)
+            _DbTimestampFormat)
         return datetime.datetime.fromtimestamp(
             timestamp.timestamp(),
             tz=datetime.timezone.utc)
     
     @staticmethod
     def _timestampToString(timestamp: datetime.datetime) -> str:
-        return timestamp.strftime(TileCache._DbTimestampFormat)
+        return timestamp.strftime(_DbTimestampFormat)
