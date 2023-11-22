@@ -9,11 +9,12 @@ import sqlite3
 import travellermap
 import typing
 
-_DatabaseSchemaVersion = 1
-_DatabaseCacheKiB = 51200 # 50MiB
+_SqliteCacheKiB = 51200 # 50MiB
 # This is the best page size based on the average size of tile blobs
 # https://www.sqlite.org/intern-v-extern-blob.html
-_DatabasePageSizeBytes = 8192
+_SqlitePageSizeBytes = 8192
+
+_DatabaseSchemaVersion = 1
 
 _ConfigTableName = 'config'
 _TilesTableName = 'tiles'
@@ -27,8 +28,8 @@ _MapUrlConfigKey = 'map_url'
 # it can't be changed after entering WAL mode
 _SetDatabasePragmaScript = \
 f"""
-PRAGMA cache_size = -{_DatabaseCacheKiB};
-PRAGMA page_size = {_DatabasePageSizeBytes};
+PRAGMA cache_size = -{_SqliteCacheKiB};
+PRAGMA page_size = {_SqlitePageSizeBytes};
 PRAGMA synchronous = NORMAL;
 PRAGMA journal_mode = WAL;
 """
@@ -80,6 +81,7 @@ f"""
         :used,
         :data);
 """
+_DropTilesTable = f'DROP TABLE {_TilesTableName};'
 _UpdateTileUsedQuery = \
     f'UPDATE {_TilesTableName} SET used = :used WHERE query = :query AND used < :used;'
 # When loading the metadata have it sorted by used time (oldest to newest) as it makes it
@@ -99,14 +101,14 @@ _DeleteUniverseTilesQuery = \
     f'DELETE FROM {_TilesTableName} WHERE overlap != "complete"'
 _DeleteAllTilesQuery = f'DELETE FROM {_TilesTableName};'
 
-_OverlapTypeToDbStringMap = {
+_OverlapTypeToDatabaseStringMap = {
     proxy.Compositor.OverlapType.NoOverlap: 'none',
     proxy.Compositor.OverlapType.PartialOverlap: 'partial',
     proxy.Compositor.OverlapType.CompleteOverlap: 'complete',
 }
-_DbStringToOverlapTypeMap =  {v: k for k, v in _OverlapTypeToDbStringMap.items()}
+_DatabaseStringToOverlapTypeMap =  {v: k for k, v in _OverlapTypeToDatabaseStringMap.items()}
 
-_DbTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
+_DatabaseTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
 class TileCache(object):
     class _DiskEntry(object):
@@ -217,11 +219,25 @@ class TileCache(object):
                 logging.debug('Creating tile cache config table')
                 async with self._dbConnection.execute(_CreateConfigTableQuery):
                     pass
-                await self._writeConfigValueAsync(_SchemaConfigKey, _DatabaseSchemaVersion)
+                await self._writeConfigValueAsync(
+                    key=_SchemaConfigKey,
+                    value=_DatabaseSchemaVersion)
             else:
-                # TODO: Read schema version from config and check it matches the expected version
-                # - not sure what to do if it doesn't match (possibly delete and recreate tiles table?)
-                pass
+                schemaVersion = await self._readConfigValueAsync(
+                    key=_SchemaConfigKey,
+                    type=int)
+                if schemaVersion != _DatabaseSchemaVersion:
+                    logging.info(
+                        'Recreating tile cache due to schema version change from {old} to {new})'.format(
+                            old=schemaVersion,
+                            new=_DatabaseSchemaVersion))
+                    # The database schema doesn't match the expected schema. Drop the tiles 
+                    # table so it will be recreated with the correct structure
+                    async with self._dbConnection.execute(_DropTilesTable):
+                        pass
+
+                    # Write the new schema version to the database
+                    await self._writeConfigValueAsync(_SchemaConfigKey, _DatabaseSchemaVersion)
 
             if not await proxy.checkIfTableExistsAsync(
                     table=_TilesTableName,
@@ -257,11 +273,11 @@ class TileCache(object):
                         invalidEntries.append(tileQuery)
                         continue
 
-                    if overlapType not in _DbStringToOverlapTypeMap:
+                    if overlapType not in _DatabaseStringToOverlapTypeMap:
                         logging.warning(f'Found invalid tile cache entry for {tileQuery} (Unknown overlap type {overlapType})')
                         invalidEntries.append(tileQuery)
                         continue
-                    overlapType = _DbStringToOverlapTypeMap[overlapType]
+                    overlapType = _DatabaseStringToOverlapTypeMap[overlapType]
 
                     try:
                         createdTime = TileCache._stringToTimestamp(string=createdTime)
@@ -623,7 +639,7 @@ class TileCache(object):
                 'width': diskEntry.tileWidth(),
                 'height': diskEntry.tileHeight(),
                 'scale': diskEntry.tileScale(),
-                'overlap': _OverlapTypeToDbStringMap[diskEntry.overlapType()],
+                'overlap': _OverlapTypeToDatabaseStringMap[diskEntry.overlapType()],
                 'created': TileCache._timestampToString(timestamp=diskEntry.createdTime()),
                 'used': TileCache._timestampToString(timestamp=diskEntry.usedTime()),
                 'data': sqlite3.Binary(tileData)}
@@ -811,11 +827,11 @@ class TileCache(object):
     def _stringToTimestamp(string: str) -> datetime.datetime:
         timestamp = datetime.datetime.strptime(
             string,
-            _DbTimestampFormat)
+            _DatabaseTimestampFormat)
         return datetime.datetime.fromtimestamp(
             timestamp.timestamp(),
             tz=datetime.timezone.utc)
     
     @staticmethod
     def _timestampToString(timestamp: datetime.datetime) -> str:
-        return timestamp.strftime(_DbTimestampFormat)
+        return timestamp.strftime(_DatabaseTimestampFormat)
