@@ -13,7 +13,10 @@ import typing
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
 _TileCacheDbFileName = 'tile_cache.db'
 
-# TODO: I don't think this is working for errors due to internal exceptions
+# NOTE: Changing the Server string like this doesn't work if an exception is
+# thrown by the request handler. I can't see a way to do it without implementing
+# my own code to generate HTTP error responses so it doesn't seem worth the
+# effort
 @aiohttp.web.middleware
 async def _serverHeaderMiddlewareAsync(
         request: aiohttp.web.Request,
