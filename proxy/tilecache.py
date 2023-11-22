@@ -659,6 +659,7 @@ class TileCache(object):
             # Cancellation is expected at shutdown so only log at debug
             logging.debug(
                 f'Adding tile {diskEntry.tileQuery()} to the disk cache was cancelled')
+            raise
         except Exception as ex:
             # Log the exception here rather than letting it be caught and logged by
             # the async loop running the fire and forget function.
@@ -693,6 +694,7 @@ class TileCache(object):
             # Cancellation is expected at shutdown so only log at debug
             logging.debug(
                 f'Updating tile {diskEntry.tileQuery()} last used time was cancelled')
+            raise
         except Exception as ex:
             # Log the exception here rather than letting it be caught and logged by
             # the async loop running the fire and forget function.
