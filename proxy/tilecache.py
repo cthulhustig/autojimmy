@@ -322,19 +322,15 @@ class TileCache(object):
             raise
                 
     async def shutdownAsync(self) -> None:
-        # TODO: Not sure if this should close tasks or await them
+        # Wait for all background tasks to finish
         while self._backgroundTasks:
             task = next(iter(self._backgroundTasks))
             try:
                 await task
             except Exception as ex:
-                print(str(ex)) # TODO: Not sure if this should log or just ignore
-        """
-        for task in self._backgroundTasks:
-            task.cancel()
-        self._backgroundTasks.clear()
-        self._diskPendingAdds.clear()
-        """
+                logging.error(
+                    'An error occurred while waiting for tile cache background tasks to complete',
+                    exc_info=ex)
 
         if self._garbageCollectTask:
             self._garbageCollectTask.cancel()
@@ -371,7 +367,7 @@ class TileCache(object):
         evictionCount = 0
         while self._memCache and ((self._memTotalBytes + size) > self._memMaxBytes):
             # The item at the start of the cache is the one that was used longest ago
-            _, oldData = self._memCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
+            _, oldData = self._memCache.popitem(last=False)
             evictionCount += 1
             self._memTotalBytes -= len(oldData)
             assert(self._memTotalBytes >= 0)
@@ -694,7 +690,7 @@ class TileCache(object):
         # is maintained in order of last usage (oldest to newest).
         queryArgs = []
         while self._diskTotalBytes > TileCache._MaxDbCacheSizeBytes:
-            _, diskEntry = self._diskCache.popitem(last=False) # TODO: Double check last is correct (it's VERY important)
+            _, diskEntry = self._diskCache.popitem(last=False)
             self._diskTotalBytes -= diskEntry.fileSize()
             queryArgs.append({'query': diskEntry.tileQuery()})
 
