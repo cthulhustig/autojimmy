@@ -10,7 +10,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 # TODO: Need spell/grammar check this
-# TODO: Need something about cairosvg maybe???????
+# TODO: Add link to documentation covering install of CairoSVG
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sector definitions along with associated
@@ -37,13 +37,26 @@ _WelcomeMessage = """
     <li><a href=\'https://travellermap.com/doc/fileformats#t5-column-delimited-format\'>T5 Column Delimited Sector Format</a> (aka Second Survey format)</li>
     <li><a href=\'https://travellermap.com/doc/fileformats#t5tab\'>T5 Row Delimited Sector Format</a></li>
     <li><a href=\'https://travellermap.com/doc/metadata#xml-metadata-file-structure\'>XML Metadata Format</a></li>
-    <li>JSON Metadata Format (sorry, I can't find documentation)</li>
+    <li>JSON Metadata Format (sorry, I can't find documentation for this format)</li>
     </ul>
     <li>Metadata files are required and must, at a minimum, specify the name and position of the sector.</li>
     <li>JSON metadata is the default output from the Traveller Map Metadata API, however it isn't supported
     by the Poster API. To account for this, {name} will automatically convert JSON metadata to XML metadata
     when generating Posters. It should be noted that the JSON metadata format doesn't support all the
     features of XML metadata, notably style sheets, so XML is generally the recommended format.</li>
+    <li>{name} support 3 modes of tile composition. Which is used is dependent on configuration
+    and if CairoSVG is installed. The composition modes are:</li>
+    <ul style="margin-left:15px; -qt-list-indent:0;">
+    <li><i>Bitmap</i> - This is the fallback mode if CairoSVG is not installed. {name} uses Traveller Map to
+    generate bitmap posters for composition. This method suffers from the most graphical artifacts.</li>
+    <li><i>Hybrid SVG</i> - This is the default mode if CairoSVG is installed. {name} uses Traveller Map to
+    generate SVG posters, these posters are pre-processed and converted to bitmap layers prior to composition.
+    This method prevents some of the graphical artifacts around the borders of custom sectors.</li>
+    <li><i>Full SVG</i> - This method of composition can be enabled from the configuration dialog if CairoSVG
+    is installed. {name} uses Traveller Map to generate SVG posters, these SVG posters are only converted to
+    bitmaps at the point tile composition occurs. This method prevents pixelisation at high zoom levels
+    and some of the graphical artifacts around the borders, however it is <b>significantly</b> slower than the
+    other methods.</ul>
     </ul></p>
     </html>
 """.format(name=app.AppName)

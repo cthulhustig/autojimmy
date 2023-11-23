@@ -19,6 +19,8 @@ import travellermap
 import typing
 import xml.etree.ElementTree
 
+# TODO: When I make this a user configurable option, changing it should trigger
+# clearing the tile cache
 _FullSvgRendering = False
 
 # Returns true if rect1 is completely contained within rect2
