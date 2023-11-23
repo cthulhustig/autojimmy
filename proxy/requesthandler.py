@@ -99,7 +99,6 @@ class RequestHandler(object):
             self,
             request: aiohttp.web.Request
             ) -> aiohttp.web.Response:
-        # TODO: I should probably use the local copies of sophont and allegiance files for those requests
         if request.path in self._staticRoutes:
             return await self._handleStaticRouteRequestAsync(request)
         elif request.path == '/api/tile':
@@ -194,9 +193,7 @@ class RequestHandler(object):
         try:
             tileImage = await self._tileCache.lookupAsync(tileQuery=request.query_string)
         except Exception as ex:
-            # Log this at a low level as it could happen a LOT if something goes wrong
-            # TODO: This should be logging at debug as it could get very spammy
-            logging.info(
+            logging.error(
                 f'Error occurred when looking up tile {request.query_string} in tile cache',
                 exc_info=ex)
             # Continue so tile is still generated
@@ -294,9 +291,7 @@ class RequestHandler(object):
                         newBytes.seek(0)
                         tileBytes = newBytes.read()
                 except Exception as ex:
-                    # Log this at a low level as it could happen a LOT if something goes wrong
-                    # TODO: This should be logging at debug as it could get very spammy
-                    logging.warning('Failed to composite tile', exc_info=ex)
+                    logging.error('Failed to composite tile', exc_info=ex)
                     shouldCacheTile = False # Don't cache tiles if they failed to generate
                 finally:
                     if tileImage:
