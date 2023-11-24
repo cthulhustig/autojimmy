@@ -832,6 +832,7 @@ class Compositor(object):
                 dpi=96.0)
 
             try:
+                # TODO: It looks like PNGSurface for mapping colour channels so this might not be needed
                 result = Compositor._convertBGRAToRGBA(
                     bgra=bytes(surface.cairo.get_data()),
                     width=tgtPixelDim[0],
