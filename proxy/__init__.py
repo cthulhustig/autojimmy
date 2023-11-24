@@ -1,4 +1,4 @@
-from .sqliteutils import *
+from .database import *
 from .compositor import *
 from .tilecache import *
 from .requesthandler import *

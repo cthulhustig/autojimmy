@@ -11,7 +11,7 @@ import threading
 import typing
 
 _MaxTileCacheBytes = 256 * 1024 * 1024 # 256MiB
-_TileCacheDbFileName = 'tile_cache.db'
+_MapProxyDbFileName = 'map_proxy.db'
 
 # NOTE: Changing the Server string like this doesn't work if an exception is
 # thrown by the request handler. I can't see a way to do it without implementing
@@ -157,7 +157,11 @@ class MapProxy(object):
         except Exception as ex:
             logging.error('Failed to set up map proxy logging', exc_info=ex)
 
-        logging.info(f'Map proxy starting on port {listenPort}')
+        logging.info(f'Map Proxy {app.AppVersion}')
+
+        dbPath=os.path.join(appDir, _MapProxyDbFileName)
+        logging.info(f'Proxy Listen Port: {listenPort}')
+        logging.info(f'Map Database Path: {dbPath}')        
 
         # This is a hack. The aiohttp server logs all requests at info level
         # where as I only want it logged at debug. The best way I can see to
@@ -177,14 +181,18 @@ class MapProxy(object):
                 customDir=customMapsDir)
 
             loop = asyncio.get_event_loop()
+            database = proxy.Database(filePath=dbPath)
+            loop.run_until_complete(database.initAsync())
+
+            # TODO: Using with here but not for other things seems inconsistent
             with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
                 # NOTE: This will block until the universe is loaded
                 loop.run_until_complete(compositor.loadUniverseAsync())
 
                 # Clear tile cache
                 tileCache = proxy.TileCache(
+                    mapDatabase=database,
                     travellerMapUrl=travellerMapUrl,
-                    dbPath=os.path.join(appDir, _TileCacheDbFileName),
                     maxMemBytes=_MaxTileCacheBytes)
                 loop.run_until_complete(tileCache.initAsync())
 

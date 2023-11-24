@@ -1,4 +1,3 @@
-import aiosqlite
 import asyncio
 import collections
 import common
@@ -10,39 +9,24 @@ import travellermap
 import typing
 
 _SqliteCacheKiB = 51200 # 50MiB
-# This is the best page size based on the average size of tile blobs
-# https://www.sqlite.org/intern-v-extern-blob.html
-_SqlitePageSizeBytes = 8192
 
-_DatabaseSchemaVersion = 1
+_TileTableSchema = 1
 
-_ConfigTableName = 'config'
-_TilesTableName = 'tiles'
+_TileTableName = 'tile_cache'
 
-_SchemaConfigKey = 'schema'
-_UniverseTimestampConfigKey = 'universe_timestamp'
-_CustomSectorTimestampConfigKey = 'custom_timestamp'
-_MapUrlConfigKey = 'map_url'
+_UniverseTimestampConfigKey = 'tile_cache_universe_timestamp'
+_CustomSectorTimestampConfigKey = 'tile_cache_custom_timestamp'
+_MapUrlConfigKey = 'tile_cache_map_url'
 
-# NOTE: Setting the page_size needs to be done before setting the journal_mode as
-# it can't be changed after entering WAL mode
-_SetDatabasePragmaScript = \
-    f"""
+_SetConnectionPragmaScript = \
+f"""
 PRAGMA cache_size = -{_SqliteCacheKiB};
-PRAGMA page_size = {_SqlitePageSizeBytes};
 PRAGMA synchronous = NORMAL;
-PRAGMA journal_mode = WAL;
 """
 
-_CreateConfigTableQuery = \
-    f"""
-CREATE TABLE IF NOT EXISTS {_ConfigTableName} (
-    key TEXT NOT NULL PRIMARY KEY,
-    value TEXT NOT NULL);
-"""
 _CreateTileTableQuery = \
-    f"""
-CREATE TABLE IF NOT EXISTS {_TilesTableName} (
+f"""
+CREATE TABLE IF NOT EXISTS {_TileTableName} (
     query TEXT NOT NULL PRIMARY KEY,
     mime TEXT NOT NULL,
     size INTEGER NOT NULL,
@@ -57,49 +41,49 @@ CREATE TABLE IF NOT EXISTS {_TilesTableName} (
     used DATETIME NOT NULL,
     data BLOB NOT NULL);
 """
-_ReadConfigValue = \
-    f'SELECT value FROM {_ConfigTableName} WHERE key = :key;'
-_WriteConfigValue = \
-    f'INSERT OR REPLACE INTO {_ConfigTableName} VALUES (:key, :value);'
-_DeleteConfigValue = \
-    f'DELETE FROM {_ConfigTableName} WHERE key = :key;'
 
 _AddTileQuery = \
-    f"""
-    INSERT OR REPLACE INTO {_TilesTableName} VALUES (
-        :query,
-        :mime,
-        :size,
-        :milieu,
-        :x,
-        :y,
-        :width,
-        :height,
-        :scale,
-        :overlap,
-        :created,
-        :used,
-        :data);
+f"""
+INSERT OR REPLACE INTO {_TileTableName} VALUES (
+    :query,
+    :mime,
+    :size,
+    :milieu,
+    :x,
+    :y,
+    :width,
+    :height,
+    :scale,
+    :overlap,
+    :created,
+    :used,
+    :data);
 """
-_DropTilesTable = f'DROP TABLE {_TilesTableName};'
+
 _UpdateTileUsedQuery = \
-    f'UPDATE {_TilesTableName} SET used = :used WHERE query = :query AND used < :used;'
+    f'UPDATE {_TileTableName} SET used = :used WHERE query = :query AND used < :used;'
+
 # When loading the metadata have it sorted by used time (oldest to newest) as it makes it
 # easier to initialise the memory cache which is also kept in usage order
 _LoadAllMetadataQuery = \
-    f"""
-    SELECT query, mime, size, milieu, x, y, width, height, scale, overlap, created, used
-    FROM {_TilesTableName} ORDER BY used ASC;
+f"""
+SELECT query, mime, size, milieu, x, y, width, height, scale, overlap, created, used
+FROM {_TileTableName} ORDER BY used ASC;
 """
+
 _LoadTileDataQuery = \
-    f'SELECT data FROM {_TilesTableName} WHERE query = :query;'
+    f'SELECT data FROM {_TileTableName} WHERE query = :query;'
+
 _DeleteTileQuery = \
-    f'DELETE FROM {_TilesTableName} WHERE query = :query;'
+    f'DELETE FROM {_TileTableName} WHERE query = :query;'
+
 _DeleteExpiredTilesQuery = \
-    f'DELETE FROM {_TilesTableName} WHERE created <= :expiry;'
+    f'DELETE FROM {_TileTableName} WHERE created <= :expiry;'
+
 _DeleteUniverseTilesQuery = \
-    f'DELETE FROM {_TilesTableName} WHERE overlap != "complete"'
-_DeleteAllTilesQuery = f'DELETE FROM {_TilesTableName};'
+    f'DELETE FROM {_TileTableName} WHERE overlap != "complete"'
+
+_DeleteAllTilesQuery = f'DELETE FROM {_TileTableName};'
 
 _OverlapTypeToDatabaseStringMap = {
     proxy.Compositor.OverlapType.NoOverlap: 'none',
@@ -107,8 +91,6 @@ _OverlapTypeToDatabaseStringMap = {
     proxy.Compositor.OverlapType.CompleteOverlap: 'complete',
 }
 _DatabaseStringToOverlapTypeMap = {v: k for k, v in _OverlapTypeToDatabaseStringMap.items()}
-
-_DatabaseTimestampFormat = '%Y-%m-%d %H:%M:%S.%f'
 
 class TileCache(object):
     class _DiskEntry(object):
@@ -189,11 +171,11 @@ class TileCache(object):
     def __init__(
             self,
             travellerMapUrl: str,
-            dbPath: str,
+            mapDatabase: proxy.Database,
             maxMemBytes: typing.Optional[int] # None means no max
             ) -> None:
         self._travellerMapUrl = travellerMapUrl
-        self._dbPath = dbPath
+        self._mapDatabase = mapDatabase
         self._dbConnection = None
         self._memCache: typing.OrderedDict[str, travellermap.MapImage] = collections.OrderedDict()
         self._memTotalBytes = 0
@@ -205,46 +187,17 @@ class TileCache(object):
         self._garbageCollectTask = None
 
     async def initAsync(self) -> None:
-        logging.info(f'Connecting to tile cache database {self._dbPath}')
+        logging.info(f'Tile cache connecting to database')
 
         try:
-            self._dbConnection = await aiosqlite.connect(self._dbPath)
-
-            async with self._dbConnection.executescript(_SetDatabasePragmaScript):
-                pass
-
-            if not await proxy.checkIfTableExistsAsync(
-                    table=_ConfigTableName,
-                    connection=self._dbConnection):
-                logging.debug('Creating tile cache config table')
-                async with self._dbConnection.execute(_CreateConfigTableQuery):
-                    pass
-                await self._writeConfigValueAsync(
-                    key=_SchemaConfigKey,
-                    value=_DatabaseSchemaVersion)
-            else:
-                schemaVersion = await self._readConfigValueAsync(
-                    key=_SchemaConfigKey,
-                    type=int)
-                if schemaVersion != _DatabaseSchemaVersion:
-                    logging.info(
-                        'Recreating tile cache due to schema version change from {old} to {new})'.format(
-                            old=schemaVersion,
-                            new=_DatabaseSchemaVersion))
-                    # The database schema doesn't match the expected schema. Drop the tiles
-                    # table so it will be recreated with the correct structure
-                    async with self._dbConnection.execute(_DropTilesTable):
-                        pass
-
-                    # Write the new schema version to the database
-                    await self._writeConfigValueAsync(_SchemaConfigKey, _DatabaseSchemaVersion)
-
-            if not await proxy.checkIfTableExistsAsync(
-                    table=_TilesTableName,
-                    connection=self._dbConnection):
-                logging.debug('Creating tile cache table')
-                async with self._dbConnection.execute(_CreateTileTableQuery):
-                    pass
+            self._dbConnection = await self._mapDatabase.connectAsync(
+                pragmaQuery=_SetConnectionPragmaScript)
+            
+            await proxy.createSchemaTable(
+                connection=self._dbConnection,
+                tableName=_TileTableName,
+                requiredSchema=_TileTableSchema,
+                createTableQuery=_CreateTileTableQuery)
 
             logging.debug('Checking tile cache validity')
             await self._checkCacheValidityAsync()
@@ -280,7 +233,7 @@ class TileCache(object):
                     overlapType = _DatabaseStringToOverlapTypeMap[overlapType]
 
                     try:
-                        createdTime = TileCache._stringToTimestamp(string=createdTime)
+                        createdTime = proxy.stringToDbTimestamp(string=createdTime)
                     except Exception as ex:
                         logging.warning(
                             f'Found invalid tile cache entry for {tileQuery} (Error while parsing created timestamp)',
@@ -289,7 +242,7 @@ class TileCache(object):
                         continue
 
                     try:
-                        usedTime = TileCache._stringToTimestamp(string=usedTime)
+                        usedTime = proxy.stringToDbTimestamp(string=usedTime)
                     except Exception as ex:
                         logging.warning(
                             f'Found invalid tile cache entry for {tileQuery} (Error while parsing used timestamp)',
@@ -493,42 +446,6 @@ class TileCache(object):
         self._diskCache.clear()
         self._diskTotalBytes = 0
 
-    async def _readConfigValueAsync(
-            self,
-            key: str,
-            type: typing.Type[typing.Any],
-            default: typing.Any = None
-            ) -> None:
-        queryArgs = {'key': key}
-        async with self._dbConnection.execute(_ReadConfigValue, queryArgs) as cursor:
-            row = await cursor.fetchone()
-            if row == None:
-                return default
-
-            if type == datetime.datetime:
-                return TileCache._stringToTimestamp(row[0])
-            return type(row[0])
-
-    async def _writeConfigValueAsync(
-            self,
-            key: str,
-            value: typing.Any
-            ) -> None:
-        if isinstance(value, datetime.datetime):
-            value = TileCache._timestampToString(timestamp=value)
-
-        queryArgs = {'key': key, 'value': str(value)}
-        async with self._dbConnection.execute(_WriteConfigValue, queryArgs):
-            pass
-
-    async def _deleteConfigValueAsync(
-            self,
-            key: str
-            ) -> None:
-        queryArgs = {'key': key}
-        async with self._dbConnection.execute(_DeleteConfigValue, queryArgs):
-            pass
-
     async def _checkCacheValidityAsync(self) -> None:
         # If the universe timestamp has changed then delete tiles that aren't
         # completely within a custom sector
@@ -566,7 +483,8 @@ class TileCache(object):
             identString: str
             ) -> None:
         try:
-            cacheValue = await self._readConfigValueAsync(
+            cacheValue = await proxy.readDbMetadataAsync(
+                connection=self._dbConnection,
                 key=configKey,
                 type=valueType)
         except Exception as ex:
@@ -608,9 +526,14 @@ class TileCache(object):
                                 ident=identString))
 
                 if currentValue:
-                    await self._writeConfigValueAsync(key=configKey, value=currentValue)
+                    await proxy.writeDbMetadataAsync(
+                        connection=self._dbConnection,
+                        key=configKey,
+                        value=currentValue)
                 else:
-                    await self._deleteConfigValueAsync(key=configKey)
+                    await proxy.deleteDbMetadataAsync(
+                        connection=self._dbConnection,
+                        key=configKey)
             except Exception as ex:
                 logging.error(
                     'An exception occurred when purging tiles from tile cache due to {ident} change'.format(
@@ -641,8 +564,8 @@ class TileCache(object):
                 'height': diskEntry.tileHeight(),
                 'scale': diskEntry.tileScale(),
                 'overlap': _OverlapTypeToDatabaseStringMap[diskEntry.overlapType()],
-                'created': TileCache._timestampToString(timestamp=diskEntry.createdTime()),
-                'used': TileCache._timestampToString(timestamp=diskEntry.usedTime()),
+                'created': proxy.dbTimestampToString(timestamp=diskEntry.createdTime()),
+                'used': proxy.dbTimestampToString(timestamp=diskEntry.usedTime()),
                 'data': sqlite3.Binary(tileData)}
 
             async with self._dbConnection.execute(_AddTileQuery, queryArgs):
@@ -682,7 +605,7 @@ class TileCache(object):
         try:
             queryArgs = {
                 'query': diskEntry.tileQuery(),
-                'used': TileCache._timestampToString(diskEntry.usedTime())}
+                'used': proxy.dbTimestampToString(diskEntry.usedTime())}
 
             async with self._dbConnection.execute(_UpdateTileUsedQuery, queryArgs):
                 pass
@@ -766,7 +689,7 @@ class TileCache(object):
 
         # Remove expired tiles from the database
         try:
-            queryArgs = {'expiry': TileCache._timestampToString(timestamp=expiryTime)}
+            queryArgs = {'expiry': proxy.dbTimestampToString(timestamp=expiryTime)}
             async with self._dbConnection.execute(_DeleteExpiredTilesQuery, queryArgs):
                 pass
             await self._dbConnection.commit()
@@ -826,15 +749,3 @@ class TileCache(object):
             if currentTask in self._backgroundTasks:
                 self._backgroundTasks.remove(currentTask)
 
-    @staticmethod
-    def _stringToTimestamp(string: str) -> datetime.datetime:
-        timestamp = datetime.datetime.strptime(
-            string,
-            _DatabaseTimestampFormat)
-        return datetime.datetime.fromtimestamp(
-            timestamp.timestamp(),
-            tz=datetime.timezone.utc)
-
-    @staticmethod
-    def _timestampToString(timestamp: datetime.datetime) -> str:
-        return timestamp.strftime(_DatabaseTimestampFormat)
