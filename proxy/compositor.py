@@ -791,6 +791,9 @@ class Compositor(object):
             width = int(tree['width'])
             height = int(tree['height'])
 
+            # PNGSurface can take a function to map rgb colour channels but I've done some tests
+            # and (at least for my system) using numpy to convert the final image is marginally
+            # faster
             output = io.BytesIO()
             surface = cairosvg.surface.PNGSurface(
                 tree=tree,
@@ -798,6 +801,7 @@ class Compositor(object):
                 output_width=width,
                 output_height=height,
                 dpi=96.0)
+
             try:
                 result = Compositor._convertBGRAToRGBA(
                     bgra=bytes(surface.cairo.get_data()),
@@ -823,6 +827,9 @@ class Compositor(object):
             tree['viewBox'] = \
                 f'{srcPixelRect[0]}, {srcPixelRect[1]}, {srcPixelRect[2] - srcPixelRect[0]}, {srcPixelRect[3] - srcPixelRect[1]}'
 
+            # PNGSurface can take a function to map rgb colour channels but I've done some tests
+            # and (at least for my system) using numpy to convert the final image is marginally
+            # faster
             output = io.BytesIO()
             surface = cairosvg.surface.PNGSurface(
                 tree=tree,
