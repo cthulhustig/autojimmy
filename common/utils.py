@@ -1,5 +1,6 @@
 import datetime
 import enum
+import ipaddress
 import itertools
 import locale
 import math
@@ -194,3 +195,12 @@ def humanFriendlyByteSizes(byteSize) -> str:
     p = math.pow(1024, i)
     s = round(byteSize / p, 2)
     return f'{s}{_ByteSizeSuffixes[i]}'
+
+def isLoopback(host: str) -> bool:
+    host = host.lower()
+    if host == 'localhost' or host == 'loopback':
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False # Not an IP so not loopback

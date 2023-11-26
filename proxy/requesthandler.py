@@ -1,5 +1,6 @@
 import aiohttp.web
 import app
+import common
 import io
 import logging
 import multidict
@@ -56,9 +57,18 @@ class RequestHandler(object):
 
         def mimeType(self) -> str:
             return self._mimeType
+        
+    # This limits the max out going connections to Traveller Map. The value of 6 is based on the
+    # limit Chrome uses and is similar the value used by other browsers. The value is ignored
+    # when accessing instances of Traveller Map over loopback.
+    #
+    # PLEASE DO NOT INCREASE THIS VALUE.
+    # Traveller Map is a free service, increasing this value puts extra load on their servers,
+    # costing they people who run it money and affecting performance for other users.
+    _MaxConnectionsPerHost = 6        
 
-    # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15 seconds.
-    # I'm overriding this to make navigation of the map more responsive
+    # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15
+    # seconds. I'm overriding this to make navigation of the map more responsive
     _ConnectionKeepAliveSeconds = 60
 
     def __init__(
@@ -77,15 +87,23 @@ class RequestHandler(object):
         self._mainsMilieu = mainsMilieu
         self._staticRoutes: typing.Dict[str, RequestHandler._StaticRouteData] = {}
 
+        parsedUrl = urllib.parse.urlparse(travellerMapUrl)
+        isLoopback = common.isLoopback(host=parsedUrl.hostname)
+
+        # Allow unlimited connections per host if connecting over loopback
+        maxConnectionsPerHost = 0 if isLoopback else RequestHandler._MaxConnectionsPerHost
+
         # As far as I can tell connection reuse requires HTTP/2 which in turns requires
         # SSL (https://caniuse.com/http2). I was seeing exceptions when using my local
         # Traveller Map over HTTP but not when accessing the main site over HTTPS.
-        parsedUrl = urllib.parse.urlparse(travellerMapUrl)
         if parsedUrl.scheme.lower() == 'https':
             self._connector = aiohttp.TCPConnector(
+                limit_per_host=maxConnectionsPerHost,
                 keepalive_timeout=RequestHandler._ConnectionKeepAliveSeconds)
         else:
-            self._connector = aiohttp.TCPConnector(force_close=True)
+            self._connector = aiohttp.TCPConnector(
+                limit_per_host=maxConnectionsPerHost,
+                force_close=True)
 
         self._session = aiohttp.ClientSession(connector=self._connector)
 
