@@ -36,6 +36,7 @@ class MapProxy(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _listenPort = None
+    _hostPoolSize = None
     _travellerMapUrl = None
     _installDir = None
     _appDir = None
@@ -72,6 +73,7 @@ class MapProxy(object):
     @staticmethod
     def configure(
             listenPort: int,
+            hostPoolSize: int,
             travellerMapUrl: str,
             installDir: str,
             appDir: str,
@@ -84,6 +86,7 @@ class MapProxy(object):
         if MapProxy._listenPort == 0:
             raise RuntimeError('Map proxy listen port can\'t be 0')
         MapProxy._listenPort = listenPort
+        MapProxy._hostPoolSize = hostPoolSize
         MapProxy._travellerMapUrl = travellerMapUrl
         MapProxy._installDir = installDir
         MapProxy._appDir = appDir
@@ -102,6 +105,7 @@ class MapProxy(object):
                 target=MapProxy._serviceCallback,
                 args=[
                     self._listenPort,
+                    self._hostPoolSize,
                     self._travellerMapUrl,
                     self._installDir,
                     self._appDir,
@@ -141,6 +145,7 @@ class MapProxy(object):
     @staticmethod
     def _serviceCallback(
             listenPort: int,
+            hostPoolSize: int,
             travellerMapUrl: str,
             installDir: str,
             appDir: str,
@@ -211,10 +216,23 @@ class MapProxy(object):
                     method='*',
                     path='/{path:.*?}',
                     handler=requestHandler.handleRequestAsync)
+                
+                # Only listen on loopback for security. Multiple loopback addresses
+                # can be used to allow the client side to round robin requests to
+                # different addresses in order to work around the hard coded limit
+                # of 6 connections per host enforced by the Chromium browser used by
+                # the map widgets.
+                hosts = []
+                if hostPoolSize:
+                    for index in range(1, hostPoolSize + 1):
+                        hosts.append(f'127.0.0.{index}')
+                else:
+                    hosts.append('127.0.0.1')
+
                 loop.run_until_complete(loop.create_server(
                     protocol_factory=webApp.make_handler(),
-                    host='127.0.0.1', # Only listen on loopback for security
-                    port=app.Config.instance().mapProxyPort()))
+                    host=hosts,
+                    port=listenPort))
 
                 # Now that set up is finished clear out cached data from that data
                 # store to keep the memory footprint down.

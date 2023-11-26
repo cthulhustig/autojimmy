@@ -55,8 +55,8 @@ _WelcomeMessage = """
     <li><i>Full SVG</i> - This method of composition can be enabled from the configuration dialog if CairoSVG
     is installed. {name} uses Traveller Map to generate SVG posters, these SVG posters are only converted to
     bitmaps at the point tile composition occurs. This method prevents pixelisation at high zoom levels
-    and some of the graphical artifacts around the borders, however it is <b>significantly</b> slower than the
-    other methods.</ul>
+    and some of the graphical artifacts around the borders, however it's <b>significantly</b> more processor
+    intensive than other methods and only really suitable for systems with high core counts.</ul>
     </ul></p>
     </html>
 """.format(name=app.AppName)

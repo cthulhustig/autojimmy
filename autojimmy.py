@@ -459,6 +459,7 @@ def main() -> None:
         if mapProxyPort:
             proxy.MapProxy.configure(
                 listenPort=mapProxyPort,
+                hostPoolSize=app.Config.instance().mapProxyPoolSize(),
                 travellerMapUrl=travellerMapUrl,
                 installDir=installDir,
                 appDir=appDir,

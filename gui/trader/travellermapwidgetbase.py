@@ -584,6 +584,49 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         reloadAction.triggered.connect(self.reload)
         self.addAction(reloadAction)
 
+    # Replace the standard Util.fetchImage function with one that does a round robin
+    # of of hosts for loopback requests in order to work around the hard coded limit
+    # of 6 connections per host that the underlying Chromium browser enforces.
+    # NOTE: This only affects connections to the proxy so cached tiles can be returned
+    # without having to wait for the requests for non-cached tiles. The proxy still
+    # limits the number of outgoing connections to 6.
+    # NOTE: This should only be done when routing through the proxy. It doesn't work
+    # when accessing local instances of Traveller Map directly as it only listens on
+    # 127.0.0.1
+    def _injectImageHostRoundRobin(self) -> None:
+        script = """
+            const LoopbackRegex = /^(127\.\d\.\d\.\d|localhost|loopback)$/;
+            let nextImageHost = 1;
+            let imageHostCount = {poolSize};
+
+            Util.real_fetchImage = Util.fetchImage;
+
+            Util.fetchImage = function(url, img) {{
+                if (url.startsWith("/")) {{
+                    hostname = document.location.hostname;
+                }} else {{
+                    let parsedUrl = new URL(url);
+                    hostname = parsedUrl.hostname;
+                }}
+            
+                if (hostname.match(LoopbackRegex)) {{
+                    let authority = "127.0.0." + nextImageHost;
+                    if (document.location.port) {{
+                        authority += ":" + document.location.port;
+                    }}
+                    url = document.location.protocol + "//" + authority + url;
+                
+                    nextImageHost += 1
+                    if (nextImageHost > imageHostCount) {{
+                        nextImageHost = 1;
+                    }}
+                }}
+            
+                return Util.real_fetchImage(url, img);
+            }};
+            """.format(poolSize=app.Config.instance().mapProxyPoolSize())
+        self._runScript(script)
+
     # NOTE: The 'tilt' url parameter isn't supported as it doesn't draw properly in the Qt widget
     def _generateUrl(self) -> QtCore.QUrl:
         currentUrl = self._mapWidget.url().toString()
@@ -616,6 +659,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     def _loadMap(self) -> None:
         url = self._generateUrl()
         logging.debug(f'TravellerMapWidget loading {url.toString()}')
+
+        if app.Config.instance().mapProxyPort():
+            self._injectImageHostRoundRobin()
+
         self._mapWidget.load(url)
 
     def _runJumpRouteScript(

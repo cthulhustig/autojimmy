@@ -212,6 +212,9 @@ class Config(object):
     # NOTE: If this returns 0 it means the proxy is disabled
     def mapProxyPort(self) -> int:
         return self._mapProxyPort
+    
+    def mapProxyPoolSize(self) -> int:
+        return 4 # TODO: Hook up somewhere
 
     def setMapProxyPort(
             self,
