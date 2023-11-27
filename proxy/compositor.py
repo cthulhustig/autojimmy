@@ -811,8 +811,6 @@ class Compositor(object):
 
             tree['viewBox'] = \
                 f'{srcPixelRect[0]}, {srcPixelRect[1]}, {srcPixelRect[2] - srcPixelRect[0]}, {srcPixelRect[3] - srcPixelRect[1]}'
-                
-            # TODO: Need to check this doesn't cause sector name text etc to be lost. It does seem to make a small speed improvement
             tree['clip'] = \
                 f'{srcPixelRect[0]} {srcPixelRect[1]} {srcPixelRect[2]} {srcPixelRect[3]}'
             
