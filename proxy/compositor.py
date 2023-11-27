@@ -7,14 +7,15 @@ except Exception as ex:
     _HasSvgSupport = False
 
 import asyncio
+import common
 import concurrent.futures
 import enum
 import io
 import logging
 import math
 import multiprocessing
-import numpy
 import PIL.Image
+import re
 import travellermap
 import typing
 import xml.etree.ElementTree
@@ -262,14 +263,14 @@ class Compositor(object):
                 result = mapTask.result()
                 if isinstance(result, Exception):
                     raise RuntimeError('Worker process exception when render map SVG') from result
-                mainImage = PIL.Image.frombytes('RGBA', (width, height), result)
+                mainImage = PIL.Image.open(io.BytesIO(result))
 
                 # Process text task results
                 await textTask
                 result = textTask.result()
                 if isinstance(result, Exception):
                     raise RuntimeError('Worker process exception when render text SVG') from result
-                textImage = PIL.Image.frombytes('RGBA', (width, height), result)
+                textImage = PIL.Image.open(io.BytesIO(result))
                 textMask = textImage.split()[-1] # Extract alpha channel as Image
                 del textImage
         else:
@@ -632,9 +633,8 @@ class Compositor(object):
                 if isinstance(textResult, Exception):
                     raise RuntimeError('Worker process exception when render text SVG') from textResult
 
-                svgDim = _extractSvgSize(svgData=mapImage.bytes())
-                mainImage = PIL.Image.frombytes('RGBA', svgDim, mapResult)
-                textImage = PIL.Image.frombytes('RGBA', svgDim, textResult)
+                mainImage = PIL.Image.open(io.BytesIO(mapResult))
+                textImage = PIL.Image.open(io.BytesIO(textResult))
                 textMask = textImage.split()[-1] # Extract alpha channel as Image
                 del textImage
 
@@ -743,7 +743,7 @@ class Compositor(object):
             if isinstance(result, Exception):
                 raise RuntimeError('Worker process encountered an exception when render SVG region') from result
 
-            overlayImage = PIL.Image.frombytes('RGBA', tgtPixelDim, result)
+            overlayImage = PIL.Image.open(io.BytesIO(result))
 
             if tgtImage == None:
                 # No target was specified to overlay the custom sector on so just return the
@@ -755,7 +755,7 @@ class Compositor(object):
                 tgtImage = overlayImage
             else:
                 # Copy custom sector section over current tile using it's alpha channel as a mask
-                tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage)
+                tgtImage.paste(overlayImage, tgtPixelOffset, overlayImage if overlayImage.mode == 'RGBA' else None)
         finally:
             if (overlayImage is not None) and (overlayImage is not tgtImage):
                 del overlayImage
@@ -790,26 +790,9 @@ class Compositor(object):
             tree = cairosvg.parser.Tree(bytestring=svgData)
             width = int(tree['width'])
             height = int(tree['height'])
-
-            # PNGSurface can take a function to map rgb colour channels but I've done some tests
-            # and (at least for my system) using numpy to convert the final image is marginally
-            # faster
-            output = io.BytesIO()
-            surface = cairosvg.surface.PNGSurface(
-                tree=tree,
-                output=output,
-                output_width=width,
-                output_height=height,
-                dpi=96.0)
-
-            try:
-                result = Compositor._convertBGRAToRGBA(
-                    bgra=bytes(surface.cairo.get_data()),
-                    width=width,
-                    height=height)
-                surface.finish()
-            finally:
-                del surface
+            result = Compositor._renderSvgTree(
+                svgTree=tree,
+                tgtPixelDim=(width, height))
         except Exception as ex:
             return ex
 
@@ -824,48 +807,108 @@ class Compositor(object):
             ) -> typing.Union[bytes, Exception]:
         try:
             tree = cairosvg.parser.Tree(bytestring=svgData)
+            Compositor._clipSvgTree(svgTree=tree, srcPixelRect=srcPixelRect)
+
             tree['viewBox'] = \
                 f'{srcPixelRect[0]}, {srcPixelRect[1]}, {srcPixelRect[2] - srcPixelRect[0]}, {srcPixelRect[3] - srcPixelRect[1]}'
-
-            # PNGSurface can take a function to map rgb colour channels but I've done some tests
-            # and (at least for my system) using numpy to convert the final image is marginally
-            # faster
-            output = io.BytesIO()
-            surface = cairosvg.surface.PNGSurface(
-                tree=tree,
-                output=output,
-                output_width=tgtPixelDim[0],
-                output_height=tgtPixelDim[1],
-                dpi=96.0)
-
-            try:
-                # TODO: It looks like PNGSurface for mapping colour channels so this might not be needed
-                result = Compositor._convertBGRAToRGBA(
-                    bgra=bytes(surface.cairo.get_data()),
-                    width=tgtPixelDim[0],
-                    height=tgtPixelDim[1])
-                surface.finish()
-            finally:
-                del surface
+                
+            # TODO: Need to check this doesn't cause sector name text etc to be lost. It does seem to make a small speed improvement
+            tree['clip'] = \
+                f'{srcPixelRect[0]} {srcPixelRect[1]} {srcPixelRect[2]} {srcPixelRect[3]}'
+            
+            result = Compositor._renderSvgTree(
+                svgTree=tree,
+                tgtPixelDim=tgtPixelDim)
         except Exception as ex:
             return ex
 
         return result
 
+    # NOTE: Clipping assumes the tree is for a 32x40 hex poster image
+    _TranslationRegex = re.compile(r'translate\((.+),\s*(.+)\)\s+scale\(1.1547 1\)')
     @staticmethod
-    def _convertBGRAToRGBA(
-            bgra: bytes,
-            width: int,
-            height: int
+    def _clipSvgTree(
+            svgTree: cairosvg.parser.Tree,
+            srcPixelRect: typing.Tuple[int, int, int, int]
+            ) -> None:
+        hexWidth = int(svgTree['width']) / 32
+        hexHeight = int(svgTree['height']) / 40
+
+        # Calculate the rect to use when clip world groups. The rect is in a local hex
+        # coordinate system used by the SVGs generated by Traveller Map. The rect is
+        # expanded by 2 hexes horizontally in each direction to avoid clipping adjacent
+        # worlds with long names where the start/end of the text extends over the area
+        # being rendered. It's expanded by 1 hex vertically in each direction to avoid
+        # things getting clipped due to rounding errors and floating point comparisons
+        clipMinX = (srcPixelRect[0] / hexWidth) - 2
+        clipMinY = ((srcPixelRect[1] / hexHeight) - 40) - 1
+        clipMaxX = (srcPixelRect[2] / hexWidth) + 2
+        clipMaxY = ((srcPixelRect[3] / hexHeight) - 40) + 1
+
+        for child in svgTree.children:
+            if child.tag != 'g':
+                continue
+            newChildren = []
+            for possible in child.children:
+                if possible.tag != 'g':
+                    newChildren.append(possible)
+                    continue
+
+                transform = possible.get('transform')
+                if transform is None:
+                    newChildren.append(possible)
+                    continue
+
+                translation = re.match(Compositor._TranslationRegex, transform)
+                if not translation:
+                    newChildren.append(possible)
+                    continue
+
+                try:
+                    translationX = float(translation.group(1))
+                    translationY = float(translation.group(2))
+                except:
+                    newChildren.append(possible)
+                    continue
+
+                if (translationX < clipMinX) or (translationX > clipMaxX) or \
+                    (translationY < clipMinY) or (translationY > clipMaxY):
+                    continue
+
+                newChildren.append(possible)
+
+            child.children = newChildren
+
+    @staticmethod
+    def _renderSvgTree(
+            svgTree: cairosvg.parser.Tree,
+            tgtPixelDim: typing.Tuple[int, int],
             ) -> bytes:
-        bgra = numpy.frombuffer(
-            buffer=bgra,
-            dtype=numpy.uint8)
-        bgra.shape = (height, width, 4) # for RGBA
-        b, g, r, a = bgra[:, :, 0], bgra[:, :, 1], bgra[:, :, 2], bgra[:, :, 3]
-        rgba = numpy.zeros(shape=bgra.shape, dtype=numpy.uint8)
-        rgba[:, :, 0] = r
-        rgba[:, :, 1] = g
-        rgba[:, :, 2] = b
-        rgba[:, :, 3] = a
-        return rgba.tobytes()
+        # Usa a PNGSurface to render the SVG to a bitmap of the required size
+        output = io.BytesIO()
+        surface = cairosvg.surface.PNGSurface(
+            tree=svgTree,
+            output=output,
+            output_width=tgtPixelDim[0],
+            output_height=tgtPixelDim[1],
+            dpi=96.0,
+            map_rgba=Compositor._mapColour)
+
+        # Use a PIL Image to convert the bitmap to a PNG. This is done rather than
+        # using PNGSurface to generate the PNG as I found using it resulted in a 
+        # green tint around text at some zoom levels. Using PIL also appears to be
+        # slightly faster (at least on my machine)
+        image = PIL.Image.frombytes(
+            'RGBA',
+            tgtPixelDim,
+            surface.cairo.get_data())
+        buffer = io.BytesIO()
+        image.save(buffer, format='PNG')
+        buffer.seek(0)
+        return buffer.read()
+    
+    @staticmethod
+    def _mapColour(
+            colour: typing.Tuple[int, int, int, int]
+            ) -> typing.Tuple[int, int, int, int]:
+        return (colour[2], colour[1], colour[0], colour[3])

@@ -1,5 +1,6 @@
 import app
 import common
+import depschecker
 import enum
 import gui
 import jobs
@@ -81,7 +82,10 @@ _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
 # Once you get to a scale lower than 4 the poster API stops generating posters that really
 # look like what is rendered by the tile API. You don't get the red sector overlay and
 # the background colour can be noticeably different.
-_CustomMapScales = [128, 64, 32, 16, 4]
+# NOTE: SVGs put less load on Traveller Map so I've added an extra scale to make the
+# compositing more seamless
+_BitmapCustomMapScales = [128, 64, 32, 16, 4]
+_SvgCustomMapScales = [128, 64, 32, 16, 8, 4]
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
@@ -777,6 +781,8 @@ class _NewSectorDialog(gui.DialogEx):
                     exception=ex)
                 return
 
+            scales = \
+                _SvgCustomMapScales if depschecker.DetectedCairoSvgState else _BitmapCustomMapScales
             posterJob = jobs.PosterJobAsync(
                 parent=self,
                 mapUrl=mapUrl,
@@ -784,7 +790,7 @@ class _NewSectorDialog(gui.DialogEx):
                 xmlMetadata=xmlMetadata, # Poster API always uses XML metadata
                 style=renderStyle,
                 options=renderOptions,
-                scales=_CustomMapScales,
+                scales=scales,
                 compositing=True)
             progressDlg = _PosterJobDialog(
                 title='Map Creation',

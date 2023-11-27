@@ -20,8 +20,7 @@ _Requirements = [
     'aiosqlite',
     'qasync',
     'xmlschema',
-    'cairosvg',
-    'numpy']
+    'cairosvg']
 _RequirementsFile = 'requirements.txt'
 _CairoModuleName = 'cairosvg'
 
