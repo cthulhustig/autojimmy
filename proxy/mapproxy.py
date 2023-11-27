@@ -176,6 +176,11 @@ class MapProxy(object):
         if logLevel > logging.DEBUG:
             logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
+        database = None
+        compositor = None
+        tileCache = None
+        requestHandler = None
+        webApp = None
         try:
             installMapsDir = os.path.join(installDir, 'data', 'map')
             overlayMapsDir = os.path.join(appDir, 'map')
@@ -189,74 +194,103 @@ class MapProxy(object):
             database = proxy.Database(filePath=dbPath)
             loop.run_until_complete(database.initAsync())
 
-            # TODO: Using with here but not for other things seems inconsistent
-            with proxy.Compositor(customMapsDir=customMapsDir) as compositor:
-                # NOTE: This will block until the universe is loaded
-                loop.run_until_complete(compositor.loadUniverseAsync())
+            compositor = proxy.Compositor(customMapsDir=customMapsDir, mapDatabase=database)
+            loop.run_until_complete(compositor.initAsync())          
 
-                # Clear tile cache
-                tileCache = proxy.TileCache(
-                    mapDatabase=database,
-                    travellerMapUrl=travellerMapUrl,
-                    maxMemBytes=_MaxTileCacheBytes)
-                loop.run_until_complete(tileCache.initAsync())
+            # Clear tile cache
+            tileCache = proxy.TileCache(
+                mapDatabase=database,
+                travellerMapUrl=travellerMapUrl,
+                maxMemBytes=_MaxTileCacheBytes)
+            loop.run_until_complete(tileCache.initAsync())       
 
-                # Create request handler
-                requestHandler = proxy.RequestHandler(
-                    travellerMapUrl=travellerMapUrl,
-                    installDir=installDir,
-                    tileCache=tileCache,
-                    compositor=compositor,
-                    mainsMilieu=mainsMilieu)
+            # Create request handler
+            requestHandler = proxy.RequestHandler(
+                travellerMapUrl=travellerMapUrl,
+                installDir=installDir,
+                tileCache=tileCache,
+                compositor=compositor,
+                mainsMilieu=mainsMilieu)          
 
-                # Set up web server with all requests redirected to my handler
-                webApp = aiohttp.web.Application(
-                    middlewares=[_serverHeaderMiddlewareAsync])
-                webApp.router.add_route(
-                    method='*',
-                    path='/{path:.*?}',
-                    handler=requestHandler.handleRequestAsync)
-                
-                # Only listen on loopback for security. Multiple loopback addresses
-                # can be used to allow the client side to round robin requests to
-                # different addresses in order to work around the hard coded limit
-                # of 6 connections per host enforced by the Chromium browser used by
-                # the map widgets.
-                hosts = []
-                if hostPoolSize:
-                    for index in range(1, hostPoolSize + 1):
-                        hosts.append(f'127.0.0.{index}')
-                else:
-                    hosts.append('127.0.0.1')
+            # Set up web server with all requests redirected to my handler
+            webApp = aiohttp.web.Application(
+                middlewares=[_serverHeaderMiddlewareAsync])
+            webApp.router.add_route(
+                method='*',
+                path='/{path:.*?}',
+                handler=requestHandler.handleRequestAsync)            
+            
+            # Only listen on loopback for security. Multiple loopback addresses
+            # can be used to allow the client side to round robin requests to
+            # different addresses in order to work around the hard coded limit
+            # of 6 connections per host enforced by the Chromium browser used by
+            # the map widgets.
+            hosts = []
+            if hostPoolSize:
+                for index in range(1, hostPoolSize + 1):
+                    hosts.append(f'127.0.0.{index}')
+            else:
+                hosts.append('127.0.0.1')
 
-                loop.run_until_complete(loop.create_server(
-                    protocol_factory=webApp.make_handler(),
-                    host=hosts,
-                    port=listenPort))
+            loop.run_until_complete(loop.create_server(
+                protocol_factory=webApp.make_handler(),
+                host=hosts,
+                port=listenPort))             
 
-                # Now that set up is finished clear out cached data from that data
-                # store to keep the memory footprint down.
-                travellermap.DataStore.instance().clearCachedData()
+            # Now that set up is finished clear out cached data from that data
+            # store to keep the memory footprint down.
+            travellermap.DataStore.instance().clearCachedData()
 
-                # Run event loop until proxy is shut down
-                messageQueue.put((MapProxy.ServerStatus.Started, None))
-                loop.run_until_complete(MapProxy._shutdownMonitorAsync(
-                    shutdownEvent=shutdownEvent,
-                    webApp=webApp,
-                    requestHandler=requestHandler,
-                    tileCache=tileCache))
+            # Run event loop until proxy is shut down
+            messageQueue.put((MapProxy.ServerStatus.Started, None))
+            loop.run_until_complete(MapProxy._shutdownMonitorAsync(
+                shutdownEvent=shutdownEvent,
+                webApp=webApp,
+                requestHandler=requestHandler,
+                tileCache=tileCache,
+                compositor=compositor))
 
-                messageQueue.put((MapProxy.ServerStatus.Stopped, None))
-                logging.info('Map proxy shutdown complete')
+            messageQueue.put((MapProxy.ServerStatus.Stopped, None))
+            logging.info('Map proxy shutdown complete')
         except Exception as ex:
             logging.error('Exception occurred while running map proxy', exc_info=ex)
             messageQueue.put((MapProxy.ServerStatus.Error, str(ex)))
+            loop.run_until_complete(MapProxy._shutdownAsync(
+                requestHandler=requestHandler,
+                webApp=webApp,
+                tileCache=tileCache,
+                compositor=compositor))
+
+    async def _shutdownAsync(
+            webApp: aiohttp.web.Application,
+            requestHandler: proxy.RequestHandler,
+            tileCache: proxy.TileCache,
+            compositor: proxy.Compositor
+            ) -> None:
+        # Disable aiohttp logging during shutdown as it can get quite noisy if requests
+        # are in progress due. The errors that are generated are expected due to closing
+        # the async session used for outgoing connections
+        logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
+
+        if requestHandler:
+            await requestHandler.shutdownAsync()
+
+        if webApp:
+            await webApp.shutdown()
+            await webApp.cleanup()
+
+        if tileCache:
+            await tileCache.shutdownAsync()
+
+        if compositor:
+            await compositor.shutdownAsync()
 
     async def _shutdownMonitorAsync(
             shutdownEvent: multiprocessing.Event,
             webApp: aiohttp.web.Application,
             requestHandler: proxy.RequestHandler,
-            tileCache: proxy.TileCache
+            tileCache: proxy.TileCache,
+            compositor: proxy.Compositor
             ) -> None:
         while True:
             await asyncio.sleep(0.5)
@@ -265,9 +299,9 @@ class MapProxy(object):
                 # are in progress due. The errors that are generated are expected due to closing
                 # the async session used for outgoing connections
                 logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
-
-                await requestHandler.shutdownAsync()
-                await webApp.shutdown()
-                await webApp.cleanup()
-                await tileCache.shutdownAsync()
+                await MapProxy._shutdownAsync(
+                    requestHandler=requestHandler,
+                    webApp=webApp,
+                    tileCache=tileCache,
+                    compositor=compositor)
                 return

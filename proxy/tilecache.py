@@ -8,8 +8,6 @@ import sqlite3
 import travellermap
 import typing
 
-_SqliteCacheKiB = 51200 # 50MiB
-
 _TileTableSchema = 1
 
 _TileTableName = 'tile_cache'
@@ -17,6 +15,7 @@ _TileTableName = 'tile_cache'
 _UniverseTimestampConfigKey = 'tile_cache_universe_timestamp'
 _CustomSectorTimestampConfigKey = 'tile_cache_custom_timestamp'
 _MapUrlConfigKey = 'tile_cache_map_url'
+_SqliteCacheKiB = 51200 # 50MiB
 
 _SetConnectionPragmaScript = \
 f"""

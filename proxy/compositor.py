@@ -6,16 +6,20 @@ try:
 except Exception as ex:
     _HasSvgSupport = False
 
+import aiosqlite
 import asyncio
 import common
 import concurrent.futures
+import datetime
 import enum
 import io
 import logging
 import math
 import multiprocessing
 import PIL.Image
+import proxy
 import re
+import sqlite3
 import travellermap
 import typing
 import xml.etree.ElementTree
@@ -23,6 +27,51 @@ import xml.etree.ElementTree
 # TODO: When I make this a user configurable option, changing it should trigger
 # clearing the tile cache
 _FullSvgRendering = False
+
+_LayersTableSchema = 1
+_LayersTableName = 'layers_cache'
+
+_CustomSectorTimestampConfigKey = 'layers_cache_custom_timestamp'
+
+_SetConnectionPragmaScript = \
+"""
+PRAGMA synchronous = NORMAL;
+"""
+
+_CreateLayersTableQuery = \
+f"""
+CREATE TABLE IF NOT EXISTS {_LayersTableName} (
+    name TEXT NOT NULL,
+    milieu TEXT NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    scale INTEGER NOT NULL,
+    created DATETIME NOT NULL,
+    map BLOB NOT NULL,
+    text BLOB NOT NULL);
+"""
+
+_LoadLayersQuery = \
+f"""
+SELECT map, text
+FROM {_LayersTableName}
+WHERE milieu = :milieu AND x = :x AND y = :y AND scale = :scale;
+"""
+
+_AddLayersQuery = \
+f"""
+INSERT INTO {_LayersTableName} VALUES (
+    :name,
+    :milieu,
+    :x,
+    :y,
+    :scale,
+    :created,
+    :map,
+    :text);
+"""
+
+_DeleteAllLayersQuery = f'DELETE FROM {_LayersTableName};'
 
 # Returns true if rect1 is completely contained within rect2
 # Rect format is (left, top, right, bottom)
@@ -202,9 +251,11 @@ class Compositor(object):
 
     def __init__(
             self,
-            customMapsDir: str
+            customMapsDir: str,
+            mapDatabase: proxy.Database
             ) -> OverlapType:
         self._customMapsDir = customMapsDir
+        self._mapDatabase = mapDatabase
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
         self._processExecutor = None
 
@@ -215,82 +266,180 @@ class Compositor(object):
             mpContext = multiprocessing.get_context('spawn')
             self._processExecutor = concurrent.futures.ProcessPoolExecutor(mp_context=mpContext)
 
-    def __enter__(self) -> 'Compositor':
-        return self
+    async def initAsync(self) -> None:
+        self._milieuSectorMap.clear()
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
-        self.shutdown()
+        logging.info(f'Compositor connecting to database')
+        connection = await self._mapDatabase.connectAsync(
+            pragmaQuery=_SetConnectionPragmaScript)
+        
+        try:
+            await proxy.createSchemaTable(
+                connection=connection,
+                tableName=_LayersTableName,
+                requiredSchema=_LayersTableSchema,
+                createTableQuery=_CreateLayersTableQuery)
+            
+            logging.debug('Checking compositor layers validity')
+            await self._checkCacheValidityAsync(connection=connection)            
+
+            layerTasks: typing.List[typing.Tuple[
+                _CustomSector,
+                travellermap.Milieu,
+                int,
+                asyncio.Future,
+                asyncio.Future
+                ]] = []
+            loop = asyncio.get_running_loop()
+            
+            for milieu in travellermap.Milieu:
+                milieuSectors = []
+                for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
+                    if not sectorInfo.isCustomSector():
+                        continue # Only interested in custom sectors
+
+                    mapLevels = sectorInfo.customMapLevels()
+                    if not mapLevels:
+                        logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no map levels')
+                        continue
+
+                    mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
+                    for scale in mapLevels.keys():
+                        try:
+                            # TODO: Ideally this would by async
+                            mapImage = travellermap.DataStore.instance().sectorMapImage(
+                                sectorName=sectorInfo.canonicalName(),
+                                milieu=milieu,
+                                scale=scale)
+                            if (mapImage.format() == travellermap.MapFormat.SVG) and (not _HasSvgSupport):
+                                logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} in {milieu.value} as SVG support is disabled')
+                                continue
+
+                            mapImages.append((mapImage, scale))
+                        except Exception as ex:
+                            logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
+                            continue
+
+                    if not mapImages:
+                        logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no usable map levels')
+                        continue
+
+                    customSector = _CustomSector(
+                        name=sectorInfo.canonicalName(),
+                        position=(sectorInfo.x(), sectorInfo.y()))
+                    milieuSectors.append(customSector)
+
+                    for mapImage, scale in mapImages:
+                        mapBytes = mapImage.bytes()
+                        mapFormat = mapImage.format()
+
+                        try:
+                            if mapFormat == travellermap.MapFormat.SVG:
+                                if _FullSvgRendering:
+                                    customSector.addMapPoster(CompositorImage(
+                                        imageType=CompositorImage.ImageType.SVG,
+                                        mainImage=mapBytes,
+                                        textMask=Compositor._createTextSvg(mapBytes=mapBytes),
+                                        scale=scale))
+                                else:
+                                    sectorPosition = customSector.position()
+                                    queryArgs = {
+                                        'milieu': milieu.value,
+                                        'x': sectorPosition[0],
+                                        'y': sectorPosition[1],
+                                        'scale': scale}
+                                    async with connection.execute(_LoadLayersQuery, queryArgs) as cursor:
+                                        row = await cursor.fetchone()
+                                        if row:
+                                            mapBytes = row[0]
+                                            maskBytes = row[1]
+                                            customSector.addMapPoster(CompositorImage(
+                                                imageType=CompositorImage.ImageType.Bitmap,
+                                                mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
+                                                textMask=PIL.Image.open(io.BytesIO(maskBytes)),
+                                                scale=scale))
+                                            continue
+
+                                    svgMapBytes = mapImage.bytes()
+                                    svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
+
+                                    mapTask = loop.run_in_executor(
+                                        self._processExecutor,
+                                        Compositor._renderSvgTask,
+                                        svgMapBytes)
+                                    textTask = loop.run_in_executor(
+                                        self._processExecutor,
+                                        Compositor._renderSvgTask,
+                                        svgTextBytes)
+
+                                    layerTasks.append((customSector, milieu, scale, mapTask, textTask))
+                            else:
+                                customSector.addMapPoster(CompositorImage(
+                                    imageType=CompositorImage.ImageType.Bitmap,
+                                    mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
+                                    textMask=None,
+                                    scale=scale))
+                        except Exception as ex:
+                            logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
+                            continue
+
+                if milieuSectors:
+                    self._milieuSectorMap[milieu] = milieuSectors
+
+            for customSector, milieu, scale, mapTask, textTask in layerTasks:
+                try:
+                    await mapTask
+                    mapBytes = mapTask.result()
+                    if isinstance(mapBytes, Exception):
+                        raise RuntimeError('Worker process exception when render map SVG') from mapBytes
+
+                    await textTask
+                    textBytes = textTask.result()
+                    if isinstance(textBytes, Exception):
+                        raise RuntimeError('Worker process exception when render text SVG') from textBytes
+
+                    mainImage = PIL.Image.open(io.BytesIO(mapBytes))
+                    textImage = PIL.Image.open(io.BytesIO(textBytes))
+                    textMask = textImage.split()[-1] # Extract alpha channel as Image
+                    del textImage
+
+                    customSector.addMapPoster(CompositorImage(
+                        imageType=CompositorImage.ImageType.Bitmap,
+                        mainImage=mainImage,
+                        textMask=textMask,
+                        scale=scale))
+                    
+                    sectorPosition = customSector.position()
+                    queryArgs = {
+                        'name': customSector.name(),
+                        'milieu': milieu.value,
+                        'x': sectorPosition[0],
+                        'y': sectorPosition[1],
+                        'scale': scale,
+                        'created': proxy.dbTimestampToString(timestamp=common.utcnow()),
+                        'map': sqlite3.Binary(mapBytes),
+                        'text': sqlite3.Binary(textBytes)}
+                    async with connection.execute(_AddLayersQuery, queryArgs):
+                        pass
+                except Exception as ex:
+                    logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
+                    continue
+
+            await connection.commit()
+        finally:
+            await connection.close()
+
+            # If full SVG rendering is disabled the process poll won't be used any more so may
+            # as well shut it down
+            if not _FullSvgRendering:
+                self._processExecutor.shutdown(wait=True, cancel_futures=True)
+                self._processExecutor = None            
 
     # NOTE: Shutting down the executor is important as otherwise the app hangs on shutdown
-    def shutdown(self):
+    async def shutdownAsync(self):
         if self._processExecutor:
             self._processExecutor.shutdown(wait=True, cancel_futures=True)
-
-    async def createCompositorImageAsync(
-            self,
-            mapImage: travellermap.MapImage,
-            scale: int
-            ) -> CompositorImage:
-        mapBytes = mapImage.bytes()
-        mapFormat = mapImage.format()
-        if mapFormat == travellermap.MapFormat.SVG:
-            if not _HasSvgSupport:
-                raise RuntimeError('Unable to generate SVG compositor image (SVG support is disabled)')
-
-            if _FullSvgRendering:
-                imageType = CompositorImage.ImageType.SVG
-                mainImage = mapBytes
-                textMask = Compositor._createTextSvg(mapBytes=mapBytes)
-            else:
-                imageType = CompositorImage.ImageType.Bitmap
-                width, height = _extractSvgSize(mapBytes)
-
-                # Run map & text mask rendering concurrently in worker processes
-                loop = asyncio.get_running_loop()
-                mapTask = loop.run_in_executor(
-                    self._processExecutor,
-                    Compositor._renderSvgTask,
-                    mapBytes)
-
-                textSvg = Compositor._createTextSvg(mapBytes=mapBytes)
-                textTask = loop.run_in_executor(
-                    self._processExecutor,
-                    Compositor._renderSvgTask,
-                    textSvg)
-
-                # Process map task results
-                await mapTask
-                result = mapTask.result()
-                if isinstance(result, Exception):
-                    raise RuntimeError('Worker process exception when render map SVG') from result
-                mainImage = PIL.Image.open(io.BytesIO(result))
-
-                # Process text task results
-                await textTask
-                result = textTask.result()
-                if isinstance(result, Exception):
-                    raise RuntimeError('Worker process exception when render text SVG') from result
-                textImage = PIL.Image.open(io.BytesIO(result))
-                textMask = textImage.split()[-1] # Extract alpha channel as Image
-                del textImage
-        else:
-            imageType = CompositorImage.ImageType.Bitmap
-            # Image.load isn't thread safe so make sure to call it now so it doesn't get called
-            # when cropping the image during composition
-            # https://github.com/python-pillow/Pillow/issues/4848
-            mainImage = PIL.Image.open(io.BytesIO(mapBytes))
-            try:
-                mainImage.load()
-            except:
-                mainImage.close()
-                raise
-            textMask = None
-
-        return CompositorImage(
-            imageType=imageType,
-            mainImage=mainImage,
-            textMask=textMask,
-            scale=scale)
+            self._processExecutor = None
 
     def overlapType(
             self,
@@ -528,130 +677,88 @@ class Compositor(object):
             return tileImage
 
         return None
+    
+    async def _checkCacheValidityAsync(
+            self,
+            connection: aiosqlite.Connection
+            ) -> None:
+        # If the custom sector timestamp has changed then delete all tiles.
+        # TODO: Ideally this would only delete tiles that touch custom sectors
+        # that have changed (added, deleted, modified) but it's not trivial
+        await self._checkKeyValidityAsync(
+            connection=connection,
+            configKey=_CustomSectorTimestampConfigKey,
+            currentValueFn=travellermap.DataStore.instance().customSectorsTimestamp,
+            valueType=datetime.datetime,
+            deleteQuery=_DeleteAllLayersQuery,
+            identString='custom sector timestamp')
 
-    async def loadUniverseAsync(self) -> None:
-        self._milieuSectorMap.clear()
+    async def _checkKeyValidityAsync(
+            self,
+            connection: aiosqlite.Connection,
+            configKey: str,
+            currentValueFn: typing.Callable[[], typing.Optional[typing.Any]],
+            valueType: typing.Type[typing.Any],
+            deleteQuery: str,
+            identString: str
+            ) -> None:
+        try:
+            cacheValue = await proxy.readDbMetadataAsync(
+                connection=connection,
+                key=configKey,
+                type=valueType)
+        except Exception as ex:
+            # Log and continue if unable to read map timestamp. Assume that cache is invalid
+            logging.error(
+                'An exception occurred when the compositor was reading the {key} entry layers cache config'.format(
+                    key=configKey),
+                exc_info=ex)
+            cacheValue = None
 
-        svgMapData: typing.List[typing.Tuple[
-            travellermap.Milieu,
-            _CustomSector,
-            travellermap.MapImage,
-            int]] = []
+        try:
+            # TODO: Ideally this would be async
+            currentValue = currentValueFn()
+        except Exception as ex:
+            # Log and continue if unable to read the current un
+            logging.error(
+                'An exception occurred when the compositor was reading the current {ident}'.format(
+                    ident=identString),
+                exc_info=ex)
+            currentValue = None
 
-        for milieu in travellermap.Milieu:
-            milieuSectors = []
-            for sectorInfo in travellermap.DataStore.instance().sectors(milieu=milieu):
-                if not sectorInfo.isCustomSector():
-                    continue # Only interested in custom sectors
+        # Delete tiles from the the disk cache if either of the values couldn't
+        # be read or the value stored in the database is not an exact match for
+        # the current value
+        if (not cacheValue) or (not currentValue) or \
+                (cacheValue != currentValue):
+            logging.info(
+                'Compositor detected {ident} change (Current: {current}, Cached: {cached})'.format(
+                    ident=identString,
+                    current=currentValue,
+                    cached=cacheValue))
 
-                mapLevels = sectorInfo.customMapLevels()
-                if not mapLevels:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no map levels')
-                    continue
-
-                mapImages: typing.List[typing.Tuple[travellermap.MapImage, int]] = []
-                for scale in mapLevels.keys():
-                    try:
-                        # TODO: Ideally this would by async
-                        mapImage = travellermap.DataStore.instance().sectorMapImage(
-                            sectorName=sectorInfo.canonicalName(),
-                            milieu=milieu,
-                            scale=scale)
-                        if (mapImage.format() == travellermap.MapFormat.SVG) and (not _HasSvgSupport):
-                            logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} in {milieu.value} as SVG support is disabled')
-                            continue
-
-                        mapImages.append((mapImage, scale))
-                    except Exception as ex:
-                        logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
-                        continue
-
-                if not mapImages:
-                    logging.warning(f'Compositor skipping custom sector {sectorInfo.canonicalName()} in {milieu.value} as it has no usable map levels')
-                    continue
-
-                customSector = _CustomSector(
-                    name=sectorInfo.canonicalName(),
-                    position=(sectorInfo.x(), sectorInfo.y()))
-                milieuSectors.append(customSector)
-
-                for mapImage, scale in mapImages:
-                    mapFormat = mapImage.format()
-                    if (mapFormat == travellermap.MapFormat.SVG) and not _FullSvgRendering:
-                        svgMapData.append((milieu, customSector, mapImage, scale))
-                    else:
-                        try:
-                            poster = await self.createCompositorImageAsync(
-                                mapImage=mapImage,
-                                scale=scale)
-                            customSector.addMapPoster(poster)
-                        except Exception as ex:
-                            logging.warning(f'Compositor failed to generate {scale} composition image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
-                            continue
-
-            if milieuSectors:
-                self._milieuSectorMap[milieu] = milieuSectors
-
-        if not svgMapData:
-            return # Nothing more to do
-
-        assert(self._processExecutor)
-
-        loop = asyncio.get_running_loop()
-        taskList: typing.List[asyncio.Future] = []
-        for milieu, customSector, mapImage, scale in svgMapData:
             try:
-                svgMapBytes = mapImage.bytes()
-                svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
+                async with connection.execute(deleteQuery) as cursor:
+                    if cursor.rowcount:
+                        logging.info(
+                            'Compositor purged {count} entries from the layers cache due to {ident} change'.format(
+                                count=cursor.rowcount,
+                                ident=identString))
 
-                taskList.append(loop.run_in_executor(
-                    self._processExecutor,
-                    Compositor._renderSvgTask,
-                    svgMapBytes))
-
-                taskList.append(loop.run_in_executor(
-                    self._processExecutor,
-                    Compositor._renderSvgTask,
-                    svgTextBytes))
-            except:
-                logging.warning(f'Compositor failed to set up SVG task for {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
-                continue
-
-        logging.info(f'Compositor converting {len(taskList)} SVG maps')
-
-        for index, (milieu, customSector, mapImage, scale) in enumerate(svgMapData):
-            try:
-                mapTask = taskList[index * 2]
-                await mapTask
-                mapResult = mapTask.result()
-                if isinstance(mapResult, Exception):
-                    raise RuntimeError('Worker process exception when render map SVG') from mapResult
-
-                textTask = taskList[(index * 2) + 1]
-                await textTask
-                textResult = textTask.result()
-                if isinstance(textResult, Exception):
-                    raise RuntimeError('Worker process exception when render text SVG') from textResult
-
-                mainImage = PIL.Image.open(io.BytesIO(mapResult))
-                textImage = PIL.Image.open(io.BytesIO(textResult))
-                textMask = textImage.split()[-1] # Extract alpha channel as Image
-                del textImage
-
-                customSector.addMapPoster(CompositorImage(
-                    imageType=CompositorImage.ImageType.Bitmap,
-                    mainImage=mainImage,
-                    textMask=textMask,
-                    scale=scale))
+                if currentValue:
+                    await proxy.writeDbMetadataAsync(
+                        connection=connection,
+                        key=configKey,
+                        value=currentValue)
+                else:
+                    await proxy.deleteDbMetadataAsync(
+                        connection=connection,
+                        key=configKey)
             except Exception as ex:
-                logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
-                continue
-
-        if not _FullSvgRendering:
-            # If full SVG rendering is disabled there process poll won't be used any more so may
-            # as well shut it down
-            self._processExecutor.shutdown(wait=True, cancel_futures=True)
-            self._processExecutor = None
+                logging.error(
+                    'An exception occurred when the compositor was purging the layers cache due to {ident} change'.format(
+                        ident=identString),
+                    exc_info=ex)    
 
     def _overlayBitmapCustomSector(
             self,
