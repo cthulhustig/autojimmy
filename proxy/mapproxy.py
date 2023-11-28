@@ -66,6 +66,7 @@ class MapProxy(object):
                     # this keeps the behaviour the same on all OS and avoids issues with
                     # singletons when using fork
                     cls._mpContext = multiprocessing.get_context('spawn')
+                    cls._shutdownEvent = cls._mpContext.Event()
                     cls._messageQueue = cls._mpContext.Queue()
 
                     cls._instance = cls.__new__(cls)
@@ -107,9 +108,8 @@ class MapProxy(object):
         try:
             if progressCallback:
                 # Size of range doesn't matter here only that it's at 0%
-                progressCallback('Starting', 0, 1)
+                progressCallback('Starting Process', 0, 1)
 
-            self._shutdownEvent = self._mpContext.Event()
             self._service = self._mpContext.Process(
                 target=MapProxy._serviceCallback,
                 args=[
@@ -127,7 +127,7 @@ class MapProxy(object):
 
             # TODO: This needs a timeout
             while self._status == MapProxy.ServerStatus.Starting:
-                time.sleep(0.5)
+                time.sleep(0.1)
                 while not self._messageQueue.empty():
                     message = self._messageQueue.get(block=False)
                     if not message:
@@ -136,7 +136,10 @@ class MapProxy(object):
 
                     if newStatus == MapProxy.ServerStatus.Starting:
                         if progressCallback and len(message) == 4:
-                            progressCallback(message[1], message[2], message[3])
+                            # Pass on the startup progress, adding 1 to account for the fact this function
+                            # has an initial starting process stage that the process it's self knows nothing
+                            # about
+                            progressCallback(message[1], message[2] + 1, message[3] + 1)
                     elif newStatus == MapProxy.ServerStatus.Started:
                         self._status = MapProxy.ServerStatus.Started
                         break
@@ -160,7 +163,10 @@ class MapProxy(object):
         self._shutdownEvent.set()
         self._service.join()
         self._service = None
-        self._shutdownEvent = None
+        self._shutdownEvent.clear()
+        # Clear out message queue
+        while not self._messageQueue.empty():
+            self._messageQueue.get()
         self._status = MapProxy.ServerStatus.Stopped
 
     def status(self) -> 'MapProxy.ServerStatus':
@@ -170,11 +176,12 @@ class MapProxy(object):
     def _updateStatus(self) -> None:
         while not self._messageQueue.empty():
             message = self._messageQueue.get(block=False)
-            if message and (len(message) == 2):
-                status = message[0]
-                data = message[1]
-                assert(isinstance(status, MapProxy.ServerStatus))
-                self._status = status
+            if not message:
+                continue
+
+            status = message[0]
+            assert(isinstance(status, MapProxy.ServerStatus))
+            self._status = status
 
     # NOTE: This runs in a separate process
     @staticmethod
@@ -212,7 +219,7 @@ class MapProxy(object):
             logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
         # TODO: Do something better than hard coding the total stage count
-        totalStageCount = 4
+        totalStageCount = 5
         currentStageIndex = 0
 
         database = None
@@ -228,24 +235,34 @@ class MapProxy(object):
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
+            
+            messageQueue.put((MapProxy.ServerStatus.Starting, 'Generating Mains', currentStageIndex, totalStageCount))
+            currentStageIndex += 1
+            mainsData = None
+            try:
+                mainsGenerator = travellermap.MainsGenerator()
+                mainsData = mainsGenerator.generate(milieu=mainsMilieu)
+            except Exception as ex:
+                logging.error(
+                    f'An exception occurred while generating mains for {mainsMilieu.value}',
+                    exc_info=ex)
+                # Continue. Mains data will be pulled from Traveller Map, it just won't have
+                # have custom sector data
+
+            loop = asyncio.get_event_loop()
 
             messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Database', currentStageIndex, totalStageCount))
             currentStageIndex += 1
-
-            loop = asyncio.get_event_loop()
             database = proxy.Database(filePath=dbPath)
             loop.run_until_complete(database.initAsync())
 
             messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Compositor', currentStageIndex, totalStageCount))            
             currentStageIndex += 1
-
             compositor = proxy.Compositor(customMapsDir=customMapsDir, mapDatabase=database)
             loop.run_until_complete(compositor.initAsync())
             
             messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Tile Cache', currentStageIndex, totalStageCount))    
             currentStageIndex += 1
-
-            # Clear tile cache
             tileCache = proxy.TileCache(
                 mapDatabase=database,
                 travellerMapUrl=travellerMapUrl,
@@ -254,14 +271,19 @@ class MapProxy(object):
 
             messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Server', currentStageIndex, totalStageCount))
             currentStageIndex += 1
-
-            # Create request handler
             requestHandler = proxy.RequestHandler(
                 travellerMapUrl=travellerMapUrl,
                 installDir=installDir,
                 tileCache=tileCache,
                 compositor=compositor,
-                mainsMilieu=mainsMilieu)          
+                mainsMilieu=mainsMilieu)
+            loop.run_until_complete(requestHandler.initAsync())
+            if mainsData:
+                # Add static route for mains data        
+                requestHandler.addStaticRoute(
+                    route='/res/mains.json',
+                    data=mainsData,
+                    mimeType='application/json')
 
             # Set up web server with all requests redirected to my handler
             webApp = aiohttp.web.Application(
@@ -293,7 +315,7 @@ class MapProxy(object):
             travellermap.DataStore.instance().clearCachedData()
 
             # Run event loop until proxy is shut down
-            messageQueue.put((MapProxy.ServerStatus.Started, None))
+            messageQueue.put((MapProxy.ServerStatus.Started, )) # Trailing comma is important to keep as a tuple
             loop.run_until_complete(MapProxy._shutdownMonitorAsync(
                 shutdownEvent=shutdownEvent,
                 webApp=webApp,
@@ -301,7 +323,7 @@ class MapProxy(object):
                 tileCache=tileCache,
                 compositor=compositor))
 
-            messageQueue.put((MapProxy.ServerStatus.Stopped, None))
+            messageQueue.put((MapProxy.ServerStatus.Stopped, )) # Trailing comma is important to keep as a tuple
             logging.info('Map proxy shutdown complete')
         except Exception as ex:
             logging.error('Exception occurred while running map proxy', exc_info=ex)

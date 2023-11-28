@@ -1,3 +1,4 @@
+import aiofiles
 import aiohttp.web
 import app
 import common
@@ -107,7 +108,33 @@ class RequestHandler(object):
 
         self._session = aiohttp.ClientSession(connector=self._connector)
 
-        self._initStaticRoutes()
+    async def initAsync(self) -> None:
+        # Add static routes for Traveller Map web interface snapshot
+        webDir = os.path.join(self._installDir, 'data', 'web')
+        webFiles = _enumerateFiles(webDir=webDir)
+        for fileName, mimeType in webFiles:
+            filePath = os.path.join(webDir, fileName)
+
+            try:
+                async with aiofiles.open(filePath, 'rb') as file:
+                    data = await file.read()
+            except Exception as ex:
+                logging.error(
+                    f'An exception occurred while loading web file {filePath}',
+                    exc_info=ex)
+                continue
+
+            self.addStaticRoute(
+                route='/' + fileName,
+                data=data,
+                mimeType=mimeType)
+
+            # Alias / to index.html
+            if fileName == 'index.html':
+                self.addStaticRoute(
+                    route='/',
+                    data=data,
+                    mimeType=mimeType)
 
     async def shutdownAsync(self) -> None:
         if self._session:
@@ -126,48 +153,7 @@ class RequestHandler(object):
             # configured Traveller Map instance
             return await self._handleProxyRequestAsync(request)
 
-    def _initStaticRoutes(self) -> None:
-        # Add static routes for Traveller Map web interface snapshot
-        webDir = os.path.join(self._installDir, 'data', 'web')
-        webFiles = _enumerateFiles(webDir=webDir)
-        for fileName, mimeType in webFiles:
-            filePath = os.path.join(webDir, fileName)
-
-            try:
-                with open(filePath, 'rb') as file:
-                    data = file.read()
-            except Exception as ex:
-                logging.error(
-                    f'An exception occurred while loading web file {filePath}',
-                    exc_info=ex)
-                continue
-
-            self._addStaticRoute(
-                route='/' + fileName,
-                data=data,
-                mimeType=mimeType)
-
-            # Alias / to index.html
-            if fileName == 'index.html':
-                self._addStaticRoute(
-                    route='/',
-                    data=data,
-                    mimeType=mimeType)
-
-        # Add static route for /res/mains.json
-        try:
-            mainsGenerator = travellermap.MainsGenerator()
-            mainsData = mainsGenerator.generateMains(milieu=self._mainsMilieu)
-            self._addStaticRoute(
-                route='/res/mains.json',
-                data=mainsData,
-                mimeType='application/json')
-        except Exception as ex:
-            logging.error(
-                f'An exception occurred while generating mains for {self._mainsMilieu.value}',
-                exc_info=ex)
-
-    def _addStaticRoute(
+    def addStaticRoute(
             self,
             route: str,
             data: typing.Union[str, bytes],

@@ -58,7 +58,7 @@ class MainsGenerator(object):
     def __init__(self) -> None:
         self._defaultSectors = None
 
-    def generateMains(
+    def generate(
             self,
             milieu: travellermap.Milieu
             ) -> str:
