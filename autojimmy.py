@@ -190,37 +190,6 @@ def _snapshotUpdateCheck(
 
     return True # Update is complete so continue loading
 
-
-class _MapProxyMonitor(QtCore.QObject):
-    error = QtCore.pyqtSignal()
-
-    _PollIntervalMs = 5000
-
-    def __init__(
-            self,
-            parent: typing.Optional[QtCore.QObject] = None
-            ) -> None:
-        super().__init__(parent)
-        self._status = None
-        self._timer = QtCore.QTimer()
-        self._timer.timeout.connect(self._checkStatus)
-
-    def start(self) -> None:
-        self._timer.start(_MapProxyMonitor._PollIntervalMs)
-
-    def stop(self) -> None:
-        self._timer.stop()
-
-    def _checkStatus(self) -> None:
-        newStatus = proxy.MapProxy.instance().status()
-        isError = newStatus == proxy.MapProxy.ServerStatus.Error
-        wasError = self._status == proxy.MapProxy.ServerStatus.Error
-
-        if isError and not wasError:
-            self.error.emit()
-
-        self._status = newStatus
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super(MainWindow, self).__init__()
@@ -389,10 +358,8 @@ def main() -> None:
     if application.isAlreadyRunning():
         print(f'{app.AppName} is already running.')
         return
-    asyncEventLoop = qasync.QEventLoop()
 
     exitCode = 0
-    mapProxyMonitor = None
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
@@ -401,8 +368,6 @@ def main() -> None:
         os.makedirs(appDir, exist_ok=True)
 
         logDirectory = os.path.join(appDir, 'logs')
-        cacheDirectory = os.path.join(appDir, 'cache')
-
         app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
         # Log version before setting log level as it should always be logged
         logging.info(f'{app.AppName} v{app.AppVersion}')
@@ -450,10 +415,8 @@ def main() -> None:
         if not _snapshotUpdateCheck():
             sys.exit(0)
 
-        # Set up map proxy now to give it time to start its child process while data is being loaded.
-        # It's important this is done after the check for new map data. If new data is downloaded it
-        # should be done before the proxy is started so it and the main app don't end up with a different
-        # view of the data.
+        # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
+        # so progress can be displayed
         travellerMapUrl = app.Config.instance().travellerMapUrl()
         mapProxyPort = app.Config.instance().mapProxyPort()
         if mapProxyPort:
@@ -466,45 +429,32 @@ def main() -> None:
                 mainsMilieu=app.Config.instance().milieu(),
                 logDir=logDirectory,
                 logLevel=logLevel)
-            proxy.MapProxy.instance().run()
 
         travellermap.TileClient.configure(
             mapBaseUrl=travellerMapUrl,
             mapProxyPort=mapProxyPort)
 
-        loadProgress = gui.StartupProgressDialog()
-        if loadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            raise RuntimeError('Failed to load data')
+        startupProgress = gui.StartupProgressDialog()
+        if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            raise startupProgress.exception()
+        
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        loadProgress.deleteLater()
+        startupProgress.deleteLater()
 
-        if mapProxyPort:
-            # Start monitoring the map proxy after everything has loaded. If it does fail, this prevents
-            # an error popup being displayed while loading (it will be displayed when the monitor first
-            # polls the proxy)
-            mapProxyMonitor = _MapProxyMonitor()
-            mapProxyMonitor.error.connect(lambda: gui.MessageBoxEx.critical(
-                'The map proxy has stopped running or failed to start. Check logs for further details.'))
-            mapProxyMonitor.start()
-
-        window = MainWindow()
-        window.show()
-        with asyncEventLoop:
+        with qasync.QEventLoop() as asyncEventLoop:
+            window = MainWindow()
+            window.show()
             asyncEventLoop.run_forever()
     except Exception as ex:
         message = 'Failed to initialise application'
         logging.error(message, exc_info=ex)
         gui.MessageBoxEx.critical(
-            parent=None,
             text=message,
             exception=ex)
         exitCode = 1
     finally:
-        if mapProxyMonitor:
-            mapProxyMonitor.stop()
-
         proxy.MapProxy.instance().shutdown()
 
     sys.exit(exitCode)

@@ -15,6 +15,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         super().__init__(parent=parent)
 
         self._loadJob = None
+        self._exception = None
 
         self._textLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
@@ -36,19 +37,18 @@ class StartupProgressDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
+    def exception(self) -> Exception:
+        return self._exception
+
     def exec(self) -> int:
         try:
             self._loadJob = jobs.StartupJob(
                 parent=self,
+                startProxy=app.Config.instance().mapProxyPort() != 0,
                 progressCallback=self._updateProgress,
                 finishedCallback=self._startupFinished)
         except Exception as ex:
-            message = 'Failed to start startup job'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
+            self._exception = ex
             self.close()
 
         return super().exec()
@@ -64,11 +64,11 @@ class StartupProgressDialog(QtWidgets.QDialog):
 
     def _updateProgress(
             self,
-            item: str,
+            stage: str,
             current: int,
             total: int
             ) -> None:
-        self._textLabel.setText(f'Loading: {item}')
+        self._textLabel.setText(stage)
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
@@ -77,12 +77,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
             result: typing.Union[str, Exception]
             ) -> None:
         if isinstance(result, Exception):
-            message = f'Failed to start {app.AppName}'
-            logging.error(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
+            self._exception = result
             self.close()
         else:
             self.accept()

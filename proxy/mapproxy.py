@@ -6,6 +6,7 @@ import logging
 import multiprocessing
 import os
 import proxy
+import time
 import travellermap
 import threading
 import typing
@@ -45,7 +46,7 @@ class MapProxy(object):
     _logLevel = logging.INFO
     _service = None
     _shutdownEvent = None
-    _currentState = ServerStatus.Stopped
+    _status = ServerStatus.Stopped
     _mpContext = None # Multiprocessing context
     _messageQueue = None
 
@@ -94,12 +95,20 @@ class MapProxy(object):
         MapProxy._logDir = logDir
         MapProxy._logLevel = logLevel
 
-    def run(self) -> None:
+    # NOTE: This blocks until the proxy has reached the started state
+    def start(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> None:
         if self._service:
             self.shutdown()
 
-        self._currentState = MapProxy.ServerStatus.Starting
+        self._status = MapProxy.ServerStatus.Starting
         try:
+            if progressCallback:
+                # Size of range doesn't matter here only that it's at 0%
+                progressCallback('Starting', 0, 1)
+
             self._shutdownEvent = self._mpContext.Event()
             self._service = self._mpContext.Process(
                 target=MapProxy._serviceCallback,
@@ -115,8 +124,34 @@ class MapProxy(object):
                     self._messageQueue])
             self._service.daemon = False
             self._service.start()
-        except Exception:
-            self._currentState = MapProxy.ServerStatus.Error
+
+            # TODO: This needs a timeout
+            while self._status == MapProxy.ServerStatus.Starting:
+                time.sleep(0.5)
+                while not self._messageQueue.empty():
+                    message = self._messageQueue.get(block=False)
+                    if not message:
+                        continue
+                    newStatus = message[0]
+
+                    if newStatus == MapProxy.ServerStatus.Starting:
+                        if progressCallback and len(message) == 4:
+                            progressCallback(message[1], message[2], message[3])
+                    elif newStatus == MapProxy.ServerStatus.Started:
+                        self._status = MapProxy.ServerStatus.Started
+                        break
+                    elif newStatus == MapProxy.ServerStatus.Error:
+                        if len(message) != 2:
+                            raise RuntimeError('Map proxy failed to start (Unknown error)')
+                        raise RuntimeError(f'Map proxy failed to start ({message[1]})')
+                    elif newStatus == MapProxy.ServerStatus.Stopped:
+                        raise RuntimeError(f'Map proxy stopped unexpectedly during startup')
+               
+            if progressCallback:
+                # Size of range doesn't matter here only that it's now at 100%
+                progressCallback('Started', 1, 1)
+        except:
+            self._status = MapProxy.ServerStatus.Error
             raise
 
     def shutdown(self) -> None:
@@ -126,20 +161,20 @@ class MapProxy(object):
         self._service.join()
         self._service = None
         self._shutdownEvent = None
-        self._currentState = MapProxy.ServerStatus.Stopped
+        self._status = MapProxy.ServerStatus.Stopped
 
     def status(self) -> 'MapProxy.ServerStatus':
-        self._updateState()
-        return self._currentState
+        self._updateStatus()
+        return self._status
 
-    def _updateState(self) -> None:
+    def _updateStatus(self) -> None:
         while not self._messageQueue.empty():
             message = self._messageQueue.get(block=False)
             if message and (len(message) == 2):
                 status = message[0]
                 data = message[1]
                 assert(isinstance(status, MapProxy.ServerStatus))
-                self._currentState = status
+                self._status = status
 
     # NOTE: This runs in a separate process
     @staticmethod
@@ -176,6 +211,10 @@ class MapProxy(object):
         if logLevel > logging.DEBUG:
             logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
+        # TODO: Do something better than hard coding the total stage count
+        totalStageCount = 4
+        currentStageIndex = 0
+
         database = None
         compositor = None
         tileCache = None
@@ -190,19 +229,31 @@ class MapProxy(object):
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
 
+            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Database', currentStageIndex, totalStageCount))
+            currentStageIndex += 1
+
             loop = asyncio.get_event_loop()
             database = proxy.Database(filePath=dbPath)
             loop.run_until_complete(database.initAsync())
 
+            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Compositor', currentStageIndex, totalStageCount))            
+            currentStageIndex += 1
+
             compositor = proxy.Compositor(customMapsDir=customMapsDir, mapDatabase=database)
-            loop.run_until_complete(compositor.initAsync())          
+            loop.run_until_complete(compositor.initAsync())
+            
+            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Tile Cache', currentStageIndex, totalStageCount))    
+            currentStageIndex += 1
 
             # Clear tile cache
             tileCache = proxy.TileCache(
                 mapDatabase=database,
                 travellerMapUrl=travellerMapUrl,
                 maxMemBytes=_MaxTileCacheBytes)
-            loop.run_until_complete(tileCache.initAsync())       
+            loop.run_until_complete(tileCache.initAsync())
+
+            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Server', currentStageIndex, totalStageCount))
+            currentStageIndex += 1
 
             # Create request handler
             requestHandler = proxy.RequestHandler(
@@ -235,7 +286,7 @@ class MapProxy(object):
             loop.run_until_complete(loop.create_server(
                 protocol_factory=webApp.make_handler(),
                 host=hosts,
-                port=listenPort))             
+                port=listenPort))  
 
             # Now that set up is finished clear out cached data from that data
             # store to keep the memory footprint down.
@@ -295,10 +346,6 @@ class MapProxy(object):
         while True:
             await asyncio.sleep(0.5)
             if shutdownEvent.is_set():
-                # Disable aiohttp logging during shutdown as it can get quite noisy if requests
-                # are in progress due. The errors that are generated are expected due to closing
-                # the async session used for outgoing connections
-                logging.getLogger('aiohttp').setLevel(logging.CRITICAL)
                 await MapProxy._shutdownAsync(
                     requestHandler=requestHandler,
                     webApp=webApp,
