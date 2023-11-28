@@ -106,10 +106,6 @@ class MapProxy(object):
 
         self._status = MapProxy.ServerStatus.Starting
         try:
-            if progressCallback:
-                # Size of range doesn't matter here only that it's at 0%
-                progressCallback('Starting Process', 0, 1)
-
             self._service = self._mpContext.Process(
                 target=MapProxy._serviceCallback,
                 args=[
@@ -149,10 +145,6 @@ class MapProxy(object):
                         raise RuntimeError(f'Map proxy failed to start ({message[1]})')
                     elif newStatus == MapProxy.ServerStatus.Stopped:
                         raise RuntimeError(f'Map proxy stopped unexpectedly during startup')
-               
-            if progressCallback:
-                # Size of range doesn't matter here only that it's now at 100%
-                progressCallback('Started', 1, 1)
         except:
             self._status = MapProxy.ServerStatus.Error
             raise
@@ -218,10 +210,6 @@ class MapProxy(object):
         if logLevel > logging.DEBUG:
             logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
 
-        # TODO: Do something better than hard coding the total stage count
-        totalStageCount = 5
-        currentStageIndex = 0
-
         database = None
         compositor = None
         tileCache = None
@@ -235,13 +223,20 @@ class MapProxy(object):
                 installDir=installMapsDir,
                 overlayDir=overlayMapsDir,
                 customDir=customMapsDir)
+
+            loop = asyncio.get_event_loop()
+
+            database = proxy.Database(filePath=dbPath)
+            loop.run_until_complete(database.initAsync())            
             
-            messageQueue.put((MapProxy.ServerStatus.Starting, 'Generating Mains', currentStageIndex, totalStageCount))
-            currentStageIndex += 1
+            progressCallback = \
+                lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Generating Mains', current, total))
             mainsData = None
             try:
                 mainsGenerator = travellermap.MainsGenerator()
-                mainsData = mainsGenerator.generate(milieu=mainsMilieu)
+                mainsData = mainsGenerator.generate(
+                    milieu=mainsMilieu,
+                    progressCallback=progressCallback)
             except Exception as ex:
                 logging.error(
                     f'An exception occurred while generating mains for {mainsMilieu.value}',
@@ -249,28 +244,26 @@ class MapProxy(object):
                 # Continue. Mains data will be pulled from Traveller Map, it just won't have
                 # have custom sector data
 
-            loop = asyncio.get_event_loop()
+            progressCallback = \
+                lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Starting Server', current, total))
+            serverStageCount = 4 # TODO: Do something better than hard coding the stage count
+            serverStageIndex = 0
 
-            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Database', currentStageIndex, totalStageCount))
-            currentStageIndex += 1
-            database = proxy.Database(filePath=dbPath)
-            loop.run_until_complete(database.initAsync())
-
-            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Compositor', currentStageIndex, totalStageCount))            
-            currentStageIndex += 1
+            progressCallback(serverStageIndex, serverStageCount)
+            serverStageIndex += 1
             compositor = proxy.Compositor(customMapsDir=customMapsDir, mapDatabase=database)
             loop.run_until_complete(compositor.initAsync())
             
-            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Tile Cache', currentStageIndex, totalStageCount))    
-            currentStageIndex += 1
+            progressCallback(serverStageIndex, serverStageCount)
+            serverStageIndex += 1
             tileCache = proxy.TileCache(
                 mapDatabase=database,
                 travellerMapUrl=travellerMapUrl,
                 maxMemBytes=_MaxTileCacheBytes)
             loop.run_until_complete(tileCache.initAsync())
 
-            messageQueue.put((MapProxy.ServerStatus.Starting, 'Initialising Server', currentStageIndex, totalStageCount))
-            currentStageIndex += 1
+            progressCallback(serverStageIndex, serverStageCount)
+            serverStageIndex += 1
             requestHandler = proxy.RequestHandler(
                 travellerMapUrl=travellerMapUrl,
                 installDir=installDir,
@@ -305,6 +298,8 @@ class MapProxy(object):
             else:
                 hosts.append('127.0.0.1')
 
+            progressCallback(serverStageIndex, serverStageCount)
+            serverStageIndex += 1
             loop.run_until_complete(loop.create_server(
                 protocol_factory=webApp.make_handler(),
                 host=hosts,
@@ -316,6 +311,7 @@ class MapProxy(object):
 
             # Run event loop until proxy is shut down
             messageQueue.put((MapProxy.ServerStatus.Started, )) # Trailing comma is important to keep as a tuple
+            progressCallback(serverStageCount, serverStageCount)
             loop.run_until_complete(MapProxy._shutdownMonitorAsync(
                 shutdownEvent=shutdownEvent,
                 webApp=webApp,

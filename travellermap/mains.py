@@ -7,6 +7,8 @@ class MainsFinder(object):
     # This is the value used by Traveller Map (tools\mains.js)
     _MinMainWorlds = 5
 
+    _WorldsPerProgressStep = 100
+
     def __init__(self) -> None:
         self._worlds: typing.Set[typing.Tuple[int, int, int, int]] = set()
 
@@ -23,12 +25,17 @@ class MainsFinder(object):
     # Returns an iterable of mains, each main is an iterable of tuples
     # giving the sector x/y & hex x/y position of the world
     def generate(
-            self
+            self,
+            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> typing.Iterable[typing.Iterable[typing.Tuple[int, int, int, int]]]:
         seen = set()
         mains = []
 
-        for world in self._worlds:
+        totalWorlds = len(self._worlds)
+        for progress, world in enumerate(self._worlds):
+            if progressCallback and ((progress % MainsFinder._WorldsPerProgressStep) == 0):
+                progressCallback(progress, totalWorlds)
+
             if world in seen:
                 continue
 
@@ -52,6 +59,10 @@ class MainsFinder(object):
 
         # Sort mains from largest to smallest for consistency with how Traveller Map generates them
         mains = sorted(mains, key=lambda element: -len(element))
+
+        if progressCallback:
+            progressCallback(totalWorlds, totalWorlds)
+
         return mains
 
 class MainsGenerator(object):
@@ -60,7 +71,8 @@ class MainsGenerator(object):
 
     def generate(
             self,
-            milieu: travellermap.Milieu
+            milieu: travellermap.Milieu,
+            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
             ) -> str:
         # Traveller Map generates mains from M1105 world positions. The same
         # mains information is then use no mater which milieu you are viewing.
@@ -114,7 +126,7 @@ class MainsGenerator(object):
                     hexX=hexX,
                     hexY=hexY)
 
-        mains = mainsGenerator.generate()
+        mains = mainsGenerator.generate(progressCallback)
         outputData = []
         for main in mains:
             outputMain = []

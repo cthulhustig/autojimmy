@@ -425,7 +425,7 @@ class RequestHandler(object):
         if 'Host' in headers:
             del headers['Host']
 
-        # The request User-Agent is set to a custom string
+        # Set User-Agent header to a custom string
         if 'User-Agent' in headers:
             del headers['User-Agent']
         headers['User-Agent'] = f'{app.AppName} Map Client {app.AppVersion}'
