@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
-class LoadProgressDialog(QtWidgets.QDialog):
+class StartupProgressDialog(QtWidgets.QDialog):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -23,7 +23,7 @@ class LoadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._textLabel)
         windowLayout.addWidget(self._progressBar)
 
-        self.setWindowTitle('Loading')
+        self.setWindowTitle('Starting')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
@@ -38,12 +38,12 @@ class LoadProgressDialog(QtWidgets.QDialog):
 
     def exec(self) -> int:
         try:
-            self._loadJob = jobs.DataLoadJob(
+            self._loadJob = jobs.StartupJob(
                 parent=self,
                 progressCallback=self._updateProgress,
-                finishedCallback=self._loadingFinished)
+                finishedCallback=self._startupFinished)
         except Exception as ex:
-            message = 'Failed to start data load job'
+            message = 'Failed to start startup job'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -72,12 +72,12 @@ class LoadProgressDialog(QtWidgets.QDialog):
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
-    def _loadingFinished(
+    def _startupFinished(
             self,
             result: typing.Union[str, Exception]
             ) -> None:
         if isinstance(result, Exception):
-            message = 'Failed to load data'
+            message = f'Failed to start {app.AppName}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
                 parent=self,

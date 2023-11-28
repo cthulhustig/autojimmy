@@ -472,7 +472,7 @@ def main() -> None:
             mapBaseUrl=travellerMapUrl,
             mapProxyPort=mapProxyPort)
 
-        loadProgress = gui.LoadProgressDialog()
+        loadProgress = gui.StartupProgressDialog()
         if loadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             raise RuntimeError('Failed to load data')
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted

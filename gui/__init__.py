@@ -79,7 +79,7 @@ from .gunsmith.weaponmanifesttable import *
 from .gunsmith.weaponinfowidget import *
 from .gunsmith.weaponinfotabwidget import *
 from .gunsmith.gunsmithwindow import *
-from .loadprogressdialog import *
+from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
 from .configdialog import *
