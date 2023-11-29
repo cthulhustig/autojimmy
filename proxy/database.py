@@ -103,7 +103,7 @@ async def deleteDbMetadataAsync(
     if commit:
         await connection.commit()
 
-async def createSchemaTable(
+async def createSchemaTableAsync(
         connection: aiosqlite.Connection,
         tableName: str,
         requiredSchema: int,

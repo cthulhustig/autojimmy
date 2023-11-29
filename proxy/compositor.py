@@ -267,7 +267,7 @@ class Compositor(object):
         
         futureList: typing.List[asyncio.Future] = []
         try:
-            await proxy.createSchemaTable(
+            await proxy.createSchemaTableAsync(
                 connection=connection,
                 tableName=_LayersTableName,
                 requiredSchema=_LayersTableSchema,
@@ -314,7 +314,7 @@ class Compositor(object):
                     milieuSectors.append(customSector)
 
                     for mapImage, scale in mapImages:
-                        future = asyncio.ensure_future(self._addCompositorImage(
+                        future = asyncio.ensure_future(self._addSectorImageAsync(
                             customSector=customSector,
                             milieu=milieu,
                             scale=scale,
@@ -683,7 +683,7 @@ class Compositor(object):
                         ident=identString),
                     exc_info=ex)
                 
-    async def _addCompositorImage(
+    async def _addSectorImageAsync(
             self,
             customSector: _CustomSector,
             milieu: travellermap.Milieu,

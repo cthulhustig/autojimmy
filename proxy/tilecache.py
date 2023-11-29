@@ -197,7 +197,7 @@ class TileCache(object):
             self._dbConnection = await self._mapDatabase.connectAsync(
                 pragmaQuery=_SetConnectionPragmaScript)
             
-            await proxy.createSchemaTable(
+            await proxy.createSchemaTableAsync(
                 connection=self._dbConnection,
                 tableName=_TileTableName,
                 requiredSchema=_TileTableSchema,
