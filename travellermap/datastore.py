@@ -462,8 +462,6 @@ class DataStore(object):
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = UniverseDataFormat(4, 0)
-    _FileSystemCacheMaxFileSize = 10 * 1024 * 1024 # 10MiB
-    _FileSystemCacheMaxTotalSize = 256 * 1024 * 1024 # 256MiB
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -479,9 +477,6 @@ class DataStore(object):
     _overlayDir = None
     _customDir = None
     _universeMap = None
-    _filesystemCache = common.FileSystemCache(
-        maxCacheFileSize=_FileSystemCacheMaxFileSize,
-        maxCacheTotalSize=_FileSystemCacheMaxTotalSize)
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -662,7 +657,7 @@ class DataStore(object):
         try:
             timestampPath = os.path.join(self._customDir, self._TimestampFileName)
             return DataStore._parseTimestamp(
-                data=self._filesystemCache.read(timestampPath))
+                data=DataStore._readFile(path=timestampPath))
         except Exception as ex:
             logging.error(f'Failed to read custom sectors timestamp', exc_info=ex)
             return None
@@ -787,9 +782,9 @@ class DataStore(object):
 
                 logging.info(f'Extracting {subPath}')
                 directoryHierarchy = os.path.dirname(targetPath)
-                if not self._filesystemCache.exists(directoryHierarchy):
-                    self._filesystemCache.makedirs(directoryHierarchy, canExist=True)
-                self._filesystemCache.write(
+                if not os.path.exists(directoryHierarchy):
+                    os.makedirs(directoryHierarchy, exist_ok=True)
+                DataStore._writeFile(
                     path=targetPath,
                     data=zipData.read(fileInfo.filename))
 
@@ -871,7 +866,7 @@ class DataStore(object):
             self._customDir,
             DataStore._MilieuBaseDir,
             milieu.value)
-        self._filesystemCache.makedirs(milieuDirPath, canExist=True)
+        os.makedirs(milieuDirPath, exist_ok=True)
 
         with self._lock:
             universe = self._universeMap[milieu]
@@ -888,13 +883,13 @@ class DataStore(object):
 
             sectorExtension = DataStore._SectorFormatExtensions[sectorFormat]
             sectorFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{sectorExtension}')
-            self._filesystemCache.write(
+            DataStore._writeFile(
                 path=sectorFilePath,
                 data=sectorContent)
 
             metadataExtension = DataStore._MetadataFormatExtensions[metadataFormat]
             metadataFilePath = os.path.join(milieuDirPath, f'{escapedSectorName}.{metadataExtension}')
-            self._filesystemCache.write(
+            DataStore._writeFile(
                 path=metadataFilePath,
                 data=metadataContent)
 
@@ -910,7 +905,7 @@ class DataStore(object):
                     format=mapFormat)
                 mapLevels[mapLevel.scale()] = mapLevel
 
-                self._filesystemCache.write(
+                DataStore._writeFile(
                     path=mapLevelFilePath,
                     data=mapImage.bytes())
 
@@ -975,7 +970,7 @@ class DataStore(object):
             for file in files:
                 try:
                     filePath = os.path.join(milieuDirPath, file)
-                    self._filesystemCache.remove(filePath)
+                    os.remove(filePath)
                 except Exception as ex:
                     logging.warning(
                         'Failed to delete custom sector file {file} from {milieu}'.format(
@@ -1016,10 +1011,6 @@ class DataStore(object):
 
         if root.find('./Y') == None:
             raise DataStore.SectorMetadataValidationError('Metadata must contain Y element')
-
-    def clearCachedData(self):
-        # No need to lock as cache is thread safe
-        self._filesystemCache.clearCache()
 
     def _loadSectors(
             self,
@@ -1077,7 +1068,7 @@ class DataStore(object):
                             f'Failed to add stock sector {sector.canonicalName()} at {sector.x()},{sector.y()} to universe for {milieu.value}', exc_info=ex)
 
     def _checkOverlayDataFormat(self) -> None:
-        if not self._filesystemCache.exists(self._overlayDir):
+        if not os.path.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
         overlayDataFormat = self.universeDataFormat()
@@ -1102,24 +1093,24 @@ class DataStore(object):
             (checkFormat < nextMajorVersion)
 
     def _checkOverlayAge(self) -> None:
-        if not self._filesystemCache.exists(self._overlayDir):
+        if not os.path.exists(self._overlayDir):
             # If the overlay directory doesn't exist there is nothing to check
             return
         overlayTimestampPath = os.path.join(self._overlayDir, self._TimestampFileName)
-        if not self._filesystemCache.exists(overlayTimestampPath):
+        if not os.path.exists(overlayTimestampPath):
             # Overlay timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Overlay timestamp file "{overlayTimestampPath}" not found')
             return
 
         installTimestampPath = os.path.join(self._installDir, self._TimestampFileName)
-        if not self._filesystemCache.exists(installTimestampPath):
+        if not os.path.exists(installTimestampPath):
             # Install timestamp file doesn't exist, err on th side of caution and don't do anything
             logging.warning(f'Install timestamp file "{installTimestampPath}" not found')
             return
 
         try:
             overlayTimestamp = DataStore._parseTimestamp(
-                data=self._filesystemCache.read(overlayTimestampPath))
+                data=DataStore._readFile(path=overlayTimestampPath))
         except Exception as ex:
             logging.error(
                 f'Failed to load overlay timestamp from "{overlayTimestampPath}"',
@@ -1128,7 +1119,7 @@ class DataStore(object):
 
         try:
             installTimestamp = DataStore._parseTimestamp(
-                data=self._filesystemCache.read(installTimestampPath))
+                data=DataStore._readFile(path=installTimestampPath))
         except Exception as ex:
             logging.error(
                 f'Failed to load install timestamp from "{installTimestampPath}"',
@@ -1146,7 +1137,7 @@ class DataStore(object):
     def _deleteOverlayDir(self) -> None:
         logging.info(f'Deleting overlay directory "{self._overlayDir}"')
         try:
-            self._filesystemCache.rmtree(path=self._overlayDir)
+            shutil.rmtree(self._overlayDir)
         except Exception as ex:
             logging.error(
                 f'Failed to delete overlay directory "{self._overlayDir}"',
@@ -1161,7 +1152,7 @@ class DataStore(object):
         filePath = os.path.join(
             self._overlayDir if os.path.isdir(self._overlayDir) else self._installDir,
             relativeFilePath)
-        return self._filesystemCache.read(filePath)
+        return DataStore._readFile(path=filePath)
 
     def _readMilieuFile(
             self,
@@ -1172,7 +1163,7 @@ class DataStore(object):
         relativePath = os.path.join(self._MilieuBaseDir, milieu.value, fileName)
         if useCustomMapDir:
             absolutePath = os.path.join(self._customDir, relativePath)
-            return self._filesystemCache.read(absolutePath)
+            return DataStore._readFile(path=absolutePath)
 
         return self._readStockFile(relativeFilePath=relativePath)
 
@@ -1181,10 +1172,10 @@ class DataStore(object):
             overlayDirPath: str
             ) -> str:
         workingDir = overlayDirPath + '_working'
-        if self._filesystemCache.exists(workingDir):
+        if os.path.exists(workingDir):
             # Delete any previous working directory that may have been left kicking about
-            self._filesystemCache.rmtree(workingDir)
-        self._filesystemCache.makedirs(workingDir)
+            shutil.rmtree(workingDir)
+        os.makedirs(workingDir)
         return workingDir
 
     def _replaceDir(
@@ -1193,17 +1184,17 @@ class DataStore(object):
             currentDirPath: str
             ) -> None:
         oldDirPath = None
-        if self._filesystemCache.exists(currentDirPath):
+        if os.path.exists(currentDirPath):
             oldDirPath = currentDirPath + '_old'
-            if self._filesystemCache.exists(oldDirPath):
-                self._filesystemCache.rmtree(oldDirPath)
-            self._filesystemCache.rename(currentDirPath, oldDirPath)
+            if os.path.exists(oldDirPath):
+                shutil.rmtree(oldDirPath)
+            os.rename(currentDirPath, oldDirPath)
 
         try:
-            self._filesystemCache.rename(workingDirPath, currentDirPath)
+            os.rename(workingDirPath, currentDirPath)
         except Exception:
             if oldDirPath:
-                self._filesystemCache.rename(oldDirPath, currentDirPath)
+                os.rename(oldDirPath, currentDirPath)
             raise
 
     def _loadMilieuSectors(
@@ -1420,14 +1411,24 @@ class DataStore(object):
 
             universeData = {'Sectors': sectorListData}
 
-            self._filesystemCache.write(
+            DataStore._writeFile(
                 path=universeFilePath,
                 data=json.dumps(universeData, indent=4))
 
             utcTime = common.utcnow()
-            self._filesystemCache.write(
+            DataStore._writeFile(
                 path=timestampPath,
                 data=DataStore._formatTimestamp(timestamp=utcTime))
+            
+    @staticmethod
+    def _readFile(path: str) -> bytes:
+        with open(path, 'rb') as file:
+            return file.read()
+        
+    @staticmethod
+    def _writeFile(path: str, data: bytes) -> None:
+        with open(path, 'wb') as file:
+            file.write(data)
 
     @staticmethod
     def _bytesToString(bytes: bytes) -> str:
@@ -1442,6 +1443,7 @@ class DataStore(object):
             timestamp.timestamp(),
             tz=datetime.timezone.utc)
 
+    @staticmethod
     def _formatTimestamp(timestamp: datetime.datetime) -> bytes:
         timestamp = timestamp.astimezone(datetime.timezone.utc)
         return timestamp.strftime(DataStore._TimestampFormat).encode()

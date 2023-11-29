@@ -319,11 +319,7 @@ class MapProxy(object):
             loop.run_until_complete(loop.create_server(
                 protocol_factory=webApp.make_handler(),
                 host=hosts,
-                port=listenPort))  
-
-            # Now that set up is finished clear out cached data from that data
-            # store to keep the memory footprint down.
-            travellermap.DataStore.instance().clearCachedData()
+                port=listenPort))
 
             # Run event loop until proxy is shut down
             messageQueue.put((MapProxy.ServerStatus.Started, )) # Trailing comma is important to keep as a tuple
