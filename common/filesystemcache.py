@@ -62,13 +62,7 @@ class FileSystemCache(object):
 
         with self._lock:
             os.rename(srcPath, dstPath)
-            # TODO: If data is cached it should be moved to it's new location in the
-            # cache. This would need the code that renames after a download updated to
-            # clear the old data out the cache as we don't want to keep it (may not be
-            # needed if I implement some kind of cache eviction). For now just clear
-            # the source and dest out the cache
-            self._removeCache(elements=srcElements)
-            self._removeCache(elements=dstElements)
+            self._renameCache(srcElements, dstElements)
 
     def remove(self, path: str) -> None:
         elements = FileSystemCache._splitPath(path)
@@ -182,7 +176,42 @@ class FileSystemCache(object):
             else:
                 next = dir.get(element)
                 if next == None:
-                    return
+                    return # Not cached so nothing to remove
+                dir = next
+    
+    def _renameCache(
+            self,
+            srcElements,
+            dstElements
+            ) -> None:
+        last = len(srcElements) - 1
+        dir = self._cache
+        node = None
+        for index, element in enumerate(srcElements):
+            if index == last:
+                child = dir.get(element)
+                if child:
+                    node = child
+                    del dir[element]
+            else:
+                next = dir.get(element)
+                if next == None:
+                    return # Not cached so nothing to rename
+                dir = next
+
+        if node is None:
+            return # Not cached so nothing to rename
+        
+        last = len(dstElements) - 1
+        dir = self._cache
+        for index, element in enumerate(dstElements):
+            if index == last:
+                dir[element] = node
+            else:
+                next = dir.get(element)
+                if not isinstance(next, dict): # Also handles next being none
+                    next = {}
+                    dir[element] = next
                 dir = next
 
     def _freeCache(
