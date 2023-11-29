@@ -1426,7 +1426,13 @@ class DataStore(object):
             return file.read()
         
     @staticmethod
-    def _writeFile(path: str, data: bytes) -> None:
+    def _writeFile(
+        path: str,
+        data: typing.Union[bytes, str]
+        ) -> None:
+        if not isinstance(data, bytes):
+            data = data.encode()
+
         with open(path, 'wb') as file:
             file.write(data)
 
