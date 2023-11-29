@@ -226,11 +226,18 @@ class MapProxy(object):
 
             loop = asyncio.get_event_loop()
 
+            #
+            # Set up database
+            #
             database = proxy.Database(filePath=dbPath)
             loop.run_until_complete(database.initAsync())            
             
             progressCallback = \
-                lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Generating Mains', current, total))
+                lambda text, current, total: messageQueue.put((MapProxy.ServerStatus.Starting, text, current, total))
+
+            #
+            # Generate Mains
+            #
             mainsData = None
             try:
                 mainsGenerator = travellermap.MainsGenerator()
@@ -244,23 +251,32 @@ class MapProxy(object):
                 # Continue. Mains data will be pulled from Traveller Map, it just won't have
                 # have custom sector data
 
-            progressCallback = \
-                lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Starting Server', current, total))
-            serverStageCount = 4 # TODO: Do something better than hard coding the stage count
-            serverStageIndex = 0
+            #
+            # Set up compositor
+            #
+            compositor = proxy.Compositor(
+                customMapsDir=customMapsDir,
+                mapDatabase=database)
+            loop.run_until_complete(compositor.initAsync(
+                progressCallback=progressCallback))
 
-            progressCallback(serverStageIndex, serverStageCount)
-            serverStageIndex += 1
-            compositor = proxy.Compositor(customMapsDir=customMapsDir, mapDatabase=database)
-            loop.run_until_complete(compositor.initAsync())
-            
-            progressCallback(serverStageIndex, serverStageCount)
-            serverStageIndex += 1
+            #
+            # Set up tile cache 
+            #
             tileCache = proxy.TileCache(
                 mapDatabase=database,
                 travellerMapUrl=travellerMapUrl,
                 maxMemBytes=_MaxTileCacheBytes)
-            loop.run_until_complete(tileCache.initAsync())
+            loop.run_until_complete(tileCache.initAsync(
+                progressCallback=progressCallback))             
+
+            #
+            # Start web server
+            #
+            progressCallback = \
+                lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Starting Server', current, total))
+            serverStageCount = 2 # TODO: Do something better than hard coding the stage count
+            serverStageIndex = 0
 
             progressCallback(serverStageIndex, serverStageCount)
             serverStageIndex += 1

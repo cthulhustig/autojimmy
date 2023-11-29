@@ -26,15 +26,16 @@ class MainsFinder(object):
     # giving the sector x/y & hex x/y position of the world
     def generate(
             self,
-            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> typing.Iterable[typing.Iterable[typing.Tuple[int, int, int, int]]]:
         seen = set()
         mains = []
 
+        progressStage = 'Generating Mains'
         totalWorlds = len(self._worlds)
         for progress, world in enumerate(self._worlds):
             if progressCallback and ((progress % MainsFinder._WorldsPerProgressStep) == 0):
-                progressCallback(progress, totalWorlds)
+                progressCallback(progressStage, progress, totalWorlds)
 
             if world in seen:
                 continue
@@ -61,7 +62,7 @@ class MainsFinder(object):
         mains = sorted(mains, key=lambda element: -len(element))
 
         if progressCallback:
-            progressCallback(totalWorlds, totalWorlds)
+            progressCallback(progressStage, totalWorlds, totalWorlds)
 
         return mains
 
@@ -72,7 +73,7 @@ class MainsGenerator(object):
     def generate(
             self,
             milieu: travellermap.Milieu,
-            progressCallback: typing.Optional[typing.Callable[[int, int], typing.Any]] = None
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
             ) -> str:
         # Traveller Map generates mains from M1105 world positions. The same
         # mains information is then use no mater which milieu you are viewing.

@@ -167,6 +167,8 @@ class TileCache(object):
     _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
 
+    _TilesPerProgressStep = 100
+
     def __init__(
             self,
             travellerMapUrl: str,
@@ -185,7 +187,10 @@ class TileCache(object):
         self._backgroundTasks: typing.Set[asyncio.Task] = set()
         self._garbageCollectTask = None
 
-    async def initAsync(self) -> None:
+    async def initAsync(
+            self,
+            progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
+            ) -> None:
         logging.info(f'Tile cache connecting to database')
 
         try:
@@ -205,7 +210,8 @@ class TileCache(object):
             invalidEntries = []
             async with self._dbConnection.execute(_LoadAllMetadataQuery) as cursor:
                 results = await cursor.fetchall()
-                for row in results:
+                progressStage = 'Loading Tile Cache'
+                for progress, row in enumerate(results):
                     tileQuery = row[0]
                     mimeType = row[1]
                     fileSize = row[2]
@@ -218,6 +224,9 @@ class TileCache(object):
                     overlapType = row[9]
                     createdTime = row[10]
                     usedTime = row[11]
+
+                    if progressCallback and ((progress % TileCache._TilesPerProgressStep) == 0):
+                        progressCallback(progressStage, progress, len(results))
 
                     mapFormat = travellermap.mimeTypeToMapFormat(mimeType=mimeType)
                     if not mapFormat:
@@ -265,18 +274,29 @@ class TileCache(object):
                         usedTime=usedTime)
                     self._diskTotalBytes += fileSize
 
+                if progressCallback:
+                    progressCallback(progressStage, len(results), len(results))
+
             # Remove invalid entries from the database
-            for tileQuery in invalidEntries:
-                try:
-                    queryArgs = {'query': tileQuery}
-                    async with self._dbConnection.execute(_DeleteTileQuery, queryArgs):
-                        pass
-                    logging.debug(f'Deleted the invalid tile cache entry for {tileQuery}')
-                except Exception as ex:
-                    # Log and continue
-                    logging.error(
-                        f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
-                        exc_info=ex)
+            if invalidEntries:
+                progressStage = 'Purging Tile Cache'
+                for progress, tileQuery in enumerate(invalidEntries):
+                    try:
+                        if progressCallback and ((progress % TileCache._TilesPerProgressStep) == 0):
+                            progressCallback(progressStage, progress, len(invalidEntries))
+
+                        queryArgs = {'query': tileQuery}
+                        async with self._dbConnection.execute(_DeleteTileQuery, queryArgs):
+                            pass
+                        logging.debug(f'Deleted the invalid tile cache entry for {tileQuery}')
+                    except Exception as ex:
+                        # Log and continue
+                        logging.error(
+                            f'An error occurred while deleting the invalid tile cache entry for {tileQuery}',
+                            exc_info=ex)
+
+                if progressCallback:
+                    progressCallback(progressStage, len(invalidEntries), len(invalidEntries))                    
 
             # Commit all changes to the database
             await self._dbConnection.commit()
