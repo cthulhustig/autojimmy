@@ -462,7 +462,8 @@ class DataStore(object):
     # all instances of the app everywhere
     _DataVersionPattern = re.compile(r'^(\d+)(?:\.(\d+))?\s*$')
     _MinDataFormatVersion = UniverseDataFormat(4, 0)
-    _FileSystemCacheSize = 256 * 1024 * 1024 # 256MiB
+    _FileSystemCacheMaxFileSize = 10 * 1024 * 1024 # 10MiB
+    _FileSystemCacheMaxTotalSize = 256 * 1024 * 1024 # 256MiB
 
     _SectorFormatExtensions = {
         # NOTE: The sec format is short for second survey, not the legacy sec format
@@ -478,7 +479,9 @@ class DataStore(object):
     _overlayDir = None
     _customDir = None
     _universeMap = None
-    _filesystemCache = common.FileSystemCache(maxCacheSize=_FileSystemCacheSize)
+    _filesystemCache = common.FileSystemCache(
+        maxCacheFileSize=_FileSystemCacheMaxFileSize,
+        maxCacheTotalSize=_FileSystemCacheMaxTotalSize)
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -907,13 +910,6 @@ class DataStore(object):
                     format=mapFormat)
                 mapLevels[mapLevel.scale()] = mapLevel
 
-                # TODO: Need to check if this going into the cache is resulting in multiple
-                # copies being help in memory of if they all work out to be the same byte array.
-                # If there are multiple copies I need to add a non-cache option as this could eat
-                # a lot of memory (may not be needed if I add cache eviction with a max memory
-                # limit).
-                # TODO: The cache should probably also have some kind of hard limit on the max
-                # file size it caches (10MiB maybe)
                 self._filesystemCache.write(
                     path=mapLevelFilePath,
                     data=mapImage.bytes())

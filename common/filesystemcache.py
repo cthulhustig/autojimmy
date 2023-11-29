@@ -10,7 +10,8 @@ import typing
 class FileSystemCache(object):
     def __init__(
             self,
-            maxCacheSize: int
+            maxCacheFileSize: int,
+            maxCacheTotalSize: int
             ) -> None:
         # The cache is a dictionary hierarchy that maps to filesystem elements. If an entry is a file
         # it maps to a bytes object, if it's a directory it maps to another dict for the cache of that
@@ -18,7 +19,8 @@ class FileSystemCache(object):
         self._cache: typing.Dict[str, dict] = {}
         self._lock = threading.Lock()
 
-        self._maxCacheSize = maxCacheSize
+        self._maxCacheFileSize = maxCacheFileSize
+        self._maxCacheTotalSize = maxCacheTotalSize
         self._currentCacheSize = 0
 
         # Ordered dict that maps file path strings to split element lists with the map being kept in
@@ -131,11 +133,15 @@ class FileSystemCache(object):
             data: bytes
             ) -> None:
         dataSize = len(data)
-        if dataSize > self._maxCacheSize:
-            # This data is to big to fit in the cache even if we clear it out completely
-            return
-        if (self._currentCacheSize + dataSize) > self._maxCacheSize:
-            self._freeCache(elements, dataSize)
+        if (self._maxCacheFileSize > 0) and (dataSize > self._maxCacheFileSize):
+            return # File is to big to cache
+
+        if self._maxCacheTotalSize > 0: # If cache isn't unlimited
+            if dataSize > self._maxCacheTotalSize:
+                # This data is to big to fit in the cache even if we clear it out completely
+                return
+            if (self._currentCacheSize + dataSize) > self._maxCacheTotalSize:
+                self._freeCache(elements, dataSize)
 
         last = len(elements) - 1
         dir = self._cache
@@ -184,14 +190,17 @@ class FileSystemCache(object):
             elements: typing.Iterable[str], # The file to be added to the cache
             dataSize: int # The number of bytes to be added to the cache
             ) -> None:
+        if self._maxCacheTotalSize <= 0:
+            return # Cache size is unlimited
+
         # First try removing any old cached version of the file to be added
         self._removeCache(elements)
-        if (self._currentCacheSize + dataSize) <= self._maxCacheSize:
+        if (self._currentCacheSize + dataSize) <= self._maxCacheTotalSize:
             return # Enough space has been freed
 
         # Start removing items from the cache starting with the ones that were
         # used longest ago
-        while self._usageHistory and ((self._currentCacheSize + dataSize) > self._maxCacheSize):
+        while self._usageHistory and ((self._currentCacheSize + dataSize) > self._maxCacheTotalSize):
             oldestPath, oldestElements = self._usageHistory.popitem(last=False)
             self._removeCache(oldestElements)
 
