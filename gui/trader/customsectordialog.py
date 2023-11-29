@@ -331,7 +331,7 @@ class _LintJobDialog(QtWidgets.QDialog):
         self._lintingTimer.stop()
 
         if isinstance(result, Exception):
-            message = 'Map creation job failed'
+            message = 'Linter job failed'
             logging.critical(message, exc_info=result)
             gui.MessageBoxEx.critical(text=message, exception=result)
             self.close()
