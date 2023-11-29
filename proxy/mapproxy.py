@@ -1,6 +1,8 @@
 import aiohttp.web
 import asyncio
 import app
+import common
+import datetime
 import enum
 import logging
 import multiprocessing
@@ -49,6 +51,9 @@ class MapProxy(object):
     _status = ServerStatus.Stopped
     _mpContext = None # Multiprocessing context
     _messageQueue = None
+    # NOTE: This timeout is NOT the total startup timeout. It's the max time allowed between
+    # status updates from the worker thread
+    _startTimeout = datetime.timedelta(seconds=60)
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -121,7 +126,7 @@ class MapProxy(object):
             self._service.daemon = False
             self._service.start()
 
-            # TODO: This needs a timeout
+            lastUpdateTime = common.utcnow()
             while self._status == MapProxy.ServerStatus.Starting:
                 time.sleep(0.1)
                 while not self._messageQueue.empty():
@@ -129,6 +134,7 @@ class MapProxy(object):
                     if not message:
                         continue
                     newStatus = message[0]
+                    lastUpdateTime = common.utcnow()
 
                     if newStatus == MapProxy.ServerStatus.Starting:
                         if progressCallback and len(message) == 4:
@@ -145,8 +151,13 @@ class MapProxy(object):
                         raise RuntimeError(f'Map proxy failed to start ({message[1]})')
                     elif newStatus == MapProxy.ServerStatus.Stopped:
                         raise RuntimeError(f'Map proxy stopped unexpectedly during startup')
+                    
+                if common.utcnow() > (lastUpdateTime + MapProxy._startTimeout):
+                    raise RuntimeError(f'Map proxy process stopped responding during startup')
         except:
             self._status = MapProxy.ServerStatus.Error
+            if self._service:
+                self._service.kill()
             raise
 
     def shutdown(self) -> None:
