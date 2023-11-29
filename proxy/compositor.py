@@ -340,10 +340,11 @@ class Compositor(object):
 
             # Commit any changes made to the database
             await connection.commit()
-        finally:
+        except:
+            # Cancel any futures that have been created
             for future in futureList:
                 future.cancel()
-
+        finally:
             await connection.close()
 
             # If full SVG rendering is disabled the process poll won't be used any more so may
