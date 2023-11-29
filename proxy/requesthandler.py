@@ -295,7 +295,7 @@ class RequestHandler(object):
                         newBytes.seek(0)
                         tileBytes = newBytes.read()
                 except Exception as ex:
-                    logging.error('Failed to composite tile', exc_info=ex)
+                    logging.error(f'Failed to composite tile {request.query_string}', exc_info=ex)
                     shouldCacheTile = False # Don't cache tiles if they failed to generate
                 finally:
                     if tileImage:

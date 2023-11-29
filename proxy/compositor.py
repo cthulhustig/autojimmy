@@ -491,7 +491,12 @@ class Compositor(object):
         for sector in sectorList:
             sectorMapRect = sector.boundingRect()
             intersection = _calculateIntersection(sectorMapRect, tileMapRect)
-            if intersection:
+            if intersection is None:
+                continue
+
+            pixelWidth = round((intersection[2] - intersection[0]) * tileScale)
+            pixelHeight = round((intersection[3] - intersection[1]) * tileScale)    
+            if pixelWidth > 0 and pixelHeight > 0:
                 return Compositor.OverlapType.PartialOverlap
 
         return Compositor.OverlapType.NoOverlap
