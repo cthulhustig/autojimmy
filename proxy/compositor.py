@@ -353,101 +353,6 @@ class Compositor(object):
                 self._processExecutor.shutdown(wait=True, cancel_futures=True)
                 self._processExecutor = None
 
-    async def _addCompositorImage(
-            self,
-            customSector: _CustomSector,
-            milieu: travellermap.Milieu,
-            scale: int,
-            mapImage: travellermap.MapImage,
-            connection: aiosqlite.Connection
-            ) -> None:
-        try:
-            mapBytes = mapImage.bytes()
-            mapFormat = mapImage.format()
-
-            if mapFormat == travellermap.MapFormat.SVG:
-                if _FullSvgRendering:
-                    customSector.addMapPoster(_CompositorImage(
-                        imageType=_CompositorImage.ImageType.SVG,
-                        mainImage=mapBytes,
-                        textMask=Compositor._createTextSvg(mapBytes=mapBytes),
-                        scale=scale))
-                else:
-                    sectorPosition = customSector.position()
-                    queryArgs = {
-                        'milieu': milieu.value,
-                        'x': sectorPosition[0],
-                        'y': sectorPosition[1],
-                        'scale': scale}
-                    async with connection.execute(_LoadLayersQuery, queryArgs) as cursor:
-                        row = await cursor.fetchone()
-                        if row:
-                            mapBytes = row[0]
-                            maskBytes = row[1]
-                            customSector.addMapPoster(_CompositorImage(
-                                imageType=_CompositorImage.ImageType.Bitmap,
-                                mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
-                                textMask=PIL.Image.open(io.BytesIO(maskBytes)),
-                                scale=scale))
-                            return
-
-                    svgMapBytes = mapImage.bytes()
-                    svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
-
-                    loop = asyncio.get_running_loop()
-                    mapTask = loop.run_in_executor(
-                        self._processExecutor,
-                        Compositor._renderSvgTask,
-                        svgMapBytes)
-                    textTask = loop.run_in_executor(
-                        self._processExecutor,
-                        Compositor._renderSvgTask,
-                        svgTextBytes)
-
-                    await asyncio.gather(mapTask, textTask)
-
-                    mapBytes = mapTask.result()
-                    if isinstance(mapBytes, Exception):
-                        raise RuntimeError('Worker process exception when render map SVG') from mapBytes
-
-                    textBytes = textTask.result()
-                    if isinstance(textBytes, Exception):
-                        raise RuntimeError('Worker process exception when render text SVG') from textBytes
-
-                    mainImage = PIL.Image.open(io.BytesIO(mapBytes))
-                    textImage = PIL.Image.open(io.BytesIO(textBytes))
-                    textMask = textImage.split()[-1] # Extract alpha channel as Image
-                    del textImage
-
-                    customSector.addMapPoster(_CompositorImage(
-                        imageType=_CompositorImage.ImageType.Bitmap,
-                        mainImage=mainImage,
-                        textMask=textMask,
-                        scale=scale))
-                    
-                    sectorPosition = customSector.position()
-                    queryArgs = {
-                        'name': customSector.name(),
-                        'milieu': milieu.value,
-                        'x': sectorPosition[0],
-                        'y': sectorPosition[1],
-                        'scale': scale,
-                        'created': proxy.dbTimestampToString(timestamp=common.utcnow()),
-                        'map': sqlite3.Binary(mapBytes),
-                        'text': sqlite3.Binary(textBytes)}
-                    async with connection.execute(_AddLayersQuery, queryArgs):
-                        pass                           
-            else:
-                customSector.addMapPoster(_CompositorImage(
-                    imageType=_CompositorImage.ImageType.Bitmap,
-                    mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
-                    textMask=None,
-                    scale=scale))
-        except asyncio.CancelledError:
-            raise
-        except Exception as ex:
-            logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
-
     # NOTE: Shutting down the executor is important as otherwise the app hangs on shutdown
     async def shutdownAsync(self):
         if self._processExecutor:
@@ -777,6 +682,101 @@ class Compositor(object):
                     'An exception occurred when the compositor was purging the layers cache due to {ident} change'.format(
                         ident=identString),
                     exc_info=ex)
+                
+    async def _addCompositorImage(
+            self,
+            customSector: _CustomSector,
+            milieu: travellermap.Milieu,
+            scale: int,
+            mapImage: travellermap.MapImage,
+            connection: aiosqlite.Connection
+            ) -> None:
+        try:
+            mapBytes = mapImage.bytes()
+            mapFormat = mapImage.format()
+
+            if mapFormat == travellermap.MapFormat.SVG:
+                if _FullSvgRendering:
+                    customSector.addMapPoster(_CompositorImage(
+                        imageType=_CompositorImage.ImageType.SVG,
+                        mainImage=mapBytes,
+                        textMask=Compositor._createTextSvg(mapBytes=mapBytes),
+                        scale=scale))
+                else:
+                    sectorPosition = customSector.position()
+                    queryArgs = {
+                        'milieu': milieu.value,
+                        'x': sectorPosition[0],
+                        'y': sectorPosition[1],
+                        'scale': scale}
+                    async with connection.execute(_LoadLayersQuery, queryArgs) as cursor:
+                        row = await cursor.fetchone()
+                        if row:
+                            mapBytes = row[0]
+                            maskBytes = row[1]
+                            customSector.addMapPoster(_CompositorImage(
+                                imageType=_CompositorImage.ImageType.Bitmap,
+                                mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
+                                textMask=PIL.Image.open(io.BytesIO(maskBytes)),
+                                scale=scale))
+                            return
+
+                    svgMapBytes = mapImage.bytes()
+                    svgTextBytes = Compositor._createTextSvg(mapBytes=svgMapBytes)
+
+                    loop = asyncio.get_running_loop()
+                    mapTask = loop.run_in_executor(
+                        self._processExecutor,
+                        Compositor._renderSvgTask,
+                        svgMapBytes)
+                    textTask = loop.run_in_executor(
+                        self._processExecutor,
+                        Compositor._renderSvgTask,
+                        svgTextBytes)
+
+                    await asyncio.gather(mapTask, textTask)
+
+                    mapBytes = mapTask.result()
+                    if isinstance(mapBytes, Exception):
+                        raise RuntimeError('Worker process exception when render map SVG') from mapBytes
+
+                    textBytes = textTask.result()
+                    if isinstance(textBytes, Exception):
+                        raise RuntimeError('Worker process exception when render text SVG') from textBytes
+
+                    mainImage = PIL.Image.open(io.BytesIO(mapBytes))
+                    textImage = PIL.Image.open(io.BytesIO(textBytes))
+                    textMask = textImage.split()[-1] # Extract alpha channel as Image
+                    del textImage
+
+                    customSector.addMapPoster(_CompositorImage(
+                        imageType=_CompositorImage.ImageType.Bitmap,
+                        mainImage=mainImage,
+                        textMask=textMask,
+                        scale=scale))
+                    
+                    sectorPosition = customSector.position()
+                    queryArgs = {
+                        'name': customSector.name(),
+                        'milieu': milieu.value,
+                        'x': sectorPosition[0],
+                        'y': sectorPosition[1],
+                        'scale': scale,
+                        'created': proxy.dbTimestampToString(timestamp=common.utcnow()),
+                        'map': sqlite3.Binary(mapBytes),
+                        'text': sqlite3.Binary(textBytes)}
+                    async with connection.execute(_AddLayersQuery, queryArgs):
+                        pass                           
+            else:
+                customSector.addMapPoster(_CompositorImage(
+                    imageType=_CompositorImage.ImageType.Bitmap,
+                    mainImage=PIL.Image.open(io.BytesIO(mapBytes)),
+                    textMask=None,
+                    scale=scale))
+        except asyncio.CancelledError:
+            raise
+        except Exception as ex:
+            logging.warning(f'Compositor failed to generate {scale} composition image for {customSector.name()} in {milieu.value}', exc_info=ex)
 
     def _overlayBitmapCustomSector(
             self,
