@@ -102,10 +102,11 @@ class SectorInfo(object):
             y: int,
             sectorFormat: travellermap.SectorFormat,
             metadataFormat: travellermap.MetadataFormat,
+            modifiedTimestamp: datetime.datetime,
             isCustomSector: bool,
             customMapStyle: typing.Optional[travellermap.Style],
             customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
-            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]],
+            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]  
             ) -> None:
         self._canonicalName = canonicalName
         self._abbreviation = abbreviation
@@ -113,6 +114,7 @@ class SectorInfo(object):
         self._y = y
         self._sectorFormat = sectorFormat
         self._metadataFormat = metadataFormat
+        self._modifiedTimestamp = modifiedTimestamp
         self._isCustomSector = isCustomSector
         self._customMapStyle = customMapStyle
         self._customMapOptions = list(customMapOptions) if customMapOptions else None
@@ -135,6 +137,9 @@ class SectorInfo(object):
 
     def metadataFormat(self) -> travellermap.MetadataFormat:
         return self._metadataFormat
+    
+    def modifiedTimestamp(self) -> datetime.datetime:
+        return self._modifiedTimestamp
 
     def isCustomSector(self) -> bool:
         return self._isCustomSector
@@ -916,6 +921,7 @@ class DataStore(object):
                 y=metadata.y(),
                 sectorFormat=sectorFormat,
                 metadataFormat=metadataFormat,
+                modifiedTimestamp=common.utcnow(),
                 isCustomSector=True,
                 customMapStyle=customMapStyle,
                 customMapOptions=customMapOptions,
@@ -1281,19 +1287,30 @@ class DataStore(object):
                     metadataFormat = travellermap.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
+                    
+                # If the universe doesn't specify the modified timestamp assume the epoch
+                # NOTE: For now the modified time is only used for custom sectors. I've added it like this
+                # to make it easier if I want to update the github action that creates the snapshots so that
+                # it tracks the modified time of each individual sector and adds it to the universe file.
+                modifiedTimestampTag = sectorElement.get('ModifiedTimestamp')
+                if modifiedTimestampTag != None:
+                    modifiedTimestamp = DataStore._parseTimestamp(str(modifiedTimestampTag).encode())
+                else:
+                    modifiedTimestamp = datetime.datetime.fromtimestamp(0)
 
                 customMapLevels = None
                 customMapStyle = None
                 customMapOptions = None
                 if customSectors:
                     customMapStyleTag = sectorElement.get('CustomMapStyle')
-                    if customMapStyleTag:
-                        customMapStyle = travellermap.Style.__members__.get(str(customMapStyleTag))
-                        if customMapStyle == None:
-                            raise RuntimeError('Sector has no custom map style')
+                    if customMapStyleTag == None:
+                        raise RuntimeError('Sector has no custom map style')
+                    customMapStyle = travellermap.Style.__members__.get(str(customMapStyleTag))
+                    if customMapStyle == None:
+                        raise RuntimeError(f'Sector has an unknown map style {str(customMapStyleTag)}')
 
                     customMapOptionsElement = sectorElement.get('CustomMapOptions')
-                    if customMapOptionsElement:
+                    if customMapOptionsElement != None:
                         customMapOptions = []
                         for optionTag in customMapOptionsElement:
                             optionTag = str(optionTag)
@@ -1340,6 +1357,7 @@ class DataStore(object):
                     y=sectorY,
                     sectorFormat=sectorFormat,
                     metadataFormat=metadataFormat,
+                    modifiedTimestamp=modifiedTimestamp,
                     isCustomSector=customSectors,
                     customMapStyle=customMapStyle,
                     customMapOptions=customMapOptions,
@@ -1386,6 +1404,8 @@ class DataStore(object):
 
                 sectorData['SectorFormat'] = sectorInfo.sectorFormat().name
                 sectorData['MetadataFormat'] = sectorInfo.metadataFormat().name
+                sectorData['ModifiedTimestamp'] = \
+                    DataStore._formatTimestamp(sectorInfo.modifiedTimestamp()).decode()
 
                 mapLevels = sectorInfo.customMapLevels()
                 mapLevelListData = []
