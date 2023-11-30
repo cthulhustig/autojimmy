@@ -674,7 +674,6 @@ class TileCache(object):
             self._diskTotalBytes -= diskEntry.fileSize()
             queryArgs.append({'query': diskEntry.tileQuery()})
 
-            # TODO: Should log at debug
             logging.warning(
                 f'Purged tile disk cache entry for {diskEntry.tileQuery()} to free {diskEntry.fileSize()} bytes')
 
