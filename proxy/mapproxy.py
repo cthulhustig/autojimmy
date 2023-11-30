@@ -82,9 +82,12 @@ class MapProxy(object):
             listenPort: int,
             hostPoolSize: int,
             travellerMapUrl: str,
+            tileCacheSize: int,
+            tileCacheLifetime: int,
+            svgComposition: bool,
+            mainsMilieu: travellermap.Milieu,
             installDir: str,
             appDir: str,
-            mainsMilieu: travellermap.Milieu,
             logDir: str,
             logLevel: int
             ) -> None:
@@ -95,9 +98,12 @@ class MapProxy(object):
         MapProxy._listenPort = listenPort
         MapProxy._hostPoolSize = hostPoolSize
         MapProxy._travellerMapUrl = travellerMapUrl
+        MapProxy._tileCacheSize = tileCacheSize
+        MapProxy._tileCacheLifetime = tileCacheLifetime
+        MapProxy._svgComposition = svgComposition
+        MapProxy._mainsMilieu = mainsMilieu
         MapProxy._installDir = installDir
         MapProxy._appDir = appDir
-        MapProxy._mainsMilieu = mainsMilieu
         MapProxy._logDir = logDir
         MapProxy._logLevel = logLevel
 
@@ -117,9 +123,12 @@ class MapProxy(object):
                     self._listenPort,
                     self._hostPoolSize,
                     self._travellerMapUrl,
+                    self._tileCacheSize,
+                    self._tileCacheLifetime,
+                    self._svgComposition,
+                    self._mainsMilieu,
                     self._installDir,
                     self._appDir,
-                    self._mainsMilieu,
                     self._logLevel,
                     self._shutdownEvent,
                     self._messageQueue])
@@ -192,9 +201,12 @@ class MapProxy(object):
             listenPort: int,
             hostPoolSize: int,
             travellerMapUrl: str,
+            tileCacheSize: int,
+            tileCacheLifetime: int,
+            svgComposition: bool,
+            mainsMilieu: travellermap.Milieu,
             installDir: str,
             appDir: str,
-            mainsMilieu: travellermap.Milieu,
             logLevel: int,
             shutdownEvent: multiprocessing.Event,
             messageQueue: multiprocessing.Queue
@@ -210,9 +222,14 @@ class MapProxy(object):
         logging.info(f'Map Proxy {app.AppVersion}')
 
         dbPath=os.path.join(appDir, _MapProxyDbFileName)
-        logging.info(f'Proxy Listen Port: {listenPort}')
-        logging.info(f'Map Database Path: {dbPath}')        
-
+        logging.info(f'Listen Port: {listenPort}')
+        logging.info(f'Host Pool Size: {hostPoolSize}')
+        logging.info(f'Map URL: {travellerMapUrl}')
+        logging.info(f'Tile Cache Size: {tileCacheSize}')
+        logging.info(f'Tile Cache Lifetime: {tileCacheLifetime}')
+        logging.info(f'SVG Composition: {svgComposition}')
+        logging.info(f'Map Database Path: {dbPath}')    
+        
         # This is a hack. The aiohttp server logs all requests at info level
         # where as I only want it logged at debug. The best way I can see to
         # achieve this is to set the server logging to a level that won't log
@@ -266,6 +283,7 @@ class MapProxy(object):
             # Set up compositor
             #
             compositor = proxy.Compositor(
+                svgComposition=svgComposition,
                 customMapsDir=customMapsDir,
                 mapDatabase=database)
             loop.run_until_complete(compositor.initAsync(
@@ -277,7 +295,10 @@ class MapProxy(object):
             tileCache = proxy.TileCache(
                 mapDatabase=database,
                 travellerMapUrl=travellerMapUrl,
-                maxMemBytes=_MaxTileCacheBytes)
+                maxMemBytes=_MaxTileCacheBytes,
+                maxDiskBytes=tileCacheSize,
+                tileLifetime=tileCacheLifetime,
+                svgComposition=svgComposition)
             loop.run_until_complete(tileCache.initAsync(
                 progressCallback=progressCallback))             
 

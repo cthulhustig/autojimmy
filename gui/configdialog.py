@@ -287,37 +287,6 @@ class ConfigDialog(gui.DialogEx):
         restartRequiredText = f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
 
         # Traveller widgets
-        self._mapUrlLineEdit = gui.LineEditEx()
-        self._mapUrlLineEdit.setText(app.Config.instance().travellerMapUrl())
-        self._mapUrlLineEdit.setToolTip(gui.createStringToolTip(
-            '<p>If you run your own copy of Traveller Map, you can specify it\'s URL here.</p>' +
-            restartRequiredText,
-            escape=False))
-
-        self._mapProxyPortSpinBox = gui.SpinBoxEx()
-        self._mapProxyPortSpinBox.setRange(0, 65535)
-        self._mapProxyPortSpinBox.setValue(app.Config.instance().mapProxyPort())
-        self._mapProxyPortSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the port the local Traveller Map proxy will listen on.</p>' +
-            f'<p>By default {app.AppName} uses a local proxy to access Traveller Map. ' +
-            'Using this proxy has two main benefits:</p>' +
-            '<ul style="margin-left:15px; -qt-list-indent:0;">' +
-            f'<li>It allows {app.AppName} to overlay custom sectors on tiles returned by ' +
-            'Traveller Map, in order to have them rendered in the integrated map views.</li>' +
-            '<li>It allocates more memory to be used for caching tiles in order to ' +
-            'improve performance when doing a lot of scrolling & zooming.</li>' +
-            '</ul>' +
-            '<p>For increased security, this proxy only listens on localhost, meaning ' +
-            f'it can only be accessed from the system {app.AppName} is running on. ' +
-            'The proxy also only allows access to the Traveller Map URL configured ' +
-            'above.<p>' +
-            '<p>You may need to change the port the proxy listens on if there is a ' +
-            'conflict with another service running on you system. The port can be set ' +
-            'to 0 in order to disable the use of the proxy, however this will also ' +
-            'disable the features mentioned above.</p>' +
-            restartRequiredText,
-            escape=False))
-
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),
@@ -336,13 +305,90 @@ class ConfigDialog(gui.DialogEx):
             escape=False))
 
         travellerLayout = gui.FormLayoutEx()
-        travellerLayout.addRow('Traveller Map Url:', self._mapUrlLineEdit)
-        travellerLayout.addRow('Map Proxy Port:', self._mapProxyPortSpinBox)
         travellerLayout.addRow('Milieu:', self._milieuComboBox)
         travellerLayout.addRow('Rules:', self._rulesComboBox)
 
-        gameGroupBox = QtWidgets.QGroupBox('Traveller')
-        gameGroupBox.setLayout(travellerLayout)
+        travellerGroupBox = QtWidgets.QGroupBox('Traveller')
+        travellerGroupBox.setLayout(travellerLayout)
+
+        # Proxy Widgets
+        self._proxyEnabledCheckBox = gui.CheckBoxEx()
+        self._proxyEnabledCheckBox.setChecked(app.Config.instance().proxyEnabled())
+        self._proxyEnabledCheckBox.stateChanged.connect(self._enableProxyToggled)
+        # TODO: Tool tip
+
+        self._proxyPortSpinBox = gui.SpinBoxEx()
+        self._proxyPortSpinBox.setRange(1024, 65535)
+        self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
+        self._proxyPortSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        # TODO: This tooltip needs updated, cover 
+        self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the port the local Traveller Map proxy will listen on.</p>' +
+            f'<p>By default {app.AppName} uses a local proxy to access Traveller Map. ' +
+            'Using this proxy has two main benefits:</p>' +
+            '<ul style="margin-left:15px; -qt-list-indent:0;">' +
+            f'<li>It allows {app.AppName} to overlay custom sectors on tiles returned by ' +
+            'Traveller Map, in order to have them rendered in the integrated map views.</li>' +
+            '<li>It allocates more memory to be used for caching tiles in order to ' +
+            'improve performance when doing a lot of scrolling & zooming.</li>' +
+            '</ul>' +
+            '<p>For increased security, this proxy only listens on localhost, meaning ' +
+            f'it can only be accessed from the system {app.AppName} is running on. ' +
+            'The proxy also only allows access to the Traveller Map URL configured ' +
+            'below.<p>' +
+            '<p>You may need to change the port the proxy listens on if there is a ' +
+            'conflict with another service running on you system.</p>' +
+            restartRequiredText,
+            escape=False))
+        
+        self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
+        self._proxyHostPoolSizeSpinBox.setRange(1, 10)
+        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
+        self._proxyHostPoolSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        # TODO: Tooltip
+        
+        self._proxyMapUrlLineEdit = gui.LineEditEx()
+        self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
+        self._proxyMapUrlLineEdit.setMaximumWidth(200)
+        self._proxyMapUrlLineEdit.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
+            '<p>If you run your own copy of Traveller Map, you can specify it\'s URL here.</p>' +
+            restartRequiredText,
+            escape=False))
+
+        # NOTE: The tile cache size is shown in MB but is actually stored in bytes
+        self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
+        self._proxyTileCacheSizeSpinBox.setValue(
+            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
+        self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        # TODO: Tooltip
+
+        self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
+        self._proxyTileCacheLifetimeSpinBox.setValue(
+            app.Config.instance().proxyTileCacheLifetime())
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        # TODO: Tooltip
+
+        self._proxySvgCompositionCheckBox = gui.CheckBoxEx()
+        self._proxySvgCompositionCheckBox.setChecked(
+            app.Config.instance().proxySvgCompositionEnabled())
+        self._proxySvgCompositionCheckBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        # TODO: Tooltip
+        # TODO: Probably also want a warning popup if the user enables this        
+
+        proxyLayout = gui.FormLayoutEx()
+        proxyLayout.addRow('Enabled:', self._proxyEnabledCheckBox)
+        proxyLayout.addRow('Port:', self._proxyPortSpinBox)
+        proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
+        proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
+        proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
+        proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
+        proxyLayout.addRow('SVG Composition:', self._proxySvgCompositionCheckBox)
+
+        proxyGroupBox = QtWidgets.QGroupBox('Proxy')
+        proxyGroupBox.setLayout(proxyLayout)        
 
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
@@ -353,8 +399,8 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
 
-        # Note that this displays the interface scale as an integer percentage increase but it's
-        # actually stored as a float scalar
+        # NOTE: The interface scale is displayed in percent but is actually stored as a float scale
+        # where 1.0 is 100%
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)
         self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
@@ -425,7 +471,8 @@ class ConfigDialog(gui.DialogEx):
 
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
-        tabLayout.addWidget(gameGroupBox)
+        tabLayout.addWidget(travellerGroupBox)
+        tabLayout.addWidget(proxyGroupBox)
         tabLayout.addWidget(guiGroupBox)
         tabLayout.addWidget(taggingGroupBox)
         tabLayout.addStretch()
@@ -695,7 +742,7 @@ class ConfigDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._cancelButton)
 
     def _validateConfig(self) -> bool:
-        mapUrl = QtCore.QUrl(self._mapUrlLineEdit.text())
+        mapUrl = QtCore.QUrl(self._proxyMapUrlLineEdit.text())
         # Map URL must have a scheme but no path or options
         if mapUrl.scheme() != 'http' and mapUrl.scheme() != 'https':
             gui.MessageBoxEx.critical(
@@ -725,19 +772,32 @@ class ConfigDialog(gui.DialogEx):
 
         try:
             config = app.Config.instance()
-            checker.update(config.setTravellerMapUrl(self._mapUrlLineEdit.text()))
-            checker.update(config.setMapProxyPort(self._mapProxyPortSpinBox.value()))
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
+
+            checker.update(config.setProxyEnabled(self._proxyEnabledCheckBox.isChecked()))
+            checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
+            checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
+            checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
+            checker.update(config.setProxyTileCacheSize(
+                self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000))) # Convert MB to bytes
+            checker.update(config.setProxyTileCacheLifetime(
+                self._proxyTileCacheLifetimeSpinBox.value()))
+            checker.update(config.setProxySvgCompositionEnabled(
+                self._proxySvgCompositionCheckBox.isChecked()))
+            
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
-            checker.update(config.setInterfaceScale(self._interfaceScaleSpinBox.value() / 100))
+            checker.update(config.setInterfaceScale(
+                self._interfaceScaleSpinBox.value() / 100)) # Convert percent to scale
             checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
             checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
             checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))
             checker.update(config.setBestCaseColour(self._bestCaseColourButton.colour()))
+            
             checker.update(config.setTagColour(app.TagLevel.Desirable, self._desirableTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Warning, self._warningTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Danger, self._dangerTagColourButton.colour()))
+
             checker.update(config.setZoneTagLevels(self._taggingMapFromTable(self._zoneTaggingTable)))
             checker.update(config.setStarPortTagLevels(self._taggingMapFromTable(self._starPortTaggingTable)))
             checker.update(config.setWorldSizeTagLevels(self._taggingMapFromTable(self._worldSizeTaggingTable)))
@@ -881,3 +941,12 @@ class ConfigDialog(gui.DialogEx):
             html=_WelcomeMessage,
             noShowAgainId='ConfigWelcome')
         message.exec()
+
+    def _enableProxyToggled(self, value: int) -> None:
+        enabled = value != 0
+        self._proxyPortSpinBox.setEnabled(enabled)
+        self._proxyHostPoolSizeSpinBox.setEnabled(enabled)
+        self._proxyMapUrlLineEdit.setEnabled(enabled)
+        self._proxyTileCacheSizeSpinBox.setEnabled(enabled)
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(enabled)
+        self._proxySvgCompositionCheckBox.setEnabled(enabled)

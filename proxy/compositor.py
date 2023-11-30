@@ -24,10 +24,6 @@ import travellermap
 import typing
 import xml.etree.ElementTree
 
-# TODO: When I make this a user configurable option, changing it should trigger
-# clearing the tile cache
-_FullSvgRendering = False
-
 _LayersTableSchema = 1
 _LayersTableName = 'layers_cache'
 
@@ -239,9 +235,11 @@ class Compositor(object):
 
     def __init__(
             self,
+            svgComposition: bool,
             customMapsDir: str,
             mapDatabase: proxy.Database
             ) -> OverlapType:
+        self._svgComposition = svgComposition
         self._customMapsDir = customMapsDir
         self._mapDatabase = mapDatabase
         self._milieuSectorMap: typing.Dict[travellermap.Milieu, typing.List[_CustomSector]] = {}
@@ -349,7 +347,7 @@ class Compositor(object):
 
             # If full SVG rendering is disabled the process poll won't be used any more so may
             # as well shut it down
-            if not _FullSvgRendering:
+            if not self._svgComposition:
                 self._processExecutor.shutdown(wait=True, cancel_futures=True)
                 self._processExecutor = None
 
@@ -696,7 +694,7 @@ class Compositor(object):
             mapFormat = mapImage.format()
 
             if mapFormat == travellermap.MapFormat.SVG:
-                if _FullSvgRendering:
+                if self._svgComposition:
                     customSector.addMapPoster(_CompositorImage(
                         imageType=_CompositorImage.ImageType.SVG,
                         mainImage=mapBytes,

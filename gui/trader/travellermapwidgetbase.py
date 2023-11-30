@@ -624,7 +624,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             
                 return Util.real_fetchImage(url, img);
             }};
-            """.format(poolSize=app.Config.instance().mapProxyPoolSize())
+            """.format(poolSize=app.Config.instance().proxyHostPoolSize())
         self._runScript(script)
 
     # NOTE: The 'tilt' url parameter isn't supported as it doesn't draw properly in the Qt widget
@@ -636,12 +636,11 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        mapProxyPort = app.Config.instance().mapProxyPort()
-        if mapProxyPort:
+        if app.Config.instance().proxyEnabled():
             # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
             # using localhost causes the web widget to be incredibly slow to update tiles
             # as you zoom in and out.
-            indexUrl = f'http://127.0.0.1:{mapProxyPort}'
+            indexUrl = f'http://127.0.0.1:{app.Config.instance().proxyPort()}'
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 
@@ -660,7 +659,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         url = self._generateUrl()
         logging.debug(f'TravellerMapWidget loading {url.toString()}')
 
-        if app.Config.instance().mapProxyPort():
+        if app.Config.instance().proxyEnabled():
             self._injectImageHostRoundRobin()
 
         self._mapWidget.load(url)

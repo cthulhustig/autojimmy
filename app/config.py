@@ -21,10 +21,16 @@ class Config(object):
     _ConfigFileName = 'autojimmy.ini'
 
     _LogLevelKeyName = 'Debug/LogLevel'
-    _TravellerMapUrlKeyName = 'TravellerMap/SiteUrl'
-    _MapProxyPortKeyName = 'TravellerMap/ProxyPort'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
+
+    _ProxyEnabledKeyName = 'Proxy/Enabled'
+    _ProxyPortKeyName = 'Proxy/Port'
+    _ProxyHostPoolSizeKeyName = 'Proxy/HostPoolSize'
+    _ProxyMapUrlKeyName = 'Proxy/MapUrl'
+    _ProxyTileCacheSizeKeyName = 'Proxy/TileCacheSize'
+    _ProxyTileCacheLifetimeKeyName = 'Proxy/TileCacheLifetime'
+    _ProxySvgCompositionKeyName = 'Proxy/SvgComposition'
 
     _RulesKeyName = 'Game/Rules'
     _PlayerBrokerDmKeyName = 'Game/PlayerBrokerDM'
@@ -197,34 +203,91 @@ class Config(object):
             self._settings.remove(Config._LogLevelKeyName)
 
         return True # Restart required
-
-    def travellerMapUrl(self) -> str:
-        return self._travellerMapUrl
-
-    def setTravellerMapUrl(self, url: str) -> bool:
-        if url == self._travellerMapUrl:
+    
+    def proxyEnabled(self) -> bool:
+        return self._proxyEnabled
+    
+    def setProxyEnabled(self, enabled: bool) -> bool:
+        if enabled == self._proxyEnabled:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._TravellerMapUrlKeyName, url)
+        self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
         return True # Restart required
-
-    # NOTE: If this returns 0 it means the proxy is disabled
-    def mapProxyPort(self) -> int:
-        return self._mapProxyPort
     
-    def mapProxyPoolSize(self) -> int:
-        return 4 # TODO: Hook up somewhere
+    # NOTE: If this returns 0 it means the proxy is disabled
+    def proxyPort(self) -> int:
+        return self._proxyPort
 
-    def setMapProxyPort(
+    def setProxyPort(
             self,
             port: int # 0 == proxy disabled
             ) -> None:
-        if port == self._mapProxyPort:
+        if port == self._proxyPort:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._MapProxyPortKeyName, port)
+        self._settings.setValue(Config._ProxyPortKeyName, port)
+        return True # Restart required
+    
+    # Number of loopback addresses to listen on to work around 6 connection per
+    # host limit
+    def proxyHostPoolSize(self) -> int:
+        return self._proxyHostPoolSize
+    
+    def setProxyHostPoolSize(self, size: int) -> bool: 
+        if size == self._proxyHostPoolSize:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyHostPoolSizeKeyName, size)
+        return True # Restart required
+    
+    # The Traveller Map URL used by the proxy
+    def proxyMapUrl(self) -> str:
+        return self._proxyMapUrl
+
+    def setProxyMapUrl(self, url: str) -> bool:
+        if url == self._proxyMapUrl:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyMapUrlKeyName, url)
+        return True # Restart required    
+    
+    # Size of tile cache in bytes
+    def proxyTileCacheSize(self) -> int:
+        return self._proxyTileCacheSize
+    
+    def setProxyTileCacheSize(self, size: int) -> bool:
+        if size == self._proxyTileCacheSize:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyTileCacheSizeKeyName, size)
+        return True # Restart required
+    
+    # Lifetime of cache entries in days
+    def proxyTileCacheLifetime(self) -> int:
+        return self._proxyTileCacheLifetime
+    
+    def setProxyTileCacheLifetime(self, days: int) -> bool:
+        if days == self._proxyTileCacheLifetime:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyTileCacheLifetimeKeyName, days)
+        return True # Restart required
+    
+    def proxySvgCompositionEnabled(self) -> bool:
+        return self._proxySvgComposition
+    
+    def setProxySvgCompositionEnabled(self, enabled) -> bool:
+        if enabled == self._proxySvgComposition:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxySvgCompositionKeyName, enabled)
         return True # Restart required
 
     def milieu(self) -> travellermap.Milieu:
@@ -1005,14 +1068,34 @@ class Config(object):
             key=Config._LogLevelKeyName,
             default=logging.WARNING)
 
-        self._travellerMapUrl = self._loadUrlSetting(
-            key=Config._TravellerMapUrlKeyName,
-            default=travellermap.TravellerMapBaseUrl)
-        self._mapProxyPort = self._loadIntSetting(
-            key=Config._MapProxyPortKeyName,
+        self._proxyEnabled = self._loadBoolSetting(
+            key=Config._ProxyEnabledKeyName,
+            default=True)
+        self._proxyPort = self._loadIntSetting(
+            key=Config._ProxyPortKeyName,
             default=61977,
-            minValue=0,
+            minValue=1024, # Don't allow system ports
             maxValue=65535)
+        self._proxyHostPoolSize = self._loadIntSetting(
+            key=Config._ProxyHostPoolSizeKeyName,
+            default=4,
+            minValue=1,
+            maxValue=10)
+        self._proxyMapUrl = self._loadUrlSetting(
+            key=Config._ProxyMapUrlKeyName,
+            default=travellermap.TravellerMapBaseUrl)
+        self._proxyTileCacheSize = self._loadIntSetting(
+            key=Config._ProxyTileCacheSizeKeyName,
+            default=500 * 1000 * 1000, # 500MB
+            minValue=0)
+        self._proxyTileCacheLifetime = self._loadIntSetting(
+            key=Config._ProxyTileCacheLifetimeKeyName,
+            default=14, # Days
+            minValue=0)
+        self._proxySvgComposition = self._loadBoolSetting(
+            key=Config._ProxySvgCompositionKeyName,
+            default=False)
+                
         self._milieu = self._loadEnumSetting(
             key=Config._MilieuKeyName,
             default=travellermap.Milieu.M1105,

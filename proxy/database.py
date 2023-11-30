@@ -73,6 +73,8 @@ async def readDbMetadataAsync(
 
         if type == datetime.datetime:
             return stringToDbTimestamp(row[0])
+        elif type == bool:
+            return str(row[0]).lower() == 'true'
         return type(row[0])
 
 async def writeDbMetadataAsync(

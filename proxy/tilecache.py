@@ -15,6 +15,7 @@ _TileTableName = 'tile_cache'
 _UniverseTimestampConfigKey = 'tile_cache_universe_timestamp'
 _CustomSectorTimestampConfigKey = 'tile_cache_custom_timestamp'
 _MapUrlConfigKey = 'tile_cache_map_url'
+_SvgCompositionConfigKey = 'tile_cache_svg_composition'
 _SqliteCacheKiB = 51200 # 50MiB
 
 _SetConnectionPragmaScript = \
@@ -79,8 +80,11 @@ _DeleteTileQuery = \
 _DeleteExpiredTilesQuery = \
     f'DELETE FROM {_TileTableName} WHERE created <= :expiry;'
 
-_DeleteUniverseTilesQuery = \
+_DeleteStockTilesQuery = \
     f'DELETE FROM {_TileTableName} WHERE overlap != "complete"'
+
+_DeleteCustomSectorTilesQuery = \
+    f'DELETE FROM {_TileTableName} WHERE overlap != "none"'
 
 _DeleteAllTilesQuery = f'DELETE FROM {_TileTableName};'
 
@@ -91,80 +95,77 @@ _OverlapTypeToDatabaseStringMap = {
 }
 _DatabaseStringToOverlapTypeMap = {v: k for k, v in _OverlapTypeToDatabaseStringMap.items()}
 
+class _DiskEntry(object):
+    def __init__(
+            self,
+            tileQuery: str,
+            mapFormat: travellermap.MapFormat,
+            fileSize: int,
+            tileMilieu: travellermap.milieu,
+            tilePosition: typing.Tuple[int, int],
+            tileDimensions: typing.Tuple[int, int],
+            tileScale: int,
+            overlapType: proxy.Compositor.OverlapType,
+            createdTime: datetime.datetime,
+            usedTime: typing.Optional[datetime.datetime] = None
+            ) -> None:
+        self._tileQuery = tileQuery
+        self._mapFormat = mapFormat
+        self._fileSize = fileSize
+        self._tileMilieu = tileMilieu
+        self._tilePosition = tilePosition
+        self._tileDimensions = tileDimensions
+        self._tileScale = tileScale
+        self._overlapType = overlapType
+        self._createdTimestamp = createdTime
+        self._usedTimestamp = usedTime if usedTime != None else createdTime
+
+    def tileQuery(self) -> str:
+        return self._tileQuery
+
+    def mapFormat(self) -> str:
+        return self._mapFormat
+
+    def fileSize(self) -> str:
+        return self._fileSize
+
+    def tileMilieu(self) -> travellermap.Milieu:
+        return self._tileMilieu
+
+    def tileX(self) -> int:
+        return self._tilePosition[0]
+
+    def tileY(self) -> int:
+        return self._tilePosition[1]
+
+    def tilePosition(self) -> typing.Tuple[int, int]:
+        return self._tilePosition
+
+    def tileWidth(self) -> int:
+        return self._tileDimensions[0]
+
+    def tileHeight(self) -> int:
+        return self._tileDimensions[1]
+
+    def tileDimensions(self) -> typing.Tuple[int, int]:
+        return self._tileDimensions
+
+    def tileScale(self) -> int:
+        return self._tileScale
+
+    def overlapType(self) -> proxy.Compositor.OverlapType:
+        return self._overlapType
+
+    def createdTime(self) -> datetime.datetime:
+        return self._createdTimestamp
+
+    def usedTime(self) -> datetime.datetime:
+        return self._usedTimestamp
+
+    def markUsed(self) -> None:
+        self._usedTimestamp = common.utcnow()
+
 class TileCache(object):
-    class _DiskEntry(object):
-        def __init__(
-                self,
-                tileQuery: str,
-                mapFormat: travellermap.MapFormat,
-                fileSize: int,
-                tileMilieu: travellermap.milieu,
-                tilePosition: typing.Tuple[int, int],
-                tileDimensions: typing.Tuple[int, int],
-                tileScale: int,
-                overlapType: proxy.Compositor.OverlapType,
-                createdTime: datetime.datetime,
-                usedTime: typing.Optional[datetime.datetime] = None
-                ) -> None:
-            self._tileQuery = tileQuery
-            self._mapFormat = mapFormat
-            self._fileSize = fileSize
-            self._tileMilieu = tileMilieu
-            self._tilePosition = tilePosition
-            self._tileDimensions = tileDimensions
-            self._tileScale = tileScale
-            self._overlapType = overlapType
-            self._createdTimestamp = createdTime
-            self._usedTimestamp = usedTime if usedTime != None else createdTime
-
-        def tileQuery(self) -> str:
-            return self._tileQuery
-
-        def mapFormat(self) -> str:
-            return self._mapFormat
-
-        def fileSize(self) -> str:
-            return self._fileSize
-
-        def tileMilieu(self) -> travellermap.Milieu:
-            return self._tileMilieu
-
-        def tileX(self) -> int:
-            return self._tilePosition[0]
-
-        def tileY(self) -> int:
-            return self._tilePosition[1]
-
-        def tilePosition(self) -> typing.Tuple[int, int]:
-            return self._tilePosition
-
-        def tileWidth(self) -> int:
-            return self._tileDimensions[0]
-
-        def tileHeight(self) -> int:
-            return self._tileDimensions[1]
-
-        def tileDimensions(self) -> typing.Tuple[int, int]:
-            return self._tileDimensions
-
-        def tileScale(self) -> int:
-            return self._tileScale
-
-        def overlapType(self) -> proxy.Compositor.OverlapType:
-            return self._overlapType
-
-        def createdTime(self) -> datetime.datetime:
-            return self._createdTimestamp
-
-        def usedTime(self) -> datetime.datetime:
-            return self._usedTimestamp
-
-        def markUsed(self) -> None:
-            self._usedTimestamp = common.utcnow()
-
-    # TODO: Some of these should be configurable
-    _MaxDbCacheSizeBytes = 1 * 1024 * 1024 * 1024 # 1GiB
-    _MaxDbCacheExpiryAge = datetime.timedelta(days=7)
     _GarbageCollectInterval = datetime.timedelta(seconds=60)
 
     _TilesPerProgressStep = 100
@@ -173,7 +174,10 @@ class TileCache(object):
             self,
             travellerMapUrl: str,
             mapDatabase: proxy.Database,
-            maxMemBytes: typing.Optional[int] # None means no max
+            maxMemBytes: int,
+            maxDiskBytes: int, # A value of 0 disables the disk cache
+            tileLifetime: int, # A value of 0 disables eviction
+            svgComposition: bool
             ) -> None:
         self._travellerMapUrl = travellerMapUrl
         self._mapDatabase = mapDatabase
@@ -181,9 +185,12 @@ class TileCache(object):
         self._memCache: typing.OrderedDict[str, travellermap.MapImage] = collections.OrderedDict()
         self._memTotalBytes = 0
         self._memMaxBytes = maxMemBytes
-        self._diskCache: typing.OrderedDict[str, TileCache._DiskEntry] = collections.OrderedDict()
+        self._diskCache: typing.OrderedDict[str, _DiskEntry] = collections.OrderedDict()
         self._diskTotalBytes = 0
+        self._diskMaxBytes = maxDiskBytes
         self._diskPendingAdds: typing.Set[str] = set() # Tile query strings of adds that are pending
+        self._tileLifetime = datetime.timedelta(days=tileLifetime) if tileLifetime != 0 else None
+        self._svgComposition = svgComposition
         self._backgroundTasks: typing.Set[asyncio.Task] = set()
         self._garbageCollectTask = None
 
@@ -261,7 +268,7 @@ class TileCache(object):
                     # NOTE: In order for items to be inserted into the ordered dict cache in the correct
                     # order, this assumes that the database query returns the rows ordered by used time
                     # (oldest to newest)
-                    self._diskCache[tileQuery] = TileCache._DiskEntry(
+                    self._diskCache[tileQuery] = _DiskEntry(
                         tileQuery=tileQuery,
                         mapFormat=mapFormat,
                         fileSize=fileSize,
@@ -369,9 +376,9 @@ class TileCache(object):
         self._memCache[tileQuery] = tileImage
         self._memTotalBytes += size
 
-        if cacheToDisk and (tileQuery not in self._diskPendingAdds):
+        if cacheToDisk and (self._diskMaxBytes > 0) and (tileQuery not in self._diskPendingAdds):
             # Writing to the database is done as a future so as not to block the caller
-            diskEntry = TileCache._DiskEntry(
+            diskEntry = _DiskEntry(
                 tileQuery=tileQuery,
                 mapFormat=tileImage.format(),
                 fileSize=tileImage.size(),
@@ -394,6 +401,9 @@ class TileCache(object):
             # Move most recently used item to end of cache so it will be evicted last
             self._memCache.move_to_end(tileQuery, last=True)
             return data
+        
+        if self._diskMaxBytes <= 0:
+            return None # Disk cache is disabled
 
         # Not in memory so check the database cache
         diskEntry = self._diskCache.get(tileQuery)
@@ -472,7 +482,7 @@ class TileCache(object):
             configKey=_UniverseTimestampConfigKey,
             currentValueFn=travellermap.DataStore.instance().universeTimestamp,
             valueType=datetime.datetime,
-            deleteQuery=_DeleteUniverseTilesQuery,
+            deleteQuery=_DeleteStockTilesQuery,
             identString='universe timestamp')
 
         # If the custom sector timestamp has changed then delete all tiles.
@@ -492,6 +502,15 @@ class TileCache(object):
             valueType=str,
             deleteQuery=_DeleteAllTilesQuery,
             identString='map url')
+        
+        # If the SVG composition setting has changed, delete all tiles that overlap
+        # a custom sector
+        await self._checkKeyValidityAsync(
+            configKey=_SvgCompositionConfigKey,
+            currentValueFn=lambda: self._svgComposition,
+            valueType=bool,
+            deleteQuery=_DeleteCustomSectorTilesQuery,
+            identString='SVG composition')
 
     async def _checkKeyValidityAsync(
             self,
@@ -528,7 +547,7 @@ class TileCache(object):
         # Delete tiles from the the disk cache if either of the values couldn't
         # be read or the value stored in the database is not an exact match for
         # the current value
-        if (not cacheValue) or (not currentValue) or \
+        if (cacheValue is None) or (currentValue is None) or \
                 (cacheValue != currentValue):
             logging.info(
                 'Tile cache detected {ident} change (Current: {current}, Cached: {cached})'.format(
@@ -544,7 +563,7 @@ class TileCache(object):
                                 count=cursor.rowcount,
                                 ident=identString))
 
-                if currentValue:
+                if currentValue is not None:
                     await proxy.writeDbMetadataAsync(
                         connection=self._dbConnection,
                         key=configKey,
@@ -650,7 +669,7 @@ class TileCache(object):
         # Remove expired tiles from the disk cache. This assumes the disk cache
         # is maintained in order of last usage (oldest to newest).
         queryArgs = []
-        while self._diskTotalBytes > TileCache._MaxDbCacheSizeBytes:
+        while self._diskTotalBytes > self._diskMaxBytes:
             _, diskEntry = self._diskCache.popitem(last=False)
             self._diskTotalBytes -= diskEntry.fileSize()
             queryArgs.append({'query': diskEntry.tileQuery()})
@@ -675,9 +694,14 @@ class TileCache(object):
                 exc_info=ex)
 
     async def _purgeByAgeAsync(self) -> None:
-        expiryTime = common.utcnow() - TileCache._MaxDbCacheExpiryAge
+        if self._tileLifetime is None:
+            logging.debug(
+                f'Purging tile disk cache entries by age is disabled')
+            return
+
+        purgeTime = common.utcnow() - self._tileLifetime
         logging.debug(
-            f'Purging tile disk cache entries up to {expiryTime}')
+            f'Purging tile disk cache entries up to {purgeTime}')
 
         # Remove expired tiles from the disk cache
         purged = 0
@@ -690,7 +714,7 @@ class TileCache(object):
 
             # Check if the disk entry has expired. The creation time is used
             # for this as the intention is all entries should be purged eventually
-            if diskEntry.createdTime() > expiryTime:
+            if diskEntry.createdTime() > purgeTime:
                 continue # The entry hasn't expired
 
             # Remove entry from disk cache, this will prevent any further lookups from
@@ -708,7 +732,7 @@ class TileCache(object):
 
         # Remove expired tiles from the database
         try:
-            queryArgs = {'expiry': proxy.dbTimestampToString(timestamp=expiryTime)}
+            queryArgs = {'expiry': proxy.dbTimestampToString(timestamp=purgeTime)}
             async with self._dbConnection.execute(_DeleteExpiredTilesQuery, queryArgs):
                 pass
             await self._dbConnection.commit()
@@ -716,7 +740,7 @@ class TileCache(object):
             raise
         except Exception as ex:
             logging.error(
-                f'An error occurred when purging disk cache entries up to {expiryTime}',
+                f'An error occurred when purging disk cache entries up to {purgeTime}',
                 exc_info=ex)
 
     async def _garbageCollectAsync(self) -> None:

@@ -44,7 +44,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         try:
             self._loadJob = jobs.StartupJob(
                 parent=self,
-                startProxy=app.Config.instance().mapProxyPort() != 0,
+                startProxy=app.Config.instance().proxyEnabled(),
                 progressCallback=self._updateProgress,
                 finishedCallback=self._startupFinished)
         except Exception as ex:

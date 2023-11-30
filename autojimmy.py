@@ -247,19 +247,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self._customSectorsButton = QtWidgets.QPushButton('Custom Sectors...', self)
         self._customSectorsButton.clicked.connect(self._showCustomSectorsWindow)
 
-        self._configurationButton = QtWidgets.QPushButton('Configuration...', self)
-        self._configurationButton.clicked.connect(self._showConfiguration)
-
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
+
+        self._configurationButton = QtWidgets.QPushButton('Configuration...', self)
+        self._configurationButton.clicked.connect(self._showConfiguration)
 
         self._aboutButton = QtWidgets.QPushButton('About...', self)
         self._aboutButton.clicked.connect(self._showAbout)
 
         systemLayout = QtWidgets.QVBoxLayout()
         systemLayout.addWidget(self._customSectorsButton)
-        systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._downloadButton)
+        systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._aboutButton)
         systemGroupBox = QtWidgets.QGroupBox('System')
         systemGroupBox.setLayout(systemLayout)
@@ -417,23 +417,28 @@ def main() -> None:
 
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
-        travellerMapUrl = app.Config.instance().travellerMapUrl()
-        mapProxyPort = app.Config.instance().mapProxyPort()
-        if mapProxyPort:
+        if app.Config.instance().proxyEnabled():
+            proxyPort = app.Config.instance().proxyPort()
+
             proxy.MapProxy.configure(
-                listenPort=mapProxyPort,
-                hostPoolSize=app.Config.instance().mapProxyPoolSize(),
-                travellerMapUrl=travellerMapUrl,
+                listenPort=proxyPort,
+                hostPoolSize=app.Config.instance().proxyHostPoolSize(),
+                travellerMapUrl=app.Config.instance().proxyMapUrl(),
+                tileCacheSize=app.Config.instance().proxyTileCacheSize(),
+                tileCacheLifetime=app.Config.instance().proxyTileCacheLifetime(),
+                svgComposition=app.Config.instance().proxySvgCompositionEnabled(),
+                mainsMilieu=app.Config.instance().milieu(),
                 installDir=installDir,
                 appDir=appDir,
-                mainsMilieu=app.Config.instance().milieu(),
                 logDir=logDirectory,
                 logLevel=logLevel)
 
-        travellermap.TileClient.configure(
-            mapBaseUrl=travellerMapUrl,
-            mapProxyPort=mapProxyPort)
+            travellermap.TileClient.configure(mapProxyPort=proxyPort)
+        else:
+            travellermap.TileClient.configure(mapProxyPort=None)
 
+        # TODO: If the proxy fails to start (e.g. if it fails to bind to it's port) then the user should
+        # be given the option to disable the proxy and continue
         startupProgress = gui.StartupProgressDialog()
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             raise startupProgress.exception()

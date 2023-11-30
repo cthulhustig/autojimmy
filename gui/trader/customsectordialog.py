@@ -50,10 +50,10 @@ _WelcomeMessage = """
     <ul style="margin-left:15px; -qt-list-indent:0;">
     <li><i>Bitmap</i> - This is the fallback mode if CairoSVG is not installed. {name} uses Traveller Map to
     generate bitmap posters for composition. This method suffers from the most graphical artifacts.</li>
-    <li><i>Hybrid SVG</i> - This is the default mode if CairoSVG is installed. {name} uses Traveller Map to
+    <li><i>Hybrid</i> - This is the default mode if CairoSVG is installed. {name} uses Traveller Map to
     generate SVG posters, these posters are pre-processed and converted to bitmap layers prior to composition.
     This method prevents some of the graphical artifacts around the borders of custom sectors.</li>
-    <li><i>Full SVG</i> - This method of composition can be enabled from the configuration dialog if CairoSVG
+    <li><i>SVG</i> - This method of composition can be enabled from the configuration dialog if CairoSVG
     is installed. {name} uses Traveller Map to generate SVG posters, these SVG posters are only converted to
     bitmaps at the point tile composition occurs. This method prevents pixelisation at high zoom levels
     and some of the graphical artifacts around the borders, however it's <b>significantly</b> more processor
@@ -711,7 +711,7 @@ class _NewSectorDialog(gui.DialogEx):
             # Always send poster requests directly to the configured traveller map instance.
             # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
             # to add support for proxying multipart/form-data
-            mapUrl = app.Config.instance().travellerMapUrl()
+            mapUrl = app.Config.instance().proxyMapUrl()
 
             xmlMetadata = None
             try:
@@ -831,7 +831,7 @@ class _NewSectorDialog(gui.DialogEx):
             # Always send linter requests directly to the configured traveller map instance.
             # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
             # to add support for proxying multipart/form-data
-            mapUrl = app.Config.instance().travellerMapUrl()
+            mapUrl = app.Config.instance().proxyMapUrl()
 
             # Try to parse the sector format now to prevent it failing after the user has waited
             # to create the posters. This is only really needed for cases where Traveller Map is
