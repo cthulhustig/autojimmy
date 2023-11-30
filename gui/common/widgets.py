@@ -738,6 +738,25 @@ class ComboBoxEx(QtWidgets.QComboBox):
                 return
         self.addItem(text, userData)
 
+    def userDataByIndex(
+            self,
+            index
+            ) -> typing.Any:
+        return self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+    
+    def currentUserData(self) -> typing.Any:
+        return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
+    
+    def setCurrentByUserData(
+            self,
+            userData: typing.Any = None
+            ) -> None:
+        for index in range(self.count()):
+            itemData = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+            if userData == itemData:
+                self.setCurrentIndex(index)
+                return
+
     def setSelection(
             self,
             start: int,

@@ -1,4 +1,5 @@
 import app
+import depschecker
 import enum
 import gui
 import logging
@@ -315,29 +316,34 @@ class ConfigDialog(gui.DialogEx):
         self._proxyEnabledCheckBox = gui.CheckBoxEx()
         self._proxyEnabledCheckBox.setChecked(app.Config.instance().proxyEnabled())
         self._proxyEnabledCheckBox.stateChanged.connect(self._enableProxyToggled)
-        # TODO: Tool tip
+        self._proxyEnabledCheckBox.setToolTip(gui.createStringToolTip(
+            '<p>Enable or disable the Traveller Map proxy.</p>'
+            '<p>By default, {app} uses a local proxy to access Traveller Map. '
+            'Using this proxy has two main benefits:</p>'
+            '<ul style="margin-left:15px; -qt-list-indent:0;">'
+            '<li>It allows {app} to overlay custom sectors on tiles returned '
+            'by Traveller Map, in order to have them rendered in the map '
+            'views.</li>'
+            '<li>It allows {app} to create a persistent cache of the tiles '
+            'returned by Traveller Map, this allows quicker rendering when '
+            'viewing sections of the map you\'ve previously viewed.</li>'
+            '</ul>'
+            '<p>For security, this proxy only listens on localhost, meaning '
+            'it can only be accessed from the system {app} is running on. '
+            'The proxy also only allows access to the Traveller Map URL '
+            'configured below.<p>'.format(app=app.AppName) +
+            restartRequiredText,
+            escape=False))
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
         self._proxyPortSpinBox.setRange(1024, 65535)
         self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
         self._proxyPortSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        # TODO: This tooltip needs updated, cover 
         self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the port the local Traveller Map proxy will listen on.</p>' +
-            f'<p>By default {app.AppName} uses a local proxy to access Traveller Map. ' +
-            'Using this proxy has two main benefits:</p>' +
-            '<ul style="margin-left:15px; -qt-list-indent:0;">' +
-            f'<li>It allows {app.AppName} to overlay custom sectors on tiles returned by ' +
-            'Traveller Map, in order to have them rendered in the integrated map views.</li>' +
-            '<li>It allocates more memory to be used for caching tiles in order to ' +
-            'improve performance when doing a lot of scrolling & zooming.</li>' +
-            '</ul>' +
-            '<p>For increased security, this proxy only listens on localhost, meaning ' +
-            f'it can only be accessed from the system {app.AppName} is running on. ' +
-            'The proxy also only allows access to the Traveller Map URL configured ' +
-            'below.<p>' +
-            '<p>You may need to change the port the proxy listens on if there is a ' +
-            'conflict with another service running on you system.</p>' +
+            '<p>Specify the port the local Traveller Map proxy will listen '
+            'on.</p>' \
+            '<p>You may need to change the port the proxy listens on if there '
+            'is a conflict with another service running on your system.</p>' +
             restartRequiredText,
             escape=False))
         
@@ -345,14 +351,34 @@ class ConfigDialog(gui.DialogEx):
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
         self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
         self._proxyHostPoolSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        # TODO: Tooltip
+        self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the number of localhost addresses the proxy will '
+            'listen on.</p>'
+            '<p>The Chromium browser that {app} uses to display Traveller Map '
+            'has a hard coded limit of 6 simultaneous connections to a single '
+            'host. This is a standard feature of browsers to prevent excessive '
+            'load being put on a site. However, this limitation can reduce '
+            'rendering performance as the browser may delay requests for tiles '
+            'that the proxy could satisfy using its tile cache. To work around '
+            'this issue, the proxy can listen on multiple localhost addresses '
+            '(e.g. 127.0.0.1, 127.0.0.2), with requests for tiles are then '
+            'spread evenly over all these addresses.</p>'
+            '<p><b>This setting only affects the number of simultaneous '
+            'connections made to the proxy in order to allow better use of the '
+            'tile cache. The proxy will enforce a limit of 6 simultaneous '
+            'outgoing connections to travellermap.com in order to not place '
+            'additional load on the site.</b></p>'.format(app=app.AppName) +
+            restartRequiredText,
+            escape=False))
         
         self._proxyMapUrlLineEdit = gui.LineEditEx()
         self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
         self._proxyMapUrlLineEdit.setEnabled(self._proxyEnabledCheckBox.isChecked())
         self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
-            '<p>If you run your own copy of Traveller Map, you can specify it\'s URL here.</p>' +
+            '<p>Specify the URL the proxy will use to access Traveller Map.</p>'
+            '<p>If you run your own copy of Traveller Map, you can specify its '
+            'URL here.</p>' +
             restartRequiredText,
             escape=False))
 
@@ -362,21 +388,61 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheSizeSpinBox.setValue(
             int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
         self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        # TODO: Tooltip
+        self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the amount of disk space to use to cache tiles.</p>'
+            '<p>When the cache size reaches the specified limit, tiles will be '
+            'automatically removed starting with the least recently used. A '
+            'size of 0 will disable the disk cache.' +
+            restartRequiredText,
+            escape=False))
 
         self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
         self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
         self._proxyTileCacheLifetimeSpinBox.setValue(
             app.Config.instance().proxyTileCacheLifetime())
         self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        # TODO: Tooltip
+        self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the max time the proxy will cache a tile on disk.</p>' 
+            '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
+            restartRequiredText,
+            escape=False))
 
-        self._proxySvgCompositionCheckBox = gui.CheckBoxEx()
-        self._proxySvgCompositionCheckBox.setChecked(
-            app.Config.instance().proxySvgCompositionEnabled())
-        self._proxySvgCompositionCheckBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        # TODO: Tooltip
-        # TODO: Probably also want a warning popup if the user enables this        
+        # The proxy mode control is only shown if CairoSVG is detected. It's used
+        # to set the flag to indicate if SVG composition is enabled. It's shown as a
+        # combo box to make it easier to explain to the user what the difference is
+        # between having it enabled and disabled.
+        self._proxyCompositionModeComboBox = gui.ComboBoxEx()
+        self._proxyCompositionModeComboBox.addItem('Hybrid', False)
+        self._proxyCompositionModeComboBox.addItem('SVG', True)
+        self._proxyCompositionModeComboBox.setCurrentByUserData(
+            userData=app.Config.instance().proxySvgCompositionEnabled())
+        self._proxyCompositionModeComboBox.setEnabled(
+            self._proxyEnabledCheckBox.isChecked())
+        self._proxyCompositionModeComboBox.setHidden(
+            not depschecker.DetectedCairoSvgState)        
+        self._proxyCompositionModeComboBox.currentIndexChanged.connect(
+            self._proxyModeChanged)
+        self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
+            '<p>Change the type of composition used when overlaying custom '
+            'sectors onto tiles from Traveller Map.</p>'  
+            '<p>When CairoSVG is installed, there are multiple ways the proxy '
+            'can composite tiles.</p>' 
+            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+            '<li><b>Hybrid</b> - Traveller map is used to generate SVG posters '
+            'of the custom sectors, however, these posters are processed to '
+            'split them into multiple bitmap layers prior to composition. '
+            'These bitmap layers are then used to composite individual tiles. '
+            'This method is fast but can result in slight blockiness at '
+            'higher zoom levels.'
+            '<li><b>SVG</b> - Traveller map is used to generate SVG posters of '
+            'the custom sectors and these SVG are composited directly onto '
+            'tiles. This prevents blockiness at high zoom levels, however, '
+            'it\'s <b>significantly</b> more CPU intensive than Hybrid '
+            'composition and should only be used on systems with high core '
+            'counts (and even then I don\'t really recommend it).</ul> '
+            '</ul>' +
+            restartRequiredText,
+            escape=False))  
 
         proxyLayout = gui.FormLayoutEx()
         proxyLayout.addRow('Enabled:', self._proxyEnabledCheckBox)
@@ -385,10 +451,10 @@ class ConfigDialog(gui.DialogEx):
         proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
         proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
         proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
-        proxyLayout.addRow('SVG Composition:', self._proxySvgCompositionCheckBox)
+        proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
 
         proxyGroupBox = QtWidgets.QGroupBox('Proxy')
-        proxyGroupBox.setLayout(proxyLayout)        
+        proxyGroupBox.setLayout(proxyLayout)
 
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
@@ -412,8 +478,8 @@ class ConfigDialog(gui.DialogEx):
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
         self._showToolTipImagesCheckBox.setChecked(app.Config.instance().showToolTipImages())
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
-            '<p>Display world images in tool tips</p>' \
-            f'<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
+            '<p>Display world images in tool tips</p>'
+            '<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
             'recommended to disable this setting if operating offline or with a slow connection. Tool '
             'tip images are cached, however the first time a tool tip for a given world is displayed it '
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
@@ -784,7 +850,7 @@ class ConfigDialog(gui.DialogEx):
             checker.update(config.setProxyTileCacheLifetime(
                 self._proxyTileCacheLifetimeSpinBox.value()))
             checker.update(config.setProxySvgCompositionEnabled(
-                self._proxySvgCompositionCheckBox.isChecked()))
+                self._proxyCompositionModeComboBox.currentUserData()))
             
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
             checker.update(config.setInterfaceScale(
@@ -949,4 +1015,12 @@ class ConfigDialog(gui.DialogEx):
         self._proxyMapUrlLineEdit.setEnabled(enabled)
         self._proxyTileCacheSizeSpinBox.setEnabled(enabled)
         self._proxyTileCacheLifetimeSpinBox.setEnabled(enabled)
-        self._proxySvgCompositionCheckBox.setEnabled(enabled)
+        self._proxyCompositionModeComboBox.setEnabled(enabled)
+
+    def _proxyModeChanged(self) -> None:
+        if not self._proxyCompositionModeComboBox.currentUserData():
+            return # Hybrid is selected, nothing to do
+        gui.AutoSelectMessageBox.warning(
+            text='SVG composition is VERY processor intensive and should only '
+                'be used on systems with high core counts.',
+            stateKey='SvgCompositionPerformanceWarning')

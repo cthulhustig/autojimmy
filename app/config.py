@@ -1087,11 +1087,11 @@ class Config(object):
         self._proxyTileCacheSize = self._loadIntSetting(
             key=Config._ProxyTileCacheSizeKeyName,
             default=500 * 1000 * 1000, # 500MB
-            minValue=0)
+            minValue=0) # 0 means disable cache
         self._proxyTileCacheLifetime = self._loadIntSetting(
             key=Config._ProxyTileCacheLifetimeKeyName,
             default=14, # Days
-            minValue=0)
+            minValue=0) # 0 means never expire
         self._proxySvgComposition = self._loadBoolSetting(
             key=Config._ProxySvgCompositionKeyName,
             default=False)

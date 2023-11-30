@@ -30,7 +30,7 @@ _WelcomeMessage = """
     <li>The eye candy style isn't supported.</li>
     <li>The overlaying of custom sector posters onto tiles is not perfect. You may see some graphical
     artifacts around the borders where custom sectors meet other sectors. You may also notice some
-    pixelisation at high zoom levels.</li>
+    blockiness at high zoom levels.</li>
     <li>Custom sector and metadata files need to be created manually, {name} has no tools for editing
     these files.</li>
     <li>Supported data formats are:
@@ -55,9 +55,9 @@ _WelcomeMessage = """
     This method prevents some of the graphical artifacts around the borders of custom sectors.</li>
     <li><i>SVG</i> - This method of composition can be enabled from the configuration dialog if CairoSVG
     is installed. {name} uses Traveller Map to generate SVG posters, these SVG posters are only converted to
-    bitmaps at the point tile composition occurs. This method prevents pixelisation at high zoom levels
-    and some of the graphical artifacts around the borders, however it's <b>significantly</b> more processor
-    intensive than other methods and only really suitable for systems with high core counts.</ul>
+    bitmaps at the point tile composition occurs. This method prevents blockiness at high zoom levels
+    and some of the graphical artifacts around the borders, however it's <b>significantly</b> more CPU
+    intensive than other methods and only suitable for systems with high core counts.</ul>
     </ul></p>
     </html>
 """.format(name=app.AppName)
