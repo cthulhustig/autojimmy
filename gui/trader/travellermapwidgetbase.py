@@ -3,6 +3,7 @@ import common
 import gui
 import logic
 import logging
+import proxy
 import math
 import os
 import re
@@ -636,11 +637,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        if app.Config.instance().proxyEnabled():
-            # IMPORTANT: Use 127.0.0.1 instead of localhost. For reasons I don't understand,
-            # using localhost causes the web widget to be incredibly slow to update tiles
-            # as you zoom in and out.
-            indexUrl = f'http://127.0.0.1:{app.Config.instance().proxyPort()}'
+        if proxy.MapProxy.instance().isRunning():
+            indexUrl =  proxy.MapProxy.instance().accessUrl()
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 

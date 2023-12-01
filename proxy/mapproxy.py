@@ -25,8 +25,9 @@ async def _serverHeaderMiddlewareAsync(
         request: aiohttp.web.Request,
         handler: typing.Callable[[aiohttp.web.Request], aiohttp.web.Response]
         ):
-    response: aiohttp.web.Response = await handler(request)
-    response.headers['Server'] = f'{app.AppName} Map Proxy {app.AppVersion}'
+    response = await handler(request)
+    if isinstance(response, aiohttp.web.Response):
+        response.headers['Server'] = f'{app.AppName} Map Proxy {app.AppVersion}'
     return response
 
 class MapProxy(object):
@@ -180,6 +181,12 @@ class MapProxy(object):
         while not self._messageQueue.empty():
             self._messageQueue.get()
         self._status = MapProxy.ServerStatus.Stopped
+
+    def isRunning(self) -> bool:
+        return self._status is MapProxy.ServerStatus.Started
+    
+    def accessUrl(self) -> str:
+        return f'http://127.0.0.1:{self._listenPort}/'
 
     def status(self) -> 'MapProxy.ServerStatus':
         self._updateStatus()

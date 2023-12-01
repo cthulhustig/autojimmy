@@ -433,9 +433,11 @@ def main() -> None:
                 logDir=logDirectory,
                 logLevel=logLevel)
 
-            travellermap.TileClient.configure(mapProxyPort=proxyPort)
+            travellermap.TileClient.configure(
+                baseMapUrl=proxy.MapProxy.instance().accessUrl())
         else:
-            travellermap.TileClient.configure(mapProxyPort=None)
+            travellermap.TileClient.configure(
+                baseMapUrl=travellermap.TravellerMapBaseUrl)
 
         # TODO: If the proxy fails to start (e.g. if it fails to bind to it's port) then the user should
         # be given the option to disable the proxy and continue

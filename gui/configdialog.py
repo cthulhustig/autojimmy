@@ -1,11 +1,15 @@
 import app
+import asyncio
 import depschecker
 import enum
 import gui
+import json
 import logging
+import proxy
 import traveller
 import travellermap
 import typing
+import urllib.parse
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 _WelcomeMessage = """
@@ -28,6 +32,125 @@ _WelcomeMessage = """
     </ol></p>
     </html>
 """.format(name=app.AppName)
+
+
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class _ClearTileCacheDialog(QtWidgets.QDialog):
+    _WorkingDotCount = 5
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
+
+        self._request = None
+
+        self._workingLabel = gui.PrefixLabel(
+            prefix='Communicating with proxy')
+
+        self._workingTimer = QtCore.QTimer()
+        self._workingTimer.timeout.connect(self._workingTimerFired)
+        self._workingTimer.setInterval(500)
+        self._workingTimer.setSingleShot(False)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self._cancelRequest)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(self._workingLabel)
+        windowLayout.addWidget(self._cancelButton)
+
+        self.setWindowTitle('Clearing Cache')
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setSizeGripEnabled(False)
+        self.setLayout(windowLayout)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
+
+    def exec(self) -> int:
+        try:
+            clearCacheUrl = urllib.parse.urljoin(
+                proxy.MapProxy.instance().accessUrl(),
+                '/proxy/clearcache')
+            self._request = app.AsyncRequest(parent=self)
+            self._request.complete.connect(self._requestComplete)
+            self._request.get(
+                url=clearCacheUrl,
+                loop=asyncio.get_event_loop())
+        except Exception as ex:
+            message = 'Failed to initiate request to clear cache'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
+            # the window is shown
+            QtCore.QTimer.singleShot(0, self.close)
+
+        return super().exec()
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self._request:
+            self._request.cancel()
+            self._request = None
+        return super().closeEvent(a0)
+
+    def _cancelRequest(self) -> None:
+        if self._request:
+            self._request.cancel()
+            self._request = None
+        self.close()
+
+    def _requestComplete(
+            self,
+            result: typing.Union[app.AsyncResponse, Exception]
+            ) -> None:
+        self._workingTimer.stop()
+
+        if isinstance(result, app.AsyncResponse):
+            try:
+                response = json.loads(result.content().decode())
+                message = 'Cleared {memTiles} tiles from memory and {diskTiles} from disk'.format(
+                    memTiles=response["memoryTiles"],
+                    diskTiles=response["diskTiles"])
+                gui.MessageBoxEx.information(message)
+            except Exception as ex:
+                message = 'Clearing the tile cache succeeded but parsing response failed'
+                logging.warning(message, exc_info=ex)
+                gui.MessageBoxEx.warning(text=message, exception=ex)                
+            self.accept()
+        elif isinstance(result, Exception):
+            message = 'Request to clear tile cache failed'
+            logging.error(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+        else:
+            message = 'Request to clear tile cache returned an unexpected result'
+            logging.critical(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+
+    def _workingTimerFired(self) -> None:
+        text = self._workingLabel.text()
+        if (len(text) % _ClearTileCacheDialog._WorkingDotCount) == 0:
+            text = ''
+        text += '.'
+        self._workingLabel.setText(text)
 
 class ConfigDialog(gui.DialogEx):
     def __init__(
@@ -381,32 +504,7 @@ class ConfigDialog(gui.DialogEx):
             'URL here.</p>' +
             restartRequiredText,
             escape=False))
-
-        # NOTE: The tile cache size is shown in MB but is actually stored in bytes
-        self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
-        self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
-        self._proxyTileCacheSizeSpinBox.setValue(
-            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
-        self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the amount of disk space to use to cache tiles.</p>'
-            '<p>When the cache size reaches the specified limit, tiles will be '
-            'automatically removed starting with the least recently used. A '
-            'size of 0 will disable the disk cache.' +
-            restartRequiredText,
-            escape=False))
-
-        self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
-        self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
-        self._proxyTileCacheLifetimeSpinBox.setValue(
-            app.Config.instance().proxyTileCacheLifetime())
-        self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
-        self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the max time the proxy will cache a tile on disk.</p>' 
-            '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
-            restartRequiredText,
-            escape=False))
-
+        
         # The proxy mode control is only shown if CairoSVG is detected. It's used
         # to set the flag to indicate if SVG composition is enabled. It's shown as a
         # combo box to make it easier to explain to the user what the difference is
@@ -442,16 +540,51 @@ class ConfigDialog(gui.DialogEx):
             'counts (and even then I don\'t really recommend it).</ul> '
             '</ul>' +
             restartRequiredText,
-            escape=False))  
+            escape=False))          
+
+        # NOTE: The tile cache size is shown in MB but is actually stored in bytes
+        self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
+        self._proxyTileCacheSizeSpinBox.setValue(
+            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
+        self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the amount of disk space to use to cache tiles.</p>'
+            '<p>When the cache size reaches the specified limit, tiles will be '
+            'automatically removed starting with the least recently used. A '
+            'size of 0 will disable the disk cache.' +
+            restartRequiredText,
+            escape=False))
+
+        self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
+        self._proxyTileCacheLifetimeSpinBox.setValue(
+            app.Config.instance().proxyTileCacheLifetime())
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the max time the proxy will cache a tile on disk.</p>' 
+            '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
+            restartRequiredText,
+            escape=False))
+        
+        # NOTE: The button for clearing the tile cache is enabled/disabled 
+        # based on if the proxy is currently running not if the enable check
+        # box is currently checked. Clearing the cache is an immediate operation
+        # that requires sending a request to the proxy process so it only makes
+        # sense when it's actually running
+        self._clearTileCacheButton = QtWidgets.QPushButton('Clear Tile Cache')
+        self._clearTileCacheButton.setEnabled(proxy.MapProxy.instance().isRunning())
+        self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
 
         proxyLayout = gui.FormLayoutEx()
         proxyLayout.addRow('Enabled:', self._proxyEnabledCheckBox)
         proxyLayout.addRow('Port:', self._proxyPortSpinBox)
         proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
         proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
+        proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
         proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
         proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
-        proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
+        proxyLayout.addRow('', self._clearTileCacheButton)
 
         proxyGroupBox = QtWidgets.QGroupBox('Proxy')
         proxyGroupBox.setLayout(proxyLayout)
@@ -1024,3 +1157,7 @@ class ConfigDialog(gui.DialogEx):
             text='SVG composition is VERY processor intensive and should only '
                 'be used on systems with high core counts.',
             stateKey='SvgCompositionPerformanceWarning')
+        
+    def _clearTileCacheClicked(self) -> None:
+        dlg = _ClearTileCacheDialog()
+        dlg.exec()

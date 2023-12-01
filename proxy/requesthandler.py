@@ -3,6 +3,7 @@ import aiohttp.web
 import app
 import common
 import io
+import json
 import logging
 import multidict
 import os
@@ -148,6 +149,8 @@ class RequestHandler(object):
             return await self._handleStaticRouteRequestAsync(request)
         elif request.path == '/api/tile':
             return await self._handleTileRequestAsync(request)
+        elif request.path == '/proxy/clearcache':
+            return await self._handleClearCacheRequestAsync(request)
         else:
             # Act as a proxy for all other requests and just forward them to the
             # configured Traveller Map instance
@@ -436,3 +439,23 @@ class RequestHandler(object):
             if response.content_type:
                 headers['Content-Type'] = response.content_type
             return (response.status, response.reason, headers, body)
+
+    async def _handleClearCacheRequestAsync(
+            self,
+            request: aiohttp.web.Request
+            ) -> aiohttp.web.Response:
+        memTileCount, diskTileCount = await self._tileCache.clearCacheAsync()
+
+        body = json.dumps({
+            'memoryTiles': memTileCount,
+            'diskTiles': diskTileCount})
+        
+        headers = {
+            'Content-Length': str(len(body)),
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache'}
+
+        return aiohttp.web.Response(
+            status=200,
+            headers=headers,
+            body=body)

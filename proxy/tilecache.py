@@ -453,10 +453,13 @@ class TileCache(object):
 
         return image
 
-    async def clearCacheAsync(self) -> None:
+    async def clearCacheAsync(
+            self
+            ) -> (int, int): # (Memory Tile Count, Disk Tile Count)
         logging.info('Clearing tile cache')
 
         # Clear the memory cache
+        memTileCount = len(self._memCache)
         self._memCache.clear()
         self._memTotalBytes = 0
 
@@ -472,8 +475,11 @@ class TileCache(object):
         await self._dbConnection.commit()
 
         # Clear details of the database cache from memory.
+        diskTileCount = len(self._diskCache)
         self._diskCache.clear()
         self._diskTotalBytes = 0
+
+        return (memTileCount, diskTileCount)
 
     async def _checkCacheValidityAsync(self) -> None:
         # If the universe timestamp has changed then delete tiles that aren't

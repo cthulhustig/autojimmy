@@ -10,8 +10,7 @@ import urllib.request
 class TileClient(object):
     _instance = None # Singleton instance
     _lock = threading.Lock()
-    _mapBaseUrl = travellermap.TravellerMapBaseUrl
-    _mapProxyPort = None # Disabled by default
+    _baseMapUrl = None
     _cache = {}
 
     def __init__(self) -> None:
@@ -29,10 +28,10 @@ class TileClient(object):
 
     # The Traveller Map URL specified here is only used if the map proxy isn't running
     @staticmethod
-    def configure(mapProxyPort: typing.Optional[int]) -> None:
+    def configure(baseMapUrl: str) -> None:
         if TileClient._instance:
             raise RuntimeError('You can\'t configure map proxy after the singleton has been initialised')
-        TileClient._mapProxyPort = mapProxyPort
+        TileClient._baseMapUrl = baseMapUrl
 
     def tile(
             self,
@@ -55,13 +54,8 @@ class TileClient(object):
             (mapX * linearScale - (width / 2)) / width,
             (-mapY * linearScale - (height / 2)) / height)
 
-        if self._mapProxyPort:
-            baseUrl = f'http://127.0.0.1:{self._mapProxyPort}'
-        else:
-            baseUrl = travellermap.TravellerMapBaseUrl
-
         url = travellermap.formatTileUrl(
-            baseMapUrl=baseUrl,
+            baseMapUrl=TileClient._baseMapUrl,
             milieu=milieu,
             style=style,
             options=options,
@@ -70,7 +64,7 @@ class TileClient(object):
             minimal=True)
 
         with self._lock:
-            content = self._cache.get(url)
+            content = TileClient._cache.get(url)
         if content != None:
             logging.debug(f'Tile cache hit for {url}')
             return content
@@ -80,7 +74,7 @@ class TileClient(object):
             timeout=timeout)
 
         with self._lock:
-            self._cache[url] = content
+            TileClient._cache[url] = content
 
         return content
 

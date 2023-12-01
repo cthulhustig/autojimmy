@@ -119,7 +119,7 @@ class AsyncRequest(QtCore.QObject):
     def get(
             self,
             url,
-            timeout: typing.Optional[float],
+            timeout: typing.Optional[float] = None,
             loop: typing.Optional[asyncio.AbstractEventLoop] = None # None means use current loop
             ) -> None:
         try:
