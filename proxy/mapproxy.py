@@ -314,7 +314,7 @@ class MapProxy(object):
             #
             progressCallback = \
                 lambda current, total: messageQueue.put((MapProxy.ServerStatus.Starting, 'Starting Server', current, total))
-            serverStageCount = 2 # TODO: Do something better than hard coding the stage count
+            serverStageCount = 2
             serverStageIndex = 0
 
             progressCallback(serverStageIndex, serverStageCount)
