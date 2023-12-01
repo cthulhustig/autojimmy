@@ -1,4 +1,4 @@
-from .startupjob import *
+from .startupjobs import *
 from .datadownloadjob import *
 from .routeplannerjobs import *
 from .traderjobs import *

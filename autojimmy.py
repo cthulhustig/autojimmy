@@ -433,12 +433,6 @@ def main() -> None:
                 logDir=logDirectory,
                 logLevel=logLevel)
 
-            travellermap.TileClient.configure(
-                baseMapUrl=proxy.MapProxy.instance().accessUrl())
-        else:
-            travellermap.TileClient.configure(
-                baseMapUrl=travellermap.TravellerMapBaseUrl)
-
         # TODO: If the proxy fails to start (e.g. if it fails to bind to it's port) then the user should
         # be given the option to disable the proxy and continue
         startupProgress = gui.StartupProgressDialog()
@@ -448,7 +442,15 @@ def main() -> None:
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgress.deleteLater()
+        startupProgress.deleteLater()        
+        
+        # Configure the tile client to use the proxy if it's running
+        if proxy.MapProxy.instance().isRunning():
+            travellermap.TileClient.configure(
+                baseMapUrl=proxy.MapProxy.instance().accessUrl())
+        else:
+            travellermap.TileClient.configure(
+                baseMapUrl=travellermap.TravellerMapBaseUrl)
 
         with qasync.QEventLoop() as asyncEventLoop:
             window = MainWindow()

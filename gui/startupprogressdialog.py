@@ -8,13 +8,19 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
 class StartupProgressDialog(QtWidgets.QDialog):
+    _JobProgressPrefixMap = {
+        jobs.LoadSectorsJob: 'Loading: Sector - ',
+        jobs.LoadWeaponsJob: 'Loading: Weapon - ',
+        jobs.StartProxyJob: 'Proxy: '}
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
-        self._loadJob = None
+        self._jobQueue: typing.List[typing.Type[jobs.StartupJobBase]] = [] # NOTE: This is a queue of job types
+        self._currentJob = None
         self._exception = None
 
         self._textLabel = QtWidgets.QLabel()
@@ -41,15 +47,12 @@ class StartupProgressDialog(QtWidgets.QDialog):
         return self._exception
 
     def exec(self) -> int:
-        try:
-            self._loadJob = jobs.StartupJob(
-                parent=self,
-                startProxy=app.Config.instance().proxyEnabled(),
-                progressCallback=self._updateProgress,
-                finishedCallback=self._startupFinished)
-        except Exception as ex:
-            self._exception = ex
-            self.close()
+        self._jobQueue.append(jobs.LoadSectorsJob)
+        self._jobQueue.append(jobs.LoadWeaponsJob)
+        if app.Config.instance().proxyEnabled():
+            self._jobQueue.append(jobs.StartProxyJob)
+
+        self._startNextJob()
 
         return super().exec()
 
@@ -61,6 +64,17 @@ class StartupProgressDialog(QtWidgets.QDialog):
             gui.configureWindowTitleBar(widget=self)
 
         return super().showEvent(e)
+    
+    def _startNextJob(self) -> None:
+        try:
+            jobType = self._jobQueue.pop(0)
+            self._currentJob = jobType(
+                parent=self,
+                progressCallback=self._updateProgress,
+                finishedCallback=self._jobFinished)
+        except Exception as ex:
+            self._exception = ex
+            self.close()
 
     def _updateProgress(
             self,
@@ -68,21 +82,41 @@ class StartupProgressDialog(QtWidgets.QDialog):
             current: int,
             total: int
             ) -> None:
+        prefix = StartupProgressDialog._JobProgressPrefixMap.get(type(self._currentJob))
+        if prefix:
+            stage = prefix + stage
+
         self._textLabel.setText(stage)
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
-    def _startupFinished(
+    def _jobFinished(
             self,
             result: typing.Union[str, Exception]
             ) -> None:
         if isinstance(result, Exception):
-            self._exception = result
-            self.close()
-        else:
-            self.accept()
+            if isinstance(self._currentJob, jobs.StartProxyJob) :
+                logging.error(
+                    'An exception occurred while starting the proxy',
+                    exc_info=result)
+                gui.MessageBoxEx.critical(
+                    'The proxy failed to start. Custom sectors won\'t be displayed in Traveller Map',
+                    exception=result)
+            else:
+                self._exception = result
+                self.close()
 
         # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
         # and a crash on Linux
-        self._loadJob.wait()
-        self._loadJob = None
+        self._currentJob.wait()
+        self._currentJob = None
+
+        if self._exception is None:
+            if len(self._jobQueue) > 0:
+                self._startNextJob()
+            else:
+                self.accept()
+    
+            
+
+

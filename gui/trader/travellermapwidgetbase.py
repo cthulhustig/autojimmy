@@ -657,7 +657,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         url = self._generateUrl()
         logging.debug(f'TravellerMapWidget loading {url.toString()}')
 
-        if app.Config.instance().proxyEnabled():
+        if proxy.MapProxy.instance().isRunning():
             self._injectImageHostRoundRobin()
 
         self._mapWidget.load(url)

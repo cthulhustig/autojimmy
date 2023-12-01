@@ -4,7 +4,7 @@ import proxy
 import typing
 from PyQt5 import QtCore
 
-class StartupJob(QtCore.QThread):
+class StartupJobBase(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
@@ -14,14 +14,10 @@ class StartupJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            startProxy: bool,
             progressCallback: typing.Callable[[str, int, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
         super().__init__(parent=parent)
-
-        self._startProxy = startProxy
-        self._dataType = None
 
         if progressCallback:
             self._progressSignal[str, int, int].connect(progressCallback)
@@ -33,22 +29,13 @@ class StartupJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            self._dataType = 'Loading: Sector - '
-            traveller.WorldManager.instance().loadSectors(
-                progressCallback=self._handleProgressUpdate)
-
-            self._dataType = 'Loading: Weapon - '
-            gunsmith.WeaponStore.instance().loadWeapons(
-                progressCallback=self._handleProgressUpdate)
-            
-            if self._startProxy:
-                self._dataType = 'Proxy: '
-                proxy.MapProxy.instance().start(
-                    progressCallback=self._handleProgressUpdate)
-
+            self.executeJob()
             self._finishedSignal[str].emit('Finished')
         except Exception as ex:
             self._finishedSignal[Exception].emit(ex)
+
+    def executeJob(self) -> None:
+        raise RuntimeError('The executeJob method must be implemented by classes derived from StartupJobBase')
 
     def _handleProgressUpdate(
             self,
@@ -56,4 +43,19 @@ class StartupJob(QtCore.QThread):
             current: int,
             total: int
             ) -> None:
-        self._progressSignal[str, int, int].emit(self._dataType + stage, current, total)
+        self._progressSignal[str, int, int].emit(stage, current, total)
+
+class LoadSectorsJob(StartupJobBase):
+    def executeJob(self) -> None:
+        traveller.WorldManager.instance().loadSectors(
+            progressCallback=self._handleProgressUpdate)
+        
+class LoadWeaponsJob(StartupJobBase):
+    def executeJob(self) -> None:
+        gunsmith.WeaponStore.instance().loadWeapons(
+            progressCallback=self._handleProgressUpdate)
+        
+class StartProxyJob(StartupJobBase):
+    def executeJob(self) -> None:
+        proxy.MapProxy.instance().start(
+            progressCallback=self._handleProgressUpdate)
