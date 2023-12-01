@@ -433,8 +433,6 @@ def main() -> None:
                 logDir=logDirectory,
                 logLevel=logLevel)
 
-        # TODO: If the proxy fails to start (e.g. if it fails to bind to it's port) then the user should
-        # be given the option to disable the proxy and continue
         startupProgress = gui.StartupProgressDialog()
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             raise startupProgress.exception()
