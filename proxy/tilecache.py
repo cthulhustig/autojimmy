@@ -728,8 +728,7 @@ class TileCache(object):
             self._diskTotalBytes -= diskEntry.fileSize()
             purged += 1
 
-            # TODO: This should be logged at debug
-            logging.warning(
+            logging.debug(
                 f'Purged expired tile disk cache entry for {diskEntry.tileQuery()} from {diskEntry.createdTime()}')
 
         if not purged:
