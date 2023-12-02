@@ -661,6 +661,10 @@ class DataStore(object):
     def customSectorsTimestamp(self) -> typing.Optional[datetime.datetime]:
         try:
             timestampPath = os.path.join(self._customDir, self._TimestampFileName)
+            if not os.path.exists(timestampPath):
+                # The custom sector timestamp won't exist if the user has never created
+                # a custom sector so don't log it as an error
+                return None
             return DataStore._parseTimestamp(
                 data=DataStore._readFile(path=timestampPath))
         except Exception as ex:
