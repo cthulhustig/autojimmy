@@ -704,83 +704,97 @@ class _NewSectorDialog(gui.DialogEx):
         return path
 
     def _createClicked(self) -> None:
+        sectorFilePath = self._sectorFileLineEdit.text()
+        if not sectorFilePath:
+            gui.MessageBoxEx.critical('No sector file selected')
+            return
+        if not os.path.exists(sectorFilePath):
+            gui.MessageBoxEx.critical(f'Sector file doesn\'t exist')
+            return
+        
+        metadataFilePath = self._metadataFileLineEdit.text()
+        if not metadataFilePath:
+            gui.MessageBoxEx.critical('No sector metadata file selected')
+            return
+        if not os.path.exists(metadataFilePath):
+            gui.MessageBoxEx.critical(f'Sector metadata file doesn\'t exist')
+            return
+                
+        renderStyle = self._renderStyleComboBox.currentEnum()
+        renderOptions = self._renderOptionList()
+
+        # Always send poster requests directly to the configured traveller map instance.
+        # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
+        # to add support for proxying multipart/form-data
+        mapUrl = app.Config.instance().proxyMapUrl()
+
+        xmlMetadata = None
         try:
-            renderStyle = self._renderStyleComboBox.currentEnum()
-            renderOptions = self._renderOptionList()
+            with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
+                sectorMetadata = file.read()
 
-            # Always send poster requests directly to the configured traveller map instance.
-            # The proxy isn't used as there is no need, and if we wanted to use it, we'd need
-            # to add support for proxying multipart/form-data
-            mapUrl = app.Config.instance().proxyMapUrl()
+            metadataFormat = travellermap.metadataFileFormatDetect(
+                content=sectorMetadata)
+            if not metadataFormat:
+                raise RuntimeError('Unable to detect metadata format')
 
-            xmlMetadata = None
-            try:
-                metadataFilePath = self._metadataFileLineEdit.text()
-                with open(metadataFilePath, 'r', encoding='utf-8-sig') as file:
-                    sectorMetadata = file.read()
+            rawMetadata = travellermap.readMetadata(
+                content=sectorMetadata,
+                format=metadataFormat,
+                identifier=metadataFilePath)
 
-                metadataFormat = travellermap.metadataFileFormatDetect(
-                    content=sectorMetadata)
-                if not metadataFormat:
-                    raise RuntimeError('Unable to detect metadata format')
-
-                rawMetadata = travellermap.readMetadata(
-                    content=sectorMetadata,
-                    format=metadataFormat,
-                    identifier=metadataFilePath)
-
-                if metadataFormat == travellermap.MetadataFormat.XML:
-                    xmlMetadata = sectorMetadata
-                    travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
-                else:
-                    gui.AutoSelectMessageBox.information(
-                        parent=self,
-                        text=_JsonMetadataWarning,
-                        stateKey=_JsonMetadataWarningNoShowStateKey)
-
-                    xmlMetadata = travellermap.writeXMLMetadata(
-                        metadata=rawMetadata,
-                        identifier='Generated XML metadata')
-
-                # This will throw if there is a conflict with an existing sector
-                travellermap.DataStore.instance().customSectorConflictCheck(
-                    sectorName=rawMetadata.canonicalName(),
-                    sectorX=rawMetadata.x(),
-                    sectorY=rawMetadata.y(),
-                    milieu=app.Config.instance().milieu())
-            except Exception as ex:
-                message = 'Metadata validation failed.'
-                logging.critical(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
+            if metadataFormat == travellermap.MetadataFormat.XML:
+                xmlMetadata = sectorMetadata
+                travellermap.DataStore.instance().validateSectorMetadataXML(xmlMetadata)
+            else:
+                gui.AutoSelectMessageBox.information(
                     parent=self,
-                    text=message,
-                    exception=ex)
-                return
+                    text=_JsonMetadataWarning,
+                    stateKey=_JsonMetadataWarningNoShowStateKey)
 
-            # Try to parse the sector format now to prevent it failing after the user has waited
-            # to create the posters. This is only really needed for cases where Traveller Map is
-            # happy with the format but my parser isn't
-            try:
-                sectorFilePath = self._sectorFileLineEdit.text()
-                with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
-                    sectorData = file.read()
+                xmlMetadata = travellermap.writeXMLMetadata(
+                    metadata=rawMetadata,
+                    identifier='Generated XML metadata')
 
-                sectorFormat = travellermap.sectorFileFormatDetect(content=sectorData)
-                if not sectorFormat:
-                    raise RuntimeError('Unknown sector file format')
-                travellermap.readSector(
-                    content=sectorData,
-                    format=sectorFormat,
-                    identifier=sectorFilePath)
-            except Exception as ex:
-                message = 'Sector validation failed.'
-                logging.critical(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-                return
+            # This will throw if there is a conflict with an existing sector
+            travellermap.DataStore.instance().customSectorConflictCheck(
+                sectorName=rawMetadata.canonicalName(),
+                sectorX=rawMetadata.x(),
+                sectorY=rawMetadata.y(),
+                milieu=app.Config.instance().milieu())
+        except Exception as ex:
+            message = 'Metadata validation failed.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
+        # Try to parse the sector format now to prevent it failing after the user has waited
+        # to create the posters. This is only really needed for cases where Traveller Map is
+        # happy with the format but my parser isn't
+        try:
+            with open(sectorFilePath, 'r', encoding='utf-8-sig') as file:
+                sectorData = file.read()
+
+            sectorFormat = travellermap.sectorFileFormatDetect(content=sectorData)
+            if not sectorFormat:
+                raise RuntimeError('Unknown sector file format')
+            travellermap.readSector(
+                content=sectorData,
+                format=sectorFormat,
+                identifier=sectorFilePath)
+        except Exception as ex:
+            message = 'Sector validation failed.'
+            logging.critical(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
             scales = \
                 _SvgCustomMapScales if depschecker.DetectedCairoSvgState else _BitmapCustomMapScales
             posterJob = jobs.PosterJobAsync(
