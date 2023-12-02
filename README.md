@@ -70,12 +70,12 @@ Downloading the source code can be done either by cloning the repo with git or d
    pip3 install -r requirements_sierra.txt
    ```
 
-### Step 3: Set up CairoSVG (Optional)
-If you are going to create custom sectors it's recommended that you set up CairoSVG as it
-allows Auto-Jimmy to use SVG posters of your custom sectors rather than bitmap posters.
-Primarily this is done to reduce graphical artifacts when compositing the custom sector
-posters onto the map tiles returned by Traveller Map, however, it also has the added
-advantage that the posters take less time to generate.
+### Step 3: Install libcairo (Optional)
+Installing libcairo is recommended if you are going to create custom sectors. It allows
+Auto-Jimmy to use SVG posters of your custom sectors rather than bitmap posters. Primarily
+this is done to reduce visual artifacts when compositing the custom sector posters onto
+the map tiles returned by Traveller Map, however, it also has the added advantage that the
+posters take less time to generate.
 
 #### Windows
 TODO: Need content
