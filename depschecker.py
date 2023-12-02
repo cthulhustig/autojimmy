@@ -16,6 +16,7 @@ _Requirements = [
     'darkdetect',
     'reportlab',
     'PIL',
+    'aiofiles',
     'aiohttp',
     'aiosqlite',
     'qasync',
