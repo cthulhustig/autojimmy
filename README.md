@@ -92,7 +92,7 @@ compiler. It doesn't which you use to run the following command.
    ```
    pacman -S mingw-w64-x86_64-cairo
    ```
-4. If you choose to install MSYS2 in location other that the default of `c:\msys64`, you
+4. If you choose to install MSYS2 in a location other that the default of `c:\msys64`, you
    will need to set the `MSYS2_PATH` environment variable to the location you installed
    it.
 
