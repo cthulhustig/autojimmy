@@ -80,12 +80,12 @@ however, it also has the added advantage that SVG posters take less time to gene
 #### Windows
 On Windows, libcairo can be installed using the package manager that comes with MSYS2.
 1. Follow the instructions here to install MSYS2 https://www.msys2.org/
-   > [!NOTE]
+   > **Note**
    > It's recommended to install MSYS2 in the default location of `c:\msys64`
 2. Once the installer has completed it should launch a MSYS2 command prompt. If it doesn't
    happen, or you already have MSYS2 installed, you can launch one from the Windows Start
    Menu.
-   > [!NOTE]
+   > **Note**
    > MSYS2 add multiple command prompt entries to the Start Menu, each for a different
    compiler. It doesn't which you use to run the following command.
 3. Run the following command from the MSYS2 command prompt to install libcairo:
