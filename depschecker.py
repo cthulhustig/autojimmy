@@ -1,6 +1,7 @@
 import enum
 import importlib
 import os
+import platform
 
 class CairoSvgState(enum.Enum):
     Working = 0
@@ -27,8 +28,9 @@ _CairoModuleName = 'cairosvg'
 
 DetectedCairoSvgState = CairoSvgState.Working
 
-# This is just a noddy check to make sure I remember to update the list. If it actually triggers it's pretty
-# ugly as it gets printed out by any sub processes that are spawned
+# This is just a noddy check to make sure I remember to update the list. If it
+# actually triggers it's pretty ugly as it gets printed out by any sub
+# processes that are spawned
 try:
     with open(_RequirementsFile, 'r') as file:
         lineCount = len(file.readlines())
@@ -36,6 +38,17 @@ try:
             print(f'Dependency checker requirements list length doesn\'t match the number of lines in {_RequirementsFile}, results may be inaccurate!')
 except Exception as ex:
     print(f'Failed to open {_RequirementsFile} for dependency checking')
+
+# On Windows the expectation is libcairo will have been installed using MSYS2
+# as per the instructions in the README.md. Update the path to include the
+# expected location of libcairo, the MUST be added at the end of the path as
+# the MSYS2 directory that is added contains multiple binaries and we don't
+# want and of them obscuring something that is already on the users path
+if platform.system() == 'Windows':
+    msys2Path = os.environ.get('MSYS2_PATH', 'c:\\msys64')
+    libcairoPath = os.path.join(msys2Path, 'mingw64', 'bin')
+    if os.path.exists(libcairoPath):
+        os.environ["PATH"] += os.pathsep + libcairoPath
 
 # Try to import each of the required modules to display
 _MissingRequirements = []
