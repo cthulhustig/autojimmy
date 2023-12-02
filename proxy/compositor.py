@@ -355,7 +355,7 @@ class Compositor(object):
 
             # If full SVG rendering is disabled the process poll won't be used any more so may
             # as well shut it down
-            if not self._svgComposition:
+            if self._processExecutor and not self._svgComposition:
                 self._processExecutor.shutdown(wait=True, cancel_futures=True)
                 self._processExecutor = None
 
