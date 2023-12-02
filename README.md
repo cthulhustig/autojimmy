@@ -26,6 +26,10 @@ Python and can be run on Windows, Linux and macOS.
     * Options to see how each variable in the trading process would affect a trade
     * Estimation of profits for trading between worlds if the player was to make average, worst
     and best case dice roles at each point in the trading process
+* Import of custom sectors
+    * Custom sector data integrated into all tools
+    * Posters of custom sectors automatically generated and merged into Traveller Map views
+    * Support for T5 Column & Row sector files and XML & JSON metadata
 
 ## Installing
 For Windows users, an installer is available [here](https://github.com/cthulhustig/autojimmy/releases).
@@ -66,7 +70,23 @@ Downloading the source code can be done either by cloning the repo with git or d
    pip3 install -r requirements_sierra.txt
    ```
 
-### Step 3: Running Auto-Jimmy
+### Step 3: Set up CairoSVG (Optional)
+If you are going to create custom sectors it's recommended that you set up CairoSVG as it
+allows Auto-Jimmy to use SVG posters of your custom sectors rather than bitmap posters.
+Primarily this is done to reduce graphical artifacts when compositing the custom sector
+posters onto the map tiles returned by Traveller Map, however, it also has the added
+advantage that the posters take less time to generate.
+
+#### Windows
+TODO: Need content
+
+#### Linux
+TODO: Need content
+
+#### macOS
+TODO: Need content
+
+### Step 4: Running Auto-Jimmy
 1. Open a terminal or command prompt.
 2. Navigate to the directory containing the Auto-Jimmy source code
 3. Execute the following command to run the application:
