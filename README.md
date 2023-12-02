@@ -71,20 +71,43 @@ Downloading the source code can be done either by cloning the repo with git or d
    ```
 
 ### Step 3: Install libcairo (Optional)
-Installing libcairo is recommended if you are going to create custom sectors. It allows
-Auto-Jimmy to use SVG posters of your custom sectors rather than bitmap posters. Primarily
-this is done to reduce visual artifacts when compositing the custom sector posters onto
-the map tiles returned by Traveller Map, however, it also has the added advantage that the
-posters take less time to generate.
+Installing [libcairo](https://www.cairographics.org/) is recommended if you're going to
+create custom sectors. It allows Auto-Jimmy to use SVG posters of your custom sectors
+rather than bitmap posters. Primarily this is done to reduce visual artifacts when
+compositing the posters onto the map tiles Traveller Map uses to display the universe,
+however, it also has the added advantage that SVG posters take less time to generate.
 
 #### Windows
-TODO: Need content
-
-#### Linux
-TODO: Need content
+On Windows, libcairo can be installed using the package manager that comes with MSYS2.
+1. Follow the instructions here to install MSYS2 https://www.msys2.org/
+   > [!NOTE]
+   > It's recommended to install MSYS2 in the default location of `c:\msys64`
+2. Once the installer has completed it should launch a MSYS2 command prompt. If it doesn't
+   happen, or you already have MSYS2 installed, you can launch one from the Windows Start
+   Menu.
+   > [!NOTE]
+   > MSYS2 add multiple command prompt entries to the Start Menu, each for a different
+   compiler. It doesn't which you use to run the following command.
+3. Run the following command from the MSYS2 command prompt to install libcairo:
+   ```
+   pacman -S mingw-w64-x86_64-cairo
+   ```
+4. If you choose to install MSYS2 in location other that the default of `c:\msys64`, you
+   will need to set the `MSYS2_PATH` environment variable to the location you installed
+   it.
 
 #### macOS
-TODO: Need content
+On macOS, libcairo can be installed using the brew package manager.
+1. Follow the instructions here to install brew https://brew.sh/
+2. Open a terminal or command prompt.
+3. Run the following command to install libcairo:
+   ```
+   brew install cairo
+   ```
+
+#### Linux
+How libcairo is installed on Linux will vary depending on which distro you are using.
+Some distros, such as recent versions of Ubuntu, come with it already installed.
 
 ### Step 4: Running Auto-Jimmy
 1. Open a terminal or command prompt.
