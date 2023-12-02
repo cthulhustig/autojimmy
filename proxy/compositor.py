@@ -24,6 +24,14 @@ import travellermap
 import typing
 import xml.etree.ElementTree
 
+# This is a hack to keep typing happy if CairoSVG isn't imported
+if not _HasSvgSupport:
+    class cairosvg(object):
+        class parser(object):
+            class Tree(object):
+                pass
+
+
 _LayersTableSchema = 1
 _LayersTableName = 'layers_cache'
 
