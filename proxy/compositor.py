@@ -302,12 +302,12 @@ class Compositor(object):
                                 milieu=milieu,
                                 scale=scale)
                             if (mapImage.format() == travellermap.MapFormat.SVG) and (not _HasSvgSupport):
-                                logging.warning(f'Compositor ignoring {scale} map image for {sectorInfo.canonicalName()} in {milieu.value} as SVG support is disabled')
+                                logging.warning(f'Compositor ignoring {scale} scale map image for {sectorInfo.canonicalName()} in {milieu.value} as SVG support is disabled')
                                 continue
 
                             mapImages.append((mapImage, scale))
                         except Exception as ex:
-                            logging.warning(f'Compositor failed to load scale {scale} map image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
+                            logging.warning(f'Compositor failed to load scale {scale} scale map image for {sectorInfo.canonicalName()} in {milieu.value}', exc_info=ex)
                             continue
 
                     if not mapImages:
