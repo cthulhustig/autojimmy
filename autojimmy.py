@@ -238,7 +238,7 @@ def _hostPoolSizeCheck() -> int:
             but only {available} IPv4 loopback {wording} available. This may
             reduce performance when displaying Traveller Map.</p>
             <p>For a pool size of {requested}, the loopback addresses
-            127.0.0.1 -> 127.0.0.{available} must be enabled.</p>
+            127.0.0.1 -> 127.0.0.{requested} must be enabled.</p>
             """.format(
                 requested=requestedHostCount,
                 available=availableHostCount,
