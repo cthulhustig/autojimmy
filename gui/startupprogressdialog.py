@@ -15,10 +15,12 @@ class StartupProgressDialog(QtWidgets.QDialog):
 
     def __init__(
             self,
+            startProxy: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
+        self._startProxy = startProxy
         self._jobQueue: typing.List[typing.Type[jobs.StartupJobBase]] = [] # NOTE: This is a queue of job types
         self._currentJob = None
         self._exception = None
@@ -49,7 +51,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     def exec(self) -> int:
         self._jobQueue.append(jobs.LoadSectorsJob)
         self._jobQueue.append(jobs.LoadWeaponsJob)
-        if app.Config.instance().proxyEnabled():
+        if self._startProxy:
             self._jobQueue.append(jobs.StartProxyJob)
 
         self._startNextJob()

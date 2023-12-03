@@ -625,7 +625,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
                 return Util.real_fetchImage(url, img);
             }};
-            """.format(poolSize=app.Config.instance().proxyHostPoolSize())
+            """.format(poolSize=proxy.MapProxy.instance().hostPoolSize())
         self._runScript(script)
 
     # NOTE: The 'tilt' url parameter isn't supported as it doesn't draw properly in the Qt widget

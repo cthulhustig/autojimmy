@@ -15,6 +15,7 @@ import os
 import pathlib
 import proxy
 import qasync
+import socket
 import sys
 import traveller
 import travellermap
@@ -191,6 +192,61 @@ def _snapshotUpdateCheck(
     updateProgress.deleteLater()
 
     return True # Update is complete so continue loading
+
+# Check that the loopback addresses required for the proxy host pool
+# are available. This is required as macOS (and possibly some Linux
+# distros) only enables 127.0.0.1 by default.
+def _hostPoolSizeCheck() -> int:  
+    requestedHostCount = app.Config.instance().proxyHostPoolSize()
+    if common.isWindows():
+        # This method of checking the available loopback addresses doesn't work
+        # on Windows as gethostbyaddr fails for addresses other than 127.0.0.1.
+        # I don't think this is a problem as (as far as I can tell) Windows
+        # always has all loopback addresses enabled by default.
+        return requestedHostCount
+
+    availableHostCount = 0
+    for index in range(1, requestedHostCount + 1):
+        try:
+            socket.gethostbyaddr(f'127.0.0.{index}')
+            availableHostCount = index
+        except Exception as ex:
+            logging.debug('', exc_info=ex) # TODO: Message
+            break
+
+    if availableHostCount == 0:
+        logging.error(
+            'Proxy will be disabled as no IPv4 loopback addresses were found')
+        
+        message = """
+            <p>The proxy will be disabled as no IPv4 loopback addresses were
+            found. When the proxy is disabled, custom sectors will not be overlaid
+            on Traveller Map.</p>    
+            """
+        gui.AutoSelectMessageBox.critical(
+            text=message,
+            stateKey='NoHostPoolInterfaces')
+    elif availableHostCount != requestedHostCount:
+        logging.warning(
+            'Proxy host pool size will be reduced from {requested} to '
+            '{available} due to insufficient IPv4 loopback addresses.'.format(
+                requested=requestedHostCount,
+                available=availableHostCount))
+        
+        message = """
+            <p>The proxy is configured to have a host pool size of {requested}
+            but only {available} IPv4 loopback addresses are available. This
+            may reduce performance when displaying Traveller Map.</p>
+            <p>For a pool size of {requested}, the loopback addresses
+            127.0.0.1 -> 127.0.0.{available} must be enabled.</p>
+            """.format(
+                requested=requestedHostCount,
+                available=availableHostCount)
+        gui.AutoSelectMessageBox.warning(
+            text=message,
+            stateKey='NoHostPoolInterfaces')
+
+    return availableHostCount
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -419,23 +475,25 @@ def main() -> None:
 
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
+        startProxy = False
         if app.Config.instance().proxyEnabled():
-            proxyPort = app.Config.instance().proxyPort()
+            hostPoolSize = _hostPoolSizeCheck()
+            if hostPoolSize > 0:
+                proxy.MapProxy.configure(
+                    listenPort=app.Config.instance().proxyPort(),
+                    hostPoolSize=hostPoolSize,
+                    travellerMapUrl=app.Config.instance().proxyMapUrl(),
+                    tileCacheSize=app.Config.instance().proxyTileCacheSize(),
+                    tileCacheLifetime=app.Config.instance().proxyTileCacheLifetime(),
+                    svgComposition=app.Config.instance().proxySvgCompositionEnabled(),
+                    mainsMilieu=app.Config.instance().milieu(),
+                    installDir=installDir,
+                    appDir=appDir,
+                    logDir=logDirectory,
+                    logLevel=logLevel)
+                startProxy = True
 
-            proxy.MapProxy.configure(
-                listenPort=proxyPort,
-                hostPoolSize=app.Config.instance().proxyHostPoolSize(),
-                travellerMapUrl=app.Config.instance().proxyMapUrl(),
-                tileCacheSize=app.Config.instance().proxyTileCacheSize(),
-                tileCacheLifetime=app.Config.instance().proxyTileCacheLifetime(),
-                svgComposition=app.Config.instance().proxySvgCompositionEnabled(),
-                mainsMilieu=app.Config.instance().milieu(),
-                installDir=installDir,
-                appDir=appDir,
-                logDir=logDirectory,
-                logLevel=logLevel)
-
-        startupProgress = gui.StartupProgressDialog()
+        startupProgress = gui.StartupProgressDialog(startProxy=startProxy)
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             raise startupProgress.exception()
 
