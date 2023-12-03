@@ -198,21 +198,22 @@ def _snapshotUpdateCheck(
 # distros) only enables 127.0.0.1 by default.
 def _hostPoolSizeCheck() -> int:  
     requestedHostCount = app.Config.instance().proxyHostPoolSize()
-    if common.isWindows():
-        # This method of checking the available loopback addresses doesn't work
-        # on Windows as gethostbyaddr fails for addresses other than 127.0.0.1.
-        # I don't think this is a problem as (as far as I can tell) Windows
-        # always has all loopback addresses enabled by default.
-        return requestedHostCount
-
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
+        testSocket = None
         try:
-            socket.gethostbyaddr(f'127.0.0.{index}')
+            address = f'127.0.0.{index}'
+            testSocket = socket.socket()
+            testSocket.bind((address, 0))
             availableHostCount = index
         except Exception as ex:
-            logging.debug('', exc_info=ex) # TODO: Message
+            logging.debug(
+                'An exception occurred when binding to {address} to test proxy host pool size.',
+                exc_info=ex)
             break
+        finally:
+            if testSocket:
+                testSocket.close()
 
     if availableHostCount == 0:
         logging.error(
