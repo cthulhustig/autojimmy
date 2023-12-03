@@ -75,12 +75,12 @@ _WelcomeMessage = """
 
 _JsonMetadataWarning = """
     <html>
-    <p>You're using JSON metadata which isn't supported by the Traveller Map
-    Poster API that {name} uses to generate custom sector maps. The metadata
-    will be automatically converted to XML format before uploading it to
-    Traveller Map. This is mostly a transparent process, however any parsing
-    errors returned by Traveller Map will refer to the XML representation of
-    the data.</p>
+    <p>You're using JSON metadata which isn't officially supported by the
+    Traveller Map Poster API that's used to generate images of custom sectors.
+    The metadata will be automatically converted to XML format before uploading
+    it to Traveller Map. This is mostly a transparent process, however any
+    parsing errors returned by Traveller Map will refer to the XML
+    representation of the data.</p>
     </html>
 """.format(name=app.AppName)
 _JsonMetadataWarningNoShowStateKey = 'JsonMetadataConversionWarning'
