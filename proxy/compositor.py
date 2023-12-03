@@ -356,14 +356,11 @@ class Compositor(object):
             # If full SVG rendering is disabled the process poll won't be used any more so may
             # as well shut it down
             if self._processExecutor and not self._svgComposition:
-                self._processExecutor.shutdown(wait=True, cancel_futures=True)
-                self._processExecutor = None
+                await self._shutdownProcessPoolAsync()
 
     # NOTE: Shutting down the executor is important as otherwise the app hangs on shutdown
     async def shutdownAsync(self):
-        if self._processExecutor:
-            self._processExecutor.shutdown(wait=True, cancel_futures=True)
-            self._processExecutor = None
+        await self._shutdownProcessPoolAsync()
 
     def overlapType(
             self,
@@ -892,6 +889,19 @@ class Compositor(object):
                 del overlayImage
 
         return tgtImage
+    
+    async def _shutdownProcessPoolAsync(self) -> None:
+        if self._processExecutor:
+            if common.pythonVersionCheck((3, 9)):
+                self._processExecutor.shutdown(wait=True, cancel_futures=True)
+            else:
+                # Prior to Python 3.9, ProcessPoolExecutor didn't have the
+                # cancel_future parameter. This It means this may block until in
+                # progress jobs are finished but that's better that it raising
+                # an exception which at best will be logged every time the app
+                # shuts down and at worst will cause the proxy to fail
+                self._processExecutor.shutdown(wait=True)
+            self._processExecutor = None
 
     @staticmethod
     def _createTextSvg(mapBytes: bytes) -> bytes:

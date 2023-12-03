@@ -204,3 +204,18 @@ def isLoopback(host: str) -> bool:
         return ipaddress.ip_address(host).is_loopback
     except ValueError:
         return False # Not an IP so not loopback
+
+def pythonVersionCheck(
+        minVersion: typing.Tuple[int, int, typing.Optional[int]]
+        ) -> bool:
+    try:
+        version = platform.python_version_tuple()
+        version = [int(num) for num in version]
+        for index, minNum in enumerate(minVersion):
+            checkNum = version[index] if index < len(version) else 0
+            if checkNum < minNum:
+                return False
+        return True
+    except:
+        # If something goes wrong assume we don't meet the min version
+        return False
