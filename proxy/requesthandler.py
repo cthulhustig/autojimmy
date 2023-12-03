@@ -413,7 +413,7 @@ class RequestHandler(object):
                 int, # Status code
                 str, # Reason
                 multidict.CIMultiDict, # Headers
-                bytes: # Body
+                bytes # Body
                 ]:
         targetUrl = urllib.parse.urljoin(self._travellerMapUrl, request.path)
         query = request.query
