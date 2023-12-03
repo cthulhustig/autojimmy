@@ -489,7 +489,7 @@ class ConfigDialog(gui.DialogEx):
             '<p><b>This setting only affects the number of simultaneous '
             'connections made to the proxy in order to allow better use of the '
             'tile cache. The proxy will enforce a limit of 6 simultaneous '
-            'outgoing connections to travellermap.com in order to not place '
+            'outgoing connections to travellermap.com so as not to place '
             'additional load on the site.</b></p>'.format(app=app.AppName) +
             restartRequiredText,
             escape=False))
