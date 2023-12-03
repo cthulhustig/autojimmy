@@ -596,7 +596,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     # 127.0.0.1
     def _injectImageHostRoundRobin(self) -> None:
         script = """
-            const LoopbackRegex = /^(127\.\d\.\d\.\d|localhost|loopback)$/;
+            const LoopbackRegex = /^(127\\.\\d\\.\\d\\.\\d|localhost|loopback)$/;
             let nextImageHost = 1;
             let imageHostCount = {poolSize};
 
