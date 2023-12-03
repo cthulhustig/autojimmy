@@ -45,6 +45,9 @@ Before you begin, ensure that you have the following prerequisites installed:
 * Python 3.11+ (3.8+ _should_ be ok, ymmv)
 * Pip (Python package installer)
 
+> [!IMPORTANT]  
+> If you're using Python 3.12 see [Installing requirements.txt fails for Python 3.12](#windows-installing-requirements-txt-fails-for-python-3-12)
+
 ### Step 1: Download the Auto-Jimmy Source Code
 Downloading the source code can be done either by cloning the repo with git or downloading a zip archive.
 
@@ -77,7 +80,7 @@ rather than bitmap posters. Primarily this is done to reduce visual artifacts wh
 compositing the posters onto the map tiles Traveller Map uses to display the universe,
 however, it also has the added advantage that SVG posters take less time to generate.
 
-#### Windows
+#### Install libcairo on Windows
 On Windows, libcairo can be installed using the package manager that comes with MSYS2.
 1. Follow the instructions here to install MSYS2 https://www.msys2.org/
 > [!NOTE]  
@@ -86,7 +89,7 @@ On Windows, libcairo can be installed using the package manager that comes with 
    happen, or you already have MSYS2 installed, you can launch one from the Windows Start
    Menu.
 > [!NOTE]  
-> MSYS2 add multiple command prompt entries to the Start Menu, each for a different
+> MSYS2 adds multiple command prompt entries to the Start Menu, each for a different
 compiler. It doesn't which you use to run the following command.
 3. Run the following command from the MSYS2 command prompt to install libcairo:
    ```
@@ -96,7 +99,7 @@ compiler. It doesn't which you use to run the following command.
    will need to set the `MSYS2_PATH` environment variable to the location you installed
    it.
 
-#### macOS
+#### Install libcairo on macOS
 On macOS, libcairo can be installed using the brew package manager.
 1. Follow the instructions here to install brew https://brew.sh/
 2. Open a terminal or command prompt.
@@ -105,7 +108,7 @@ On macOS, libcairo can be installed using the brew package manager.
    brew install cairo
    ```
 
-#### Linux
+#### Install libcairo on Linux
 How libcairo is installed on Linux will vary depending on which distro you are using.
 Some distros, such as recent versions of Ubuntu, come with it already installed.
 
@@ -118,6 +121,24 @@ Some distros, such as recent versions of Ubuntu, come with it already installed.
    ```
 
 ## Common Issues
+
+### Windows: Installing requirements.txt fails for Python 3.12
+At the time of writing Python 3.12 is relatively new and the precompiled wheels used by some
+packages have not yet been rebuilt for it. The wheels will automatically be built as part of
+the install, however, this will fail with the error below if you don't have the Visual Studio
+Build Tools installed on your system.
+
+> ERROR: Could not build wheels for frozenlist, multidict, which is required to install pyproject.toml-based projects
+
+One solution to this is to simply use Python 3.11 until package maintainers have had time to
+update them for Python 3.12.
+
+Alternatively, you can install the Visual Studio Build Tools by following these steps:
+1. Download the Visual Studio Build Tools installer from https://visualstudio.microsoft.com/visual-cpp-build-tools/
+2. Run the installer
+3. When prompted to choose which Workloads to install, check "Desktop development with C++"
+   then click the Install button in the lower right corner
+4. Once the installer has completed, re-run the command to install requirements.txt
 
 ### Windows: Microsoft Defender SmartScreen prevents the installer from running
 This happens because the installer executable isn't digitally signed so Windows doesn't
