@@ -82,16 +82,15 @@ however, it also has the added advantage that SVG posters take less time to gene
 
 #### Install libcairo on Windows
 On Windows, libcairo can be installed using the package manager that comes with MSYS2.
-1. Follow the instructions here to install MSYS2 https://www.msys2.org/
-> [!NOTE]  
-> It's recommended to install MSYS2 in the default location of `c:\msys64`
+1. Follow the instructions here to install MSYS2 https://www.msys2.org/. When prompted to
+   choose an install location, it's recommended to use the default of `c:\msys64`
 2. Once the installer has completed it should launch a MSYS2 command prompt. If it doesn't
    happen, or you already have MSYS2 installed, you can launch one from the Windows Start
    Menu.
-> [!NOTE]  
-> MSYS2 adds multiple command prompt entries to the Start Menu, each for a different
-compiler. It doesn't which you use to run the following command.
-3. Run the following command from the MSYS2 command prompt to install libcairo:
+
+   Note: MSYS2 adds multiple command prompt entries to the Start Menu, each for a different
+   compiler. It doesn't which you use to run the following command.
+3. Run the following command from the MSYS2 command prompt:
    ```
    pacman -S mingw-w64-x86_64-cairo
    ```
@@ -103,7 +102,7 @@ compiler. It doesn't which you use to run the following command.
 On macOS, libcairo can be installed using the brew package manager.
 1. Follow the instructions here to install brew https://brew.sh/
 2. Open a terminal or command prompt.
-3. Run the following command to install libcairo:
+3. Run the following command:
    ```
    brew install cairo
    ```
