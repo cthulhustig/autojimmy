@@ -15,13 +15,13 @@ _CheckIfTableExistsQuery = 'SELECT name FROM sqlite_master WHERE type = "table" 
 # NOTE: Setting the page_size needs to be done before setting the journal_mode as
 # it can't be changed after entering WAL mode
 _SetPersistentPragmaScript = \
-f"""
+    f"""
 PRAGMA page_size = {_SqlitePageSizeBytes};
 PRAGMA journal_mode = WAL;
 """
 
 _CreateMetadataTableQuery = \
-f"""
+    f"""
 CREATE TABLE IF NOT EXISTS {_MetadataTableName} (
     key TEXT NOT NULL PRIMARY KEY,
     value TEXT NOT NULL);
@@ -81,7 +81,7 @@ async def writeDbMetadataAsync(
         connection: aiosqlite.Connection,
         key: str,
         value: typing.Any,
-        commit = False
+        commit=False
         ) -> None:
     if isinstance(value, datetime.datetime):
         value = dbTimestampToString(timestamp=value)
@@ -101,7 +101,7 @@ async def deleteDbMetadataAsync(
     queryArgs = {'key': key}
     async with connection.execute(_DeleteMetadataValueQuery, queryArgs):
         pass
-    
+
     if commit:
         await connection.commit()
 
@@ -117,12 +117,12 @@ async def createSchemaTableAsync(
         connection=connection,
         key=schemaKey,
         type=int,
-        default=None)    
+        default=None)
     tableExists = await proxy.checkIfTableExistsAsync(
         connection=connection,
         tableName=tableName)
     if tableSchema != requiredSchema:
-        if tableExists:                    
+        if tableExists:
             logging.info(
                 'Deleting {table} due to schema version change from {old} to {new}'.format(
                     table=tableName,
@@ -148,7 +148,7 @@ async def createSchemaTableAsync(
             pass
 
     if commit:
-        await connection.commit()        
+        await connection.commit()
 
 class Database(object):
     def __init__(
@@ -167,7 +167,7 @@ class Database(object):
                 connection=connection)
             if configTableExists:
                 return
-            
+
             logging.debug('Creating tile cache config table')
 
             async with connection.executescript(_SetPersistentPragmaScript):
@@ -192,4 +192,3 @@ class Database(object):
                 raise
 
         return connection
-

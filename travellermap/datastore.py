@@ -106,7 +106,7 @@ class SectorInfo(object):
             isCustomSector: bool,
             customMapStyle: typing.Optional[travellermap.Style],
             customMapOptions: typing.Optional[typing.Iterable[travellermap.Option]],
-            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]  
+            customMapLevels: typing.Optional[typing.Mapping[int, CustomMapLevel]]
             ) -> None:
         self._canonicalName = canonicalName
         self._abbreviation = abbreviation
@@ -137,7 +137,7 @@ class SectorInfo(object):
 
     def metadataFormat(self) -> travellermap.MetadataFormat:
         return self._metadataFormat
-    
+
     def modifiedTimestamp(self) -> datetime.datetime:
         return self._modifiedTimestamp
 
@@ -1291,7 +1291,7 @@ class DataStore(object):
                     metadataFormat = travellermap.MetadataFormat.__members__.get(
                         str(metadataFormatTag),
                         metadataFormat)
-                    
+
                 # If the universe doesn't specify the modified timestamp assume the epoch
                 # NOTE: For now the modified time is only used for custom sectors. I've added it like this
                 # to make it easier if I want to update the github action that creates the snapshots so that
@@ -1443,17 +1443,17 @@ class DataStore(object):
             DataStore._writeFile(
                 path=timestampPath,
                 data=DataStore._formatTimestamp(timestamp=utcTime))
-            
+
     @staticmethod
     def _readFile(path: str) -> bytes:
         with open(path, 'rb') as file:
             return file.read()
-        
+
     @staticmethod
     def _writeFile(
-        path: str,
-        data: typing.Union[bytes, str]
-        ) -> None:
+            path: str,
+            data: typing.Union[bytes, str]
+            ) -> None:
         if not isinstance(data, bytes):
             data = data.encode()
 

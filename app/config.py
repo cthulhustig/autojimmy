@@ -203,10 +203,10 @@ class Config(object):
             self._settings.remove(Config._LogLevelKeyName)
 
         return True # Restart required
-    
+
     def proxyEnabled(self) -> bool:
         return self._proxyEnabled
-    
+
     def setProxyEnabled(self, enabled: bool) -> bool:
         if enabled == self._proxyEnabled:
             return False # Nothing has changed
@@ -214,7 +214,7 @@ class Config(object):
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
         return True # Restart required
-    
+
     # NOTE: If this returns 0 it means the proxy is disabled
     def proxyPort(self) -> int:
         return self._proxyPort
@@ -229,20 +229,20 @@ class Config(object):
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyPortKeyName, port)
         return True # Restart required
-    
+
     # Number of loopback addresses to listen on to work around 6 connection per
     # host limit
     def proxyHostPoolSize(self) -> int:
         return self._proxyHostPoolSize
-    
-    def setProxyHostPoolSize(self, size: int) -> bool: 
+
+    def setProxyHostPoolSize(self, size: int) -> bool:
         if size == self._proxyHostPoolSize:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyHostPoolSizeKeyName, size)
         return True # Restart required
-    
+
     # The Traveller Map URL used by the proxy
     def proxyMapUrl(self) -> str:
         return self._proxyMapUrl
@@ -253,12 +253,12 @@ class Config(object):
 
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyMapUrlKeyName, url)
-        return True # Restart required    
-    
+        return True # Restart required
+
     # Size of tile cache in bytes
     def proxyTileCacheSize(self) -> int:
         return self._proxyTileCacheSize
-    
+
     def setProxyTileCacheSize(self, size: int) -> bool:
         if size == self._proxyTileCacheSize:
             return False # Nothing has changed
@@ -266,11 +266,11 @@ class Config(object):
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyTileCacheSizeKeyName, size)
         return True # Restart required
-    
+
     # Lifetime of cache entries in days
     def proxyTileCacheLifetime(self) -> int:
         return self._proxyTileCacheLifetime
-    
+
     def setProxyTileCacheLifetime(self, days: int) -> bool:
         if days == self._proxyTileCacheLifetime:
             return False # Nothing has changed
@@ -278,10 +278,10 @@ class Config(object):
         # Don't update internal copy of setting, it's only applied after a restart
         self._settings.setValue(Config._ProxyTileCacheLifetimeKeyName, days)
         return True # Restart required
-    
+
     def proxySvgCompositionEnabled(self) -> bool:
         return self._proxySvgComposition
-    
+
     def setProxySvgCompositionEnabled(self, enabled) -> bool:
         if enabled == self._proxySvgComposition:
             return False # Nothing has changed
@@ -1095,7 +1095,7 @@ class Config(object):
         self._proxySvgComposition = self._loadBoolSetting(
             key=Config._ProxySvgCompositionKeyName,
             default=False)
-                
+
         self._milieu = self._loadEnumSetting(
             key=Config._MilieuKeyName,
             default=travellermap.Milieu.M1105,

@@ -429,7 +429,7 @@ class _NewSectorDialog(gui.DialogEx):
     _SectorFileFilter = 'Sector Files(*.sec *.tab *.t5 *.t5col *.t5row)'
     _MetadataFileFilter = 'Metadata Files(*.xml *.json)'
     _AllFileFilter = 'All Files(*.*)'
-    
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -724,7 +724,7 @@ class _NewSectorDialog(gui.DialogEx):
         if not os.path.exists(sectorFilePath):
             gui.MessageBoxEx.critical(f'Sector file doesn\'t exist')
             return
-        
+
         metadataFilePath = self._metadataFileLineEdit.text()
         if not metadataFilePath:
             gui.MessageBoxEx.critical('No sector metadata file selected')
@@ -732,7 +732,7 @@ class _NewSectorDialog(gui.DialogEx):
         if not os.path.exists(metadataFilePath):
             gui.MessageBoxEx.critical(f'Sector metadata file doesn\'t exist')
             return
-                
+
         renderStyle = self._renderStyleComboBox.currentEnum()
         renderOptions = self._renderOptionList()
 

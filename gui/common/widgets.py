@@ -743,10 +743,10 @@ class ComboBoxEx(QtWidgets.QComboBox):
             index
             ) -> typing.Any:
         return self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
-    
+
     def currentUserData(self) -> typing.Any:
         return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
-    
+
     def setCurrentByUserData(
             self,
             userData: typing.Any = None

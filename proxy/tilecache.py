@@ -19,13 +19,13 @@ _SvgCompositionConfigKey = 'tile_cache_svg_composition'
 _SqliteCacheKiB = 51200 # 50MiB
 
 _SetConnectionPragmaScript = \
-f"""
+    f"""
 PRAGMA cache_size = -{_SqliteCacheKiB};
 PRAGMA synchronous = NORMAL;
 """
 
 _CreateTileTableQuery = \
-f"""
+    f"""
 CREATE TABLE IF NOT EXISTS {_TileTableName} (
     query TEXT NOT NULL PRIMARY KEY,
     mime TEXT NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS {_TileTableName} (
 """
 
 _AddTileQuery = \
-f"""
+    f"""
 INSERT OR REPLACE INTO {_TileTableName} VALUES (
     :query,
     :mime,
@@ -66,7 +66,7 @@ _UpdateTileUsedQuery = \
 # When loading the metadata have it sorted by used time (oldest to newest) as it makes it
 # easier to initialise the memory cache which is also kept in usage order
 _LoadAllMetadataQuery = \
-f"""
+    f"""
 SELECT query, mime, size, milieu, x, y, width, height, scale, overlap, created, used
 FROM {_TileTableName} ORDER BY used ASC;
 """
@@ -203,7 +203,7 @@ class TileCache(object):
         try:
             self._dbConnection = await self._mapDatabase.connectAsync(
                 pragmaQuery=_SetConnectionPragmaScript)
-            
+
             await proxy.createSchemaTableAsync(
                 connection=self._dbConnection,
                 tableName=_TileTableName,
@@ -303,7 +303,7 @@ class TileCache(object):
                             exc_info=ex)
 
                 if progressCallback:
-                    progressCallback(progressStage, len(invalidEntries), len(invalidEntries))                    
+                    progressCallback(progressStage, len(invalidEntries), len(invalidEntries))
 
             # Commit all changes to the database
             await self._dbConnection.commit()
@@ -401,7 +401,7 @@ class TileCache(object):
             # Move most recently used item to end of cache so it will be evicted last
             self._memCache.move_to_end(tileQuery, last=True)
             return data
-        
+
         if self._diskMaxBytes <= 0:
             return None # Disk cache is disabled
 
@@ -508,7 +508,7 @@ class TileCache(object):
             valueType=str,
             deleteQuery=_DeleteAllTilesQuery,
             identString='map url')
-        
+
         # If the SVG composition setting has changed, delete all tiles that overlap
         # a custom sector
         await self._checkKeyValidityAsync(
@@ -795,4 +795,3 @@ class TileCache(object):
             currentTask = asyncio.current_task()
             if currentTask in self._backgroundTasks:
                 self._backgroundTasks.remove(currentTask)
-

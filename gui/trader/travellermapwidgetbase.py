@@ -609,20 +609,20 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                     let parsedUrl = new URL(url);
                     hostname = parsedUrl.hostname;
                 }}
-            
+
                 if (hostname.match(LoopbackRegex)) {{
                     let authority = "127.0.0." + nextImageHost;
                     if (document.location.port) {{
                         authority += ":" + document.location.port;
                     }}
                     url = document.location.protocol + "//" + authority + url;
-                
+
                     nextImageHost += 1
                     if (nextImageHost > imageHostCount) {{
                         nextImageHost = 1;
                     }}
                 }}
-            
+
                 return Util.real_fetchImage(url, img);
             }};
             """.format(poolSize=app.Config.instance().proxyHostPoolSize())
@@ -638,7 +638,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
         if proxy.MapProxy.instance().isRunning():
-            indexUrl =  proxy.MapProxy.instance().accessUrl()
+            indexUrl = proxy.MapProxy.instance().accessUrl()
         else:
             indexUrl = f'file:///{rootPath}/data/web/'
 

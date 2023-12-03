@@ -64,7 +64,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
             gui.configureWindowTitleBar(widget=self)
 
         return super().showEvent(e)
-    
+
     def _startNextJob(self) -> None:
         try:
             jobType = self._jobQueue.pop(0)
@@ -116,7 +116,3 @@ class StartupProgressDialog(QtWidgets.QDialog):
                 self._startNextJob()
             else:
                 self.accept()
-    
-            
-
-

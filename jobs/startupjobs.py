@@ -49,12 +49,12 @@ class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
         traveller.WorldManager.instance().loadSectors(
             progressCallback=self._handleProgressUpdate)
-        
+
 class LoadWeaponsJob(StartupJobBase):
     def executeJob(self) -> None:
         gunsmith.WeaponStore.instance().loadWeapons(
             progressCallback=self._handleProgressUpdate)
-        
+
 class StartProxyJob(StartupJobBase):
     def executeJob(self) -> None:
         proxy.MapProxy.instance().start(

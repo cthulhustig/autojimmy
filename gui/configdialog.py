@@ -132,7 +132,7 @@ class _ClearTileCacheDialog(QtWidgets.QDialog):
             except Exception as ex:
                 message = 'Clearing the tile cache succeeded but parsing response failed'
                 logging.warning(message, exc_info=ex)
-                gui.MessageBoxEx.warning(text=message, exception=ex)                
+                gui.MessageBoxEx.warning(text=message, exception=ex)
             self.accept()
         elif isinstance(result, Exception):
             message = 'Request to clear tile cache failed'
@@ -469,7 +469,7 @@ class ConfigDialog(gui.DialogEx):
             'is a conflict with another service running on your system.</p>' +
             restartRequiredText,
             escape=False))
-        
+
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
         self._proxyHostPoolSizeSpinBox.setRange(1, 10)
         self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
@@ -493,7 +493,7 @@ class ConfigDialog(gui.DialogEx):
             'additional load on the site.</b></p>'.format(app=app.AppName) +
             restartRequiredText,
             escape=False))
-        
+
         self._proxyMapUrlLineEdit = gui.LineEditEx()
         self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
         self._proxyMapUrlLineEdit.setMaximumWidth(200)
@@ -504,7 +504,7 @@ class ConfigDialog(gui.DialogEx):
             'URL here.</p>' +
             restartRequiredText,
             escape=False))
-        
+
         # The proxy mode control is only shown if CairoSVG is detected. It's used
         # to set the flag to indicate if SVG composition is enabled. It's shown as a
         # combo box to make it easier to explain to the user what the difference is
@@ -517,14 +517,14 @@ class ConfigDialog(gui.DialogEx):
         self._proxyCompositionModeComboBox.setEnabled(
             self._proxyEnabledCheckBox.isChecked())
         self._proxyCompositionModeComboBox.setHidden(
-            not depschecker.DetectedCairoSvgState)        
+            not depschecker.DetectedCairoSvgState)
         self._proxyCompositionModeComboBox.currentIndexChanged.connect(
             self._proxyModeChanged)
         self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
             '<p>Change the type of composition used when overlaying custom '
-            'sectors onto tiles from Traveller Map.</p>'  
+            'sectors onto tiles from Traveller Map.</p>'
             '<p>When CairoSVG is installed, there are multiple ways the proxy '
-            'can composite tiles.</p>' 
+            'can composite tiles.</p>'
             '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
             '<li><b>Hybrid</b> - Traveller map is used to generate SVG posters '
             'of the custom sectors, however, these posters are processed to '
@@ -540,7 +540,7 @@ class ConfigDialog(gui.DialogEx):
             'counts (and even then I don\'t really recommend it).</ul> '
             '</ul>' +
             restartRequiredText,
-            escape=False))          
+            escape=False))
 
         # NOTE: The tile cache size is shown in MB but is actually stored in bytes
         self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
@@ -562,12 +562,12 @@ class ConfigDialog(gui.DialogEx):
             app.Config.instance().proxyTileCacheLifetime())
         self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
         self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
-            '<p>Specify the max time the proxy will cache a tile on disk.</p>' 
+            '<p>Specify the max time the proxy will cache a tile on disk.</p>'
             '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
             restartRequiredText,
             escape=False))
-        
-        # NOTE: The button for clearing the tile cache is enabled/disabled 
+
+        # NOTE: The button for clearing the tile cache is enabled/disabled
         # based on if the proxy is currently running not if the enable check
         # box is currently checked. Clearing the cache is an immediate operation
         # that requires sending a request to the proxy process so it only makes
@@ -984,7 +984,7 @@ class ConfigDialog(gui.DialogEx):
                 self._proxyTileCacheLifetimeSpinBox.value()))
             checker.update(config.setProxySvgCompositionEnabled(
                 self._proxyCompositionModeComboBox.currentUserData()))
-            
+
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
             checker.update(config.setInterfaceScale(
                 self._interfaceScaleSpinBox.value() / 100)) # Convert percent to scale
@@ -992,7 +992,7 @@ class ConfigDialog(gui.DialogEx):
             checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
             checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))
             checker.update(config.setBestCaseColour(self._bestCaseColourButton.colour()))
-            
+
             checker.update(config.setTagColour(app.TagLevel.Desirable, self._desirableTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Warning, self._warningTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Danger, self._dangerTagColourButton.colour()))
@@ -1155,9 +1155,9 @@ class ConfigDialog(gui.DialogEx):
             return # Hybrid is selected, nothing to do
         gui.AutoSelectMessageBox.warning(
             text='SVG composition is VERY processor intensive and should only '
-                'be used on systems with high core counts.',
+            'be used on systems with high core counts.',
             stateKey='SvgCompositionPerformanceWarning')
-        
+
     def _clearTileCacheClicked(self) -> None:
         dlg = _ClearTileCacheDialog()
         dlg.exec()

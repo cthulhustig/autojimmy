@@ -161,7 +161,7 @@ class MapProxy(object):
                         raise RuntimeError(f'Map proxy failed to start ({message[1]})')
                     elif newStatus == MapProxy.ServerStatus.Stopped:
                         raise RuntimeError(f'Map proxy stopped unexpectedly during startup')
-                    
+
                 if common.utcnow() > (lastUpdateTime + MapProxy._startTimeout):
                     raise RuntimeError(f'Map proxy process stopped responding during startup')
         except:
@@ -184,7 +184,7 @@ class MapProxy(object):
 
     def isRunning(self) -> bool:
         return self._status is MapProxy.ServerStatus.Started
-    
+
     def accessUrl(self) -> str:
         return f'http://127.0.0.1:{self._listenPort}/'
 
@@ -228,15 +228,15 @@ class MapProxy(object):
 
         logging.info(f'Map Proxy {app.AppVersion}')
 
-        dbPath=os.path.join(appDir, _MapProxyDbFileName)
+        dbPath = os.path.join(appDir, _MapProxyDbFileName)
         logging.info(f'Listen Port: {listenPort}')
         logging.info(f'Host Pool Size: {hostPoolSize}')
         logging.info(f'Map URL: {travellerMapUrl}')
         logging.info(f'Tile Cache Size: {tileCacheSize}')
         logging.info(f'Tile Cache Lifetime: {tileCacheLifetime}')
         logging.info(f'SVG Composition: {svgComposition}')
-        logging.info(f'Map Database Path: {dbPath}')    
-        
+        logging.info(f'Map Database Path: {dbPath}')
+
         # This is a hack. The aiohttp server logs all requests at info level
         # where as I only want it logged at debug. The best way I can see to
         # achieve this is to set the server logging to a level that won't log
@@ -265,8 +265,8 @@ class MapProxy(object):
             # Set up database
             #
             database = proxy.Database(filePath=dbPath)
-            loop.run_until_complete(database.initAsync())            
-            
+            loop.run_until_complete(database.initAsync())
+
             progressCallback = \
                 lambda text, current, total: messageQueue.put((MapProxy.ServerStatus.Starting, text, current, total))
 
@@ -297,7 +297,7 @@ class MapProxy(object):
                 progressCallback=progressCallback))
 
             #
-            # Set up tile cache 
+            # Set up tile cache
             #
             tileCache = proxy.TileCache(
                 mapDatabase=database,
@@ -307,7 +307,7 @@ class MapProxy(object):
                 tileLifetime=tileCacheLifetime,
                 svgComposition=svgComposition)
             loop.run_until_complete(tileCache.initAsync(
-                progressCallback=progressCallback))             
+                progressCallback=progressCallback))
 
             #
             # Start web server
@@ -327,7 +327,7 @@ class MapProxy(object):
                 mainsMilieu=mainsMilieu)
             loop.run_until_complete(requestHandler.initAsync())
             if mainsData:
-                # Add static route for mains data        
+                # Add static route for mains data
                 requestHandler.addStaticRoute(
                     route='/res/mains.json',
                     data=mainsData,
@@ -339,8 +339,8 @@ class MapProxy(object):
             webApp.router.add_route(
                 method='*',
                 path='/{path:.*?}',
-                handler=requestHandler.handleRequestAsync)            
-            
+                handler=requestHandler.handleRequestAsync)
+
             # Only listen on loopback for security. Multiple loopback addresses
             # can be used to allow the client side to round robin requests to
             # different addresses in order to work around the hard coded limit

@@ -38,12 +38,12 @@ _LayersTableName = 'layers_cache'
 _CustomSectorTimestampConfigKey = 'layers_cache_custom_timestamp'
 
 _SetConnectionPragmaScript = \
-"""
+    """
 PRAGMA synchronous = NORMAL;
 """
 
 _CreateLayersTableQuery = \
-f"""
+    f"""
 CREATE TABLE IF NOT EXISTS {_LayersTableName} (
     name TEXT NOT NULL,
     milieu TEXT NOT NULL,
@@ -56,14 +56,14 @@ CREATE TABLE IF NOT EXISTS {_LayersTableName} (
 """
 
 _LoadLayersQuery = \
-f"""
+    f"""
 SELECT map, text
 FROM {_LayersTableName}
 WHERE milieu = :milieu AND x = :x AND y = :y AND scale = :scale;
 """
 
 _AddLayersQuery = \
-f"""
+    f"""
 INSERT INTO {_LayersTableName} VALUES (
     :name,
     :milieu,
@@ -270,7 +270,7 @@ class Compositor(object):
         logging.info(f'Compositor connecting to database')
         connection = await self._mapDatabase.connectAsync(
             pragmaQuery=_SetConnectionPragmaScript)
-        
+
         futureList: typing.List[asyncio.Future] = []
         try:
             await proxy.createSchemaTableAsync(
@@ -278,9 +278,9 @@ class Compositor(object):
                 tableName=_LayersTableName,
                 requiredSchema=_LayersTableSchema,
                 createTableQuery=_CreateLayersTableQuery)
-            
+
             logging.debug('Checking compositor layers validity')
-            await self._checkCacheValidityAsync(connection=connection)            
+            await self._checkCacheValidityAsync(connection=connection)
 
             for milieu in travellermap.Milieu:
                 milieuSectors = []
@@ -406,7 +406,7 @@ class Compositor(object):
                 continue
 
             pixelWidth = round((intersection[2] - intersection[0]) * tileScale)
-            pixelHeight = round((intersection[3] - intersection[1]) * tileScale)    
+            pixelHeight = round((intersection[3] - intersection[1]) * tileScale)
             if pixelWidth > 0 and pixelHeight > 0:
                 return Compositor.OverlapType.PartialOverlap
 
@@ -606,7 +606,7 @@ class Compositor(object):
             return tileImage
 
         return None
-    
+
     async def _checkCacheValidityAsync(
             self,
             connection: aiosqlite.Connection
@@ -688,7 +688,7 @@ class Compositor(object):
                     'An exception occurred when the compositor was purging the layers cache due to {ident} change'.format(
                         ident=identString),
                     exc_info=ex)
-                
+
     async def _addSectorImageAsync(
             self,
             customSector: _CustomSector,
@@ -760,7 +760,7 @@ class Compositor(object):
                         mainImage=mainImage,
                         textMask=textMask,
                         scale=scale))
-                    
+
                     sectorPosition = customSector.position()
                     queryArgs = {
                         'name': customSector.name(),
@@ -772,7 +772,7 @@ class Compositor(object):
                         'map': sqlite3.Binary(mapBytes),
                         'text': sqlite3.Binary(textBytes)}
                     async with connection.execute(_AddLayersQuery, queryArgs):
-                        pass                           
+                        pass
             else:
                 customSector.addMapPoster(_CompositorImage(
                     imageType=_CompositorImage.ImageType.Bitmap,
@@ -944,7 +944,7 @@ class Compositor(object):
                 f'{srcPixelRect[0]}, {srcPixelRect[1]}, {srcPixelRect[2] - srcPixelRect[0]}, {srcPixelRect[3] - srcPixelRect[1]}'
             tree['clip'] = \
                 f'{srcPixelRect[0]} {srcPixelRect[1]} {srcPixelRect[2]} {srcPixelRect[3]}'
-            
+
             result = Compositor._renderSvgTree(
                 svgTree=tree,
                 tgtPixelDim=tgtPixelDim)
@@ -955,6 +955,7 @@ class Compositor(object):
 
     # NOTE: Clipping assumes the tree is for a 32x40 hex poster image
     _TranslationRegex = re.compile(r'translate\((.+),\s*(.+)\)\s+scale\(1.1547 1\)')
+
     @staticmethod
     def _clipSvgTree(
             svgTree: cairosvg.parser.Tree,
@@ -1001,7 +1002,7 @@ class Compositor(object):
                     continue
 
                 if (translationX < clipMinX) or (translationX > clipMaxX) or \
-                    (translationY < clipMinY) or (translationY > clipMaxY):
+                        (translationY < clipMinY) or (translationY > clipMaxY):
                     continue
 
                 newChildren.append(possible)
@@ -1024,7 +1025,7 @@ class Compositor(object):
             map_rgba=Compositor._mapColour)
 
         # Use a PIL Image to convert the bitmap to a PNG. This is done rather than
-        # using PNGSurface to generate the PNG as I found using it resulted in a 
+        # using PNGSurface to generate the PNG as I found using it resulted in a
         # green tint around text at some zoom levels. Using PIL also appears to be
         # slightly faster (at least on my machine)
         image = PIL.Image.frombytes(
@@ -1035,7 +1036,7 @@ class Compositor(object):
         image.save(buffer, format='PNG')
         buffer.seek(0)
         return buffer.read()
-    
+
     @staticmethod
     def _mapColour(
             colour: typing.Tuple[int, int, int, int]

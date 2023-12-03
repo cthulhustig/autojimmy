@@ -59,7 +59,7 @@ class RequestHandler(object):
 
         def mimeType(self) -> str:
             return self._mimeType
-        
+
     # This limits the max out going connections to Traveller Map. The value of 6 is based on the
     # limit Chrome uses and is similar the value used by other browsers. The value is ignored
     # when accessing instances of Traveller Map over loopback.
@@ -67,7 +67,7 @@ class RequestHandler(object):
     # PLEASE DO NOT INCREASE THIS VALUE.
     # Traveller Map is a free service, increasing this value puts extra load on their servers,
     # costing they people who run it money and affecting performance for other users.
-    _MaxConnectionsPerHost = 6        
+    _MaxConnectionsPerHost = 6
 
     # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15
     # seconds. I'm overriding this to make navigation of the map more responsive
@@ -368,6 +368,7 @@ class RequestHandler(object):
         'Content-Type',
         'Cache-Control'
     ]
+
     async def _handleProxyRequestAsync(
             self,
             request: aiohttp.web.Request,
@@ -449,7 +450,7 @@ class RequestHandler(object):
         body = json.dumps({
             'memoryTiles': memTileCount,
             'diskTiles': diskTileCount})
-        
+
         headers = {
             'Content-Length': str(len(body)),
             'Content-Type': 'application/json',

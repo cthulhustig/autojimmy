@@ -438,12 +438,12 @@ def main() -> None:
         startupProgress = gui.StartupProgressDialog()
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             raise startupProgress.exception()
-        
+
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        startupProgress.deleteLater()        
-        
+        startupProgress.deleteLater()
+
         # Configure the tile client to use the proxy if it's running
         if proxy.MapProxy.instance().isRunning():
             travellermap.TileClient.configure(
