@@ -122,10 +122,10 @@ Some distros, such as recent versions of Ubuntu, come with it already installed.
 ## Common Issues
 
 ### Windows: Installing requirements.txt fails for Python 3.12
-At the time of writing Python 3.12 is relatively new and the precompiled wheels used by some
+At the time of writing, Python 3.12 is relatively new, and the precompiled wheels used by some
 packages have not yet been rebuilt for it. The wheels will automatically be built as part of
-the install, however, this will fail with the error below if you don't have the Visual Studio
-Build Tools installed on your system.
+the installation, however, this will fail with the error below if you don't have the Visual
+Studio Build Tools installed on your system.
 
 > ERROR: Could not build wheels for frozenlist, multidict, which is required to install pyproject.toml-based projects
 
