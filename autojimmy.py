@@ -235,13 +235,14 @@ def _hostPoolSizeCheck() -> int:
         
         message = """
             <p>The proxy is configured to have a host pool size of {requested}
-            but only {available} IPv4 loopback addresses are available. This
-            may reduce performance when displaying Traveller Map.</p>
+            but only {available} IPv4 loopback {wording} available. This may
+            reduce performance when displaying Traveller Map.</p>
             <p>For a pool size of {requested}, the loopback addresses
             127.0.0.1 -> 127.0.0.{available} must be enabled.</p>
             """.format(
                 requested=requestedHostCount,
-                available=availableHostCount)
+                available=availableHostCount,
+                wording='address is' if availableHostCount == 1 else 'addresses are')
         gui.AutoSelectMessageBox.warning(
             text=message,
             stateKey='NoHostPoolInterfaces')
