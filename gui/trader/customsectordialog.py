@@ -11,7 +11,6 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 # TODO: Need spell/grammar check this
-# TODO: Add link to documentation covering install of CairoSVG
 _WelcomeMessage = """
     <html>
     <p>The Custom Sectors dialog allows you to add your own sector definitions along with associated

@@ -69,22 +69,23 @@ def _cairoSvgInstallCheck() -> bool: # True if the application should continue, 
 
     alwaysShowPrompt = False
     if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:
-        promptMessage = 'The CairoSVG Python library is not installed.'
+        promptMessage = 'The CairoSVG Python package is not installed.'
         promptIcon = QtWidgets.QMessageBox.Icon.Information
         logging.info(promptMessage)
     elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
-        promptMessage = 'The CairoSVG Python library is installed but it failed to find the Cairo system libraries that it requires.'
+        promptMessage = 'The CairoSVG Python package is installed but it failed to find the Cairo libraries that it requires.'
         promptIcon = QtWidgets.QMessageBox.Icon.Warning
         logging.warning(promptMessage)
     else:
-        promptMessage = 'The CairoSVG Python library is in an unknown state.'
+        promptMessage = 'The CairoSVG Python package is in an unknown state.'
         promptIcon = QtWidgets.QMessageBox.Icon.Critical
         alwaysShowPrompt = True
         logging.error(promptMessage)
 
     promptMessage += \
-        '<br><br>New custom sector posters will be created using PNG images, this can ' + \
-        'introduce more render artifacts around their borders.'
+        '<br><br>New custom sector posters will be created using PNG images. This can ' \
+        'introduce more visual artifacts around the borders of custom sectors when ' \
+        'compositing them onto tiles returned by Traveller Map.'
 
     if svgCustomSectors:
         # Always show the prompt if there are SVG sectors that won't be rendered
@@ -99,7 +100,8 @@ def _cairoSvgInstallCheck() -> bool: # True if the application should continue, 
         else:
             promptMessage += f' There are currently {len(svgCustomSectors)} custom sectors using SVG posters.'
 
-    promptMessage += '<br><br>CairoSVG install info: <a href=\'https://cairosvg.org/documentation/\'>https://cairosvg.org/documentation/</a>'
+    promptMessage += '<br><br>Details on how to install the CairoSVG package and its required libraries can ' \
+        f'be found at <a href=\'{app.AppURL}\'>{app.AppURL}</a>.'
     promptMessage += f'<br><br>Do you want to continue loading {app.AppName}?'
 
     promptMessage = f'<html>{promptMessage}</html>'
