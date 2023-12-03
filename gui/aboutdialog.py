@@ -9,7 +9,7 @@ _AboutText = """
     <h1 style="text-align: center">{name} v{version}</h1>
     <p>Copyright (C) 2023 CthulhuStig</p>
     <p>Universe Data Timestamp: {timestamp}</p>
-    <p>Source Code: <a href="https://github.com/cthulhustig/autojimmy">https://github.com/cthulhustig/autojimmy</a></p>
+    <p>Source Code: <a href="{url}">{url}</a></p>
     <p>This program is free software: you can redistribute it and/or modify<br>
     it under the terms of the GNU General Public License as published by<br>
     the Free Software Foundation, either version 3 of the License, or<br>
@@ -44,8 +44,10 @@ class AboutDialog(gui.DialogEx):
         self._aboutLabel = QtWidgets.QLabel(_AboutText.format(
             name=app.AppName,
             version=app.AppVersion,
-            timestamp=universeTimestamp))
-        self._aboutLabel.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+            timestamp=universeTimestamp,
+            url=app.AppURL))
+        self._aboutLabel.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         self._aboutLabel.setOpenExternalLinks(True)
 
         self._licensingButton = QtWidgets.QPushButton("Licensing...")
