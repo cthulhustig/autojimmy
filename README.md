@@ -99,8 +99,8 @@ On Windows, libcairo can be installed using the package manager that comes with 
    it.
 
 #### Install libcairo on macOS
-On macOS, libcairo can be installed using the brew package manager.
-1. Follow the instructions here to install brew https://brew.sh/
+On macOS, libcairo can be installed using the Homebrew package manager.
+1. Follow the instructions here to install Homebrew https://brew.sh/
 2. Open a terminal or command prompt.
 3. Run the following command:
    ```
