@@ -303,6 +303,7 @@ class TileCache(object):
                             exc_info=ex)
 
                 if progressCallback:
+                    # Force 100% progress notification
                     progressCallback(progressStage, len(invalidEntries), len(invalidEntries))
 
             # Commit all changes to the database
