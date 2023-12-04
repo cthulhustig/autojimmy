@@ -149,8 +149,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     # profile from the get go.
     _sharedProfile = None
 
-    _sharedRequestInterceptor = None
-
     # Next script id (used for debugging)
     _nextScriptId = 1
 
