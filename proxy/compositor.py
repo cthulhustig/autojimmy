@@ -889,7 +889,7 @@ class Compositor(object):
                 del overlayImage
 
         return tgtImage
-    
+
     async def _shutdownProcessPoolAsync(self) -> None:
         if self._processExecutor:
             if common.pythonVersionCheck((3, 9)):

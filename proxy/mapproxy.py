@@ -191,7 +191,7 @@ class MapProxy(object):
     def status(self) -> 'MapProxy.ServerStatus':
         self._updateStatus()
         return self._status
-    
+
     def hostPoolSize(self) -> int:
         return self._hostPoolSize
 

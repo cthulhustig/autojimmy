@@ -196,7 +196,7 @@ def _snapshotUpdateCheck(
 # Check that the loopback addresses required for the proxy host pool
 # are available. This is required as macOS (and possibly some Linux
 # distros) only enables 127.0.0.1 by default.
-def _hostPoolSizeCheck() -> int:  
+def _hostPoolSizeCheck() -> int:
     requestedHostCount = app.Config.instance().proxyHostPoolSize()
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
@@ -218,11 +218,11 @@ def _hostPoolSizeCheck() -> int:
     if availableHostCount == 0:
         logging.error(
             'Proxy will be disabled as no IPv4 loopback addresses were found')
-        
+
         message = """
             <p>The proxy will be disabled as no IPv4 loopback addresses were
             found. When the proxy is disabled, custom sectors will not be overlaid
-            on Traveller Map.</p>    
+            on Traveller Map.</p>
             """
         gui.AutoSelectMessageBox.critical(
             text=message,
@@ -233,7 +233,7 @@ def _hostPoolSizeCheck() -> int:
             '{available} due to insufficient IPv4 loopback addresses.'.format(
                 requested=requestedHostCount,
                 available=availableHostCount))
-        
+
         message = """
             <p>The proxy is configured to have a host pool size of {requested}
             but only {available} IPv4 loopback {wording} available. This may
@@ -241,9 +241,9 @@ def _hostPoolSizeCheck() -> int:
             <p>For a pool size of {requested}, the loopback addresses
             127.0.0.1 -> 127.0.0.{requested} must be enabled.</p>
             """.format(
-                requested=requestedHostCount,
-                available=availableHostCount,
-                wording='address is' if availableHostCount == 1 else 'addresses are')
+            requested=requestedHostCount,
+            available=availableHostCount,
+            wording='address is' if availableHostCount == 1 else 'addresses are')
         gui.AutoSelectMessageBox.warning(
             text=message,
             stateKey='NoHostPoolInterfaces')
