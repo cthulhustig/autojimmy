@@ -497,7 +497,10 @@ def main() -> None:
 
         startupProgress = gui.StartupProgressDialog(startProxy=startProxy)
         if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            raise startupProgress.exception()
+            exception = startupProgress.exception()
+            if exception is not None:
+                raise exception
+            raise RuntimeError('Startup failed with an unknown error')
 
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application

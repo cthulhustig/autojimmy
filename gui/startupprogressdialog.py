@@ -45,7 +45,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
-    def exception(self) -> Exception:
+    def exception(self) -> typing.Optional[Exception]:
         return self._exception
 
     def exec(self) -> int:
