@@ -51,7 +51,7 @@ Before you begin, ensure that you have the following prerequisites installed:
 
 > [!IMPORTANT]  
 > If you're using Python 3.12 see
-> [Installing requirements.txt fails for Python 3.12](#windows-installing-requirementstxt-fails-for-python-312)
+> [Installing requirements.txt fails for Python 3.12](./docs/known_issues.md#windows-installing-requirementstxt-fails-for-python-312)
 
 ### Step 1: Download the Auto-Jimmy Source Code
 Downloading the source code can be done either by cloning the repo with git or downloading a zip archive.
