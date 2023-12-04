@@ -28,7 +28,7 @@ Python and can be run on Windows, Linux and macOS.
     and best case dice roles at each point in the trading process
 * Import of custom sectors
     * Custom sector data integrated into all tools
-    * Posters of custom sectors automatically generated and merged into Traveller Map views
+    * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
     * Support for T5 Column & Row sector files and XML & JSON metadata
 
 ## Installing
@@ -50,7 +50,7 @@ Before you begin, ensure that you have the following prerequisites installed:
 * Pip (Python package installer)
 
 > [!IMPORTANT]  
-> If you're using Python 3.12 see
+> If you're using Python 3.12 on Windows, see
 > [Installing requirements.txt fails for Python 3.12](./docs/known_issues.md#windows-installing-requirementstxt-fails-for-python-312)
 
 ### Step 1: Download the Auto-Jimmy Source Code
@@ -86,15 +86,16 @@ posters onto the map tiles Traveller Map uses to display the universe, however, 
 has the added advantage that SVG posters take less time to generate.
 
 #### Install libcairo on Windows
-On Windows, libcairo can be installed using the package manager that comes with MSYS2.
-1. Follow the instructions here to install MSYS2 https://www.msys2.org/. When prompted to
+On Windows, libcairo can be installed using the package manager that comes with
+[MSYS2](https://www.msys2.org/).
+1. Follow the instructions from https://www.msys2.org/ to install MSYS2 . When prompted to
    choose an install location, it's recommended to use the default of `c:\msys64`
 2. Once the installer has completed it should launch a MSYS2 command prompt. If it doesn't
    happen, or you already have MSYS2 installed, you can launch one from the Windows Start
    Menu.
 
    Note: MSYS2 adds multiple command prompt entries to the Start Menu, each for a different
-   compiler. It doesn't which you use to run the following command.
+   compiler. It doesn't matter which you use to run the following command.
 3. Run the following command from the MSYS2 command prompt:
    ```
    pacman -S mingw-w64-x86_64-cairo
@@ -104,9 +105,9 @@ On Windows, libcairo can be installed using the package manager that comes with 
    it.
 
 #### Install libcairo on macOS
-On macOS, libcairo can be installed using the Homebrew package manager.
-1. Follow the instructions here to install Homebrew https://brew.sh/
-2. Open a terminal or command prompt.
+On macOS, libcairo can be installed using the [Homebrew package manager](https://brew.sh/).
+1. Follow the instructions at https://brew.sh/ to install Homebrew 
+2. Open a terminal.
 3. Run the following command:
    ```
    brew install cairo
