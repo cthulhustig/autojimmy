@@ -875,11 +875,7 @@ class Compositor(object):
 
             if tgtImage == None:
                 # No target was specified to overlay the custom sector on so just return the
-                # cropped and resized section of the source image.
-                # NOTE: If no cropping or resizing performed a copy MUST be made as the source
-                # image shouldn't be returned as something may delete it
-                # NOTE: It's important to set tgtImage to srcImage to prevent it being deleted
-                # in the finally clause
+                # cropped and rendered image
                 tgtImage = overlayImage
             else:
                 # Copy custom sector section over current tile using it's alpha channel as a mask
