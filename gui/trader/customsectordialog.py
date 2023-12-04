@@ -27,8 +27,8 @@ _WelcomeMessage = """
     <li>The posters of your custom sectors will be generated at the point you
     add the sector. This means the display options (render style, filled
     borders, sector grid etc) are fixed at the point you add the sector. If you
-    change the display options in the Traveller Map windows displayed in the
-    app, custom sectors will not reflect the change.</li>
+    change the display options in the Traveller Map windows, custom sectors
+    will not reflect the change.</li>
     <li>The eye candy style isn't supported.</li>
     <li>The overlaying of custom sector posters onto tiles is not perfect. You
     may see some visual artifacts around the borders where custom sectors meet
