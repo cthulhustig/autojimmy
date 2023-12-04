@@ -572,7 +572,7 @@ class ConfigDialog(gui.DialogEx):
         # box is currently checked. Clearing the cache is an immediate operation
         # that requires sending a request to the proxy process so it only makes
         # sense when it's actually running
-        self._clearTileCacheButton = QtWidgets.QPushButton('Clear Tile Cache')
+        self._clearTileCacheButton = QtWidgets.QPushButton('Clear')
         self._clearTileCacheButton.setEnabled(proxy.MapProxy.instance().isRunning())
         self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
 
@@ -584,7 +584,7 @@ class ConfigDialog(gui.DialogEx):
         proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
         proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
         proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
-        proxyLayout.addRow('', self._clearTileCacheButton)
+        proxyLayout.addRow('Clear Tile Cache:', self._clearTileCacheButton)
 
         proxyGroupBox = QtWidgets.QGroupBox('Proxy')
         proxyGroupBox.setLayout(proxyLayout)
