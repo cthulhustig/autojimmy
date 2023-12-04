@@ -326,8 +326,7 @@ class MapProxy(object):
                 travellerMapUrl=travellerMapUrl,
                 installDir=installDir,
                 tileCache=tileCache,
-                compositor=compositor,
-                mainsMilieu=mainsMilieu)
+                compositor=compositor)
             loop.run_until_complete(requestHandler.initAsync())
             if mainsData:
                 # Add static route for mains data

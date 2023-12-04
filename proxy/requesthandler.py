@@ -65,12 +65,13 @@ class RequestHandler(object):
     # when accessing instances of Traveller Map over loopback.
     #
     # PLEASE DO NOT INCREASE THIS VALUE.
-    # Traveller Map is a free service, increasing this value puts extra load on their servers,
-    # costing they people who run it money and affecting performance for other users.
+    # Traveller Map is a free service and increasing this value will put extra load on their
+    # servers.
     _MaxConnectionsPerHost = 6
 
     # By default the aiohttp ClientSession connection pool seems to keep connections alive for ~15
-    # seconds. I'm overriding this to make navigation of the map more responsive
+    # seconds. I'm overriding this to avoid the overhead of making new connections and the effect
+    # that has on render performance
     _ConnectionKeepAliveSeconds = 60
 
     def __init__(
@@ -78,15 +79,13 @@ class RequestHandler(object):
             travellerMapUrl: str,
             installDir: str,
             tileCache: proxy.TileCache,
-            compositor: typing.Optional[proxy.Compositor],
-            mainsMilieu: typing.Optional[travellermap.Milieu]
+            compositor: typing.Optional[proxy.Compositor]
             ) -> None:
         super().__init__()
         self._travellerMapUrl = travellerMapUrl
         self._installDir = installDir
         self._tileCache = tileCache
         self._compositor = compositor
-        self._mainsMilieu = mainsMilieu
         self._staticRoutes: typing.Dict[str, RequestHandler._StaticRouteData] = {}
 
         parsedUrl = urllib.parse.urlparse(travellerMapUrl)
@@ -95,9 +94,10 @@ class RequestHandler(object):
         # Allow unlimited connections per host if connecting over loopback
         maxConnectionsPerHost = 0 if isLoopback else RequestHandler._MaxConnectionsPerHost
 
-        # As far as I can tell connection reuse requires HTTP/2 which in turns requires
-        # SSL (https://caniuse.com/http2). I was seeing exceptions when using my local
-        # Traveller Map over HTTP but not when accessing the main site over HTTPS.
+        # It looks like connection reuse requires HTTP/2 which in turns requires
+        # SSL (https://caniuse.com/http2). I was seeing exceptions when using my
+        # local Traveller Map over HTTP but not when accessing the main site
+        # over HTTPS.
         if parsedUrl.scheme.lower() == 'https':
             self._connector = aiohttp.TCPConnector(
                 limit_per_host=maxConnectionsPerHost,
@@ -201,7 +201,7 @@ class RequestHandler(object):
             tileImage = await self._tileCache.lookupAsync(tileQuery=request.query_string)
         except Exception as ex:
             logging.error(
-                f'Error occurred when looking up tile {request.query_string} in tile cache',
+                f'An exception occurred when looking up tile {request.query_string} in tile cache',
                 exc_info=ex)
             # Continue so tile is still generated
 
@@ -298,7 +298,9 @@ class RequestHandler(object):
                         newBytes.seek(0)
                         tileBytes = newBytes.read()
                 except Exception as ex:
-                    logging.error(f'Failed to composite tile {request.query_string}', exc_info=ex)
+                    logging.error(
+                        f'An exception occurred while composite tile {request.query_string}',
+                        exc_info=ex)
                     shouldCacheTile = False # Don't cache tiles if they failed to generate
                 finally:
                     if tileImage:
@@ -307,19 +309,21 @@ class RequestHandler(object):
                 logging.debug(f'Serving live response for tile {request.query_string}')
 
             if not tileBytes:
-                # If we get to here with no tile bytes it means something wen't wrong performing a simple
-                # copy. In this situation the only real option is to request the tile from Traveller Map and
-                # return that
-                logging.debug(f'Requesting fallback tile for {request.query_string}')
+                # If we get to here with no tile bytes it means something wen't
+                # wrong. In this situation the only real option is to request
+                # the tile from Traveller Map and return that
+                logging.debug(
+                    f'Requesting fallback tile for {request.query_string}')
                 tileBytes, contentType, targetFormat = await self._makeTileRequestAsync(request)
                 shouldCacheTile = False # Don't cache tile when using a fallback tile
                 if not tileBytes:
-                    # We're having a bad day, something also wen't wrong getting the tile from Traveller
-                    # Map. Not much to do apart from bail
-                    raise RuntimeError(f'Proxied tile request returned no data for tile {request.query_string}')
+                    # We're having a bad day, something also wen't wrong getting
+                    # the tile from Traveller Map. Not much to do apart from bail
+                    raise RuntimeError(
+                        f'Proxied tile request returned no data for tile {request.query_string}')
 
             # Add the tile to the cache. Depending on the logic above this could either be a tile
-            # as-is from Traveller Map or a composite tile
+            # as-is from Traveller Map or a composited tile
             if shouldCacheTile and tileBytes and targetFormat and overlapType:
                 tileImage = travellermap.MapImage(
                     bytes=tileBytes,
