@@ -44,11 +44,11 @@ This issue can be resolved by executing the following command
 sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
 ```
 
-## Debian/Ubuntu: The integrated Traveller Map view is blank
+## Debian/Ubuntu: The Traveller Map window is blank
 > [!IMPORTANT]
 > If using venv to run Python, it's recommended to create a new virtual environment
-> specifically for running Auto-Jimmy, then repeat [Install Python Dependencies] for
-> that environment before continuing with this fix.
+> specifically for running Auto-Jimmy, then repeat [Install Python Dependencies](../README.md#step-2-install-python-dependencies)
+> for that environment before continuing with this fix.
 
 > [!NOTE]
 > There may be a better way to resolve this. If you know of one, please raise an
@@ -73,7 +73,7 @@ ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site
 
 ## Debian/Ubuntu: Installing requirements.txt fails when upgrading Auto-Jimmy
 If your running Python in a venv and have previously used the workaround for 
-[Integrated Traveller Map view is blank](https://github.com/cthulhustig/autojimmy#debianubuntu-the-integrated-traveller-map-view-is-blank),
+[The Traveller Map window is blank](#debianubuntu-the-traveller-map-window-is-blank),
 you may get a error similar to the following after downloading a new version
 of the Auto-Jimmy source and using pip to install requirements for the new
 version.
@@ -92,7 +92,7 @@ venv being used and `<PYTHON_VERSION>` with the version of python being used
 4. ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 
 > [!NOTE]
-> There may be a better way to resolve [Integrated Traveller Map view is blank](https://github.com/cthulhustig/autojimmy#debianubuntu-the-integrated-traveller-map-view-is-blank).
+> There may be a better way to resolve [The Traveller Map window is blank](#debianubuntu-the-traveller-map-window-is-blank).
 > If you know of one, please raise an [Issue](https://github.com/cthulhustig/autojimmy/issues)
 > with details of how so I can update this help.
 

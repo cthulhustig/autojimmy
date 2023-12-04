@@ -40,7 +40,7 @@ running it. If you have problems, check out the [Common Issues](#Common-Issues) 
 For Linux, macOS and more adventurous Windows users, the instructions below cover how to download
 Auto-Jimmy, install dependencies and run the application.
 
-> [!IMPORTANT]  
+> [!NOTE]  
 > If you have any problems when installing, you can check the
 > [Known Issues](./docs/known_issues.md) for a possible solution.
 
