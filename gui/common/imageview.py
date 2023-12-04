@@ -46,6 +46,7 @@ class ImageView(QtWidgets.QGraphicsView):
         scene.setSceneRect(0, 0, self._pixmap.width(), self._pixmap.height())
         self.setScene(scene)
         self.resetTransform()
+        return True
 
     def currentScale(self) -> typing.Tuple[float, float]:
         transform = self.transform()
