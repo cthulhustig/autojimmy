@@ -110,3 +110,25 @@ certificates.
 1. From the main toolbar select *Go > Applications*
 2. Find the application directory for Python 3.x and open it
 3. Click on "Install Certificates.command" and select *Open*
+
+## macOS: When starting Auto-Jimmy a warning is displayed saying there are not enough IPv4 loopback addresses available
+This can happen if you've set the proxy host pool size to a value higher than 1
+on macOS. The host pool size specifies the number of loopback addresses (e.g.
+127.0.0.x) that the proxy will bind to in order to work around the hard coded
+limit of 6 connections per host imposed by the Chromium web browser Auto-Jimmy
+uses to display Traveller Map. In order for the proxy to use additional loopback
+addresses they must be enabled in the OS, however, macOS only enables the
+127.0.0.1 loopback address by default.
+
+Details of how to enable additional loopback addresses can be found here. Note
+that you will need to repeat the instructions for each additional address you
+enable. For example, if you set the host pool size to 4 you will need to enable
+127.0.0.2, 127.0.0.3 & 127.0.0.4.
+
+https://medium.com/@david.limkys/permanently-create-an-ifconfig-loopback-alias-macos-b7c93a8b0db
+
+> [!NOTE]
+> The host pool size only affects the number of simultaneous connections made
+> between Auto-Jimmy and the proxy, this is done to make better use of the
+> proxies tile cache. The proxy will still impose a limit of 6 simultaneous
+> connections to travellermap.com so as not to place additional load on the site.

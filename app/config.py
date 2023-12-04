@@ -1,4 +1,5 @@
 import app
+import common
 import darkdetect
 import enum
 import logging
@@ -1076,9 +1077,11 @@ class Config(object):
             default=61977,
             minValue=1024, # Don't allow system ports
             maxValue=65535)
+        # NOTE: Default to 1 host on macOS as it doesn't enable other loopback
+        # addresses by default
         self._proxyHostPoolSize = self._loadIntSetting(
             key=Config._ProxyHostPoolSizeKeyName,
-            default=4,
+            default=1 if common.isMacOS() else 4,
             minValue=1,
             maxValue=10)
         self._proxyMapUrl = self._loadUrlSetting(
