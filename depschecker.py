@@ -50,7 +50,7 @@ if platform.system() == 'Windows':
     if os.path.exists(libcairoPath):
         os.environ["PATH"] += os.pathsep + libcairoPath
 
-# Try to import each of the required modules to display
+# Try to import each of the required modules
 _MissingRequirements = []
 for lib in _Requirements:
     try:
@@ -60,7 +60,7 @@ for lib in _Requirements:
             # CairoSVG is optional
             DetectedCairoSvgState = CairoSvgState.NoLibraries
             continue
-        raise # Rethrow other OSErrors on
+        raise # Rethrow other OSErrors
     except ModuleNotFoundError as ex:
         if lib == _CairoModuleName:
             # CairoSVG is optional
