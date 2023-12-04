@@ -216,13 +216,12 @@ class Config(object):
         self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
         return True # Restart required
 
-    # NOTE: If this returns 0 it means the proxy is disabled
     def proxyPort(self) -> int:
         return self._proxyPort
 
     def setProxyPort(
             self,
-            port: int # 0 == proxy disabled
+            port: int
             ) -> None:
         if port == self._proxyPort:
             return False # Nothing has changed
