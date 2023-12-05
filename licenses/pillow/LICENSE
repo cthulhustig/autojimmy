@@ -29,7 +29,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
  
-===== brotli-1.0.9 ===== 
+===== brotli-1.1.0 ===== 
  
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
 
@@ -51,7 +51,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  
-===== freetype-2.13.0 ===== 
+===== freetype-2.13.2 ===== 
  
 FREETYPE LICENSES
 -----------------
@@ -609,7 +609,7 @@ consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Library General
 Public License instead of this License.
  
-===== harfbuzz-7.1.0 ===== 
+===== harfbuzz-8.2.1 ===== 
  
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
 For parts of HarfBuzz that are licensed under different licenses see individual
@@ -678,7 +678,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
-===== libjpeg-turbo-2.1.5.1 ===== 
+===== libjpeg-turbo-3.0.0 ===== 
  
 LEGAL ISSUES
 ============
@@ -862,7 +862,7 @@ attribution and endorsement protections to other entities.  Thus, it was
 desirable to choose a license that granted us the same protections for new code
 that were granted to the IJG for code derived from their software.
  
-===== libwebp-1.3.0 ===== 
+===== libwebp-1.3.2 ===== 
  
 Copyright (c) 2010, Google Inc. All rights reserved.
 
@@ -1074,7 +1074,7 @@ be appreciated.
  * POSSIBILITY OF SUCH DAMAGE.
  */
  
-===== tiff-4.5.0 ===== 
+===== tiff-4.6.0 ===== 
  
 # LibTIFF license
 
@@ -1100,7 +1100,7 @@ WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
 LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 
 OF THIS SOFTWARE.
  
-===== xz-5.4.2 ===== 
+===== xz-5.4.4 ===== 
  
 
 XZ Utils Licensing
@@ -1179,9 +1179,9 @@ XZ Utils Licensing
     information.
 
  
-===== zlib-1.2.13 ===== 
+===== zlib-1.3 ===== 
  
- (C) 1995-2022 Jean-loup Gailly and Mark Adler
+ (C) 1995-2023 Jean-loup Gailly and Mark Adler
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

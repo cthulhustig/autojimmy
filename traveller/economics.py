@@ -133,6 +133,7 @@ class Economics(object):
 
     @staticmethod
     def _sanitise(culture: str) -> str:
+        culture = culture.strip('()')
         sanitized = ''
         for index in range(4):
             sanitized += Economics._sanitiseElement(index, culture)

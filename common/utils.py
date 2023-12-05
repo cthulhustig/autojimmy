@@ -1,6 +1,9 @@
+import datetime
 import enum
+import ipaddress
 import itertools
 import locale
+import math
 import platform
 import re
 import typing
@@ -68,6 +71,11 @@ def clamp(
         maxValue: typing.Union[float, int]
         ) -> typing.Union[float, int]:
     return max(minValue, min(value, maxValue))
+
+# This is the recommended way get UTC time in Python 3 (rather than using datetime.utcnow)
+# https://docs.python.org/3/library/datetime.html#datetime.datetime.utcnow
+def utcnow() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 # List of characters that are illegal in filenames on Windows, Linux and macOS.
@@ -175,3 +183,39 @@ def humanFriendlyListString(strings: typing.Sequence[str]) -> str:
 
     result += ' & ' + strings[count - 1]
     return result
+
+
+_ByteSizeSuffixes = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
+def humanFriendlyByteSizes(byteSize) -> str:
+    if byteSize == 0:
+        return '0B'
+    i = int(math.floor(math.log(byteSize, 1024)))
+    if i >= len(_ByteSizeSuffixes):
+        return f'{byteSize}B'
+    p = math.pow(1024, i)
+    s = round(byteSize / p, 2)
+    return f'{s}{_ByteSizeSuffixes[i]}'
+
+def isLoopback(host: str) -> bool:
+    host = host.lower()
+    if host == 'localhost' or host == 'loopback':
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False # Not an IP so not loopback
+
+def pythonVersionCheck(
+        minVersion: typing.Tuple[int, int, typing.Optional[int]]
+        ) -> bool:
+    try:
+        version = platform.python_version_tuple()
+        version = [int(num) for num in version]
+        for index, minNum in enumerate(minVersion):
+            checkNum = version[index] if index < len(version) else 0
+            if checkNum < minNum:
+                return False
+        return True
+    except:
+        # If something goes wrong assume we don't meet the min version
+        return False

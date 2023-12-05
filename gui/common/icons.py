@@ -19,6 +19,9 @@ class Icon(enum.Enum):
     ExportFile = 'export_file.svg'
     Search = 'search.svg'
     Info = 'info.svg'
+    ZoomIn = 'zoom_in.svg'
+    ZoomOut = 'zoom_out.svg'
+    ZoomToFit = 'zoom_to_fit.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 
+# This should always be imported first. It will exit the app with more helpful message if any
+# external dependencies are missing (assuming I remember to keep the list up to date)
+import depschecker
+
 import app
 import common
 import gui
 import gunsmith
 import locale
 import logging
+import multiprocessing
 import os
 import pathlib
+import proxy
+import qasync
+import socket
 import sys
 import traveller
 import travellermap
 import uuid
+import typing
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 _SingletonAppId = 'd2b192d8-4007-4588-bb80-8bd9721e9bcc'
@@ -37,6 +46,209 @@ _WelcomeMessage = """
 # Works on the assumption the main file is in the root of the code/data hierarchy
 def _installDirectory() -> str:
     return os.path.dirname(os.path.realpath(__file__))
+
+def _applicationDirectory() -> str:
+    if os.name == 'nt':
+        return os.path.join(os.getenv('APPDATA'), app.AppName)
+    else:
+        return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
+
+def _cairoSvgInstallCheck() -> bool: # True if the application should continue, or False if it should exit
+    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
+        return True # CairoSVG is working so app should continue
+
+    svgCustomSectors = []
+    sectors = travellermap.DataStore.instance().sectors(app.Config.instance().milieu())
+    for sector in sectors:
+        mapLevels = sector.customMapLevels()
+        if not mapLevels:
+            continue
+        for mapLevel in mapLevels.values():
+            if mapLevel.format() == travellermap.MapFormat.SVG:
+                svgCustomSectors.append(sector.canonicalName())
+                break
+
+    alwaysShowPrompt = False
+    if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NotInstalled:
+        promptMessage = 'The CairoSVG Python package is not installed.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Information
+        logging.info(promptMessage)
+    elif depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.NoLibraries:
+        promptMessage = 'The CairoSVG Python package is installed but it failed to find the Cairo libraries that it requires.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Warning
+        logging.warning(promptMessage)
+    else:
+        promptMessage = 'The CairoSVG Python package is in an unknown state.'
+        promptIcon = QtWidgets.QMessageBox.Icon.Critical
+        alwaysShowPrompt = True
+        logging.error(promptMessage)
+
+    promptMessage += \
+        '<br><br>New custom sector posters will be created using PNG images. This can ' \
+        'introduce more visual artifacts around the borders of custom sectors when ' \
+        'compositing them onto tiles returned by Traveller Map.'
+
+    if svgCustomSectors:
+        # Always show the prompt if there are SVG sectors that won't be rendered
+        alwaysShowPrompt = True
+
+        promptMessage += '<br><br>Existing custom sectors that use SVG posters will be disabled.'
+
+        if len(svgCustomSectors) <= 4:
+            promptMessage += ' The following custom sectors are currently using SVG posters:'
+            for sectorName in svgCustomSectors:
+                promptMessage += '<br>' + sectorName
+        else:
+            promptMessage += f' There are currently {len(svgCustomSectors)} custom sectors using SVG posters.'
+
+    promptMessage += '<br><br>Details on how to install the CairoSVG package and its required libraries can ' \
+        f'be found at <a href=\'{app.AppURL}\'>{app.AppURL}</a>.'
+    promptMessage += f'<br><br>Do you want to continue loading {app.AppName}?'
+
+    promptMessage = f'<html>{promptMessage}</html>'
+
+    promptTitle = 'Prompt'
+    promptButtons = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+    promptDefaultButton = QtWidgets.QMessageBox.StandardButton.Yes
+    if alwaysShowPrompt:
+        answer = gui.MessageBoxEx.showMessageBox(
+            title=promptTitle,
+            icon=promptIcon,
+            text=promptMessage,
+            buttons=promptButtons,
+            defaultButton=promptDefaultButton)
+    else:
+        answer = gui.AutoSelectMessageBox.showMessageBox(
+            title=promptTitle,
+            icon=promptIcon,
+            text=promptMessage,
+            buttons=promptButtons,
+            defaultButton=promptDefaultButton,
+            stateKey='ContinueIfCairoSvgNotWorking',
+            rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
+
+    return answer == QtWidgets.QMessageBox.StandardButton.Yes
+
+def _snapshotUpdateCheck(
+        automaticUpdate: bool = False,
+        noUpdateMessage: typing.Optional[str] = None,
+        successMessage: typing.Optional[str] = None
+        ) -> bool: # True if the application should continue, or False if it should exit
+    try:
+        snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
+    except Exception as ex:
+        message = 'An error occurred when checking for new universe data.'
+        logging.error(message, exc_info=ex)
+        gui.AutoSelectMessageBox.critical(
+            text=message,
+            exception=ex,
+            stateKey='UniverseUpdateErrorWhenChecking')
+        return True # Continue loading the app
+
+    if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
+        if noUpdateMessage:
+            gui.MessageBoxEx.information(text=noUpdateMessage)
+        return True # No update available so just continue loading
+
+    if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
+        promptMessage = 'New universe data is available, however this version of {app} is to {age} to use it.'.format(
+            app=app.AppName,
+            age='old' if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld else 'new')
+        if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld:
+            promptMessage += ' New versions can be downloaded from: <br><br><a href=\'{url}\'>{url}</a>'.format(
+                url=app.AppURL)
+            stateKey = 'UniverseUpdateAppToOld'
+        else:
+            promptMessage += ' Either your a time traveller or your\'re running a dev branch, either way, I\'ll assume you know what your\'re doing.'
+            stateKey = 'UniverseUpdateAppToNew'
+        promptMessage += '<br><br>Do you want to continue loading {app}?<br>'.format(
+            app=app.AppName)
+
+        answer = gui.AutoSelectMessageBox.question(
+            text='<html>' + promptMessage + '<html>',
+            stateKey=stateKey,
+            rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
+        return answer == QtWidgets.QMessageBox.StandardButton.Yes
+
+    if not automaticUpdate:
+        # TODO: At some point in the future I can remove the note about it being faster
+        answer = gui.AutoSelectMessageBox.question(
+            text='<html>New universe data is available. Do you want to update?<br>' \
+            'Custom sectors will not be affected<br><br>' \
+            'Don\'t worry, updating is a LOT faster than it used to be.</html>',
+            stateKey='DownloadUniverseAtStartup')
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return True # User chose not to install update so just continue loading the app with the old data
+
+    # Update the snapshot
+    updateProgress = gui.DownloadProgressDialog()
+    result = updateProgress.exec()
+    if (result == QtWidgets.QDialog.DialogCode.Accepted) and successMessage:
+        gui.MessageBoxEx.information(text=successMessage)
+
+    # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
+    # when exec is called on the application
+    # https://doc.qt.io/qt-6/qobject.html#deleteLater
+    updateProgress.deleteLater()
+
+    return True # Update is complete so continue loading
+
+# Check that the loopback addresses required for the proxy host pool
+# are available. This is required as macOS (and possibly some Linux
+# distros) only enables 127.0.0.1 by default.
+def _hostPoolSizeCheck() -> int:
+    requestedHostCount = app.Config.instance().proxyHostPoolSize()
+    availableHostCount = 0
+    for index in range(1, requestedHostCount + 1):
+        testSocket = None
+        try:
+            address = f'127.0.0.{index}'
+            testSocket = socket.socket()
+            testSocket.bind((address, 0))
+            availableHostCount = index
+        except Exception as ex:
+            logging.debug(
+                'An exception occurred when binding to {address} to test proxy host pool size.',
+                exc_info=ex)
+            break
+        finally:
+            if testSocket:
+                testSocket.close()
+
+    if availableHostCount == 0:
+        logging.error(
+            'Proxy will be disabled as no IPv4 loopback addresses were found')
+
+        message = """
+            <p>The proxy will be disabled as no IPv4 loopback addresses were
+            found. When the proxy is disabled, custom sectors will not be overlaid
+            on Traveller Map.</p>
+            """
+        gui.AutoSelectMessageBox.critical(
+            text=message,
+            stateKey='NoHostPoolInterfaces')
+    elif availableHostCount != requestedHostCount:
+        logging.warning(
+            'Proxy host pool size will be reduced from {requested} to '
+            '{available} due to insufficient IPv4 loopback addresses.'.format(
+                requested=requestedHostCount,
+                available=availableHostCount))
+
+        message = """
+            <p>The proxy is configured to have a host pool size of {requested}
+            but only {available} IPv4 loopback {wording} available. This may
+            reduce performance when displaying Traveller Map.</p>
+            <p>For a pool size of {requested}, the loopback addresses
+            127.0.0.1 -> 127.0.0.{requested} must be enabled.</p>
+            """.format(
+            requested=requestedHostCount,
+            available=availableHostCount,
+            wording='address is' if availableHostCount == 1 else 'addresses are')
+        gui.AutoSelectMessageBox.warning(
+            text=message,
+            stateKey='NoHostPoolInterfaces')
+
+    return availableHostCount
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -92,18 +304,22 @@ class MainWindow(QtWidgets.QMainWindow):
         refereeGroupBox = QtWidgets.QGroupBox('Referee Tools')
         refereeGroupBox.setLayout(refereeLayout)
 
-        self._configurationButton = QtWidgets.QPushButton('Configuration...', self)
-        self._configurationButton.clicked.connect(self._showConfiguration)
+        self._customSectorsButton = QtWidgets.QPushButton('Custom Sectors...', self)
+        self._customSectorsButton.clicked.connect(self._showCustomSectorsWindow)
 
         self._downloadButton = QtWidgets.QPushButton('Download Universe Data...', self)
         self._downloadButton.clicked.connect(self._downloadUniverse)
+
+        self._configurationButton = QtWidgets.QPushButton('Configuration...', self)
+        self._configurationButton.clicked.connect(self._showConfiguration)
 
         self._aboutButton = QtWidgets.QPushButton('About...', self)
         self._aboutButton.clicked.connect(self._showAbout)
 
         systemLayout = QtWidgets.QVBoxLayout()
-        systemLayout.addWidget(self._configurationButton)
+        systemLayout.addWidget(self._customSectorsButton)
         systemLayout.addWidget(self._downloadButton)
+        systemLayout.addWidget(self._configurationButton)
         systemLayout.addWidget(self._aboutButton)
         systemGroupBox = QtWidgets.QGroupBox('System')
         systemGroupBox.setLayout(systemLayout)
@@ -160,18 +376,28 @@ class MainWindow(QtWidgets.QMainWindow):
             noShowAgainId='AppWelcome')
         message.exec()
 
+    def _showCustomSectorsWindow(self) -> None:
+        configDialog = gui.CustomSectorDialog()
+        configDialog.exec()
+
+        if configDialog.modified():
+            gui.MessageBoxEx.information(
+                parent=self,
+                text=f'{app.AppName} will load changes to custom sectors when next started.')
+
     def _showConfiguration(self) -> None:
         configDialog = gui.ConfigDialog()
         configDialog.exec()
 
     def _downloadUniverse(self) -> None:
-        downloadProgress = gui.DownloadProgressDialog()
-        if downloadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return
-
-        gui.MessageBoxEx.information(
-            parent=self,
-            text=f'Download complete.\n{app.AppName} will load the new data when next started.')
+        try:
+            _snapshotUpdateCheck(
+                automaticUpdate=True, # Automatically install the update if one is available
+                noUpdateMessage=f'There is no new universe data to download.',
+                successMessage=f'Universe update complete.\n{app.AppName} will load the new data when next started.')
+        except Exception as ex:
+            gui.MessageBoxEx.critical(
+                text='Failed to update universe data', exception=ex)
 
     def _showAbout(self) -> None:
         licenseDir = os.path.join(_installDirectory(), 'Licenses')
@@ -179,10 +405,6 @@ class MainWindow(QtWidgets.QMainWindow):
         aboutDialog.exec()
 
 def main() -> None:
-    # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
-    # Currently disabled as multiprocessing isn't being used at the moment.
-    # multiprocessing.freeze_support()
-
     QtWidgets.QApplication.setAttribute(
         QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
 
@@ -197,21 +419,17 @@ def main() -> None:
         print(f'{app.AppName} is already running.')
         return
 
-    exitCode = None
+    exitCode = 0
     try:
         installDir = _installDirectory()
         application.setWindowIcon(QtGui.QIcon(os.path.join(installDir, 'icons', 'autojimmy.ico')))
 
-        if os.name == 'nt':
-            appDirectory = os.path.join(os.getenv('APPDATA'), app.AppName)
-        else:
-            appDirectory = os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
-        os.makedirs(appDirectory, exist_ok=True)
+        appDir = _applicationDirectory()
+        os.makedirs(appDir, exist_ok=True)
 
-        logDirectory = os.path.join(appDirectory, 'logs')
-        cacheDirectory = os.path.join(appDirectory, 'cache')
-
+        logDirectory = os.path.join(appDir, 'logs')
         app.setupLogger(logDir=logDirectory, logFile='autojimmy.log')
+        # Log version before setting log level as it should always be logged
         logging.info(f'{app.AppName} v{app.AppVersion}')
 
         try:
@@ -221,65 +439,105 @@ def main() -> None:
 
         app.Config.setDirs(
             installDir=installDir,
-            appDir=appDirectory)
+            appDir=appDir)
 
         # Set configured log level immediately after configuration has been setup
+        logLevel = app.Config.instance().logLevel()
         try:
-            app.setLogLevel(app.Config.instance().logLevel())
+            app.setLogLevel(logLevel)
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
 
-        common.RequestCache.setCacheDir(cacheDirectory)
-
+        installMapsDir = os.path.join(installDir, 'data', 'map')
+        overlayMapsDir = os.path.join(appDir, 'map')
+        customMapsDir = os.path.join(appDir, 'custom_map')
         travellermap.DataStore.setSectorDirs(
-            installDir=os.path.join(installDir, 'data', 'map'),
-            overlayDir=os.path.join(appDirectory, 'map'),
-            userDir=os.path.join(appDirectory, 'my_map'))
+            installDir=installMapsDir,
+            overlayDir=overlayMapsDir,
+            customDir=customMapsDir)
 
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
-            userWeaponDir=os.path.join(appDirectory, 'weapons'),
+            userWeaponDir=os.path.join(appDir, 'weapons'),
             exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
 
         gui.configureAppStyle(application)
 
+        # Check if CairoSVG is working, possibly prompting the user if it's not. This needs to be
+        # done after the DataStore singleton has been set up so it can check if there are any
+        # existing SVG custom sectors
+        if not _cairoSvgInstallCheck():
+            sys.exit(0)
+
         # Check if there is new universe data available BEFORE the app loads the local snapshot so it
         # can be updated without restarting
-        if travellermap.DataStore.instance().checkForNewSnapshot():
-            # TODO: At some point in the future I can remove the note about it being faster
-            answer = gui.AutoSelectMessageBox.question(
-                text='New universe data is available. Do you want to update?\nDon\'t worry, updating is a LOT faster than it used to be.',
-                stateKey='DownloadUniverseAtStartup')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                updateProgress = gui.DownloadProgressDialog()
-                updateProgress.exec()
-                # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
-                # when exec is called on the application
-                # https://doc.qt.io/qt-6/qobject.html#deleteLater
-                updateProgress.deleteLater()
+        if not _snapshotUpdateCheck():
+            sys.exit(0)
 
-        loadProgress = gui.LoadProgressDialog()
-        if loadProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            raise RuntimeError('Failed to load data')
+        # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
+        # so progress can be displayed
+        startProxy = False
+        if app.Config.instance().proxyEnabled():
+            hostPoolSize = _hostPoolSizeCheck()
+            if hostPoolSize > 0:
+                proxy.MapProxy.configure(
+                    listenPort=app.Config.instance().proxyPort(),
+                    hostPoolSize=hostPoolSize,
+                    travellerMapUrl=app.Config.instance().proxyMapUrl(),
+                    tileCacheSize=app.Config.instance().proxyTileCacheSize(),
+                    tileCacheLifetime=app.Config.instance().proxyTileCacheLifetime(),
+                    svgComposition=app.Config.instance().proxySvgCompositionEnabled(),
+                    mainsMilieu=app.Config.instance().milieu(),
+                    installDir=installDir,
+                    appDir=appDir,
+                    logDir=logDirectory,
+                    logLevel=logLevel)
+                startProxy = True
+
+        startupProgress = gui.StartupProgressDialog(startProxy=startProxy)
+        if startupProgress.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            exception = startupProgress.exception()
+            if exception is not None:
+                raise exception
+            raise RuntimeError('Startup failed with an unknown error')
+
         # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
         # when exec is called on the application
         # https://doc.qt.io/qt-6/qobject.html#deleteLater
-        loadProgress.deleteLater()
+        startupProgress.deleteLater()
 
-        window = MainWindow()
-        exitCode = application.exec()
+        # Configure the tile client to use the proxy if it's running
+        if proxy.MapProxy.instance().isRunning():
+            travellermap.TileClient.configure(
+                baseMapUrl=proxy.MapProxy.instance().accessUrl())
+        else:
+            travellermap.TileClient.configure(
+                baseMapUrl=travellermap.TravellerMapBaseUrl)
+
+        with qasync.QEventLoop() as asyncEventLoop:
+            window = MainWindow()
+            window.show()
+            asyncEventLoop.run_forever()
     except Exception as ex:
         message = 'Failed to initialise application'
         logging.error(message, exc_info=ex)
         gui.MessageBoxEx.critical(
-            parent=None,
             text=message,
             exception=ex)
         exitCode = 1
+    finally:
+        proxy.MapProxy.instance().shutdown()
 
     sys.exit(exitCode)
 
 
 if __name__ == "__main__":
+    # This is required for multiprocessing to work with apps that have been frozen as Windows exes.
+    # According to the docs this should be called as the first line of the script. Technically I'm
+    # not doing this as the dependency checking runs first but I've tested it and it doesn't seem
+    # to matter.
+    # https://docs.python.org/3/library/multiprocessing.html#windows
+    multiprocessing.freeze_support()
+
     main()

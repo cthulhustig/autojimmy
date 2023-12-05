@@ -1,10 +1,15 @@
 import app
+import asyncio
+import depschecker
 import enum
 import gui
+import json
 import logging
+import proxy
 import traveller
 import travellermap
 import typing
+import urllib.parse
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 _WelcomeMessage = """
@@ -27,6 +32,125 @@ _WelcomeMessage = """
     </ol></p>
     </html>
 """.format(name=app.AppName)
+
+
+# This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
+# can cause incorrect sizing if the font scaling is increased then decreased
+class _ClearTileCacheDialog(QtWidgets.QDialog):
+    _WorkingDotCount = 5
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent=parent)
+
+        self._request = None
+
+        self._workingLabel = gui.PrefixLabel(
+            prefix='Communicating with proxy')
+
+        self._workingTimer = QtCore.QTimer()
+        self._workingTimer.timeout.connect(self._workingTimerFired)
+        self._workingTimer.setInterval(500)
+        self._workingTimer.setSingleShot(False)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self._cancelRequest)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(self._workingLabel)
+        windowLayout.addWidget(self._cancelButton)
+
+        self.setWindowTitle('Clearing Cache')
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setSizeGripEnabled(False)
+        self.setLayout(windowLayout)
+
+        # Setting up the title bar needs to be done before the window is show to take effect. It
+        # needs to be done every time the window is shown as the setting is lost if the window is
+        # closed then reshown
+        gui.configureWindowTitleBar(widget=self)
+
+    def exec(self) -> int:
+        try:
+            clearCacheUrl = urllib.parse.urljoin(
+                proxy.MapProxy.instance().accessUrl(),
+                '/proxy/clearcache')
+            self._request = app.AsyncRequest(parent=self)
+            self._request.complete.connect(self._requestComplete)
+            self._request.get(
+                url=clearCacheUrl,
+                loop=asyncio.get_event_loop())
+        except Exception as ex:
+            message = 'Failed to initiate request to clear cache'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Closing a dialog from showEvent doesn't work so schedule it to happen immediately after
+            # the window is shown
+            QtCore.QTimer.singleShot(0, self.close)
+
+        return super().exec()
+
+    def showEvent(self, e: QtGui.QShowEvent) -> None:
+        if not e.spontaneous():
+            # Setting up the title bar needs to be done before the window is show to take effect. It
+            # needs to be done every time the window is shown as the setting is lost if the window is
+            # closed then reshown
+            gui.configureWindowTitleBar(widget=self)
+
+        return super().showEvent(e)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self._request:
+            self._request.cancel()
+            self._request = None
+        return super().closeEvent(a0)
+
+    def _cancelRequest(self) -> None:
+        if self._request:
+            self._request.cancel()
+            self._request = None
+        self.close()
+
+    def _requestComplete(
+            self,
+            result: typing.Union[app.AsyncResponse, Exception]
+            ) -> None:
+        self._workingTimer.stop()
+
+        if isinstance(result, app.AsyncResponse):
+            try:
+                response = json.loads(result.content().decode())
+                message = 'Cleared {memTiles} tiles from memory and {diskTiles} from disk'.format(
+                    memTiles=response["memoryTiles"],
+                    diskTiles=response["diskTiles"])
+                gui.MessageBoxEx.information(message)
+            except Exception as ex:
+                message = 'Clearing the tile cache succeeded but parsing response failed'
+                logging.warning(message, exc_info=ex)
+                gui.MessageBoxEx.warning(text=message, exception=ex)
+            self.accept()
+        elif isinstance(result, Exception):
+            message = 'Request to clear tile cache failed'
+            logging.error(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+        else:
+            message = 'Request to clear tile cache returned an unexpected result'
+            logging.critical(message, exc_info=result)
+            gui.MessageBoxEx.critical(text=message, exception=result)
+            self.close()
+
+    def _workingTimerFired(self) -> None:
+        text = self._workingLabel.text()
+        if (len(text) % _ClearTileCacheDialog._WorkingDotCount) == 0:
+            text = ''
+        text += '.'
+        self._workingLabel.setText(text)
 
 class ConfigDialog(gui.DialogEx):
     def __init__(
@@ -78,6 +202,8 @@ class ConfigDialog(gui.DialogEx):
         super().firstShowEvent(e)
 
     def accept(self) -> None:
+        if not self._validateConfig():
+            return
         self._saveConfig()
         super().accept()
 
@@ -284,7 +410,7 @@ class ConfigDialog(gui.DialogEx):
 
         restartRequiredText = f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
 
-        # Game widgets
+        # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
             value=app.Config.instance().milieu(),
@@ -302,12 +428,166 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
 
-        gameLayout = gui.FormLayoutEx()
-        gameLayout.addRow('Milieu:', self._milieuComboBox)
-        gameLayout.addRow('Rules:', self._rulesComboBox)
+        travellerLayout = gui.FormLayoutEx()
+        travellerLayout.addRow('Milieu:', self._milieuComboBox)
+        travellerLayout.addRow('Rules:', self._rulesComboBox)
 
-        gameGroupBox = QtWidgets.QGroupBox('Game')
-        gameGroupBox.setLayout(gameLayout)
+        travellerGroupBox = QtWidgets.QGroupBox('Traveller')
+        travellerGroupBox.setLayout(travellerLayout)
+
+        # Proxy Widgets
+        self._proxyEnabledCheckBox = gui.CheckBoxEx()
+        self._proxyEnabledCheckBox.setChecked(app.Config.instance().proxyEnabled())
+        self._proxyEnabledCheckBox.stateChanged.connect(self._enableProxyToggled)
+        self._proxyEnabledCheckBox.setToolTip(gui.createStringToolTip(
+            '<p>Enable or disable the Traveller Map proxy.</p>'
+            '<p>By default, {app} uses a local proxy to access Traveller Map. '
+            'Using this proxy has two main benefits:</p>'
+            '<ul style="margin-left:15px; -qt-list-indent:0;">'
+            '<li>It allows {app} to overlay custom sectors on tiles returned '
+            'by Traveller Map, in order to have them rendered in the map '
+            'views.</li>'
+            '<li>It allows {app} to create a persistent cache of the tiles '
+            'returned by Traveller Map, this allows quicker rendering when '
+            'viewing sections of the map you\'ve previously viewed.</li>'
+            '</ul>'
+            '<p>For security, this proxy only listens on localhost, meaning '
+            'it can only be accessed from the system {app} is running on. '
+            'The proxy also only allows access to the Traveller Map URL '
+            'configured below.<p>'.format(app=app.AppName) +
+            restartRequiredText,
+            escape=False))
+
+        self._proxyPortSpinBox = gui.SpinBoxEx()
+        self._proxyPortSpinBox.setRange(1024, 65535)
+        self._proxyPortSpinBox.setValue(app.Config.instance().proxyPort())
+        self._proxyPortSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyPortSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the port the local Traveller Map proxy will listen '
+            'on.</p>' \
+            '<p>You may need to change the port the proxy listens on if there '
+            'is a conflict with another service running on your system.</p>' +
+            restartRequiredText,
+            escape=False))
+
+        self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
+        self._proxyHostPoolSizeSpinBox.setRange(1, 10)
+        self._proxyHostPoolSizeSpinBox.setValue(app.Config.instance().proxyHostPoolSize())
+        self._proxyHostPoolSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyHostPoolSizeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the number of localhost addresses the proxy will '
+            'listen on.</p>'
+            '<p>The Chromium browser that {app} uses to display Traveller Map '
+            'has a hard coded limit of 6 simultaneous connections to a single '
+            'host. This is a standard feature of browsers to prevent excessive '
+            'load being put on a site. However, this limitation can reduce '
+            'rendering performance as the browser may delay requests for tiles '
+            'that the proxy could satisfy using its tile cache. To work around '
+            'this issue, the proxy can listen on multiple localhost addresses '
+            '(e.g. 127.0.0.1, 127.0.0.2), with requests for tiles are then '
+            'spread evenly over all these addresses.</p>'
+            '<p><b>This setting only affects the number of simultaneous '
+            'connections made to the proxy in order to allow better use of the '
+            'tile cache. The proxy will enforce a limit of 6 simultaneous '
+            'outgoing connections to travellermap.com so as not to place '
+            'additional load on the site.</b></p>'.format(app=app.AppName) +
+            restartRequiredText,
+            escape=False))
+
+        self._proxyMapUrlLineEdit = gui.LineEditEx()
+        self._proxyMapUrlLineEdit.setText(app.Config.instance().proxyMapUrl())
+        self._proxyMapUrlLineEdit.setMaximumWidth(200)
+        self._proxyMapUrlLineEdit.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyMapUrlLineEdit.setToolTip(gui.createStringToolTip(
+            '<p>Specify the URL the proxy will use to access Traveller Map.</p>'
+            '<p>If you run your own copy of Traveller Map, you can specify its '
+            'URL here.</p>' +
+            restartRequiredText,
+            escape=False))
+
+        # The proxy mode control is only shown if CairoSVG is detected. It's used
+        # to set the flag to indicate if SVG composition is enabled. It's shown as a
+        # combo box to make it easier to explain to the user what the difference is
+        # between having it enabled and disabled.
+        self._proxyCompositionModeComboBox = gui.ComboBoxEx()
+        self._proxyCompositionModeComboBox.addItem('Hybrid', False)
+        self._proxyCompositionModeComboBox.addItem('SVG', True)
+        self._proxyCompositionModeComboBox.setCurrentByUserData(
+            userData=app.Config.instance().proxySvgCompositionEnabled())
+        self._proxyCompositionModeComboBox.setEnabled(
+            self._proxyEnabledCheckBox.isChecked())
+        self._proxyCompositionModeComboBox.setHidden(
+            not depschecker.DetectedCairoSvgState)
+        self._proxyCompositionModeComboBox.currentIndexChanged.connect(
+            self._proxyModeChanged)
+        self._proxyCompositionModeComboBox.setToolTip(gui.createStringToolTip(
+            '<p>Change the type of composition used when overlaying custom '
+            'sectors onto tiles from Traveller Map.</p>'
+            '<p>When CairoSVG is installed, there are multiple ways the proxy '
+            'can composite tiles.</p>'
+            '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
+            '<li><b>Hybrid</b> - Traveller map is used to generate SVG posters '
+            'of the custom sectors, however, these posters are processed to '
+            'split them into multiple bitmap layers prior to composition. '
+            'These bitmap layers are then used to composite individual tiles. '
+            'This method is fast but can result in slight blockiness at '
+            'higher zoom levels.'
+            '<li><b>SVG</b> - Traveller map is used to generate SVG posters of '
+            'the custom sectors and these SVG are composited directly onto '
+            'tiles. This prevents blockiness at high zoom levels, however, '
+            'it\'s <b>significantly</b> more CPU intensive than Hybrid '
+            'composition and should only be used on systems with high core '
+            'counts (and even then I don\'t really recommend it).</ul> '
+            '</ul>' +
+            restartRequiredText,
+            escape=False))
+
+        # NOTE: The tile cache size is shown in MB but is actually stored in bytes
+        self._proxyTileCacheSizeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheSizeSpinBox.setRange(0, 4 * 1000) # 4GB max (in MB)
+        self._proxyTileCacheSizeSpinBox.setValue(
+            int(app.Config.instance().proxyTileCacheSize() / (1000 * 1000)))
+        self._proxyTileCacheSizeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheSizeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the amount of disk space to use to cache tiles.</p>'
+            '<p>When the cache size reaches the specified limit, tiles will be '
+            'automatically removed starting with the least recently used. A '
+            'size of 0 will disable the disk cache.' +
+            restartRequiredText,
+            escape=False))
+
+        self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
+        self._proxyTileCacheLifetimeSpinBox.setRange(0, 90)
+        self._proxyTileCacheLifetimeSpinBox.setValue(
+            app.Config.instance().proxyTileCacheLifetime())
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(self._proxyEnabledCheckBox.isChecked())
+        self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
+            '<p>Specify the max time the proxy will cache a tile on disk.</p>'
+            '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
+            restartRequiredText,
+            escape=False))
+
+        # NOTE: The button for clearing the tile cache is enabled/disabled
+        # based on if the proxy is currently running not if the enable check
+        # box is currently checked. Clearing the cache is an immediate operation
+        # that requires sending a request to the proxy process so it only makes
+        # sense when it's actually running
+        self._clearTileCacheButton = QtWidgets.QPushButton('Clear')
+        self._clearTileCacheButton.setEnabled(proxy.MapProxy.instance().isRunning())
+        self._clearTileCacheButton.clicked.connect(self._clearTileCacheClicked)
+
+        proxyLayout = gui.FormLayoutEx()
+        proxyLayout.addRow('Enabled:', self._proxyEnabledCheckBox)
+        proxyLayout.addRow('Port:', self._proxyPortSpinBox)
+        proxyLayout.addRow('Host Pool Size:', self._proxyHostPoolSizeSpinBox)
+        proxyLayout.addRow('Map Url:', self._proxyMapUrlLineEdit)
+        proxyLayout.addRow('Composition Mode:', self._proxyCompositionModeComboBox)
+        proxyLayout.addRow('Tile Cache Size (MB):', self._proxyTileCacheSizeSpinBox)
+        proxyLayout.addRow('Tile Cache Lifetime (days):', self._proxyTileCacheLifetimeSpinBox)
+        proxyLayout.addRow('Clear Tile Cache:', self._clearTileCacheButton)
+
+        proxyGroupBox = QtWidgets.QGroupBox('Proxy')
+        proxyGroupBox.setLayout(proxyLayout)
 
         # GUI widgets
         self._colourThemeComboBox = gui.EnumComboBox(
@@ -318,8 +598,8 @@ class ConfigDialog(gui.DialogEx):
             restartRequiredText,
             escape=False))
 
-        # Note that this displays the interface scale as an integer percentage increase but it's
-        # actually stored as a float scalar
+        # NOTE: The interface scale is displayed in percent but is actually stored as a float scale
+        # where 1.0 is 100%
         self._interfaceScaleSpinBox = gui.SpinBoxEx()
         self._interfaceScaleSpinBox.setRange(100, 400)
         self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
@@ -331,8 +611,8 @@ class ConfigDialog(gui.DialogEx):
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
         self._showToolTipImagesCheckBox.setChecked(app.Config.instance().showToolTipImages())
         self._showToolTipImagesCheckBox.setToolTip(gui.createStringToolTip(
-            '<p>Display world images in tool tips</p>' \
-            f'<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
+            '<p>Display world images in tool tips</p>'
+            '<p>When enabled, {app.AppName} will retrieve world images to display in tool tips. It\'s '
             'recommended to disable this setting if operating offline or with a slow connection. Tool '
             'tip images are cached, however the first time a tool tip for a given world is displayed it '
             'can cause the user interface to block temporarily while the image is downloaded.</p>',
@@ -390,7 +670,8 @@ class ConfigDialog(gui.DialogEx):
 
         tabLayout = QtWidgets.QVBoxLayout()
         tabLayout.setContentsMargins(0, 0, 0, 0)
-        tabLayout.addWidget(gameGroupBox)
+        tabLayout.addWidget(travellerGroupBox)
+        tabLayout.addWidget(proxyGroupBox)
         tabLayout.addWidget(guiGroupBox)
         tabLayout.addWidget(taggingGroupBox)
         tabLayout.addStretch()
@@ -659,6 +940,21 @@ class ConfigDialog(gui.DialogEx):
         self._buttonLayout.addWidget(self._okButton)
         self._buttonLayout.addWidget(self._cancelButton)
 
+    def _validateConfig(self) -> bool:
+        mapUrl = QtCore.QUrl(self._proxyMapUrlLineEdit.text())
+        # Map URL must have a scheme but no path or options
+        if mapUrl.scheme() != 'http' and mapUrl.scheme() != 'https':
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='The Traveller Map URL must use http or https')
+            return False
+        if (mapUrl.path() != '' and mapUrl.path() != '/') or mapUrl.query():
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='The Traveller Map URL can\'t have a path or query')
+            return False
+        return True
+
     def _saveConfig(self) -> None:
         class RestartChecker(object):
             def __init__(self) -> None:
@@ -677,15 +973,30 @@ class ConfigDialog(gui.DialogEx):
             config = app.Config.instance()
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
             checker.update(config.setRules(self._rulesComboBox.currentEnum()))
+
+            checker.update(config.setProxyEnabled(self._proxyEnabledCheckBox.isChecked()))
+            checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
+            checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))
+            checker.update(config.setProxyMapUrl(self._proxyMapUrlLineEdit.text()))
+            checker.update(config.setProxyTileCacheSize(
+                self._proxyTileCacheSizeSpinBox.value() * (1000 * 1000))) # Convert MB to bytes
+            checker.update(config.setProxyTileCacheLifetime(
+                self._proxyTileCacheLifetimeSpinBox.value()))
+            checker.update(config.setProxySvgCompositionEnabled(
+                self._proxyCompositionModeComboBox.currentUserData()))
+
             checker.update(config.setColourTheme(self._colourThemeComboBox.currentEnum()))
-            checker.update(config.setInterfaceScale(self._interfaceScaleSpinBox.value() / 100))
+            checker.update(config.setInterfaceScale(
+                self._interfaceScaleSpinBox.value() / 100)) # Convert percent to scale
             checker.update(config.setShowToolTipImages(self._showToolTipImagesCheckBox.isChecked()))
             checker.update(config.setAverageCaseColour(self._averageCaseColourButton.colour()))
             checker.update(config.setWorstCaseColour(self._worstCaseColourButton.colour()))
             checker.update(config.setBestCaseColour(self._bestCaseColourButton.colour()))
+
             checker.update(config.setTagColour(app.TagLevel.Desirable, self._desirableTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Warning, self._warningTagColourButton.colour()))
             checker.update(config.setTagColour(app.TagLevel.Danger, self._dangerTagColourButton.colour()))
+
             checker.update(config.setZoneTagLevels(self._taggingMapFromTable(self._zoneTaggingTable)))
             checker.update(config.setStarPortTagLevels(self._taggingMapFromTable(self._starPortTaggingTable)))
             checker.update(config.setWorldSizeTagLevels(self._taggingMapFromTable(self._worldSizeTaggingTable)))
@@ -829,3 +1140,24 @@ class ConfigDialog(gui.DialogEx):
             html=_WelcomeMessage,
             noShowAgainId='ConfigWelcome')
         message.exec()
+
+    def _enableProxyToggled(self, value: int) -> None:
+        enabled = value != 0
+        self._proxyPortSpinBox.setEnabled(enabled)
+        self._proxyHostPoolSizeSpinBox.setEnabled(enabled)
+        self._proxyMapUrlLineEdit.setEnabled(enabled)
+        self._proxyTileCacheSizeSpinBox.setEnabled(enabled)
+        self._proxyTileCacheLifetimeSpinBox.setEnabled(enabled)
+        self._proxyCompositionModeComboBox.setEnabled(enabled)
+
+    def _proxyModeChanged(self) -> None:
+        if not self._proxyCompositionModeComboBox.currentUserData():
+            return # Hybrid is selected, nothing to do
+        gui.AutoSelectMessageBox.warning(
+            text='SVG composition is VERY processor intensive and should only '
+            'be used on systems with high core counts.',
+            stateKey='SvgCompositionPerformanceWarning')
+
+    def _clearTileCacheClicked(self) -> None:
+        dlg = _ClearTileCacheDialog()
+        dlg.exec()

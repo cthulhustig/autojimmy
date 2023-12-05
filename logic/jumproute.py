@@ -1,4 +1,5 @@
 import traveller
+import travellermap
 import typing
 
 class JumpRoute(object):
@@ -36,7 +37,7 @@ class JumpRoute(object):
                 break
             fromWorld = self._worldList[index]
             toWorld = self._worldList[index + 1]
-            parsecs += traveller.hexDistance(
+            parsecs += travellermap.hexDistance(
                 fromWorld.absoluteX(),
                 fromWorld.absoluteY(),
                 toWorld.absoluteX(),

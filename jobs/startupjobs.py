@@ -1,9 +1,10 @@
 import gunsmith
 import traveller
+import proxy
 import typing
 from PyQt5 import QtCore
 
-class DataLoadJob(QtCore.QThread):
+class StartupJobBase(QtCore.QThread):
     # Signals MUST be defined at the class level (i.e. static). Qt does magic
     # when the super() is called to create per-instance interfaces to the
     # signals
@@ -18,8 +19,6 @@ class DataLoadJob(QtCore.QThread):
             ) -> None:
         super().__init__(parent=parent)
 
-        self._dataType = None
-
         if progressCallback:
             self._progressSignal[str, int, int].connect(progressCallback)
         if finishedCallback:
@@ -30,22 +29,33 @@ class DataLoadJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            self._dataType = 'Sector - '
-            traveller.WorldManager.instance().loadSectors(
-                progressCallback=self._handleProgressUpdate)
-
-            self._dataType = 'Weapon - '
-            gunsmith.WeaponStore.instance().loadWeapons(
-                progressCallback=self._handleProgressUpdate)
-
+            self.executeJob()
             self._finishedSignal[str].emit('Finished')
         except Exception as ex:
             self._finishedSignal[Exception].emit(ex)
 
+    def executeJob(self) -> None:
+        raise RuntimeError('The executeJob method must be implemented by classes derived from StartupJobBase')
+
     def _handleProgressUpdate(
             self,
-            itemText: str,
+            stage: str,
             current: int,
             total: int
             ) -> None:
-        self._progressSignal[str, int, int].emit(self._dataType + itemText, current, total)
+        self._progressSignal[str, int, int].emit(stage, current, total)
+
+class LoadSectorsJob(StartupJobBase):
+    def executeJob(self) -> None:
+        traveller.WorldManager.instance().loadSectors(
+            progressCallback=self._handleProgressUpdate)
+
+class LoadWeaponsJob(StartupJobBase):
+    def executeJob(self) -> None:
+        gunsmith.WeaponStore.instance().loadWeapons(
+            progressCallback=self._handleProgressUpdate)
+
+class StartProxyJob(StartupJobBase):
+    def executeJob(self) -> None:
+        proxy.MapProxy.instance().start(
+            progressCallback=self._handleProgressUpdate)

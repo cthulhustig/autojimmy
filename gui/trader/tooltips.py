@@ -239,22 +239,21 @@ def createWorldToolTip(
             app.Config.instance().showToolTipImages() and \
             not _DisableWorldToolTipImages:
         try:
-            tileBytes = travellermap.TileStore.instance().tile(
-                travellerMapUrl=app.Config.instance().travellerMapUrl(),
+            tileBytes, tileFormat = travellermap.TileClient.instance().tile(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                worldX=world.absoluteX(),
-                worldY=world.absoluteY(),
+                absoluteX=world.absoluteX(),
+                absoluteY=world.absoluteY(),
                 width=256,
                 height=256,
                 timeout=3)
             if tileBytes:
+                mineType = travellermap.mapFormatToMimeType(tileFormat)
                 tileString = base64.b64encode(tileBytes).decode()
                 toolTip += '<td width="256">'
                 # https://travellermap.com/doc/api#tile-render-an-arbitrary-rectangle-of-space
-                imageType = 'image/jpeg' if app.Config.instance().mapStyle() == travellermap.Style.Candy else 'image/png'
-                toolTip += f'<p style="vertical-align:middle"><img src=data:{imageType};base64,{tileString} width="256" height="256"></p>'
+                toolTip += f'<p style="vertical-align:middle"><img src=data:{mineType};base64,{tileString} width="256" height="256"></p>'
                 toolTip += '</td>'
         except Exception as ex:
             logging.error(f'Failed to retrieve tool tip image for {world.name(includeSubsector=True)}', exc_info=ex)
@@ -273,6 +272,7 @@ def createWorldToolTip(
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(world.subsectorName())}<li>'
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
+    toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
 
     if world.isAnomaly():
         style = formatStyle(app.tagColour(app.TagLevel.Danger))

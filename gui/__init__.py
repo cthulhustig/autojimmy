@@ -23,6 +23,7 @@ from .common.expander import *
 from .common.sectionlist import *
 from .common.verticaltabs import *
 from .common.tableitems import *
+from .common.imageview import *
 from .common.calculationtree import *
 from .common.calculationwindow import *
 from .common.licensewidget import *
@@ -69,6 +70,7 @@ from .trader.traderwindows import *
 from .trader.purchasecalculatorwindow import *
 from .trader.salecalculatorwindow import *
 from .trader.simulatorwindow import *
+from .trader.customsectordialog import *
 from .gunsmith.weaponselectdialog import *
 from .gunsmith.weaponmalfunctiongraph import *
 from .gunsmith.weaponstorelist import *
@@ -77,7 +79,7 @@ from .gunsmith.weaponmanifesttable import *
 from .gunsmith.weaponinfowidget import *
 from .gunsmith.weaponinfotabwidget import *
 from .gunsmith.gunsmithwindow import *
-from .loadprogressdialog import *
+from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
 from .configdialog import *

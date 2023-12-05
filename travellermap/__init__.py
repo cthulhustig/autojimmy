@@ -2,5 +2,9 @@ from .milieu import *
 from .options import *
 from .style import *
 from .url import *
+from .astrometrics import *
+from .sectorparsers import *
+from .mapimage import *
 from .datastore import *
-from .tilestore import *
+from .tileclient import *
+from .mains import *

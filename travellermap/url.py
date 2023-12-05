@@ -1,7 +1,9 @@
 import math
 import travellermap
 import typing
-from urllib import parse
+import urllib.parse
+
+TravellerMapBaseUrl = 'https://travellermap.com'
 
 _SectorGridOption = 0x0001
 _SubsectorGridOption = 0x0002
@@ -22,45 +24,16 @@ _ForceHexesOption = 0x2000
 _WorldColorsOption = 0x4000
 _FilledBordersOption = 0x8000
 
-class MapPosition(object):
-    def __init__(
-            self,
-            mapX: float,
-            mapY: float,
-            logScale: float
-            ) -> None:
-        self._mapX = mapX
-        self._mapY = mapY
-        self._logScale = logScale
-
-    def mapX(self) -> float:
-        return self._mapX
-
-    def mapY(self) -> float:
-        return self._mapY
-
-    def logScale(self) -> float:
-        return self._logScale
-
-class TilePosition(object):
-    def __init__(
-            self,
-            tileX: float,
-            tileY: float,
-            linearScale: float
-            ) -> None:
-        self._tileX = tileX
-        self._tileY = tileY
-        self._linearScale = linearScale
-
-    def tileX(self) -> float:
-        return self._tileX
-
-    def tileY(self) -> float:
-        return self._tileY
-
-    def linearScale(self) -> float:
-        return self._linearScale
+_StyleOptionMap = {
+    travellermap.Style.Poster: 'poster',
+    travellermap.Style.Print: 'print',
+    travellermap.Style.Atlas: 'atlas',
+    travellermap.Style.Candy: 'candy',
+    travellermap.Style.Draft: 'draft',
+    travellermap.Style.Fasa: 'fasa',
+    travellermap.Style.Terminal: 'terminal',
+    travellermap.Style.Mongoose: 'mongoose'
+}
 
 def linearScaleToLogScale(linearScale: float) -> float:
     return 1 + math.log2(linearScale)
@@ -69,14 +42,104 @@ def logScaleToLinearScale(logScale: float) -> float:
     return math.pow(2, logScale - 1)
 
 def formatMapUrl(
-        baseUrl: str,
+        baseMapUrl: str,
         milieu: travellermap.Milieu,
         style: travellermap.Style,
-        options: typing.Optional[typing.Iterable[travellermap.Option]] = None,
-        position: typing.Optional[typing.Union[MapPosition, TilePosition]] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        mapPosition: typing.Optional[typing.Tuple[float, float]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
         minimal: bool = False
         ) -> str:
-    url = f'{baseUrl}?milieu={milieu.value}&style={style.value}'
+    # It's important the file name doesn't start with a slash as, in the case of a file url,
+    # it will cause it to be take as the located in the root of the filesystem and any part
+    # in baseMapUrl will be deleted
+    url = urllib.parse.urljoin(baseMapUrl, 'index.html')
+
+    queryList = _createCommonQueryList(
+        milieu=milieu,
+        style=style,
+        options=options,
+        minimal=minimal)
+    if (mapPosition != None) and (linearScale != None):
+        logScale = linearScaleToLogScale(linearScale=linearScale)
+        queryList.append(f'p={mapPosition[0]:.3f}!{mapPosition[1]:.3f}!{logScale:.2f}')
+
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
+
+def formatTileUrl(
+        baseMapUrl: str,
+        tilePosition: typing.Tuple[float, float],
+        milieu: travellermap.Milieu,
+        style: travellermap.Style,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
+        minimal: bool = False
+        ) -> str:
+    url = urllib.parse.urljoin(baseMapUrl, 'api/tile')
+
+    queryList = _createCommonQueryList(
+        milieu=milieu,
+        style=style,
+        options=options,
+        minimal=minimal)
+    queryList.append(f'x={tilePosition[0]:.4f}')
+    queryList.append(f'y={tilePosition[1]:.4f}')
+    if linearScale != None:
+        queryList.append('scale=' + str(linearScale))
+
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
+
+# NOTE: This only supports generating full sector posters from custom sector data, it doesn't
+# support generating posters from standard sector data or subsector/quadrant posters of
+# custom sectors as those features aren't used by the app
+def formatPosterUrl(
+        baseMapUrl: str,
+        style: travellermap.Style,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        linearScale: typing.Optional[float] = None, # Pixels per parsec
+        compositing: bool = True,
+        minimal: bool = False
+        ) -> str:
+    url = urllib.parse.urljoin(baseMapUrl, 'api/poster')
+
+    queryList = _createCommonQueryList(
+        style=style,
+        options=options,
+        minimal=minimal)
+    if linearScale != None:
+        queryList.append(f'scale=' + str(linearScale))
+    queryList.append(f'compositing=' + ('1' if compositing else '0'))
+
+    if queryList:
+        url += '?' + ('&'.join(queryList))
+    return url
+
+def formatPosterLintUrl(baseMapUrl: str) -> str:
+    return urllib.parse.urljoin(baseMapUrl, 'api/poster?lint=1')
+
+def formatMetadataLintUrl(baseMapUrl: str) -> str:
+    return urllib.parse.urljoin(baseMapUrl, 'api/metadata?lint=1')
+
+def _createCommonQueryList(
+        milieu: typing.Optional[travellermap.Milieu] = None,
+        style: typing.Optional[travellermap.Style] = None,
+        options: typing.Optional[typing.Collection[travellermap.Option]] = None,
+        minimal: bool = False
+        ) -> typing.List[str]:
+    optionList = []
+    if milieu != None:
+        optionList.append('milieu=' + str(milieu.value))
+    style = _StyleOptionMap.get(style)
+    if style != None:
+        optionList.append('style=' + style)
+
+    if options == None:
+        # Always have a valid list of options as it makes the following code simpler
+        options = []
 
     optionBitMask = _ForceHexesOption # Always enabled
     if travellermap.Option.SectorGrid in options:
@@ -93,93 +156,103 @@ def formatMapUrl(
         optionBitMask |= _WorldColorsOption
     if travellermap.Option.FilledBorders in options:
         optionBitMask |= _FilledBordersOption
-
-    url += '&options=' + str(optionBitMask)
+    optionList.append('options=' + str(optionBitMask)) # Always add this as ForcedHexes is always set
 
     if travellermap.Option.HideUI in options:
-        url += '&hideui=1'
+        optionList.append('hideui=1')
     elif not minimal:
-        url += '&hideui=0'
+        optionList.append('hideui=0')
 
-    if travellermap.Option.GalacticDirections in options:
-        url += '&galdir=1'
+    # Galactic directors are on by default so this logic is different to most other options
+    if travellermap.Option.GalacticDirections not in options:
+        optionList.append('galdir=0')
     elif not minimal:
-        url += '&galdir=0'
+        optionList.append('galdir=1')
 
-    if travellermap.Option.Routes in options:
-        url += '&routes=1'
+    # Routes are on by default so this logic is different to most other options
+    if travellermap.Option.Routes not in options:
+        optionList.append('routes=0')
     elif not minimal:
-        url += '&routes=0'
+        optionList.append('routes=1')
 
     if travellermap.Option.DimUnofficial in options:
-        url += '&dimunofficial=1'
+        optionList.append('dimunofficial=1')
     elif not minimal:
-        url += '&dimunofficial=0'
+        optionList.append('dimunofficial=0')
 
     if travellermap.Option.ImportanceOverlay in options:
-        url += '&im=1'
+        optionList.append('im=1')
     elif not minimal:
-        url += '&im=0'
+        optionList.append('im=0')
 
     if travellermap.Option.PopulationOverlay in options:
-        url += '&po=1'
+        optionList.append('po=1')
     elif not minimal:
-        url += '&po=0'
+        optionList.append('po=0')
 
     if travellermap.Option.CapitalsOverlay in options:
-        url += '&cp=1'
+        optionList.append('cp=1')
     elif not minimal:
-        url += '&cp=0'
+        optionList.append('cp=0')
 
     if travellermap.Option.MinorRaceOverlay in options:
-        url += '&mh=1'
+        optionList.append('mh=1')
     elif not minimal:
-        url += '&mh=0'
+        optionList.append('mh=0')
 
     if travellermap.Option.DroyneWorldOverlay in options:
-        url += '&dw=1'
+        optionList.append('dw=1')
     elif not minimal:
-        url += '&dw=0'
+        optionList.append('dw=0')
 
     if travellermap.Option.AncientSitesOverlay in options:
-        url += '&an=1'
+        optionList.append('an=1')
     elif not minimal:
-        url += '&an=0'
+        optionList.append('an=0')
 
     if travellermap.Option.StellarOverlay in options:
-        url += '&stellar=1'
+        optionList.append('stellar=1')
     elif not minimal:
-        url += '&stellar=0'
+        optionList.append('stellar=0')
 
     if travellermap.Option.MainsOverlay in options:
-        url += '&mains=1'
+        optionList.append('mains=1')
     elif not minimal:
-        url += '&mains=0'
+        optionList.append('mains=0')
 
     # Note that ew and qz use an empty argument to clear rather than 0
     if travellermap.Option.EmpressWaveOverlay in options:
-        url += '&ew=milieu' # Show for current milieu
+        optionList.append('ew=milieu') # Show for current milieu
     elif not minimal:
-        url += '&ew=' # Empty to clear rather than 0
+        optionList.append('ew=') # Empty to clear rather than 0
 
     if travellermap.Option.EmpressWaveOverlay in options:
-        url += '&qz=1'
+        optionList.append('qz=1')
     elif not minimal:
-        url += '&qz=' # Empty to clear rather than 0
+        optionList.append('qz=') # Empty to clear rather than 0
 
-    if isinstance(position, MapPosition):
-        url += f'&p={position.mapX():.3f}!{position.mapY():.3f}!{position.logScale():.2f}'
-    elif isinstance(position, TilePosition):
-        url += f'&x={position.tileX():.4f}&y={position.tileY():.4f}&scale={position.linearScale()}'
+    return optionList
 
-    return url
-
-def posFromMapUrl(url: str) -> typing.Optional[MapPosition]:
-    paramMap = parse.parse_qs(parse.urlsplit(url).query)
+def parsePosFromMapUrl(
+        url: str
+        ) -> typing.Optional[typing.Tuple[float, float]]:
+    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
     paramValues = paramMap.get('p')
     if not paramValues:
         return None
     tokens = paramValues[0].split('!')
     if len(tokens) != 3:
         return None
-    return MapPosition(mapX=float(tokens[0]), mapY=float(tokens[1]), logScale=float(tokens[2]))
+    return (float(tokens[0]), float(tokens[1]))
+
+def parseScaleFromMapUrl(
+        url: str
+        ) -> typing.Optional[float]: # Pixels per parsec
+    paramMap = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+    paramValues = paramMap.get('p')
+    if not paramValues:
+        return None
+    tokens = paramValues[0].split('!')
+    if len(tokens) != 3:
+        return None
+    return logScaleToLinearScale(float(tokens[2]))

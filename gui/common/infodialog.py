@@ -23,11 +23,13 @@ class InfoDialog(gui.DialogEx):
 
         self._noShowAgainId = noShowAgainId
 
-        self._textEdit = gui.ContentSizedTextEdit()
+        self._textEdit = gui.ContentSizedTextBrowser()
         self._textEdit.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Preferred,
             QtWidgets.QSizePolicy.Policy.Preferred)
-        self._textEdit.setReadOnly(True)
+        self._textEdit.setOpenExternalLinks(True)
+        self._textEdit.setTextInteractionFlags(
+            QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self._noShowAgain = gui.CheckBoxEx('Don\'t show again')
         if self._noShowAgainId:

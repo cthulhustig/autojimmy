@@ -3,13 +3,14 @@ import common
 import gui
 import logic
 import logging
+import proxy
 import math
 import os
 import re
 import traveller
 import travellermap
 import typing
-from PyQt5 import QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
+from PyQt5 import QtWebEngineCore, QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
 
 class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     # Massive Hack: This message is expected as a local snapshot of the Traveller Map web interface
@@ -60,11 +61,10 @@ class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
 class _MapStyleToggleAction(QtWidgets.QAction):
     def __init__(
             self,
-            text: str,
             style: travellermap.Style,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
-        super().__init__(text, parent)
+        super().__init__(style.value, parent)
 
         self._style = style
 
@@ -84,11 +84,10 @@ class _MapStyleToggleAction(QtWidgets.QAction):
 class _MapOptionToggleAction(QtWidgets.QAction):
     def __init__(
             self,
-            text: str,
             option: travellermap.Option,
             parent: typing.Optional[QtCore.QObject] = None
             ) -> None:
-        super().__init__(text, parent)
+        super().__init__(option.value, parent)
 
         self._option = option
 
@@ -405,7 +404,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        absoluteX, absoluteY = traveller.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
+        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         overlay = _HexOverlay(
             absoluteX=absoluteX,
             absoluteY=absoluteY,
@@ -433,7 +432,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             worldX: int,
             worldY: int
             ) -> None:
-        absoluteX, absoluteY = traveller.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
+        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         self._overlays = [overlay for overlay in self._overlays if (overlay.absoluteX() != absoluteX or overlay.absoluteY() != absoluteY)]
 
         if self._loaded:
@@ -500,95 +499,54 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._styleOptionGroup = QtWidgets.QActionGroup(self)
 
         if not TravellerMapWidgetBase._sharedStyleActions:
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Poster',
-                style=travellermap.Style.Poster))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Print',
-                style=travellermap.Style.Print))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Atlas',
-                style=travellermap.Style.Atlas))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Candy',
-                style=travellermap.Style.Candy))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Draft',
-                style=travellermap.Style.Draft))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='FASA',
-                style=travellermap.Style.Fasa))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Terminal',
-                style=travellermap.Style.Terminal))
-            TravellerMapWidgetBase._sharedStyleActions.append(_MapStyleToggleAction(
-                text='Mongoose',
-                style=travellermap.Style.Mongoose))
+            for style in travellermap.Style:
+                TravellerMapWidgetBase._sharedStyleActions.append(
+                    _MapStyleToggleAction(style=style))
 
         if not TravellerMapWidgetBase._sharedFeatureActions:
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Galactic Directions',
                 option=travellermap.Option.GalacticDirections))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Sector Grid',
                 option=travellermap.Option.SectorGrid))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Sector Names',
                 option=travellermap.Option.SectorNames))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Borders',
                 option=travellermap.Option.Borders))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Routes',
                 option=travellermap.Option.Routes))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Region Names',
                 option=travellermap.Option.RegionNames))
             TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                text='Important Worlds',
                 option=travellermap.Option.ImportantWorlds))
 
         if not TravellerMapWidgetBase._sharedAppearanceActions:
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='More World Colours',
                 option=travellermap.Option.WorldColours))
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='Filled Borders',
                 option=travellermap.Option.FilledBorders))
             TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                text='Dim Unofficial Data',
                 option=travellermap.Option.DimUnofficial))
 
         if not TravellerMapWidgetBase._sharedOverlayActions:
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Importance',
                 option=travellermap.Option.ImportanceOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Population',
                 option=travellermap.Option.PopulationOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Capitals/Candidates',
                 option=travellermap.Option.CapitalsOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Minor Race Homeworlds',
                 option=travellermap.Option.MinorRaceOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Droyne Worlds',
                 option=travellermap.Option.DroyneWorldOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Ancient Sites',
                 option=travellermap.Option.AncientSitesOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Stellar',
                 option=travellermap.Option.StellarOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Empress Wave',
                 option=travellermap.Option.EmpressWaveOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Qrekrsha Zone',
                 option=travellermap.Option.QrekrshaZoneOverlay))
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                text='Mains',
                 option=travellermap.Option.MainsOverlay))
 
         for action in TravellerMapWidgetBase._sharedStyleActions:
@@ -625,29 +583,81 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         reloadAction.triggered.connect(self.reload)
         self.addAction(reloadAction)
 
+    # Replace the standard Util.fetchImage function with one that does a round robin
+    # of of hosts for loopback requests in order to work around the hard coded limit
+    # of 6 connections per host that the underlying Chromium browser enforces.
+    # NOTE: This only affects connections to the proxy so cached tiles can be returned
+    # without having to wait for the requests for non-cached tiles. The proxy still
+    # limits the number of outgoing connections to 6.
+    # NOTE: This should only be done when routing through the proxy. It doesn't work
+    # when accessing local instances of Traveller Map directly as it only listens on
+    # 127.0.0.1
+    def _injectImageHostRoundRobin(self) -> None:
+        script = """
+            const LoopbackRegex = /^(127\\.\\d\\.\\d\\.\\d|localhost|loopback)$/;
+            let nextImageHost = 1;
+            let imageHostCount = {poolSize};
+
+            Util.real_fetchImage = Util.fetchImage;
+
+            Util.fetchImage = function(url, img) {{
+                if (url.startsWith("/")) {{
+                    hostname = document.location.hostname;
+                }} else {{
+                    let parsedUrl = new URL(url);
+                    hostname = parsedUrl.hostname;
+                }}
+
+                if (hostname.match(LoopbackRegex)) {{
+                    let authority = "127.0.0." + nextImageHost;
+                    if (document.location.port) {{
+                        authority += ":" + document.location.port;
+                    }}
+                    url = document.location.protocol + "//" + authority + url;
+
+                    nextImageHost += 1
+                    if (nextImageHost > imageHostCount) {{
+                        nextImageHost = 1;
+                    }}
+                }}
+
+                return Util.real_fetchImage(url, img);
+            }};
+            """.format(poolSize=proxy.MapProxy.instance().hostPoolSize())
+        self._runScript(script)
+
     # NOTE: The 'tilt' url parameter isn't supported as it doesn't draw properly in the Qt widget
     def _generateUrl(self) -> QtCore.QUrl:
         currentUrl = self._mapWidget.url().toString()
-        currentPosition = travellermap.posFromMapUrl(url=currentUrl) if currentUrl else None
+        currentPos = travellermap.parsePosFromMapUrl(url=currentUrl) if currentUrl else None
+        currentScale = travellermap.parseScaleFromMapUrl(url=currentUrl) if currentUrl else None
 
         installDir = app.Config.instance().installDir()
         rootPath = installDir.replace('\\', '/') if common.isWindows() else installDir
 
-        indexUrl = f'file:///{rootPath}/data/web/index.html'
+        if proxy.MapProxy.instance().isRunning():
+            indexUrl = proxy.MapProxy.instance().accessUrl()
+        else:
+            indexUrl = f'file:///{rootPath}/data/web/'
 
         options = set(app.Config.instance().mapOptions())
         options.add(travellermap.Option.HideUI) # Always hide the UI
 
         return QtCore.QUrl(travellermap.formatMapUrl(
-            baseUrl=indexUrl,
+            baseMapUrl=indexUrl,
             milieu=app.Config.instance().milieu(),
             style=app.Config.instance().mapStyle(),
             options=options,
-            position=currentPosition))
+            mapPosition=currentPos,
+            linearScale=currentScale))
 
     def _loadMap(self) -> None:
         url = self._generateUrl()
         logging.debug(f'TravellerMapWidget loading {url.toString()}')
+
+        if proxy.MapProxy.instance().isRunning():
+            self._injectImageHostRoundRobin()
+
         self._mapWidget.load(url)
 
     def _runJumpRouteScript(

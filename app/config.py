@@ -1,4 +1,5 @@
 import app
+import common
 import darkdetect
 import enum
 import logging
@@ -21,9 +22,16 @@ class Config(object):
     _ConfigFileName = 'autojimmy.ini'
 
     _LogLevelKeyName = 'Debug/LogLevel'
-    _TravellerMapUrlKeyName = 'TravellerMap/SiteUrl'
     _MilieuKeyName = 'TravellerMap/Milieu'
     _MapStyleKeyName = 'TravellerMap/MapStyle'
+
+    _ProxyEnabledKeyName = 'Proxy/Enabled'
+    _ProxyPortKeyName = 'Proxy/Port'
+    _ProxyHostPoolSizeKeyName = 'Proxy/HostPoolSize'
+    _ProxyMapUrlKeyName = 'Proxy/MapUrl'
+    _ProxyTileCacheSizeKeyName = 'Proxy/TileCacheSize'
+    _ProxyTileCacheLifetimeKeyName = 'Proxy/TileCacheLifetime'
+    _ProxySvgCompositionKeyName = 'Proxy/SvgComposition'
 
     _RulesKeyName = 'Game/Rules'
     _PlayerBrokerDmKeyName = 'Game/PlayerBrokerDM'
@@ -197,15 +205,89 @@ class Config(object):
 
         return True # Restart required
 
-    def travellerMapUrl(self) -> str:
-        return self._travellerMapUrl
+    def proxyEnabled(self) -> bool:
+        return self._proxyEnabled
 
-    def setTravellerMapUrl(self, url: str) -> bool:
-        if url == self._travellerMapUrl:
+    def setProxyEnabled(self, enabled: bool) -> bool:
+        if enabled == self._proxyEnabled:
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._TravellerMapUrlKeyName, url)
+        self._settings.setValue(Config._ProxyEnabledKeyName, enabled)
+        return True # Restart required
+
+    def proxyPort(self) -> int:
+        return self._proxyPort
+
+    def setProxyPort(
+            self,
+            port: int
+            ) -> None:
+        if port == self._proxyPort:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyPortKeyName, port)
+        return True # Restart required
+
+    # Number of loopback addresses to listen on to work around 6 connection per
+    # host limit
+    def proxyHostPoolSize(self) -> int:
+        return self._proxyHostPoolSize
+
+    def setProxyHostPoolSize(self, size: int) -> bool:
+        if size == self._proxyHostPoolSize:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyHostPoolSizeKeyName, size)
+        return True # Restart required
+
+    # The Traveller Map URL used by the proxy
+    def proxyMapUrl(self) -> str:
+        return self._proxyMapUrl
+
+    def setProxyMapUrl(self, url: str) -> bool:
+        if url == self._proxyMapUrl:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyMapUrlKeyName, url)
+        return True # Restart required
+
+    # Size of tile cache in bytes
+    def proxyTileCacheSize(self) -> int:
+        return self._proxyTileCacheSize
+
+    def setProxyTileCacheSize(self, size: int) -> bool:
+        if size == self._proxyTileCacheSize:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyTileCacheSizeKeyName, size)
+        return True # Restart required
+
+    # Lifetime of cache entries in days
+    def proxyTileCacheLifetime(self) -> int:
+        return self._proxyTileCacheLifetime
+
+    def setProxyTileCacheLifetime(self, days: int) -> bool:
+        if days == self._proxyTileCacheLifetime:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxyTileCacheLifetimeKeyName, days)
+        return True # Restart required
+
+    def proxySvgCompositionEnabled(self) -> bool:
+        return self._proxySvgComposition
+
+    def setProxySvgCompositionEnabled(self, enabled) -> bool:
+        if enabled == self._proxySvgComposition:
+            return False # Nothing has changed
+
+        # Don't update internal copy of setting, it's only applied after a restart
+        self._settings.setValue(Config._ProxySvgCompositionKeyName, enabled)
         return True # Restart required
 
     def milieu(self) -> travellermap.Milieu:
@@ -984,11 +1066,38 @@ class Config(object):
 
         self._logLevel = self._loadLogLevelSetting(
             key=Config._LogLevelKeyName,
-            default=logging.INFO)
+            default=logging.WARNING)
 
-        self._travellerMapUrl = self._loadUrlSetting(
-            key=Config._TravellerMapUrlKeyName,
-            default='https://travellermap.com')
+        self._proxyEnabled = self._loadBoolSetting(
+            key=Config._ProxyEnabledKeyName,
+            default=True)
+        self._proxyPort = self._loadIntSetting(
+            key=Config._ProxyPortKeyName,
+            default=61977,
+            minValue=1024, # Don't allow system ports
+            maxValue=65535)
+        # NOTE: Default to 1 host on macOS as it doesn't enable other loopback
+        # addresses by default
+        self._proxyHostPoolSize = self._loadIntSetting(
+            key=Config._ProxyHostPoolSizeKeyName,
+            default=1 if common.isMacOS() else 4,
+            minValue=1,
+            maxValue=10)
+        self._proxyMapUrl = self._loadUrlSetting(
+            key=Config._ProxyMapUrlKeyName,
+            default=travellermap.TravellerMapBaseUrl)
+        self._proxyTileCacheSize = self._loadIntSetting(
+            key=Config._ProxyTileCacheSizeKeyName,
+            default=500 * 1000 * 1000, # 500MB
+            minValue=0) # 0 means disable cache
+        self._proxyTileCacheLifetime = self._loadIntSetting(
+            key=Config._ProxyTileCacheLifetimeKeyName,
+            default=14, # Days
+            minValue=0) # 0 means never expire
+        self._proxySvgComposition = self._loadBoolSetting(
+            key=Config._ProxySvgCompositionKeyName,
+            default=False)
+
         self._milieu = self._loadEnumSetting(
             key=Config._MilieuKeyName,
             default=travellermap.Milieu.M1105,

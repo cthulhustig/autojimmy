@@ -7,14 +7,23 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
-class LoadProgressDialog(QtWidgets.QDialog):
+class StartupProgressDialog(QtWidgets.QDialog):
+    _JobProgressPrefixMap = {
+        jobs.LoadSectorsJob: 'Loading: Sector - ',
+        jobs.LoadWeaponsJob: 'Loading: Weapon - ',
+        jobs.StartProxyJob: 'Proxy: '}
+
     def __init__(
             self,
+            startProxy: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
-        self._loadJob = None
+        self._startProxy = startProxy
+        self._jobQueue: typing.List[typing.Type[jobs.StartupJobBase]] = [] # NOTE: This is a queue of job types
+        self._currentJob = None
+        self._exception = None
 
         self._textLabel = QtWidgets.QLabel()
         self._progressBar = QtWidgets.QProgressBar()
@@ -23,7 +32,7 @@ class LoadProgressDialog(QtWidgets.QDialog):
         windowLayout.addWidget(self._textLabel)
         windowLayout.addWidget(self._progressBar)
 
-        self.setWindowTitle('Loading')
+        self.setWindowTitle('Starting')
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
         self.setLayout(windowLayout)
         self.setWindowFlags(
@@ -36,20 +45,16 @@ class LoadProgressDialog(QtWidgets.QDialog):
         # closed then reshown
         gui.configureWindowTitleBar(widget=self)
 
+    def exception(self) -> typing.Optional[Exception]:
+        return self._exception
+
     def exec(self) -> int:
-        try:
-            self._loadJob = jobs.DataLoadJob(
-                parent=self,
-                progressCallback=self._updateProgress,
-                finishedCallback=self._loadingFinished)
-        except Exception as ex:
-            message = 'Failed to start data load job'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            self.close()
+        self._jobQueue.append(jobs.LoadSectorsJob)
+        self._jobQueue.append(jobs.LoadWeaponsJob)
+        if self._startProxy:
+            self._jobQueue.append(jobs.StartProxyJob)
+
+        self._startNextJob()
 
         return super().exec()
 
@@ -62,32 +67,54 @@ class LoadProgressDialog(QtWidgets.QDialog):
 
         return super().showEvent(e)
 
+    def _startNextJob(self) -> None:
+        try:
+            jobType = self._jobQueue.pop(0)
+            self._currentJob = jobType(
+                parent=self,
+                progressCallback=self._updateProgress,
+                finishedCallback=self._jobFinished)
+        except Exception as ex:
+            self._exception = ex
+            self.close()
+
     def _updateProgress(
             self,
-            item: str,
+            stage: str,
             current: int,
             total: int
             ) -> None:
-        self._textLabel.setText(f'Loading: {item}')
+        prefix = StartupProgressDialog._JobProgressPrefixMap.get(type(self._currentJob))
+        if prefix:
+            stage = prefix + stage
+
+        self._textLabel.setText(stage)
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
-    def _loadingFinished(
+    def _jobFinished(
             self,
             result: typing.Union[str, Exception]
             ) -> None:
         if isinstance(result, Exception):
-            message = 'Failed to load data'
-            logging.error(message, exc_info=result)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=result)
-            self.close()
-        else:
-            self.accept()
+            if isinstance(self._currentJob, jobs.StartProxyJob) :
+                logging.error(
+                    'An exception occurred while starting the proxy',
+                    exc_info=result)
+                gui.MessageBoxEx.critical(
+                    'The proxy failed to start. Custom sectors won\'t be displayed in Traveller Map',
+                    exception=result)
+            else:
+                self._exception = result
+                self.close()
 
         # Wait for thread to finish to prevent "QThread: Destroyed while thread is still running"
         # and a crash on Linux
-        self._loadJob.wait()
-        self._loadJob = None
+        self._currentJob.wait()
+        self._currentJob = None
+
+        if self._exception is None:
+            if len(self._jobQueue) > 0:
+                self._startNextJob()
+            else:
+                self.accept()
