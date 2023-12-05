@@ -9,8 +9,8 @@ import typing
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
-    _SectorSearchHintPattern = re.compile('^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
-    _SectorHexPattern = re.compile('^(.*) (\d{4})$')
+    _SectorSearchHintPattern = re.compile(r'^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
+    _SectorHexPattern = re.compile(r'^(.*) (\d{4})$')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
