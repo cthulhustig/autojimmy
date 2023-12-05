@@ -304,7 +304,7 @@ class TileCache(object):
 
                 if progressCallback:
                     # Force 100% progress notification
-                    progressCallback(progressStage, len(invalidEntries), len(invalidEntries))
+                    progressCallback('Complete', len(invalidEntries), len(invalidEntries))
 
             # Commit all changes to the database
             await self._dbConnection.commit()
