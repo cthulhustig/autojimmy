@@ -1263,7 +1263,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             'Save File',
             QtCore.QDir.homePath() + '/route.json',
-            'JSON Files(*.json)')
+            'JSON Files (*.json)')
         if not path:
             return
 

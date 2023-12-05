@@ -160,7 +160,7 @@ class TravellerMapWindow(gui.WindowWidget):
             self,
             'Open File',
             QtCore.QDir.homePath(),
-            'JSON Files(*.json)')
+            'JSON Files (*.json)')
         if not path:
             return
 
