@@ -155,7 +155,7 @@ class CalculationWindow(gui.WindowWidget):
                 answer = gui.MessageBoxEx.question(
                     parent=self,
                     text=f'The calculation archive was created with {app.AppName} version {archive.appVersion()}.\nDo you want to continue loading it?')
-                if not answer:
+                if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                     return # User cancelled
             self.setCalculations(calculations=archive.calculations())
         except Exception as ex:
