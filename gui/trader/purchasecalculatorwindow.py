@@ -447,7 +447,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self,
             'Save File',
             QtCore.QDir.homePath() + '/cargo.json',
-            'JSON Files(*.json)')
+            'JSON Files (*.json)')
         if not path:
             return
 
