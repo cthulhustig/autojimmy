@@ -368,8 +368,8 @@ class RawMetadata(object):
         return self._styleSheet
 
 
-_HeaderPattern = re.compile('(?:([\w{}()\[\]]+)\s*)')
-_SeparatorPattern = re.compile('(?:([-]+)\s?)')
+_HeaderPattern = re.compile(r'(?:([\w{}()\[\]]+)\s*)')
+_SeparatorPattern = re.compile(r'(?:([-]+)\s?)')
 _T5Column_ColumnNameToAttributeMap = {
     'Hex': WorldAttribute.Hex,
     'Name': WorldAttribute.Name,

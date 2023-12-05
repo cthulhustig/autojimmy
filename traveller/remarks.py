@@ -6,15 +6,15 @@ import typing
 class Remarks(object):
     # Most of these are based on the descriptions here https://travellermap.com/doc/secondsurvey
     # with the exception of Colony which I found here https://wiki.travellerrpg.com/Trade_classification
-    _TradeCodePattern = re.compile('^([A-Za-z]{2})$') # Argument gives trade code
-    _MilitaryRulePattern = re.compile('^Mr\(\S{4}\)$') # Argument gives the controlling
-    _ResearchStationPattern = re.compile('^Rs([A-Za-z])$') # Argument gives grade of research station
-    _OwnershipPattern = re.compile('^O:(?:(\S{4})-)?(\d{4})$') # Argument gives the owning world
-    _ColonyPattern = re.compile('^C:(?:(\S{4})-)?(\d{4})$') # Argument gives the colony world
-    _SophontMajorRacePattern = re.compile('^\[(.*)\]$') # Argument gives major sophont
-    _SophontMinorRacePattern = re.compile('^\((.*)\)([0-9W]?)$') # Argument gives minor sophont with optional percentage
-    _SophontDiebackWorldPattern = re.compile('^Di\((.+)\)$') # Argument gives previously inhabiting sophont
-    _SophontShortCodePattern = re.compile('^(\S{4})([0-9W])$') # Argument gives sophont short code with optional percentage
+    _TradeCodePattern = re.compile(r'^([A-Za-z]{2})$') # Argument gives trade code
+    _MilitaryRulePattern = re.compile(r'^Mr\(\S{4}\)$') # Argument gives the controlling
+    _ResearchStationPattern = re.compile(r'^Rs([A-Za-z])$') # Argument gives grade of research station
+    _OwnershipPattern = re.compile(r'^O:(?:(\S{4})-)?(\d{4})$') # Argument gives the owning world
+    _ColonyPattern = re.compile(r'^C:(?:(\S{4})-)?(\d{4})$') # Argument gives the colony world
+    _SophontMajorRacePattern = re.compile(r'^\[(.*)\]$') # Argument gives major sophont
+    _SophontMinorRacePattern = re.compile(r'^\((.*)\)([0-9W]?)$') # Argument gives minor sophont with optional percentage
+    _SophontDiebackWorldPattern = re.compile(r'^Di\((.+)\)$') # Argument gives previously inhabiting sophont
+    _SophontShortCodePattern = re.compile(r'^(\S{4})([0-9W])$') # Argument gives sophont short code with optional percentage
 
     def __init__(
             self,
