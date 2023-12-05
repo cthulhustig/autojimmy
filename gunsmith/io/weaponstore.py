@@ -94,6 +94,11 @@ class WeaponStore(object):
             except Exception as ex:
                 logging.error(f'Weapon store failed to load example weapon from file "{filePath}"', exc_info=ex)
 
+        if progressCallback:
+            # Force 100% progress notification
+            progressCallback('Complete', weaponCount, weaponCount)
+
+
     def weapons(self) -> typing.Iterable[gunsmith.Weapon]:
         with self._lock:
             return list(self._weaponMap.keys())
