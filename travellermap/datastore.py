@@ -186,9 +186,8 @@ class SectorLookupMaps(object):
         self._sectors.remove(sector)
 
         # Only remove position & name maps if it was found in the main list of sectors. This
-        # is a safety net to avoid removing the world form only a single map if a sector with
-        # the same name or position is passed in. Still play it safe and don't assume that
-        # there is an entry in either of the maps.
+        # is a safety net to avoid leaving the maps in an inconsistent state if something
+        # unexpected happens
         position = (sector.x(), sector.y())
         if position in self._positionMap:
             del self._positionMap[position]
@@ -746,7 +745,8 @@ class DataStore(object):
             if progressCallback:
                 progressCallback(DataStore.UpdateStage.ExtractStage, 0)
 
-            workingDirPath = self._makeWorkingDir(overlayDirPath=self._overlayDir)
+            workingDirPath = DataStore._makeWorkingDir(
+                baseDirPath=self._overlayDir)
             zipData = zipfile.ZipFile(dataBuffer)
             fileInfoList = zipData.infolist()
 
@@ -798,7 +798,7 @@ class DataStore(object):
                     data=zipData.read(fileInfo.filename))
 
             logging.info('Replacing old universe snapshot')
-            self._replaceDir(
+            DataStore._replaceDir(
                 workingDirPath=workingDirPath,
                 currentDirPath=self._overlayDir)
 
@@ -863,9 +863,10 @@ class DataStore(object):
             format=metadataFormat,
             identifier='Custom Metadata')
 
-        # Do a full parse of the custom sector data based on the detected file format. If it fails
-        # an exception will be raised an allowed to pass back to the called. Doing this check is
-        # important as it prevents bad data causing the app to barf when loading
+        # Do a full parse of the custom sector data based on the detected file
+        # format. If it fails an exception will be raised and allowed to pass
+        # back to the called. Doing this check is important as it prevents bad
+        # data causing the app to barf when loading
         travellermap.readSector(
             content=sectorContent,
             format=sectorFormat,
@@ -1177,36 +1178,6 @@ class DataStore(object):
 
         return self._readStockFile(relativeFilePath=relativePath)
 
-    def _makeWorkingDir(
-            self,
-            overlayDirPath: str
-            ) -> str:
-        workingDir = overlayDirPath + '_working'
-        if os.path.exists(workingDir):
-            # Delete any previous working directory that may have been left kicking about
-            shutil.rmtree(workingDir)
-        os.makedirs(workingDir)
-        return workingDir
-
-    def _replaceDir(
-            self,
-            workingDirPath: str,
-            currentDirPath: str
-            ) -> None:
-        oldDirPath = None
-        if os.path.exists(currentDirPath):
-            oldDirPath = currentDirPath + '_old'
-            if os.path.exists(oldDirPath):
-                shutil.rmtree(oldDirPath)
-            os.rename(currentDirPath, oldDirPath)
-
-        try:
-            os.rename(workingDirPath, currentDirPath)
-        except Exception:
-            if oldDirPath:
-                os.rename(oldDirPath, currentDirPath)
-            raise
-
     def _loadMilieuSectors(
             self,
             milieu: travellermap.Milieu,
@@ -1491,3 +1462,31 @@ class DataStore(object):
         return UniverseDataFormat(
             major=int(major),
             minor=int(minor) if minor else 0)
+
+    @staticmethod
+    def _makeWorkingDir(baseDirPath: str) -> str:
+        workingDir = baseDirPath + '_working'
+        if os.path.exists(workingDir):
+            # Delete any previous working directory that may have been left kicking about
+            shutil.rmtree(workingDir)
+        os.makedirs(workingDir)
+        return workingDir
+
+    @staticmethod
+    def _replaceDir(
+            workingDirPath: str,
+            currentDirPath: str
+            ) -> None:
+        oldDirPath = None
+        if os.path.exists(currentDirPath):
+            oldDirPath = currentDirPath + '_old'
+            if os.path.exists(oldDirPath):
+                shutil.rmtree(oldDirPath)
+            os.rename(currentDirPath, oldDirPath)
+
+        try:
+            os.rename(workingDirPath, currentDirPath)
+        except Exception:
+            if oldDirPath:
+                os.rename(oldDirPath, currentDirPath)
+            raise
