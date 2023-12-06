@@ -471,6 +471,9 @@ class Compositor(object):
             tgtPixelDim = (
                 round((intersection[2] - intersection[0]) * tileScale),
                 round((intersection[3] - intersection[1]) * tileScale))
+            if (tgtPixelDim[0] <= 0) or (tgtPixelDim[1] <= 0):
+                continue
+
             tgtPixelOffset = (
                 math.ceil((intersection[0] * tileScale) - (float(tileX) * tileWidth)),
                 -math.ceil((intersection[3] * tileScale) + (float(tileY) * tileHeight)))
