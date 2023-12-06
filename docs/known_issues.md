@@ -86,7 +86,7 @@ previous fix, installing the requirements then re-applying the original fix. To
 do this run the following commands, replacing `<VENV_PATH>` with the path to the
 venv being used and `<PYTHON_VERSION>` with the version of python being used
 (e.g. python3.11).
-1. rm -rf <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
+1. rm <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 2. pip3 install -r requirements.txt
 3. rm -rf <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
 4. ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site-packages/PyQt5
