@@ -275,8 +275,8 @@ def createWorldToolTip(
     toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
 
     if world.isAnomaly():
-        style = formatStyle(app.tagColour(app.TagLevel.Danger))
-        toolTip += f'<li><span style="{style}">Danger: Anomaly system!</span>'
+        style = formatStyle(app.tagColour(app.TagLevel.Warning))
+        toolTip += f'<li><span style="{style}">Warning: Anomaly!</span>'
 
     allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
     tagLevel = app.calculateAllegianceTagLevel(world)
