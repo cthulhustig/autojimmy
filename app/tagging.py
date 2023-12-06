@@ -3,9 +3,9 @@ import logic
 import traveller
 
 def calculateWorldTagLevel(world: traveller.World) -> app.TagLevel:
-    # Always tag Anomalies at danger level
+    # Always tag Anomalies at warning level as they're not necessarily a danger
     if world.isAnomaly():
-        return app.TagLevel.Danger
+        return app.TagLevel.Warning
 
     worldTagLevel = None
 
