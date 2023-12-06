@@ -336,17 +336,17 @@ class RoutePlanner(object):
                     searchRadius = shipJumpRating
                 else:
                     searchRadius = min(shipJumpRating, currentNode.fuelParsecs())
+
+                # Clamp the search radius to the max parsecs without refuelling. This is required for
+                # ships that don't have the fuel capacity to perform their max jump. Not sure when
+                # this would actually happen but it should be handled
+                searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
+                if searchRadius <= 0:
+                    continue
             else:
                 # Fuel based route calculation is disabled so always search for the full ship jump
                 # rating
                 searchRadius = shipJumpRating
-
-            # Clamp the search radius to the max parsecs without refuelling. This is required for
-            # ships that don't have the fuel capacity to perform their max jump. Not sure when
-            # this would actually happen but it should be handled
-            searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
-            if searchRadius <= 0:
-                continue
 
             # examine each node adjacent to the current node. The world filter isn't passed in
             # as it's quicker to use the open and closed set to filter out large numbers of
