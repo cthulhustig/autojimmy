@@ -8,7 +8,9 @@ import sqlite3
 import travellermap
 import typing
 
-_TileTableSchema = 1
+# v1 = Initial version
+# v2 = SVG unicode font fix (not really a schema change but need to force regeneration)
+_TileTableSchema = 2
 
 _TileTableName = 'tile_cache'
 
