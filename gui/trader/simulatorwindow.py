@@ -513,6 +513,15 @@ class SimulatorWindow(gui.WindowWidget):
                 parent=self,
                 text='Select a start world')
             return
+        
+        refuellingType = logic.selectRefuellingType(
+            world=self._startWorldWidget.world(),
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum())
+        if not refuellingType:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='The start world must allow the selected refuelling strategy')
+            return
 
         if self._startingFundsSpinBox.value() <= 0:
             gui.MessageBoxEx.information(
