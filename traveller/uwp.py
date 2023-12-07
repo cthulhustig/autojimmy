@@ -38,26 +38,40 @@ _StarPortStringMap = {
 #    ░░███ ░░███     ░░██████  █████     █████░░████████   ░░█████████  █████  █████████░░██████
 #     ░░░   ░░░       ░░░░░░  ░░░░░     ░░░░░  ░░░░░░░░     ░░░░░░░░░  ░░░░░  ░░░░░░░░░  ░░░░░░
 
-# These values are taken from https://travellermap.com/doc/secondsurvey
-# the gravity values conflict with the MGT2 rules but I wanted to use
-# the extended list of codes from Traveller Map
+# The source of these values is a bit convoluted. The diameter and gravity
+# values come from world_util.js in the Traveller Map repo. However I don't know
+# what where the masses used to calculate the gravity values came from. The
+# gravity values are also different to https://travellermap.com/doc/secondsurvey.
+# As world_util.js doesn't have escape velocity values and the ones on
+# https://travellermap.com/doc/secondsurvey appear to be innacurate. I used this
+# link to calculate the mass from the gravity and diameter values, doing this
+# also gives the escape velocity values.
+# https://www.wolframalpha.com/input?i=surface+gravity+calculator
+# 
+# I've not included the mass in the description as I don't think it's would
+# really be of intereast to anyone. These were the masses calculated, I've
+# converted them from kg to earths (i.e. multiples of 12800km)
+# 1 = 0.0019, 2 = 0.0156, 3 = 0.0534, 4 = 0.1250,
+# 5 = 0.2461, 6 = 0.4218, 7 = 0.6737, 8 = 1.0000,
+# 9 = 1.4173, A = 1.9522, B = 2.6084, C = 3.3743 
+# D = 4.3047, E = 5.3597, F = 7.0311 
 _WorldSizeStringMap = {
     '0': 'Asteroid belt',
-    '1': 'Diameter 1600km, Gravity 0.122g, Escape Velocity 1.35km/s',
-    '2': 'Diameter 3200km, Gravity 0.24g, Escape Velocity 2.69km/s',
-    '3': 'Diameter 4800km, Gravity 0.377g, Escape Velocity 4.13km/s',
-    '4': 'Diameter 6400km, Gravity 0.5g, Escape Velocity 5.49km/s',
-    '5': 'Diameter 8000km, Gravity 0.625g, Escape Velocity 6.87km/s',
-    '6': 'Diameter 9600km, Gravity 0.84g, Escape Velocity 8.72km/s',
-    '7': 'Diameter 11200km, Gravity 0.875g, Escape Velocity 9.62km/s',
-    '8': 'Diameter 12800km, Gravity 1g, Escape Velocity 11.00km/s',
-    '9': 'Diameter 14400km, Gravity 1.12g, Escape Velocity 12.35km/s',
-    'A': 'Diameter 16000km, Gravity 1.25g, Escape Velocity 13.73km/s',
-    'B': 'Diameter 18800km, Gravity 1.375, Escape Velocity 15.34km/s',
-    'C': 'Diameter 19200km, Gravity 1.5, Escape Velocity 16.74km/s',
-    'D': 'Diameter 20800km, Gravity 1.625, Escape Velocity 18.13km/s',
-    'E': 'Diameter 22400km, Gravity 1.750, Escape Velocity 19.52km/s',
-    'F': 'Diameter 24000km, Gravity 1.875, Escape Velocity 20.92km/s',
+    '1': 'Diameter 1600km, Gravity 0.12g, Escape Velocity 1.37km/s',
+    '2': 'Diameter 3200km, Gravity 0.25g, Escape Velocity 2.80km/s',
+    '3': 'Diameter 4800km, Gravity 0.38g, Escape Velocity 4.23km/s',
+    '4': 'Diameter 6400km, Gravity 0.50g, Escape Velocity 5.60km/s',
+    '5': 'Diameter 8000km, Gravity 0.63g, Escape Velocity 7.03km/s',
+    '6': 'Diameter 9600km, Gravity 0.75g, Escape Velocity 8.40km/s',
+    '7': 'Diameter 11200km, Gravity 0.88g, Escape Velocity 9.83km/s',
+    '8': 'Diameter 12800km, Gravity 1.00g, Escape Velocity 11.20km/s',
+    '9': 'Diameter 14400km, Gravity 1.12g, Escape Velocity 12.58km/s',
+    'A': 'Diameter 16000km, Gravity 1.25g, Escape Velocity 14.00km/s',
+    'B': 'Diameter 17600km, Gravity 1.38g, Escape Velocity 15.43km/s',
+    'C': 'Diameter 19200km, Gravity 1.50g, Escape Velocity 16.81km/s',
+    'D': 'Diameter 20800km, Gravity 1.63g, Escape Velocity 18.23km/s',
+    'E': 'Diameter 22400km, Gravity 1.75g, Escape Velocity 19.61km/s',
+    'F': 'Diameter 24000km, Gravity 2.00g, Escape Velocity 21.70km/s',
     '?': 'Unknown'
 }
 
