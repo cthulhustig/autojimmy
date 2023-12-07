@@ -969,15 +969,6 @@ class Compositor(object):
                 # display unicode glyphs
                 continue
 
-            fontFamily = element.get('font-family')
-            if fontFamily is None:
-                continue
-
-            # The text elements we need to fix all have Segoe UI Symbol
-            # somewhere in the font list but it might not be the first entry
-            if fontFamily.find('Segoe UI Symbol') < 0:
-                continue
-
             if common.isWindows():
                 # On Windows the Segoe UI Symbol font should be used for all
                 # symbol glyphs
