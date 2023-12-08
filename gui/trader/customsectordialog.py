@@ -1356,8 +1356,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._sectorListGroupBox.setLayout(groupLayout)
 
     def _setupSectorDataControls(self) -> None:
-        monospaceFont = QtGui.QFont('unknown')
-        monospaceFont.setStyleHint(QtGui.QFont.StyleHint.Monospace)
+        monospaceFont = gui.getMonospaceFont()
 
         self._sectorFileTextEdit = QtWidgets.QPlainTextEdit()
         self._sectorFileTextEdit.setFont(monospaceFont)
