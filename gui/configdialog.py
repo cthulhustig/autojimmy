@@ -128,21 +128,32 @@ class _ClearTileCacheDialog(QtWidgets.QDialog):
                 message = 'Cleared {memTiles} tiles from memory and {diskTiles} from disk'.format(
                     memTiles=response["memoryTiles"],
                     diskTiles=response["diskTiles"])
-                gui.MessageBoxEx.information(message)
+                gui.MessageBoxEx.information(
+                    parent=self,
+                    text=message)
             except Exception as ex:
                 message = 'Clearing the tile cache succeeded but parsing response failed'
                 logging.warning(message, exc_info=ex)
-                gui.MessageBoxEx.warning(text=message, exception=ex)
+                gui.MessageBoxEx.warning(
+                    parent=self,
+                    text=message,
+                    exception=ex)
             self.accept()
         elif isinstance(result, Exception):
             message = 'Request to clear tile cache failed'
             logging.error(message, exc_info=result)
-            gui.MessageBoxEx.critical(text=message, exception=result)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=result)
             self.close()
         else:
             message = 'Request to clear tile cache returned an unexpected result'
             logging.critical(message, exc_info=result)
-            gui.MessageBoxEx.critical(text=message, exception=result)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=result)
             self.close()
 
     def _workingTimerFired(self) -> None:
@@ -1136,6 +1147,7 @@ class ConfigDialog(gui.DialogEx):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='ConfigWelcome')
@@ -1154,10 +1166,11 @@ class ConfigDialog(gui.DialogEx):
         if not self._proxyCompositionModeComboBox.currentUserData():
             return # Hybrid is selected, nothing to do
         gui.AutoSelectMessageBox.warning(
+            parent=self,
             text='SVG composition is VERY processor intensive and should only '
             'be used on systems with high core counts.',
             stateKey='SvgCompositionPerformanceWarning')
 
     def _clearTileCacheClicked(self) -> None:
-        dlg = _ClearTileCacheDialog()
+        dlg = _ClearTileCacheDialog(parent=self)
         dlg.exec()

@@ -284,7 +284,7 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self,
             initialWorld: typing.Optional[traveller.World] = None
             ) -> None:
-        dlg = gui.NearbyWorldsDialog()
+        dlg = gui.NearbyWorldsDialog(parent=self)
         dlg.setWorld(world=initialWorld if initialWorld else self._relativeWorld)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -318,7 +318,7 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
     def promptSelectWithTravellerMap(self) -> None:
         currentWorlds = self.worlds()
         if not self._worldSelectDialog:
-            self._worldSelectDialog = gui.TravellerMapSelectDialog()
+            self._worldSelectDialog = gui.TravellerMapSelectDialog(parent=self)
             self._worldSelectDialog.setSingleSelect(False)
         self._worldSelectDialog.setSelectedWorlds(currentWorlds)
         if self._worldSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -353,7 +353,7 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
 
     def promptAddWorld(self) -> None:
-        dlg = gui.WorldSearchDialog()
+        dlg = gui.WorldSearchDialog(parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         self.addWorld(dlg.world())

@@ -180,6 +180,7 @@ class PurchaseCargoDialog(gui.DialogEx):
                 rhs=self._freeCargoCapacity)
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Cargo Quantity',
             world=self._world,
             editTradeGood=originalCargoRecord.tradeGood(),

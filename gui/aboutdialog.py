@@ -72,5 +72,7 @@ class AboutDialog(gui.DialogEx):
         self.setSizeGripEnabled(False)
 
     def _licensingClicked(self) -> None:
-        dlg = gui.LicensingDialog(licenseDir=self._licenseDir)
+        dlg = gui.LicensingDialog(
+            parent=self,
+            licenseDir=self._licenseDir)
         dlg.exec()

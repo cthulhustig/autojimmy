@@ -18,7 +18,7 @@ class ColourButton(QtWidgets.QPushButton):
         self.setStyleSheet(f'QPushButton {{border:1px solid; border-color=#000000; background-color: {colour}}}')
 
     def _showColourSelect(self) -> None:
-        dlg = gui.ColourDialogEx()
+        dlg = gui.ColourDialogEx(parent=self)
         dlg.setOptions(QtWidgets.QColorDialog.ColorDialogOption.ShowAlphaChannel | QtWidgets.QColorDialog.ColorDialogOption.DontUseNativeDialog)
         dlg.setCurrentColor(QtGui.QColor(self._colour))
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:

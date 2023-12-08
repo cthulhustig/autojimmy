@@ -706,6 +706,7 @@ class GunsmithWindow(gui.WindowWidget):
         try:
             if filter == GunsmithWindow._PDFFilter:
                 dlg = _PDFExportSettingsDialog(
+                    parent=self,
                     hasMagazineQuantities=weapon.hasComponent(componentType=gunsmith.MagazineQuantityInterface),
                     hasAmmoQuantities=weapon.hasComponent(componentType=gunsmith.AmmoQuantityInterface))
                 if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -898,6 +899,7 @@ class GunsmithWindow(gui.WindowWidget):
                 weaponToSave.append(weapon)
         else:
             dlg = gui.WeaponSelectDialog(
+                parent=self,
                 title='Unsaved Weapons',
                 text='Do you want to save these modified weapons?',
                 weapons=modifiedWeapons,
@@ -931,6 +933,7 @@ class GunsmithWindow(gui.WindowWidget):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='GunsmithWelcome')

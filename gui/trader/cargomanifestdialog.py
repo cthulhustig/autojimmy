@@ -490,6 +490,7 @@ class CargoManifestDialog(gui.DialogEx):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='CargoManifestWelcome')

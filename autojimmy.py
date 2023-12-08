@@ -53,7 +53,9 @@ def _applicationDirectory() -> str:
     else:
         return os.path.join(pathlib.Path.home(), '.' + app.AppName.lower())
 
-def _cairoSvgInstallCheck() -> bool: # True if the application should continue, or False if it should exit
+def _cairoSvgInstallCheck(
+        parent: typing.Optional[QtWidgets.QWidget] = None
+        ) -> bool: # True if the application should continue, or False if it should exit
     if depschecker.DetectedCairoSvgState == depschecker.CairoSvgState.Working:
         return True # CairoSVG is working so app should continue
 
@@ -112,6 +114,7 @@ def _cairoSvgInstallCheck() -> bool: # True if the application should continue, 
     promptDefaultButton = QtWidgets.QMessageBox.StandardButton.Yes
     if alwaysShowPrompt:
         answer = gui.MessageBoxEx.showMessageBox(
+            parent=parent,
             title=promptTitle,
             icon=promptIcon,
             text=promptMessage,
@@ -119,6 +122,7 @@ def _cairoSvgInstallCheck() -> bool: # True if the application should continue, 
             defaultButton=promptDefaultButton)
     else:
         answer = gui.AutoSelectMessageBox.showMessageBox(
+            parent=parent,
             title=promptTitle,
             icon=promptIcon,
             text=promptMessage,
@@ -132,7 +136,8 @@ def _cairoSvgInstallCheck() -> bool: # True if the application should continue, 
 def _snapshotUpdateCheck(
         automaticUpdate: bool = False,
         noUpdateMessage: typing.Optional[str] = None,
-        successMessage: typing.Optional[str] = None
+        successMessage: typing.Optional[str] = None,
+        parent: typing.Optional[QtWidgets.QWidget] = None
         ) -> bool: # True if the application should continue, or False if it should exit
     try:
         snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
@@ -140,6 +145,7 @@ def _snapshotUpdateCheck(
         message = 'An error occurred when checking for new universe data.'
         logging.error(message, exc_info=ex)
         gui.AutoSelectMessageBox.critical(
+            parent=parent,
             text=message,
             exception=ex,
             stateKey='UniverseUpdateErrorWhenChecking')
@@ -147,7 +153,9 @@ def _snapshotUpdateCheck(
 
     if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
         if noUpdateMessage:
-            gui.MessageBoxEx.information(text=noUpdateMessage)
+            gui.MessageBoxEx.information(
+                parent=parent,
+                text=noUpdateMessage)
         return True # No update available so just continue loading
 
     if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
@@ -165,6 +173,7 @@ def _snapshotUpdateCheck(
             app=app.AppName)
 
         answer = gui.AutoSelectMessageBox.question(
+            parent=parent,
             text='<html>' + promptMessage + '<html>',
             stateKey=stateKey,
             rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
@@ -173,6 +182,7 @@ def _snapshotUpdateCheck(
     if not automaticUpdate:
         # TODO: At some point in the future I can remove the note about it being faster
         answer = gui.AutoSelectMessageBox.question(
+            parent=parent,
             text='<html>New universe data is available. Do you want to update?<br>' \
             'Custom sectors will not be affected<br><br>' \
             'Don\'t worry, updating is a LOT faster than it used to be.</html>',
@@ -181,10 +191,12 @@ def _snapshotUpdateCheck(
             return True # User chose not to install update so just continue loading the app with the old data
 
     # Update the snapshot
-    updateProgress = gui.DownloadProgressDialog()
+    updateProgress = gui.DownloadProgressDialog(parent=parent)
     result = updateProgress.exec()
     if (result == QtWidgets.QDialog.DialogCode.Accepted) and successMessage:
-        gui.MessageBoxEx.information(text=successMessage)
+        gui.MessageBoxEx.information(
+            parent=parent,
+            text=successMessage)
 
     # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
     # when exec is called on the application
@@ -196,7 +208,9 @@ def _snapshotUpdateCheck(
 # Check that the loopback addresses required for the proxy host pool
 # are available. This is required as macOS (and possibly some Linux
 # distros) only enables 127.0.0.1 by default.
-def _hostPoolSizeCheck() -> int:
+def _hostPoolSizeCheck(
+        parent: typing.Optional[QtWidgets.QWidget] = None
+        ) -> int:
     requestedHostCount = app.Config.instance().proxyHostPoolSize()
     availableHostCount = 0
     for index in range(1, requestedHostCount + 1):
@@ -225,6 +239,7 @@ def _hostPoolSizeCheck() -> int:
             on Traveller Map.</p>
             """
         gui.AutoSelectMessageBox.critical(
+            parent=parent,
             text=message,
             stateKey='NoHostPoolInterfaces')
     elif availableHostCount != requestedHostCount:
@@ -245,6 +260,7 @@ def _hostPoolSizeCheck() -> int:
             available=availableHostCount,
             wording='address is' if availableHostCount == 1 else 'addresses are')
         gui.AutoSelectMessageBox.warning(
+            parent=parent,
             text=message,
             stateKey='NoHostPoolInterfaces')
 
@@ -371,13 +387,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title='Welcome',
             html=_WelcomeMessage,
             noShowAgainId='AppWelcome')
         message.exec()
 
     def _showCustomSectorsWindow(self) -> None:
-        configDialog = gui.CustomSectorDialog()
+        configDialog = gui.CustomSectorDialog(parent=self)
         configDialog.exec()
 
         if configDialog.modified():
@@ -386,7 +403,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 text=f'{app.AppName} will load changes to custom sectors when next started.')
 
     def _showConfiguration(self) -> None:
-        configDialog = gui.ConfigDialog()
+        configDialog = gui.ConfigDialog(parent=self)
         configDialog.exec()
 
     def _downloadUniverse(self) -> None:
@@ -394,14 +411,18 @@ class MainWindow(QtWidgets.QMainWindow):
             _snapshotUpdateCheck(
                 automaticUpdate=True, # Automatically install the update if one is available
                 noUpdateMessage=f'There is no new universe data to download.',
-                successMessage=f'Universe update complete.\n{app.AppName} will load the new data when next started.')
+                successMessage=f'Universe update complete.\n{app.AppName} will load the new data when next started.',
+                parent=self)
         except Exception as ex:
             gui.MessageBoxEx.critical(
+                parent=self,
                 text='Failed to update universe data', exception=ex)
 
     def _showAbout(self) -> None:
         licenseDir = os.path.join(_installDirectory(), 'Licenses')
-        aboutDialog = gui.AboutDialog(licenseDir=licenseDir)
+        aboutDialog = gui.AboutDialog(
+            parent=self,
+            licenseDir=licenseDir)
         aboutDialog.exec()
 
 def main() -> None:

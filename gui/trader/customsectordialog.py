@@ -199,7 +199,10 @@ class _PosterJobDialog(QtWidgets.QDialog):
         if isinstance(result, Exception):
             message = 'Map creation job failed'
             logging.critical(message, exc_info=result)
-            gui.MessageBoxEx.critical(text=message, exception=result)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=result)
             self.close()
         else:
             self._posters = result
@@ -345,7 +348,10 @@ class _LintJobDialog(QtWidgets.QDialog):
         if isinstance(result, Exception):
             message = 'Linter job failed'
             logging.critical(message, exc_info=result)
-            gui.MessageBoxEx.critical(text=message, exception=result)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=result)
             self.close()
         else:
             self._results = result
@@ -718,18 +724,26 @@ class _NewSectorDialog(gui.DialogEx):
     def _createClicked(self) -> None:
         sectorFilePath = self._sectorFileLineEdit.text()
         if not sectorFilePath:
-            gui.MessageBoxEx.critical('No sector file selected')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='No sector file selected')
             return
         if not os.path.exists(sectorFilePath):
-            gui.MessageBoxEx.critical(f'Sector file doesn\'t exist')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='Sector file doesn\'t exist')
             return
 
         metadataFilePath = self._metadataFileLineEdit.text()
         if not metadataFilePath:
-            gui.MessageBoxEx.critical('No sector metadata file selected')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='No sector metadata file selected')
             return
         if not os.path.exists(metadataFilePath):
-            gui.MessageBoxEx.critical(f'Sector metadata file doesn\'t exist')
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=f'Sector metadata file doesn\'t exist')
             return
 
         renderStyle = self._renderStyleComboBox.currentEnum()
@@ -819,6 +833,7 @@ class _NewSectorDialog(gui.DialogEx):
                 scales=scales,
                 compositing=True)
             progressDlg = _PosterJobDialog(
+                parent=self,
                 title='Map Creation',
                 job=posterJob)
             if progressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -913,6 +928,7 @@ class _NewSectorDialog(gui.DialogEx):
                 sectorData=sectorData,
                 xmlMetadata=xmlMetadata)
             progressDlg = _LintJobDialog(
+                parent=self,
                 title='Linting',
                 job=lintJob)
             if progressDlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -929,9 +945,12 @@ class _NewSectorDialog(gui.DialogEx):
 
         if not results:
             gui.MessageBoxEx.information(
+                parent=self,
                 text='The Traveller Map linter reported no errors or warnings in your sector or metadata files')
         else:
-            dlg = _LintJobResultsDialog(results=results)
+            dlg = _LintJobResultsDialog(
+                parent=self,
+                results=results)
             dlg.exec()
 
     def _renderOptionList(self) -> typing.Iterable[travellermap.Option]:
@@ -1461,7 +1480,7 @@ class CustomSectorDialog(gui.DialogEx):
         self._mapSelectComboBox.setSectorInfo(sectorInfo=sectorInfo)
 
     def _newSectorClicked(self) -> None:
-        dialog = _NewSectorDialog()
+        dialog = _NewSectorDialog(parent=self)
         if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1508,6 +1527,7 @@ class CustomSectorDialog(gui.DialogEx):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='CustomSectorsWelcome')

@@ -1383,7 +1383,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidWorldsGroupBox.setDisabled(disable)
 
     def _selectWorld(self) -> typing.Optional[traveller.World]:
-        dlg = gui.WorldSearchDialog()
+        dlg = gui.WorldSearchDialog(parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return None
         return dlg.world()
@@ -1536,6 +1536,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='JumpRouteWelcome')

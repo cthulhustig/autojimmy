@@ -77,7 +77,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
         return True
 
     def _selectClicked(self) -> None:
-        dlg = gui.WorldSearchDialog()
+        dlg = gui.WorldSearchDialog(parent=self)
         dlg.setWorld(self.world()) # Set initial selection to current world
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return None

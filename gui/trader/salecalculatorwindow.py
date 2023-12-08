@@ -551,6 +551,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             return
 
         dlg = gui.TradeGoodQuantityDialog(
+            parent=self,
             title='Add Sale Good',
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -576,6 +577,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         cargoRecord = self._cargoTable.cargoRecord(row)
 
         dlg = gui.TradeGoodQuantityDialog(
+            parent=self,
             title='Edit Sale Good',
             editTradeGood=cargoRecord.tradeGood(),
             editQuantity=cargoRecord.quantity())
@@ -712,6 +714,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 break
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Edit Sale Details',
             world=self._saleWorldWidget.world(),
             editTradeGood=salePrice.tradeGood(),
@@ -775,6 +778,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='SaleCalculatorWelcome')

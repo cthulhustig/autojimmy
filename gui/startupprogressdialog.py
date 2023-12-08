@@ -102,7 +102,8 @@ class StartupProgressDialog(QtWidgets.QDialog):
                     'An exception occurred while starting the proxy',
                     exc_info=result)
                 gui.MessageBoxEx.critical(
-                    'The proxy failed to start. Custom sectors won\'t be displayed in Traveller Map',
+                    parent=self,
+                    text='The proxy failed to start. Custom sectors won\'t be displayed in Traveller Map',
                     exception=result)
             else:
                 self._exception = result

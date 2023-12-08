@@ -1297,7 +1297,9 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Cargo records for all trade goods have already been added')
             return
 
-        dlg = gui.TradeGoodMultiSelectDialog(selectableTradeGoods=tradeGoods)
+        dlg = gui.TradeGoodMultiSelectDialog(
+            parent=self,
+            selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1400,6 +1402,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Add Available Cargo',
             world=self._purchaseWorldWidget.world(),
             selectableTradeGoods=tradeGoods)
@@ -1428,6 +1431,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         assert(isinstance(quantity, common.ScalarCalculation))
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Edit Available Cargo',
             world=self._purchaseWorldWidget.world(),
             editTradeGood=cargoRecord.tradeGood(),
@@ -1470,6 +1474,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             return
 
         dlg = gui.PurchaseCargoDialog(
+            parent=self,
             world=self._purchaseWorldWidget.world(),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
@@ -1602,6 +1607,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _promptAddCurrentCargo(self) -> None:
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Add Current Cargo',
             world=self._purchaseWorldWidget.world())
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -1629,6 +1635,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         assert(isinstance(quantity, common.ScalarCalculation))
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Edit Current Cargo',
             world=self._purchaseWorldWidget.world(),
             editTradeGood=cargoRecord.tradeGood(),
@@ -1887,6 +1894,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WorldWelcomeMessage,
             noShowAgainId='WorldTraderWelcome')
@@ -2458,6 +2466,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             return
 
         dlg = gui.CargoManifestDialog(
+            parent=self,
             availableFunds=self._availableFundsSpinBox.value(),
             freeCargoSpace=self._freeCargoSpaceSpinBox.value(),
             tradeOptions=self._tradeOptionsTable.tradeOptions(),
@@ -2466,6 +2475,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_MultiWorldWelcomeMessage,
             noShowAgainId='MultiWorldTraderWelcome')
