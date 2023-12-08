@@ -209,7 +209,9 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
         return self._filterTable.restoreContent(state=state)
 
     def promptAddFilter(self) -> None:
-        dlg = gui.WorldFilterDialog(title='Add Filter')
+        dlg = gui.WorldFilterDialog(
+            parent=self,
+            title='Add Filter')
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         self.addFilter(dlg.filter())
@@ -217,10 +219,13 @@ class WorldFilterTableManagerWidget(QtWidgets.QWidget):
     def promptEditFilter(self) -> None:
         filter = self._filterTable.currentFilter()
         if not filter:
-            gui.MessageBoxEx.information('Select a filter to edit')
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='Select a filter to edit')
             return
 
         dlg = gui.WorldFilterDialog(
+            parent=self,
             title='Edit Filter',
             editFilter=filter)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:

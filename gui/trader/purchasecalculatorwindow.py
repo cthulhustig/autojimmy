@@ -378,6 +378,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             return
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Add Available Cargo',
             world=self._purchaseWorldWidget.world(),
             selectableTradeGoods=tradeGoods)
@@ -401,6 +402,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         cargoRecord = self._cargoTable.cargoRecord(row)
 
         dlg = gui.ScalarCargoDetailsDialog(
+            parent=self,
             title='Edit Available Cargo',
             world=self._purchaseWorldWidget.world(),
             editTradeGood=cargoRecord.tradeGood(),
@@ -535,6 +537,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='PurchaseCalculatorWelcome')

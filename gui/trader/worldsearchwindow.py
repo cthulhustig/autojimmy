@@ -595,6 +595,7 @@ class WorldSearchWindow(gui.WindowWidget):
                 world = self._worldRadiusSearchWidget.world()
                 if not world:
                     gui.MessageBoxEx.information(
+                        parent=self,
                         text='Select a world to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
@@ -746,6 +747,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
+            parent=self,
             title=self.windowTitle(),
             html=_WelcomeMessage,
             noShowAgainId='WorldSearchWelcome')
