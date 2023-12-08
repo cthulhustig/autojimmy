@@ -122,3 +122,33 @@ def pyQtEnumMapping(
             mapping[key] = value
             mapping[value] = key
     return mapping
+
+# This will attempt to retrieve the system monospace font. If it's unable to do
+# that it will try to create a monospace font. It falls back to creating a font
+# because there are reports of using the font database not working on some Linux
+# distros
+# https://stackoverflow.com/questions/1468022/how-to-specify-monospace-fonts-for-cross-platform-qt-applications)
+# NOTE: that creating the monospace font causes an ugly warning to be dumped to
+# the terminal on macOS but not other platforms form what I've seen.
+_cachedMonospaceFont = None
+def getMonospaceFont() -> QtGui.QFont:
+    global _cachedMonospaceFont
+    if _cachedMonospaceFont is not None:
+        return _cachedMonospaceFont
+
+    font = None
+    try:
+        font = QtGui.QFontDatabase.systemFont(QtGui.QFontDatabase.SystemFont.FixedFont)
+    except Exception as ex:
+        logging.error(
+            'An exception occurred while querying the system fixed font',
+            exc_info=ex)
+        # Continue to try and create a font
+
+    if not font:
+        font = QtGui.QFont()
+        font.setStyleHint(QtGui.QFont.StyleHint.Monospace)
+        font.setFamily('monospace')
+
+    _cachedMonospaceFont = font
+    return font
