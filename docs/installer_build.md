@@ -6,7 +6,12 @@ dependencies (including the Python binary), this is then packages into an instal
 
 ## Prerequisites
 Before you begin, you need to have completed the instructions to clone the Auto-Jimmy repo and install
-its dependencies before performing these instructions. See [README.md](../README.md) for more details.
+its dependencies before performing these instructions, this includes installing MSYS2 and libcairo.
+See [README.md](../README.md) for more details.
+
+Building the installer also requires that `dumpbin.exe` is in your path. One way to have `dumpbin.exe`
+installed on your system is to install the free [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/). Then when running `buildwin.bat` to build the Auto-Jimmy installer, do so from a Visual
+Studio command prompt.
 
 ## Step 1: Install Inno Setup
 1. Download the Inno Setup installer from [here](https://jrsoftware.org/isdl.php) and install it

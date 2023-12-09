@@ -8,6 +8,8 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
+# NOTE: This script works on the assumption it's in the root of the install directory
+_InstallPath = os.path.dirname(os.path.realpath(__file__))
 
 # Mapping of library friendly name to the module to import to test it
 _Requirements = [
@@ -26,7 +28,9 @@ _Requirements = [
 _RequirementsFile = 'requirements.txt'
 _CairoModuleName = 'cairosvg'
 
+# NOTE: This is public so other scripts can check the status of libcairo
 DetectedCairoSvgState = CairoSvgState.Working
+
 
 # This is just a noddy check to make sure I remember to update the list. If it
 # actually triggers it's pretty ugly as it gets printed out by any sub
@@ -39,16 +43,38 @@ try:
 except Exception as ex:
     print(f'Failed to open {_RequirementsFile} for dependency checking')
 
-# On Windows the expectation is libcairo will have been installed using MSYS2
-# as per the instructions in the README.md. Update the path to include the
-# expected location of libcairo, the MUST be added at the end of the path as
-# the MSYS2 directory that is added contains multiple binaries and we don't
-# want and of them obscuring something that is already on the users path
+# On Windows the expectation is libcairo will come from MSYS2. This will either
+# be manually installed following the instructions in the README.md if cloning
+# the repo or be a local copy in the install directory if using the installer.
+# Multiple paths will be added if they exist in a best effort attempt to get
+# something working.
+# NOTE: It's important these paths are added at the end of the existing path as
+# the MSYS2 directory can contains a lot of other dlls and binaries so we don't
+# want them taking precedence over part of the system install.
 if platform.system() == 'Windows':
-    msys2Path = os.environ.get('MSYS2_PATH', 'c:\\msys64')
-    libcairoPath = os.path.join(msys2Path, 'mingw64', 'bin')
-    if os.path.exists(libcairoPath):
-        os.environ["PATH"] += os.pathsep + libcairoPath
+    paths = []
+
+    # If the MSYS2_PATH environment variable is set it should be the first
+    # entry added to the path
+    envPath = os.environ.get('MSYS2_PATH')
+    if envPath is not None:
+        binPath = os.path.join(envPath, 'mingw64', 'bin')
+        if os.path.exists(binPath):
+            paths.append(binPath)
+
+    # If there is a local copy of msys2 then it should be used next
+    binPath = os.path.join(_InstallPath, 'msys64', 'mingw64', 'bin')
+    if os.path.exists(binPath):
+        paths.append(binPath)
+
+    # Lastly the default msys2 path should be added to the path if it
+    # exists
+    binPath = os.path.join('c:', 'msys64', 'mingw64', 'bin')
+    if os.path.exists(binPath):
+        paths.append(binPath)
+
+    if paths:
+        os.environ["PATH"] += os.pathsep + os.pathsep.join(paths)
 
 # Try to import each of the required modules
 _MissingRequirements = []
@@ -75,7 +101,7 @@ if _MissingRequirements:
     print('To install all required dependencies, run the following commands:')
     print()
     # NOTE: This assumes that this file is at the same level as the requirements file
-    print(f'cd {os.path.dirname(os.path.realpath(__file__))}')
+    print(f'cd {_InstallPath}')
     print(f'pip3 install -r {_RequirementsFile}')
     print()
     print('Further documentation can be found at https://github.com/cthulhustig/autojimmy')
