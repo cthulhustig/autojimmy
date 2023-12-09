@@ -33,7 +33,8 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        subprocess.check_output([_PacmanPath, '--sync', '--refresh', '--noconfirm','--sysupgrade', _CairoPackageName]) 
+        subprocess.check_output([_PacmanPath, '--sync', '--noconfirm', '--refresh'])
+        subprocess.check_output([_PacmanPath, '--sync', '--noconfirm', '--sysupgrade', _CairoPackageName]) 
     except:
         print('Failed to upgrade Cairo')
         exit(1)
