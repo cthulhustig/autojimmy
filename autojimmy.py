@@ -447,8 +447,6 @@ class MainWindow(QtWidgets.QMainWindow):
         aboutDialog.exec()
 
     def _showRestartRequiredStatus(self) -> None:
-        colour = gui.colourToString(
-            colour=QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Highlight))
         self.statusBar().showMessage('Status: Restart Required')
 
 def main() -> None:
