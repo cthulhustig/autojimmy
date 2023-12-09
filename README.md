@@ -33,12 +33,16 @@ Python and can be run on Windows, Linux and macOS.
 
 ## Installing
 For Windows users, an installer is available [here](https://github.com/cthulhustig/autojimmy/releases).
-The installer allows Auto-Jimmy to be run without requiring Python and dependencies to be
-manually installed. Note that the installer isn't digitally signed, so Windows may warn you about
-running it. If you have problems, check out the [Common Issues](#Common-Issues) section.
+The installer allows Auto-Jimmy to be run without requiring Python and other dependencies
+to be manually installed. The downside of using the installer is I only create them
+periodically so you'll have to wait a bit longer for new features.
 
-For Linux, macOS and more adventurous Windows users, the instructions below cover how to download
-Auto-Jimmy, install dependencies and run the application.
+> [!NOTE] 
+> The installer isn't digitally signed, so Windows may warn you about running it. If you
+have problems, check out the [Known Issues](./docs/known_issues.md#windows-microsoft-defender-smartscreen-prevents-the-installer-from-running) section.
+
+For Linux, macOS and more adventurous Windows users, the instructions below cover how to
+download Auto-Jimmy, install dependencies and run the application.
 
 > [!NOTE]  
 > If you have any problems when installing, you can check the
