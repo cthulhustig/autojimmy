@@ -173,6 +173,8 @@ class ConfigDialog(gui.DialogEx):
             configSection='ConfigDialog',
             parent=parent)
 
+        self._restartRequired = False
+
         self._tabWidget = gui.VerticalTabWidget()
 
         self._setupGeneralTab()
@@ -207,6 +209,9 @@ class ConfigDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
         self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, True)
+
+    def restartRequired(self) -> bool:
+        return self._restartRequired
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
@@ -1039,11 +1044,8 @@ class ConfigDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
             return
-
-        if checker.needsRestart():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'Some changes will only be applied when {app.AppName} is restarted.')
+        
+        self._restartRequired = checker.needsRestart()
 
     def _createTaggingTable(
             self,

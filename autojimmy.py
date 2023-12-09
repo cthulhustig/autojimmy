@@ -5,7 +5,7 @@
 import depschecker
 
 import app
-import common
+import enum
 import gui
 import gunsmith
 import locale
@@ -133,33 +133,24 @@ def _cairoSvgInstallCheck(
 
     return answer == QtWidgets.QMessageBox.StandardButton.Yes
 
+class _SnapshotCheckResult(enum.Enum):
+    NoUpdate = 0
+    UpdateInstalled = 1
+    IncompatibleUpdate = 2
+    ExitRequested = 3
+    Cancelled = 4
+
 def _snapshotUpdateCheck(
-        automaticUpdate: bool = False,
-        noUpdateMessage: typing.Optional[str] = None,
-        successMessage: typing.Optional[str] = None,
+        isStartup: bool,
         parent: typing.Optional[QtWidgets.QWidget] = None
-        ) -> bool: # True if the application should continue, or False if it should exit
-    try:
-        snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
-    except Exception as ex:
-        message = 'An error occurred when checking for new universe data.'
-        logging.error(message, exc_info=ex)
-        gui.AutoSelectMessageBox.critical(
-            parent=parent,
-            text=message,
-            exception=ex,
-            stateKey='UniverseUpdateErrorWhenChecking')
-        return True # Continue loading the app
+        ) -> _SnapshotCheckResult:
+    snapshotAvailability = travellermap.DataStore.instance().checkForNewSnapshot()
 
     if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.NoNewSnapshot:
-        if noUpdateMessage:
-            gui.MessageBoxEx.information(
-                parent=parent,
-                text=noUpdateMessage)
-        return True # No update available so just continue loading
+        return _SnapshotCheckResult.NoUpdate
 
     if snapshotAvailability != travellermap.DataStore.SnapshotAvailability.NewSnapshotAvailable:
-        promptMessage = 'New universe data is available, however this version of {app} is to {age} to use it.'.format(
+        promptMessage = 'New universe data is available, however it can\'t be installed as this version of {app} is to {age} to use it.'.format(
             app=app.AppName,
             age='old' if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld else 'new')
         if snapshotAvailability == travellermap.DataStore.SnapshotAvailability.AppToOld:
@@ -169,41 +160,58 @@ def _snapshotUpdateCheck(
         else:
             promptMessage += ' Either your a time traveller or your\'re running a dev branch, either way, I\'ll assume you know what your\'re doing.'
             stateKey = 'UniverseUpdateAppToNew'
-        promptMessage += '<br><br>Do you want to continue loading {app}?<br>'.format(
-            app=app.AppName)
 
-        answer = gui.AutoSelectMessageBox.question(
-            parent=parent,
-            text='<html>' + promptMessage + '<html>',
-            stateKey=stateKey,
-            rememberState=QtWidgets.QMessageBox.StandardButton.Yes) # Only remember if the user clicked yes
-        return answer == QtWidgets.QMessageBox.StandardButton.Yes
+        if isStartup:
+            # When running the startup check allow the user to choose to
+            # ignore this error and continue loading the app. Remembering
+            # not to continue loading the app isn't allowed as it could
+            # result in the app just existing with the it not being clear
+            # the user why
+            promptMessage += '<br><br>Do you want to continue loading {app}?<br>'.format(
+                app=app.AppName)
+            answer = gui.AutoSelectMessageBox.question(
+                text='<html>' + promptMessage + '<html>',
+                stateKey=stateKey,
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+            return _SnapshotCheckResult.IncompatibleUpdate \
+                if answer == QtWidgets.QMessageBox.StandardButton.Yes else \
+                _SnapshotCheckResult.ExitRequested
+        else:
+            # Always show the message when performing a user requested check.
+            # However this is purely informational, there is not choice for
+            # the user as to what to do
+            gui.MessageBoxEx.information(
+                text='<html>' + promptMessage + '<html>')
+            return _SnapshotCheckResult.IncompatibleUpdate
 
-    if not automaticUpdate:
-        # TODO: At some point in the future I can remove the note about it being faster
+    # Ask for confirmation to install the update if this is the automated check
+    # run at startup. If the user requested the check then it implies they want
+    # it installed
+    if isStartup:
+        # TODO: At some point in the future I can remove the note about it being
+        #  faster
         answer = gui.AutoSelectMessageBox.question(
-            parent=parent,
             text='<html>New universe data is available. Do you want to update?<br>' \
             'Custom sectors will not be affected<br><br>' \
             'Don\'t worry, updating is a LOT faster than it used to be.</html>',
             stateKey='DownloadUniverseAtStartup')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return True # User chose not to install update so just continue loading the app with the old data
+            # User chose not to install update so just continue loading the app with the
+            # old data
+            return _SnapshotCheckResult.NoUpdate
 
     # Update the snapshot
     updateProgress = gui.DownloadProgressDialog(parent=parent)
     result = updateProgress.exec()
-    if (result == QtWidgets.QDialog.DialogCode.Accepted) and successMessage:
-        gui.MessageBoxEx.information(
-            parent=parent,
-            text=successMessage)
 
     # Force delete of progress dialog to stop it hanging around. The docs say it will be deleted
     # when exec is called on the application
     # https://doc.qt.io/qt-6/qobject.html#deleteLater
     updateProgress.deleteLater()
 
-    return True # Update is complete so continue loading
+    return _SnapshotCheckResult.UpdateInstalled \
+        if result == QtWidgets.QDialog.DialogCode.Accepted else \
+        _SnapshotCheckResult.Cancelled
 
 # Check that the loopback addresses required for the proxy host pool
 # are available. This is required as macOS (and possibly some Linux
@@ -275,6 +283,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint, False)
         self.setWindowTitle(f'{app.AppName} v{app.AppVersion}')
         self.statusBar().setSizeGripEnabled(False)
+        self.statusBar().showMessage('Status: Ready')
 
         self._compareWorldsButton = QtWidgets.QPushButton('Compare Worlds...', self)
         self._compareWorldsButton.clicked.connect(gui.WindowManager.instance().showWorldComparisonWindow)
@@ -394,10 +403,11 @@ class MainWindow(QtWidgets.QMainWindow):
         message.exec()
 
     def _showCustomSectorsWindow(self) -> None:
-        configDialog = gui.CustomSectorDialog(parent=self)
-        configDialog.exec()
+        sectorDialog = gui.CustomSectorDialog(parent=self)
+        sectorDialog.exec()
 
-        if configDialog.modified():
+        if sectorDialog.modified():
+            self._showRestartRequiredStatus()
             gui.MessageBoxEx.information(
                 parent=self,
                 text=f'{app.AppName} will load changes to custom sectors when next started.')
@@ -405,14 +415,25 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showConfiguration(self) -> None:
         configDialog = gui.ConfigDialog(parent=self)
         configDialog.exec()
+        
+        if configDialog.restartRequired():
+            self._showRestartRequiredStatus()
+            gui.MessageBoxEx.information(
+                parent=self,
+                text=f'Some changes will only be applied when {app.AppName} is restarted.')
 
     def _downloadUniverse(self) -> None:
         try:
-            _snapshotUpdateCheck(
-                automaticUpdate=True, # Automatically install the update if one is available
-                noUpdateMessage=f'There is no new universe data to download.',
-                successMessage=f'Universe update complete.\n{app.AppName} will load the new data when next started.',
-                parent=self)
+            result = _snapshotUpdateCheck(isStartup=False, parent=self)
+            if result == _SnapshotCheckResult.NoUpdate:
+                gui.MessageBoxEx.information(
+                    parent=self,
+                    text='There is no new universe data to download.')
+            elif result == _SnapshotCheckResult.UpdateInstalled:
+                self._showRestartRequiredStatus()
+                gui.MessageBoxEx.information(
+                    parent=self,
+                    text=f'Universe update complete.\n{app.AppName} will load the new data when next started.')
         except Exception as ex:
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -424,6 +445,9 @@ class MainWindow(QtWidgets.QMainWindow):
             parent=self,
             licenseDir=licenseDir)
         aboutDialog.exec()
+
+    def _showRestartRequiredStatus(self) -> None:
+        self.statusBar().showMessage('Status: Restart Required')
 
 def main() -> None:
     QtWidgets.QApplication.setAttribute(
@@ -491,10 +515,20 @@ def main() -> None:
         if not _cairoSvgInstallCheck():
             sys.exit(0)
 
-        # Check if there is new universe data available BEFORE the app loads the local snapshot so it
-        # can be updated without restarting
-        if not _snapshotUpdateCheck():
-            sys.exit(0)
+        # Check if there is new universe data available BEFORE the app loads the
+        # local snapshot so it can be updated without restarting
+        try:
+            result = _snapshotUpdateCheck(isStartup=True)
+            if result == _SnapshotCheckResult.ExitRequested:
+                sys.exit(0)
+        except Exception as ex:
+            message = 'An exception occurred when checking for new universe data.'
+            logging.error(message, exc_info=ex)
+            gui.AutoSelectMessageBox.critical(
+                text=message,
+                exception=ex,
+                stateKey='UniverseUpdateErrorWhenChecking')
+            # Continue loading the app with the existing data
 
         # Configure the map proxy if it's enabled. The proxy isn't started now, that will be done later
         # so progress can be displayed
