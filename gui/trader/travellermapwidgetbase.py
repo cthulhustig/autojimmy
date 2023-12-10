@@ -130,7 +130,7 @@ class _HexOverlay(object):
 
     def colour(self) -> str:
         return self._colour
-    
+
 class _OverlayGroups(object):
     def __init__(
             self,
@@ -140,7 +140,7 @@ class _OverlayGroups(object):
 
     def handle(self) -> str:
         return self._handle
-    
+
     def overlays(self) -> typing.Iterable[_HexOverlay]:
         return self._overlays
 
@@ -487,7 +487,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._overlayGroups[group.handle()] = group
 
         if self._loaded:
-            self._runAddOverlayGroupScript(group=group)        
+            self._runAddOverlayGroupScript(group=group)
 
         return group.handle()
 
@@ -531,16 +531,16 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def stylesAction(self) -> QtWidgets.QAction:
         return self._stylesAction
-    
+
     def featuresAction(self) -> QtWidgets.QAction:
         return self._featuresAction
-    
+
     def appearancesAction(self) -> QtWidgets.QAction:
         return self._appearancesAction
-    
+
     def overlaysAction(self) -> QtWidgets.QAction:
         return self._overlaysAction
-    
+
     def reloadAction(self) -> QtWidgets.QAction:
         return self._reloadAction
 
@@ -570,7 +570,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                     self._updateToolTip(event.pos())
 
         return super().eventFilter(object, event)
-    
+
     def createSnapshot(self) -> QtGui.QPixmap:
         view = self._mapWidget.page().view()
         size = view.size()
@@ -789,10 +789,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 y=overlay.absoluteY(),
                 radius=overlay.radius(),
                 colour=overlay.colour()))
-            
+
         if not data:
             return # Nothing to do
-        
+
         script = """
             var hexes = [{data}];
             for (let i = 0; i < hexes.length; i++) {{

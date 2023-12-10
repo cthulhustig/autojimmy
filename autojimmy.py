@@ -415,7 +415,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _showConfiguration(self) -> None:
         configDialog = gui.ConfigDialog(parent=self)
         configDialog.exec()
-        
+
         if configDialog.restartRequired():
             self._showRestartRequiredStatus()
             gui.MessageBoxEx.information(

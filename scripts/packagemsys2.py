@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     try:
         subprocess.check_output([_PacmanPath, '--sync', '--noconfirm', '--refresh'])
-        subprocess.check_output([_PacmanPath, '--sync', '--noconfirm', '--sysupgrade', _CairoPackageName]) 
+        subprocess.check_output([_PacmanPath, '--sync', '--noconfirm', '--sysupgrade', _CairoPackageName])
     except:
         print('Failed to upgrade Cairo')
         exit(1)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     while todoList:
         filePath = todoList.pop(0)
         print(f'Checking {filePath} for dependencies')
-        
+
         command = [_DumpBin, '/DEPENDENTS', filePath]
         result = subprocess.check_output(command)
 
@@ -87,6 +87,3 @@ if __name__ == "__main__":
     # does include the licenses of the packages we are taking dlls from
     print(f'Copying Licenses')
     shutil.copytree(_SrcLicensePath, dstLicensePath, dirs_exist_ok=True)
-
-
-

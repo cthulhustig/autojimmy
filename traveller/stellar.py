@@ -107,7 +107,7 @@ class Stellar(object):
 
     def string(self) -> str:
         return self._string
-    
+
     def isEmpty(self) -> bool:
         return not self._string
 

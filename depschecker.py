@@ -8,6 +8,7 @@ class CairoSvgState(enum.Enum):
     NotInstalled = 1
     NoLibraries = 2
 
+
 # NOTE: This script works on the assumption it's in the root of the install directory
 _InstallPath = os.path.dirname(os.path.realpath(__file__))
 

@@ -499,7 +499,7 @@ class JumpRouteWindow(gui.WindowWidget):
             settings=self._settings,
             key='ShowReachableWorldsOverlay',
             type=bool,
-            default=False)    
+            default=False)
 
         self._settings.endGroup()
 
@@ -833,7 +833,7 @@ class JumpRouteWindow(gui.WindowWidget):
             # A trade option job is already running so cancel it
             self._jumpRouteJob.cancel()
             return
-        
+
         self._clearJumpRoute()
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
@@ -1104,7 +1104,7 @@ class JumpRouteWindow(gui.WindowWidget):
         action = QtWidgets.QAction('Show World Details...', self)
         menuItems.append(action)
         action.triggered.connect(lambda: self._showWorldDetails([clickedWorld]))
-        action.setEnabled(clickedWorld != None)        
+        action.setEnabled(clickedWorld != None)
 
         menu = QtWidgets.QMenu('Start/Finish Worlds', self)
         menuItems.append(menu)
@@ -1159,7 +1159,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Add separator between jump route and map options
         menuItems.append(None)
-        
+
         menuItems.append(self._travellerMapWidget.stylesAction())
         menuItems.append(self._travellerMapWidget.featuresAction())
         menuItems.append(self._travellerMapWidget.appearancesAction())
@@ -1294,7 +1294,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _exportMapScreenshot(self) -> None:
         try:
             snapshot = self._travellerMapWidget.createSnapshot()
@@ -1306,7 +1306,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
             return
-        
+
         # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
         _SupportedFormats = {
             'Bitmap (*.bmp)': 'bmp',
@@ -1322,12 +1322,12 @@ class JumpRouteWindow(gui.WindowWidget):
             filter=';;'.join(_SupportedFormats.keys()))
         if not path:
             return # User cancelled
-        
+
         format = _SupportedFormats.get(filter)
         if format is None:
             message = f'Unable to save unknown format "{filter}"'
-            logging.error(msg=message)            
-            gui.MessageBoxEx.critical(message)            
+            logging.error(msg=message)
+            gui.MessageBoxEx.critical(message)
             return
 
         try:
@@ -1339,7 +1339,7 @@ class JumpRouteWindow(gui.WindowWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)        
+                exception=ex)
 
     def _showWorldDetails(
             self,
@@ -1398,12 +1398,12 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _toggleReachableWorldsOverlay(self) -> None:
         self._showReachableWorldsOverlay = \
             not self._showReachableWorldsOverlay
         self._updateReachableWorldsOverlay()
-            
+
     def _updateReachableWorldsOverlay(self) -> None:
         if self._reachableWorldsOverlayHandle:
             self._travellerMapWidget.removeOverlayGroup(
@@ -1428,10 +1428,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 f'An exception occurred while finding worlds reachable from {startWorld.name()} ({startWorld.sectorName()})',
                 exc_info=ex)
             return
-          
+
         if not worlds:
             return # Nothing more to do
-        
+
         overlayMap = {}
         for world in worlds:
             if world == startWorld:
@@ -1450,7 +1450,7 @@ class JumpRouteWindow(gui.WindowWidget):
             overlayMap[world] = tagColour
 
         self._reachableWorldsOverlayHandle = \
-            self._travellerMapWidget.createOverlayGroup(worlds=overlayMap)        
+            self._travellerMapWidget.createOverlayGroup(worlds=overlayMap)
 
     def _updateTravellerMapOverlays(self) -> None:
         self._travellerMapWidget.clearOverlays()
@@ -1488,7 +1488,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 zoomToArea=self._zoomToJumpRoute,
                 clearOverlays=False,
                 pitStopRadius=0.4)
-            
+
         self._updateReachableWorldsOverlay()
 
     def _shipJumpRatingChanged(self) -> None:

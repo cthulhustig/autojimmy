@@ -104,7 +104,7 @@ class _PDFExportSettingsDialog(gui.DialogEx):
 
     def isIncludeEditableFieldsChecked(self) -> bool:
         return self._includeEditableFieldsCheckBox.isChecked()
-    
+
     def isIncludeManifestTableChecked(self) -> bool:
         return self._includeManifestTableCheckBox.isChecked()
 
