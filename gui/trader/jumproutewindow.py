@@ -755,14 +755,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._resultsDisplayModeTabView.addTab(self._refuellingPlanTable, 'Refuelling Plan')
         self._resultsDisplayModeTabView.addTab(self._travellerMapWidget, 'Traveller Map')
 
-        self._exportRouteButton = QtWidgets.QPushButton('Export Jump Route...')
-        self._exportRouteButton.clicked.connect(self._exportJumpRoute)
-
         routeLayout = QtWidgets.QVBoxLayout()
         routeLayout.addWidget(self._calculateRouteButton)
         routeLayout.addLayout(labelLayout)
         routeLayout.addWidget(self._resultsDisplayModeTabView)
-        routeLayout.addWidget(self._exportRouteButton)
 
         self._plannedRouteGroupBox = QtWidgets.QGroupBox('Jump Route')
         self._plannedRouteGroupBox.setLayout(routeLayout)
@@ -1152,6 +1148,18 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(lambda: self._showWorldsInTravellerMap(self._jumpRoute))
         action.setEnabled(self._jumpRoute != None)
 
+        menu = QtWidgets.QMenu('Export', self)
+        menuItems.append(menu)
+        action = menu.addAction('Jump Route...')
+        action.triggered.connect(self._exportJumpRoute)
+        action.setEnabled(self._jumpRoute != None)
+        action = menu.addAction('Screenshot...')
+        action.setEnabled(True)
+        action.triggered.connect(self._exportMapScreenshot)
+
+        # Add separator between jump route and map options
+        menuItems.append(None)
+        
         menuItems.append(self._travellerMapWidget.stylesAction())
         menuItems.append(self._travellerMapWidget.featuresAction())
         menuItems.append(self._travellerMapWidget.appearancesAction())
@@ -1270,10 +1278,10 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self,
-            'Save File',
-            QtCore.QDir.homePath() + '/route.json',
-            'JSON Files (*.json)')
+            parent=self,
+            caption='Export Jump Route',
+            directory=QtCore.QDir.homePath() + '/route.json',
+            filter='JSON Files (*.json)')
         if not path:
             return
 
@@ -1286,6 +1294,52 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+            
+    def _exportMapScreenshot(self) -> None:
+        try:
+            snapshot = self._travellerMapWidget.createSnapshot()
+        except Exception as ex:
+            message = 'An exception occurred while generating the snapshot'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+        
+        # https://doc.qt.io/qt-5/qpixmap.html#reading-and-writing-image-files
+        _SupportedFormats = {
+            'Bitmap (*.bmp)': 'bmp',
+            'JPEG (*.jpg *.jpeg)': 'jpg',
+            'PNG (*.png)': 'png',
+            'Portable Pixmap (*.ppm)': 'ppm',
+            'X11 Bitmap (*.xbm)': 'xbm',
+            'X11 Pixmap (*.xpm)': 'xpm'}
+
+        path, filter = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Export Snapshot',
+            filter=';;'.join(_SupportedFormats.keys()))
+        if not path:
+            return # User cancelled
+        
+        format = _SupportedFormats.get(filter)
+        if format is None:
+            message = f'Unable to save unknown format "{filter}"'
+            logging.error(msg=message)            
+            gui.MessageBoxEx.critical(message)            
+            return
+
+        try:
+            if not snapshot.save(path, format):
+                gui.MessageBoxEx.critical(f'Failed to save snapshot to "{path}"')
+        except Exception as ex:
+            message = f'An exception occurred while saving the snapshot to "{path}"'
+            logging.error(msg=message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)        
 
     def _showWorldDetails(
             self,
