@@ -7,7 +7,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class CalculationWindow(gui.WindowWidget):
-    _CalculationFileFilter = 'PKL File(*.pkl)'
+    _CalculationFileFilter = 'PKL (*.pkl)'
 
     def __init__(
             self

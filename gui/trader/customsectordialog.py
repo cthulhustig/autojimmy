@@ -431,8 +431,8 @@ class _LintJobResultsDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
 
 class _NewSectorDialog(gui.DialogEx):
-    _SectorFileFilter = 'Sector Files (*.sec *.tab *.t5 *.t5col *.t5row)'
-    _MetadataFileFilter = 'Metadata Files (*.xml *.json)'
+    _SectorFileFilter = 'Sector (*.sec *.tab *.t5 *.t5col *.t5row)'
+    _MetadataFileFilter = 'Metadata (*.xml *.json)'
     _AllFileFilter = 'All Files (*.*)'
 
     def __init__(
