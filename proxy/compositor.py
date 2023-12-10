@@ -33,7 +33,8 @@ if not _HasSvgSupport:
 
 # v1 = Initial version
 # v2 = SVG unicode font fix (not really a schema change but need to force regeneration)
-_LayersTableSchema = 2
+# v3 = More selective splitting of text layer (not really a schema change but need to force regeneration)
+_LayersTableSchema = 3
 
 _LayersTableName = 'layers_cache'
 
@@ -84,6 +85,7 @@ _DeleteAllLayersQuery = f'DELETE FROM {_LayersTableName};'
 # characters in SVG text.
 
 # Glyph used for anomaly worlds (take from StyleSheet.cs)
+_PlaceholderGlyph = '*'
 _AnomalyGlyph = '\u2316'
 
 # The majority of these were taken from the Glyph class in RenderUtils.cs.
@@ -936,6 +938,15 @@ class Compositor(object):
                 self._processExecutor.shutdown(wait=True)
             self._processExecutor = None
 
+    # Prepare the SVG for better rendering. The following steps are carried out:
+    # 1. Unicode fonts used for rendering things like anomalies and the world
+    #    attribute icons are overridden with platform specific fonts.
+    # 2. A world text layer is separated from the main SVG. This can be used as
+    #    a second layer during composition to fix the issue where compositing
+    #    one sector can overwrite long world name text from an adjacent sector.
+    #    It's important this layer is only world text and doesn't include things
+    #    like subsector names as we don't want that text to be layered on top of
+    #    the world graphics.
     def _prepareSvg(
             svgData: bytes
             ) -> typing.Tuple[bytes, bytes]: # (Map Bytes, Text Bytes)
@@ -944,7 +955,7 @@ class Compositor(object):
         Compositor._fixSvgUnicodeGlyphs(element=root)
         svgData = xml.etree.ElementTree.tostring(element=root)
 
-        Compositor._removeSvgGraphics(element=root)
+        Compositor._splitSvgWorldText(element=root)
         textData = xml.etree.ElementTree.tostring(element=root)
 
         return (svgData, textData)
@@ -983,15 +994,36 @@ class Compositor(object):
                 element.set('font-family', 'FreeSerif')
 
     @staticmethod
-    def _removeSvgGraphics(
+    def _splitSvgWorldText(
             element: xml.etree.ElementTree.Element
             ) -> None:
+        # This makes an attempt at detecting elements that contain the
+        # components for rendering a world
+        hasWorld = False
+        for child in element:
+            if child.tag == '{http://www.w3.org/2000/svg}circle':
+                hasWorld = True
+                break
+            elif child.tag == '{http://www.w3.org/2000/svg}ellipse':
+                # Ellipses are used for asteroid belts
+                hasWorld = True
+                break
+            elif child.tag == '{http://www.w3.org/2000/svg}text':
+                if child.text == _AnomalyGlyph or child.text == _PlaceholderGlyph:
+                    hasWorld = True
+                    break
+
+        # Remove any non-text objects or text objects that are not for rendering
+        # a world
         for child in reversed(element):
             if child.tag == '{http://www.w3.org/2000/svg}g':
-                Compositor._removeSvgGraphics(child)
+                Compositor._splitSvgWorldText(child)
                 if len(child) == 0:
                     element.remove(child)
-            elif child.tag != '{http://www.w3.org/2000/svg}text':
+            elif child.tag == '{http://www.w3.org/2000/svg}text':
+                if not hasWorld:
+                    element.remove(child)
+            else:
                 element.remove(child)
 
     # This function is executed in a worker process

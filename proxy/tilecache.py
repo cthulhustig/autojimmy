@@ -11,7 +11,8 @@ import typing
 
 # v1 = Initial version
 # v2 = SVG unicode font fix (not really a schema change but need to force regeneration)
-_TileTableSchema = 2
+# v3 = More selective splitting of text layer (not really a schema change but need to force regeneration)
+_TileTableSchema = 3
 
 _TileTableName = 'tile_cache'
 
