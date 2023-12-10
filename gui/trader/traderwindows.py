@@ -1158,7 +1158,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self,
             'Open File',
             QtCore.QDir.homePath(),
-            'JSON Files (*.json)')
+            'JSON (*.json)')
         if not path:
             return None
 
@@ -1589,7 +1589,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self,
             'Save File',
             QtCore.QDir.homePath() + '/cargo.json',
-            'JSON Files (*.json)')
+            'JSON (*.json)')
         if not path:
             return
 

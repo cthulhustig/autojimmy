@@ -440,7 +440,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
             self,
             'Open File',
             QtCore.QDir.homePath(),
-            'JSON Files (*.json)')
+            'JSON (*.json)')
         if not path:
             return None
 

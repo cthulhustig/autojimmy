@@ -234,9 +234,9 @@ class GunsmithWindow(gui.WindowWidget):
     _DefaultWeaponType = gunsmith.WeaponType.ConventionalWeapon
     _DefaultTechLevel = 12
 
-    _PDFFilter = 'PDF File(*.pdf)'
-    _JSONFilter = 'JSON File(*.json)'
-    _CSVFilter = 'CSV File(*.csv)'
+    _PDFFilter = 'PDF (*.pdf)'
+    _JSONFilter = 'JSON (*.json)'
+    _CSVFilter = 'CSV (*.csv)'
 
     _ConfigurationBottomSpacing = 100
 
