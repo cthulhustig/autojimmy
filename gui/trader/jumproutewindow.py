@@ -355,6 +355,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._routeLogistics = None
         self._zoomToJumpRoute = False
 
+        self._showReachableWorldsOverlay = True
+        self._reachableWorldsOverlayHandle = None
+
         self._setupJumpWorldsControls()
         self._setupConfigurationControls()
         self._setupWaypointWorldsControls()
@@ -492,9 +495,15 @@ class JumpRouteWindow(gui.WindowWidget):
         if storedValue:
             self._mainSplitter.restoreState(storedValue)
 
+        self._showReachableWorldsOverlay = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ShowReachableWorldsOverlay',
+            type=bool,
+            default=False)    
+
         self._settings.endGroup()
 
-        self._updateTravellerMapOverlay()
+        self._updateTravellerMapOverlays()
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
@@ -514,6 +523,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('RefuellingPlanTableState', self._refuellingPlanTable.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
+        self._settings.setValue('ShowReachableWorldsOverlay', self._showReachableWorldsOverlay)
 
         self._settings.endGroup()
 
@@ -608,6 +618,7 @@ class JumpRouteWindow(gui.WindowWidget):
         # Left hand column of options
         self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
+        self._shipJumpRatingSpinBox.valueChanged.connect(self._shipJumpRatingChanged)
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
         self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
@@ -655,7 +666,7 @@ class JumpRouteWindow(gui.WindowWidget):
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
-        self._waypointWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlay)
+        self._waypointWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._waypointWorldsWidget.enableDisplayModeChangedEvent(enable=True)
         self._waypointWorldsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
         self._waypointWorldsWidget.enableShowInTravellerMapEvent(enable=True)
@@ -671,7 +682,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._avoidWorldsWidget = gui.WorldTableManagerWidget(
             allowWorldCallback=self._allowAvoidWorld,
             showSelectInTravellerMapButton=False) # The windows Traveller Map widget should be used to select worlds
-        self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlay)
+        self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._avoidWorldsWidget.enableShowInTravellerMapEvent(enable=True)
         self._avoidWorldsWidget.showInTravellerMap.connect(self._showWorldsInTravellerMap)
 
@@ -767,7 +778,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._maxRouteCostLabel.clear()
         self._jumpRoute = None
         self._routeLogistics = None
-        self._updateTravellerMapOverlay()
+        self._updateTravellerMapOverlays()
 
     def _startFinishWorldsChanged(self) -> None:
         if self._waypointWorldsWidget.worldCount() > 0:
@@ -794,7 +805,7 @@ class JumpRouteWindow(gui.WindowWidget):
         # Always clear the current jump route as it's invalid if the finish world changes
         self._clearJumpRoute()
 
-        self._updateTravellerMapOverlay()
+        self._updateTravellerMapOverlays()
 
         # When a new route is calculated for the first time after a start/finish world has been
         # changed, the Traveller Map widget should be zoomed to show the route as it may be
@@ -1081,84 +1092,83 @@ class JumpRouteWindow(gui.WindowWidget):
             if sectorHex:
                 clickedWorld = traveller.WorldManager.instance().world(sectorHex=sectorHex)
         except Exception as ex:
-            logging.warning(f'Exception occurred while resolving sector hex "{sectorHex}" to world', exc_info=ex)
+            logging.warning(
+                f'An exception occurred while resolving sector hex "{sectorHex}" to world for context menu',
+                exc_info=ex)
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add World to Waypoints',
-                callback=lambda: self._waypointWorldsWidget.addWorld(clickedWorld),
-                enabled=clickedWorld != None and not self._waypointWorldsWidget.containsWorld(clickedWorld)
-            ),
-            gui.MenuItem(
-                text='Remove World from Waypoints',
-                callback=lambda: self._waypointWorldsWidget.removeWorld(clickedWorld),
-                enabled=clickedWorld != None and self._waypointWorldsWidget.containsWorld(clickedWorld)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Add World to Avoid Worlds',
-                callback=lambda: self._avoidWorldsWidget.addWorld(clickedWorld),
-                enabled=clickedWorld != None and not self._avoidWorldsWidget.containsWorld(clickedWorld)
-            ),
-            gui.MenuItem(
-                text='Remove World from Avoid Worlds',
-                callback=lambda: self._avoidWorldsWidget.removeWorld(clickedWorld),
-                enabled=clickedWorld != None and self._avoidWorldsWidget.containsWorld(clickedWorld)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Use World as Start World',
-                callback=lambda: self._startFinishWorldsWidget.setStartWorld(clickedWorld),
-                enabled=clickedWorld != None
-            ),
-            gui.MenuItem(
-                text='Use World as Finish World',
-                callback=lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld),
-                enabled=clickedWorld != None
-            ),
-            gui.MenuItem(
-                text='Swap Start && Finish Worlds',
-                callback=lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld),
-                enabled=(startWorld != None) and (finishWorld != None)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Recalculate Jump Route',
-                callback=self._calculateJumpRoute,
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Zoom to Start World',
-                callback=lambda: self._showWorldInTravellerMap(startWorld),
-                enabled=startWorld != None
-            ),
-            gui.MenuItem(
-                text='Zoom to Finish World',
-                callback=lambda: self._showWorldInTravellerMap(finishWorld),
-                enabled=finishWorld != None
-            ),
-            gui.MenuItem(
-                text='Zoom to Jump Route',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRoute),
-                enabled=self._jumpRoute != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show World Details...',
-                callback=lambda: self._showWorldDetails([clickedWorld]),
-                enabled=clickedWorld != None
-            ),
-            None, # Separator
-        ]
+        menuItems = []
 
-        sectionMenu = QtWidgets.QMenu('Traveller Map', self)
-        sectionMenu.addActions(self._travellerMapWidget.actions())
-        sectionAction = QtWidgets.QAction('Traveller Map')
-        sectionAction.setMenu(sectionMenu)
-        menuItems.append(sectionAction)
+        action = QtWidgets.QAction('Recalculate Jump Route', self)
+        menuItems.append(action)
+        action.triggered.connect(self._calculateJumpRoute)
+        action.setEnabled((startWorld != None) and (finishWorld != None))
+
+        action = QtWidgets.QAction('Show World Details...', self)
+        menuItems.append(action)
+        action.triggered.connect(lambda: self._showWorldDetails([clickedWorld]))
+        action.setEnabled(clickedWorld != None)        
+
+        menu = QtWidgets.QMenu('Start/Finish Worlds', self)
+        menuItems.append(menu)
+        action = menu.addAction('Set Start World')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setStartWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None)
+        action = menu.addAction('Set Finish World')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None)
+        action = menu.addAction('Swap Start && Finish Worlds')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld))
+        action.setEnabled((startWorld != None) and (finishWorld != None))
+
+        menu = QtWidgets.QMenu('Waypoint Worlds', self)
+        menuItems.append(menu)
+        action = menu.addAction('Add World')
+        action.triggered.connect(lambda: self._waypointWorldsWidget.addWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and not self._waypointWorldsWidget.containsWorld(clickedWorld))
+        action = menu.addAction('Remove World')
+        action.triggered.connect(lambda: self._waypointWorldsWidget.removeWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and self._waypointWorldsWidget.containsWorld(clickedWorld))
+
+        menu = QtWidgets.QMenu('Avoid Worlds', self)
+        menuItems.append(menu)
+        action = menu.addAction('Add World')
+        action.triggered.connect(lambda: self._avoidWorldsWidget.addWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and not self._avoidWorldsWidget.containsWorld(clickedWorld))
+        action = menu.addAction('Remove World')
+        action.triggered.connect(lambda: self._avoidWorldsWidget.removeWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and self._avoidWorldsWidget.containsWorld(clickedWorld))
+
+        menu = QtWidgets.QMenu('Zoom To', self)
+        menuItems.append(menu)
+        action = menu.addAction('Start World')
+        action.triggered.connect(lambda: self._showWorldInTravellerMap(startWorld))
+        action.setEnabled(startWorld != None)
+        action = menu.addAction('Finish World')
+        action.triggered.connect(lambda: self._showWorldInTravellerMap(finishWorld))
+        action.setEnabled(finishWorld != None)
+        action = menu.addAction('Jump Route')
+        action.triggered.connect(lambda: self._showWorldsInTravellerMap(self._jumpRoute))
+        action.setEnabled(self._jumpRoute != None)
+
+        menuItems.append(self._travellerMapWidget.stylesAction())
+        menuItems.append(self._travellerMapWidget.featuresAction())
+        menuItems.append(self._travellerMapWidget.appearancesAction())
+        menuItems.append(self._travellerMapWidget.overlaysAction())
+
+        menu = QtWidgets.QMenu('Advanced Overlays', self)
+        action = QtWidgets.QAction('Reachable Worlds', self)
+        action.triggered.connect(lambda: self._toggleReachableWorldsOverlay())
+        action.setCheckable(True)
+        action.setChecked(self._showReachableWorldsOverlay)
+        action.setEnabled(True)
+        menu.addAction(action)
+        action = QtWidgets.QAction('Advanced Overlays', self)
+        menuItems.append(action)
+        action.setMenu(menu)
+
+        menuItems.append(self._travellerMapWidget.reloadAction())
 
         gui.displayMenu(
             parent=self,
@@ -1334,9 +1344,63 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+            
+    def _toggleReachableWorldsOverlay(self) -> None:
+        self._showReachableWorldsOverlay = \
+            not self._showReachableWorldsOverlay
+        self._updateReachableWorldsOverlay()
+            
+    def _updateReachableWorldsOverlay(self) -> None:
+        if self._reachableWorldsOverlayHandle:
+            self._travellerMapWidget.removeOverlayGroup(
+                handle=self._reachableWorldsOverlayHandle)
+            self._reachableWorldsOverlayHandle = None
 
-    def _updateTravellerMapOverlay(self) -> None:
+        if not self._showReachableWorldsOverlay:
+            return # Nothing more to do
+
+        startWorld = self._startFinishWorldsWidget.startWorld()
+        if not startWorld:
+            return # Nothing more to do
+
+        try:
+            worlds = traveller.WorldManager.instance().worldsInArea(
+                sectorName=startWorld.sectorName(),
+                worldX=startWorld.x(),
+                worldY=startWorld.y(),
+                searchRadius=self._shipJumpRatingSpinBox.value())
+        except Exception as ex:
+            logging.warning(
+                f'An exception occurred while finding worlds reachable from {startWorld.name()} ({startWorld.sectorName()})',
+                exc_info=ex)
+            return
+          
+        if not worlds:
+            return # Nothing more to do
+        
+        overlayMap = {}
+        for world in worlds:
+            if world == startWorld:
+                continue
+
+            tagLevel = app.calculateWorldTagLevel(world=world)
+            if tagLevel:
+                colour = QtGui.QColor(app.tagColour(
+                    tagLevel=tagLevel))
+                tagColour = gui.colourToString(
+                    colour=colour,
+                    includeAlpha=False)
+            else:
+                tagColour = 'white'
+
+            overlayMap[world] = tagColour
+
+        self._reachableWorldsOverlayHandle = \
+            self._travellerMapWidget.createOverlayGroup(worlds=overlayMap)        
+
+    def _updateTravellerMapOverlays(self) -> None:
         self._travellerMapWidget.clearOverlays()
+        self._reachableWorldsOverlayHandle = None
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
         if startWorld:
@@ -1370,6 +1434,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 zoomToArea=self._zoomToJumpRoute,
                 clearOverlays=False,
                 pitStopRadius=0.4)
+            
+        self._updateReachableWorldsOverlay()
+
+    def _shipJumpRatingChanged(self) -> None:
+        self._updateReachableWorldsOverlay()
 
     def _fuelBasedRoutingToggled(self) -> None:
         self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
@@ -1478,7 +1547,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 self._minRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.bestCaseValue()))
                 self._maxRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.worstCaseValue()))
 
-        self._updateTravellerMapOverlay()
+        self._updateTravellerMapOverlays()
 
         # We've calculated a new jump route so prevent further recalculations of this route from
         # zooming out to show the full jump route. Zooming will be re-enabled if we start

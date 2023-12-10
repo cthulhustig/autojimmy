@@ -6,7 +6,7 @@ _SectorHexPattern = re.compile('^(.*) ([0-9]{2})([0-9]{2})$')
 
 def splitSectorHex(
         sectorHex: str
-        ) -> typing.Tuple[str, str]:
+        ) -> typing.Tuple[str, int, int]:
     result = _SectorHexPattern.match(sectorHex)
     if not result:
         raise ValueError(f'Invalid sector hex string "{sectorHex}"')
