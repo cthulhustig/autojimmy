@@ -1085,80 +1085,62 @@ class JumpRouteWindow(gui.WindowWidget):
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
 
-        menuItems = [
-            gui.MenuItem(
-                text='Add World to Waypoints',
-                callback=lambda: self._waypointWorldsWidget.addWorld(clickedWorld),
-                enabled=clickedWorld != None and not self._waypointWorldsWidget.containsWorld(clickedWorld)
-            ),
-            gui.MenuItem(
-                text='Remove World from Waypoints',
-                callback=lambda: self._waypointWorldsWidget.removeWorld(clickedWorld),
-                enabled=clickedWorld != None and self._waypointWorldsWidget.containsWorld(clickedWorld)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Add World to Avoid Worlds',
-                callback=lambda: self._avoidWorldsWidget.addWorld(clickedWorld),
-                enabled=clickedWorld != None and not self._avoidWorldsWidget.containsWorld(clickedWorld)
-            ),
-            gui.MenuItem(
-                text='Remove World from Avoid Worlds',
-                callback=lambda: self._avoidWorldsWidget.removeWorld(clickedWorld),
-                enabled=clickedWorld != None and self._avoidWorldsWidget.containsWorld(clickedWorld)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Use World as Start World',
-                callback=lambda: self._startFinishWorldsWidget.setStartWorld(clickedWorld),
-                enabled=clickedWorld != None
-            ),
-            gui.MenuItem(
-                text='Use World as Finish World',
-                callback=lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld),
-                enabled=clickedWorld != None
-            ),
-            gui.MenuItem(
-                text='Swap Start && Finish Worlds',
-                callback=lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld),
-                enabled=(startWorld != None) and (finishWorld != None)
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Recalculate Jump Route',
-                callback=self._calculateJumpRoute,
-                enabled=True
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Zoom to Start World',
-                callback=lambda: self._showWorldInTravellerMap(startWorld),
-                enabled=startWorld != None
-            ),
-            gui.MenuItem(
-                text='Zoom to Finish World',
-                callback=lambda: self._showWorldInTravellerMap(finishWorld),
-                enabled=finishWorld != None
-            ),
-            gui.MenuItem(
-                text='Zoom to Jump Route',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRoute),
-                enabled=self._jumpRoute != None
-            ),
-            None, # Separator
-            gui.MenuItem(
-                text='Show World Details...',
-                callback=lambda: self._showWorldDetails([clickedWorld]),
-                enabled=clickedWorld != None
-            ),
-            None, # Separator
-        ]
+        startFinishMenu = QtWidgets.QMenu('Start/Finish Worlds', self)
+        action = startFinishMenu.addAction('Set Start')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setStartWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None)
+        action = startFinishMenu.addAction('Set Finish')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setFinishWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None)
+        action = startFinishMenu.addAction('Swap Start && Finish')
+        action.triggered.connect(lambda: self._startFinishWorldsWidget.setStartFinishWorlds(startWorld=finishWorld, finishWorld=startWorld))
+        action.setEnabled((startWorld != None) and (finishWorld != None))        
 
-        sectionMenu = QtWidgets.QMenu('Traveller Map', self)
-        sectionMenu.addActions(self._travellerMapWidget.actions())
-        sectionAction = QtWidgets.QAction('Traveller Map')
-        sectionAction.setMenu(sectionMenu)
-        menuItems.append(sectionAction)
+        waypointMenu = QtWidgets.QMenu('Waypoint Worlds', self)
+        action = waypointMenu.addAction('Add')
+        action.triggered.connect(lambda: self._waypointWorldsWidget.addWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and not self._waypointWorldsWidget.containsWorld(clickedWorld))
+        action = waypointMenu.addAction('Remove')
+        action.triggered.connect(lambda: self._waypointWorldsWidget.removeWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and self._waypointWorldsWidget.containsWorld(clickedWorld))
+
+        avoidMenu = QtWidgets.QMenu('Avoid Worlds', self)
+        action = avoidMenu.addAction('Add')
+        action.triggered.connect(lambda: self._avoidWorldsWidget.addWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and not self._avoidWorldsWidget.containsWorld(clickedWorld))
+        action = avoidMenu.addAction('Remove')
+        action.triggered.connect(lambda: self._avoidWorldsWidget.removeWorld(clickedWorld))
+        action.setEnabled(clickedWorld != None and self._avoidWorldsWidget.containsWorld(clickedWorld))
+
+        zoomMenu = QtWidgets.QMenu('Zoom To', self)
+        action = zoomMenu.addAction('Start World')
+        action.triggered.connect(lambda: self._showWorldInTravellerMap(startWorld))
+        action.setEnabled(startWorld != None)
+        action = zoomMenu.addAction('Finish World')
+        action.triggered.connect(lambda: self._showWorldInTravellerMap(finishWorld))
+        action.setEnabled(finishWorld != None)
+        action = zoomMenu.addAction('Jump Route')
+        action.triggered.connect(lambda: self._showWorldsInTravellerMap(self._jumpRoute))
+        action.setEnabled(self._jumpRoute != None)
+
+        recalculateAction = QtWidgets.QAction('Recalculate Jump Route', self)
+        recalculateAction.triggered.connect(self._calculateJumpRoute)
+        recalculateAction.setEnabled((startWorld != None) and (finishWorld != None))
+
+        worldInfoAction = QtWidgets.QAction('Show World Details...', self)
+        worldInfoAction.triggered.connect(lambda: self._showWorldDetails([clickedWorld]))
+        worldInfoAction.setEnabled(clickedWorld != None)  
+
+        menuItems = [
+            startFinishMenu,
+            waypointMenu,
+            avoidMenu,
+            zoomMenu,
+            recalculateAction,
+            worldInfoAction]
+
+        for action in self._travellerMapWidget.actions():
+            menuItems.append(action)
 
         gui.displayMenu(
             parent=self,
