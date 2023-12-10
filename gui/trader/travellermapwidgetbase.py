@@ -570,6 +570,19 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                     self._updateToolTip(event.pos())
 
         return super().eventFilter(object, event)
+    
+    def createSnapshot(self) -> QtGui.QPixmap:
+        view = self._mapWidget.page().view()
+        size = view.size()
+
+        image = QtGui.QPixmap(size.width(), size.height())
+        painter = QtGui.QPainter(image)
+        self._mapWidget.page().view().render(
+            painter,
+            QtCore.QPoint(),
+            QtGui.QRegion(0, 0, size.width(), size.height()))
+        painter.end()
+        return image
 
     def _createActions(self) -> None:
         if not TravellerMapWidgetBase._sharedStyleActions:
