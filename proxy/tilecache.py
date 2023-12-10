@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import common
+import depschecker
 import datetime
 import logging
 import proxy
@@ -18,6 +19,7 @@ _UniverseTimestampConfigKey = 'tile_cache_universe_timestamp'
 _CustomSectorTimestampConfigKey = 'tile_cache_custom_timestamp'
 _MapUrlConfigKey = 'tile_cache_map_url'
 _SvgCompositionConfigKey = 'tile_cache_svg_composition'
+_LibCairoSupportConfigKey = 'tile_cache_libcairo_support'
 _SqliteCacheKiB = 51200 # 50MiB
 
 _SetConnectionPragmaScript = \
@@ -520,6 +522,29 @@ class TileCache(object):
             valueType=bool,
             deleteQuery=_DeleteCustomSectorTilesQuery,
             identString='SVG composition')
+        
+        # If the state of Cairo support has changed:
+        # - if cairo is working, delete all tiles that intersect stock sectors,
+        # this removes any tiles that were cached while SVG support wasn't
+        # available but should now be rendered using custom sectors.
+        # - If cairo is not working, delete all tiles that intersect custom
+        # sectors, this prevents inconsistencies where old tiles have been
+        # rendered with SVG support but new tiles are not.
+        #
+        # This whole check is a bit of a corner case for situations where cairo
+        # is working, then not working then working again.
+        cairoEnabled = depschecker.DetectedCairoSvgState == \
+            depschecker.CairoSvgState.Working
+        if cairoEnabled:
+            deleteQuery = _DeleteStockTilesQuery
+        else:
+            deleteQuery = _DeleteCustomSectorTilesQuery
+        await self._checkKeyValidityAsync(
+            configKey=_LibCairoSupportConfigKey,
+            currentValueFn=lambda: cairoEnabled,
+            valueType=bool,
+            deleteQuery=deleteQuery,
+            identString='libcairo status')
 
     async def _checkKeyValidityAsync(
             self,
