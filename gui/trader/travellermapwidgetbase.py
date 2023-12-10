@@ -10,6 +10,7 @@ import re
 import traveller
 import travellermap
 import typing
+import uuid
 from PyQt5 import QtWebEngineCore, QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
 
 class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
@@ -129,6 +130,22 @@ class _HexOverlay(object):
 
     def colour(self) -> str:
         return self._colour
+    
+class _OverlayGroups(object):
+    def __init__(
+            self,
+            ) -> None:
+        self._handle = str(uuid.uuid4())
+        self._overlays = []
+
+    def handle(self) -> str:
+        return self._handle
+    
+    def overlays(self) -> typing.Iterable[_HexOverlay]:
+        return self._overlays
+
+    def addOverlay(self, overlay: _HexOverlay) -> None:
+        self._overlays.append(overlay)
 
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor
@@ -169,7 +186,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._clickTrackingRect = None
 
         self._jumpRoute = None
-        self._overlays: typing.List[_HexOverlay] = []
+        self._hexOverlays: typing.List[_HexOverlay] = []
+        self._overlayGroups: typing.Dict[str, _OverlayGroups] = {}
 
         self._toolTipCallback = None
         self._toolTipTimer = None
@@ -177,6 +195,11 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._toolTipQueuePos = None
         self._toolTipScriptRunning = False
 
+        self._stylesAction = None
+        self._featuresAction = None
+        self._appearancesAction = None
+        self._overlaysAction = None
+        self._reloadAction = None
         self._styleOptionGroup = None
 
         if not TravellerMapWidgetBase._sharedProfile:
@@ -216,8 +239,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
-        self._createSharedActions()
-        self._createPrivateActions()
+        self._createActions()
 
         self._loadMap()
 
@@ -410,10 +432,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             absoluteY=absoluteY,
             radius=radius,
             colour=colour)
-        self._overlays.append(overlay)
+        self._hexOverlays.append(overlay)
 
         if self._loaded:
-            self._runOverlayScript(overlay=overlay)
+            self._runAddHexOverlayScript(overlay=overlay)
 
     def clearWorldHighlight(
             self,
@@ -433,12 +455,15 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             worldY: int
             ) -> None:
         absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
-        self._overlays = [overlay for overlay in self._overlays if (overlay.absoluteX() != absoluteX or overlay.absoluteY() != absoluteY)]
+        self._hexOverlays = [overlay for overlay in self._hexOverlays if (overlay.absoluteX() != absoluteX or overlay.absoluteY() != absoluteY)]
 
         if self._loaded:
             script = """
                 var worldX = {x}, worldY = {y};
                 var filterCallback = (overlay) => {{
+                    if (overlay.hasOwnProperty("group")) {{
+                        return true;
+                    }}
                     var worldPos = Traveller.Astrometrics.mapToWorld(overlay.x, overlay.y);
                     return worldPos.x != worldX || worldPos.y != worldY;
                 }};
@@ -446,9 +471,50 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 """.format(x=absoluteX, y=absoluteY)
             self._runScript(script)
 
+    def createOverlayGroup(
+            self,
+            worlds: typing.Mapping[traveller.World, str], # World to colour
+            radius: float = 0.5
+            ) -> str:
+        group = _OverlayGroups()
+        for world, colour in worlds.items():
+            overlay = _HexOverlay(
+                absoluteX=world.absoluteX(),
+                absoluteY=world.absoluteY(),
+                radius=radius,
+                colour=colour)
+            group.addOverlay(overlay)
+        self._overlayGroups[group.handle()] = group
+
+        if self._loaded:
+            self._runAddOverlayGroupScript(group=group)        
+
+        return group.handle()
+
+    def removeOverlayGroup(
+            self,
+            handle: str
+            ) -> None:
+        if handle in self._overlayGroups:
+            del self._overlayGroups[handle]
+
+        if self._loaded:
+            script = """
+                var group = "{group}";
+                var filterCallback = (overlay) => {{
+                    if (!overlay.hasOwnProperty("group")) {{
+                        return true;
+                    }}
+                    return overlay.group != group;
+                }};
+                map.FilterOverlays(filterCallback);
+                """.format(group=handle)
+            self._runScript(script)
+
     def clearOverlays(self) -> None:
         self._jumpRoute = None
-        self._overlays.clear()
+        self._hexOverlays.clear()
+        self._overlayGroups.clear()
 
         if self._loaded:
             script = """
@@ -462,6 +528,21 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             callback: typing.Optional[typing.Callable[[str], typing.Optional[str]]],
             ) -> None:
         self._toolTipCallback = callback
+
+    def stylesAction(self) -> QtWidgets.QAction:
+        return self._stylesAction
+    
+    def featuresAction(self) -> QtWidgets.QAction:
+        return self._featuresAction
+    
+    def appearancesAction(self) -> QtWidgets.QAction:
+        return self._appearancesAction
+    
+    def overlaysAction(self) -> QtWidgets.QAction:
+        return self._overlaysAction
+    
+    def reloadAction(self) -> QtWidgets.QAction:
+        return self._reloadAction
 
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._mapWidget.focusProxy():
@@ -490,14 +571,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         return super().eventFilter(object, event)
 
-    def _createSharedActions(self) -> None:
-        styleMenu = QtWidgets.QMenu('Style', self)
-        featureMenu = QtWidgets.QMenu('Features', self)
-        appearanceMenu = QtWidgets.QMenu('Appearance', self)
-        overlayMenu = QtWidgets.QMenu('Overlays', self)
-
-        self._styleOptionGroup = QtWidgets.QActionGroup(self)
-
+    def _createActions(self) -> None:
         if not TravellerMapWidgetBase._sharedStyleActions:
             for style in travellermap.Style:
                 TravellerMapWidgetBase._sharedStyleActions.append(
@@ -549,39 +623,43 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
                 option=travellermap.Option.MainsOverlay))
 
+        styleMenu = QtWidgets.QMenu('Style', self)
+        self._styleOptionGroup = QtWidgets.QActionGroup(self)
         for action in TravellerMapWidgetBase._sharedStyleActions:
             self._styleOptionGroup.addAction(action)
             action.triggered.connect(self.reload)
             styleMenu.addAction(action)
-        stylesAction = QtWidgets.QAction('Styles', self)
-        stylesAction.setMenu(styleMenu)
-        self.addAction(stylesAction)
+        self._stylesAction = QtWidgets.QAction('Styles', self)
+        self._stylesAction.setMenu(styleMenu)
+        self.addAction(self._stylesAction)
 
+        featureMenu = QtWidgets.QMenu('Features', self)
         for action in TravellerMapWidgetBase._sharedFeatureActions:
             action.triggered.connect(self.reload)
             featureMenu.addAction(action)
-        featuresAction = QtWidgets.QAction('Features', self)
-        featuresAction.setMenu(featureMenu)
-        self.addAction(featuresAction)
+        self._featuresAction = QtWidgets.QAction('Features', self)
+        self._featuresAction.setMenu(featureMenu)
+        self.addAction(self._featuresAction)
 
+        appearanceMenu = QtWidgets.QMenu('Appearance', self)
         for action in TravellerMapWidgetBase._sharedAppearanceActions:
             action.triggered.connect(self.reload)
             appearanceMenu.addAction(action)
-        appearanceAction = QtWidgets.QAction('Appearance', self)
-        appearanceAction.setMenu(appearanceMenu)
-        self.addAction(appearanceAction)
+        self._appearancesAction = QtWidgets.QAction('Appearance', self)
+        self._appearancesAction.setMenu(appearanceMenu)
+        self.addAction(self._appearancesAction)
 
+        overlayMenu = QtWidgets.QMenu('Overlays', self)
         for action in TravellerMapWidgetBase._sharedOverlayActions:
             action.triggered.connect(self.reload)
             overlayMenu.addAction(action)
-        overlaysAction = QtWidgets.QAction('Overlays', self)
-        overlaysAction.setMenu(overlayMenu)
-        self.addAction(overlaysAction)
+        self._overlaysAction = QtWidgets.QAction('Overlays', self)
+        self._overlaysAction.setMenu(overlayMenu)
+        self.addAction(self._overlaysAction)
 
-    def _createPrivateActions(self) -> None:
-        reloadAction = QtWidgets.QAction('Reload', self)
-        reloadAction.triggered.connect(self.reload)
-        self.addAction(reloadAction)
+        self._reloadAction = QtWidgets.QAction('Reload', self)
+        self._reloadAction.triggered.connect(self.reload)
+        self.addAction(self._reloadAction)
 
     # Replace the standard Util.fetchImage function with one that does a round robin
     # of of hosts for loopback requests in order to work around the hard coded limit
@@ -671,7 +749,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         script += ']);'
         self._runScript(script)
 
-    def _runOverlayScript(
+    def _runAddHexOverlayScript(
             self,
             overlay: _HexOverlay
             ) -> None:
@@ -685,6 +763,38 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             y=overlay.absoluteY(),
             radius=overlay.radius(),
             colour=overlay.colour())
+        self._runScript(script)
+
+    def _runAddOverlayGroupScript(
+            self,
+            group: _OverlayGroups
+            ) -> None:
+        data = []
+        for overlay in group.overlays():
+            data.append('[{x}, {y}, {radius}, "{colour}"]'.format(
+                x=overlay.absoluteX(),
+                y=overlay.absoluteY(),
+                radius=overlay.radius(),
+                colour=overlay.colour()))
+            
+        if not data:
+            return # Nothing to do
+        
+        script = """
+            var hexes = [{data}];
+            for (let i = 0; i < hexes.length; i++) {{
+                let hex = hexes[i];
+                let worldX = hex[0];
+                let worldY = hex[1];
+                let radius = hex[2];
+                let colour = hex[3];
+                let mapPosition = Traveller.Astrometrics.worldToMap(worldX, worldY);
+                let overlay = {{type: 'circle', x:mapPosition.x, y:mapPosition.y, r:radius, style:colour, group:'{group}'}};
+                map.AddOverlay(overlay);
+            }}
+            """.format(
+            data=','.join(data),
+            group=group.handle())
         self._runScript(script)
 
     def _sectorHexAt(
@@ -902,8 +1012,11 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         if self._jumpRoute:
             self._runJumpRouteScript(jumpRoute=self._jumpRoute)
 
-        for overlay in self._overlays:
-            self._runOverlayScript(overlay=overlay)
+        for overlay in self._hexOverlays:
+            self._runAddHexOverlayScript(overlay=overlay)
+
+        for group in self._overlayGroups.values():
+            self._runAddOverlayGroupScript(group=group)
 
         # Run queued scripts
         for script, resultsCallback in self._scriptQueue:
