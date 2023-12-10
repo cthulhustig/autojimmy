@@ -400,7 +400,7 @@ def createWorldToolTip(
     # Nobilities
     #
     nobilities = world.nobilities()
-    if nobilities.hasNobilities():
+    if not nobilities.isEmpty():
         toolTip += f'<li>Nobilities: {html.escape(nobilities.string())}</li>'
         toolTip += f'<ul style="{_IndentListStyle}">'
         for nobilityType in nobilities:
@@ -413,8 +413,9 @@ def createWorldToolTip(
     # Remarks
     #
     remarks = world.remarks()
-    if remarks.hasRemarks():
+    if not remarks.isEmpty():
         toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+
         tradeCodes = remarks.tradeCodes()
         if tradeCodes:
             toolTip += '<li>Trade Codes:</li>'
@@ -449,8 +450,9 @@ def createWorldToolTip(
     # Stellar
     #
     stellar = world.stellar()
-    toolTip += f'<li><span>Stars: {html.escape(stellar.string())}</span></li>'
-    if stellar.hasStars():
+    if not stellar.isEmpty():
+        toolTip += f'<li><span>Stars: {html.escape(stellar.string())}</span></li>'
+
         toolTip += f'<ul style="{_IndentListStyle}">'
         for star in stellar:
             toolTip += f'<li><span">Classification: {html.escape(star.string())}</span></li>'
@@ -471,7 +473,7 @@ def createWorldToolTip(
     # Bases
     #
     bases = world.bases()
-    if bases.hasBases():
+    if not bases.isEmpty():
         toolTip += f'<li>Bases: {html.escape(bases.string())}</li>'
         toolTip += f'<ul style="{_IndentListStyle}">'
         for base in bases:

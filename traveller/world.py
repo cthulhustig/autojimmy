@@ -35,7 +35,7 @@ class World(object):
         self._nobilities = traveller.Nobilities(nobilities)
         self._zone = traveller.parseZoneString(zone)
         self._remarks = traveller.Remarks(
-            remarksString=remarks,
+            string=remarks,
             sectorName=sectorName,
             zone=self._zone)
         self._isAnomaly = self._remarks.hasRemark('{Anomaly}')
