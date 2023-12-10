@@ -133,8 +133,8 @@ class Bases(object):
     def string(self) -> str:
         return self._string
 
-    def hasBases(self) -> bool:
-        return len(self._bases) > 0
+    def isEmpty(self) -> bool:
+        return not self._string
 
     def hasBase(self, base: BaseType) -> bool:
         return base in self._bases

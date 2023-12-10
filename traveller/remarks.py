@@ -18,11 +18,11 @@ class Remarks(object):
 
     def __init__(
             self,
-            remarksString: str,
+            string: str,
             sectorName: str,
             zone: traveller.ZoneType
             ) -> None:
-        self._remarksString = remarksString
+        self._string = string
         self._tokenSet = set()
         self._sectorName = sectorName
         self._zone = zone
@@ -42,7 +42,10 @@ class Remarks(object):
             self._tradeCodes.add(traveller.TradeCode.RedZone)
 
     def string(self) -> str:
-        return self._remarksString
+        return self._string
+    
+    def isEmpty(self) -> bool:
+        return not self._string
 
     def hasRemark(self, remark) -> bool:
         return remark in self._tokenSet
@@ -89,7 +92,7 @@ class Remarks(object):
         return self._colonyWorlds
 
     def _parseRemarks(self) -> None:
-        if not self._remarksString:
+        if not self._string:
             return
 
         tokens = self._tokeniseRemarks()
@@ -187,7 +190,7 @@ class Remarks(object):
         tokens = []
         remark = None
         bracketNesting = 0
-        for char in self._remarksString:
+        for char in self._string:
             if bracketNesting > 0:
                 # We're processing bracketed data so just add the character to the current remark no
                 # mater what it is

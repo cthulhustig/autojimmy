@@ -107,12 +107,12 @@ class Stellar(object):
 
     def string(self) -> str:
         return self._string
+    
+    def isEmpty(self) -> bool:
+        return not self._string
 
     def stars(self) -> typing.Iterable[Star]:
         return self._stars
-
-    def hasStars(self) -> bool:
-        return len(self._stars) > 0
 
     def starCount(self) -> int:
         return len(self._stars)

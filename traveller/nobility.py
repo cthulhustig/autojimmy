@@ -50,6 +50,9 @@ class Nobilities(object):
 
     def string(self) -> str:
         return self._string
+    
+    def isEmpty(self) -> bool:
+        return not self._string
 
     def hasNobility(self, nobility: NobilityType) -> bool:
         return nobility in self._nobilities
