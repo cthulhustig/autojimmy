@@ -400,38 +400,39 @@ def createWorldToolTip(
     # Nobilities
     #
     nobilities = world.nobilities()
-    toolTip += f'<li>Nobilities: {html.escape(nobilities.string())}</li>'
-    toolTip += f'<ul style="{_IndentListStyle}">'
-    for nobilityType in nobilities:
-        tagLevel = app.calculateNobilityTagLevel(nobilityType)
-        style = formatStyle(app.tagColour(tagLevel))
-        toolTip += f'<li><span style="{style}">{traveller.Nobilities.code(nobilityType)} - {html.escape(traveller.Nobilities.description(nobilityType))}</span></li>'
-    toolTip += '</ul>'
+    if nobilities.hasNobilities():
+        toolTip += f'<li>Nobilities: {html.escape(nobilities.string())}</li>'
+        toolTip += f'<ul style="{_IndentListStyle}">'
+        for nobilityType in nobilities:
+            tagLevel = app.calculateNobilityTagLevel(nobilityType)
+            style = formatStyle(app.tagColour(tagLevel))
+            toolTip += f'<li><span style="{style}">{traveller.Nobilities.code(nobilityType)} - {html.escape(traveller.Nobilities.description(nobilityType))}</span></li>'
+        toolTip += '</ul>'
 
     #
     # Remarks
     #
     remarks = world.remarks()
-    toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+    if remarks.hasRemarks():
+        toolTip += f'<li>Remarks: {html.escape(remarks.string())}</li>'
+        tradeCodes = remarks.tradeCodes()
+        if tradeCodes:
+            toolTip += '<li>Trade Codes:</li>'
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for tradeCode in tradeCodes:
+                tagLevel = app.calculateTradeCodeTagLevel(tradeCode)
+                style = formatStyle(app.tagColour(tagLevel))
+                toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
+            toolTip += '</ul>'
 
-    tradeCodes = remarks.tradeCodes()
-    if tradeCodes:
-        toolTip += '<li>Trade Codes:</li>'
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for tradeCode in tradeCodes:
-            tagLevel = app.calculateTradeCodeTagLevel(tradeCode)
-            style = formatStyle(app.tagColour(tagLevel))
-            toolTip += f'<li><span style="{style}">{html.escape(traveller.tradeCodeName(tradeCode))} - {html.escape(traveller.tradeCodeDescription(tradeCode))}</span></li>'
-        toolTip += '</ul>'
-
-    sophonts = remarks.sophonts()
-    if sophonts:
-        toolTip += '<li>Sophonts:</li>'
-        toolTip += f'<ul style="{_IndentListStyle}">'
-        for sophont in sophonts:
-            percentage = remarks.sophontPercentage(sophont=sophont)
-            toolTip += f'<li><span>{html.escape(sophont)} - {percentage}%</span></li>'
-        toolTip += '</ul>'
+        sophonts = remarks.sophonts()
+        if sophonts:
+            toolTip += '<li>Sophonts:</li>'
+            toolTip += f'<ul style="{_IndentListStyle}">'
+            for sophont in sophonts:
+                percentage = remarks.sophontPercentage(sophont=sophont)
+                toolTip += f'<li><span>{html.escape(sophont)} - {percentage}%</span></li>'
+            toolTip += '</ul>'
 
     #
     # PBG

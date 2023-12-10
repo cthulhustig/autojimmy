@@ -43,6 +43,9 @@ class Remarks(object):
 
     def string(self) -> str:
         return self._remarksString
+    
+    def hasRemarks(self) -> bool:
+        return len(self._remarksString) > 0
 
     def hasRemark(self, remark) -> bool:
         return remark in self._tokenSet
