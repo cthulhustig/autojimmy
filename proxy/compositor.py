@@ -948,7 +948,7 @@ class Compositor(object):
         textData = xml.etree.ElementTree.tostring(element=root)
 
         return (svgData, textData)
-    
+
     # This is a workaround for a couple of issues
     # - The way Cairo renders text or something in the way I'm using the library
     #   doesn't seem to support a font-family that specifies a list of fonts. If

@@ -1044,7 +1044,7 @@ class ConfigDialog(gui.DialogEx):
                 text=message,
                 exception=ex)
             return
-        
+
         self._restartRequired = checker.needsRestart()
 
     def _createTaggingTable(

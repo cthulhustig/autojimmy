@@ -123,6 +123,7 @@ def pyQtEnumMapping(
             mapping[value] = key
     return mapping
 
+
 # This will attempt to retrieve the system monospace font. If it's unable to do
 # that it will try to create a monospace font. It falls back to creating a font
 # because there are reports of using the font database not working on some Linux

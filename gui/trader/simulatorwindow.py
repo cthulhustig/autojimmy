@@ -513,7 +513,7 @@ class SimulatorWindow(gui.WindowWidget):
                 parent=self,
                 text='Select a start world')
             return
-        
+
         refuellingType = logic.selectRefuellingType(
             world=self._startWorldWidget.world(),
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum())

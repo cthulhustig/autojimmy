@@ -98,7 +98,6 @@ class WeaponStore(object):
             # Force 100% progress notification
             progressCallback('Complete', weaponCount, weaponCount)
 
-
     def weapons(self) -> typing.Iterable[gunsmith.Weapon]:
         with self._lock:
             return list(self._weaponMap.keys())

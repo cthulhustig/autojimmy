@@ -47,14 +47,14 @@ _StarPortStringMap = {
 # link to calculate the mass from the gravity and diameter values, doing this
 # also gives the escape velocity values.
 # https://www.wolframalpha.com/input?i=surface+gravity+calculator
-# 
+#
 # I've not included the mass in the description as I don't think it's would
 # really be of intereast to anyone. These were the masses calculated, I've
 # converted them from kg to earths (i.e. multiples of 12800km)
 # 1 = 0.0019, 2 = 0.0156, 3 = 0.0534, 4 = 0.1250,
 # 5 = 0.2461, 6 = 0.4218, 7 = 0.6737, 8 = 1.0000,
-# 9 = 1.4173, A = 1.9522, B = 2.6084, C = 3.3743 
-# D = 4.3047, E = 5.3597, F = 7.0311 
+# 9 = 1.4173, A = 1.9522, B = 2.6084, C = 3.3743
+# D = 4.3047, E = 5.3597, F = 7.0311
 _WorldSizeStringMap = {
     '0': 'Asteroid belt',
     '1': 'Diameter 1600km, Gravity 0.12g, Escape Velocity 1.37km/s',

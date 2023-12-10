@@ -522,7 +522,7 @@ class TileCache(object):
             valueType=bool,
             deleteQuery=_DeleteCustomSectorTilesQuery,
             identString='SVG composition')
-        
+
         # If the state of Cairo support has changed:
         # - if cairo is working, delete all tiles that intersect stock sectors,
         # this removes any tiles that were cached while SVG support wasn't
