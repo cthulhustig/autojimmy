@@ -84,7 +84,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1201 Ao-dai               E410673-7 Na Ni                              { -3 } (853+3) [3387] B    -  - 312 10 Wild K2 V M3 V     
 1204 Mongo                A5686BD-A Ag Ri Ni                           { 3 }  (B58+1) [191D] BC   N  - 503 7  Wild M6 III M0 V   
 1209 Utoland              C573452-8 Ni                                 { -2 } (732-4) [4237] B    -  - 410 8  NaHu M0 V          
-1210 Pequan               E565677-4 Ag Ri Ni                           { -1 } (854+1) [4551] BC   -  A 710 5  NaHu K5 V          
+1210 Pequan               E565677-4 Ag Ri Ni                           { -1 } (854+1) [4551] BC   -  - 710 5  NaHu K5 V          
 1305 Nakege               D591000-5 (minor) Di He                      { -3 } (500+2) [0000] B    -  - 001 14 Wild K2 V M0 V     
 1307 Lysen                X592000-A Di He                              { -1 } (D00+1) [0000] B    -  - 023 12 Wild M3 V          
 1401 Foelen               E638000-8 (Chokari)4 Dolp2 Di                { -3 } (900+2) [0000] B    -  - 010 14 Wild K0 V          
@@ -182,7 +182,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1118 Garda-Vilis          B97888D-A Pa Pi Ph                           { 2 }  (D79-1) [AA4C] BcDe S  - 312 14 Wild M3 V          
 1119 Vilis                A593997-A Hi In                              { 5 }  (D8A+2) [CE5B] BEf  NS - 420 9  Vi   G5 V M8 V     
 1212 Digitis              E536745-6                                    { -2 } (866-2) [6583] B    -  - 120 8  NaHu M3 V          
-1213 Edinina              E400212-7 Lo Va                              { -3 } (410-4) [3153] B    -  A 401 6  CsIm K6 V M0 V     
+1213 Edinina              E400212-7 Lo Va                              { -3 } (410-4) [3153] B    -  - 401 6  CsIm K6 V M0 V     
 1214 728-907              E955000-0 Ba                                 { -3 } (200+1) [0000] B    -  - 010 10 Na   F1 V M2 V     
 1216 Stellatio            D5A4448-8 Fl Ni Px                           { -3 } (730-5) [215A] B    -  - 210 14 Na   M3 V          
 1217 Arkadia              E546875-6 Pa Pi Ph                           { -2 } (A75+1) [764A] BcDe -  - 302 7  Na   G8 V          
@@ -192,9 +192,9 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1411 Rangent              E67A679-7 Ni Wa                              { -3 } (852+1) [537C] B    -  - 603 14 NaHu K8 V          
 1413 Denotam              B739778-A                                    { 2 }  (D6E-3) [9977] B    N  - 224 9  Na   M2 V          
 1417 Ficant               E567376-4 Lo                                 { -3 } (520-1) [1168] B    -  - 810 13 Na   M0 V M1 V     
-1511 Tionale              C674375-8 (minor) Lo                         { -2 } (620+1) [4127] B    -  A 810 11 CsIm M2 V M5 V     
+1511 Tionale              C674375-8 (minor) Lo                         { -2 } (620+1) [4127] B    -  - 810 11 CsIm M2 V M5 V     
 1515 Calit                C434877-7 (Llellewyloly)2 Ph                 { -1 } (A76+1) [7749] Be   -  - 701 4  Na   K9 V M1 V     
-1519 Asgard               X54379B-5 Pi Po                              { -2 } (964+1) [A556] BD   -  R 420 13 Na   F5 V M1 V     
+1519 Asgard               X54379B-5 Pi Po                              { -2 } (964+1) [A556] BD   -  - 420 13 Na   F5 V M1 V     
 1520 Tavonni              E567000-0 Ba                                 { -3 } (200+3) [0000] B    -  - 034 10 Na   G6 V          
 1611 Phlume               C887620-8 Ag Ri Ga Ni                        { 0 }  (956+1) [9646] BC   -  - 710 5  Na   G5 V M8 V     
 1711 Extolay              B5558AC-A Pa Ph Varg3                        { 2 }  (B78-1) [6A15] Bce  N  - 310 8  Rr   M2 V M4 V     

@@ -215,7 +215,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0137 Turadhadz            C8A3831-6 Fl                                  - -  - 500   Va F3 V            
 0139 Loure                D628577-4 Ni                                  - C  - 301   Va M7 V            
 0233 Gzoughia             C775777-4 Ag Pi Pz                            - K  A 424   VS G1 V            
-0333 Khoezo               B575486-5 Ni                                  - C  - 204   VS G8 V M4 V F2 V  
+0333 Khoezo               B575486-5 Ni                                  - C  - 204   VS F2 V M4 V G8 V  
 0334 Soutsgvaek           E659798-7                                     - C  - 500   VS G2 V            
 0335 Gharroeth            B62768A-6 Ni                                  - K  - 405   VS F4 V D          
 0337 Agrerrgkueng         C685485-3 Ni                                  - -  - 814   Va F8 V D          
@@ -224,7 +224,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0533 Gvarrgaz             C562878-7 Cp Ph Pz Ri                         - -  A 210   VS F1 V            
 0540 Ralangzakor          C877876-5                                     - K  - 403   Va F7 V            
 0631 Agueksther           C7A4301-8 Fl Lo                               - K  - 604   VS F9 V            
-0633 Raerrthadh           X4527AB-1 Fo Po                               - C  R 325   VS M3 V M2 V F6 V D
+0633 Raerrthadh           X4527AB-1 Fo Po                               - C  R 325   VS F6 V M2 V M3 V D
 0733 Ledzuegzo            C884233-5 Lo                                  - K  - 512   VS F8 V            
 0738 Gvugvaer             C400300-8 Lo Ni Va                            - -  - 400   Va M4 II           
 0740 Zuerrknenkag         A120220-A De Lo Ni Po                         - K  - 102   Va M8 V            

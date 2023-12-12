@@ -40,91 +40,91 @@
 Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z PBG W A  Stellar            
 ---- -------------------- --------- -------------------- ---- ---- ---- - -- - --- - -- -------------------
 0102                      X534000-0 Ba Lo Ni                            - -  - 002   -- M5 V               
-0105                      X363000-0 Ba Lo Ni                            - -  - 011   -- F2 V M7 D          
+0105                      X363000-0 Ba Lo Ni                            - -  - 011   -- F2 V M7 V          
 0106                      X231000-0 Ba Lo Ni Po                         - -  - 001   -- M7 V               
-0109 Kaeuerzgueg          C433666-4 Na Ni Po                            - C  - 707   Va M8 V M2 D          
+0109 Kaeuerzgueg          C433666-4 Na Ni Po                            - C  - 707   Va M2 V M8 V          
 0208 Khaello              B672677-7 Ni                                  - -  - 215   Va G6 V               
-0209 Enouvarro            C484652-7 Ag Ni Ri                            - -  - 604   Va F9 V M1 D          
+0209 Enouvarro            C484652-7 Ag Ni Ri                            - -  - 604   Va F9 V M1 V          
 0210 Vesueksaon           C427776-9                                     - -  - 203   Va M4 V               
-0307 Fioilug              C78A664-3 Ni Ri Wa                            - -  - 206   Va F5 V M8 D          
+0307 Fioilug              C78A664-3 Ni Ri Wa                            - -  - 206   Va F5 V M8 V          
 0310 Gzouno               B000768-A As Na                               - C  - 903   Va M6 V               
-0404 Vothookh             D633676-4 Na Ni Po                            - -  - 107   Va K2 V M5 D          
-0410 Rroiroers            A687789-A Ag                                  - K  - 103   Va F3 V M1 D          
+0404 Vothookh             D633676-4 Na Ni Po                            - -  - 107   Va K2 V M5 V          
+0410 Rroiroers            A687789-A Ag                                  - K  - 103   Va F3 V M1 V          
 0501                      X778000-0 Ba Lo Ni                            - -  - 014   -- F5 V               
-0504 Thaoedhaekhs         B9B8649-A Fl Ni                               - CK - 802   Va M1 V M5 D M0 D     
+0504 Thaoedhaekhs         B9B8649-A Fl Ni                               - CK - 802   Va M0 V M5 V M1 V     
 0506 Onuarra              D220100-A De Lo Ni Po                         - -  - 513   VR M7 V               
-0602 Gnuuekfedz           D200878-4 Na Va                               - -  - 414   Va F8 D               
-0606 Guegvarrgh           C78599A-A Hi In                               - C  - 801   VR F5 V M7 D          
+0602 Gnuuekfedz           D200878-4 Na Va                               - -  - 414   Va F8 V               
+0606 Guegvarrgh           C78599A-A Hi In                               - C  - 801   VR F5 V M7 V          
 0609 Ouaklloluen          B658201-A Lo Ni                               - K  - 303   VR K5 V               
 0701                      X596000-0 Ba Lo Ni                            - -  - 023   -- F1 V               
-0706 Nuerouvaekh          B54667B-4 Ag Ni                               - -  - 923   VR F9 V M4 D          
-0707 Uraegou              B655357-9 Lo Ni                               - K  - 605   VR F1 V M2 D          
+0706 Nuerouvaekh          B54667B-4 Ag Ni                               - -  - 923   VR F9 V M4 V          
+0707 Uraegou              B655357-9 Lo Ni                               - K  - 605   VR F1 V M2 V          
 0709 Tuetangalou          C66197C-3 Hi In                               - -  - 901   VR F4 V               
 0803 Tsagvuerr            D250874-4 De Po                               - C  - 310   VP F2 V               
 0804 Gagvaekerr           E686878-3                                     - C  - 805   VP F5 V               
 0807 Kengllunar           A230662-A De Na Ni Po                         - K  - 402   VR K2 V               
 0808 Nourrghfourz         E333400-8 Ni Po                               - C  - 914   VR M4 V               
-0809 Ouellanourz          C585777-3 Ag                                  - C  - 228   VR M1 V F3 V M6 D     
-0901                      X452000-0 Ba Lo Ni Po                         - -  - 012   -- F5 V M6 D          
-0904 Dougha               A545203-8 Lo Ni                               - K  - 505   VP F6 V M8 D          
+0809 Ouellanourz          C585777-3 Ag                                  - C  - 228   VR F3 V M1 V M6 V     
+0901                      X452000-0 Ba Lo Ni Po                         - -  - 012   -- F5 V M6 V          
+0904 Dougha               A545203-8 Lo Ni                               - K  - 505   VP F6 V M8 V          
 0905 Suerrouroe           C966879-1                                     - -  - 500   VP F1 V               
 0907 Koerukhukh           C345466-6 Ni                                  - K  - 510   VR F0 V               
 0908 Forraroekou          A629500-E Ni                                  - K  - 700   VR K2 V               
 0910 Goeollaz             CA9A977-9 Hi In Wa                            - K  - 404   Va F2 V               
-1004 Saaghun              E788773-2 Ag                                  - -  - 922   VP F3 V M5 D          
-1005 Kekoeghuegh          D886001-5 Lo Ni                               - -  - 202   VP F4 V M3 D F5 V M6 D
+1004 Saaghun              E788773-2 Ag                                  - -  - 922   VP F3 V M5 V          
+1005 Kekoeghuegh          D886001-5 Lo Ni                               - -  - 202   VP F4 V M3 V F5 V M6 V
 1007 Rraekhus             B325899-8                                     - -  - 712   VR K4 V               
-1010 Aenarou              E210452-9 Ni                                  - -  - 701   Va M8 V M1 D          
+1010 Aenarou              E210452-9 Ni                                  - -  - 701   Va M1 V M8 V          
 1101                      X262000-0 Ba Lo Ni                            - -  - 003   -- F0 V               
 1102                      X78A000-0 Ba Lo Ni Wa                         - -  - 002   -- G5 V               
 1104 Gungharsoell         B577897-7                                     - K  - 904   VP G1 V               
 1106 Gaoedho              C765865-8 Ri                                  - -  - 404   VP F2 V               
 1204 Kaedonoks            D575543-6 Ag Ni                               - C  - 601   VP F1 V               
 1209 Arruezaegh           B345588-5 Ag Ni                               - C  - 404   VP F7 V               
-1304 Ruerrgueng           B380331-9 De Lo Ni                            - K  - 720   VP F5 V M6 D          
+1304 Ruerrgueng           B380331-9 De Lo Ni                            - K  - 720   VP F5 V M6 V          
 1306 Etazuek              A130766-8 De Na Po                            - -  - 514   VP M6 V               
 1307 Aegzeoe              E100244-A Lo Ni Va                            - -  - 411   VP M5 III K4 V        
 1308 Aellonorrgh          D873454-6 Ni                                  - K  - 602   VP F8 V               
 1309 Gueovou              E310533-4 Ni                                  - -  - 324   VP F6 V               
-1406 Aedzaue              D377A7A-A Hi In                               - -  - 203   VP K5 V M7 D          
+1406 Aedzaue              D377A7A-A Hi In                               - -  - 203   VP K5 V M7 V          
 1408 Ularr                A355578-B Ag Ni                               - K  - 502   VP F0 V               
-1501 Oukegaeguerr         E695468-1 Ni                                  - -  - 213   Va F3 V M3 D          
+1501 Oukegaeguerr         E695468-1 Ni                                  - -  - 213   Va F3 V M3 V          
 1503 Khazvanekh           D000579-8 As Ni                               - C  - 605   Va F0 II              
-1506 Tsoeghours           B301565-9 Ic Ni Va                            - -  - 103   VP A0 D               
-1508 Rrozuetsae           B681874-8                                     - -  - 834   VP F0 V M6 D          
-1509 Ksueghale            C634325-5 Lo Ni                               - -  - 616   VP K2 V F3 V M1 D     
-1601 Tsadzguez            A754105-9 Lo Ni                               - K  - 823   Va F8 V M6 D          
+1506 Tsoeghours           B301565-9 Ic Ni Va                            - -  - 103   VP A0 V               
+1508 Rrozuetsae           B681874-8                                     - -  - 834   VP F0 V M6 V          
+1509 Ksueghale            C634325-5 Lo Ni                               - -  - 616   VP F3 V K2 V M1 V     
+1601 Tsadzguez            A754105-9 Lo Ni                               - K  - 823   Va F8 V M6 V          
 1603 Daeghado             B536988-9 Hi In                               - -  - 100   Va F2 V               
 1604 Vaghzigan            C422776-A Na Po                               - -  - 313   Va K9 V               
 1608 Tsatha               D352697-2 Ni Po                               - K  - 500   VP F2 V               
 1609 Ghagugharr           B665574-6 Ag Ni                               - C  - 800   VP F8 V               
-1701 Tsuetsnozug          B231778-8 Na Po                               - C  - 400   Va M2 V K8 D          
+1701 Tsuetsnozug          B231778-8 Na Po                               - C  - 400   Va K8 V M2 V          
 1703 Irtaek               A9B4310-A Fl Lo Ni                            - -  - 203   Va M3 II              
 1704 Aekoensoez           E54726A-5 Lo Ni                               - -  - 300   Va G7 V               
-1707 Gnughenangi          B1607B7-9 De                                  - K  - 303   Va K6 V M0 D          
+1707 Gnughenangi          B1607B7-9 De                                  - K  - 303   Va K6 V M0 V          
 1803 Thouirru             C474675-5 Ag Ni                               - -  - 303   Va F1 V               
-1805 Ghokhogva            E100000-9 Ba Lo Ni Va                         - C  - 723   Va M5 V M4 D          
-1806 Aeghaedhi            C76A212-9 Lo Ni Wa                            - -  - 804   Va F9 V M5 D          
-1808 Ksigtsodho           B639676-7 Ni                                  - -  - 502   Va M5 V G6 D          
-1809 Ungugudz             C9C48AB-3 Fl                                  - -  - 223   Va F3 V M6 D          
-1905 Surrarrgh            C43297A-C Hi In Na Po                         - -  - 407   Va G2 V M3 D F5 V M2 D
+1805 Ghokhogva            E100000-9 Ba Lo Ni Va                         - C  - 723   Va M4 V M5 V          
+1806 Aeghaedhi            C76A212-9 Lo Ni Wa                            - -  - 804   Va F9 V M5 V          
+1808 Ksigtsodho           B639676-7 Ni                                  - -  - 502   Va G6 V M5 V          
+1809 Ungugudz             C9C48AB-3 Fl                                  - -  - 223   Va F3 V M6 V          
+1905 Surrarrgh            C43297A-C Hi In Na Po                         - -  - 407   Va F5 V M3 V G2 V M2 V
 1906 Khuuo                C97677A-4 Ag                                  - -  - 502   Va K1 V               
 2001 Enguksuerrug         C223134-9 Lo Ni Po                            - -  - 803   Va K5 V               
 2002 Llarthoelal          A47367B-A Ag Ni                               - K  - 312   Va M6 V               
 2005 Gvanaerran           B100323-9 Lo Ni Va                            - K  - 303   Va G2 V               
-2007 Lengikakh            E220435-7 De Ni Po                            - -  - 100   Va M6 V M1 V M8 D     
-2009 Rerukh               X632243-1 Lo Ni Po                            - C  - 103   Va F8 V M3 D          
-2108 Dulloue              E400102-5 Lo Ni Va                            - C  - 732   Va M0 V M2 D          
-2201 Rughoe               B374777-5 Ag                                  - K  - 705   Va F3 V M6 D          
-2204 Dugzaesi             C636666-4 Ni                                  - C  - 705   Va M3 V M4 D          
+2007 Lengikakh            E220435-7 De Ni Po                            - -  - 100   Va M1 V M6 V M8 V     
+2009 Rerukh               X632243-1 Lo Ni Po                            - C  - 103   Va F8 V M3 V          
+2108 Dulloue              E400102-5 Lo Ni Va                            - C  - 732   Va M0 V M2 V          
+2201 Rughoe               B374777-5 Ag                                  - K  - 705   Va F3 V M6 V          
+2204 Dugzaesi             C636666-4 Ni                                  - C  - 705   Va M3 V M4 V          
 2205 Ksounaz              E200442-4 Ni Va                               - -  - 804   Va G7 V               
-2206 Zoenaedhtsus         D400876-2 Na Va                               - -  - 500   Va G1 D M6 D          
+2206 Zoenaedhtsus         D400876-2 Na Va                               - -  - 500   Va G1 V M6 V          
 2209 Zuedala              E120400-A De Ni Po                            - C  - 110   Va K9 V               
 2301 Konourogh            B532363-A Lo Ni Po                            - K  - 810   Va M8 V               
-2302 Vouvou               E2009CA-5 Hi Na Va                            - C  - 904   Va F6 D M7 D          
+2302 Vouvou               E2009CA-5 Hi Na Va                            - C  - 904   Va F6 V M7 V          
 2401 Utsighz              C313487-A Ic Ni                               - -  - 614   Va A1 IV              
 2402 Uerragaefae          C56497C-5 Hi In                               - -  - 304   Va F4 V               
-2404 Eraezors             B866765-8 Ag Ri                               - -  - 504   Va F9 V M8 D          
+2404 Eraezors             B866765-8 Ag Ri                               - -  - 504   Va F9 V M8 V          
 2501 Oeurorz              B76A626-C Ni Wa                               - -  - 202   Va F2 V               
 2505 Okharuz              B436855-8                                     - -  - 704   Va F9 V               
 2506 Oksa                 A501226-9 Ic Lo Ni Va                         - K  - 615   Va G8 V               
@@ -132,56 +132,56 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2609 Edunllak             C100A74-A Hi Na Va                            - C  - 803   Va F2 V               
 2704 Ghouga               X989778-1                                     - C  - 705   Va F3 V               
 2801 Oknagoe              AAD9566-F Fl Ni                               - -  - 410   Va K4 IV              
-2804 Rruzathantek         C739266-9 Lo Ni                               - -  - 707   Va K0 V M1 D M0 D     
-2902 Tueaeue              C514434-4 Ic Ni                               - K  - 441   Va M5 V M7 D          
+2804 Rruzathantek         C739266-9 Lo Ni                               - -  - 707   Va K0 V M1 V M0 V     
+2902 Tueaeue              C514434-4 Ic Ni                               - K  - 441   Va M5 V M7 V          
 3001 Zaetsarrg            C767358-4 Lo Ni                               - C  - 223   Va K7 V               
-3002 Dhangaeks            A878974-B Hi In                               - K  - 506   Va M1 V M1 D          
+3002 Dhangaeks            A878974-B Hi In                               - K  - 506   Va M1 V M1 V          
 3202 Tsoeluegz            C8A1744-7 Fl                                  - -  - 822   Va M1 V               
-3203 Tsaghzksuell         C899458-7 Ni                                  - C  - 405   Va F5 V M0 D          
+3203 Tsaghzksuell         C899458-7 Ni                                  - C  - 405   Va F5 V M0 V          
 3207 Khoenugzaghz         C9C5000-9 Ba Fl Lo Ni                         - -  - 801   Va G7 V               
-0111 Dzaerakhsaeg         B310657-7 Na Ni                               - C  - 301   Va M4 V M0 D          
-0112 Vuesagouvull         D463553-4 Ag Ni                               - K  - 825   Va K5 V M7 D          
+0111 Dzaerakhsaeg         B310657-7 Na Ni                               - C  - 301   Va M0 V M4 V          
+0112 Vuesagouvull         D463553-4 Ag Ni                               - K  - 825   Va K5 V M7 V          
 0115 Okuvoe               E8A269D-7 Fl Ni                               - -  - 802   Va K0 V               
 0116 Sughue               B559552-B Ni                                  - -  - 803   Va K4 V               
 0118 Ruezerrfugar         C000553-9 As Ni                               - K  - 302   Va M2 V               
 0211 Kfuegvakue           A482500-B Ni                                  - -  - 500   Va G6 V               
-0218 Sighangarorr         C669555-7 Ni                                  - -  - 204   Va F9 V M8 D          
+0218 Sighangarorr         C669555-7 Ni                                  - -  - 204   Va F9 V M8 V          
 0219 Ughkuesdorr          A46487A-6                                     - -  - 605   Va K1 V               
-0220 Knougzaeue           B464301-9 Lo Ni                               - -  - 426   Va F8 V M6 D          
-0311 Ngadzughz            D443A7C-4 Hi In Po                            - CK - 735   Va M6 V M6 D          
-0316 Rrozanrroeng         C225200-7 Lo Ni                               - -  - 401   Va M1 V M2 D          
+0220 Knougzaeue           B464301-9 Lo Ni                               - -  - 426   Va F8 V M6 V          
+0311 Ngadzughz            D443A7C-4 Hi In Po                            - CK - 735   Va M6 V M6 V          
+0316 Rrozanrroeng         C225200-7 Lo Ni                               - -  - 401   Va M1 V M2 V          
 0319 Nazaelzol            X321657-1 Na Ni Po                            - C  - 800   Va F2 IV K3 V         
 0320 Azoegzoen            B221201-A Lo Ni Po                            - CK - 503   Va G9 V               
 0511 Roukharr             D63AAA8-7 Hi In Wa                            - -  - 100   Va F8 V               
-0514 Goeakson             C643100-A Lo Ni Po                            - K  - 203   Va F9 V M3 D          
-0518 Ugogvudz             D575646-4 Ag Ni                               - -  - 215   Va F7 V M2 D          
+0514 Goeakson             C643100-A Lo Ni Po                            - K  - 203   Va F9 V M3 V          
+0518 Ugogvudz             D575646-4 Ag Ni                               - -  - 215   Va F7 V M2 V          
 0519 Soesuenoeng          C647478-6 Ni                                  - -  - 803   Va F6 V               
 0612 Oruerraez            D6388AD-5                                     - -  - 413   Va F2 V               
 0613 Kueghaetue           B444146-8 Lo Ni                               - -  - 502   Va M0 V               
 0617 Dagzvoen             B537746-6                                     - K  - 203   Va M5 V               
 0714 Orsgirsfagz          B365344-9 Lo Ni                               - K  - 611   Va F5 V               
 0716 Uesatsagzon          X543644-0 Ag Ni Po                            - C  - 124   Va F0 V               
-0811 Uagve                E452457-7 Ni Po                               - C  - 803   Va F0 V M6 D          
+0811 Uagve                E452457-7 Ni Po                               - C  - 803   Va F0 V M6 V          
 0820 Gvoghang             B57657A-6 Ag Ni                               - K  - 800   Va F1 V               
 0911 Ouerorr              A350145-B De Lo Ni Po                         - K  - 810   Va F3 V               
 0912 Gueksogok            C100362-6 Lo Ni Va                            - K  - 722   Va M4 V               
 0914 Zanue                D529300-4 Lo Ni                               - -  - 305   Va G2 V M7 V K7 V     
 0916 Raekhirr             E97A597-6 Ni Wa                               - -  - 513   Va F2 V               
-0920 Soeuo                B534564-8 Ni                                  - -  - 400   Va A1 V M0 D          
-1018 Akhguetsoerr         B675455-8 Ni                                  - -  - 604   Va F9 V M0 D          
+0920 Soeuo                B534564-8 Ni                                  - -  - 400   Va A1 V M0 V          
+1018 Akhguetsoerr         B675455-8 Ni                                  - -  - 604   Va F9 V M0 V          
 1112 Voughoegheng         X000654-3 As Na Ni                            - C  - 603   Va G6 V M6 V          
 1113 Toungougun           E659675-5 Ni                                  - C  - 712   Va K5 V               
 1120 Aerugvekh            C64A578-9 Ni Wa                               - K  - 703   Va K5 V               
-1316 Ruganill             C221AC8-A Hi In Na Po                         - K  - 305   Va G2 V F9 V          
+1316 Ruganill             C221AC8-A Hi In Na Po                         - K  - 305   Va F9 V G2 V          
 1319 Ksauelloeae          C475875-5                                     - -  - 302   Va G0 V               
 1412 Aouzeghou            B594201-A Lo Ni                               - -  - 900   VP F4 V               
-1413 Gadhknoungar         C356202-4 Lo Ni                               - C  - 802   VP F0 V M4 D          
-1415 Voenaetsoour         C889479-6 Ni                                  - K  - 205   Va F7 V M3 D          
+1413 Gadhknoungar         C356202-4 Lo Ni                               - C  - 802   VP F0 V M4 V          
+1415 Voenaetsoour         C889479-6 Ni                                  - K  - 205   Va F7 V M3 V          
 1511 Aekfuezarr           B946310-8 Lo Ni                               - -  - 322   VP F4 V               
 1513 Nengnueghz           C366674-6 Ag Ni                               - K  - 413   VP F7 V               
-1514 Kaethoukue           C898301-5 Lo Ni                               - -  - 523   VP F9 V M2 D          
+1514 Kaethoukue           C898301-5 Lo Ni                               - -  - 523   VP F9 V M2 V          
 1516 Ogoedha              C799456-7 Ni                                  - C  - 713   Va G4 V               
-1517 Roeagha              E79A987-5 Hi In Wa                            - -  - 912   Va F3 V M7 D          
+1517 Roeagha              E79A987-5 Hi In Wa                            - -  - 912   Va F3 V M7 V          
 1519 Relluezgaeng         E4236A9-5 Na Ni Po                            - -  - 106   Va F4 IV K5 V         
 1520 Gnaezrra             E523598-3 Ni Po                               - C  - 204   Va K5 V               
 1611 Thueaeuae            C200435-9 Ni Va                               - -  - 300   VP M8 V               
@@ -193,40 +193,40 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1911 Daza                 B130253-8 De Lo Ni Po                         - -  - 712   Va K1 IV              
 1917 Rafuegvuerro         C535144-6 Lo Ni                               - K  - 902   Va M3 V               
 2111 Zotusael             C673433-7 Ni                                  - K  - 305   Va F9 V               
-2219 Dhoerou              C787776-3 Ag                                  - -  - 911   Va F5 V M6 D          
-2416 Dzorrgun             X855884-0                                     - C  - 402   Va F9 V M2 D          
-2517 Ivakhsoes            E9E1778-5 Fl                                  - C  - 105   Va M3 V M5 D          
-2519 Aenarsveghz          C6B2876-7 Fl                                  - C  - 210   Va F2 V M8 D          
-2617 Ngaradhur            B68A222-A Lo Ni Wa                            - -  - 813   Va F8 V M5 D          
+2219 Dhoerou              C787776-3 Ag                                  - -  - 911   Va F5 V M6 V          
+2416 Dzorrgun             X855884-0                                     - C  - 402   Va F9 V M2 V          
+2517 Ivakhsoes            E9E1778-5 Fl                                  - C  - 105   Va M3 V M5 V          
+2519 Aenarsveghz          C6B2876-7 Fl                                  - C  - 210   Va F2 V M8 V          
+2617 Ngaradhur            B68A222-A Lo Ni Wa                            - -  - 813   Va F8 V M5 V          
 2716 Doe                  C899666-8 Ni                                  - -  - 600   Va F3 V               
-2717 Naeaou               A51275A-7 Ic Na                               - -  - 802   Va M3 V M2 D          
+2717 Naeaou               A51275A-7 Ic Na                               - -  - 802   Va M2 V M3 V          
 2816 Razuka               C8C8532-9 Fl Ni                               - C  - 903   Va F0 V               
-2818 Rrulkhalrun          DA9A201-A Lo Ni Wa                            - -  - 702   Va F9 V M2 D          
+2818 Rrulkhalrun          DA9A201-A Lo Ni Wa                            - -  - 702   Va F9 V M2 V          
 2914 Ondokhs              C538000-5 Ba Lo Ni                            - -  - 203   Va G4 V               
 2915 Gueghikang           C452532-6 Ni Po                               - K  - 913   Va F4 V               
 3217 Rralludh             E85A6B7-4 Ni Wa                               - C  - 602   Va F5 V               
-0121 Igarangan            D000979-7 As Hi Na                            - -  - 802   Va F5 V M3 D          
+0121 Igarangan            D000979-7 As Hi Na                            - -  - 802   Va F5 V M3 V          
 0122 Roksue               E435443-7 Ni                                  - -  - 900   Va M8 V               
 0124 Gvueksoudzu          A100548-D Ni Va                               - K  - 412   Va G7 III M0 V        
 0125 Vakhuegh             E200255-4 Lo Ni Va                            - -  - 400   Va K1 V               
-0127 Daeguea              C436635-3 Ni                                  - C  - 214   Va F3 V M3 D          
+0127 Daeguea              C436635-3 Ni                                  - C  - 214   Va F3 V M3 V          
 0130 Aeoengghuk           E66A443-2 Ni Wa                               - C  - 512   Va F9 V               
 0223 Ueoegvaghung         C736002-8 Lo Ni                               - -  - 600   Va F0 V               
 0225 Ataetu               B200100-D Lo Ni Va                            - K  - 701   Va M5 V               
-0227 Ghuergnogzu          C402488-7 Ic Ni Va                            - -  - 325   Va F1 V M2 D          
+0227 Ghuergnogzu          C402488-7 Ic Ni Va                            - -  - 325   Va F1 V M2 V          
 0321 Ghuetstoge           B999132-5 Lo Ni                               - K  - 700   Va M4 V               
-0322 Tanuedhue            B778100-8 Lo Ni                               - K  - 905   Va F3 V M7 D          
+0322 Tanuedhue            B778100-8 Lo Ni                               - K  - 905   Va F3 V M7 V          
 0329 Saguerrukh           B5A0444-8 De Ni                               - -  - 302   Va F2 V               
 0330 Kheduzksuzuk         C528641-9 Ni                                  - -  - 301   Va K0 V               
 0422 Azzongekh            A210558-D Ni                                  - -  - 902   Va F4 V               
 0423 Uegvaegni            B360664-6 De Ni Ri                            - -  - 304   Va F9 V               
 0426 Eeouts               A78966A-8 Ni Ri                               - -  - 900   Va F1 V               
-0427 Zerraksuk            C202A77-A Hi Ic Na Va                         - K  - 213   Va F9 D               
+0427 Zerraksuk            C202A77-A Hi Ic Na Va                         - K  - 213   Va F9 V               
 0430 Thuguegousa          XA78422-0 Ni                                  - C  - 302   Va F0 V               
-0524 Tsagnoe              C326674-4 Ni                                  - -  - 614   Va F8 V M3 D F4 V     
-0525 Doveka               C201564-9 Ic Ni Va                            - -  - 622   Va M5 V M1 D          
+0524 Tsagnoe              C326674-4 Ni                                  - -  - 614   Va F4 V M3 V F8 V     
+0525 Doveka               C201564-9 Ic Ni Va                            - -  - 622   Va M1 V M5 V          
 0527 Gvueradue            E99A123-6 Lo Ni Wa                            - C  - 300   Va G6 V               
-0724 Goevaturr            A444562-9 Ag Ni                               - K  - 226   Va F4 V M8 D          
+0724 Goevaturr            A444562-9 Ag Ni                               - K  - 226   Va F4 V M8 V          
 0726 Aellesu              B340246-B De Lo Ni Po                         - -  - 303   Va F8 V               
 0727 Kughkuengokh         B8A9875-A Fl                                  - K  - 500   Va F2 V               
 0730 Ksaekhaae            C525203-6 Lo Ni                               - K  - 402   Va M4 V               
@@ -240,56 +240,56 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1025 Vuedhavug            B543534-5 Ag Ni Po                            - -  - 912   Va F3 V               
 1026 Raekounoegh          X544302-4 Lo Ni                               - -  - 500   Va G7 V               
 1027 Uenguea              C100223-8 Lo Ni Va                            - C  - 904   Va M6 V               
-1121 Thoudzanang          C300644-6 Na Ni Va                            - -  - 103   Va A5 V M4 D          
-1125 Rassoughzao          C694300-7 Lo Ni                               - -  - 812   Va F1 V M8 D          
+1121 Thoudzanang          C300644-6 Na Ni Va                            - -  - 103   Va A5 V M4 V          
+1125 Rassoughzao          C694300-7 Lo Ni                               - -  - 812   Va F1 V M8 V          
 1126 Ghueaae              D674699-1 Ag Ni                               - -  - 923   Va F3 V               
 1127 Daokfingngug         A67677B-B Ag                                  - -  - 800   Va F2 V               
-1321 Guedzagh             E222561-2 Ni Po                               - C  - 811   Va F3 V M7 D          
+1321 Guedzagh             E222561-2 Ni Po                               - C  - 811   Va F3 V M7 V          
 1322 Sakhsakhkuel         A7A197B-C Fl Hi In                            - K  - 912   Va K0 V               
-1325 Konokh               C77657C-4 Ag Ni                               - -  - 511   Va F2 V M2 D          
+1325 Konokh               C77657C-4 Ag Ni                               - -  - 511   Va F2 V M2 V          
 1326 Liuae                X5A3453-0 Fl Ni                               - C  - 501   Va K5 V               
-1421 Soeugi               C762214-4 Lo Ni                               - -  - 300   Va G1 V M2 D          
+1421 Soeugi               C762214-4 Lo Ni                               - -  - 300   Va G1 V M2 V          
 1428 Breo                 C644688-7 Ag Ni                               - M  - 910   Ve F4 V               
 1525 Alaethera            B8C7574-9 Fl Ni                               - K  - 501   Va G1 V M2 V          
-1528 Gelal                B341578-A Ni Po                               - -  - 203   Ve G4 V M2 D          
+1528 Gelal                B341578-A Ni Po                               - -  - 203   Ve G4 V M2 V          
 1530 Yehigeton            E53369C-4 Na Ni Po                            - -  - 504   Ve K5 V M0 V          
-1623 Dhuerrosegh          B533889-7 Na Po                               - K  - 704   Va M0 V M2 D          
+1623 Dhuerrosegh          B533889-7 Na Po                               - K  - 704   Va M0 V M2 V          
 1625 Ukanguekagh          B84A578-B Ni Wa                               - -  - 712   Va F5 V               
 1628 Tashe                B667225-7 Lo Ni                               - NW - 324   Ve F6 V               
 1721 Sunzorkhasou         B676878-A                                     - K  - 603   Va G2 V               
 1726 Aelluegknugh         C729325-7 Lo Ni                               - C  - 413   Va M4 V               
 1727 Thaegvongouk         A464523-8 Ag Ni                               - -  - 110   Va F1 V               
 1826 Kaedzanzourr         B234577-7 Ni                                  - -  - 400   Va M5 V               
-1924 Gvosousuerr          C728553-8 Ni                                  - -  - 513   Va M5 V M6 D M5 D     
-2025 Rirsthuers           CAA6454-7 Fl Ni                               - -  - 813   Va F1 V M1 D          
-2030 Seseto               E789452-7 Ni                                  - -  - 916   Ve M7 V M0 D          
-2321 Khazoekhskha         C653420-9 Ni Po                               - -  - 704   Va F7 V M2 D          
+1924 Gvosousuerr          C728553-8 Ni                                  - -  - 513   Va M5 V M6 V M5 V     
+2025 Rirsthuers           CAA6454-7 Fl Ni                               - -  - 813   Va F1 V M1 V          
+2030 Seseto               E789452-7 Ni                                  - -  - 916   Ve M0 V M7 V          
+2321 Khazoekhskha         C653420-9 Ni Po                               - -  - 704   Va F7 V M2 V          
 2430 Locae                C654988-8 Hi In                               - S  - 800   Ve F9 V               
 2621 Aerakhsaghz          C767869-4 Ri                                  - K  - 333   Va F7 V               
 2625 Ugsuezou             E476130-4 Lo Ni                               - -  - 411   Va K7 V               
 2628 Ogaerou              E646879-4                                     - C  - 901   Va M7 V               
 2727 Lluzaengvoe          C232675-3 Na Ni Po                            - -  - 500   Va M0 III             
-2826 Thathegz             C585876-1                                     - C  - 705   Va F5 V M2 D          
+2826 Thathegz             C585876-1                                     - C  - 705   Va F5 V M2 V          
 2829 Ousou                C100455-B Ni Va                               - K  - 904   Va G5 V               
-2929 Thokfakeng           C62446A-8 Ni                                  - C  - 702   Va M0 V M0 D          
-3021 Udakhag              B100857-C Na Va                               - K  - 905   Va M6 D M2 D          
+2929 Thokfakeng           C62446A-8 Ni                                  - C  - 702   Va M0 V M0 V          
+3021 Udakhag              B100857-C Na Va                               - K  - 905   Va M2 V M6 V          
 3122 Raguezag             AAD3427-A Fl Ni                               - -  - 610   Va M7 V               
 3225 Tharkung             A585579-9 Ag Ni                               - -  - 320   Va M7 V               
-3226 Otsonvikhs           C854423-5 Ni                                  - K  - 223   Va F2 V M1 D          
+3226 Otsonvikhs           C854423-5 Ni                                  - K  - 223   Va F2 V M1 V          
 0132 Zoelkhazats          A429415-B Ni                                  - -  - 101   Va M7 V               
-0133 Ullonzong            B212203-E Ic Lo Ni                            - -  - 904   Va K2 V M5 D          
-0135 Oursonoag            B334556-B Ni                                  - -  - 902   Va M1 V M1 D          
+0133 Ullonzong            B212203-E Ic Lo Ni                            - -  - 904   Va K2 V M5 V          
+0135 Oursonoag            B334556-B Ni                                  - -  - 902   Va M1 V M1 V          
 0137 Segrarruefo          C506696-4 Ic Ni Va                            - C  - 402   Va M8 V               
-0139 Tsaenzuellog         E000878-7 As Na                               - C  - 514   Va F1 D               
+0139 Tsaenzuellog         E000878-7 As Na                               - C  - 514   Va F1 V               
 0231 Kuesatsu             A427368-B Lo Ni                               - K  - 811   Va M3 III M7 V        
 0233 Nazaeng              C626876-9                                     - C  - 500   Va F9 V               
 0237 Gvueukhgzoe          B500777-7 Na Va                               - -  - 201   Va G4 V M2 V          
-0239 Sutaavun             C87A698-5 Ni Wa                               - -  - 303   Va F6 V M3 D          
+0239 Sutaavun             C87A698-5 Ni Wa                               - -  - 303   Va F6 V M3 V          
 0240 Agastour             C75A677-A Ni Wa                               - K  - 322   Va F1 V               
 0333 Zourzaegae           C483876-3                                     - -  - 504   Va G5 V               
 0336 Ueoe                 C578355-8 Lo Ni                               - -  - 203   Va M3 V               
 0337 Sekhurour            C470654-5 De Ni                               - -  - 200   Va F6 V               
-0340 Aknoutsagh           X677686-0 Ag Ni                               - C  - 615   Va F6 V M7 D          
+0340 Aknoutsagh           X677686-0 Ag Ni                               - C  - 615   Va F6 V M7 V          
 0434 Legzourrges          A796662-9 Ag Ni                               - K  - 400   Va M8 V               
 0435 Kugzoeghzaek         C313335-5 Ic Lo Ni                            - K  - 300   Va K7 V               
 0436 Arsaghza             B473267-7 Lo Ni                               - CK - 221   Va K0 V               
@@ -299,75 +299,75 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0533 Saangoungaeg         D426378-3 Lo Ni                               - -  - 401   Va M5 V               
 0535 Sagvoeoegh           C646773-5 Ag                                  - -  - 102   Va M1 V               
 0536 Raerksungarr         X230778-0 De Na Po                            - -  - 403   Va F7 V               
-0537 Ueonugzaeng          B9C8778-A Fl                                  - -  - 900   Va M2 V M1 V          
+0537 Ueonugzaeng          B9C8778-A Fl                                  - -  - 900   Va M1 V M2 V          
 0538 Rilalnughz           B566651-A Ag Ni Ri                            - K  - 601   Va M5 V               
 0540 Foekoe               E5377AB-2                                     - C  - 301   Va A2 V               
 0631 Tuedukhsaghz         C63587B-5                                     - -  - 603   Va F4 V               
-0632 Toengedzgugh         C300898-4 Na Va                               - C  - 403   Va F8 D               
-0638 Ueoudhdoeth          C411431-8 Ic Ni                               - K  - 135   Va A3 V M0 D          
+0632 Toengedzgugh         C300898-4 Na Va                               - C  - 403   Va F8 V               
+0638 Ueoudhdoeth          C411431-8 Ic Ni                               - K  - 135   Va A3 V M0 V          
 0639 Ikerrgorrg           D336145-5 Lo Ni                               - -  - 113   Va F9 V               
 0640 Tsurougvae           D6377BE-5                                     - -  - 403   Va M6 V               
 0731 Rarueksuen           C469145-5 Lo Ni                               - C  - 401   Va F9 V               
-0732 Koeghookh            B733000-A Ba Lo Ni Po                         - -  - 823   Va G8 V M6 D          
+0732 Koeghookh            B733000-A Ba Lo Ni Po                         - -  - 823   Va G8 V M6 V          
 0733 Ransaenuedz          B7A6554-B Fl Ni                               - -  - 201   Va F2 II              
 0734 Kears                E200376-9 Lo Ni Va                            - -  - 706   Va M7 II M0 V         
-0736 Tarrgote             B210535-A Ni                                  - -  - 600   Va M3 V M1 V          
-0738 Aksrrue              C644889-2                                     - -  - 104   Va F8 V M3 D          
-0739 Aungknae             E254974-3 Hi In                               - C  - 603   Va F2 V M1 D          
-0740 Sughankoung          C100578-7 Ni Va                               - -  - 701   Va M7 V M4 D          
+0736 Tarrgote             B210535-A Ni                                  - -  - 600   Va M1 V M3 V          
+0738 Aksrrue              C644889-2                                     - -  - 104   Va F8 V M3 V          
+0739 Aungknae             E254974-3 Hi In                               - C  - 603   Va F2 V M1 V          
+0740 Sughankoung          C100578-7 Ni Va                               - -  - 701   Va M4 V M7 V          
 0831 Geoedue              X13049B-6 De Ni Po                            - -  - 503   Va F9 II K7 V         
 0832 Ngoegroghan          B352566-8 Ni Po                               - -  - 803   Va F3 V               
 0837 Ungugzaezogh         A837145-B Lo Ni                               - K  - 700   Va M0 V               
-0931 Vuoutha              A000887-9 As Na                               - K  - 214   Va F1 D               
+0931 Vuoutha              A000887-9 As Na                               - K  - 214   Va F1 V               
 0933 Eghuengerrgh         DAB8453-7 Fl Ni                               - C  - 214   Va F6 II              
 0935 Zoungtadae           D649673-5 Ni                                  - C  - 403   Va F6 V               
-0937 Atsoerghourz         E67A350-6 Lo Ni Wa                            - -  - 800   Va F8 V M0 D          
-0940 Kanangall            B77A003-A Lo Ni Wa                            - K  - 703   Va G3 V M8 D M0 D     
-1033 Zatsueleghz          B748696-6 Ag Ni                               - -  - 102   Va K8 V M8 D          
-1035 Zugue                C687974-5 Hi In                               - CK - 900   Va F2 V M6 D          
+0937 Atsoerghourz         E67A350-6 Lo Ni Wa                            - -  - 800   Va F8 V M0 V          
+0940 Kanangall            B77A003-A Lo Ni Wa                            - K  - 703   Va G3 V M8 V M0 V     
+1033 Zatsueleghz          B748696-6 Ag Ni                               - -  - 102   Va K8 V M8 V          
+1035 Zugue                C687974-5 Hi In                               - CK - 900   Va F2 V M6 V          
 1037 Okaegvong            C785666-3 Ag Ni Ri                            - -  - 700   Va F6 V               
 1038 Ourrruaks            B4136A8-A Ic Na Ni                            - K  - 104   Va G2 V               
 1039 Kaksueghen           C536A77-D Hi In                               - K  - 502   Va F9 V               
-1139 Dhollorourr          C669779-2                                     - K  - 726   Va G7 V M3 D          
-1232 Idpo                 C565ADD-8 Hi In                               - -  - 717   Ve F8 V M6 D          
-1234 Iwi                  C110432-7 Ni                                  - M  - 707   Ve M2 V M4 D          
-1235 Sise                 C848001-7 Lo Ni                               - S  - 707   Ve K3 V M8 D          
-1240 Cauw                 E696516-4 Ag Ni                               - -  - 603   Ve F7 V M5 D          
-1338 Iha                  C9E3788-5 Fl                                  - -  - 114   Ve M0 V M6 D          
+1139 Dhollorourr          C669779-2                                     - K  - 726   Va G7 V M3 V          
+1232 Idpo                 C565ADD-8 Hi In                               - -  - 717   Ve F8 V M6 V          
+1234 Iwi                  C110432-7 Ni                                  - M  - 707   Ve M2 V M4 V          
+1235 Sise                 C848001-7 Lo Ni                               - S  - 707   Ve K3 V M8 V          
+1240 Cauw                 E696516-4 Ag Ni                               - -  - 603   Ve F7 V M5 V          
+1338 Iha                  C9E3788-5 Fl                                  - -  - 114   Ve M0 V M6 V          
 1340 Keors                X546632-0 Ag Ni                               - -  R 213   Ve F4 V               
 1432 Ithian               B548300-9 Lo Ni                               - M  - 902   Ve K9 V               
 1436 Kosta                C789797-7 Ri                                  - M  - 313   Ve F2 V               
 1437 Ese                  C575000-8 Ba Lo Ni                            - S  - 700   Ve F1 V               
-1439 Cewerdi              D66A510-9 Ni Wa                               - -  - 232   Ve F6 V M3 D          
-1534 Froire               C695673-5 Ag Ni                               - M  - 501   Ve F0 V M2 D          
+1439 Cewerdi              D66A510-9 Ni Wa                               - -  - 232   Ve F6 V M3 V          
+1534 Froire               C695673-5 Ag Ni                               - M  - 501   Ve F0 V M2 V          
 1536 Onde                 C887657-9 Ag Ni Ri                            - M  - 510   Ve F4 V               
-1538 Widbaen              E97A278-9 Lo Ni Wa                            - -  - 500   Ve K2 V M4 D          
+1538 Widbaen              E97A278-9 Lo Ni Wa                            - -  - 500   Ve K2 V M4 V          
 1540 Houriwwep            B227731-8                                     - NW - 504   Ve G6 V               
 1632 Esdesthi             B263142-B Lo Ni                               - NS - 624   Ve F8 V               
 1736 Bragofond            C563400-9 Ni                                  - S  - 210   Ve F3 V               
-1739 Shitouck             E78379C-2 Ag Ri                               - -  - 100   Ve K9 V M3 D          
+1739 Shitouck             E78379C-2 Ag Ri                               - -  - 100   Ve K9 V M3 V          
 1837 Langed               CAA6234-7 Fl Lo Ni                            - S  - 300   Ve M2 V M5 V          
 1840 Obayon               E300658-8 Na Ni Va                            - -  - 602   Ve G9 V               
-1932 Emufen               XA8A8BA-3 Wa                                  - -  R 803   Ve F5 V M0 D          
-1933 Tharirseand          C754556-6 Ag Ni                               - S  - 213   Ve F2 V M4 D          
-1938 Codithishe           B989630-7 Ni                                  - S  - 102   Ve F7 V M7 D M1 D     
+1932 Emufen               XA8A8BA-3 Wa                                  - -  R 803   Ve F5 V M0 V          
+1933 Tharirseand          C754556-6 Ag Ni                               - S  - 213   Ve F2 V M4 V          
+1938 Codithishe           B989630-7 Ni                                  - S  - 102   Ve F7 V M7 V M1 V     
 2039 Adide                A530454-D De Ni Po                            - -  - 503   Ve G4 V               
 2040 Lainte               C324145-A Lo Ni                               - -  - 722   Ve F5 V               
 2137 Yomeceth             E4536AA-3 Ag Ni Po                            - -  - 100   Ve F0 V               
 2138 Hellewanse           A587ABE-G Hi In                               - S  - 104   Ve F0 V               
-2139 Feemef               BA5A77A-A Wa                                  - -  - 823   Ve M0 V M2 D          
+2139 Feemef               BA5A77A-A Wa                                  - -  - 823   Ve M0 V M2 V          
 2235 Foorsaa              C546421-8 Ni                                  - -  - 302   Ve M8 V               
-2237 Whothelle            C411610-A Ic Na Ni                            - S  - 603   Ve M8 V M0 V          
+2237 Whothelle            C411610-A Ic Na Ni                            - S  - 603   Ve M0 V M8 V          
 2334 Ingthan              C210304-B Lo Ni                               - -  - 200   Ve A0 V               
 2338 Ecet                 C789120-6 Lo Ni                               - M  - 700   Ve F2 V               
-2339 Bothad               X548455-2 Ni                                  - -  R 813   Ve G4 V M2 D          
+2339 Bothad               X548455-2 Ni                                  - -  R 813   Ve G4 V M2 V          
 2435 Hasam                C000210-8 As Lo Ni                            - -  - 722   Ve F9 III             
 2438 Tofeo                C559352-7 Lo Ni                               - -  - 703   Ve F8 V               
-2440 Etheet               C79A652-9 Ni Wa                               - M  - 314   Ve F1 V M3 D          
+2440 Etheet               C79A652-9 Ni Wa                               - M  - 314   Ve F1 V M3 V          
 2535 Ienbet               E656677-1 Ag Ni                               - -  - 620   Ve F3 V               
 2740 Tefie                C140688-9 De Ni Po                            - M  - 504   Ve F1 V               
 2937 Yolinga              B6A286A-7 Fl                                  - -  - 813   Ve F8 V               
-3040 Bina                 B11077A-9 Na                                  - -  - 300   Ve M0 V M8 D          
-3139 Rueaguks             C778798-7 Ag                                  - -  - 613   Va F0 V M7 D          
+3040 Bina                 B11077A-9 Na                                  - -  - 300   Ve M0 V M8 V          
+3139 Rueaguks             C778798-7 Ag                                  - -  - 613   Va F0 V M7 V          
 3233 Gzuegae              A35467C-A Ag Ni                               - K  - 520   Va F0 V               
-3238 Suelllouvoe          C203520-7 Ic Ni Va                            - K  - 704   Va G7 V M5 D          
+3238 Suelllouvoe          C203520-7 Ic Ni Va                            - K  - 704   Va G7 V M5 V          

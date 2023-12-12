@@ -15,7 +15,7 @@
     </Credits>
   <X>-2</X>
   <Y>3</Y>
-  <Product Author="Randy Dorman" Title="The Deep and the Dark" Publisher="Mongoose Publishing" />
+  <Product Author="Randy Dorman" Title="The Deep and the Dark" Publisher="Mongoose Publishing" Ref="https://www.mongoosepublishing.com/products/the-deep-and-the-dark" />
   <DataFile Author="Peter G. Celella, James Holden" Source="Traveller 5 Second Survey" Milieu="M1105" />
   <Subsectors>
     <Subsector Index="A">Earle</Subsector>
