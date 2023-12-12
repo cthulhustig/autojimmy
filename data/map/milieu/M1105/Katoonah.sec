@@ -43,12 +43,12 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0110 Umberlog             C565600-7 Ag Ni                               - -  - 725   -- G7 V          
 0201 Vreck                AA99956-D Ag Hi In Wa Ri                      - N  - 804   Gr K3 V          
 0302 Martuf               C516350-B Na Ni Po                            - C  - 713   Gr K3 IV         
-0304 Yata                 A776456-D Ag Ni                               - N  - 410   Gr M4 V M6 D     
-0306 Geanak               A858950-E Ag Hi In Ri                         - N  - 502   Gr K5 V M7 D     
+0304 Yata                 A776456-D Ag Ni                               - N  - 410   Gr M4 V M6 V     
+0306 Geanak               A858950-E Ag Hi In Ri                         - N  - 502   Gr K5 V M7 V     
 0309 Unggrae              B8A6556-C Ag Ni                               - -  - 513   -- G3 III        
 0402 Mykoku               B34366A-B Na Ni Po                            - -  - 303   Gr G3 V          
 0403 Excelcior            AAAA456-D Ag Ni Ri Wa                         - NS - 114   Gr G5 III        
-0404 Bachk                B9674A3-B Ag Lo Ni                            - C  - 505   Gr G3 V M2 D     
+0404 Bachk                B9674A3-B Ag Lo Ni                            - C  - 505   Gr G3 V M2 V     
 0405 Klepto               C575410-B Ag Lo Ni                            - C  - 913   Gr K2 V          
 0410 Kenghl               C310576-A Ba De Ni                            - S  - 702   -- G3 V M1 V     
 0502 Norak                C57A77B-9 Ag In Ri Wa                         - -  - 803   Gr G2 III        
@@ -56,74 +56,74 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0509 Annubis              X645573-7 Ag Ni Po                            - -  - 413   -- G5 V          
 0510 Bacccara             X557000-0 Ba Lo Ni                            - -  - 134   -- F0 V F4 V     
 0602 Borekk               A5855A7-C Ag Ni                               - C  - 214   Gr K7 V          
-0604 Altare               A6D7959-D Ag Fl Hi                            - NS - 925   Gr G4 V M2 D     
-0606 Grryak               X937600-9 Na Lo Ni                            - -  - 912   -- K3 V M6 D     
+0604 Altare               A6D7959-D Ag Fl Hi                            - NS - 925   Gr G4 V M2 V     
+0606 Grryak               X937600-9 Na Lo Ni                            - -  - 912   -- K3 V M6 V     
 0609 Huesean              X444357-9 Na Lo Ni                            - -  - 303   -- G3 III        
-0707 Irkirka              C88A853-A Ag In Ri Wa                         - -  - 605   -- G4 V M3 D     
+0707 Irkirka              C88A853-A Ag In Ri Wa                         - -  - 605   -- G4 V M3 V     
 0708 Digia                A867850-B Ba Lo Ni                            - -  - 400   -- F5 III        
-0710 Antioc               C352550-A Na Lo Ni Po                         - -  - 510   -- K3 IV M6 D    
-0805 Fuelstaup            E867757-3 Ag Ni                               - -  - 613   Gr F5 III M2 D   
+0710 Antioc               C352550-A Na Lo Ni Po                         - -  - 510   -- K3 IV M6 V    
+0805 Fuelstaup            E867757-3 Ag Ni                               - -  - 613   Gr F5 III M2 V   
 0807 Shadarm              B320400-A Ba De Lo Ni Po                      - S  - 804   -- G1 IV         
 0808 Alu                  E67677B-8 Ba Lo Ni                            - -  - 800   -- F3 III        
-0809 Sirzurka             C424242-9 Na Lo Ni                            - S  - 404   -- F5 V G3 D     
+0809 Sirzurka             C424242-9 Na Lo Ni                            - S  - 404   -- F5 V G3 V     
 0810 Isuzu                B252300-C Na Lo Ni Po                         - R  - 612   -- G4 V          
 0904 Keagle               A861A75-E De Hi In                            - NS - 515   -- M4 V          
 0905 Keetal               X98A567-C Ag Lo Ni Wa                         - C  - 502   -- F3 III        
-0909 Sadreev              A6768A7-C Ag Ni                               - N  - 824   -- F4 IV M5 D    
+0909 Sadreev              A6768A7-C Ag Ni                               - N  - 824   -- F4 IV M5 V    
 0910 Gardinyah            C682667-C Ba Fl Lo Ni                         - -  - 622   -- M1 V          
 1005 Cheutoi              C100669-C Ba Lo Ni Va                         - C  - 902   -- G4 V          
-1006 Urgungtalz           B88986A-C Ag In                               - N  - 212   -- F3 V M8 D     
+1006 Urgungtalz           B88986A-C Ag In                               - N  - 212   -- F3 V M8 V     
 1010 Hialeah              C303567-C Ba Ic Lo Ni Va                      - S  - 810   -- M3 V          
-1102 Azur                 B676656-C Ag Ni                               - C  - 922   -- F5 V M4 D     
+1102 Azur                 B676656-C Ag Ni                               - C  - 922   -- F5 V M4 V     
 1103 Greanak              E865753-8 Ba Lo Ni                            - -  - 302   -- M4 V          
 1106 Vzeckeng             A97A86A-C Ag In Wa                            - N  - 313   -- G2 III        
 1109 Tristan              X323000-0 Ba Lo Ni Po                         - -  - 700   -- M4 V          
 1110 Morgan               AA68840-C Ag In Ri                            - N  - 412   -- G3 V          
-1207 Zeabr                C43336A-B Na Lo Ni Po                         - C  - 922   -- F5 V M5 D     
+1207 Zeabr                C43336A-B Na Lo Ni Po                         - C  - 922   -- F5 V M5 V     
 1210 Kareoke              A5746BA-C Ba Lo Ni                            - -  - 803   -- M5 III        
-1306 Freeworld            A876553-E Ag Lo Ni Ri                         - N  - 923   -- K3 V M5 D     
+1306 Freeworld            A876553-E Ag Lo Ni Ri                         - N  - 923   -- K3 V M5 V     
 1307 Kuezo                C8067AA-9 Ic Na Lo Ni                         - C  - 103   -- F7 V          
 1308 Delphi               A797957-C Ag Hi In Ri                         - -  - 924   -- G4 V          
 1309 Ieuz                 X511300-C Ba Ic Lo Ni                         - C  - 222   -- K3 V M4 V     
 1404 Darma                B8899AA-C Ag Hi In Ri                         - N  - 623   -- G3 VI         
 1405 Tomorri              B34236A-C Na Lo Ni Po                         - S  - 414   -- G2 III        
 1407 Kherrou              A78A953-E Ag Hi In Wa                         - NS - 904   -- K3 VI         
-1410 Rhmadiil             E866878-7 Ag Ni Po                            - N  - 703   -- M4 V M4 D     
+1410 Rhmadiil             E866878-7 Ag Ni Po                            - N  - 703   -- M4 V M4 V     
 1503                      X6B5000-0 Ba Fl Lo Ni                         - -  - 110   -- G1 V          
 1505                      X542000-0 Ba Lo Ni Po                         - -  - 102   -- F8 V          
-1507                      X757000-0 Ba Lo Ni                            - -  - 135   -- G4 V M5 D     
+1507                      X757000-0 Ba Lo Ni                            - -  - 135   -- G4 V M5 V     
 1508                      X686000-0 Ba Lo Ni                            - -  - 100   -- G4 V          
-1509                      X853000-0 Ba Lo Ni Po                         - -  - 124   -- F7 V M4 D     
+1509                      X853000-0 Ba Lo Ni Po                         - -  - 124   -- F7 V M4 V     
 1602 Jarrod               A768956-C Ba Lo Ni                            - -  - 513   -- G3 VI         
 1608 Amanda               AA97A59-E Ba Lo Ni                            - N  - 214   -- G4 V          
 1701                      X561000-0 Ba Lo Ni                            - -  - 813   -- F6 V          
 1707 Jyell                A312457-E Ba Ic Lo Ni                         - R  - 310   -- K3 III        
 1804 Ryku                 X222000-0 Ba Lo Ni                            - -  - 214   -- G3 V          
 1805 Pilot                X000000-0 As Ba Lo Ni                         - -  - 222   -- F3 IV         
-1809 Menth                C310459-9 Ba Lo Ni                            - -  - 414   -- K3 V M5 D     
+1809 Menth                C310459-9 Ba Lo Ni                            - -  - 414   -- K3 V M5 V     
 1810 Saphire              B468777-C Ba Lo Ni                            - -  - 902   -- G7 V          
-1902 Batlac               A796853-C Ag In Ri                            - -  - 102   -- G6 VI M3 D    
-2101                      X76A000-0 Ba Lo Ni Wa                         - -  - 114   -- G6 V M2 D K8 V
+1902 Batlac               A796853-C Ag In Ri                            - -  - 102   -- M3 V G6 VI    
+2101                      X76A000-0 Ba Lo Ni Wa                         - -  - 114   -- G6 V M2 V K8 V
 2102                      X78A000-0 Ba Lo Ni Wa                         - -  - 212   -- M8 V          
 2103                      X230000-0 Ba De Lo Ni Po                      - -  - 135   -- F8 V M1 V     
 2109 Lyope                X561000-0 Ba Lo Ni                            - -  - 123   -- F3 VI         
 2202                      XAB4000-0 Ba Fl Lo Ni                         - -  - 100   -- F6 V          
 2304                      X548000-0 Ba Lo Ni                            - -  - 502   -- K3 VI         
 2310 Pycus                A998957-F Ag Hi In Ri                         - NS - 704   -- G7 VI         
-2404 Kenner               A642655-C Ba Lo Ni Po                         - -  - 313   -- F7 V M5 D     
+2404 Kenner               A642655-C Ba Lo Ni Po                         - -  - 313   -- F7 V M5 V     
 2406 Irkerra              A674953-F Ba Lo Ni                            - N  - 402   -- G3 V          
 2409 Enos                 A515552-E Ba Ic Lo Ni                         - N  - 900   -- G4 V          
-2501                      X868000-0 Ba Lo Ni                            - -  - 102   -- F3 V M5 D     
+2501                      X868000-0 Ba Lo Ni                            - -  - 102   -- F3 V M5 V     
 2506 Chydra               C200553-A Na Lo Ni Va                         - -  - 822   -- M3 V          
 2607                      X410000-0 Ba Lo Ni                            - -  - 102   -- A5 V          
 2609                      X552000-0 Ba Lo Ni Po                         - -  - 124   -- F4 V          
 2701                      XAA7000-0 Ba Lo Ni                            - -  - 102   -- M8 V          
 2704                      X98A000-0 Ba De Lo Ni Po                      - -  - 106   -- M0 V M0 V     
-2808                      X643000-0 Ba Lo Ni Po                         - -  - 117   -- F8 V M3 D     
+2808                      X643000-0 Ba Lo Ni Po                         - -  - 117   -- F8 V M3 V     
 2903                      X867000-0 Ba Lo Ni                            - -  - 102   -- M3 V          
-3005                      X341000-0 Ba Lo Ni Po                         - -  - 103   -- F9 V M0 D     
-3007                      X681000-0 Ba Lo Ni                            - -  - 125   -- F4 V M5 D     
-3101                      X110000-0 Ba Lo Ni                            - -  - 101   -- M3 V M7 D     
+3005                      X341000-0 Ba Lo Ni Po                         - -  - 103   -- F9 V M0 V     
+3007                      X681000-0 Ba Lo Ni                            - -  - 125   -- F4 V M5 V     
+3101                      X110000-0 Ba Lo Ni                            - -  - 101   -- M3 V M7 V     
 3103                      X776000-0 Ba Lo Ni                            - -  - 101   -- G8 V          
 3204                      X688000-0 Ba Lo Ni                            - -  - 104   -- G3 V          
 3207                      X663000-0 Ba Lo Ni                            - -  - 102   -- F1 V          
@@ -131,30 +131,30 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3210                      X501000-0 Ba Ic Lo Ni Va                      - -  - 104   -- K8 V          
 0113 Kyrean               XAD5000-0 Ba Fl Lo Ni                         - -  - 100   -- M4 V          
 0114 Fecal                X461000-0 Ba Lo Ni                            - -  - 313   -- F5 III        
-0115 Katusa               X658000-0 Ba Lo Ni                            - -  - 513   -- G4 V M3 D     
-0120 Xeno                 X799977-5 Hi In Wa                            - -  - 215   -- F3 V M8 D     
+0115 Katusa               X658000-0 Ba Lo Ni                            - -  - 513   -- G4 V M3 V     
+0120 Xeno                 X799977-5 Hi In Wa                            - -  - 215   -- F3 V M8 V     
 0211 Karator              A464646-D Ag Ni                               - NS - 303   Aa K4 IV         
 0213 Zhunastu             X582000-0 Ba Lo Ni                            - -  - 511   -- K3 V          
-0312 Aluvia               A97A956-E Ag Hi In Wa Ri                      - NS - 514   Aa F4 V M2 D     
+0312 Aluvia               A97A956-E Ag Hi In Wa Ri                      - NS - 514   Aa F4 V M2 V     
 0316                      X510000-0 Ba Lo Ni                            - -  - 005   -- F0 IV         
 0317                      X406000-0 Ba Ic Lo Ni Va                      - -  - 113   -- M5 V M5 V     
 0414 Canash               C567456-C Ag Lo Ni                            - -  - 024   -- G5 III        
 0517                      X200000-0 Ba Lo Ni Va                         - -  - 020   -- K3 V          
 0518 Chrystal             X000000-0 As Ba Lo Ni                         - -  - 011   -- M2 V          
-0520 Sphere               C8A6555-B Ag Ni Ri                            - -  - 902   -- F4 V M1 D     
+0520 Sphere               C8A6555-B Ag Ni Ri                            - -  - 902   -- F4 V M1 V     
 0614                      X8D1000-0 Ba Fl Lo Ni                         - -  - 013   -- G3 V          
 0617 Ramili               A597575-A Ag Ni                               - -  - 304   -- K4 V          
 0618 Schktala             A758697-C Ag Ni                               - -  - 623   -- M3 III        
-0620 Homgmerz             C634572-B Na Lo Ni                            - -  - 613   -- F6 VI M8 D    
-0711 Wafdo                A8A7A6A-B Ag Fl Hi In                         - N  - 223   -- G3 V M6 D     
+0620 Homgmerz             C634572-B Na Lo Ni                            - -  - 613   -- M8 V F6 VI    
+0711 Wafdo                A8A7A6A-B Ag Fl Hi In                         - N  - 223   -- G3 V M6 V     
 0712 Kurikesu             C46856A-B Ba De Lo Ni                         - -  - 205   -- K4 VI         
 0713 Ntendo               C14056A-B Ba De Lo Ni Po                      - S  - 922   -- M3 V          
 0717 Ounrea               X846753-5 Ag Ni Po                            - -  - 413   -- K3 V          
-0718 Mosaic               X9B6A75-6 Ag Fl Hi In                         - -  - 113   -- G4 V M8 D     
-0720 Reagis               AA67766-C Ag In                               - N  - 714   -- F6 V M8 D     
+0718 Mosaic               X9B6A75-6 Ag Fl Hi In                         - -  - 113   -- G4 V M8 V     
+0720 Reagis               AA67766-C Ag In                               - N  - 714   -- F6 V M8 V     
 0815                      X310000-0 Ba Lo Ni                            - -  - 013   -- M3 V          
-0816                      X384000-0 Ba Lo Ni                            - -  - 010   -- G3 V M5 D     
-0911 Nautica              A97A956-E Ag Hi In Ri Wa                      - N  - 412   -- M3 V M6 D     
+0816                      X384000-0 Ba Lo Ni                            - -  - 010   -- G3 V M5 V     
+0911 Nautica              A97A956-E Ag Hi In Ri Wa                      - N  - 412   -- M3 V M6 V     
 0912 Cyduku               A210456-A Ba Lo Ni                            - -  - 313   -- G2 V          
 0913 Reisenau             A6049AA-C Ic Hi In Va                         - N  - 713   -- G3 V          
 0918 Butniff              AA88455-D Ba Lo Ni                            - N  - 214   -- F3 V          
@@ -162,44 +162,44 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1013 Amadi                C8578A8-7 Ag In Ri                            - -  - 300   -- G2 III        
 1015 Schall               B47A655-B Ag Lo Ni Wa                         - -  - 634   -- G4 V          
 1017 Ianshepl             C957553-9 Ba Lo Ni                            - -  - 802   -- F5 V          
-1112 Physeril             C764455-7 Ba Lo Ni                            - -  - 312   -- M4 V M6 D     
-1114 Bwisliser            B310678-A Ba Lo Ni                            - -  - 413   -- G8 V M6 D     
-1116 Pimpin               A967833-C Ag In                               - NS - 913   -- F9 V M7 D     
-1117 Majoinir             A530544-A De Lo Ni Po                         - NS - 522   -- A5 V M3 D     
+1112 Physeril             C764455-7 Ba Lo Ni                            - -  - 312   -- M4 V M6 V     
+1114 Bwisliser            B310678-A Ba Lo Ni                            - -  - 413   -- G8 V M6 V     
+1116 Pimpin               A967833-C Ag In                               - NS - 913   -- F9 V M7 V     
+1117 Majoinir             A530544-A De Lo Ni Po                         - NS - 522   -- A5 V M3 V     
 1120 Zerapli              AA87500-C Ag Ni Po                            - N  - 125   -- F5 V          
 1312 Frey                 X265555-9 Na Lo Ni                            - -  - 503   -- M3 V          
-1314 Haufbrau             C542359-C Ba Lo Ni Po                         - -  - 613   Hl K3 V M3 D M0 D
-1315 Caladbolg            X364000-0 Ba Lo Ni                            - S  - 710   Hl F7 V M7 D     
-1316 Tukadump             D967477-7 Ba Lo Ni                            - -  - 124   Hl G4 V M8 D     
+1314 Haufbrau             C542359-C Ba Lo Ni Po                         - -  - 613   Hl K3 V M3 V M0 V
+1315 Caladbolg            X364000-0 Ba Lo Ni                            - S  - 710   Hl F7 V M7 V     
+1316 Tukadump             D967477-7 Ba Lo Ni                            - -  - 124   Hl G4 V M8 V     
 1318 Bryzkk               CA76959-A Ag Hi In Ri                         - -  - 410   -- G5 V          
 1320 Sylvan               A8A6758-E Ag Fl Ri Cp                         - N  - 701   Sa F5 V          
 1413 Noe                  A4675A5-A Ag Lo Ni                            - -  - 212   Hl M4 V          
 1415 Tortuga              A898300-B Ag Lo Ni                            - -  - 225   Hl M7 IV         
-1416 Verili               A9779A8-E Ag Hi In Ri                         - NS - 313   Hl G2 IV M7 D    
+1416 Verili               A9779A8-E Ag Hi In Ri                         - NS - 313   Hl G2 IV M7 V    
 1418 Zadiakal             B435267-9 Na Lo Ni Po                         - S  - 702   -- M5 V          
-1420 Drea                 B656957-D Ag Hi In                            - N  - 414   Sa G5 V M1 D     
-1515                      X99A000-0 Ba Lo Ni Wa                         - -  - 104   -- G0 V M3 D     
+1420 Drea                 B656957-D Ag Hi In                            - N  - 414   Sa G5 V M1 V     
+1515                      X99A000-0 Ba Lo Ni Wa                         - -  - 104   -- G0 V M3 V     
 1516                      X455000-0 Ba Lo Ni                            - -  - 112   -- F6 V          
 1518                      X510000-0 Ba Lo Ni                            - -  - 610   -- G4 V          
 1520 Tashkent             C776456-B Ba Lo Ni Po                         - -  - 323   Sa K8 V          
 1613 Behamut              A000400-D As Ba Lo Ni                         - -  - 623   Hl M4 V          
-1614 Zues                 B514755-B Na Ni Po                            - -  - 803   Hl G3 V M5 D     
-1616 Shakir               E638856-6 Na In Po                            - -  - 112   Hl G4 V G9 V M2 D
+1614 Zues                 B514755-B Na Ni Po                            - -  - 803   Hl G3 V M5 V     
+1616 Shakir               E638856-6 Na In Po                            - -  - 112   Hl G4 V G9 V M2 V
 1618 Neagak               B8A5953-B Na Hi In                            - -  - 614   -- M1 V M9 V     
-1620 Fubar                A877920-C Ag Hi In Ri                         - N  - 714   Sa G3 V M2 D     
+1620 Fubar                A877920-C Ag Hi In Ri                         - N  - 714   Sa G3 V M2 V     
 1711 Blodi                B435656-B Na Ni Po                            - -  - 804   -- K6 V          
 1712 Aitia                X000000-0 As Ba Lo Ni                         - -  - 010   -- M3 V          
 1716 Razmar               C683554-A Na Lo Ni                            - -  - 624   Hl K3 V F4 V     
-1720 Sayardal             A662626-C Na Ni Po                            - N  - 913   Sa M5 V M2 D     
+1720 Sayardal             A662626-C Na Ni Po                            - N  - 913   Sa M2 V M5 V     
 1813 Kartoonah            A698855-E Ag In Ri                            - -  - 514   -- G2 V          
 1815 Shalandra            B876A55-D Ag Hi In Ri                         - N  - 613   Hl K3 V          
-1817 Aluvial              A968958-C Ag Hi In Ri                         - N  - 413   Sa M4 V M7 D     
+1817 Aluvial              A968958-C Ag Hi In Ri                         - N  - 413   Sa M4 V M7 V     
 1818 P-3x-117             X000000-0 As Ba Lo Ni                         - S  - 011   Sa G9 V          
 1819 Chahult              B664756-C Na Ni Po                            - N  - 711   Sa M2 V          
 1912 Tipric               X410000-0 Ba Lo Ni                            - -  - 010   -- M1 III        
 1914 Daidalus             D6988A6-A Ba Lo Ni                            - -  - 513   -- M3 V M3 V     
 1916 Enon                 A222557-D Na De Lo Ni                         - N  - 310   Hl G3 IV         
-1920 Anbar                B36266A-A Ba Ni Po                            - -  - 115   Sa G1 V M8 D     
+1920 Anbar                B36266A-A Ba Ni Po                            - -  - 115   Sa G1 V M8 V     
 2013 Anrapili             D434974-5 Ba Lo Ni                            - -  - 703   -- F5 VI         
 2015 Tripic               A30026A-C Ba Lo Ni Va                         - S  - 922   Hl M4 V          
 2016 Domcat               X63A000-0 Ba Lo Ni Wa                         - -  - 315   Hl F6 V          
@@ -211,41 +211,41 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2118 Shirmi               X300000-0 Ba Lo Ni Va                         - -  - 012   Hl F3 VI         
 2119 Citidel              AA6995D-D Ag Hi In                            - NS - 914   Hl K1 IV         
 2213 Gorignac             X312000-0 Ba Ic Lo Ni                         - -  - 010   -- K7 V          
-2218 Skell                C659657-C Ag Ni Po                            - -  - 123   Hl F3 V M0 D     
+2218 Skell                C659657-C Ag Ni Po                            - -  - 123   Hl F3 V M0 V     
 2219 Tristan              C453554-C Ba Lo Ni Po                         - -  - 604   Hl G5 V          
 2220 Watxell              X200367-B Ba Lo Ni Va                         - S  - 212   Hl F9 V          
-2313                      X270000-0 Ba De Lo Ni                         - -  - 001   -- M3 V M0 D     
+2313                      X270000-0 Ba De Lo Ni                         - -  - 001   -- M0 V M3 V     
 2314                      X210000-0 Ba Lo Ni                            - -  - 003   -- M2 V          
-2316 Naruvgrr             C888555-C Ag Lo In Ri                         - -  - 813   Hl G1 V M3 D     
+2316 Naruvgrr             C888555-C Ag Lo In Ri                         - -  - 813   Hl G1 V M3 V     
 2317 Lezina               A9998A9-C Ag Hi In                            - -  - 624   Hl G3 III        
-2320 Chairnobel           A300557-C Na Lo Ni Va                         - N  - 212   Hl M4 V M8 D     
-2414 Saliah               B846956-C Na Hi In                            - -  - 504   -- K3 V M2 D     
+2320 Chairnobel           A300557-C Na Lo Ni Va                         - N  - 212   Hl M4 V M8 V     
+2414 Saliah               B846956-C Na Hi In                            - -  - 504   -- K3 V M2 V     
 2416 Arasola              A868757-C Na Lo Ni                            - N  - 824   Hl F8 VI         
 2419 Eulass               A766855-C Ba Lo Ni                            - -  - 513   Hl K2 IV         
-2513                      X484000-0 Ba Lo Ni                            - -  - 115   -- F5 V M5 D     
+2513                      X484000-0 Ba Lo Ni                            - -  - 115   -- F5 V M5 V     
 2517 Joulupukki           C472359-C De Na Lo Ni                         - S  - 101   Hl K5 V          
-2519 Olentero             E455200-A Na Lo Ni                            - -  - 113   Hl F1 V M8 D     
-2520 Ideratl              A98789A-C Ag Hi In Ri                         - N  - 126   Hl G2 V M5 D     
-2616 Gryla                A467663-A Ag Ni Po                            - S  - 103   -- F9 V M8 D     
+2519 Olentero             E455200-A Na Lo Ni                            - -  - 113   Hl F1 V M8 V     
+2520 Ideratl              A98789A-C Ag Hi In Ri                         - N  - 126   Hl G2 V M5 V     
+2616 Gryla                A467663-A Ag Ni Po                            - S  - 103   -- F9 V M8 V     
 2617 Vasdomir             A96A69A-C Ag Lo Ni Wa                         - N  - 111   -- F2 V          
 2618 Calrysian            X200200-A Ba Lo Ni Va                         - -  - 102   -- M4 V          
 2619 Blitz                C210000-7 Na Lo Ni                            - S  - 103   -- M2 V          
 2712                      X678000-0 Ba Lo Ni                            - -  - 100   -- F2 V          
-2715 Fouettard            A8A99A8-A Ba Fl Lo Ni                         - N  - 123   -- M6 V M4 D     
+2715 Fouettard            A8A99A8-A Ba Fl Lo Ni                         - N  - 123   -- M4 V M6 V     
 2716 Liamsitt             C564654-A Ba Lo Ni                            - -  - 112   -- F5 V          
-2916                      X360000-0 Ba De Lo Ni                         - -  - 104   -- F7 V M5 D     
-2918                      X7A2000-0 Ba Fl Lo Ni                         - -  - 104   -- M1 V M7 D     
+2916                      X360000-0 Ba De Lo Ni                         - -  - 104   -- F7 V M5 V     
+2918                      X7A2000-0 Ba Fl Lo Ni                         - -  - 104   -- M1 V M7 V     
 3011                      X785000-0 Ba Lo Ni                            - -  - 100   -- K0 V          
 3013                      X543000-0 Ba Lo Ni Po                         - -  - 114   -- K0 V          
-3015                      X669000-0 Ba Lo Ni                            - -  - 101   -- F3 V M6 D     
-3016                      X682000-0 Ba Lo Ni                            - -  - 105   -- F3 V M7 D     
+3015                      X669000-0 Ba Lo Ni                            - -  - 101   -- F3 V M6 V     
+3016                      X682000-0 Ba Lo Ni                            - -  - 105   -- F3 V M7 V     
 3017                      X471000-0 Ba Lo Ni                            - -  - 114   -- F2 V          
 3115                      X200000-0 Ba Lo Ni Va                         - -  - 123   -- M3 V          
 3116                      X668000-0 Ba Lo Ni                            - -  - 103   -- F9 V          
 3120                      X000000-0 As Ba Lo Ni                         - -  - 104   -- K8 V M1 V     
-3211                      X226000-0 Ba Lo Ni                            - -  - 103   -- M0 V M6 D     
+3211                      X226000-0 Ba Lo Ni                            - -  - 103   -- M0 V M6 V     
 3213                      X140000-0 Ba De Lo Ni Po                      - -  - 103   -- F8 V          
-3215                      X210000-0 Ba Lo Ni                            - -  - 102   -- M0 III K6 D   
+3215                      X210000-0 Ba Lo Ni                            - -  - 102   -- M0 III K6 V   
 3217                      X110000-0 Ba Lo Ni                            - -  - 102   -- F2 IV         
 0122 Teaizg               X324354-9 Na Lo Ni                            - -  - 313   -- F5 IV         
 0130 Tortuga              A556681-A Ag Ni                               - C  - 100   -- G1 III        
@@ -253,7 +253,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0328                      X230000-0 Ba De Lo Ni Po                      - -  - 012   -- F3 IV         
 0421                      X431000-0 Ba Lo Ni Po                         - -  - 003   -- K3 V          
 0524 Kadiera              X987756-1 Ag Ni Ri                            - -  - 123   -- G4 V          
-0526 Luvzsav              X656452-3 Ag Lo Ni                            - -  - 315   -- M4 V M4 D     
+0526 Luvzsav              X656452-3 Ag Lo Ni                            - -  - 315   -- M4 V M4 V     
 0529 Delahara             C3414AA-C Na Lo Ni Po                         - S  - 313   -- K3 VI         
 0530 Mohennan             A868556-E Ag Ni                               - N  - 713   -- F6 V          
 0622 Newaygo              X9A6396-1 Ag Fl Lo Ni                         - -  - 312   -- M1 V          
@@ -264,96 +264,96 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0723                      X358000-0 Ba Lo Ni                            - -  - 804   -- K3 V          
 0725                      X366000-0 Ba Lo Ni                            - -  - 500   -- K5 VI         
 0726 Kartuum              X86A321-1 Ag Lo Ni Wa                         - -  - 210   -- G8 V          
-0728 Ottowa               A8A86A7-C Ag Fl Ni                            - N  - 423   -- F7 V M8 D     
-0730 Cheyenne             C987657-9 Ag Ni                               - -  - 613   -- G4 V M1 D     
-0921 Nabeen               X454000-0 Ba Lo Ni                            - -  - 523   -- F5 V M3 D     
-0924 Traca                A888A53-E Ag Hi In Ri                         - -  - 410   -- G3 V M3 D     
-0928                      X462000-0 Ba Lo Ni                            - -  - 100   -- F0 V M2 D     
-0930 Ishadala             C866875-C Ag Ni Cm                            - -  - 724   -- G5 V M5 D     
+0728 Ottowa               A8A86A7-C Ag Fl Ni                            - N  - 423   -- F7 V M8 V     
+0730 Cheyenne             C987657-9 Ag Ni                               - -  - 613   -- G4 V M1 V     
+0921 Nabeen               X454000-0 Ba Lo Ni                            - -  - 523   -- F5 V M3 V     
+0924 Traca                A888A53-E Ag Hi In Ri                         - -  - 410   -- G3 V M3 V     
+0928                      X462000-0 Ba Lo Ni                            - -  - 100   -- F0 V M2 V     
+0930 Ishadala             C866875-C Ag Ni Cm                            - -  - 724   -- G5 V M5 V     
 1027 Zietdkl              X895400-4 Ag Lo Ni                            - -  - 505   -- M4 V          
 1121 Malohk               D567978-A Ag Hi In                            - -  - 424   -- G4 V          
 1122 Fortafiber           A767300-B Ag Lo Ni                            - -  - 823   -- F8 IV M1 IV   
 1126                      X222000-0 Ba Lo Ni Po                         - -  - 004   -- M5 V          
-1129                      X241000-0 Ba Lo Ni Po                         - -  - 123   -- M1 V M3 D     
+1129                      X241000-0 Ba Lo Ni Po                         - -  - 123   -- M1 V M3 V     
 1322 Dresdia              AA78683-C Ag Ni Ri                            - S  - 925   Sa G3 V          
-1325 Mayeaux              C576657-C Ba Lo Ni                            - -  - 614   Sa F5 V M5 D     
-1330                      X976000-0 Ba Lo Ni                            - -  - 212   -- G6 V M2 D     
-1421 Cybzuul              C967300-8 Ag Lo Ni                            - -  - 720   Sa M3 V G2 V F3 D
-1423 Solmulti             D15036A-C Ba De Lo Ni Po                      - S  - 312   Sa G9 V M5 D     
+1325 Mayeaux              C576657-C Ba Lo Ni                            - -  - 614   Sa F5 V M5 V     
+1330                      X976000-0 Ba Lo Ni                            - -  - 212   -- G6 V M2 V     
+1421 Cybzuul              C967300-8 Ag Lo Ni                            - -  - 720   Sa F3 V G2 V M3 V
+1423 Solmulti             D15036A-C Ba De Lo Ni Po                      - S  - 312   Sa G9 V M5 V     
 1424 Ilpic                A7A7953-F Ag Fl Hi In Ri                      - N  - 813   Sa F4 V          
 1426 Jobio                C771771-C De Ni Po                            - S  - 712   De K3 VI         
-1427 Umex                 X221000-0 Ba Lo Ni Po                         - -  - 010   De G3 V M2 D     
+1427 Umex                 X221000-0 Ba Lo Ni Po                         - -  - 010   De G3 V M2 V     
 1523 Trzjo                X110000-0 Ba Lo Ni                            - -  - 113   Sa G4 IV G6 V    
 1524 Leannexjor           E368368-C Ag Lo Ni                            - S  - 510   Sa K4 V          
 1525 Janika               A578757-C Ag Ni                               - N  - 423   Sa G5 V          
 1528 Eiukaku              A515754-C Ba Ic Lo Ni                         - N  - 924   De K3 V M1 V     
 1529 Veagui               X100000-0 Ba Lo Ni Va                         - -  - 020   De F6 V          
-1621 Zietsck              C778155-9 Na Lo Ni Po                         - W  - 510   Sa G3 V M3 D     
+1621 Zietsck              C778155-9 Na Lo Ni Po                         - W  - 510   Sa G3 V M3 V     
 1622 Riizuku              A8668A9-C Ag In Ri                            - NS - 125   Sa M5 V          
 1623 Ingfre               C849775-7 Ag In Ri                            - -  - 402   Sa K2 V          
 1626 Hirohita             C696575-C Ag Lo Ni                            - -  - 914   De F8 VI         
 1627 Draconia             A967958-F Ag Hi In                            - NS - 425   De G3 V G5 V     
-1628 Toronaga             A857956-E Ag Hi In Ri                         - N  - 202   De F8 V M5 D     
+1628 Toronaga             A857956-E Ag Hi In Ri                         - N  - 202   De F8 V M5 V     
 1721 Mileaki              C454531-C Na Lo Ni                            - -  - 104   Sa G8 V G3 V     
-1726 Brea                 A7A78A7-C Ag In Ri                            - -  - 126   -- G5 V M2 D     
-1821 Myrettia             X754853-C Na Lo Ni                            - -  - 413   Sa M2 V M5 D     
-1824 Haita                X794497-7 Na Lo Ni                            - -  - 204   -- K3 V M6 D     
+1726 Brea                 A7A78A7-C Ag In Ri                            - -  - 126   -- G5 V M2 V     
+1821 Myrettia             X754853-C Na Lo Ni                            - -  - 413   Sa M2 V M5 V     
+1824 Haita                X794497-7 Na Lo Ni                            - -  - 204   -- K3 V M6 V     
 1826 Miogeku              D547475-A Na Lo Ni                            - -  - 510   De M5 V          
-1827 Olsmech              B888777-9 Ag Ni Ri                            - -  - 615   De K3 V M6 D     
+1827 Olsmech              B888777-9 Ag Ni Ri                            - -  - 615   De K3 V M6 V     
 1922 Blackwater           C233313-A Na Lo Ni Po                         - -  - 514   Sa M3 III M5 V   
 1923 Mythdranor           A897A56-E Ag Hi In Ri                         - N  - 902   Sa G5 V          
 1927 Tohave               A656676-B Ba Lo Ni                            - N  - 403   De K3 V          
 1928 Penzes               X240000-0 Ba De Lo Ni Po                      - -  - 000   De G9 V          
 1929 Iletrah              C100345-C Ba Lo Ni Va                         - S  - 310   De K9 V          
 2027 Haifa                C451555-B Ba Lo Ni Po                         - S  - 920   De K4 IV         
-2030 Artotxem             A396650-C Ba Lo Ni                            - N  - 802   -- K5 V M4 D     
-2124                      X400000-0 Ba Lo Ni Va                         - -  - 014   -- M3 V M6 D     
+2030 Artotxem             A396650-C Ba Lo Ni                            - N  - 802   -- K5 V M4 V     
+2124                      X400000-0 Ba Lo Ni Va                         - -  - 014   -- M3 V M6 V     
 2127 Kestlif              X100000-0 Ba Lo Ni Va                         - -  - 513   De G4 V          
-2129 Haven                X202200-C Ba Ic Lo Ni Va                      - C  - 904   -- K3 IV G0 D    
+2129 Haven                X202200-C Ba Ic Lo Ni Va                      - C  - 904   -- K3 IV G0 V    
 2130 Arnell               A556770-C Ag Lo Ni                            - C  - 605   -- F6 IV         
-2222                      X575000-0 Ba Lo Ni                            - -  - 902   -- G3 V M1 D     
+2222                      X575000-0 Ba Lo Ni                            - -  - 902   -- G3 V M1 V     
 2224                      X331000-0 Ba Lo Ni Po                         - -  - 010   -- K3 V          
 2225                      X969000-0 Ba Lo Ni                            - -  - 420   -- K1 V          
 2227 Atraiu               B235555-C Na Lo Ni                            - S  - 215   De F8 III        
-2229 Narrsum              X233223-C Na Lo Ni Po                         - -  - 114   -- M3 V M2 D     
-2323                      X699000-0 Ba Lo Ni                            - -  - 814   -- F6 V M6 D     
+2229 Narrsum              X233223-C Na Lo Ni Po                         - -  - 114   -- M2 V M3 V     
+2323                      X699000-0 Ba Lo Ni                            - -  - 814   -- F6 V M6 V     
 2324                      X360000-0 Ba De Lo Ni                         - -  - 000   -- M7 V          
 2328 Devinli              A768955-C Ag Hi In                            - -  - 624   De F8 VI         
 2422                      X347000-0 Ba Lo Ni                            - -  - 912   -- G8 V          
-2428 Tybor                C5647C7-9 Na Lo Ni                            - -  - 114   De F6 V M5 D     
+2428 Tybor                C5647C7-9 Na Lo Ni                            - -  - 114   De F6 V M5 V     
 2429 Vaveen               A633675-C Na Lo Ni                            - -  - 600   De G4 V          
 2430 Carnage              CAAA555-A Ba Lo Ni                            - -  - 610   De K1 V          
-2521 Bael                 A57376A-C Na Ni Po                            - N  - 323   -- G3 V M2 D     
+2521 Bael                 A57376A-C Na Ni Po                            - N  - 323   -- G3 V M2 V     
 2524 Rhine                A9A696A-C Ag Fl Hi In                         - -  - 902   -- K3 V          
 2525 Rundus               B79A754-C Ba Lo Ni Wa                         - -  - 123   -- F5 V          
-2527 Vreckeg              C555555-C Ba Lo Ni                            - C  - 323   -- G3 V M0 D     
+2527 Vreckeg              C555555-C Ba Lo Ni                            - C  - 323   -- G3 V M0 V     
 2622 Alise                C768777-C Ag In Ri                            - C  - 115   -- G2 V G2 V     
 2626 Vega                 A867634-C Ag Lo Ni Va                         - N  - 613   -- M5 V          
 2721 Valkrie              A55556A-C Ba Lo Ni Po                         - N  - 204   -- F6 V          
 2723 Mookbar              A867456-B Ag Lo Ni                            - N  - 703   -- G3 V          
 2725 Zekeal               D87A553-C Ag Lo Ni Wa                         - C  - 313   -- K6 IV         
 2727 Curacao              A867856-B Ag Hi In Ri                         - N  - 614   -- M3 IV         
-2729 Yugiku               AAD7755-C Ag Fl Ni                            - -  - 310   -- G3 V M3 D     
+2729 Yugiku               AAD7755-C Ag Fl Ni                            - -  - 310   -- G3 V M3 V     
 2821 Tuku                 B6B5777-C Ag Fl Ni                            - -  - 813   -- F4 III        
-2823 Cygus                A678757-C Ag Ni                               - N  - 612   --               
+2823 Cygus                A678757-C Ag Ni                               - N  - 612   -- G4 IV         
 2824 Tauri                C342557-C Ba Lo Ni Po                         - S  - 313   -- F3 IV         
-2825 Hunter               C412567-C Na Ic Lo Ni                         - S  - 303   -- G3 V M5 D     
+2825 Hunter               C412567-C Na Ic Lo Ni                         - S  - 303   -- G3 V M5 V     
 2829 Las Vega             A957753-C Ag Cm In                            - -  - 911   -- K6 IV         
 2923 Rylacor              A686525-C Ba Lo Ni                            - N  - 813   -- G3 V          
 2924 Intash               B86A975-D Ag Hi In Ri                         - -  - 325   -- K3 IV         
 2925 Avoral               C535678-B Na Lo Ni                            - C  - 214   -- G2 III        
-2926 Advent               C534654-C Na Lo Ni                            - C  - 615   -- M3 V M1 D     
-3021 Triasla              X100000-0 Ba Lo Ni Va                         - -  - 201   -- M4 V M0 V     
+2926 Advent               C534654-C Na Lo Ni                            - C  - 615   -- M1 V M3 V     
+3021 Triasla              X100000-0 Ba Lo Ni Va                         - -  - 201   -- M0 V M4 V     
 3025 Duur Imar            A8A7957-D Ag Fl Hi In                         - N  - 614   -- G3 IV         
 3027 Sittahr              A548854-C Na Lo Ni                            - N  - 303   -- K3 III        
 3028 Duln                 B6105B9-B Ba Lo Ni                            - S  - 514   -- M1 IV         
-3123 Olybrius             A888959-D Ag Hi In Ri                         - NS - 413   -- F3 V M4 D     
+3123 Olybrius             A888959-D Ag Hi In Ri                         - NS - 413   -- F3 V M4 V     
 3124 Barter               B557850-B Ba Lo Ni                            - -  - 723   -- M3 V F9 V     
-3125 Delta                A8A7653-D Ag In Ri                            - N  - 612   -- F4 V M6 D     
+3125 Delta                A8A7653-D Ag In Ri                            - N  - 612   -- F4 V M6 V     
 3126 Kybarak              B2226AE-B Na De Ni Po                         - N  - 503   -- M4 V          
 3127 Hostage              C35066A-B Ba Lo Ni Po                         - -  - 720   -- K3 V          
 3222 Outpost              X120369-C Na De Lo Ni Po                      - S  - 703   -- F6 V          
-3224 Aledan               A754876-B Ba Lo Ni                            - -  - 303   -- K4 V M5 D     
+3224 Aledan               A754876-B Ba Lo Ni                            - -  - 303   -- K4 V M5 V     
 3226 Mecca                B68A8AE-B Ba Lo Ni                            - N  - 614   -- G3 V          
 3229 Lonewadi             C89A759-C Ba Lo Ni Wa                         - -  - 613   -- G3 V          
 0132                      X000000-0 As Ba Lo Ni                         - -  - 313   -- M3 V          
@@ -364,56 +364,56 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0239                      X735231-1 Ag Lo Ni Po                         - -  - 502   -- K8 V          
 0240                      X371000-0 Ba Lo Ni                            - -  - 024   -- F6 VI         
 0333                      X000000-0 As Ba Lo Ni                         - -  - 222   -- K8 V          
-0433                      X400000-0 Ba Lo Ni Va                         - -  - 002   -- M3 V M4 D     
-0434                      X370000-0 Ba De Lo Ni                         - -  - 024   -- G4 V M7 D     
+0433                      X400000-0 Ba Lo Ni Va                         - -  - 002   -- M3 V M4 V     
+0434                      X370000-0 Ba De Lo Ni                         - -  - 024   -- G4 V M7 V     
 0439                      X432000-0 Ba Lo Ni Po                         - -  - 003   -- K7 VI         
 0440                      X445000-0 Ba Lo Ni                            - -  - 012   -- K8 VI         
 0531                      X221000-0 Ba Lo Ni Po                         - *  - 030   -- K2 VI         
 0538                      X371000-0 Ba Lo Ni                            - -  - 402   -- G3 V          
 0639                      X000000-0 As Ba Lo Ni                         - -  - 321   -- K3 III        
-0732                      X541000-0 Ba Lo Ni Po                         - -  - 213   -- K7 III M6 D   
-0733 Cemenola             X9A6457-7 Ag Fl Lo Ni                         - -  - 714   -- F8 V M4 D     
+0732                      X541000-0 Ba Lo Ni Po                         - -  - 213   -- K7 III M6 V   
+0733 Cemenola             X9A6457-7 Ag Fl Lo Ni                         - -  - 714   -- F8 V M4 V     
 0735                      X310000-0 Ba Lo Ni                            - -  - 313   -- K3 VI         
 0736 Alturo               C53A456-C Ag Lo Ni Wa                         - -  - 510   -- M3 V          
-0831 Halatoa              B423657-C Na Lo Ni                            - -  - 614   -- F8 V M7 D     
-0834 Kayla                A9AA955-E Ag Hi In Wa Ri                      - N  - 123   -- F7 V M5 D     
+0831 Halatoa              B423657-C Na Lo Ni                            - -  - 614   -- F8 V M7 V     
+0834 Kayla                A9AA955-E Ag Hi In Wa Ri                      - N  - 123   -- F7 V M5 V     
 0931 Intfen               A9A7753-B Ag Fl Ni Ri                         - N  - 603   -- K3 V          
 0935                      X100000-0 Ba Lo Ni Va                         - -  - 913   -- K2 V          
 0940                      X361000-0 Ba Lo Ni                            - -  - 303   -- F3 III        
-1032                      X100000-0 Ba Lo Ni Va                         - -  - 110   -- M6 V M3 D     
-1034 Khroulg              A88A557-A Ba Lo Ni Wa                         - -  - 725   -- K6 IV M3 D    
-1036 Charlzul             C787656-A Ba Lo Ni                            - -  - 323   -- F6 V M1 D     
+1032                      X100000-0 Ba Lo Ni Va                         - -  - 110   -- M3 V M6 V     
+1034 Khroulg              A88A557-A Ba Lo Ni Wa                         - -  - 725   -- K6 IV M3 V    
+1036 Charlzul             C787656-A Ba Lo Ni                            - -  - 323   -- F6 V M1 V     
 1037                      X574000-0 Ba Lo Ni                            - -  - 113   -- K8 V          
 1039                      X444000-0 Ba Lo Ni                            - -  - 813   -- G8 V          
 1040                      X150000-0 Ba De Lo Ni Po                      - -  - 111   -- M2 V          
 1131 Halatoa              A767858-B Ag In Ri                            - -  - 824   -- K7 V          
-1134 Moutoulk             C867756-7 Ba Lo Ni                            - -  - 103   -- K2 V M3 D     
+1134 Moutoulk             C867756-7 Ba Lo Ni                            - -  - 103   -- K2 V M3 V     
 1135 Ibutlphil            C142365-9 De Lo Ni Po                         - -  - 520   -- G7 V          
 1137                      X6B1000-0 Ba Fl Lo Ni                         - -  - 624   -- G1 V          
 1231 Kietoawu             C300366-B Ba Lo Ni Va                         - S  - 303   -- M6 V          
 1234                      X573000-0 Ba Lo Ni                            - -  - 603   -- F8 V          
 1239                      X858000-0 Ba Lo Ni                            - -  - 913   -- G2 V          
-1332 Vlad                 A758957-D Ag Hi In Ri                         - N  - 213   -- G4 V M6 D     
+1332 Vlad                 A758957-D Ag Hi In Ri                         - N  - 213   -- G4 V M6 V     
 1333 Wafadi               D343313-B Ba Lo Ni Po                         - S  - 720   -- M3 V          
 1335                      X7A3000-0 Ba Fl Lo Ni                         - -  - 222   --               
-1339                      X564000-0 Ba Lo Ni                            - -  - 403   -- M1 V M6 D     
-1431 Nueralla             B678657-B Ag Ni Ri                            - N  - 420   -- K2 V M4 D     
-1434 Narveen              A876954-E Ag Hi In Ri Cp                      - NS - 213   -- G3 V M8 D     
+1339                      X564000-0 Ba Lo Ni                            - -  - 403   -- M1 V M6 V     
+1431 Nueralla             B678657-B Ag Ni Ri                            - N  - 420   -- K2 V M4 V     
+1434 Narveen              A876954-E Ag Hi In Ri Cp                      - NS - 213   -- G3 V M8 V     
 1436                      X587000-0 Ba Lo Ni                            - -  - 110   -- A6 IV         
 1732 Fraxys               C223322-C Na Lo Ni Po                         - C  - 313   -- M3 V          
-1733 Zanemahon            A77869A-7 Ag Ni Ri                            - -  - 510   -- K3 IV M3 D    
+1733 Zanemahon            A77869A-7 Ag Ni Ri                            - -  - 510   -- K3 IV M3 V    
 1734 Norwak               X658000-0 Ba Lo Ni                            - -  - 614   -- F7 VI         
-1736 Sagev                AA67653-C Ag Ni Po                            - -  - 003   -- K2 V M2 D     
-1737 Danaphad             D534000-0 Ba Lo Ni                            - -  - 010   -- G3 V M2 D     
-1738 Sherru               C696555-B Ag Lo Ni                            - -  - 604   -- F4 V M8 D     
-1739 Ashak                C357356-B Na Lo Ni                            - -  - 213   -- G4 V M2 D     
+1736 Sagev                AA67653-C Ag Ni Po                            - -  - 003   -- K2 V M2 V     
+1737 Danaphad             D534000-0 Ba Lo Ni                            - -  - 010   -- G3 V M2 V     
+1738 Sherru               C696555-B Ag Lo Ni                            - -  - 604   -- F4 V M8 V     
+1739 Ashak                C357356-B Na Lo Ni                            - -  - 213   -- G4 V M2 V     
 1831                      X400000-0 Ba Lo Ni Va                         - -  - 013   -- K3 IV         
 1832                      X100000-0 Ba Lo Ni Va                         - -  - 012   -- K6 V          
 1833                      X212000-0 Ba Ic Lo Ni                         - -  - 013   -- G2 V          
-1835 Medina               AA6A350-C Na Lo Ni Wa                         - -  - 704   -- F6 V M2 D     
+1835 Medina               AA6A350-C Na Lo Ni Wa                         - -  - 704   -- F6 V M2 V     
 1836                      X355000-0 Ba Lo Ni                            - -  - 012   -- G8 VI         
 1839                      X513000-0 Ba Ic Lo Ni                         - -  - 513   -- F8 VI         
-1933                      X100000-0 Ba Lo Ni Va                         - -  - 014   -- M7 V M3 V     
+1933                      X100000-0 Ba Lo Ni Va                         - -  - 014   -- M3 V M7 V     
 1939                      X472000-0 Ba Lo Ni                            - -  - 013   -- G4 V          
 2031 Togzul               A468720-C Ag In Po                            - C  - 200   Rv K6 VI         
 2034 Blood                C867653-A Ag Ni Po                            - C  - 704   Rv G7 V          
@@ -426,38 +426,38 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2137                      X120000-0 Ba De Lo Ni Po                      - *  - 013   -- K3 V          
 2138                      X654000-0 Ba Lo Ni                            - -  - 013   -- F8 V          
 2232 Hitler               E7B4596-9 Na Fl Lo Ni                         - C  - 424   -- K3 IV         
-2235                      X535000-0 Ba Lo Ni                            - -  - 123   -- F7 V M0 D     
+2235                      X535000-0 Ba Lo Ni                            - -  - 123   -- F7 V M0 V     
 2236                      X242000-0 Ba Lo Ni Po                         - -  - 012   -- K3 VI         
-2240                      XAC6000-0 Ba Fl Lo Ni                         - -  - 024   -- G6 V M8 D     
+2240                      XAC6000-0 Ba Fl Lo Ni                         - -  - 024   -- G6 V M8 V     
 2331 Zantex               AA67654-C Ag Ni                               - N  - 011   De K3 V K3 V     
 2336                      X6A2000-0 Ba Fl Lo Ni                         - -  - 010   -- F4 IV         
 2337                      X869000-0 Ba Lo Ni                            - -  - 020   -- G2 V          
 2339                      X89A000-0 Ba Lo Ni Wa                         - -  - 124   -- F3 V          
-2340 Upixoc               X555555-5 Na Lo Ni                            - -  - 123   -- G3 V M0 D     
+2340 Upixoc               X555555-5 Na Lo Ni                            - -  - 123   -- G3 V M0 V     
 2431 Tess                 X310310-9 Ba Lo Ni                            - S  - 613   De F6 V          
 2433 Ghosoeg              C585853-B Ba Lo Ni                            - -  - 513   -- G7 V          
-2434 Kouevi               AA9A950-D Ba Lo Ni Wa                         - N  - 113   -- G5 V M8 D     
+2434 Kouevi               AA9A950-D Ba Lo Ni Wa                         - N  - 113   -- G5 V M8 V     
 2436 Genisis              A769657-C Ag Ni Wa                            - N  - 720   -- F6 IV         
 2437 Carrion              C857360-N Ba Lo Ni                            - -  - 320   Rv F3 V          
-2440 Sopdal               X400000-0 Ba Lo Ni Va                         - -  - 012   -- K4 V M1 D     
+2440 Sopdal               X400000-0 Ba Lo Ni Va                         - -  - 012   -- K4 V M1 V     
 2632 Montenyl             X555000-0 Ba Lo Ni                            - -  - 803   -- G1 V          
-2634 Aszear               X788455-1 Ag Lo Ni                            - -  - 701   -- G4 V M7 D     
-2636 Gakal                X635000-0 Ba Lo Ni                            - -  - 424   -- K3 V M3 D     
+2634 Aszear               X788455-1 Ag Lo Ni                            - -  - 701   -- G4 V M7 V     
+2636 Gakal                X635000-0 Ba Lo Ni                            - -  - 424   -- K3 V M3 V     
 2733 Alkali               X762000-0 Ba Lo Ni                            - -  - 302   -- K3 VI         
 2735 Pequanak             X656656-1 Ba Lo Ni                            - -  - 513   -- G2 V          
 2736 Kartawala            X561000-0 Ba Lo Ni                            - -  - 112   -- K5 V          
 2737 Chahult              A567657-6 Ag Lo Ni                            - C  - 202   -- F3 VI         
 2831 Kodrigue             X224000-0 Ba Lo Ni                            - -  - 913   -- M3 V          
-2833 Tztilphi             X786753-4 Ag Lo Ni                            - -  - 624   -- K4 IV M5 D    
+2833 Tztilphi             X786753-4 Ag Lo Ni                            - -  - 624   -- K4 IV M5 V    
 2834 Thornastor           X747000-0 Ba Lo Ni                            - -  - 303   -- F8 III        
 2835 Karatula             X463000-0 Ba Lo Ni                            - -  - 204   -- K2 VI         
 2839 Kietal               AAE7856-A Ag Fl Hi In                         - -  - 723   -- G7 V          
 3031 Fatima               X782427-1 Na Lo Ni                            - -  - 203   -- F7 V          
 3032 Iconia               X212000-0 Ba Ic Lo Ni                         - -  - 313   -- F6 III        
 3034 Nojacks              XAC4000-0 Ba Fl Lo Ni                         - -  - 422   -- G2 V          
-3132 Efortxev             X570000-0 Ba De Lo Ni                         - -  - 502   -- M2 V M1 D     
+3132 Efortxev             X570000-0 Ba De Lo Ni                         - -  - 502   -- M1 V M2 V     
 3138 Skrelja              X77A000-0 Ba Lo Ni Wa                         - -  - 200   -- K2 IV         
 3232 Njpki                X200000-0 Ba Lo Ni Va                         - -  - 123   -- M3 V          
 3233 Omxa                 X120000-0 Ba De Lo Ni Po                      - -  - 803   -- G3 V          
 3236 Aipwi                X425000-0 Ba Lo Ni                            - *  - 810   -- K5 V          
-3238 Dewan                X867594-3 Ba Lo Ni                            - -  - 714   -- K3 VI M2 D    
+3238 Dewan                X867594-3 Ba Lo Ni                            - -  - 714   -- M2 V K3 VI    

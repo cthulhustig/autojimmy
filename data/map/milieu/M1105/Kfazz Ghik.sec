@@ -51,7 +51,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0601 Ksoekadhao           B425400-E Ni                                  - K  - 504   Va F4 V            
 0602 Llaengkusous         C552757-5 Po                                  - C  - 401   Va F8 V            
 0607 Knuougnouks          E140477-7 De Ni Po                            - C  - 504   Va F8 V            
-0702 Suegaeknaee          B322566-9 Ni Po                               - -  - 110   Va F8 V F5 II      
+0702 Suegaeknaee          B322566-9 Ni Po                               - -  - 110   Va F5 II F8 V      
 0709 Koungeksdoth         C432232-5 Lo Ni Po                            - C  - 102   Va M4 V            
 0809 Koighousaedh         C5A3545-5 Fl Ni                               - K  - 413   Va K1 V            
 0810 Knaaedo              C210300-7 Lo Ni                               - K  - 503   Va M6 V            
@@ -77,7 +77,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1905 Agorrirrar           C633675-3 Na Ni Po                            - C  - 116   Va K7 V M4 V D     
 1906 Lluethou             E412653-5 Ic Na Ni                            - -  - 901   Va F6 V D          
 1907 Koengko              C68A69A-5 Ni Ri Wa                            - C  - 421   Va F3 V            
-2002 Reru                 A5958CB-9                                     - -  - 906   Va F9 V M0 V F6 V D
+2002 Reru                 A5958CB-9                                     - -  - 906   Va F6 V M0 V F9 V D
 2003 Ruerrrrur            C8C3877-7 Fl                                  - -  - 504   Va F5 V D          
 2103 Zaluerukhs           D371205-9 Lo Ni                               - K  - 801   Va K9 V            
 2107 Zifoenglaerr         C8A5000-8 Ba Fl Lo Ni                         - -  - 403   Va G2 IV M5 V      

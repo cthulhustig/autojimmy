@@ -14,7 +14,7 @@
     </Credits>
   <X>-2</X>
   <Y>2</Y>
-  <Product Author="Randy Dorman" Title="The Deep and the Dark" Publisher="Mongoose Publishing" />
+  <Product Author="Randy Dorman" Title="The Deep and the Dark" Publisher="Mongoose Publishing" Ref="https://www.mongoosepublishing.com/products/the-deep-and-the-dark" />
   <DataFile Author="J. Andrew Keith" Source="Traveller 5 Second Survey" Milieu="M1105" />
   <Subsectors>
     <Subsector Index="A">Farift</Subsector>
