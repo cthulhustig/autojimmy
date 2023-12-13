@@ -767,7 +767,7 @@ class DataStore(object):
                     data=zipData.read(dataFormatInfo.filename))
             except Exception as ex:
                 raise RuntimeError(f'Unable to read universe snapshot data format file ({str(ex)})')
-            if not self._isDataFormatCompatible(dataFormat):
+            if not dataFormat or not self._isDataFormatCompatible(dataFormat):
                 raise RuntimeError(f'Universe snapshot is incompatible')
 
             extractIndex = 0
@@ -1083,7 +1083,7 @@ class DataStore(object):
             # If the overlay directory doesn't exist there is nothing to check
             return
         overlayDataFormat = self.universeDataFormat()
-        if self._isDataFormatCompatible(checkFormat=overlayDataFormat):
+        if (overlayDataFormat is not None) and self._isDataFormatCompatible(checkFormat=overlayDataFormat):
             # The overlay data format meets the min requirements for this version of the app and
             # it's still within the same major version so it should be compatible
             return
