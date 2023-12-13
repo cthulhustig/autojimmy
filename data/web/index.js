@@ -1047,31 +1047,32 @@
         selectedWorld = null;
       }
 
-      if (selectedSector && (options.refresh || options.directAction)) {
-        // BUG: This is being applied even if world is going to be shown.
-        $('#sds-data').innerHTML = template('#sds-template')(data);
-
-        // Hook up toggle
-        $$('#sds-data .ds-mini-toggle, .sds-sectorname').forEach(element => {
-          element.addEventListener('click', event => {
-            document.body.classList.toggle('ds-mini');
-          });
-        });
-      }
-
       if (options.directAction) {
         document.body.classList.toggle('sector-selected', selectedSector);
         document.body.classList.toggle('world-selected', selectedWorld);
 
         if (selectedWorld) {
           showWorldData();
-        } else if (selectedSector && map.scale <= 16) {
-          showSearchPane('sds-visible', data.SectorName);
+        } else if (selectedSector) {
+          showSectorData(data);
         } else {
           hideCards();
         }
       }
     }
+  }
+
+  async function showSectorData(data) {
+    $('#sds-data').innerHTML = template('#sds-template')(data);
+
+    // Hook up toggle
+    $$('#sds-data .ds-mini-toggle, .sds-sectorname').forEach(element => {
+      element.addEventListener('click', event => {
+        document.body.classList.toggle('ds-mini');
+      });
+    });
+
+    showSearchPane('sds-visible', data.SectorName);
   }
 
   async function showWorldData() {
@@ -1081,7 +1082,7 @@
       sector: selectedSector,
       hex: selectedWorld.hex
     };
-    $('#wds-spinner').style.display = 'block';
+    $('#spinner').style.display = 'block';
     const milieu = map.namedOptions.get('milieu');
 
     try {
@@ -1098,7 +1099,10 @@
       const data = await response.json();
       const world = await Traveller.prepareWorld(data.Worlds[0]);
       if (world) {
-        await Traveller.renderWorldImage(world, $('#wds-world-image'));
+        await Promise.all([
+          Traveller.renderWorldImage(world, $('#wds-world-image')),
+          world.map_exists // Once resolved, `map`/`map_thumb` are set
+        ]);
 
         // Data Sheet
         world.DataSheetURL = Util.makeURL('print/world', {
@@ -1167,7 +1171,7 @@
     } catch (error) {
       console.warn(error);
     } finally {
-      $('#wds-spinner').style.display = 'none';
+      $('#spinner').style.display = 'none';
     }
   }
 
@@ -1640,7 +1644,7 @@
   }
 
   // Show promo, if not dismissed.
-  if (!isIframe) {
+  if (!isIframe && $('#promo-closebtn')) {
     setTimeout(() => {
       const promo_key = 'tm_promo5';
       if (!localStorage.getItem(promo_key)) {
