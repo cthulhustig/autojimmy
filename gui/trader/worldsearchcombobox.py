@@ -80,8 +80,10 @@ class WorldSearchComboBox(gui.ComboBoxEx):
         self.setCompleter(self._completer)
         self.setItemDelegate(_ListItemDelegate())
         self.installEventFilter(self)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.editTextChanged.connect(self._updateCompleter)
         self.activated.connect(self._dropDownSelected)
+        self.customContextMenuRequested.connect(self._showContextMenu)
 
     def selectedWorld(self) -> typing.Optional[traveller.World]:
         return self._selectedWorld
@@ -105,6 +107,12 @@ class WorldSearchComboBox(gui.ComboBoxEx):
                 assert(isinstance(event, QtGui.QFocusEvent))
                 if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
                     QtCore.QTimer.singleShot(0, self.selectAll)
+            elif event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.matches(QtGui.QKeySequence.StandardKey.Paste):
+                    self._pasteText()
+                    event.accept()
+                    return True
         return super().eventFilter(object, event)
 
     def showPopup(self) -> None:
@@ -268,3 +276,36 @@ class WorldSearchComboBox(gui.ComboBoxEx):
         # if it's actually the same world to allow for the case where the user
         # reselects the same world to cause the map to jump back to it's location
         self.worldChanged.emit(self._selectedWorld)
+
+    # https://forum.qt.io/topic/123909/how-to-override-paste-or-catch-the-moment-before-paste-happens-in-qlineedit/10
+    # NOTE: I suspect this might not work with RTL languages
+    def _showContextMenu(self, pos: QtCore.QPoint) -> None:
+        menu = self.lineEdit().createStandardContextMenu()
+
+        try:
+            translatedText = QtWidgets.QApplication.translate('QComboBox', '&Paste')
+            foundActions = [action for action in menu.actions() if action.text().startswith(translatedText)]
+            if len(foundActions) == 1:
+                action = foundActions[0]
+                action.triggered.disconnect()
+                action.triggered.connect(self._pasteText)
+        except Exception as ex:
+            logging.error(
+                'An exception occurred while overriding the world search paste action',
+                exc_info=ex)
+            # Continue so menu is still displayed
+
+        menu.exec(self.mapToGlobal(pos))
+
+    def _pasteText(self) -> None:
+        lineEdit = self.lineEdit()
+        lineEdit.paste()
+        if self._completer:
+            # Force display of the completer after pasting text into the line
+            # edit as QT doesn't seem to do it it's self. Setting the completer
+            # widget to the line edit used by the combo box is needed otherwise
+            # the world changed event isn't trigged if the user selects an entry
+            # from the completer. This happens as for some reason activated
+            # isn't called even though the completer does still set the text
+            self._completer.setWidget(lineEdit)
+            self._completer.complete()
