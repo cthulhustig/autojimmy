@@ -16,6 +16,7 @@ body {
 
   font-size: 10pt;
   color: white; background-color: black;
+  text-wrap: balance;
 
   -webkit-touch-callout: none;
   -webkit-text-size-adjust: 100%;
@@ -268,12 +269,11 @@ body:not(.wds-visible) #wds-frame { display: none; }
   margin-bottom: 1em;
 }
 
-#wds-spinner {
+#spinner {
   display: none;
 
   position: absolute;
-  right: 30px;
-  top: 10px;
+  top: 10px; right: 40px;
   width: 20px;
   height: 20px;
 
@@ -983,9 +983,7 @@ body:not(.route-shown) #routeBox { min-height: 135px; max-height: 135px; }
 #share-facebook  { background-position:  -40px 0; }
 #share-pinterest { background-position: -120px 0; }
 #share-reddit    { background-position: -160px 0; }
-#share-su        { background-position: -200px 0; }
 #share-tumblr    { background-position: -240px 0; }
-#share-twitter   { background-position: -280px 0; }
 #share-linkedin  { background-position: -320px 0; }
 
 
@@ -1026,7 +1024,6 @@ body:not(.search-results) #closeSearchBtn { display: none; }
   background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMy4xNSIgaGVpZ2h0PSIxMS4xNSI+PHBhdGggZD0iTTIwLjM3IDBhMi43OSAyLjc5IDAgMCAwLTIuNCA0LjJsLTMuMzIgMy4zNy01LjQxLTUuNTRhLjg1Ljg1IDAgMCAwLS42MS0uMjYuODUuODUgMCAwIDAtLjYuMjRMNC4wNiA1LjljLS4zOS0uMi0uODItLjMyLTEuMjYtLjMyQTIuNzkgMi43OSAwIDEgMCA1LjI2IDcuMUw4LjYgMy44Mmw1LjQzIDUuNTZhLjg1Ljg1IDAgMCAwIDEuMiAwbDQtNC4wNEEyLjc5IDIuNzkgMCAxIDAgMjAuMzYgMHoiLz48L3N2Zz4K);
 }
 .route-ui #routeBtn { display: none; }
-
 
 /* ============================================================ */
 /* More Box */

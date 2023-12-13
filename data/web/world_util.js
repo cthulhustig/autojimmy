@@ -49,21 +49,21 @@
   const SIZ_TABLE = {
     0: 'Asteroid Belt',
     S: 'Small World', // MegaTraveller
-    1: '1,600km',
-    2: '3,200km',
-    3: '4,800km',
-    4: '6,400km',
-    5: '8,000km',
-    6: '9,600km',
-    7: '11,200km',
-    8: '12,800km',
-    9: '14,400km',
-    A: '16,000km',
-    B: '17,600km',
-    C: '19,200km',
-    D: '20,800km',
-    E: '22,400km',
-    F: '24,000km',
+    1: '1,600km (0.12g)',
+    2: '3,200km (0.25g)',
+    3: '4,800km (0.38g)',
+    4: '6,400km (0.50g)',
+    5: '8,000km (0.63g)',
+    6: '9,600km (0.75g)',
+    7: '11,200km (0.88g)',
+    8: '12,800km (1.0g)',
+    9: '14,400km (1.12g)',
+    A: '16,000km (1.25g)',
+    B: '17,600km (1.38g)',
+    C: '19,200km (1.50g)',
+    D: '20,800km (1.63g)',
+    E: '22,400km (1.75g)',
+    F: '24,000km (2.0g)',
     X: 'Unknown',
     '?': 'Unknown'
   };
@@ -541,19 +541,44 @@
     });
   })();
 
+  // Promise - resolved once world details is available.
+  const DETAILS_FETCHED = (async () => {
+    const response = await fetch(Traveller.MapService.makeURL('/res/maps/world_details.json'));
+    if (!response.ok) throw Error(response.statusText);
+    return await response.json();
+  })();
+
   const STELLAR_TABLE = {
+    // Ordinary stars
     Ia: 'Supergiant',
     Ib: 'Supergiant',
     II: 'Giant',
     III: 'Giant',
     IV: 'Subgiant',
-    V: 'Dwarf',
+    V: 'Dwarf (Main Sequence)',
+
+    // Compact stars
     D: 'White Dwarf',
     BD: 'Brown Dwarf',
     BH: 'Black Hole',
     PSR: 'Pulsar',
     NS: 'Neutron Star'
   };
+
+  const STELLAR_OVERRIDES = {
+    // Avoid "blue dwarf" for O and B, "white dwarf" for A.
+    'Main Sequence': /^[OBA][0-9] V$/,
+  };
+
+  const STELLAR_COLOR = {
+    'Blue':         /^[OB][0-9] /,
+    'White':        /^A[0-9] /,
+    'Yellow-White': /^F[0-9] /,
+    'Yellow':       /^G[0-9] /,
+    'Orange':       /^K[0-9] /,
+    'Red':          /^M[0-9] /,
+  };
+
 
   const fetch_status = new Map();
 
@@ -638,7 +663,7 @@
 
   Traveller.prepareWorld = async world => {
     if (!world) return undefined;
-    await SOPHONTS_FETCHED;
+    await Promise.all([SOPHONTS_FETCHED, DETAILS_FETCHED]);
 
     world.raw = Object.assign({}, world);
 
@@ -755,7 +780,20 @@
       .split(/\s+(?!Ia|Ib|II|III|IV|V|VI|VII)/)
       .map(code => {
         const last = code.split(/\s+/).pop();
-        return {code, detail: STELLAR_TABLE[last]};
+        let detail = STELLAR_TABLE[last];
+
+        Object.keys(STELLAR_OVERRIDES).forEach(key => {
+          if (code.match(STELLAR_OVERRIDES[key]))
+            detail = key;
+        });
+
+        // Prepend color for ordinary stars
+        Object.keys(STELLAR_COLOR).forEach(key => {
+          if (code.match(STELLAR_COLOR[key]))
+            detail = key + ' ' + detail;
+        });
+
+        return {code, detail};
       });
 
     // Zone
@@ -791,8 +829,7 @@
     world.sector_url_noscheme = world.sector_url.replace(/^\w+:\/\//, '');
 
     // Map Generator
-    // http://members.ozemail.com.au/~jonoreita/T5%20World%20Map%20Generator/api_documentation.html
-    const GENERATOR_BASE = 'http://members.ozemail.com.au/~jonoreita/TravellerWorlds/';
+    const GENERATOR_BASE = 'https://travellerworlds.com/';
 
     const map_generator_options = {
       hex: world.Hex,
@@ -816,15 +853,17 @@
     world.map_link = Util.makeURL(GENERATOR_BASE + '', map_generator_options);
     world.map_source_link = Util.makeURL(GENERATOR_BASE + '', map_generator_options);
 
-
     const map_thumb = worldImageURL(world, 'map_thumb');
     const map = worldImageURL(world, 'map');
+    world.map_exists = checkImage(map_thumb);
+    world.map_exists.then(async exists => {
+      if (exists) {
+        world.map_thumb = map_thumb;
+        world.map = map;
+        world.map_details = (await DETAILS_FETCHED)[world.SectorAbbreviation + ' ' + world.Hex];
+      }
+    });
 
-    const exists = await checkImage(map_thumb);
-    if (exists) {
-      world.map_thumb = map_thumb;
-      world.map = map;
-    }
     return world;
   };
 
@@ -841,7 +880,6 @@
     console.log('The "404 (Not Found)" error for world images is expected, and is not a bug.');
   });
 
-  let renderWorldImageFirstTime = true;
   Traveller.renderWorldImage = async (world, canvas) => {
     if (!world) return undefined;
 
