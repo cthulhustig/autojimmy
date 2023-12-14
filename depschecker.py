@@ -70,7 +70,7 @@ if platform.system() == 'Windows':
 
     # Lastly the default msys2 path should be added to the path if it
     # exists
-    binPath = os.path.join('c:', 'msys64', 'mingw64', 'bin')
+    binPath = os.path.join('c:\\', 'msys64', 'mingw64', 'bin')
     if os.path.exists(binPath):
         paths.append(binPath)
 
