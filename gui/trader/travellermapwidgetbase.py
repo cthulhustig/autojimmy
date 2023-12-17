@@ -802,7 +802,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 let radius = hex[2];
                 let colour = hex[3];
                 let mapPosition = Traveller.Astrometrics.worldToMap(worldX, worldY);
-                let overlay = {{type: 'circle', x:mapPosition.x, y:mapPosition.y, r:radius, style:colour, group:'{group}'}};
+                let overlay = {{type:'hex', x:mapPosition.x, y:mapPosition.y, r:radius, style:colour, group:'{group}'}};
                 map.AddOverlay(overlay);
             }}
             """.format(
