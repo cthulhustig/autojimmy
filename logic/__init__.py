@@ -12,3 +12,4 @@ from .trader import *
 from .serialization import *
 from .cargomanifest import *
 from .simulator import *
+from .hexborders import *

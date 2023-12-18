@@ -2,16 +2,29 @@ import enum
 import math
 import typing
 
-_SectorWidth = 32
-_SectorHeight = 40
-_ReferenceSectorX = 0
-_ReferenceSectorY = 0
-_ReferenceHexX = 1
-_ReferenceHexY = 40
-_TravellerMapTileSize = 256
-_ParsecScaleX = math.cos(math.pi / 6) # cosine 30°
-_ParsecScaleY = 1
-_HexEdgePadding = math.tan(math.pi / 6) / 4 / _ParsecScaleX
+SectorWidth = 32
+SectorHeight = 40
+ReferenceSectorX = 0
+ReferenceSectorY = 0
+ReferenceHexX = 1
+ReferenceHexY = 40
+TravellerMapTileSize = 256
+ParsecScaleX = math.cos(math.pi / 6) # cosine 30°
+ParsecScaleY = 1
+HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX
+
+# I've pinched this diagram from Traveller Map (RenderUtils.cs)
+# It shows how the size of hexes are calculated
+#                    1
+#            +-*------------*x+
+#            |/              \|
+#            /                \
+#           /|                |\
+#          * |                +x*  x = tan( pi / 6 ) / 4
+#           \|                |/
+#            \                /
+#            |\              /|
+#            +-*------------*-+
 
 # Implementation taken from https://travellermap.com/doc/api
 def relativeHexToAbsoluteHex(
@@ -20,12 +33,12 @@ def relativeHexToAbsoluteHex(
         worldX: int,
         worldY: int
         ) -> typing.Tuple[int, int]:
-    worldX = (sectorX - _ReferenceSectorX) * \
-        _SectorWidth + \
-        (worldX - _ReferenceHexX)
-    worldY = (sectorY - _ReferenceSectorY) * \
-        _SectorHeight + \
-        (worldY - _ReferenceHexY)
+    worldX = (sectorX - ReferenceSectorX) * \
+        SectorWidth + \
+        (worldX - ReferenceHexX)
+    worldY = (sectorY - ReferenceSectorY) * \
+        SectorHeight + \
+        (worldY - ReferenceHexY)
     return (worldX, worldY)
 
 # Reimplementation of code from Traveller Map source code.
@@ -34,12 +47,12 @@ def absoluteHexToRelativeHex(
         absoluteX: int,
         absoluteY: int
         ) -> typing.Tuple[int, int, int, int]:
-    absoluteX += _ReferenceHexX - 1
-    absoluteY += _ReferenceHexY - 1
-    sectorX = absoluteX // _SectorWidth
-    sectorY = absoluteY // _SectorHeight
-    worldX = absoluteX - (sectorX * _SectorWidth) + 1
-    worldY = absoluteY - (sectorY * _SectorHeight) + 1
+    absoluteX += ReferenceHexX - 1
+    absoluteY += ReferenceHexY - 1
+    sectorX = absoluteX // SectorWidth
+    sectorY = absoluteY // SectorHeight
+    worldX = absoluteX - (sectorX * SectorWidth) + 1
+    worldY = absoluteY - (sectorY * SectorHeight) + 1
     return (sectorX, sectorY, worldX, worldY)
 
 def absoluteHexToMapSpace(
@@ -48,8 +61,8 @@ def absoluteHexToMapSpace(
         ) -> typing.Tuple[float, float]:
     ix = absoluteX - 0.5
     iy = absoluteY - 0.5 if (absoluteX % 2) == 0 else absoluteY
-    x = ix * _ParsecScaleX
-    y = iy * -_ParsecScaleY
+    x = ix * ParsecScaleX
+    y = iy * -ParsecScaleY
     return x, y
 
 def mapSpaceToTileSpace(
@@ -57,7 +70,7 @@ def mapSpaceToTileSpace(
         mapY: int,
         scale: float
         ) -> typing.Tuple[int, int]:
-    scalar = scale / _TravellerMapTileSize
+    scalar = scale / TravellerMapTileSize
     return (mapX * scalar, -mapY * scalar)
 
 def tileSpaceToMapSpace(
@@ -65,7 +78,7 @@ def tileSpaceToMapSpace(
         tileY,
         scale: float
         ) -> typing.Tuple[int, int]:
-    scalar = scale / _TravellerMapTileSize
+    scalar = scale / TravellerMapTileSize
     return (tileX / scalar, -tileY / scalar)
 
 # This gets the bounding rect of a sector in absolute coordinates (world coordinates in Traveller
@@ -75,15 +88,15 @@ def sectorBoundingRect(
         sectorX: int,
         sectorY: int
         ) -> typing.Tuple[int, int, int, int]:
-    left = (sectorX * _SectorWidth) - _ReferenceHexX
-    bottom = (sectorY * _SectorHeight) - _ReferenceHexY
-    width = _SectorWidth
-    height = _SectorHeight
+    left = (sectorX * SectorWidth) - ReferenceHexX
+    bottom = (sectorY * SectorHeight) - ReferenceHexY
+    width = SectorWidth
+    height = SectorHeight
 
     # Adjust to completely contain all hexes in the sector
     height += 0.5
-    left += 0.5 - _HexEdgePadding
-    width += _HexEdgePadding * 2
+    left += 0.5 - HexWidthOffset
+    width += HexWidthOffset * 2
 
     return (left, bottom, width, height)
 
@@ -95,16 +108,16 @@ def sectorInteriorRect(
         sectorX: int,
         sectorY: int
         ) -> typing.Tuple[int, int, int, int]:
-    left = (sectorX * _SectorWidth) - _ReferenceHexX
-    bottom = (sectorY * _SectorHeight) - _ReferenceHexY
-    width = _SectorWidth
-    height = _SectorHeight
+    left = (sectorX * SectorWidth) - ReferenceHexX
+    bottom = (sectorY * SectorHeight) - ReferenceHexY
+    width = SectorWidth
+    height = SectorHeight
 
     # Shrink to fit within the hexes of this sector
     bottom += 0.5
     height -= 1
-    left += 0.5 + _HexEdgePadding
-    width -= (_HexEdgePadding * 2)
+    left += 0.5 + HexWidthOffset
+    width -= (HexWidthOffset * 2)
 
     return (left, bottom, width, height)
 
@@ -130,6 +143,11 @@ def hexDistance(
     adx -= ody
     return adx if adx > max else max
 
+# TODO: These are currently labelled visually (i.e. lower is towards the bottom
+# of the screen) but I think the coordinate system is actually increasing in
+# that direction so the y value would be larger than the upper y value. Need to
+# see if there is a canonical way to refer to the edges in the Traveller Map
+# source code
 class NeighbourDirs(enum.Enum):
     Upper = 0
     UpperRight = 1
@@ -137,6 +155,32 @@ class NeighbourDirs(enum.Enum):
     Lower = 3
     LowerLeft = 4
     UpperLeft = 5
+
+def neighbourAbsoluteHex(
+        origin: typing.Tuple[int, int],
+        direction: NeighbourDirs
+        ) -> typing.Tuple[int, int]:
+    hexX = origin[0]
+    hexY = origin[1]
+    if direction == NeighbourDirs.Upper:
+        hexY -= 1
+    elif direction == NeighbourDirs.UpperRight:
+        hexY += 0 if (hexX % 2) else -1
+        hexX += 1
+    elif direction == NeighbourDirs.LowerRight:
+        hexY += 1 if (hexX % 2) else 0
+        hexX += 1
+    elif direction == NeighbourDirs.Lower:
+        hexY += 1
+    elif direction == NeighbourDirs.LowerLeft:
+        hexY += 1 if (hexX % 2) else 0
+        hexX -= 1
+    elif direction == NeighbourDirs.UpperLeft:
+        hexY += 0 if (hexX % 2) else -1
+        hexX -= 1
+    else:
+        raise ValueError('Invalid neighbour direction')
+    return (hexX, hexY)
 
 def neighbourRelativeHex(
         origin: typing.Tuple[int, int, int, int],
@@ -180,3 +224,45 @@ def neighbourRelativeHex(
         sectorY += 1
 
     return (sectorX, sectorY, hexX, hexY)
+
+def absoluteRadiusHexes(
+        centerX: int,
+        centerY: int,
+        radius: int
+        ) -> typing.Iterable[typing.Tuple[int, int]]:
+    minX = centerX - (radius + 1)
+    maxX = centerX + (radius + 1)
+    minY = centerY - (radius + 1)
+    maxY = centerY + (radius + 1)
+    hexes = []
+    for y in range(minY, maxY + 1):
+        for x in range(minX, maxX + 1):
+            if hexDistance(centerX, centerY, x, y) == radius:
+                hexes.append((x, y))
+    return hexes
+
+def relativeRadiusHexes(
+        centerSectorX: int,
+        centerSectorY: int,
+        centerHexX: int,
+        centerHexY: int,
+        radius: int
+        ) -> typing.Iterable[typing.Tuple[int, int, int, int]]:
+    centerX, centerY = relativeHexToAbsoluteHex(
+        sectorX=centerSectorX,
+        sectorY=centerSectorY,
+        worldX=centerHexX,
+        worldY=centerHexY)
+
+    absoluteHexes = absoluteRadiusHexes(
+        centerX=centerX,
+        centerY=centerY,
+        radius=radius)
+
+    relativeHexes = []
+    for absoluteX, absoluteY in absoluteHexes:
+        relativeHexes.append(absoluteHexToRelativeHex(
+            absoluteX=absoluteX,
+            absoluteY=absoluteY))
+
+    return relativeHexes
