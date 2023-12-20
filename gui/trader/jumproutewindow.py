@@ -6,6 +6,7 @@ import jobs
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -345,6 +346,10 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
         return True
 
 class JumpRouteWindow(gui.WindowWidget):
+    _JumpRatingOverlayDarkStyleColour = '#9D03FC'
+    _JumpRatingOverlayLightStyleColour = '#4A03FC'
+    _JumpRatingOverlayLineWidth = 6
+
     def __init__(self) -> None:
         super().__init__(
             title='Jump Route Planner',
@@ -355,8 +360,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._routeLogistics = None
         self._zoomToJumpRoute = False
 
-        self._showReachableWorldsOverlay = True
-        self._reachableWorldsOverlayHandle = None
+        self._showJumpRatingOverlay = True
+        self._showWorldTaggingOverlay = True
+        self._jumpOverlayHandles = set()
 
         self._setupJumpWorldsControls()
         self._setupConfigurationControls()
@@ -495,9 +501,15 @@ class JumpRouteWindow(gui.WindowWidget):
         if storedValue:
             self._mainSplitter.restoreState(storedValue)
 
-        self._showReachableWorldsOverlay = gui.safeLoadSetting(
+        self._showJumpRatingOverlay = gui.safeLoadSetting(
             settings=self._settings,
-            key='ShowReachableWorldsOverlay',
+            key='ShowJumpRatingOverlay',
+            type=bool,
+            default=False)
+
+        self._showWorldTaggingOverlay = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ShowWorldTaggingOverlay',
             type=bool,
             default=False)
 
@@ -523,7 +535,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('RefuellingPlanTableState', self._refuellingPlanTable.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
-        self._settings.setValue('ShowReachableWorldsOverlay', self._showReachableWorldsOverlay)
+        self._settings.setValue('ShowJumpRatingOverlay', self._showJumpRatingOverlay)
+        self._settings.setValue('ShowWorldTaggingOverlay', self._showWorldTaggingOverlay)
 
         self._settings.endGroup()
 
@@ -1165,16 +1178,20 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems.append(self._travellerMapWidget.appearancesAction())
         menuItems.append(self._travellerMapWidget.overlaysAction())
 
-        menu = QtWidgets.QMenu('Advanced Overlays', self)
-        action = QtWidgets.QAction('Reachable Worlds', self)
-        action.triggered.connect(lambda: self._toggleReachableWorldsOverlay())
+        menu = QtWidgets.QMenu('Jump Overlays', self)
+        menuItems.append(menu)
+        action = QtWidgets.QAction('Jump Rating', self)
         action.setCheckable(True)
-        action.setChecked(self._showReachableWorldsOverlay)
+        action.setChecked(self._showJumpRatingOverlay)
         action.setEnabled(True)
+        action.triggered.connect(lambda: self._toggleJumpRatingOverlay())
         menu.addAction(action)
-        action = QtWidgets.QAction('Advanced Overlays', self)
-        menuItems.append(action)
-        action.setMenu(menu)
+        action = QtWidgets.QAction('World Tagging', self)
+        action.setCheckable(True)
+        action.setChecked(self._showWorldTaggingOverlay)
+        action.setEnabled(True)
+        action.triggered.connect(lambda: self._toggleWorldTaggingOverlay())
+        menu.addAction(action)
 
         menuItems.append(self._travellerMapWidget.reloadAction())
 
@@ -1399,61 +1416,79 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _toggleReachableWorldsOverlay(self) -> None:
-        self._showReachableWorldsOverlay = \
-            not self._showReachableWorldsOverlay
-        self._updateReachableWorldsOverlay()
+    def _toggleJumpRatingOverlay(self) -> None:
+        self._showJumpRatingOverlay = \
+            not self._showJumpRatingOverlay
+        self._updateJumpOverlays()
 
-    def _updateReachableWorldsOverlay(self) -> None:
-        if self._reachableWorldsOverlayHandle:
-            self._travellerMapWidget.removeOverlayGroup(
-                handle=self._reachableWorldsOverlayHandle)
-            self._reachableWorldsOverlayHandle = None
+    def _toggleWorldTaggingOverlay(self) -> None:
+        self._showWorldTaggingOverlay = \
+            not self._showWorldTaggingOverlay
+        self._updateJumpOverlays()
 
-        if not self._showReachableWorldsOverlay:
+    def _updateJumpOverlays(self) -> None:
+        for handle in self._jumpOverlayHandles:
+            self._travellerMapWidget.removeOverlayGroup(handle=handle)
+        self._jumpOverlayHandles.clear()
+
+        if not (self._showJumpRatingOverlay or self._showWorldTaggingOverlay):
             return # Nothing more to do
 
-        startWorld = self._startFinishWorldsWidget.startWorld()
+        startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
         if not startWorld:
             return # Nothing more to do
 
-        try:
-            worlds = traveller.WorldManager.instance().worldsInArea(
-                sectorName=startWorld.sectorName(),
-                worldX=startWorld.x(),
-                worldY=startWorld.y(),
-                searchRadius=self._shipJumpRatingSpinBox.value())
-        except Exception as ex:
-            logging.warning(
-                f'An exception occurred while finding worlds reachable from {startWorld.name()} ({startWorld.sectorName()})',
-                exc_info=ex)
-            return
+        jumpRating = self._shipJumpRatingSpinBox.value()
 
-        if not worlds:
-            return # Nothing more to do
+        if self._showJumpRatingOverlay:
+            isDarkMapStyle = travellermap.isDarkStyle(
+                style=app.Config.instance().mapStyle())
+            colour = self._JumpRatingOverlayDarkStyleColour \
+                if isDarkMapStyle else \
+                self._JumpRatingOverlayLightStyleColour
+            handle = self._travellerMapWidget.createWorldRadiusOverlayGroup(
+                centerWorld=startWorld,
+                radius=jumpRating,
+                lineColour=colour,
+                lineWidth=self._JumpRatingOverlayLineWidth)
+            self._jumpOverlayHandles.add(handle)
 
-        overlayMap = {}
-        for world in worlds:
-            if world == startWorld:
-                continue
+        if self._showWorldTaggingOverlay:
+            try:
+                worlds = traveller.WorldManager.instance().worldsInArea(
+                    sectorName=startWorld.sectorName(),
+                    worldX=startWorld.x(),
+                    worldY=startWorld.y(),
+                    searchRadius=jumpRating)
+            except Exception as ex:
+                logging.warning(
+                    f'An exception occurred while finding worlds reachable from {startWorld.name()} ({startWorld.sectorName()})',
+                    exc_info=ex)
+                return
 
-            tagLevel = app.calculateWorldTagLevel(world=world)
-            if tagLevel:
+            taggedWorlds = []
+            for world in worlds:
+                if (world == startWorld) or (world == finishWorld):
+                    continue # Don't highlight start/finish worlds
+                tagLevel = app.calculateWorldTagLevel(world=world)
+                if not tagLevel:
+                    continue
+
                 colour = QtGui.QColor(app.tagColour(
                     tagLevel=tagLevel))
                 tagColour = gui.colourToString(
                     colour=colour,
                     includeAlpha=False)
-            else:
-                tagColour = 'white'
+                taggedWorlds.append((world, tagColour))
 
-            overlayMap[world] = tagColour
-
-        self._reachableWorldsOverlayHandle = \
-            self._travellerMapWidget.createOverlayGroup(worlds=overlayMap)
+            if taggedWorlds:
+                handle = self._travellerMapWidget.createWorldOverlayGroup(
+                    worlds=taggedWorlds)
+                self._jumpOverlayHandles.add(handle)
 
     def _updateTravellerMapOverlays(self) -> None:
         self._travellerMapWidget.clearOverlays()
+        self._jumpRatingOverlayHandle = None
         self._reachableWorldsOverlayHandle = None
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
@@ -1489,10 +1524,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 clearOverlays=False,
                 pitStopRadius=0.4)
 
-        self._updateReachableWorldsOverlay()
+        self._updateJumpOverlays()
 
     def _shipJumpRatingChanged(self) -> None:
-        self._updateReachableWorldsOverlay()
+        self._updateJumpOverlays()
 
     def _fuelBasedRoutingToggled(self) -> None:
         self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())

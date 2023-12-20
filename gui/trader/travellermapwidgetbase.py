@@ -1,5 +1,6 @@
 import app
 import common
+import enum
 import gui
 import logic
 import logging
@@ -131,6 +132,31 @@ class _HexOverlay(object):
     def colour(self) -> str:
         return self._colour
 
+class _PolygonOverlay(object):
+    def __init__(
+            self,
+            mapPoints: typing.Iterable[typing.Tuple[float, float]],
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None # In pixels
+            ) -> None:
+        self._mapPoints = list(mapPoints)
+        self._fillColour = fillColour
+        self._lineColour = lineColour
+        self._lineWidth = lineWidth
+
+    def maPoints(self) -> typing.Iterable[typing.Tuple[float, float]]:
+        return self._mapPoints
+
+    def fillColour(self) -> typing.Optional[str]:
+        return self._fillColour
+
+    def lineColour(self) -> typing.Optional[str]:
+        return self._lineColour
+
+    def lineWidth(self) -> typing.Optional[int]:
+        return self._lineWidth
+
 class _OverlayGroups(object):
     def __init__(
             self,
@@ -141,10 +167,10 @@ class _OverlayGroups(object):
     def handle(self) -> str:
         return self._handle
 
-    def overlays(self) -> typing.Iterable[_HexOverlay]:
+    def overlays(self) -> typing.Iterable[typing.Union[_HexOverlay, _PolygonOverlay]]:
         return self._overlays
 
-    def addOverlay(self, overlay: _HexOverlay) -> None:
+    def addOverlay(self, overlay: typing.Union[_HexOverlay, _PolygonOverlay]) -> None:
         self._overlays.append(overlay)
 
 class TravellerMapWidgetBase(QtWidgets.QWidget):
@@ -471,13 +497,13 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 """.format(x=absoluteX, y=absoluteY)
             self._runScript(script)
 
-    def createOverlayGroup(
+    def createWorldOverlayGroup(
             self,
-            worlds: typing.Mapping[traveller.World, str], # World to colour
+            worlds: typing.Iterable[typing.Tuple[traveller.World, str]], # (World, Colour))
             radius: float = 0.5
             ) -> str:
         group = _OverlayGroups()
-        for world, colour in worlds.items():
+        for world, colour in worlds:
             overlay = _HexOverlay(
                 absoluteX=world.absoluteX(),
                 absoluteY=world.absoluteY(),
@@ -490,6 +516,84 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._runAddOverlayGroupScript(group=group)
 
         return group.handle()
+
+    def createHexBorderOverlayGroup(
+            self,
+            hexes: typing.Iterable[typing.Tuple[int, int, int, int]], # Sector/hex positions
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None
+            ) -> str:
+        absoluteHexes = []
+        for sectorX, sectorY, hexX, hexY in hexes:
+            absoluteHexes.append(travellermap.relativeHexToAbsoluteHex(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                worldX=hexX,
+                worldY=hexY))
+
+        group = _OverlayGroups()
+        self._overlayGroups[group.handle()] = group
+
+        borders = logic.calculateHexBorders(hexes=absoluteHexes)
+        if not borders:
+            # Still return the group even if there were no borders, but there
+            # is no point running a script
+            return group.handle()
+
+        for border in borders:
+            overlay = _PolygonOverlay(
+                mapPoints=border,
+                fillColour=fillColour,
+                lineColour=lineColour,
+                lineWidth=lineWidth)
+            group.addOverlay(overlay)
+
+        if self._loaded:
+            self._runAddOverlayGroupScript(group=group)
+
+        return group.handle()
+
+    def createHexRadiusOverlayGroup(
+            self,
+            centerSectorX: int,
+            centerSectorY: int,
+            centerWorldX: int,
+            centerWorldY: int,
+            radius: int,
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None
+            ) -> str:
+        radiusHexes = travellermap.relativeRadiusHexes(
+            centerSectorX=centerSectorX,
+            centerSectorY=centerSectorY,
+            centerHexX=centerWorldX,
+            centerHexY=centerWorldY,
+            radius=radius)
+        return self.createHexBorderOverlayGroup(
+            hexes=radiusHexes,
+            fillColour=fillColour,
+            lineColour=lineColour,
+            lineWidth=lineWidth)
+
+    def createWorldRadiusOverlayGroup(
+            self,
+            centerWorld: traveller.World,
+            radius: int,
+            fillColour: typing.Optional[str] = None,
+            lineColour: typing.Optional[str] = None,
+            lineWidth: typing.Optional[int] = None
+            ) -> str:
+        return self.createHexRadiusOverlayGroup(
+            centerSectorX=centerWorld.sectorX(),
+            centerSectorY=centerWorld.sectorY(),
+            centerWorldX=centerWorld.x(),
+            centerWorldY=centerWorld.y(),
+            radius=radius,
+            fillColour=fillColour,
+            lineColour=lineColour,
+            lineWidth=lineWidth)
 
     def removeOverlayGroup(
             self,
@@ -782,19 +886,36 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             group: _OverlayGroups
             ) -> None:
-        data = []
+        hexData = []
+        polyData = []
         for overlay in group.overlays():
-            data.append('[{x}, {y}, {radius}, "{colour}"]'.format(
-                x=overlay.absoluteX(),
-                y=overlay.absoluteY(),
-                radius=overlay.radius(),
-                colour=overlay.colour()))
+            if isinstance(overlay, _HexOverlay):
+                hexData.append('[{x}, {y}, {radius}, "{colour}"]'.format(
+                    x=overlay.absoluteX(),
+                    y=overlay.absoluteY(),
+                    radius=overlay.radius(),
+                    colour=overlay.colour()))
+            elif isinstance(overlay, _PolygonOverlay):
+                points = []
+                for x, y in overlay.maPoints():
+                    points.append(f'{{x:{x}, y:{y}}}')
 
-        if not data:
+                data = f'{{points:[{",".join(points)}]'
+                if overlay.fillColour() is not None:
+                    data += f', fillColour:"{overlay.fillColour()}"'
+                if overlay.lineColour() is not None:
+                    data += f', lineColour:"{overlay.lineColour()}"'
+                if overlay.lineWidth() is not None:
+                    data += f', lineWidth:{overlay.lineWidth()}'
+                data += '}'
+
+                polyData.append(data)
+
+        if (not hexData) and (not polyData):
             return # Nothing to do
 
         script = """
-            var hexes = [{data}];
+            var hexes = [{hexData}];
             for (let i = 0; i < hexes.length; i++) {{
                 let hex = hexes[i];
                 let worldX = hex[0];
@@ -804,9 +925,25 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 let mapPosition = Traveller.Astrometrics.worldToMap(worldX, worldY);
                 let overlay = {{type:'hex', x:mapPosition.x, y:mapPosition.y, r:radius, style:colour, group:'{group}'}};
                 map.AddOverlay(overlay);
-            }}
+            }};
+            var polygons = [{polyData}];
+            for (let i = 0; i < polygons.length; i++) {{
+                let polygon = polygons[i];
+                let overlay = {{type:'polygon', points:polygon.points, group:'{group}'}};
+                if ('fillColour' in polygon) {{
+                    overlay.fill = polygon.fillColour;
+                }}
+                if ('lineColour' in polygon) {{
+                    overlay.line = polygon.lineColour;
+                }}
+                if ('lineWidth' in polygon) {{
+                    overlay.w = polygon.lineWidth;
+                }}
+                map.AddOverlay(overlay);
+            }};
             """.format(
-            data=','.join(data),
+            hexData=','.join(hexData),
+            polyData=','.join(polyData),
             group=group.handle())
         self._runScript(script)
 
