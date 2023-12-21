@@ -133,7 +133,7 @@ Some distros, such as recent versions of Ubuntu, come with it already installed.
 * [Known Issues](./docs/known_issues.md)
 * [FAQ](./docs/faq.md)
 * [Screenshots](./docs/screenshots.md)
-* [Custom Sectors](./doc/custom_sectors.md)
+* [Custom Sectors](./docs/custom_sectors.md)
 * [Installer Build](./docs/installer_build.md)
 * [Source Code](https://github.com/cthulhustig/autojimmy)
 * [Traveller Map](https://travellermap.com)
