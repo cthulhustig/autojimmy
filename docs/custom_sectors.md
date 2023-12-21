@@ -38,6 +38,8 @@ different width on hexes from the custom sector compared to hexes from the
 stock sector.
 * You may notice slight pixelisation at very high zoom levels. This is mostly
 noticeable if you zoom in on one of your custom sectors as far as it will go.
+* When you zoom out to the point Traveller Map shows the red region outlines,
+they won't be drawn over custom sectors.
 * Sector and world names containing non-ascii characters are not fully
 supported, your results may vary.
 * The Candy render style isn't supported.
