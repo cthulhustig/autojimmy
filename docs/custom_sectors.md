@@ -102,6 +102,24 @@ sector, which is a sector set aside for referees to customize.
 }
 ```
 
+## Modifying Existing Sectors
+The simplest way to modify an existing sector is to make a copy of the stock
+sector and metadata file from the universe snapshot used by Auto-Jimmy, this
+copy can then be modified as required, then imported into Auto-Jimmy as a
+custom sector.
+
+> [!IMPORTANT]
+> You **must** import the modified sector files as custom sectors. If you
+> just overwrite the stock sector data, Auto-Jimmy won't generate the poster
+> images of your sector so your changes won't be shown in the Traveller Map
+> pages it displays.
+
+Where you can find the most recent stock sector files will vary depending on
+if you've downloaded a universe update. If you've not downloaded a universe
+update, the files can be found in  `./data/map/` under the directory you
+cloned/installed Auto-Jimmy to. If you have downloaded an update, they can be
+found in `%AppData%\map\` on Windows or `~/.auto-jimmy/map/` on macOS and Linux.
+
 ## Linting
 Linting is a process performed by Traveller Map where it will check your sector
 and metadata files for any errors or potential issues.
