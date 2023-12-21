@@ -29,7 +29,7 @@ Python and can be run on Windows, Linux and macOS.
 * Import of custom sectors
     * Custom sector data integrated into all tools
     * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
-    * Support for T5 Column & Row sector files and XML & JSON metadata
+    * Support for T5 Column & Tab sector files and XML & JSON metadata
 
 ## Installing
 For Windows users, an installer is available [here](https://github.com/cthulhustig/autojimmy/releases).
@@ -133,6 +133,7 @@ Some distros, such as recent versions of Ubuntu, come with it already installed.
 * [Known Issues](./docs/known_issues.md)
 * [FAQ](./docs/faq.md)
 * [Screenshots](./docs/screenshots.md)
+* [Custom Sectors](./docs/custom_sectors.md)
 * [Installer Build](./docs/installer_build.md)
 * [Source Code](https://github.com/cthulhustig/autojimmy)
 * [Traveller Map](https://travellermap.com)

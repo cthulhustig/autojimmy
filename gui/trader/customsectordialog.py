@@ -37,7 +37,7 @@ _WelcomeMessage = """
     <li>Supported data formats are:
     <ul style="margin-left:15px; -qt-list-indent:0;">
     <li><a href='https://travellermap.com/doc/fileformats#t5-column-delimited-format'>T5 Column Delimited Sector Format</a> (aka Second Survey format)</li>
-    <li><a href='https://travellermap.com/doc/fileformats#t5tab'>T5 Row Delimited Sector Format</a></li>
+    <li><a href='https://travellermap.com/doc/fileformats#t5tab'>T5 Tab Delimited Sector Format</a></li>
     <li><a href='https://travellermap.com/doc/metadata#xml-metadata-file-structure'>XML Metadata Format</a></li>
     <li>JSON Metadata Format (sorry, I can't find documentation for this format)</li>
     </ul>
@@ -431,7 +431,7 @@ class _LintJobResultsDialog(gui.DialogEx):
         self.setLayout(dialogLayout)
 
 class _NewSectorDialog(gui.DialogEx):
-    _SectorFileFilter = 'Sector (*.sec *.tab *.t5 *.t5col *.t5row)'
+    _SectorFileFilter = 'Sector (*.sec *.tab *.t5 *.t5col *.t5tab)'
     _MetadataFileFilter = 'Metadata (*.xml *.json)'
     _AllFileFilter = 'All Files (*.*)'
 
