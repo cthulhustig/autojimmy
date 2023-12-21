@@ -144,12 +144,12 @@ used by Traveller Map.
   * This mode prevents pixelisation at high zoom levels, other than that, it has
   the advantages and disadvantage of Hybrid mode
 
-[!NOTE]
+> [!NOTE]
 > Setting up CairoSVG isn't required when Auto-Jimmy is installed using the
 > Windows installer as the required libraries come pre-bundled. This also
 > means Hybrid mode is the default composition mode when using the installer.
 
-[!NOTE]
+> [!NOTE]
 > Details on how to set up CairoSVG can be found (here)[../README.md#step-3-install-libcairo-optional]
 
 ## Links
