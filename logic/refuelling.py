@@ -66,7 +66,6 @@ class FuelCostCalculator(object):
             return self._anomalyFuelCost
         return None
 
-    # TODO: When this is all done it should be possible to remove this function
     def _selectRefuellingType(
             self,
             world: traveller.World
