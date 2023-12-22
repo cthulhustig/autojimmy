@@ -1553,22 +1553,27 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateJumpOverlays()
 
     def _fuelBasedRoutingToggled(self) -> None:
-        enableControls = self._fuelBasedRoutingCheckBox.isChecked()
-        self._refuellingStrategyComboBox.setEnabled(enableControls)
-        self._anomalyRefuellingCheckBox.setEnabled(enableControls)
+        self._enableDisableControls()
 
     def _anomalyRefuellingToggled(self) -> None:
-        enableControls = self._fuelBasedRoutingCheckBox.isChecked() and \
-            self._anomalyRefuellingCheckBox.isChecked()
-        self._anomalyFuelCostPerTonSpinBox.setEnabled(enableControls)
+        self._enableDisableControls()
 
     def _enableDisableControls(self) -> None:
         # Disable configuration controls while jump route job is running
-        disable = self._jumpRouteJob != None
-        self._jumpWorldsGroupBox.setDisabled(disable)
-        self._configurationGroupBox.setDisabled(disable)
-        self._waypointWorldsGroupBox.setDisabled(disable)
-        self._avoidWorldsGroupBox.setDisabled(disable)
+        runningJob = self._jumpRouteJob != None
+        self._jumpWorldsGroupBox.setDisabled(runningJob)
+        self._configurationGroupBox.setDisabled(runningJob)
+        self._waypointWorldsGroupBox.setDisabled(runningJob)
+        self._avoidWorldsGroupBox.setDisabled(runningJob)
+
+        if not runningJob:
+            fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
+            anomalyRefuelling = self._anomalyRefuellingCheckBox.isChecked()
+
+            self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
+            self._anomalyRefuellingCheckBox.setEnabled(fuelBasedRouting)
+            self._anomalyFuelCostPerTonSpinBox.setEnabled(
+                fuelBasedRouting and anomalyRefuelling)
 
     def _selectWorld(self) -> typing.Optional[traveller.World]:
         dlg = gui.WorldSearchDialog(parent=self)
