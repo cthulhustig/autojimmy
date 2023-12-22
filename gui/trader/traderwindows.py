@@ -2379,7 +2379,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         # generated for those worlds unless the ship has enough current fuel
         fuelIssueWorldStrings = []
         for world in self._purchaseWorldsWidget.worlds():
-            if not fuelCostCalculator._worldFuelTypes(world=world):
+            if not fuelCostCalculator.refuellingType(world=world):
                 fuelIssueWorldStrings.append(world.name())
 
         if fuelIssueWorldStrings:
