@@ -74,7 +74,7 @@ class Simulator(object):
             shipCargoCapacity: int,
             shipFuelCapacity: int,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            fuelCostCalculator: logic.FuelCostCalculator,
             perJumpOverheads: int,
             searchRadius: int,
             minSellerDm: int,
@@ -95,7 +95,7 @@ class Simulator(object):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._refuellingStrategy = refuellingStrategy
+        self._fuelCostCalculator = fuelCostCalculator
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -133,7 +133,7 @@ class Simulator(object):
             # No current cargo manifest so buy something on the current world
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
-            worldFilterCallback = lambda world: logic.selectRefuellingType(world, self._refuellingStrategy) != None
+            worldFilterCallback = lambda world: self._fuelCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInArea(
                 sectorName=self._currentWorld.sectorName(),
                 worldX=self._currentWorld.x(),
@@ -171,20 +171,23 @@ class Simulator(object):
                 refuellingType = pitStop.refuellingType()
                 if refuellingType != None:
                     fuelTons = pitStop.tonsOfFuel()
-                    assert(fuelTons)
-                    if refuellingType == logic.RefuellingType.Refined or \
-                            refuellingType == logic.RefuellingType.Unrefined:
-                        refuellingCost = pitStop.fuelCost()
-                        assert(isinstance(refuellingCost, common.ScalarCalculation))
-                        refuellingCost = refuellingCost.value()
-                        fuelTypeString = 'refined' if refuellingType == logic.RefuellingType.Refined else 'unrefined'
-                        self._logMessage(f'Star port refuelling at {self._currentWorld.name(includeSubsector=True)}, taking on {fuelTons.value()} tons of {fuelTypeString} fuel for a cost of Cr{refuellingCost}')
-                        self._setAvailableFunds(self._availableFunds - refuellingCost)
-                        self._actualLogisticsCost += refuellingCost
-                    elif refuellingType == logic.RefuellingType.Wilderness:
-                        self._logMessage(f'Wilderness refuelling at {self._currentWorld.name(includeSubsector=True)}, taking on {fuelTons.value()} tons')
-                    else:
-                        assert(False)
+                    assert(isinstance(fuelTons, common.ScalarCalculation))
+                    fuelTons = fuelTons.value()
+
+                    fuelCost = pitStop.fuelCost()
+                    assert(isinstance(fuelCost, common.ScalarCalculation))
+                    fuelCost = fuelCost.value()
+
+                    infoString = 'Star port refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
+                        world=self._currentWorld.name(includeSubsector=True),
+                        tons=fuelTons,
+                        type=refuellingType.value.lower())
+                    if fuelCost > 0:
+                        infoString += f' for a cost of Cr{fuelCost}'
+
+                    self._logMessage(infoString)
+                    self._setAvailableFunds(self._availableFunds - fuelCost)
+                    self._actualLogisticsCost += fuelCost
 
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.worldCount():
@@ -309,7 +312,7 @@ class Simulator(object):
             shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
             shipFuelPerParsec=self._shipFuelPerParsec,
             jumpCostCalculator=self._jumpCostCalculator,
-            refuellingStrategy=self._refuellingStrategy,
+            fuelCostCalculator=self._fuelCostCalculator,
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)

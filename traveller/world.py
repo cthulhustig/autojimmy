@@ -199,12 +199,18 @@ class World(object):
     def numberOfSystemWorlds(self) -> int:
         return self._systemWorlds
 
-    def hasStarPortRefuelling(self, refinedFuelOnly: bool = False):
+    # TODO: This change needs a decent amount of testing
+    def hasStarPortRefuelling(
+            self,
+            includeRefined: bool = True,
+            includeUnrefined: bool = True,
+            refinedFuelExclusive: bool = False # Do A/B class star ports _only_ have refined fuel
+            ) -> bool:
         starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
         if starPortCode == 'A' or starPortCode == 'B':
-            return True
-        if not refinedFuelOnly and (starPortCode == 'C' or starPortCode == 'D'):
-            return True
+            return includeRefined or (includeUnrefined and not refinedFuelExclusive)
+        if starPortCode == 'C' or starPortCode == 'D':
+            return includeUnrefined
         return False
 
     def hasGasGiantRefuelling(self) -> bool:

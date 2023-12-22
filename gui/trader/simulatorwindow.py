@@ -514,15 +514,6 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Select a start world')
             return
 
-        refuellingType = logic.selectRefuellingType(
-            world=self._startWorldWidget.world(),
-            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum())
-        if not refuellingType:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='The start world must allow the selected refuelling strategy')
-            return
-
         if self._startingFundsSpinBox.value() <= 0:
             gui.MessageBoxEx.information(
                 parent=self,
@@ -546,6 +537,16 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
+        fuelCostCalculator = logic.FuelCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            anomalyFuelCost=None) # TODO: Should simulator support anomaly refuelling??
+        if not fuelCostCalculator.refuellingType(
+                world=self._startWorldWidget.world()):
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='The start world must allow the selected refuelling strategy')
+            return
+
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
@@ -557,7 +558,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=0, # Simulator doesn't support starting fuel
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -584,7 +585,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 searchRadius=self._searchRadiusSpinBox.value(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 playerStreetwiseDm=self._playerStreetwiseDmSpinBox.value(),

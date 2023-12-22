@@ -598,8 +598,12 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
                     toolTip += f'<li><span>Type: Star Port (Refined)<span></li>'
                 elif pitStop.refuellingType() == logic.RefuellingType.Unrefined:
                     toolTip += f'<li><span>Type: Star Port (Unrefined)<span></li>'
-                else:
+                elif pitStop.refuellingType() == logic.RefuellingType.Wilderness:
                     toolTip += '<li><span>Type: Wilderness<span></li>'
+                elif pitStop.refuellingType() == logic.RefuellingType.Anomaly:
+                    toolTip += '<li><span>Type: Anomaly<span></li>'
+                else:
+                    toolTip += '<li><span>Type: Unknown<span></li>'
                 toolTip += f'<li><span>Tonnage: {tonsOfFuel.value()} tons<span></li>'
                 fuelCost = pitStop.fuelCost()
                 if fuelCost:

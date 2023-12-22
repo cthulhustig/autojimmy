@@ -3,23 +3,15 @@ import traveller
 import typing
 
 # Fuel costs are the same for Mongoose 1e (p140), 2e (p226) & 2022 (p154)
-_RefinedFuelCostPerTon = common.ScalarCalculation(
+RefinedFuelCostPerTon = common.ScalarCalculation(
     value=500,
     name='Refined Fuel Cost Per Ton')
-_UnrefinedFuelCostPerTon = common.ScalarCalculation(
+UnrefinedFuelCostPerTon = common.ScalarCalculation(
     value=100,
     name='Unrefined Fuel Cost Per Ton')
-
-def starPortFuelCostPerTon(
-        world: traveller.World,
-        refinedFuel: bool
-        ) -> typing.Optional[common.ScalarCalculation]:
-    starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
-    if starPortCode == 'A' or starPortCode == 'B':
-        return _RefinedFuelCostPerTon if refinedFuel else _UnrefinedFuelCostPerTon
-    if starPortCode == 'C' or starPortCode == 'D':
-        return None if refinedFuel else _UnrefinedFuelCostPerTon
-    return None # No fuel available
+WildernessFuelCostPerTon = common.ScalarCalculation(
+    value=0,
+    name='Wilderness Fuel Cost Per Ton')
 
 # I can't find anything in the Mongoose 2e rules the explicitly states how you calculate how much
 # fuel a ship requires to make a jump of a given distance (I suspect I'm not looking hard enough).

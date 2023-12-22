@@ -1746,11 +1746,15 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        # Flag cases where the purchase world doesn't match the refuelling strategy. No options will be
-        # generated unless the ship has enough current fuel
-        if not logic.selectRefuellingType(
-                world=self._purchaseWorldWidget.world(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+        fuelCostCalculator = logic.FuelCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            anomalyFuelCost=None) # TODO: Should trader support anomaly refuelling?
+
+        # Flag cases where the purchase world doesn't match the refuelling
+        # strategy. No options will be generated unless the ship has enough
+        #current fuel
+        if not fuelCostCalculator.refuellingType(
+                world=self._purchaseWorldWidget.world()):
             message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
                 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
@@ -1772,7 +1776,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -1804,7 +1808,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
@@ -2367,13 +2371,15 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        fuelCostCalculator = logic.FuelCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            anomalyFuelCost=None) # TODO: Should trader support anomaly refuelling?
+
         # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
         # generated for those worlds unless the ship has enough current fuel
         fuelIssueWorldStrings = []
         for world in self._purchaseWorldsWidget.worlds():
-            if not logic.selectRefuellingType(
-                    world=world,
-                    refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+            if not fuelCostCalculator._worldFuelTypes(world=world):
                 fuelIssueWorldStrings.append(world.name())
 
         if fuelIssueWorldStrings:
@@ -2402,7 +2408,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2436,7 +2442,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                fuelCostCalculator=fuelCostCalculator,
                 includeIllegal=self._includeIllegalTradeGoodsCheckBox.isChecked(),
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),

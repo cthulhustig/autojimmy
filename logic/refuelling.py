@@ -11,6 +11,7 @@ class RefuellingType(enum.Enum):
     Refined = 'Refined'
     Unrefined = 'Unrefined'
     Wilderness = 'Wilderness'
+    Anomaly = 'Anomaly'
 
 class RefuellingStrategy(enum.Enum):
     RefinedFuelOnly = 'Refined Fuel Only'
@@ -22,67 +23,120 @@ class RefuellingStrategy(enum.Enum):
     WaterPreferred = 'Water Preferred'
     WildernessPreferred = 'Wilderness Preferred'
 
-def selectRefuellingType(
-        world: traveller.World,
-        refuellingStrategy: RefuellingStrategy
-        ) -> typing.Optional[RefuellingType]:
-    if refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
-        return RefuellingType.Refined if world.hasStarPortRefuelling(refinedFuelOnly=True) else None
-
-    if refuellingStrategy == RefuellingStrategy.UnrefinedFuelOnly:
-        return RefuellingType.Unrefined if world.hasStarPortRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.GasGiantOnly:
-        return RefuellingType.Wilderness if world.hasGasGiantRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.WaterOnly:
-        return RefuellingType.Wilderness if world.hasWaterRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.WildernessOnly:
-        return RefuellingType.Wilderness if world.hasWildernessRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
-        if world.hasGasGiantRefuelling():
-            return RefuellingType.Wilderness
-        return RefuellingType.Unrefined if world.hasStarPortRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.WaterPreferred:
-        if world.hasWaterRefuelling():
-            return RefuellingType.Wilderness
-        return RefuellingType.Unrefined if world.hasStarPortRefuelling() else None
-
-    if refuellingStrategy == RefuellingStrategy.WildernessPreferred:
-        if world.hasWildernessRefuelling():
-            return RefuellingType.Wilderness
-        return RefuellingType.Unrefined if world.hasStarPortRefuelling() else None
-
-    assert(False) # Check I've not missed an enum
-    return None
-
-def isStarPortRefuellingType(refuellingType: RefuellingType):
-    return refuellingType == RefuellingType.Refined or refuellingType == RefuellingType.Unrefined
-
-class RefuellingTypeCache(object):
+class FuelCostCalculator(object):
     def __init__(
             self,
-            refuellingStrategy: RefuellingStrategy
+            refuellingStrategy: RefuellingStrategy,
+            anomalyFuelCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
+            refinedFuelExclusive: bool = False # TODO: Add wider support for this
             ) -> None:
-        self._refuellingStrategy = refuellingStrategy
-        self._cache: typing.Dict[traveller.World, RefuellingType] = {}
+        if isinstance(anomalyFuelCost, int):
+            anomalyFuelCost = common.ScalarCalculation(
+                value=anomalyFuelCost,
+                name='Anomaly Fuel Cost Per Ton')
 
-    def selectRefuellingType(
+        self._refuellingStrategy = refuellingStrategy
+        self._anomalyFuelCost = anomalyFuelCost
+        self._refinedFuelExclusive = refinedFuelExclusive
+        self._worldFuelTypes = {}
+
+    def refuellingType(
+            self,
+            world: traveller.World
+            ) -> RefuellingType:
+        if world in self._worldFuelTypes:
+            return self._worldFuelTypes[world]
+
+        refuellingType = self._selectRefuellingType(world=world)
+        self._worldFuelTypes[world] = refuellingType
+        return refuellingType
+
+    def costPerTon(
+            self,
+            world: traveller.World
+            ) -> typing.Optional[common.ScalarCalculation]:
+        refuellingType = self.refuellingType(world=world)
+        if refuellingType is logic.RefuellingType.Refined:
+            return traveller.RefinedFuelCostPerTon
+        if refuellingType is logic.RefuellingType.Unrefined:
+            return traveller.UnrefinedFuelCostPerTon
+        if refuellingType is logic.RefuellingType.Wilderness:
+            return traveller.WildernessFuelCostPerTon
+        if refuellingType is logic.RefuellingType.Anomaly:
+            return self._anomalyFuelCost
+        return None
+
+    # TODO: When this is all done it should be possible to remove this function
+    def _selectRefuellingType(
             self,
             world: traveller.World
             ) -> typing.Optional[RefuellingType]:
-        if world in self._cache:
-            return self._cache[world]
+        if self._refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
+            if world.hasStarPortRefuelling(includeUnrefined=False):
+                return RefuellingType.Refined
+        elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelOnly:
+            if world.hasStarPortRefuelling(
+                    includeRefined=False,
+                    refinedFuelExclusive=self._refinedFuelExclusive):
+                return RefuellingType.Unrefined
+        elif self._refuellingStrategy == RefuellingStrategy.GasGiantOnly:
+            if world.hasGasGiantRefuelling():
+                return RefuellingType.Wilderness
+        elif self._refuellingStrategy == RefuellingStrategy.WaterOnly:
+            if world.hasWaterRefuelling():
+                return RefuellingType.Wilderness
+        elif self._refuellingStrategy == RefuellingStrategy.WildernessOnly:
+            if world.hasWildernessRefuelling():
+                return RefuellingType.Wilderness
+        elif self._refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
+            if world.hasGasGiantRefuelling():
+                return RefuellingType.Wilderness
+            fallbackRefuelling = self._fallbackRefuellingType(
+                world=world)
+            if fallbackRefuelling is not None:
+                return fallbackRefuelling
+        elif self._refuellingStrategy == RefuellingStrategy.WaterPreferred:
+            if world.hasWaterRefuelling():
+                return RefuellingType.Wilderness
+            fallbackRefuelling = self._fallbackRefuellingType(
+                world=world)
+            if fallbackRefuelling is not None:
+                return fallbackRefuelling
+        elif self._refuellingStrategy == RefuellingStrategy.WildernessPreferred:
+            if world.hasWildernessRefuelling():
+                return RefuellingType.Wilderness
+            fallbackRefuelling = self._fallbackRefuellingType(
+                world=world)
+            if fallbackRefuelling is not None:
+                return fallbackRefuelling
+        else:
+            assert(False) # Check I've not missed an enum
 
-        refuellingType = selectRefuellingType(
-            world=world,
-            refuellingStrategy=self._refuellingStrategy)
+        # Checking for anomaly refuelling is intestinally done last. This is done
+        # so if a world has the Anomaly tag and a known refuelling type, the known
+        # refuelling type will be used first if it meets the refuelling strategy
+        if self._anomalyFuelCost and world.isAnomaly():
+            return RefuellingType.Anomaly
 
-        self._cache[world] = refuellingType
-        return refuellingType
+        return None
+
+    # Check for a fallback star port refuelling type when the world doesn't support
+    # the preferred wilderness refuelling type. Unrefined fuel is taken in
+    # preference to refined fuel as it's assumed any ship that could have performed
+    # wilderness refuelling will have the equipment needed to process the unrefined
+    # fuel they purchase.
+    def _fallbackRefuellingType(
+            self,
+            world: traveller.World
+            ) -> typing.Optional[RefuellingType]:
+        if world.hasStarPortRefuelling(
+                includeRefined=False, # Only check for unrefined fuel
+                refinedFuelExclusive=self._refinedFuelExclusive):
+            return RefuellingType.Unrefined
+        if world.hasStarPortRefuelling(
+                includeUnrefined=False): # Only check for refined fuel
+            return RefuellingType.Refined
+        return None
 
 class PitStop(object):
     def __init__(
@@ -231,7 +285,8 @@ class _WorldContext(object):
             world: traveller.World,
             isFinishWorld: bool,
             berthingRequired: bool,
-            refuellingType: RefuellingType,
+            refuellingType: typing.Optional[RefuellingType],
+            fuelCostPerTon: typing.Optional[int],
             reachableWorlds: typing.Iterable[typing.Tuple[int, float]],
             fuelToFinish: float
             ) -> None:
@@ -240,15 +295,11 @@ class _WorldContext(object):
         self._isFinishWorld = isFinishWorld
         self._berthingRequired = berthingRequired
         self._refuellingType = refuellingType
+        self._fuelCostPerTon = fuelCostPerTon
         self._reachableWorlds = reachableWorlds
         self._fuelToFinish = fuelToFinish
 
-        self._fuelCostPerTon = traveller.starPortFuelCostPerTon(
-            world=world,
-            refinedFuel=self._refuellingType == logic.RefuellingType.Refined)
-        if self._fuelCostPerTon != None:
-            self._fuelCostPerTon = self._fuelCostPerTon.value()
-
+        # TODO: For consistency should probably pass in berthing cost
         self._berthingCost = traveller.starPortBerthingCost(world)
         # Use the worst case value to make the next world decision making pessimistic
         self._berthingCost = self._berthingCost.worstCaseValue()
@@ -269,8 +320,11 @@ class _WorldContext(object):
     def isBerthingRequired(self) -> bool:
         return self._berthingRequired
 
-    def refuellingType(self) -> RefuellingType:
+    def refuellingType(self) -> typing.Optional[RefuellingType]:
         return self._refuellingType
+
+    def fuelCostPerTon(self) -> typing.Optional[int]:
+        return self._fuelCostPerTon
 
     def reachableWorlds(self) -> typing.Iterable[typing.Tuple[int, float]]:
         return self._reachableWorlds
@@ -402,7 +456,7 @@ def calculateRefuellingPlan(
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
-        refuellingStrategy: RefuellingStrategy,
+        fuelCostCalculator: FuelCostCalculator,
         shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -457,7 +511,7 @@ def calculateRefuellingPlan(
         shipStartingFuel=shipStartingFuel,
         shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
-        refuellingStrategy=refuellingStrategy,
+        fuelCostCalculator=fuelCostCalculator,
         requiredBerthingIndices=requiredBerthingIndices)
     if not calculationContext.hasBestSequence():
         return None
@@ -473,24 +527,22 @@ def _processRoute(
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         shipFuelPerParsec: float,
         parsecsWithoutRefuelling: int,
-        refuellingStrategy: RefuellingStrategy,
+        fuelCostCalculator: FuelCostCalculator,
         requiredBerthingIndices: typing.Optional[typing.Set[int]],
         ) -> _CalculationContext:
     jumpWorldCount = jumpRoute.worldCount()
     finishWorldIndex = jumpWorldCount - 1
     fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
-    refuellingTypeCache = RefuellingTypeCache(refuellingStrategy=refuellingStrategy)
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
         world = jumpRoute[worldIndex]
 
-        # Determine the refuelling type to be used for this world
-        refuellingType = refuellingTypeCache.selectRefuellingType(world=world)
-
-        # Find the worlds that match the refuelling strategy and are reachable from the current
-        # world without refuelling. Worlds that don't match the refuelling strategy are ignored as
-        # they don't affect where refuelling can take place (only how much fuel needs taken on)
+        # Find the worlds that match the refuelling requirements (i.e. have a
+        # refuelling type) and are reachable from the current world without
+        # refuelling. Worlds that don't match the refuelling requirements are
+        # ignored as they don't affect where refuelling can take place (only
+        # how much fuel needs taken on)
         reachableWorlds = []
         totalParsecs = 0
         parsecsToNextWorld = None
@@ -509,18 +561,21 @@ def _processRoute(
             if totalParsecs > parsecsWithoutRefuelling:
                 break
 
-            toWorldRefuellingType = refuellingTypeCache.selectRefuellingType(world=toWorld)
+            toWorldRefuellingType = fuelCostCalculator.refuellingType(world=toWorld)
             if toWorldRefuellingType or (reachableWorldIndex == finishWorldIndex):
                 reachableWorlds.append((reachableWorldIndex, totalParsecs * shipFuelPerParsec))
 
             reachableWorldIndex += 1
 
+        refuellingType = fuelCostCalculator.refuellingType(world=world)
+        fuelCostPerTon = fuelCostCalculator.costPerTon(world=world)
         worldContexts.append(_WorldContext(
             index=worldIndex,
             world=world,
             isFinishWorld=worldIndex == finishWorldIndex,
             berthingRequired=(requiredBerthingIndices != None) and (worldIndex in requiredBerthingIndices),
             refuellingType=refuellingType,
+            fuelCostPerTon=fuelCostPerTon.value() if fuelCostPerTon else None,
             reachableWorlds=reachableWorlds,
             fuelToFinish=fuelToFinish))
 
@@ -660,16 +715,20 @@ def _createRefuellingPlan(
                 name='Pit Stop Fuel Tonnage')
 
             refuellingType = worldContext.refuellingType()
-            assert(refuellingType != None)
-            if refuellingType == RefuellingType.Refined or \
-                    refuellingType == RefuellingType.Unrefined:
-                fuelCostPerTon = traveller.starPortFuelCostPerTon(
-                    world=world,
-                    refinedFuel=refuellingType == RefuellingType.Refined)
+            fuelCostPerTon = worldContext.fuelCostPerTon()
+            hasFuelCost = \
+                (fuelCostPerTon is not None) and \
+                (fuelCostPerTon > 0)
+            if hasFuelCost:
+                assert(refuellingType)
+                worldString = world.name(includeSubsector=True)
+                fuelCostPerTon = common.ScalarCalculation(
+                    value=fuelCostPerTon,
+                    name=f'{refuellingType.value} Fuel Cost Per Ton On {worldString}')
                 fuelCost = common.Calculator.multiply(
                     lhs=fuelCostPerTon,
                     rhs=fuelAmount,
-                    name=f'Fuel Cost On {world.name(includeSubsector=True)}')
+                    name=f'Total Fuel Cost On {worldString}')
 
         berthingCost = None
         if fuelCost or worldContext.isBerthingRequired():

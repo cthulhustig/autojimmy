@@ -72,7 +72,7 @@ def calculateRouteLogistics(
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
-        refuellingStrategy: typing.Union[int, common.ScalarCalculation],
+        fuelCostCalculator: logic.FuelCostCalculator,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -90,7 +90,7 @@ def calculateRouteLogistics(
             shipFuelCapacity=shipFuelCapacity,
             shipStartingFuel=shipStartingFuel,
             shipFuelPerParsec=shipFuelPerParsec,
-            refuellingStrategy=refuellingStrategy,
+            fuelCostCalculator=fuelCostCalculator,
             requiredBerthingIndices=requiredBerthingIndices,
             includeRefuellingCosts=includeLogisticsCosts,
             diceRoller=diceRoller)

@@ -450,9 +450,12 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = world.hasStarPortRefuelling(refinedFuelOnly=True)
+                match = world.hasStarPortRefuelling(includeUnrefined=False)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = world.hasStarPortRefuelling()
+                # TODO: This should really be updated to allow the user to
+                # specify if A/B star ports have unrefined fuel but I'm not
+                # sure how to handle them selecting it (global config????)
+                match = world.hasStarPortRefuelling(includeRefined=False)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
                 match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
