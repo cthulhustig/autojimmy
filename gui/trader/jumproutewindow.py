@@ -678,6 +678,7 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Anomaly Refuelling:', self._anomalyRefuellingCheckBox)
+        rightLayout.addRow('Anomaly Fuel Cost Per Ton:', self._anomalyFuelCostPerTonSpinBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         rightLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         rightLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
