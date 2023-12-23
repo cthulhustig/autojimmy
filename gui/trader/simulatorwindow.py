@@ -262,6 +262,20 @@ class SimulatorWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='AnomalyFuelCostState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._anomalyFuelCostSpinBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='AnomalyBerthingCostState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._anomalyBerthingCostSpinBox.restoreState(storedValue)            
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='RouteOptimisationState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -315,6 +329,8 @@ class SimulatorWindow(gui.WindowWidget):
         self._settings.setValue('ShipFuelPerParsec', self._shipFuelPerParsecSpinBox.saveState())
         self._settings.setValue('PerJumpOverheadsState', self._perJumpOverheadsSpinBox.saveState())
         self._settings.setValue('RefuellingStrategyState', self._refuellingStrategyComboBox.saveState())
+        self._settings.setValue('AnomalyFuelCostState', self._anomalyFuelCostSpinBox.saveState())
+        self._settings.setValue('AnomalyBerthingCostState', self._anomalyBerthingCostSpinBox.saveState())
         self._settings.setValue('RouteOptimisationState', self._routeOptimisationComboBox.saveState())
         self._settings.setValue('SearchRadiusState', self._searchRadiusSpinBox.saveState())
         self._settings.setValue('MapWidgetState', self._mapWidget.saveState())
@@ -415,6 +431,16 @@ class SimulatorWindow(gui.WindowWidget):
             value=logic.RefuellingStrategy.WildernessPreferred)
         self._refuellingStrategyComboBox.setToolTip(gui.RefuellingStrategyToolTip)
 
+        self._anomalyFuelCostSpinBox = gui.TogglableSpinBox()
+        self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
+        self._anomalyFuelCostSpinBox.setChecked(False)
+        self._anomalyFuelCostSpinBox.setValue(1000)
+        
+        self._anomalyBerthingCostSpinBox = gui.TogglableSpinBox()
+        self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
+        self._anomalyBerthingCostSpinBox.setChecked(False)
+        self._anomalyBerthingCostSpinBox.setValue(5000)
+
         self._routeOptimisationComboBox = gui.EnumComboBox(
             type=logic.RouteOptimisation,
             value=logic.RouteOptimisation.ShortestDistance)
@@ -440,6 +466,8 @@ class SimulatorWindow(gui.WindowWidget):
         rightLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         rightLayout.addRow('Search Radius (Parsecs):', self._searchRadiusSpinBox)
 
@@ -539,8 +567,8 @@ class SimulatorWindow(gui.WindowWidget):
 
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            anomalyFuelCost=None, # TODO: Should simulator support anomaly refuelling??
-            anomalyBerthingCost=None) # TODO: Should simulator support anomaly berthing??
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
         if not pitCostCalculator.refuellingType(
                 world=self._startWorldWidget.world()):
             gui.MessageBoxEx.information(
