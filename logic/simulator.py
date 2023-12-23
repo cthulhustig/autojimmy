@@ -157,17 +157,26 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
-                expectedBerthingRange = pitStop.berthingCost()
-                if expectedBerthingRange:
+                if pitStop.hasBerthing():
                     # Roll dice to calculate actual berthing cost on this world
+                    # NOTE: If we've got to this point then we know berthing is
+                    # taking place, it may be to pick up fuel it may be because
+                    # we've reached the finish world (or some other mandatory
+                    # berthing situation). It doesn't mater which it is for now,
+                    # all we care is that we get the berthing cost no mater what
+                    # refuelling type is being used
+                    diceRoller = common.DiceRoller(
+                        randomGenerator=self._randomGenerator)
                     berthingCost = self._pitCostCalculator.berthingCost(
                         world=jumpRoute[self._jumpRouteIndex],
-                        diceRoller=common.DiceRoller(randomGenerator=self._randomGenerator))
+                        mandatory=True,
+                        diceRoller=diceRoller)
                     assert(isinstance(berthingCost, common.ScalarCalculation))
-                    assert(berthingCost.value() >= expectedBerthingRange.value())
-                    assert(berthingCost.value() <= expectedBerthingRange.value())
                     berthingCost = berthingCost.value()
-                    self._logMessage(f'Berthing at {self._currentWorld.name(includeSubsector=True)} for a cost of Cr{berthingCost}')
+                    self._logMessage(
+                        'Berthing at {world} for a cost of Cr{cost}'.format(
+                            world=self._currentWorld.name(includeSubsector=True),
+                            cost=berthingCost))
                     self._setAvailableFunds(self._availableFunds - berthingCost)
                     self._actualLogisticsCost += berthingCost
 
@@ -178,10 +187,9 @@ class Simulator(object):
                     fuelTons = fuelTons.value()
 
                     fuelCost = pitStop.fuelCost()
-                    assert(isinstance(fuelCost, common.ScalarCalculation))
-                    fuelCost = fuelCost.value()
+                    fuelCost = fuelCost.value() if fuelCost else 0
 
-                    infoString = 'Star port refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
+                    infoString = 'Refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
                         world=self._currentWorld.name(includeSubsector=True),
                         tons=fuelTons,
                         type=refuellingType.value.lower())
