@@ -64,13 +64,15 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
                 lastFuelWorld: traveller.World,
                 lastFuelParsecs: int,
                 lastFuelType: logic.RefuellingType,
-                lastFuelCost: int
+                lastFuelCost: int,
+                lastBerthingCost: int
                 ) -> None:
             self._currentFuel = currentFuel
             self._lastFuelWorld = lastFuelWorld
             self._lastFuelParsecs = lastFuelParsecs
             self._lastFuelType = lastFuelType
             self._lastFuelCost = lastFuelCost
+            self._lastBerthingCost = lastBerthingCost
 
         def currentFuel(self) -> float:
             return self._currentFuel
@@ -87,20 +89,23 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         def lastFuelCost(self) -> int:
             return self._lastFuelCost
 
+        def lastBerthingCost(self) -> int:
+            return self._lastBerthingCost
+
     def __init__(
             self,
             shipTonnage: int,
             shipFuelCapacity: int,
             shipCurrentFuel: float,
             perJumpOverheads: int,
-            fuelCostCalculator: typing.Optional[logic.FuelCostCalculator] = None,
+            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
             shipFuelPerParsec: typing.Optional[float] = None
             ) -> None:
         self._shipTonnage = shipTonnage
         self._shipFuelCapacity = shipFuelCapacity
         self._shipCurrentFuel = shipCurrentFuel
         self._shipFuelPerParsec = shipFuelPerParsec
-        self._fuelCostCalculator = fuelCostCalculator
+        self._pitCostCalculator = pitCostCalculator
         self._perJumpOverheads = perJumpOverheads
 
         if not self._shipFuelPerParsec:
@@ -115,19 +120,21 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             startWorld: traveller.World
             ) -> typing.Any:
-        if not self._fuelCostCalculator:
+        if not self._pitCostCalculator:
             # Fuel based route calculation is disabled so the context isn't used
             return None
 
-        refuellingType = self._fuelCostCalculator.refuellingType(world=startWorld)
-        fuelCostPerTon = self._fuelCostCalculator.costPerTon(world=startWorld)
+        refuellingType = self._pitCostCalculator.refuellingType(world=startWorld)
+        fuelCostPerTon = self._pitCostCalculator.fuelCost(world=startWorld)
+        berthingCost = self._pitCostCalculator.berthingCost(world=startWorld)
 
         costContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=self._shipCurrentFuel,
             lastFuelWorld=startWorld if refuellingType else None,
             lastFuelParsecs=0 if refuellingType else (self._parsecsWithoutRefuelling + 1),
             lastFuelType=refuellingType,
-            lastFuelCost=fuelCostPerTon.value() if fuelCostPerTon else 0)
+            lastFuelCost=fuelCostPerTon.value() if fuelCostPerTon else 0,
+            lastBerthingCost=berthingCost.worstCaseValue() if berthingCost else 0)
 
         return costContext
 
@@ -149,7 +156,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
 
-        if not self._fuelCostCalculator:
+        if not self._pitCostCalculator:
             # Fuel based route calculation is disabled
             return (jumpCost, None)
 
@@ -159,24 +166,28 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         jumpFuel = jumpParsecs * self._shipFuelPerParsec
         fuelDeficit = 0 if (jumpFuel <= currentFuel) else (jumpFuel - currentFuel)
 
-        refuellingType = self._fuelCostCalculator.refuellingType(world=currentWorld)
-        fuelWorld = currentWorld
-        fuelCostPerTon = 0
-        lastFuelParsecs = 0
-
+        refuellingType = self._pitCostCalculator.refuellingType(world=currentWorld)
         if refuellingType == None:
             # The current world doesn't meet the refuelling requirements so use
             # the last refuelling type
             refuellingType = costContext.lastFuelType()
             fuelWorld = costContext.lastFuelWorld()
             fuelCostPerTon = costContext.lastFuelCost()
+            berthingCost = costContext.lastBerthingCost()
             lastFuelParsecs = costContext.lastFuelParsecs()
         else:
             # The current world meets the refuelling requirements so use its
             # details
-            fuelCostPerTon = self._fuelCostCalculator.costPerTon(world=currentWorld)
+            fuelWorld = currentWorld
+
+            fuelCostPerTon = self._pitCostCalculator.fuelCost(world=currentWorld)
             assert(fuelCostPerTon != None)
             fuelCostPerTon = fuelCostPerTon.value()
+
+            berthingCost = self._pitCostCalculator.berthingCost(world=currentWorld)
+            berthingCost = berthingCost.worstCaseValue() if berthingCost else 0
+
+            lastFuelParsecs = 0
 
         if fuelDeficit > 0:
             if lastFuelParsecs > self._parsecsWithoutRefuelling:
@@ -185,8 +196,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
             jumpCost += fuelCostPerTon * fuelDeficit
             currentFuel += fuelDeficit
-
-            # TODO: Probably need a way to specify Anomaly berthing costs
 
             # TODO: The way this currently works means, if a fuel world is used to take on fuel for
             # multiple jumps, the berthing cost will be added to the route cost each time additional
@@ -197,16 +206,14 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             # long routes. In some cases it does generate lower cost routes but the majority of
             # times they're higher cost. I'm leaving it as is for now until I can work out what is
             # going on (I need an example of it happen that doesn't involve hundreds of worlds)
-            if refuellingType == logic.RefuellingType.Refined or \
-                    refuellingType == logic.RefuellingType.Unrefined:
-                berthingCost = traveller.starPortBerthingCost(fuelWorld)
-                jumpCost += berthingCost.worstCaseValue()
+            jumpCost += berthingCost
 
         newCostContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=currentFuel - jumpFuel,
             lastFuelWorld=fuelWorld,
             lastFuelParsecs=lastFuelParsecs + jumpParsecs,
             lastFuelType=refuellingType,
-            lastFuelCost=fuelCostPerTon)
+            lastFuelCost=fuelCostPerTon,
+            lastBerthingCost=berthingCost)
 
         return (jumpCost, newCostContext)

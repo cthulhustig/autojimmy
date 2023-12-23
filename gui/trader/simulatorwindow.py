@@ -537,10 +537,11 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
-        fuelCostCalculator = logic.FuelCostCalculator(
+        pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-            anomalyFuelCost=None) # TODO: Should simulator support anomaly refuelling??
-        if not fuelCostCalculator.refuellingType(
+            anomalyFuelCost=None, # TODO: Should simulator support anomaly refuelling??
+            anomalyBerthingCost=None) # TODO: Should simulator support anomaly berthing??
+        if not pitCostCalculator.refuellingType(
                 world=self._startWorldWidget.world()):
             gui.MessageBoxEx.information(
                 parent=self,
@@ -558,7 +559,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=0, # Simulator doesn't support starting fuel
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                fuelCostCalculator=fuelCostCalculator,
+                pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -585,7 +586,7 @@ class SimulatorWindow(gui.WindowWidget):
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                fuelCostCalculator=fuelCostCalculator,
+                pitCostCalculator=pitCostCalculator,
                 searchRadius=self._searchRadiusSpinBox.value(),
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 playerStreetwiseDm=self._playerStreetwiseDmSpinBox.value(),

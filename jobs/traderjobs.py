@@ -117,7 +117,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            fuelCostCalculator: logic.FuelCostCalculator,
+            pitCostCalculator: logic.PitStopCostCalculator,
             useLocalSaleBroker: bool,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             includePurchaseWorldBerthing: bool,
@@ -149,7 +149,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._fuelCostCalculator = fuelCostCalculator
+        self._pitCostCalculator = pitCostCalculator
         self._useLocalSaleBroker = useLocalSaleBroker
         self._localSaleBrokerDm = localSaleBrokerDm
         self._includePurchaseWorldBerthing = includePurchaseWorldBerthing
@@ -184,7 +184,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
-                fuelCostCalculator=self._fuelCostCalculator,
+                pitCostCalculator=self._pitCostCalculator,
                 useLocalSaleBroker=self._useLocalSaleBroker,
                 localSaleBrokerDm=self._localSaleBrokerDm,
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
@@ -222,7 +222,7 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            fuelCostCalculator: logic.FuelCostCalculator,
+            pitCostCalculator: logic.PitStopCostCalculator,
             useLocalPurchaseBroker: bool,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             useLocalSaleBroker: bool,
@@ -255,7 +255,7 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._fuelCostCalculator = fuelCostCalculator
+        self._pitCostCalculator = pitCostCalculator
         self._useLocalPurchaseBroker = useLocalPurchaseBroker
         self._localPurchaseBrokerDm = localPurchaseBrokerDm
         self._useLocalSaleBroker = useLocalSaleBroker
@@ -293,7 +293,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
-                fuelCostCalculator=self._fuelCostCalculator,
+                pitCostCalculator=self._pitCostCalculator,
                 useLocalPurchaseBroker=self._useLocalPurchaseBroker,
                 localPurchaseBrokerDm=self._localPurchaseBrokerDm,
                 useLocalSaleBroker=self._useLocalSaleBroker,

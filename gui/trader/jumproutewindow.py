@@ -71,8 +71,10 @@ def _formatBerthingTypeString(
     if world.hasStarPort():
         starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
-    else:
-        return 'No Star Port'
+    elif world.isAnomaly():
+        return 'Anomaly'
+
+    return 'No Star Port'
 
 class _WorldFilter(object):
     def __init__(
@@ -655,17 +657,17 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
 
-        self._anomalyRefuellingCheckBox = gui.CheckBoxEx() # TODO: Should this be shared like other controls
-        self._anomalyRefuellingCheckBox.setChecked(False) # TODO: Init to current config value
-        self._anomalyRefuellingCheckBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
-        self._anomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
-
-        self._anomalyFuelCostPerTonSpinBox = gui.SpinBoxEx() # TODO: Should this be shared like other controls
-        self._anomalyFuelCostPerTonSpinBox.setRange(0, app.MaxPossibleCredits)
-        self._anomalyFuelCostPerTonSpinBox.setValue(0) # TODO: Init to current config value
-        self._anomalyFuelCostPerTonSpinBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked() and \
-            self._anomalyRefuellingCheckBox.isChecked())
+        self._anomalyFuelCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
+        self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
+        self._anomalyFuelCostSpinBox.setValue(0) # TODO: Init to current config value
+        self._anomalyFuelCostSpinBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked())
+        
+        self._anomalyBerthingCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
+        self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
+        self._anomalyBerthingCostSpinBox.setValue(0) # TODO: Init to current config value
+        self._anomalyBerthingCostSpinBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked())
 
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
 
@@ -677,8 +679,8 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         rightLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
-        rightLayout.addRow('Anomaly Refuelling:', self._anomalyRefuellingCheckBox)
-        rightLayout.addRow('Anomaly Fuel Cost Per Ton:', self._anomalyFuelCostPerTonSpinBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         rightLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         rightLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
@@ -881,19 +883,16 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         # Fuel based route calculation
-        fuelCostCalculator = None
+        pitCostCalculator = None
         if self._fuelBasedRoutingCheckBox.isChecked():
-            anomalyFuelCost = \
-                self._anomalyFuelCostPerTonSpinBox.value() \
-                if self._anomalyRefuellingCheckBox.isChecked() else \
-                None
-            fuelCostCalculator = logic.FuelCostCalculator(
+            pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                anomalyFuelCost=anomalyFuelCost)
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
-            if not fuelCostCalculator.refuellingType(world=startWorld):
+            if not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy. '
                 if self._shipCurrentFuelSpinBox.value() <= 0:
                     message += 'In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
@@ -909,7 +908,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             fuelIssueWorldStrings = []
             for waypointWorld in self._waypointWorldsWidget.worlds():
-                if not fuelCostCalculator.refuellingType(world=waypointWorld):
+                if not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
             if fuelIssueWorldStrings:
@@ -941,7 +940,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                fuelCostCalculator=fuelCostCalculator,
+                pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -961,7 +960,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                fuelCostCalculator=fuelCostCalculator,
+                pitCostCalculator=pitCostCalculator,
                 worldFilterCallback=worldFilter.filter,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
@@ -1568,12 +1567,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not runningJob:
             fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
-            anomalyRefuelling = self._anomalyRefuellingCheckBox.isChecked()
-
             self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
-            self._anomalyRefuellingCheckBox.setEnabled(fuelBasedRouting)
-            self._anomalyFuelCostPerTonSpinBox.setEnabled(
-                fuelBasedRouting and anomalyRefuelling)
+            self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting)
+            self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting)
 
     def _selectWorld(self) -> typing.Optional[traveller.World]:
         dlg = gui.WorldSearchDialog(parent=self)
@@ -1635,14 +1631,11 @@ class JumpRouteWindow(gui.WindowWidget):
         # Only calculate logistics if fuel based routing is enabled. If it's disabled the route will
         # most likely contain worlds that don't match the refuelling strategy
         if self._fuelBasedRoutingCheckBox.isChecked():
-            anomalyFuelCost = \
-                self._anomalyFuelCostPerTonSpinBox.value() \
-                if self._anomalyRefuellingCheckBox.isChecked() else \
-                None
             # TODO: This should really be the same instance that was used to create the route
-            fuelCostCalculator = logic.FuelCostCalculator(
+            pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                anomalyFuelCost=anomalyFuelCost)
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
 
             try:
                 self._routeLogistics = logic.calculateRouteLogistics(
@@ -1652,7 +1645,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
                     shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                     perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                    fuelCostCalculator=fuelCostCalculator,
+                    pitCostCalculator=pitCostCalculator,
                     requiredBerthingIndices=self._generateRequiredBerthingIndices(),
                     includeLogisticsCosts=True) # Always include logistics costs
                 if not self._routeLogistics:

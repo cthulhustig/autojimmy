@@ -74,7 +74,7 @@ class Simulator(object):
             shipCargoCapacity: int,
             shipFuelCapacity: int,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            fuelCostCalculator: logic.FuelCostCalculator,
+            pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
             searchRadius: int,
             minSellerDm: int,
@@ -95,7 +95,7 @@ class Simulator(object):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._fuelCostCalculator = fuelCostCalculator
+        self._pitCostCalculator = pitCostCalculator
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -133,7 +133,7 @@ class Simulator(object):
             # No current cargo manifest so buy something on the current world
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
-            worldFilterCallback = lambda world: self._fuelCostCalculator.refuellingType(world=world) is not None
+            worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInArea(
                 sectorName=self._currentWorld.sectorName(),
                 worldX=self._currentWorld.x(),
@@ -157,12 +157,15 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
-                if pitStop.berthingCost():
+                expectedBerthingRange = pitStop.berthingCost()
+                if expectedBerthingRange:
                     # Roll dice to calculate actual berthing cost on this world
-                    berthingCost = traveller.starPortBerthingCost(
+                    berthingCost = self._pitCostCalculator.berthingCost(
                         world=jumpRoute[self._jumpRouteIndex],
                         diceRoller=common.DiceRoller(randomGenerator=self._randomGenerator))
                     assert(isinstance(berthingCost, common.ScalarCalculation))
+                    assert(berthingCost.value() >= expectedBerthingRange.value())
+                    assert(berthingCost.value() <= expectedBerthingRange.value())
                     berthingCost = berthingCost.value()
                     self._logMessage(f'Berthing at {self._currentWorld.name(includeSubsector=True)} for a cost of Cr{berthingCost}')
                     self._setAvailableFunds(self._availableFunds - berthingCost)
@@ -312,7 +315,7 @@ class Simulator(object):
             shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
             shipFuelPerParsec=self._shipFuelPerParsec,
             jumpCostCalculator=self._jumpCostCalculator,
-            fuelCostCalculator=self._fuelCostCalculator,
+            pitCostCalculator=self._pitCostCalculator,
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)

@@ -23,20 +23,26 @@ class RefuellingStrategy(enum.Enum):
     WaterPreferred = 'Water Preferred'
     WildernessPreferred = 'Wilderness Preferred'
 
-class FuelCostCalculator(object):
+class PitStopCostCalculator(object):
     def __init__(
             self,
             refuellingStrategy: RefuellingStrategy,
             anomalyFuelCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
+            anomalyBerthingCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             refinedFuelExclusive: bool = False # TODO: Add wider support for this
             ) -> None:
         if isinstance(anomalyFuelCost, int):
             anomalyFuelCost = common.ScalarCalculation(
                 value=anomalyFuelCost,
                 name='Anomaly Fuel Cost Per Ton')
+        if isinstance(anomalyBerthingCost, int):
+            anomalyBerthingCost = common.ScalarCalculation(
+                value=anomalyBerthingCost,
+                name='Anomaly Berthing Cost')
 
         self._refuellingStrategy = refuellingStrategy
         self._anomalyFuelCost = anomalyFuelCost
+        self._anomalyBerthingCost = anomalyBerthingCost
         self._refinedFuelExclusive = refinedFuelExclusive
         self._worldFuelTypes = {}
 
@@ -51,7 +57,7 @@ class FuelCostCalculator(object):
         self._worldFuelTypes[world] = refuellingType
         return refuellingType
 
-    def costPerTon(
+    def fuelCost(
             self,
             world: traveller.World
             ) -> typing.Optional[common.ScalarCalculation]:
@@ -64,6 +70,32 @@ class FuelCostCalculator(object):
             return traveller.WildernessFuelCostPerTon
         if refuellingType is logic.RefuellingType.Anomaly:
             return self._anomalyFuelCost
+        return None
+
+    def berthingCost(
+            self,
+            world: traveller.World,
+            mandatory: bool = False, # Is berthing mandatory rather than based
+                                     # on the refuelling type for the world
+            diceRoller: typing.Optional[common.DiceRoller] = None
+            ) -> typing.Optional[typing.Union[
+                common.ScalarCalculation,
+                common.RangeCalculation]]:
+        if not mandatory:
+            refuellingType = self.refuellingType(world=world)
+            if (not refuellingType) or \
+                    (refuellingType is logic.RefuellingType.Wilderness):
+                return None
+
+        berthingCost = traveller.starPortBerthingCost(
+            world=world,
+            diceRoller=diceRoller)
+        if berthingCost:
+            return berthingCost
+        
+        if self._anomalyBerthingCost and world.isAnomaly():
+            return self._anomalyBerthingCost
+
         return None
 
     def _selectRefuellingType(
@@ -283,25 +315,29 @@ class _WorldContext(object):
             index: int,
             world: traveller.World,
             isFinishWorld: bool,
-            berthingRequired: bool,
-            refuellingType: typing.Optional[RefuellingType],
-            fuelCostPerTon: typing.Optional[int],
+            mandatoryBerthing: bool,
+            pitCostCalculator: PitStopCostCalculator,
             reachableWorlds: typing.Iterable[typing.Tuple[int, float]],
             fuelToFinish: float
             ) -> None:
         self._index = index
         self._world = world
         self._isFinishWorld = isFinishWorld
-        self._berthingRequired = berthingRequired
-        self._refuellingType = refuellingType
-        self._fuelCostPerTon = fuelCostPerTon
+        self._mandatoryBerthing = mandatoryBerthing
+        self._pitCostCalculator = pitCostCalculator
         self._reachableWorlds = reachableWorlds
         self._fuelToFinish = fuelToFinish
 
-        # TODO: For consistency should probably pass in berthing cost
-        self._berthingCost = traveller.starPortBerthingCost(world)
-        # Use the worst case value to make the next world decision making pessimistic
-        self._berthingCost = self._berthingCost.worstCaseValue()
+        self._refuellingType = self._pitCostCalculator.refuellingType(
+            world=world)
+
+        cost = self._pitCostCalculator.fuelCost(world=world)
+        self._fuelCostPerTon = cost.value() if cost else 0
+
+        # NOTE: The worst case value to make the next world decision making
+        # pessimistic
+        cost = self._pitCostCalculator.berthingCost(world=world)
+        self._berthingCost = cost.worstCaseValue() if cost else 0
 
         self._bestFinalCost = None
         self._bestCostSoFar = None
@@ -316,8 +352,8 @@ class _WorldContext(object):
     def isFinishWorld(self) -> bool:
         return self._isFinishWorld
 
-    def isBerthingRequired(self) -> bool:
-        return self._berthingRequired
+    def mandatoryBerthing(self) -> bool:
+        return self._mandatoryBerthing
 
     def refuellingType(self) -> typing.Optional[RefuellingType]:
         return self._refuellingType
@@ -353,7 +389,7 @@ class _WorldContext(object):
             self._bestCostSoFar = costSoFar
             self._bestFuelSoFar = fuelSoFar
 
-    def calculateRefuellingCosts(
+    def estimateRefuellingCosts(
             self,
             tonsOfFuel: float
             ) -> typing.Optional[float]:
@@ -367,7 +403,7 @@ class _WorldContext(object):
         refuellingCost = self._fuelCostPerTon * tonsOfFuel
 
         # Only include berthing costs if berthing isn't mandatory
-        if not self._berthingRequired:
+        if not self._mandatoryBerthing:
             refuellingCost += self._berthingCost
 
         return refuellingCost
@@ -455,7 +491,7 @@ def calculateRefuellingPlan(
         shipTonnage: typing.Union[int, common.ScalarCalculation],
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
-        fuelCostCalculator: FuelCostCalculator,
+        pitCostCalculator: PitStopCostCalculator,
         shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -510,13 +546,14 @@ def calculateRefuellingPlan(
         shipStartingFuel=shipStartingFuel,
         shipFuelPerParsec=shipFuelPerParsec,
         parsecsWithoutRefuelling=parsecsWithoutRefuelling,
-        fuelCostCalculator=fuelCostCalculator,
+        pitCostCalculator=pitCostCalculator,
         requiredBerthingIndices=requiredBerthingIndices)
     if not calculationContext.hasBestSequence():
         return None
 
     return _createRefuellingPlan(
         calculationContext=calculationContext,
+        pitCostCalculator=pitCostCalculator,
         includeRefuellingCosts=includeRefuellingCosts,
         diceRoller=diceRoller)
 
@@ -526,7 +563,7 @@ def _processRoute(
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         shipFuelPerParsec: float,
         parsecsWithoutRefuelling: int,
-        fuelCostCalculator: FuelCostCalculator,
+        pitCostCalculator: PitStopCostCalculator,
         requiredBerthingIndices: typing.Optional[typing.Set[int]],
         ) -> _CalculationContext:
     jumpWorldCount = jumpRoute.worldCount()
@@ -560,21 +597,20 @@ def _processRoute(
             if totalParsecs > parsecsWithoutRefuelling:
                 break
 
-            toWorldRefuellingType = fuelCostCalculator.refuellingType(world=toWorld)
+            toWorldRefuellingType = pitCostCalculator.refuellingType(world=toWorld)
             if toWorldRefuellingType or (reachableWorldIndex == finishWorldIndex):
                 reachableWorlds.append((reachableWorldIndex, totalParsecs * shipFuelPerParsec))
 
             reachableWorldIndex += 1
 
-        refuellingType = fuelCostCalculator.refuellingType(world=world)
-        fuelCostPerTon = fuelCostCalculator.costPerTon(world=world)
+        mandatoryBerthing = (requiredBerthingIndices != None) and \
+            (worldIndex in requiredBerthingIndices)
         worldContexts.append(_WorldContext(
             index=worldIndex,
             world=world,
             isFinishWorld=worldIndex == finishWorldIndex,
-            berthingRequired=(requiredBerthingIndices != None) and (worldIndex in requiredBerthingIndices),
-            refuellingType=refuellingType,
-            fuelCostPerTon=fuelCostPerTon.value() if fuelCostPerTon else None,
+            mandatoryBerthing=mandatoryBerthing,
+            pitCostCalculator=pitCostCalculator,
             reachableWorlds=reachableWorlds,
             fuelToFinish=fuelToFinish))
 
@@ -607,7 +643,7 @@ def _processWorld(
 
     fromWorldIndex = fromWorldContext.index()
     fuelToFinish = fromWorldContext.fuelToFinish()
-    fromWorldCost = fromWorldContext.calculateRefuellingCosts(tonsOfFuel=fuelToFinish)
+    fromWorldCost = fromWorldContext.estimateRefuellingCosts(tonsOfFuel=fuelToFinish)
 
     # Iterate over the worlds reachable from the current world in reverse order. This causes the
     # algorithm to try sequences with fewer pit stops first. This is important to minimize the
@@ -624,7 +660,7 @@ def _processWorld(
 
         if fromWorldCost != None:
             if not toWorldContext.isFinishWorld():
-                toWorldCost = toWorldContext.calculateRefuellingCosts(
+                toWorldCost = toWorldContext.estimateRefuellingCosts(
                     tonsOfFuel=toWorldContext.fuelToFinish())
 
                 if (toWorldCost == None) or (fromWorldCost <= toWorldCost):
@@ -645,7 +681,7 @@ def _processWorld(
 
         refuellingCosts = 0
         if fuelToTakeOn > 0:
-            refuellingCosts = fromWorldContext.calculateRefuellingCosts(tonsOfFuel=fuelToTakeOn)
+            refuellingCosts = fromWorldContext.estimateRefuellingCosts(tonsOfFuel=fuelToTakeOn)
             assert(refuellingCosts != None) # The checks above should prevent this
 
         nextFuel = (currentFuel + fuelToTakeOn) - fuelBetweenWorlds
@@ -685,6 +721,7 @@ def _processWorld(
 
 def _createRefuellingPlan(
         calculationContext: _CalculationContext,
+        pitCostCalculator: PitStopCostCalculator,
         includeRefuellingCosts: bool,
         diceRoller: typing.Optional[common.DiceRoller]
         ) -> RefuellingPlan:
@@ -729,29 +766,30 @@ def _createRefuellingPlan(
                     rhs=fuelAmount,
                     name=f'Total Fuel Cost On {worldString}')
 
+        mandatoryBerthing = worldContext.mandatoryBerthing()
         berthingCost = None
-        if fuelCost or worldContext.isBerthingRequired():
-            berthingCost = traveller.starPortBerthingCost(
+        if fuelCost or mandatoryBerthing:
+            berthingCost = pitCostCalculator.berthingCost(
                 world=world,
+                mandatory=mandatoryBerthing,
                 diceRoller=diceRoller)
-            berthingCost = common.Calculator.rename(
-                value=berthingCost,
-                name=f'Berthing Cost For {world.name(includeSubsector=True)}')
+            if berthingCost:
+                berthingCost = common.Calculator.rename(
+                    value=berthingCost,
+                    name=f'Berthing Cost For {world.name(includeSubsector=True)}')
 
         # Only create a pit stop if we're refuelling or berthing
         if refuellingType or berthingCost:
-            reportedFuelCost = fuelCost
-            reportedBerthingCost = berthingCost
             if not includeRefuellingCosts:
-                if reportedFuelCost:
-                    reportedFuelCost = common.Calculator.override(
-                        old=reportedFuelCost,
+                if fuelCost:
+                    fuelCost = common.Calculator.override(
+                        old=fuelCost,
                         new=common.ScalarCalculation(value=0, name='Overridden Fuel Cost'),
                         name='Ignored Fuel Cost')
 
-                if reportedBerthingCost:
-                    reportedBerthingCost = common.Calculator.override(
-                        old=reportedBerthingCost,
+                if berthingCost:
+                    berthingCost = common.Calculator.override(
+                        old=berthingCost,
                         new=common.ScalarCalculation(value=0, name='Overridden Berthing Cost'),
                         name='Ignored Berthing Cost')
 
@@ -760,7 +798,7 @@ def _createRefuellingPlan(
                 world=world,
                 refuellingType=refuellingType,
                 tonsOfFuel=fuelAmount,
-                fuelCost=reportedFuelCost,
-                berthingCost=reportedBerthingCost))
+                fuelCost=fuelCost,
+                berthingCost=berthingCost))
 
     return RefuellingPlan(pitStops)

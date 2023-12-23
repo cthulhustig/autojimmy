@@ -23,7 +23,7 @@ class SimulatorJob(QtCore.QThread):
             shipFuelCapacity: int,
             shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            fuelCostCalculator: logic.FuelCostCalculator,
+            pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
             searchRadius: int,
             playerBrokerDm: int,
@@ -53,7 +53,7 @@ class SimulatorJob(QtCore.QThread):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipFuelPerParsec = shipFuelPerParsec
         self._jumpCostCalculator = jumpCostCalculator
-        self._fuelCostCalculator = fuelCostCalculator
+        self._pitCostCalculator = pitCostCalculator
         self._perJumpOverheads = perJumpOverheads
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
@@ -105,7 +105,7 @@ class SimulatorJob(QtCore.QThread):
                 shipFuelCapacity=self._shipFuelCapacity,
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 jumpCostCalculator=self._jumpCostCalculator,
-                fuelCostCalculator=self._fuelCostCalculator,
+                pitCostCalculator=self._pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheads,
                 searchRadius=self._searchRadius,
                 playerBrokerDm=self._playerBrokerDm,
