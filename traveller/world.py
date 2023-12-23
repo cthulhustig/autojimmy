@@ -130,6 +130,12 @@ class World(object):
     def isAnomaly(self) -> bool:
         return self._isAnomaly
 
+    # From looking at occurrences in the map data, the {Fuel} remark is used for
+    # VoidBridges and Pirian Domain Fuel Factories. Both these are automated
+    # stations where drones harvest fuel from ice. There is no star port and
+    # fuel is provided free to anyone.
+    # https://www.wiki.travellerrpg.com/VoidBridges
+    # https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
