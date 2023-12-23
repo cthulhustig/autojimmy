@@ -363,6 +363,10 @@ class WorldFilterDialog(gui.DialogEx):
             self._filterTypeComboBox.setCurrentEnum(_FilterType.NobilityFilter)
             self._nobilityFilterOperationComboBox.setCurrentEnum(filter.operation())
             self._nobilityFilterValuesList.setCheckedEnums(filter.value())
+        elif isinstance(filter, logic.RemarksFilter):
+            self._filterTypeComboBox.setCurrentEnum(_FilterType.RemarksFilter)
+            self._remarksFilterOperationCombo.setCurrentEnum(filter.operation())
+            self._remarksFilterValueLineEdit.setText(filter.value())
         elif isinstance(filter, logic.TradeCodeFilter):
             self._filterTypeComboBox.setCurrentEnum(_FilterType.TradeCodeFilter)
             self._tradeCodeFilterOperationComboBox.setCurrentEnum(filter.operation())
