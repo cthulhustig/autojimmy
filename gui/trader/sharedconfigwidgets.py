@@ -577,6 +577,62 @@ class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
             toolTip=gui.RefuellingStrategyToolTip,
             parent=parent)
 
+class SharedUseFuelCachesCheckBox(_SharedCheckBox):
+    class _SettingUpdater(_CheckBoxUpdater):
+        def _loadValue(self) -> bool:
+            return app.Config.instance().useFuelCaches()
+
+        def _saveValue(self, value: bool) -> None:
+            return app.Config.instance().setUseFuelCaches(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedUseFuelCachesCheckBox._SettingUpdater,
+            toolTip='TODO', # TODO: Add tool tip
+            parent=parent)
+
+class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
+    class _SettingUpdater(_TogglableSpinBoxUpdater):
+        def _loadValue(self) -> typing.Tuple[bool, int]:
+            return (app.Config.instance().useAnomalyRefuelling(),
+                    app.Config.instance().anomalyFuelCost())
+
+        def _saveValue(self, enabled: bool, value: int) -> None:
+            app.Config.instance().setUseAnomalyRefuelling(enabled)
+            app.Config.instance().setAnomalyFuelCost(value)
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            updaterType=SharedAnomalyRefuellingSpinBox._SettingUpdater,
+            minValue=0,
+            maxValue=app.MaxPossibleCredits,
+            toolTip='TODO', # TODO: Add tool tip
+            parent=parent)
+        
+class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
+    class _SettingUpdater(_TogglableSpinBoxUpdater):
+        def _loadValue(self) -> typing.Tuple[bool, int]:
+            return (app.Config.instance().useAnomalyBerthing(),
+                    app.Config.instance().anomalyBerthingCost())
+
+        def _saveValue(self, enabled: bool, value: int) -> None:
+            app.Config.instance().setUseAnomalyBerthing(enabled)
+            app.Config.instance().setAnomalyBerthingCost(value)
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            updaterType=SharedAnomalyBerthingSpinBox._SettingUpdater,
+            minValue=0,
+            maxValue=app.MaxPossibleCredits,
+            toolTip='TODO', # TODO: Add tool tip
+            parent=parent)
+
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def _loadValue(self) -> logic.RouteOptimisation:

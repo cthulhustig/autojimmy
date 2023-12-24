@@ -411,6 +411,13 @@ class JumpRouteWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ConfigurationTabBarState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._configurationStack.restoreState(storedValue)            
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='WaypointWorldTableState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -527,6 +534,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.beginGroup(self._configSection)
 
         self._settings.setValue('StartFinishWorldsState', self._startFinishWorldsWidget.saveState())
+        self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('WaypointWorldTableState', self._waypointWorldsWidget.saveState())
         self._settings.setValue('WaypointWorldTableContent', self._waypointWorldsWidget.saveContent())
         self._settings.setValue('AvoidWorldTableState', self._avoidWorldsWidget.saveState())
@@ -634,46 +642,29 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpWorldsGroupBox.setLayout(groupLayout)
 
     def _setupConfigurationControls(self) -> None:
-        # Left hand column of options
-        self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
-        self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
-        self._shipJumpRatingSpinBox.valueChanged.connect(self._shipJumpRatingChanged)
-        self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
-        self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
-        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
-
-        leftLayout = gui.FormLayoutEx()
-        leftLayout.setContentsMargins(0, 0, 0, 0)
-        leftLayout.addRow('Ship Total Tonnage:', self._shipTonnageSpinBox)
-        leftLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
-        leftLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
-        leftLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
-        leftLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
-
-        # Center column of options
+        #
+        # Route Configuration
+        #
         self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
 
         self._fuelBasedRoutingCheckBox = gui.SharedFuelBasedRoutingCheckBox()
-        self._fuelBasedRoutingCheckBox.stateChanged.connect(self._fuelBasedRoutingToggled)
+        self._fuelBasedRoutingCheckBox.stateChanged.connect(
+            self._fuelBasedRoutingToggled)
 
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
+        self._refuellingStrategyComboBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked())
 
-        self._useFuelCachesCheckBox = gui.CheckBoxEx() # TODO: Should this be shared like other controls
-        self._useFuelCachesCheckBox.setChecked(True)
+        self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
         self._useFuelCachesCheckBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
 
-        self._anomalyFuelCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
-        self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
-        self._anomalyFuelCostSpinBox.setValue(0) # TODO: Init to current config value
-        self._anomalyFuelCostSpinBox.setEnabled(
+        self._anomalyRefuellingSpinBox = gui.SharedAnomalyRefuellingSpinBox()
+        self._anomalyRefuellingSpinBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
 
-        self._anomalyBerthingCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
-        self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
-        self._anomalyBerthingCostSpinBox.setValue(0) # TODO: Init to current config value
-        self._anomalyBerthingCostSpinBox.setEnabled(
+        self._anomalyBerthingSpinBox = gui.SharedAnomalyBerthingSpinBox()
+        self._anomalyBerthingSpinBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
 
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
@@ -681,25 +672,60 @@ class JumpRouteWindow(gui.WindowWidget):
         self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
 
+        leftLayout = gui.FormLayoutEx()
+        leftLayout.setContentsMargins(0, 0, 0, 0)
+        leftLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
+        leftLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
+        leftLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
+        leftLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
+        leftLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
+
         rightLayout = gui.FormLayoutEx()
         rightLayout.setContentsMargins(0, 0, 0, 0)
-        rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
-        rightLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
-        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
-        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
-        rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
-        rightLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
-        rightLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyRefuellingSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)        
 
-        optionsLayout = QtWidgets.QHBoxLayout()
-        optionsLayout.addLayout(leftLayout)
-        optionsLayout.addLayout(rightLayout)
-        optionsLayout.addStretch()
+        routingLayout = QtWidgets.QHBoxLayout()
+        routingLayout.addLayout(leftLayout)
+        routingLayout.addLayout(rightLayout)
+        routingLayout.addStretch()
+
+        #
+        # Ship Configuration
+        #
+        self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
+        self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
+        self._shipJumpRatingSpinBox.valueChanged.connect(self._shipJumpRatingChanged)
+        self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
+        self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
+        self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
+
+        shipLayout = gui.FormLayoutEx()
+        shipLayout.setContentsMargins(0, 0, 0, 0)
+        shipLayout.addRow('Ship Total Tonnage:', self._shipTonnageSpinBox)
+        shipLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
+        shipLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
+        shipLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        shipLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)        
+
+        #
+        # Configuration Stack
+        #
+        self._configurationStack = gui.TabWidgetEx()
+        self._configurationStack.addTab(
+            gui.LayoutWrapperWidget(layout=routingLayout),
+            'Route')
+        self._configurationStack.addTab(
+            gui.LayoutWrapperWidget(layout=shipLayout),
+            'Ship')
+        
+        configurationLayout = QtWidgets.QHBoxLayout()
+        configurationLayout.addWidget(self._configurationStack)
 
         self._configurationGroupBox = QtWidgets.QGroupBox('Configuration')
-        self._configurationGroupBox.setLayout(optionsLayout)
+        self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupWaypointWorldsControls(self) -> None:
         self._waypointWorldTable = gui.WorldBerthingTable()
@@ -896,8 +922,8 @@ class JumpRouteWindow(gui.WindowWidget):
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
+                anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
+                anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
@@ -1578,8 +1604,8 @@ class JumpRouteWindow(gui.WindowWidget):
             fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
             self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
             self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
-            self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting)
-            self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting)
+            self._anomalyRefuellingSpinBox.setEnabled(fuelBasedRouting)
+            self._anomalyBerthingSpinBox.setEnabled(fuelBasedRouting)
 
     def _selectWorld(self) -> typing.Optional[traveller.World]:
         dlg = gui.WorldSearchDialog(parent=self)
@@ -1645,8 +1671,8 @@ class JumpRouteWindow(gui.WindowWidget):
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
+                anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
+                anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
 
             try:
                 self._routeLogistics = logic.calculateRouteLogistics(
