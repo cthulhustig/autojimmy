@@ -90,8 +90,12 @@ class _BaseTraderWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigurationControls(self) -> None:
-        # Left column of controls
+        #
+        # Trade Configuration
+        #
         self._availableFundsSpinBox = gui.SharedAvailableFundsSpinBox()
+
+        self._freeCargoSpaceSpinBox = gui.SharedFreeCargoSpaceSpinBox()
 
         self._playerBrokerDmSpinBox = gui.SharedPlayerBrokerDMSpinBox()
         self._playerBrokerDmSpinBox.valueChanged.connect(self._playerBrokerDmChanged)
@@ -108,59 +112,89 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._localSaleBrokerWidget = gui.SharedLocalSaleBrokerSpinBox()
         self._localSaleBrokerWidget.valueChanged.connect(self._localSaleBrokerDmChanged)
 
-        self._leftOptionsLayout = gui.FormLayoutEx()
-        self._leftOptionsLayout.setContentsMargins(0, 0, 0, 0)
-        self._leftOptionsLayout.addRow('Available Funds:', self._availableFundsSpinBox)
-        self._leftOptionsLayout.addRow('Player\'s Broker DM:', self._playerBrokerDmSpinBox)
-        self._leftOptionsLayout.addRow('Seller DM Range:', self._sellerDmRangeWidget)
-        self._leftOptionsLayout.addRow('Buyer DM Range:', self._buyerDmRangeWidget)
-        self._leftOptionsLayout.addRow('Local Purchase Broker:', self._localPurchaseBrokerWidget)
-        self._leftOptionsLayout.addRow('Local Sale Broker:', self._localSaleBrokerWidget)
+        leftLayout = gui.FormLayoutEx()
+        leftLayout.setContentsMargins(0, 0, 0, 0)
+        leftLayout.addRow('Available Funds:', self._availableFundsSpinBox)
+        leftLayout.addRow('Free Cargo Space:', self._freeCargoSpaceSpinBox)
+        leftLayout.addRow('Player\'s Broker DM:', self._playerBrokerDmSpinBox)
+        leftLayout.addRow('Seller DM Range:', self._sellerDmRangeWidget)
+        leftLayout.addRow('Buyer DM Range:', self._buyerDmRangeWidget)
+        leftLayout.addRow('Local Purchase Broker:', self._localPurchaseBrokerWidget)
+        leftLayout.addRow('Local Sale Broker:', self._localSaleBrokerWidget)
 
-        # Center column of controls
+        # Right column of controls
+        self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
+        self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
+        self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
+        self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
+        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
+        self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
+        self._anomalyRefuellingSpinBox = gui.SharedAnomalyRefuellingSpinBox()
+        self._anomalyBerthingSpinBox = gui.SharedAnomalyBerthingSpinBox()
+
+        centerLayout = gui.FormLayoutEx()
+        centerLayout.setContentsMargins(0, 0, 0, 0)
+        centerLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
+        centerLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
+        centerLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
+        centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
+        centerLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
+        centerLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
+        centerLayout.addRow('Anomaly Fuel Cost:', self._anomalyRefuellingSpinBox)
+        centerLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)
+
+        self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
+        self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
+
+        rightLayout = gui.FormLayoutEx()
+        rightLayout.setContentsMargins(0, 0, 0, 0)
+        rightLayout.addRow('Include Logistics Costs:', self._includeLogisticsCostsCheckBox)
+        rightLayout.addRow('Include Unprofitable Trades:', self._includeUnprofitableTradesCheckBox)
+
+        traderLayout = QtWidgets.QHBoxLayout()
+        traderLayout.addLayout(leftLayout)
+        traderLayout.addLayout(centerLayout)
+        traderLayout.addLayout(rightLayout)
+        traderLayout.addStretch()
+
+        #
+        # Ship Configuration
+        #
         self._shipTonnageSpinBox = gui.SharedShipTonnageSpinBox()
         self._shipJumpRatingSpinBox = gui.SharedJumpRatingSpinBox()
         self._shipFuelCapacitySpinBox = gui.SharedFuelCapacitySpinBox()
         self._shipCurrentFuelSpinBox = gui.SharedCurrentFuelSpinBox()
         self._shipFuelPerParsecSpinBox = gui.SharedFuelPerParsecSpinBox()
-        self._freeCargoSpaceSpinBox = gui.SharedFreeCargoSpaceSpinBox()
 
-        self._centerOptionsLayout = gui.FormLayoutEx()
-        self._centerOptionsLayout.setContentsMargins(0, 0, 0, 0)
-        self._centerOptionsLayout.addRow('Ship Total Tonnage:', self._shipTonnageSpinBox)
-        self._centerOptionsLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
-        self._centerOptionsLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
-        self._centerOptionsLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
-        self._centerOptionsLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
-        self._centerOptionsLayout.addRow('Free Cargo Space:', self._freeCargoSpaceSpinBox)
+        shipLayout = gui.FormLayoutEx()
+        shipLayout.setContentsMargins(0, 0, 0, 0)
+        shipLayout.addRow('Ship Total Tonnage:', self._shipTonnageSpinBox)
+        shipLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
+        shipLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
+        shipLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
+        shipLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
+        # Add a second copy of the free cargo capacity so the user can set it in
+        # both panes (it's logically a ship setting). We don't need to hold onto
+        # this second instance as they're shared controls so all changes should
+        # be reflected in the instance we are holding onto
+        shipLayout.addRow('Free Cargo Space:', gui.SharedFreeCargoSpaceSpinBox())
 
-        # Right column of controls
-        self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
-        self._routeOptimisationComboBox = gui.SharedRouteOptimisationComboBox()
-        self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
-        self._includeStartWorldBerthingCheckBox = gui.SharedIncludeStartBerthingCheckBox()
-        self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
-        self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
-        self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
+        #
+        # Configuration Stack
+        #
+        self._configurationStack = gui.TabWidgetEx()
+        self._configurationStack.addTab(
+            gui.LayoutWrapperWidget(layout=traderLayout),
+            'Trader')
+        self._configurationStack.addTab(
+            gui.LayoutWrapperWidget(layout=shipLayout),
+            'Ship')
 
-        self._rightOptionsLayout = gui.FormLayoutEx()
-        self._rightOptionsLayout.setContentsMargins(0, 0, 0, 0)
-        self._rightOptionsLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
-        self._rightOptionsLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
-        self._rightOptionsLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
-        self._rightOptionsLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
-        self._rightOptionsLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
-        self._rightOptionsLayout.addRow('Include Logistics Costs:', self._includeLogisticsCostsCheckBox)
-        self._rightOptionsLayout.addRow('Include Unprofitable Trades:', self._includeUnprofitableTradesCheckBox)
-
-        optionsLayout = QtWidgets.QHBoxLayout()
-        optionsLayout.addLayout(self._leftOptionsLayout)
-        optionsLayout.addLayout(self._centerOptionsLayout)
-        optionsLayout.addLayout(self._rightOptionsLayout)
-        optionsLayout.addStretch()
+        configurationLayout = QtWidgets.QHBoxLayout()
+        configurationLayout.addWidget(self._configurationStack)
 
         self._configurationGroupBox = QtWidgets.QGroupBox('Configuration')
-        self._configurationGroupBox.setLayout(optionsLayout)
+        self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupTradeOptionControls(self) -> None:
         self._calculateTradeOptionsButton = gui.DualTextPushButton(
@@ -662,6 +696,13 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ConfigurationTabBarState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._configurationStack.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='CargoRecordsDisplayModeState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -757,6 +798,8 @@ class WorldTraderWindow(_BaseTraderWindow):
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
+        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
+        self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('CargoRecordsDisplayModeState', self._cargoRecordDisplayModeTabView.saveState())
         self._settings.setValue('SpeculativeCargoTableState', self._speculativeCargoTable.saveState())
         self._settings.setValue('SpeculativeCargoTableContent', self._speculativeCargoTable.saveContent())
@@ -766,7 +809,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._settings.setValue('SaleWorldsTableContent', self._saleWorldsWidget.saveContent())
         self._settings.setValue('CurrentCargoTableState', self._currentCargoTable.saveState())
         self._settings.setValue('CurrentCargoTableContent', self._currentCargoTable.saveContent())
-        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('TradeInfoSplitterState', self._tradeInfoSplitter.saveState())
@@ -1746,11 +1788,17 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
-        # Flag cases where the purchase world doesn't match the refuelling strategy. No options will be
-        # generated unless the ship has enough current fuel
-        if not logic.selectRefuellingType(
-                world=self._purchaseWorldWidget.world(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+        pitCostCalculator = logic.PitStopCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+            anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
+            anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+
+        # Flag cases where the purchase world doesn't match the refuelling
+        # strategy. No options will be generated unless the ship has enough
+        #current fuel
+        if not pitCostCalculator.refuellingType(
+                world=self._purchaseWorldWidget.world()):
             message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
                 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
@@ -1772,7 +1820,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -1804,7 +1852,7 @@ class WorldTraderWindow(_BaseTraderWindow):
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                pitCostCalculator=pitCostCalculator,
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),
@@ -2046,10 +2094,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='IncludeIllegal',
+            key='ConfigurationTabBarState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._includeIllegalTradeGoodsCheckBox.restoreState(storedValue)
+            self._configurationStack.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -2104,7 +2152,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('IncludeIllegal', self._includeIllegalTradeGoodsCheckBox.saveState())
+        self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('PurchaseWorldsTableState', self._purchaseWorldsWidget.saveState())
         self._settings.setValue('PurchaseWorldsTableContent', self._purchaseWorldsWidget.saveContent())
         self._settings.setValue('SaleWorldsTableState', self._saleWorldsWidget.saveState())
@@ -2115,17 +2163,6 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._settings.endGroup()
 
         super().saveSettings()
-
-    def _setupConfigurationControls(self) -> None:
-        super()._setupConfigurationControls()
-
-        # An an include illegal check box before the include unprofitable check box in the options
-        # layout. This is not a shared check box as there are no other widgets to share it with
-        self._includeIllegalTradeGoodsCheckBox = gui.CheckBoxEx()
-        self._rightOptionsLayout.insertRow(
-            self._rightOptionsLayout.rowCount() - 1,
-            QtWidgets.QLabel('Include Illegal Trade Goods:'),
-            self._includeIllegalTradeGoodsCheckBox)
 
     def _setupSaleWorldControls(self) -> None:
         self._saleWorldsWidget = gui.WorldTableManagerWidget(
@@ -2367,13 +2404,17 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        pitCostCalculator = logic.PitStopCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+            anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
+            anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+
         # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
         # generated for those worlds unless the ship has enough current fuel
         fuelIssueWorldStrings = []
         for world in self._purchaseWorldsWidget.worlds():
-            if not logic.selectRefuellingType(
-                    world=world,
-                    refuellingStrategy=self._refuellingStrategyComboBox.currentEnum()):
+            if not pitCostCalculator.refuellingType(world=world):
                 fuelIssueWorldStrings.append(world.name())
 
         if fuelIssueWorldStrings:
@@ -2402,7 +2443,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:
             assert(False) # I've missed an enum
@@ -2436,8 +2477,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 shipCargoCapacity=self._freeCargoSpaceSpinBox.value(),
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                includeIllegal=self._includeIllegalTradeGoodsCheckBox.isChecked(),
+                pitCostCalculator=pitCostCalculator,
+                includeIllegal=True, # Always include illegal trade options for multi-world
                 includePurchaseWorldBerthing=self._includeStartWorldBerthingCheckBox.isChecked(),
                 includeSaleWorldBerthing=self._includeFinishWorldBerthingCheckBox.isChecked(),
                 includeUnprofitableTrades=self._includeUnprofitableTradesCheckBox.isChecked(),

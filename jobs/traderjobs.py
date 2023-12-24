@@ -117,7 +117,7 @@ class SingleWorldTraderJob(_TraderJobBase):
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            pitCostCalculator: logic.PitStopCostCalculator,
             useLocalSaleBroker: bool,
             localSaleBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             includePurchaseWorldBerthing: bool,
@@ -134,9 +134,9 @@ class SingleWorldTraderJob(_TraderJobBase):
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
         self._purchaseWorld = purchaseWorld
-        self._saleWorlds = saleWorlds.copy()
-        self._currentCargo = currentCargo.copy()
-        self._possibleCargo = possibleCargo.copy()
+        self._saleWorlds = list(saleWorlds)
+        self._currentCargo = list(currentCargo)
+        self._possibleCargo = list(possibleCargo)
         self._playerBrokerDm = playerBrokerDm
         self._minBuyerDm = minBuyerDm
         self._maxBuyerDm = maxBuyerDm
@@ -149,7 +149,7 @@ class SingleWorldTraderJob(_TraderJobBase):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._refuellingStrategy = refuellingStrategy
+        self._pitCostCalculator = pitCostCalculator
         self._useLocalSaleBroker = useLocalSaleBroker
         self._localSaleBrokerDm = localSaleBrokerDm
         self._includePurchaseWorldBerthing = includePurchaseWorldBerthing
@@ -184,7 +184,7 @@ class SingleWorldTraderJob(_TraderJobBase):
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategy,
+                pitCostCalculator=self._pitCostCalculator,
                 useLocalSaleBroker=self._useLocalSaleBroker,
                 localSaleBrokerDm=self._localSaleBrokerDm,
                 includePurchaseWorldBerthing=self._includePurchaseWorldBerthing,
@@ -222,7 +222,7 @@ class MultiWorldTraderJob(_TraderJobBase):
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]],
             perJumpOverheads: typing.Union[int, common.ScalarCalculation],
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            pitCostCalculator: logic.PitStopCostCalculator,
             useLocalPurchaseBroker: bool,
             localPurchaseBrokerDm: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             useLocalSaleBroker: bool,
@@ -238,8 +238,8 @@ class MultiWorldTraderJob(_TraderJobBase):
             ) -> None:
         # Make a copy of the worlds list so it can't be modified
         # while the thread is running.
-        self._purchaseWorlds = purchaseWorlds.copy()
-        self._saleWorlds = saleWorlds.copy()
+        self._purchaseWorlds = list(purchaseWorlds)
+        self._saleWorlds = list(saleWorlds)
         self._playerBrokerDm = playerBrokerDm
         self._minSellerDm = minSellerDm
         self._maxSellerDm = maxSellerDm
@@ -255,7 +255,7 @@ class MultiWorldTraderJob(_TraderJobBase):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._refuellingStrategy = refuellingStrategy
+        self._pitCostCalculator = pitCostCalculator
         self._useLocalPurchaseBroker = useLocalPurchaseBroker
         self._localPurchaseBrokerDm = localPurchaseBrokerDm
         self._useLocalSaleBroker = useLocalSaleBroker
@@ -293,7 +293,7 @@ class MultiWorldTraderJob(_TraderJobBase):
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 perJumpOverheads=self._perJumpOverheads,
                 jumpCostCalculator=self._jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategy,
+                pitCostCalculator=self._pitCostCalculator,
                 useLocalPurchaseBroker=self._useLocalPurchaseBroker,
                 localPurchaseBrokerDm=self._localPurchaseBrokerDm,
                 useLocalSaleBroker=self._useLocalSaleBroker,

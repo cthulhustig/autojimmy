@@ -127,9 +127,17 @@ class World(object):
     def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
         return self._remarks.colonySectorHexes()
 
+    # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
         return self._isAnomaly
 
+    # Fuel Caches are worlds that have the {Fuel} remark. From looking at the
+    # map data, the only place the remark is used in VoidBridges and Pirian
+    # Domain Fuel Factories.
+    # NOTE: At the time of writing, all worlds with the {Fuel} remark also have
+    # the {Anomaly} remark.
+    # https://www.wiki.travellerrpg.com/VoidBridges
+    # https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
     def isFuelCache(self) -> bool:
         return self._isFuelCache
 
@@ -199,12 +207,17 @@ class World(object):
     def numberOfSystemWorlds(self) -> int:
         return self._systemWorlds
 
-    def hasStarPortRefuelling(self, refinedFuelOnly: bool = False):
+    def hasStarPortRefuelling(
+            self,
+            includeRefined: bool = True,
+            includeUnrefined: bool = True,
+            refinedFuelExclusive: bool = False # Do A/B class star ports _only_ have refined fuel
+            ) -> bool:
         starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
         if starPortCode == 'A' or starPortCode == 'B':
-            return True
-        if not refinedFuelOnly and (starPortCode == 'C' or starPortCode == 'D'):
-            return True
+            return includeRefined or (includeUnrefined and not refinedFuelExclusive)
+        if starPortCode == 'C' or starPortCode == 'D':
+            return includeUnrefined
         return False
 
     def hasGasGiantRefuelling(self) -> bool:
@@ -214,7 +227,7 @@ class World(object):
         return self.waterPresent()
 
     def hasWildernessRefuelling(self) -> bool:
-        return self.hasGasGiantRefuelling() or self.hasWaterRefuelling() or self.isFuelCache()
+        return self.hasGasGiantRefuelling() or self.hasWaterRefuelling()
 
     def x(self) -> int:
         return self._x

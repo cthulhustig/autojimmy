@@ -102,6 +102,51 @@ RefuellingStrategyToolTip = createStringToolTip(
     'calculations.</li>'
     '</ul>',
     escape=False)
+UseFuelCachesToolTip = createStringToolTip(
+    '<p>Specify if fuel caches can be used when calculating a jump route.</p>'
+    '<p>Fuel Caches are systems that have the {{Fuel}} remark. These tend '
+    'to be unmanned platforms in otherwise dead space. Fuel is free, assuming '
+    'you can find them.</p>'
+    '<p>At the time of writing, the only fuel caches in the stock Traveller '
+    'Map data are the VoidBridges located in Thaku Fung and the Pirian Domain '
+    'Fuel Factories located in Datsatl and Gakghang.</p>'
+    '<p><i>Note that, if using fuel caches is disabled, a multi-jump route may '
+    'still have a stop in a hex containing a fuel cache if the ship can hold '
+    'enough fuel to then jump on to the next stop in the route without '
+    'refuelling. If you want to completely avoid fuel cache hexes in your jump '
+    'route, you can add them to the avoid worlds.</i></p>',
+    escape=False)
+AnomalyRefuellingToolTip = createStringToolTip(
+    '<p>Specify if anomalies can be used for refuelling when calculating a '
+    'jump route and, if they can, how much that fuel costs per ton.</p>'
+    '<p>Anomalies are systems that have the {{Anomaly}} remark. How this '
+    'remark is used in the Traveller Map data is a little inconsistent. In '
+    'some places (e.g. Chandler Station in Reft) it\'s used for a star port '
+    'in dead space where fuel can be purchased for exorbitant prices. '
+    'However, in other places (e.g. The Big Wreck in Corridor) it\'s used '
+    'for points of interest where it might be possible to scavenge some fuel '
+    'but you probably shouldn\'t rely on it.</p>'
+    '<p><i>Note that, if using anomalies for refuelling is disabled, a '
+    'multi-jump route may still have a stop in a hex containing a fuel cache '
+    'if the ship can hold enough fuel to then jump on to the next stop in the '
+    'route without refuelling. If you want to completely avoid fuel cache '
+    'hexes in your jump route, you can add them to the avoid worlds.</i></p>'
+    '<p><i>This setting doesn\'t apply to systems that have the {{Anomaly}} '
+    'and {{Fuel}} remarks as they are treated as fuel caches.</i></p>',
+    escape=False)
+AnomalyBerthingToolTip = createStringToolTip(
+    '<p>Specify if anomalies require berthing in order to refuel and, if so, '
+    'how much it costs.</p>'
+    '<p>Anomalies are systems that have the {{Anomaly}} remark. How this '
+    'remark is used in the Traveller Map data is a little inconsistent. In '
+    'some places (e.g. Chandler Station in Reft) it\'s used for a star port '
+    'in dead space where fuel can be purchased for exorbitant prices. '
+    'However, in other places (e.g. The Big Wreck in Corridor) it\'s used '
+    'for points of interest where it might be possible to scavenge some fuel '
+    'but you probably shouldn\'t rely on it.</p>'
+    '<p><i>This setting doesn\'t apply to systems that have the {{Anomaly}} '
+    'and {{Fuel}} remarks as they are treated as fuel caches.</i></p>',
+    escape=False)
 IncludeStartBerthingToolTip = createStringToolTip(
     '<p>Include start world berthing cost in logistics calculations</p>',
     escape=False)
@@ -274,10 +319,6 @@ def createWorldToolTip(
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
     toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
 
-    if world.isAnomaly():
-        style = formatStyle(app.tagColour(app.TagLevel.Warning))
-        toolTip += f'<li><span style="{style}">Warning: Anomaly!</span>'
-
     allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
     tagLevel = app.calculateAllegianceTagLevel(world)
     style = formatStyle(app.tagColour(tagLevel))
@@ -287,6 +328,11 @@ def createWorldToolTip(
     toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
     toolTip += f'<li><span>Total Worlds: {world.numberOfSystemWorlds()}</span></li>'
     toolTip += f'<li><span>Water Present: {"Yes" if world.waterPresent() else "No"}</span></li>'
+    if world.isFuelCache():
+        toolTip += '<li><span>Fuel Cache: Yes</span></li>'
+    if world.isAnomaly():
+        style = formatStyle(app.tagColour(app.TagLevel.Warning))
+        toolTip += f'<li><span style="{style}">Anomaly: Yes</span></li>'
 
     if world.hasOwner():
         try:
@@ -598,8 +644,14 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
                     toolTip += f'<li><span>Type: Star Port (Refined)<span></li>'
                 elif pitStop.refuellingType() == logic.RefuellingType.Unrefined:
                     toolTip += f'<li><span>Type: Star Port (Unrefined)<span></li>'
-                else:
+                elif pitStop.refuellingType() == logic.RefuellingType.Wilderness:
                     toolTip += '<li><span>Type: Wilderness<span></li>'
+                elif pitStop.refuellingType() == logic.RefuellingType.FuelCache:
+                    toolTip += '<li><span>Type: Fuel Cache<span></li>'
+                elif pitStop.refuellingType() == logic.RefuellingType.Anomaly:
+                    toolTip += '<li><span>Type: Anomaly<span></li>'
+                else:
+                    toolTip += '<li><span>Type: Unknown<span></li>'
                 toolTip += f'<li><span>Tonnage: {tonsOfFuel.value()} tons<span></li>'
                 fuelCost = pitStop.fuelCost()
                 if fuelCost:

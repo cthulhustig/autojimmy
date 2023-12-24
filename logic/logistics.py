@@ -72,7 +72,7 @@ def calculateRouteLogistics(
         shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
         shipStartingFuel: typing.Union[float, common.ScalarCalculation],
         perJumpOverheads: typing.Union[int, common.ScalarCalculation],
-        refuellingStrategy: typing.Union[int, common.ScalarCalculation],
+        pitCostCalculator: logic.PitStopCostCalculator,
         shipFuelPerParsec: typing.Union[float, common.ScalarCalculation] = None,
         # Optional set containing the integer indices of jump route worlds where berthing is required.
         requiredBerthingIndices: typing.Optional[typing.Set[int]] = None,
@@ -90,7 +90,7 @@ def calculateRouteLogistics(
             shipFuelCapacity=shipFuelCapacity,
             shipStartingFuel=shipStartingFuel,
             shipFuelPerParsec=shipFuelPerParsec,
-            refuellingStrategy=refuellingStrategy,
+            pitCostCalculator=pitCostCalculator,
             requiredBerthingIndices=requiredBerthingIndices,
             includeRefuellingCosts=includeLogisticsCosts,
             diceRoller=diceRoller)
@@ -105,18 +105,19 @@ def calculateRouteLogistics(
 
         if requireStartWorldBerthing or requireFinishWorldBerthing:
             startWorld = jumpRoute.startWorld()
-            berthingCost = traveller.starPortBerthingCost(
-                world=startWorld)
-            berthingCost = common.Calculator.rename(
-                value=berthingCost,
-                name=f'Berthing Cost For {startWorld.name(includeSubsector=True)}')
 
-            reportedBerthingCost = berthingCost
-            if reportedBerthingCost and not includeLogisticsCosts:
-                reportedBerthingCost = common.Calculator.override(
-                    old=reportedBerthingCost,
-                    new=common.ScalarCalculation(value=0, name='Overridden Berthing Cost'),
-                    name='Ignored Berthing Cost')
+            berthingCost = pitCostCalculator.berthingCost(
+                world=startWorld)
+            if berthingCost:
+                berthingCost = common.Calculator.rename(
+                    value=berthingCost,
+                    name=f'Berthing Cost For {startWorld.name(includeSubsector=True)}')
+
+                if not includeLogisticsCosts:
+                    berthingCost = common.Calculator.override(
+                        old=berthingCost,
+                        new=common.ScalarCalculation(value=0, name='Overridden Berthing Cost'),
+                        name='Ignored Berthing Cost')
 
             pitStop = logic.PitStop(
                 jumpIndex=0,
@@ -124,7 +125,7 @@ def calculateRouteLogistics(
                 refuellingType=None, # No refuelling
                 tonsOfFuel=None,
                 fuelCost=None,
-                berthingCost=reportedBerthingCost)
+                berthingCost=berthingCost)
             refuellingPlan = logic.RefuellingPlan([pitStop])
 
     reportedPerJumpOverheads = perJumpOverheads

@@ -22,7 +22,7 @@ class RoutePlannerJob(QtCore.QThread):
             shipCurrentFuel: float,
             shipFuelPerParsec: typing.Optional[float],
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
-            refuellingStrategy: typing.Optional[logic.RefuellingStrategy],
+            pitCostCalculator: typing.Optional[logic.PitStopCostCalculator], # This will be called from the worker thread
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None,
@@ -41,7 +41,7 @@ class RoutePlannerJob(QtCore.QThread):
         self._shipCurrentFuel = shipCurrentFuel
         self._shipFuelPerParsec = shipFuelPerParsec
         self._jumpCostCalculator = jumpCostCalculator
-        self._refuellingStrategy = refuellingStrategy
+        self._pitCostCalculator = pitCostCalculator
         self._worldFilterCallback = worldFilterCallback
         self._progressInterval = progressInterval
 
@@ -83,7 +83,7 @@ class RoutePlannerJob(QtCore.QThread):
                 shipCurrentFuel=self._shipCurrentFuel,
                 shipFuelPerParsec=self._shipFuelPerParsec,
                 jumpCostCalculator=self._jumpCostCalculator,
-                refuellingStrategy=self._refuellingStrategy,
+                pitCostCalculator=self._pitCostCalculator,
                 worldFilterCallback=self._worldFilterCallback,
                 progressCallback=self._handleProgress,
                 isCancelledCallback=self.isCancelled)

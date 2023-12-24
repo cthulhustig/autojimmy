@@ -38,7 +38,13 @@ _ComparisonFilterOperationDescriptionMap = {
     ComparisonFilterOperation.LessOrEqual: 'is less than or equal to'
 }
 
-_ListFilterOperationDescriptionMap = {
+_ListFilterSingleOperationDescriptionMap = {
+    ListFilterOperation.ContainsAny: 'contains',
+    ListFilterOperation.ContainsAll: 'contains',
+    ListFilterOperation.ContainsOnly: 'contains only'
+}
+
+_ListFilterMultiOperationDescriptionMap = {
     ListFilterOperation.ContainsAny: 'contains any of',
     ListFilterOperation.ContainsAll: 'contains all of',
     ListFilterOperation.ContainsOnly: 'contains only'
@@ -400,6 +406,8 @@ class RefuellingFilter(WorldFilter):
         UnrefinedRefuelling = 1
         GasGiantRefuelling = 2
         WaterRefuelling = 3
+        FuelCacheRefuelling = 4
+        AnomalyRefuelling = 5
 
     def __init__(
             self,
@@ -417,7 +425,10 @@ class RefuellingFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        operationString = _ListFilterOperationDescriptionMap.get(self._operation)
+        if len(self._value) == 1:
+            operationString = _ListFilterSingleOperationDescriptionMap.get(self._operation)
+        else:
+            operationString = _ListFilterMultiOperationDescriptionMap.get(self._operation)
         if not operationString:
             return None
 
@@ -431,6 +442,10 @@ class RefuellingFilter(WorldFilter):
                 typeString = 'Gas Giant Refuelling'
             elif type == RefuellingFilter.Type.WaterRefuelling:
                 typeString = 'Water Refuelling'
+            elif type == RefuellingFilter.Type.FuelCacheRefuelling:
+                typeString = 'Fuel Cache'
+            elif type == RefuellingFilter.Type.AnomalyRefuelling:
+                typeString = 'Anomaly'
             else:
                 return None
 
@@ -450,13 +465,17 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = world.hasStarPortRefuelling(refinedFuelOnly=True)
+                match = world.hasStarPortRefuelling(includeUnrefined=False)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = world.hasStarPortRefuelling()
+                match = world.hasStarPortRefuelling(includeRefined=False)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
                 match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:
                 match = world.hasWaterRefuelling()
+            elif refuelling == RefuellingFilter.Type.FuelCacheRefuelling:
+                match = world.isFuelCache()
+            elif refuelling == RefuellingFilter.Type.AnomalyRefuelling:
+                match = world.isAnomaly()
             else:
                 raise ValueError('Invalid refuelling filter type')
 
@@ -580,7 +599,10 @@ class BaseFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        operationString = _ListFilterOperationDescriptionMap.get(self._operation)
+        if len(self._value) == 1:
+            operationString = _ListFilterSingleOperationDescriptionMap.get(self._operation)
+        else:
+            operationString = _ListFilterMultiOperationDescriptionMap.get(self._operation)
         if not operationString:
             return None
 
@@ -636,7 +658,10 @@ class NobilityFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        operationString = _ListFilterOperationDescriptionMap.get(self._operation)
+        if len(self._value) == 1:
+            operationString = _ListFilterSingleOperationDescriptionMap.get(self._operation)
+        else:
+            operationString = _ListFilterMultiOperationDescriptionMap.get(self._operation)
         if not operationString:
             return None
 
@@ -729,7 +754,10 @@ class TradeCodeFilter(WorldFilter):
         return self._value
 
     def description(self) -> str:
-        operationString = _ListFilterOperationDescriptionMap.get(self._operation)
+        if len(self._value) == 1:
+            operationString = _ListFilterSingleOperationDescriptionMap.get(self._operation)
+        else:
+            operationString = _ListFilterMultiOperationDescriptionMap.get(self._operation)
         if not operationString:
             return None
 

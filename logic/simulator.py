@@ -74,7 +74,7 @@ class Simulator(object):
             shipCargoCapacity: int,
             shipFuelCapacity: int,
             jumpCostCalculator: logic.JumpCostCalculatorInterface,
-            refuellingStrategy: logic.RefuellingStrategy,
+            pitCostCalculator: logic.PitStopCostCalculator,
             perJumpOverheads: int,
             searchRadius: int,
             minSellerDm: int,
@@ -95,7 +95,7 @@ class Simulator(object):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._perJumpOverheads = perJumpOverheads
         self._jumpCostCalculator = jumpCostCalculator
-        self._refuellingStrategy = refuellingStrategy
+        self._pitCostCalculator = pitCostCalculator
         self._searchRadius = searchRadius
         self._playerBrokerDm = playerBrokerDm
         self._playerStreetwiseDm = playerStreetwiseDm
@@ -133,7 +133,7 @@ class Simulator(object):
             # No current cargo manifest so buy something on the current world
 
             # Filter out worlds that don't have refuelling options that match the refuelling strategy
-            worldFilterCallback = lambda world: logic.selectRefuellingType(world, self._refuellingStrategy) != None
+            worldFilterCallback = lambda world: self._pitCostCalculator.refuellingType(world=world) is not None
             self._nearbyWorlds = traveller.WorldManager.instance().worldsInArea(
                 sectorName=self._currentWorld.sectorName(),
                 worldX=self._currentWorld.x(),
@@ -157,34 +157,48 @@ class Simulator(object):
             pitStop = refuellingPlan.pitStop(self._jumpRouteIndex)
 
             if pitStop:
-                if pitStop.berthingCost():
+                if pitStop.hasBerthing():
                     # Roll dice to calculate actual berthing cost on this world
-                    berthingCost = traveller.starPortBerthingCost(
+                    # NOTE: If we've got to this point then we know berthing is
+                    # taking place, it may be to pick up fuel it may be because
+                    # we've reached the finish world (or some other mandatory
+                    # berthing situation). It doesn't mater which it is for now,
+                    # all we care is that we get the berthing cost no mater what
+                    # refuelling type is being used
+                    diceRoller = common.DiceRoller(
+                        randomGenerator=self._randomGenerator)
+                    berthingCost = self._pitCostCalculator.berthingCost(
                         world=jumpRoute[self._jumpRouteIndex],
-                        diceRoller=common.DiceRoller(randomGenerator=self._randomGenerator))
+                        mandatory=True,
+                        diceRoller=diceRoller)
                     assert(isinstance(berthingCost, common.ScalarCalculation))
                     berthingCost = berthingCost.value()
-                    self._logMessage(f'Berthing at {self._currentWorld.name(includeSubsector=True)} for a cost of Cr{berthingCost}')
+                    self._logMessage(
+                        'Berthing at {world} for a cost of Cr{cost}'.format(
+                            world=self._currentWorld.name(includeSubsector=True),
+                            cost=berthingCost))
                     self._setAvailableFunds(self._availableFunds - berthingCost)
                     self._actualLogisticsCost += berthingCost
 
                 refuellingType = pitStop.refuellingType()
                 if refuellingType != None:
                     fuelTons = pitStop.tonsOfFuel()
-                    assert(fuelTons)
-                    if refuellingType == logic.RefuellingType.Refined or \
-                            refuellingType == logic.RefuellingType.Unrefined:
-                        refuellingCost = pitStop.fuelCost()
-                        assert(isinstance(refuellingCost, common.ScalarCalculation))
-                        refuellingCost = refuellingCost.value()
-                        fuelTypeString = 'refined' if refuellingType == logic.RefuellingType.Refined else 'unrefined'
-                        self._logMessage(f'Star port refuelling at {self._currentWorld.name(includeSubsector=True)}, taking on {fuelTons.value()} tons of {fuelTypeString} fuel for a cost of Cr{refuellingCost}')
-                        self._setAvailableFunds(self._availableFunds - refuellingCost)
-                        self._actualLogisticsCost += refuellingCost
-                    elif refuellingType == logic.RefuellingType.Wilderness:
-                        self._logMessage(f'Wilderness refuelling at {self._currentWorld.name(includeSubsector=True)}, taking on {fuelTons.value()} tons')
-                    else:
-                        assert(False)
+                    assert(isinstance(fuelTons, common.ScalarCalculation))
+                    fuelTons = fuelTons.value()
+
+                    fuelCost = pitStop.fuelCost()
+                    fuelCost = fuelCost.value() if fuelCost else 0
+
+                    infoString = 'Refuelling at {world}, taking on {tons} tons of {type} fuel'.format(
+                        world=self._currentWorld.name(includeSubsector=True),
+                        tons=fuelTons,
+                        type=refuellingType.value.lower())
+                    if fuelCost > 0:
+                        infoString += f' for a cost of Cr{fuelCost}'
+
+                    self._logMessage(infoString)
+                    self._setAvailableFunds(self._availableFunds - fuelCost)
+                    self._actualLogisticsCost += fuelCost
 
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.worldCount():
@@ -309,7 +323,7 @@ class Simulator(object):
             shipStartingFuel=0, # Simulator always starts trading on a world with no fuel
             shipFuelPerParsec=self._shipFuelPerParsec,
             jumpCostCalculator=self._jumpCostCalculator,
-            refuellingStrategy=self._refuellingStrategy,
+            pitCostCalculator=self._pitCostCalculator,
             perJumpOverheads=self._perJumpOverheads,
             includePurchaseWorldBerthing=False, # We're already berthed for the previous sale
             includeSaleWorldBerthing=True)
