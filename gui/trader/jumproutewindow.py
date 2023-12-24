@@ -1667,7 +1667,6 @@ class JumpRouteWindow(gui.WindowWidget):
         # Only calculate logistics if fuel based routing is enabled. If it's disabled the route will
         # most likely contain worlds that don't match the refuelling strategy
         if self._fuelBasedRoutingCheckBox.isChecked():
-            # TODO: This should really be the same instance that was used to create the route
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),

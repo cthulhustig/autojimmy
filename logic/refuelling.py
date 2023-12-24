@@ -53,7 +53,7 @@ class PitStopCostCalculator(object):
             useFuelCaches: bool,
             anomalyFuelCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             anomalyBerthingCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
-            refinedFuelExclusive: bool = False # TODO: Add wider support for this
+            refinedFuelExclusive: bool = False
             ) -> None:
         if isinstance(anomalyFuelCost, int):
             anomalyFuelCost = common.ScalarCalculation(

@@ -207,7 +207,6 @@ class World(object):
     def numberOfSystemWorlds(self) -> int:
         return self._systemWorlds
 
-    # TODO: This change needs a decent amount of testing
     def hasStarPortRefuelling(
             self,
             includeRefined: bool = True,
