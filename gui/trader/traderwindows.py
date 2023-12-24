@@ -696,6 +696,13 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ConfigurationTabBarState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._configurationStack.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='CargoRecordsDisplayModeState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -791,6 +798,8 @@ class WorldTraderWindow(_BaseTraderWindow):
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
+        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
+        self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('CargoRecordsDisplayModeState', self._cargoRecordDisplayModeTabView.saveState())
         self._settings.setValue('SpeculativeCargoTableState', self._speculativeCargoTable.saveState())
         self._settings.setValue('SpeculativeCargoTableContent', self._speculativeCargoTable.saveContent())
@@ -800,7 +809,6 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._settings.setValue('SaleWorldsTableContent', self._saleWorldsWidget.saveContent())
         self._settings.setValue('CurrentCargoTableState', self._currentCargoTable.saveState())
         self._settings.setValue('CurrentCargoTableContent', self._currentCargoTable.saveContent())
-        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('TradeInfoSplitterState', self._tradeInfoSplitter.saveState())
@@ -2086,6 +2094,13 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ConfigurationTabBarState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._configurationStack.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='PurchaseWorldsTableState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -2137,6 +2152,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
+        self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('PurchaseWorldsTableState', self._purchaseWorldsWidget.saveState())
         self._settings.setValue('PurchaseWorldsTableContent', self._purchaseWorldsWidget.saveContent())
         self._settings.setValue('SaleWorldsTableState', self._saleWorldsWidget.saveState())
