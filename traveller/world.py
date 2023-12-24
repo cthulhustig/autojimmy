@@ -127,13 +127,15 @@ class World(object):
     def colonySectorHexes(self) -> typing.Optional[typing.Iterable[str]]:
         return self._remarks.colonySectorHexes()
 
+    # Anomalies are worlds that have the {Anomaly} remark
     def isAnomaly(self) -> bool:
         return self._isAnomaly
 
-    # From looking at occurrences in the map data, the {Fuel} remark is used for
-    # VoidBridges and Pirian Domain Fuel Factories. Both these are automated
-    # stations where drones harvest fuel from ice. There is no star port and
-    # fuel is provided free to anyone.
+    # Fuel Caches are worlds that have the {Fuel} remark. From looking at the
+    # map data, the only place the remark is used in VoidBridges and Pirian
+    # Domain Fuel Factories.
+    # NOTE: At the time of writing, all worlds with the {Fuel} remark also have
+    # the {Anomaly} remark.
     # https://www.wiki.travellerrpg.com/VoidBridges
     # https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
     def isFuelCache(self) -> bool:
@@ -226,7 +228,7 @@ class World(object):
         return self.waterPresent()
 
     def hasWildernessRefuelling(self) -> bool:
-        return self.hasGasGiantRefuelling() or self.hasWaterRefuelling() or self.isFuelCache()
+        return self.hasGasGiantRefuelling() or self.hasWaterRefuelling()
 
     def x(self) -> int:
         return self._x

@@ -11,6 +11,7 @@ class RefuellingType(enum.Enum):
     Refined = 'Refined'
     Unrefined = 'Unrefined'
     Wilderness = 'Wilderness'
+    FuelCache = 'Fuel Cache'
     Anomaly = 'Anomaly'
 
 class RefuellingStrategy(enum.Enum):
@@ -68,6 +69,8 @@ class PitStopCostCalculator(object):
             return traveller.UnrefinedFuelCostPerTon
         if refuellingType is logic.RefuellingType.Wilderness:
             return traveller.WildernessFuelCostPerTon
+        if refuellingType is logic.RefuellingType.FuelCache:
+            return traveller.FuelCacheFuelCostPerTon
         if refuellingType is logic.RefuellingType.Anomaly:
             return self._anomalyFuelCost
         return None
@@ -87,12 +90,12 @@ class PitStopCostCalculator(object):
                     (refuellingType is logic.RefuellingType.Wilderness):
                 return None
 
-        berthingCost = traveller.starPortBerthingCost(
+        berthingCost = traveller.calculateBerthingCost(
             world=world,
             diceRoller=diceRoller)
         if berthingCost:
             return berthingCost
-        
+
         if self._anomalyBerthingCost and world.isAnomaly():
             return self._anomalyBerthingCost
 
@@ -142,6 +145,9 @@ class PitStopCostCalculator(object):
                 return fallbackRefuelling
         else:
             assert(False) # Check I've not missed an enum
+
+        if world.isFuelCache():
+            return RefuellingType.FuelCache
 
         # Checking for anomaly refuelling is intestinally done last. This is done
         # so if a world has the Anomaly tag and a known refuelling type, the known

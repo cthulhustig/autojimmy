@@ -49,10 +49,12 @@ _NameFilterTypeTextMap = {
 }
 
 _RefuellingFilterTypeTextMap = {
-    logic.RefuellingFilter.Type.RefinedRefuelling: 'Refined Fuel',
-    logic.RefuellingFilter.Type.UnrefinedRefuelling: 'Unrefined Fuel',
-    logic.RefuellingFilter.Type.GasGiantRefuelling: 'Gas Giant Refuelling',
-    logic.RefuellingFilter.Type.WaterRefuelling: 'Water Refuelling'
+    logic.RefuellingFilter.Type.RefinedRefuelling: 'Refined',
+    logic.RefuellingFilter.Type.UnrefinedRefuelling: 'Unrefined',
+    logic.RefuellingFilter.Type.GasGiantRefuelling: 'Gas Giant',
+    logic.RefuellingFilter.Type.WaterRefuelling: 'Water',
+    logic.RefuellingFilter.Type.FuelCacheRefuelling: 'Fuel Cache',
+    logic.RefuellingFilter.Type.AnomalyRefuelling: 'Anomaly',
 }
 
 _UWPElementTextMap = {

@@ -49,10 +49,10 @@ def _formatRefuellingTypeString(
             text += ' (Gas Giant Only)'
         elif world.hasWaterRefuelling():
             text += ' (Water Only)'
-        elif world.isFuelCache():
-            text += ' (Fuel Cache)'
         else:
             text += ' (Unknown)'
+    elif refuellingType == logic.RefuellingType.FuelCache:
+        text = 'Fuel Cache (Unknown)'
     elif refuellingType == logic.RefuellingType.Anomaly:
         text = 'Anomaly (Unknown)'
     else:
@@ -662,7 +662,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox.setValue(0) # TODO: Init to current config value
         self._anomalyFuelCostSpinBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
-        
+
         self._anomalyBerthingCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
         self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
         self._anomalyBerthingCostSpinBox.setValue(0) # TODO: Init to current config value

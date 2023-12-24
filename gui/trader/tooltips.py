@@ -600,6 +600,8 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
                     toolTip += f'<li><span>Type: Star Port (Unrefined)<span></li>'
                 elif pitStop.refuellingType() == logic.RefuellingType.Wilderness:
                     toolTip += '<li><span>Type: Wilderness<span></li>'
+                elif pitStop.refuellingType() == logic.RefuellingType.FuelCache:
+                    toolTip += '<li><span>Type: Fuel Cache<span></li>'
                 elif pitStop.refuellingType() == logic.RefuellingType.Anomaly:
                     toolTip += '<li><span>Type: Anomaly<span></li>'
                 else:
