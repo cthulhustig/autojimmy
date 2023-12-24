@@ -588,7 +588,7 @@ class SharedUseFuelCachesCheckBox(_SharedCheckBox):
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
             updaterType=SharedUseFuelCachesCheckBox._SettingUpdater,
-            toolTip='TODO', # TODO: Add tool tip
+            toolTip=gui.UseFuelCachesToolTip,
             parent=parent)
 
 class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
@@ -609,7 +609,7 @@ class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
             updaterType=SharedAnomalyRefuellingSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip='TODO', # TODO: Add tool tip
+            toolTip=gui.AnomalyRefuellingToolTip,
             parent=parent)
         
 class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
@@ -630,7 +630,7 @@ class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
             updaterType=SharedAnomalyBerthingSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip='TODO', # TODO: Add tool tip
+            toolTip=gui.AnomalyBerthingToolTip,
             parent=parent)
 
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
