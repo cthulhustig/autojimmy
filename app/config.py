@@ -59,7 +59,7 @@ class Config(object):
     _UseAnomalyRefuellingKeyName = 'Game/UseAnomalyRefuelling'
     _AnomalyFuelCostKeyName = 'Game/AnomalyFuelCost'
     _UseAnomalyBerthingKeyName = 'Game/UseAnomalyBerthing'
-    _AnomalyBerthingCostKeyName = 'Game/AnomalyBerthingCost'    
+    _AnomalyBerthingCostKeyName = 'Game/AnomalyBerthingCost'
     _IncludeStartBerthingKeyName = 'Game/IncludeStartBerthing'
     _IncludeFinishBerthingKeyName = 'Game/IncludeFinishBerthing'
     _IncludeLogisticsCostsKeyName = 'Game/IncludeLogisticsCosts'
@@ -530,23 +530,23 @@ class Config(object):
         self._refuellingStrategy = strategy
         self._settings.setValue(Config._RefuellingStrategyKeyName, strategy.name)
         return False # No restart required
-    
+
     def setUseFuelCaches(self, enabled: bool) -> bool:
         self._useFuelCaches = enabled
         self._settings.setValue(Config._UseFuelCachesKeyName, enabled)
         return False # No restart required
-    
+
     def useFuelCaches(self) -> bool:
         return self._useFuelCaches
-    
+
     def setUseAnomalyRefuelling(self, enabled: bool) -> bool:
         self._useAnomalyRefuelling = enabled
         self._settings.setValue(Config._UseAnomalyRefuellingKeyName, enabled)
         return False # No restart required
-    
+
     def useAnomalyRefuelling(self) -> bool:
         return self._useAnomalyRefuelling
-    
+
     def setAnomalyFuelCost(self, cost: int) -> bool:
         self._anomalyFuelCost = cost
         self._settings.setValue(Config._AnomalyFuelCostKeyName, cost)
@@ -554,22 +554,22 @@ class Config(object):
 
     def anomalyFuelCost(self) -> int:
         return self._anomalyFuelCost
-    
+
     def setUseAnomalyBerthing(self, enabled: bool) -> bool:
         self._useAnomalyBerthing = enabled
         self._settings.setValue(Config._UseAnomalyBerthingKeyName, enabled)
         return False # No restart required
-    
+
     def useAnomalyBerthing(self) -> bool:
         return self._useAnomalyBerthing
-    
+
     def setAnomalyBerthingCost(self, cost: int) -> bool:
         self._anomalyBerthingCost = cost
         self._settings.setValue(Config._AnomalyBerthingCostKeyName, cost)
         return False # No restart required
 
     def anomalyBerthingCost(self) -> int:
-        return self._anomalyBerthingCost    
+        return self._anomalyBerthingCost
 
     def includeStartBerthing(self) -> bool:
         return self._includeStartBerthing

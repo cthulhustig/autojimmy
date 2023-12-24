@@ -414,7 +414,7 @@ class JumpRouteWindow(gui.WindowWidget):
             key='ConfigurationTabBarState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._configurationStack.restoreState(storedValue)            
+            self._configurationStack.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -685,7 +685,7 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
         rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyRefuellingSpinBox)
-        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)        
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)
 
         routingLayout = QtWidgets.QHBoxLayout()
         routingLayout.addLayout(leftLayout)
@@ -708,7 +708,7 @@ class JumpRouteWindow(gui.WindowWidget):
         shipLayout.addRow('Ship Jump Rating:', self._shipJumpRatingSpinBox)
         shipLayout.addRow('Ship Fuel Capacity:', self._shipFuelCapacitySpinBox)
         shipLayout.addRow('Ship Current Fuel:', self._shipCurrentFuelSpinBox)
-        shipLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)        
+        shipLayout.addRow('Ship Fuel Per Parsec:', self._shipFuelPerParsecSpinBox)
 
         #
         # Configuration Stack
@@ -720,7 +720,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._configurationStack.addTab(
             gui.LayoutWrapperWidget(layout=shipLayout),
             'Ship')
-        
+
         configurationLayout = QtWidgets.QHBoxLayout()
         configurationLayout.addWidget(self._configurationStack)
 

@@ -130,7 +130,7 @@ AnomalyRefuellingToolTip = createStringToolTip(
     'multi-jump route may still have a stop in a hex containing a fuel cache '
     'if the ship can hold enough fuel to then jump on to the next stop in the '
     'route without refuelling. If you want to completely avoid fuel cache '
-    'hexes in your jump route, you can add them to the avoid worlds.</i></p>'    
+    'hexes in your jump route, you can add them to the avoid worlds.</i></p>'
     '<p><i>This setting doesn\'t apply to systems that have the {{Anomaly}} '
     'and {{Fuel}} remarks as they are treated as fuel caches.</i></p>',
     escape=False)

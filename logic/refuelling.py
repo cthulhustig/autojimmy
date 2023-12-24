@@ -781,7 +781,7 @@ def _createRefuellingPlan(
             fuelAmount = common.ScalarCalculation(
                 value=fuelAmount,
                 name='Pit Stop Fuel Tonnage')
-            
+
             refuellingType = worldContext.refuellingType()
             assert(refuellingType)
 

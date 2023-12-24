@@ -611,7 +611,7 @@ class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
             maxValue=app.MaxPossibleCredits,
             toolTip=gui.AnomalyRefuellingToolTip,
             parent=parent)
-        
+
 class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
     class _SettingUpdater(_TogglableSpinBoxUpdater):
         def _loadValue(self) -> typing.Tuple[bool, int]:

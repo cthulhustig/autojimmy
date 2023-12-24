@@ -189,7 +189,7 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._configurationStack.addTab(
             gui.LayoutWrapperWidget(layout=shipLayout),
             'Ship')
-        
+
         configurationLayout = QtWidgets.QHBoxLayout()
         configurationLayout.addWidget(self._configurationStack)
 
