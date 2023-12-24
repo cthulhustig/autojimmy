@@ -14,28 +14,14 @@ _StarPortBerthingCostScale = {
     'E': common.ScalarCalculation(value=0, name='E Class Star Port Berthing Scale'),
 }
 
-# Fuel Caches are worlds that have the {Fuel} remark. From looking at the map
-# data, the only place the remark is used in VoidBridges and Pirian Domain Fuel
-# Factories. I'm working on the assumption that you have to berth in order to
-# refuel, however, berthing doesn't cost anything as that would be weird when
-# the fuel is free.
-# https://www.wiki.travellerrpg.com/VoidBridges
-# https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
-_FuelCacheBerthingCost = common.ScalarCalculation(
-    value=0,
-    name='Fuel Cache Berthing Cost')
-
 # The MGT2 rules aren't clear on what time range the berthing costs on p225 of the rules are
 # over. For now I'm leaving it up to the consuming code to decide what it does with the value.
-def calculateBerthingCost(
+def starPortBerthingCost(
         world: traveller.World,
         diceRoller: typing.Optional[common.DiceRoller] = None
         ) -> typing.Optional[typing.Union[
             common.ScalarCalculation,
             common.RangeCalculation]]:
-    if world.isFuelCache():
-        return _FuelCacheBerthingCost
-
     starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
     berthingScale = _StarPortBerthingCostScale.get(starPortCode)
     if not berthingScale:

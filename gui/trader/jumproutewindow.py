@@ -52,9 +52,9 @@ def _formatRefuellingTypeString(
         else:
             text += ' (Unknown)'
     elif refuellingType == logic.RefuellingType.FuelCache:
-        text = 'Fuel Cache (Unknown)'
+        text = 'Fuel Cache'
     elif refuellingType == logic.RefuellingType.Anomaly:
-        text = 'Anomaly (Unknown)'
+        text = 'Anomaly'
     else:
         text = 'No Refuelling'
 
@@ -71,6 +71,8 @@ def _formatBerthingTypeString(
     if world.hasStarPort():
         starPortCode = world.uwp().code(traveller.UWP.Element.StarPort)
         return f'Class {starPortCode} Star Port'
+    elif world.isFuelCache():
+        return 'Fuel Cache'
     elif world.isAnomaly():
         return 'Anomaly'
 
@@ -657,6 +659,11 @@ class JumpRouteWindow(gui.WindowWidget):
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._refuellingStrategyComboBox.setEnabled(self._fuelBasedRoutingCheckBox.isChecked())
 
+        self._useFuelCachesCheckBox = gui.CheckBoxEx() # TODO: Should this be shared like other controls
+        self._useFuelCachesCheckBox.setChecked(True)
+        self._useFuelCachesCheckBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked())
+
         self._anomalyFuelCostSpinBox = gui.TogglableSpinBox() # TODO: Should this be shared like other controls
         self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
         self._anomalyFuelCostSpinBox.setValue(0) # TODO: Init to current config value
@@ -679,6 +686,7 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         rightLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
+        rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
         rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
         rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
@@ -887,6 +895,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if self._fuelBasedRoutingCheckBox.isChecked():
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
 
@@ -1568,6 +1577,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if not runningJob:
             fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
             self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
+            self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
             self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting)
             self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting)
 
@@ -1634,6 +1644,7 @@ class JumpRouteWindow(gui.WindowWidget):
             # TODO: This should really be the same instance that was used to create the route
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
                 anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
 

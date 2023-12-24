@@ -274,10 +274,6 @@ def createWorldToolTip(
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
     toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
 
-    if world.isAnomaly():
-        style = formatStyle(app.tagColour(app.TagLevel.Warning))
-        toolTip += f'<li><span style="{style}">Warning: Anomaly!</span>'
-
     allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
     tagLevel = app.calculateAllegianceTagLevel(world)
     style = formatStyle(app.tagColour(tagLevel))
@@ -287,6 +283,11 @@ def createWorldToolTip(
     toolTip += f'<li><span>Population: {common.formatNumber(population) if population >= 0 else "Unknown"}</span><li>'
     toolTip += f'<li><span>Total Worlds: {world.numberOfSystemWorlds()}</span></li>'
     toolTip += f'<li><span>Water Present: {"Yes" if world.waterPresent() else "No"}</span></li>'
+    if world.isFuelCache():
+        toolTip += '<li><span>Fuel Cache: Yes</span></li>'
+    if world.isAnomaly():
+        style = formatStyle(app.tagColour(app.TagLevel.Warning))
+        toolTip += f'<li><span style="{style}">Anomaly: Yes</span></li>'
 
     if world.hasOwner():
         try:

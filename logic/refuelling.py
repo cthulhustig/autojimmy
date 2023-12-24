@@ -24,10 +24,33 @@ class RefuellingStrategy(enum.Enum):
     WaterPreferred = 'Water Preferred'
     WildernessPreferred = 'Wilderness Preferred'
 
+
+# Fuel Caches are worlds that have the {Fuel} remark. From looking at the map
+# data, the only place the remark is used in VoidBridges and Pirian Domain Fuel
+# Factories and all worlds that have the {Fuel} remark also have the {Anomaly}
+# remark.
+# From the description of both the fuel is provided free. The description for
+# VoidBridges says refined fuel is available but it doesn't say if unrefined
+# fuel is available. I don't think it really matters for what I'm doing as using
+# fuel caches can be turned on/off by the user.
+# https://www.wiki.travellerrpg.com/VoidBridges
+# https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
+_FuelCacheFuelCostPerTon = common.ScalarCalculation(
+    value=0,
+    name='Fuel Cache Fuel Cost Per Ton')
+
+# I'm working on the assumption that you have to berth in order to refuel,
+# however, berthing doesn't cost anything as that would be weird when the fuel
+# is free.
+_FuelCacheBerthingCost = common.ScalarCalculation(
+    value=0,
+    name='Fuel Cache Berthing Cost')
+
 class PitStopCostCalculator(object):
     def __init__(
             self,
             refuellingStrategy: RefuellingStrategy,
+            useFuelCaches: bool,
             anomalyFuelCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             anomalyBerthingCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             refinedFuelExclusive: bool = False # TODO: Add wider support for this
@@ -42,6 +65,7 @@ class PitStopCostCalculator(object):
                 name='Anomaly Berthing Cost')
 
         self._refuellingStrategy = refuellingStrategy
+        self._useFuelCaches = useFuelCaches
         self._anomalyFuelCost = anomalyFuelCost
         self._anomalyBerthingCost = anomalyBerthingCost
         self._refinedFuelExclusive = refinedFuelExclusive
@@ -70,7 +94,7 @@ class PitStopCostCalculator(object):
         if refuellingType is logic.RefuellingType.Wilderness:
             return traveller.WildernessFuelCostPerTon
         if refuellingType is logic.RefuellingType.FuelCache:
-            return traveller.FuelCacheFuelCostPerTon
+            return _FuelCacheFuelCostPerTon if self._useFuelCaches else None
         if refuellingType is logic.RefuellingType.Anomaly:
             return self._anomalyFuelCost
         return None
@@ -90,13 +114,18 @@ class PitStopCostCalculator(object):
                     (refuellingType is logic.RefuellingType.Wilderness):
                 return None
 
-        berthingCost = traveller.calculateBerthingCost(
+        berthingCost = traveller.starPortBerthingCost(
             world=world,
             diceRoller=diceRoller)
         if berthingCost:
             return berthingCost
 
-        if self._anomalyBerthingCost and world.isAnomaly():
+        isFuelCache = world.isFuelCache()
+        if self._useFuelCaches and isFuelCache:
+            return _FuelCacheBerthingCost
+
+        isAnomaly = world.isAnomaly()
+        if self._anomalyBerthingCost and (isAnomaly and not isFuelCache):
             return self._anomalyBerthingCost
 
         return None
@@ -146,13 +175,12 @@ class PitStopCostCalculator(object):
         else:
             assert(False) # Check I've not missed an enum
 
-        if world.isFuelCache():
+        isFuelCache = world.isFuelCache()
+        if self._useFuelCaches and isFuelCache:
             return RefuellingType.FuelCache
 
-        # Checking for anomaly refuelling is intestinally done last. This is done
-        # so if a world has the Anomaly tag and a known refuelling type, the known
-        # refuelling type will be used first if it meets the refuelling strategy
-        if self._anomalyFuelCost and world.isAnomaly():
+        isAnomaly = world.isAnomaly()
+        if self._anomalyFuelCost and (isAnomaly and not isFuelCache):
             return RefuellingType.Anomaly
 
         return None
@@ -749,20 +777,16 @@ def _createRefuellingPlan(
         fuelAmount = fuelMap.get(worldContext.index())
         refuellingType = None
         fuelCost = None
-        if fuelAmount != None:
-            assert(fuelAmount > 0)
-
+        if fuelAmount:
             fuelAmount = common.ScalarCalculation(
                 value=fuelAmount,
                 name='Pit Stop Fuel Tonnage')
-
+            
             refuellingType = worldContext.refuellingType()
+            assert(refuellingType)
+
             fuelCostPerTon = worldContext.fuelCostPerTon()
-            hasFuelCost = \
-                (fuelCostPerTon is not None) and \
-                (fuelCostPerTon > 0)
-            if hasFuelCost:
-                assert(refuellingType)
+            if fuelCostPerTon is not None:
                 worldString = world.name(includeSubsector=True)
                 fuelCostPerTon = common.ScalarCalculation(
                     value=fuelCostPerTon,
@@ -774,7 +798,7 @@ def _createRefuellingPlan(
 
         mandatoryBerthing = worldContext.mandatoryBerthing()
         berthingCost = None
-        if fuelCost or mandatoryBerthing:
+        if refuellingType or mandatoryBerthing:
             berthingCost = pitCostCalculator.berthingCost(
                 world=world,
                 mandatory=mandatoryBerthing,

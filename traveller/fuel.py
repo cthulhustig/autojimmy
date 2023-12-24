@@ -1,5 +1,4 @@
 import common
-import traveller
 import typing
 
 # Fuel costs are the same for Mongoose 1e (p140), 2e (p226) & 2022 (p154)
@@ -12,14 +11,6 @@ UnrefinedFuelCostPerTon = common.ScalarCalculation(
 WildernessFuelCostPerTon = common.ScalarCalculation(
     value=0,
     name='Wilderness Fuel Cost Per Ton')
-# Fuel Caches are worlds that have the {Fuel} remark. From looking at the map
-# data, the only place the remark is used in VoidBridges and Pirian Domain Fuel
-# Factories. From the description of both the fuel is provided free
-# https://www.wiki.travellerrpg.com/VoidBridges
-# https://www.wiki.travellerrpg.com/Pirian_Domain_Fuel_Factories
-FuelCacheFuelCostPerTon = common.ScalarCalculation(
-    value=0,
-    name='Fuel Cache Fuel Cost Per Ton')
 
 # I can't find anything in the Mongoose 2e rules the explicitly states how you calculate how much
 # fuel a ship requires to make a jump of a given distance (I suspect I'm not looking hard enough).

@@ -1748,6 +1748,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=True, # TODO: Should trader support fuel caches??
             anomalyFuelCost=None, # TODO: Should trader support anomaly refuelling??
             anomalyBerthingCost=None) # TODO: Should trader support anomaly berthing??
 
@@ -2374,6 +2375,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
 
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=True, # TODO: Should trader support fuel caches??
             anomalyFuelCost=None, # TODO: Should trader support anomaly refuelling??
             anomalyBerthingCost=None) # TODO: Should trader support anomaly berthing??
 
