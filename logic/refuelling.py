@@ -14,12 +14,15 @@ class RefuellingType(enum.Enum):
     FuelCache = 'Fuel Cache'
     Anomaly = 'Anomaly'
 
+# NOTE: RefinedFuelPreferred will give the same results as UnrefinedFuelOnly if
+# A/B class star ports are configured to sell unrefined fuel
 class RefuellingStrategy(enum.Enum):
     RefinedFuelOnly = 'Refined Fuel Only'
     UnrefinedFuelOnly = 'Unrefined Fuel Only'
     GasGiantOnly = 'Gas Giant Only'
     WaterOnly = 'Water Only'
     WildernessOnly = 'Wilderness Only'
+    UnrefinedFuelPreferred = 'Unrefined Fuel Preferred'
     GasGiantPreferred = 'Gas Giant Preferred'
     WaterPreferred = 'Water Preferred'
     WildernessPreferred = 'Wilderness Preferred'
@@ -151,6 +154,13 @@ class PitStopCostCalculator(object):
         elif self._refuellingStrategy == RefuellingStrategy.WildernessOnly:
             if world.hasWildernessRefuelling():
                 return RefuellingType.Wilderness
+        elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelPreferred:
+            if world.hasStarPortRefuelling(
+                    includeRefined=False,
+                    refinedFuelExclusive=self._refinedFuelExclusive):
+                return RefuellingType.Unrefined
+            if world.hasStarPortRefuelling(includeUnrefined=False):
+                return RefuellingType.Refined            
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
             if world.hasGasGiantRefuelling():
                 return RefuellingType.Wilderness
