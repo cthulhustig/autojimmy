@@ -1792,7 +1792,8 @@ class WorldTraderWindow(_BaseTraderWindow):
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
             anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+            anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+            rules=app.Config.instance().rules())
 
         # Flag cases where the purchase world doesn't match the refuelling
         # strategy. No options will be generated unless the ship has enough
@@ -2408,7 +2409,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
             anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+            anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+            rules=app.Config.instance().rules())
 
         # Flag cases where purchase worlds don't match the refuelling strategy. No options will be
         # generated for those worlds unless the ship has enough current fuel

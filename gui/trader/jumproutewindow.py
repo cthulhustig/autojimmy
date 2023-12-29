@@ -923,7 +923,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+                anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+                rules=app.Config.instance().rules())
 
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
@@ -1671,7 +1672,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
                 anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingSpinBox.value())
+                anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+                rules=app.Config.instance().rules())
 
             try:
                 self._routeLogistics = logic.calculateRouteLogistics(

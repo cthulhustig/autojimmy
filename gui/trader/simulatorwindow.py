@@ -584,7 +584,8 @@ class SimulatorWindow(gui.WindowWidget):
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
             anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value())
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value(),
+            rules=app.Config.instance().rules())
         if not pitCostCalculator.refuellingType(
                 world=self._startWorldWidget.world()):
             gui.MessageBoxEx.information(

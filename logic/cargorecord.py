@@ -170,7 +170,8 @@ def generateRandomPurchaseCargo(
         includeIllegal=blackMarket)
 
     # Generate randomly available trade goods
-    if rules == traveller.Rules.MGT2022:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT2022:
         # For the 2022 rules the number of randomly available trade goods is
         # determined by the population (see p242)
         population = common.ScalarCalculation(
@@ -203,7 +204,7 @@ def generateRandomPurchaseCargo(
         # I can't find anything that explicitly says this in the 1e/2e rules but the 2022 rules
         # (p242) do so I think it makes sense for it to apply in all cases.
         if tradeGood.id() != traveller.TradeGoodIds.Exotics:
-            if rules == traveller.Rules.MGT2022:
+            if ruleSystem == traveller.RuleSystem.MGT2022:
                 while tradeGood.isIllegal(world) != blackMarket:
                     tradeGood = _rollRandomTradeGood(
                         rules=rules,
@@ -380,7 +381,7 @@ def _rollRandomTradeGood(
     if isReRoll:
         rollPrefix = 'Re-Roll ' + rollPrefix
 
-    if blackMarket and (rules == traveller.Rules.MGT2022):
+    if blackMarket and (rules.system() == traveller.RuleSystem.MGT2022):
         # The Mongoose 2002 rules (p242) say that whe rolling for random items for a black market
         # seller you only use 1 dice and use 6 for the most significant digit. The knock of
         # effect of this is your're more likely to get exotics from an illegal seller

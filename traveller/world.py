@@ -209,14 +209,17 @@ class World(object):
 
     def hasStarPortRefuelling(
             self,
+            rules: traveller.Rules,
             includeRefined: bool = True,
-            includeUnrefined: bool = True,
-            refinedFuelExclusive: bool = False # Do A/B class star ports _only_ have refined fuel
+            includeUnrefined: bool = True
             ) -> bool:
-        starPortCode = self._uwp.code(traveller.UWP.Element.StarPort)
-        if starPortCode == 'A' or starPortCode == 'B':
-            return includeRefined or (includeUnrefined and not refinedFuelExclusive)
-        if starPortCode == 'C' or starPortCode == 'D':
+        starPortFuelType = rules.starPortFuelType(
+            code=self._uwp.code(traveller.UWP.Element.StarPort))
+        if starPortFuelType == traveller.StarPortFuelType.AllTypes:
+            return includeRefined or includeUnrefined
+        elif starPortFuelType == traveller.StarPortFuelType.RefinedOnly:
+            return includeRefined
+        elif starPortFuelType == traveller.StarPortFuelType.UnrefinedOnly:
             return includeUnrefined
         return False
 

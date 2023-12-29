@@ -56,7 +56,7 @@ class PitStopCostCalculator(object):
             useFuelCaches: bool,
             anomalyFuelCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
             anomalyBerthingCost: typing.Optional[typing.Union[int, common.ScalarCalculation]],
-            refinedFuelExclusive: bool = False
+            rules: traveller.Rules
             ) -> None:
         if isinstance(anomalyFuelCost, int):
             anomalyFuelCost = common.ScalarCalculation(
@@ -71,7 +71,7 @@ class PitStopCostCalculator(object):
         self._useFuelCaches = useFuelCaches
         self._anomalyFuelCost = anomalyFuelCost
         self._anomalyBerthingCost = anomalyBerthingCost
-        self._refinedFuelExclusive = refinedFuelExclusive
+        self._rules = rules
         self._worldFuelTypes = {}
 
     def refuellingType(
@@ -138,12 +138,14 @@ class PitStopCostCalculator(object):
             world: traveller.World
             ) -> typing.Optional[RefuellingType]:
         if self._refuellingStrategy == RefuellingStrategy.RefinedFuelOnly:
-            if world.hasStarPortRefuelling(includeUnrefined=False):
+            if world.hasStarPortRefuelling(
+                    includeUnrefined=False,
+                    rules=self._rules):
                 return RefuellingType.Refined
         elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelOnly:
             if world.hasStarPortRefuelling(
                     includeRefined=False,
-                    refinedFuelExclusive=self._refinedFuelExclusive):
+                    rules=self._rules):
                 return RefuellingType.Unrefined
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantOnly:
             if world.hasGasGiantRefuelling():
@@ -157,10 +159,12 @@ class PitStopCostCalculator(object):
         elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelPreferred:
             if world.hasStarPortRefuelling(
                     includeRefined=False,
-                    refinedFuelExclusive=self._refinedFuelExclusive):
+                    rules=self._rules):
                 return RefuellingType.Unrefined
-            if world.hasStarPortRefuelling(includeUnrefined=False):
-                return RefuellingType.Refined            
+            if world.hasStarPortRefuelling(
+                    includeUnrefined=False,
+                    rules=self._rules):
+                return RefuellingType.Refined
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
             if world.hasGasGiantRefuelling():
                 return RefuellingType.Wilderness
@@ -206,10 +210,11 @@ class PitStopCostCalculator(object):
             ) -> typing.Optional[RefuellingType]:
         if world.hasStarPortRefuelling(
                 includeRefined=False, # Only check for unrefined fuel
-                refinedFuelExclusive=self._refinedFuelExclusive):
+                rules=self._rules):
             return RefuellingType.Unrefined
         if world.hasStarPortRefuelling(
-                includeUnrefined=False): # Only check for refined fuel
+                includeUnrefined=False, # Only check for refined fuel
+                rules=self._rules):
             return RefuellingType.Refined
         return None
 

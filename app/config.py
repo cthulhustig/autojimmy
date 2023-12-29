@@ -33,7 +33,12 @@ class Config(object):
     _ProxyTileCacheLifetimeKeyName = 'Proxy/TileCacheLifetime'
     _ProxySvgCompositionKeyName = 'Proxy/SvgComposition'
 
-    _RulesKeyName = 'Game/Rules'
+    _RuleSystemKeyName = 'Game/Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
+    _RuleClassAFuelTypeKeyName = 'Game/ClassAFuelType'
+    _RuleClassBFuelTypeKeyName = 'Game/ClassBFuelType'
+    _RuleClassCFuelTypeKeyName = 'Game/ClassCFuelType'
+    _RuleClassDFuelTypeKeyName = 'Game/ClassDFuelType'
+    _RuleClassEFuelTypeKeyName = 'Game/ClassEFuelType'
     _PlayerBrokerDmKeyName = 'Game/PlayerBrokerDM'
     _ShipTonnageKeyName = 'Game/ShipTonnage'
     _ShipJumpRatingKeyName = 'Game/ShipJumpRating'
@@ -357,7 +362,20 @@ class Config(object):
             return False # Nothing has changed
 
         # Don't update internal copy of setting, it's only applied after a restart
-        self._settings.setValue(Config._RulesKeyName, rules.name)
+        self._settings.setValue(
+            Config._RuleSystemKeyName,
+            rules.system().name)
+
+        fuelTypes = (
+            ('A', Config._RuleClassAFuelTypeKeyName),
+            ('B', Config._RuleClassBFuelTypeKeyName),
+            ('C', Config._RuleClassCFuelTypeKeyName),
+            ('D', Config._RuleClassDFuelTypeKeyName),
+            ('E', Config._RuleClassEFuelTypeKeyName))
+        for code, key in fuelTypes:
+            fuelType = rules.starPortFuelType(code=code)
+            if fuelType:
+                self._settings.setValue(key, fuelType.name)
         return True # Restart required
 
     def playerBrokerDm(self) -> int:
@@ -1160,10 +1178,32 @@ class Config(object):
             if enabled:
                 self._mapOptions.add(option)
 
-        self._rules = self._loadEnumSetting(
-            key=Config._RulesKeyName,
-            default=traveller.Rules.MGT2,
-            members=traveller.Rules.__members__)
+        self._rules = traveller.Rules(
+            system=self._loadEnumSetting(
+                key=Config._RuleSystemKeyName,
+                default=traveller.RuleSystem.MGT2022,
+                members=traveller.RuleSystem.__members__),
+            classAStarPortFuelType=self._loadEnumSetting(
+                key=Config._RuleClassAFuelTypeKeyName,
+                default=traveller.StarPortFuelType.AllTypes,
+                members=traveller.StarPortFuelType.__members__),
+            classBStarPortFuelType=self._loadEnumSetting(
+                key=Config._RuleClassBFuelTypeKeyName,
+                default=traveller.StarPortFuelType.AllTypes,
+                members=traveller.StarPortFuelType.__members__),
+            classCStarPortFuelType=self._loadEnumSetting(
+                key=Config._RuleClassCFuelTypeKeyName,
+                default=traveller.StarPortFuelType.UnrefinedOnly,
+                members=traveller.StarPortFuelType.__members__),
+            classDStarPortFuelType=self._loadEnumSetting(
+                key=Config._RuleClassDFuelTypeKeyName,
+                default=traveller.StarPortFuelType.UnrefinedOnly,
+                members=traveller.StarPortFuelType.__members__),
+            classEStarPortFuelType=self._loadEnumSetting(
+                key=Config._RuleClassEFuelTypeKeyName,
+                default=traveller.StarPortFuelType.NoFuel,
+                members=traveller.StarPortFuelType.__members__))
+
         self._playerBrokerDm = self._loadIntSetting(
             key=Config._PlayerBrokerDmKeyName,
             default=0,

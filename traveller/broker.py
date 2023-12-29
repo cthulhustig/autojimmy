@@ -20,14 +20,15 @@ def calculateLocalBrokerDetails(
             value=brokerDm,
             name='Broker DM Increase')
 
-    if rules == traveller.Rules.MGT:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT:
         return _calculateMgtBrokerDetails(skillValue=brokerDm)
-    elif rules == traveller.Rules.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         return _calculateMgt2BrokerDetails(
             skillModifier=brokerDm,
             blackMarket=blackMarket,
             diceRoller=diceRoller)
-    elif rules == traveller.Rules.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         return _calculateMgt2022BrokerDetails(
             blackMarket=blackMarket,
             diceRoller=diceRoller)
@@ -35,20 +36,23 @@ def calculateLocalBrokerDetails(
         assert(False)
 
 def minLocalBrokerDm(rules: traveller.Rules) -> int:
-    if rules == traveller.Rules.MGT or rules == traveller.Rules.MGT2:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT or \
+            ruleSystem == traveller.RuleSystem.MGT2:
         return 1
-    if rules == traveller.Rules.MGT2022:
+    if ruleSystem == traveller.RuleSystem.MGT2022:
         # There is no user controlled modifier for 2022 rules
         return 0
     else:
         assert(False)
 
 def maxLocalBrokerDm(rules: traveller.Rules) -> int:
-    if rules == traveller.Rules.MGT:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT:
         return 6
-    elif rules == traveller.Rules.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         return 4
-    elif rules == traveller.Rules.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         # There is no user controlled modifier for 2022 rules
         return 0
     else:

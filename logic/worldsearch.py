@@ -412,11 +412,13 @@ class RefuellingFilter(WorldFilter):
     def __init__(
             self,
             operation: ListFilterOperation,
-            value: typing.Iterable[Type]
+            value: typing.Iterable[Type],
+            rules: traveller.Rules
             ) -> None:
         super().__init__()
         self._operation = operation
         self._value = set(value)
+        self._rules = rules
 
     def operation(self) -> ListFilterOperation:
         return self._operation
@@ -465,9 +467,13 @@ class RefuellingFilter(WorldFilter):
         for refuelling in checkList:
             match = False
             if refuelling == RefuellingFilter.Type.RefinedRefuelling:
-                match = world.hasStarPortRefuelling(includeUnrefined=False)
+                match = world.hasStarPortRefuelling(
+                    includeUnrefined=False,
+                    rules=self._rules)
             elif refuelling == RefuellingFilter.Type.UnrefinedRefuelling:
-                match = world.hasStarPortRefuelling(includeRefined=False)
+                match = world.hasStarPortRefuelling(
+                    includeRefined=False,
+                    rules=self._rules)
             elif refuelling == RefuellingFilter.Type.GasGiantRefuelling:
                 match = world.hasGasGiantRefuelling()
             elif refuelling == RefuellingFilter.Type.WaterRefuelling:

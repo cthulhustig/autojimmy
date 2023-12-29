@@ -750,22 +750,24 @@ class _SharedLocalBrokerSpinBoxBase(_SharedTogglableSpinBox):
             toolTip=self._ruleSpecificToolTip(rules=rules),
             parent=parent)
 
-        if rules == traveller.Rules.MGT2022:
+        if rules.system() == traveller.RuleSystem.MGT2022:
             self.hideSpinBox()
 
     def value(self, rawValue: bool = False) -> typing.Optional[int]:
-        if app.Config.instance().rules() == traveller.Rules.MGT2022:
+        rules = app.Config.instance().rules()
+        if rules.system() == traveller.RuleSystem.MGT2022:
             # HACK: For 2022 rules return a raw value of 0 to stop consumers barfing
             return 0 if rawValue else None
         return super().value(rawValue)
 
     @staticmethod
     def _ruleSpecificToolTip(rules: traveller.Rules):
-        if rules == traveller.Rules.MGT:
+        ruleSystem = rules.system()
+        if ruleSystem == traveller.RuleSystem.MGT:
             return gui.MgtLocalBrokerToolTip
-        elif rules == traveller.Rules.MGT2:
+        elif ruleSystem == traveller.RuleSystem.MGT2:
             return gui.Mgt2LocalBrokerToolTip
-        elif rules == traveller.Rules.MGT2022:
+        elif ruleSystem == traveller.RuleSystem.MGT2022:
             return gui.Mgt2022LocalBrokerToolTip
         return None
 

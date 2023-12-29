@@ -1,3 +1,4 @@
+import app
 import enum
 import gui
 import json
@@ -123,7 +124,9 @@ class WorldFilterTable(gui.ListTable):
 
         try:
             data = json.loads(stream.readQString())
-            self.addFilters(logic.deserialiseWorldFiltersList(data=data))
+            self.addFilters(logic.deserialiseWorldFiltersList(
+                data=data,
+                rules=app.Config.instance().rules()))
         except Exception as ex:
             logging.warning(f'Failed to deserialise WorldFilterTable filter list', exc_info=ex)
             return False

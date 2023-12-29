@@ -1,3 +1,4 @@
+import app
 import enum
 import gui
 import logic
@@ -284,7 +285,8 @@ class WorldFilterDialog(gui.DialogEx):
         elif filterType == _FilterType.RefuellingFilter:
             return logic.RefuellingFilter(
                 operation=self._refuellingFilterOperationComboBox.currentEnum(),
-                value=self._refuellingFilterValuesList.checkedEnums())
+                value=self._refuellingFilterValuesList.checkedEnums(),
+                rules=app.Config.instance().rules())
         elif filterType == _FilterType.AllegianceFilter:
             return logic.AllegianceFilter(
                 operation=self._allegianceFilterOperationCombo.currentEnum(),
