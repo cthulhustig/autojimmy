@@ -33,6 +33,36 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+_RestartRequiredParagraph = \
+    f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
+
+_StarPortFuelToolTip = gui.createStringToolTip(
+    """
+    <p>This lets you specify what types of fuel are available at different 
+    classes of starport based on your interpretation of the rules.</p>
+    <p>In the Mongoose rules there is some ambiguity around what types of fuel 
+    are available at different classes of starport. The 1e, 2e & 2022 core 
+    rules all have tables that state refined fuel is available at class A/B 
+    starports and unrefined fuel is available at C/D starports. They makes no 
+    mention of if unrefined fuel is also available at class A/B starports. The 
+    2e Traveller Companion (p125) muddies the water further by stating that 
+    refined and unrefined fuel is available at class A starports, making no 
+    mention of what fuel is available at class B starports but then stating 
+    that unrefined _and_ refined fuel is usually available at class C 
+    starports.</p>
+    <p>T5 core rules are much clearer, explicitly stating that class A/B 
+    starports sell refined and unrefined fuel and class C/D only sell unrefined 
+    fuel (p267).</p>
+    <p>The 1982 CT rules are a little less clear, however, the descriptions of 
+    the starport types (p84) state "Only unrefined fuel available." for class 
+    C/D starports but "Refined fuel available." for class A/B. The fact the 
+    class A/B description does\'t say "<i>Only</i> refined fuel available." 
+    would imply that unrefined fuel is also available. This seems to be backed 
+    up by the description of Alell Down Starport in the example adventure 
+    (p141), where it\'s stated to be a class B starport and to sell refined and 
+    unrefined fuel.</p>
+    """ + _RestartRequiredParagraph,
+    escape=False)
 
 # This intentionally doesn't inherit from DialogEx. We don't want it saving its size as it
 # can cause incorrect sizing if the font scaling is increased then decreased
@@ -178,6 +208,7 @@ class ConfigDialog(gui.DialogEx):
         self._tabWidget = gui.VerticalTabWidget()
 
         self._setupGeneralTab()
+        self._setupRulesTab()
         self._setupZoneTaggingTab()
         self._setupStarPortTaggingTab()
         self._setupWorldSizeTaggingTab()
@@ -424,8 +455,6 @@ class ConfigDialog(gui.DialogEx):
     def _setupGeneralTab(self) -> None:
         ColourButtonWidth = 75
 
-        restartRequiredText = f'<p><b>Changes to this setting will be applied next time {app.AppName} is started</b></p>'
-
         # Traveller widgets
         self._milieuComboBox = gui.EnumComboBox(
             type=travellermap.Milieu,
@@ -433,20 +462,26 @@ class ConfigDialog(gui.DialogEx):
             textMap={milieu: travellermap.milieuDescription(milieu) for milieu in  travellermap.Milieu})
         self._milieuComboBox.setToolTip(gui.createStringToolTip(
             '<p>The milieu to use when determining sector and world information</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
+        rules = app.Config.instance().rules()
+
         self._rulesComboBox = gui.EnumComboBox(
-            type=traveller.Rules,
-            value=app.Config.instance().rules())
+            type=traveller.RuleSystem,
+            value=rules.system())
         self._rulesComboBox.setToolTip(gui.createStringToolTip(
             '<p>The rules used for trade calculations</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         travellerLayout = gui.FormLayoutEx()
-        travellerLayout.addRow('Milieu:', self._milieuComboBox)
-        travellerLayout.addRow('Rules:', self._rulesComboBox)
+        travellerLayout.addRow(
+            'Milieu:',
+            self._milieuComboBox)
+        travellerLayout.addRow(
+            'Rule System:',
+            self._rulesComboBox)
 
         travellerGroupBox = QtWidgets.QGroupBox('Traveller')
         travellerGroupBox.setLayout(travellerLayout)
@@ -471,7 +506,7 @@ class ConfigDialog(gui.DialogEx):
             'it can only be accessed from the system {app} is running on. '
             'The proxy also only allows access to the Traveller Map URL '
             'configured below.<p>'.format(app=app.AppName) +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         self._proxyPortSpinBox = gui.SpinBoxEx()
@@ -483,7 +518,7 @@ class ConfigDialog(gui.DialogEx):
             'on.</p>' \
             '<p>You may need to change the port the proxy listens on if there '
             'is a conflict with another service running on your system.</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         self._proxyHostPoolSizeSpinBox = gui.SpinBoxEx()
@@ -507,7 +542,7 @@ class ConfigDialog(gui.DialogEx):
             'tile cache. The proxy will enforce a limit of 6 simultaneous '
             'outgoing connections to travellermap.com so as not to place '
             'additional load on the site.</b></p>'.format(app=app.AppName) +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         self._proxyMapUrlLineEdit = gui.LineEditEx()
@@ -518,7 +553,7 @@ class ConfigDialog(gui.DialogEx):
             '<p>Specify the URL the proxy will use to access Traveller Map.</p>'
             '<p>If you run your own copy of Traveller Map, you can specify its '
             'URL here.</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         # The proxy mode control is only shown if CairoSVG is detected. It's used
@@ -555,7 +590,7 @@ class ConfigDialog(gui.DialogEx):
             'composition and should only be used on systems with high core '
             'counts (and even then I don\'t really recommend it).</ul> '
             '</ul>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         # NOTE: The tile cache size is shown in MB but is actually stored in bytes
@@ -569,7 +604,7 @@ class ConfigDialog(gui.DialogEx):
             '<p>When the cache size reaches the specified limit, tiles will be '
             'automatically removed starting with the least recently used. A '
             'size of 0 will disable the disk cache.' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         self._proxyTileCacheLifetimeSpinBox = gui.SpinBoxEx()
@@ -580,7 +615,7 @@ class ConfigDialog(gui.DialogEx):
         self._proxyTileCacheLifetimeSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Specify the max time the proxy will cache a tile on disk.</p>'
             '<p>A value of 0 will cause tiles to be cached indefinitely.</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         # NOTE: The button for clearing the tile cache is enabled/disabled
@@ -611,7 +646,7 @@ class ConfigDialog(gui.DialogEx):
             value=app.Config.instance().colourTheme())
         self._colourThemeComboBox.setToolTip(gui.createStringToolTip(
             '<p>Select the colour theme.</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         # NOTE: The interface scale is displayed in percent but is actually stored as a float scale
@@ -621,7 +656,7 @@ class ConfigDialog(gui.DialogEx):
         self._interfaceScaleSpinBox.setValue(int(app.Config.instance().interfaceScale() * 100))
         self._interfaceScaleSpinBox.setToolTip(gui.createStringToolTip(
             '<p>Scale the UI up to make things easier to read</p>' +
-            restartRequiredText,
+            _RestartRequiredParagraph,
             escape=False))
 
         self._showToolTipImagesCheckBox = gui.CheckBoxEx()
@@ -695,6 +730,63 @@ class ConfigDialog(gui.DialogEx):
         tab = QtWidgets.QWidget()
         tab.setLayout(tabLayout)
         self._tabWidget.addTab(tab, 'General')
+
+    def _setupRulesTab(self) -> None:
+        rules = app.Config.instance().rules()
+
+        self._classAStarPortFuelType = gui.EnumComboBox(
+            type=traveller.StarPortFuelType,
+            value=rules.starPortFuelType(code='A'))
+        self._classAStarPortFuelType.setToolTip(_StarPortFuelToolTip)
+
+        self._classBStarPortFuelType = gui.EnumComboBox(
+            type=traveller.StarPortFuelType,
+            value=rules.starPortFuelType(code='B'))
+        self._classBStarPortFuelType.setToolTip(_StarPortFuelToolTip)
+
+        self._classCStarPortFuelType = gui.EnumComboBox(
+            type=traveller.StarPortFuelType,
+            value=rules.starPortFuelType(code='C'))
+        self._classCStarPortFuelType.setToolTip(_StarPortFuelToolTip)
+
+        self._classDStarPortFuelType = gui.EnumComboBox(
+            type=traveller.StarPortFuelType,
+            value=rules.starPortFuelType(code='D'))
+        self._classDStarPortFuelType.setToolTip(_StarPortFuelToolTip)
+
+        self._classEStarPortFuelType = gui.EnumComboBox(
+            type=traveller.StarPortFuelType,
+            value=rules.starPortFuelType(code='E'))
+        self._classEStarPortFuelType.setToolTip(_StarPortFuelToolTip)
+
+        starportFuelLayout = gui.FormLayoutEx()
+        starportFuelLayout.addRow(
+            'Class A:',
+            self._classAStarPortFuelType)
+        starportFuelLayout.addRow(
+            'Class B:',
+            self._classBStarPortFuelType)
+        starportFuelLayout.addRow(
+            'Class C:',
+            self._classCStarPortFuelType)
+        starportFuelLayout.addRow(
+            'Class D:',
+            self._classDStarPortFuelType)
+        starportFuelLayout.addRow(
+            'Class E:',
+            self._classEStarPortFuelType)
+
+        starportFuelGroupBox = QtWidgets.QGroupBox('Starport Fuel Availability')
+        starportFuelGroupBox.setLayout(starportFuelLayout)
+
+        tabLayout = QtWidgets.QVBoxLayout()
+        tabLayout.setContentsMargins(0, 0, 0, 0)
+        tabLayout.addWidget(starportFuelGroupBox)
+        tabLayout.addStretch()
+
+        tab = QtWidgets.QWidget()
+        tab.setLayout(tabLayout)
+        self._tabWidget.addTab(tab, 'Rules')
 
     def _setupZoneTaggingTab(self) -> None:
         keyDescriptions = {}
@@ -988,8 +1080,13 @@ class ConfigDialog(gui.DialogEx):
         try:
             config = app.Config.instance()
             checker.update(config.setMilieu(self._milieuComboBox.currentEnum()))
-            checker.update(config.setRules(self._rulesComboBox.currentEnum()))
-
+            checker.update(config.setRules(traveller.Rules(
+                system=self._rulesComboBox.currentEnum(),
+                classAStarPortFuelType=self._classAStarPortFuelType.currentEnum(),
+                classBStarPortFuelType=self._classBStarPortFuelType.currentEnum(),
+                classCStarPortFuelType=self._classCStarPortFuelType.currentEnum(),
+                classDStarPortFuelType=self._classDStarPortFuelType.currentEnum(),
+                classEStarPortFuelType=self._classEStarPortFuelType.currentEnum())))
             checker.update(config.setProxyEnabled(self._proxyEnabledCheckBox.isChecked()))
             checker.update(config.setProxyPort(self._proxyPortSpinBox.value()))
             checker.update(config.setProxyHostPoolSize(self._proxyHostPoolSizeSpinBox.value()))

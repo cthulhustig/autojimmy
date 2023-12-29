@@ -372,6 +372,7 @@ class WorldTable(gui.FrozenColumnListTable):
             culture = world.culture()
             pbg = world.pbg()
             worldTagColour = app.tagColour(app.calculateWorldTagLevel(world))
+            rules = app.Config.instance().rules()
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
@@ -423,7 +424,7 @@ class WorldTable(gui.FrozenColumnListTable):
                     tagColour = app.tagColour(app.calculateHydrographicsTagLevel(world))
                 elif columnType == self.ColumnType.StarPortRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setText('yes' if world.hasStarPortRefuelling() else 'no' )
+                    tableItem.setText('yes' if world.hasStarPortRefuelling(rules=rules) else 'no' )
                 elif columnType == self.ColumnType.GasGiantRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setText('yes' if world.hasGasGiantRefuelling() else 'no' )

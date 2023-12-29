@@ -109,10 +109,10 @@ class TradeGood(object):
 
     def __init__(
             self,
-            rules: traveller.Rules,
+            system: traveller.Rules,
             data: _TradeGoodData
             ) -> None:
-        self._rules = rules
+        self._system = system
         self._data = data
 
     def id(self) -> int:
@@ -275,19 +275,19 @@ class TradeGood(object):
         if isinstance(purchaseDm, common.ScalarCalculation):
             priceModifier = common.ScalarCalculation(
                 value=_calculatePurchasePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     purchaseDm=purchaseDm),
                 name='Base Price Scale')
         else:
             priceModifier = common.RangeCalculation(
                 worstCase=_calculatePurchasePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     purchaseDm=purchaseDm.worstCaseCalculation()),
                 bestCase=_calculatePurchasePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     purchaseDm=purchaseDm.bestCaseCalculation()),
                 averageCase=_calculatePurchasePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     purchaseDm=purchaseDm.averageCaseCalculation()),
                 name='Base Price Scale')
 
@@ -373,19 +373,19 @@ class TradeGood(object):
         if isinstance(saleDm, common.ScalarCalculation):
             priceModifier = common.ScalarCalculation(
                 value=_calculateSalePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     saleDm=saleDm),
                 name='Base Price Scale')
         else:
             priceModifier = common.RangeCalculation(
                 worstCase=_calculateSalePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     saleDm=saleDm.worstCaseCalculation()),
                 bestCase=_calculateSalePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     saleDm=saleDm.bestCaseCalculation()),
                 averageCase=_calculateSalePriceModifier(
-                    rules=self._rules,
+                    system=self._system,
                     saleDm=saleDm.averageCaseCalculation()),
                 name='Base Price Scale')
 
@@ -491,11 +491,12 @@ def tradeGoodList(
         excludeTradeGoods: typing.Optional[typing.Iterable[TradeGood]] = None
         ) -> typing.Iterable[TradeGood]:
     # Always return a copy so nothing messes with master trade code lists
-    if rules == traveller.Rules.MGT:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT:
         tradeGoods = _MgtTradeGoods.copy()
-    elif rules == traveller.Rules.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         tradeGoods = _Mgt2TradeGoods.copy()
-    elif rules == traveller.Rules.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         tradeGoods = _Mgt2022TradeGoods.copy()
     else:
         assert(False)
@@ -512,11 +513,12 @@ def tradeGoodFromId(
         rules: traveller.Rules,
         tradeGoodId: int
         ) -> TradeGood:
-    if rules == traveller.Rules.MGT:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT:
         return _MgtTradeGoodsMap[tradeGoodId]
-    elif rules == traveller.Rules.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         return _Mgt2TradeGoodsMap[tradeGoodId]
-    elif rules == traveller.Rules.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         return _Mgt2022TradeGoodsMap[tradeGoodId]
     else:
         assert(False)
@@ -527,11 +529,12 @@ def worldTradeGoods(
         includeLegal: bool,
         includeIllegal: bool
         ) -> typing.List[TradeGood]:
-    if rules == traveller.Rules.MGT:
+    ruleSystem = rules.system()
+    if ruleSystem == traveller.RuleSystem.MGT:
         tradeGoods = _MgtTradeGoods
-    elif rules == traveller.Rules.MGT2:
+    elif ruleSystem == traveller.RuleSystem.MGT2:
         tradeGoods = _Mgt2TradeGoods
-    elif rules == traveller.Rules.MGT2022:
+    elif ruleSystem == traveller.RuleSystem.MGT2022:
         tradeGoods = _Mgt2022TradeGoods
     else:
         assert(False)
@@ -554,7 +557,7 @@ def worldCargoQuantityModifiers(
         ) -> typing.Iterable[common.ScalarCalculation]:
     modifiers = []
 
-    if rules != traveller.Rules.MGT2022:
+    if rules.system() != traveller.RuleSystem.MGT2022:
         return modifiers # Modifiers only apply for 2022 rules
 
     # In Mongoose 2022 rules, the amount of cargo available is affected by population. Worlds with
@@ -611,7 +614,7 @@ def calculateWorldTradeGoodQuantity(
     return quantity
 
 def _calculatePurchasePriceModifier(
-        rules: traveller.Rules,
+        system: traveller.RuleSystem,
         purchaseDm: typing.Union[int, common.ScalarCalculation],
         ) -> common.ScalarCalculation:
     if not isinstance(purchaseDm, common.ScalarCalculation):
@@ -620,12 +623,12 @@ def _calculatePurchasePriceModifier(
             name='Purchase DM')
 
     return _calculatePriceModifier(
-        rules=rules,
+        system=system,
         operation='Purchase',
         tradeDm=purchaseDm)
 
 def _calculateSalePriceModifier(
-        rules: traveller.Rules,
+        system: traveller.RuleSystem,
         saleDm: typing.Union[int, common.ScalarCalculation]
         ) -> common.ScalarCalculation:
     if not isinstance(saleDm, common.ScalarCalculation):
@@ -634,24 +637,24 @@ def _calculateSalePriceModifier(
             name='Sale DM')
 
     return _calculatePriceModifier(
-        rules=rules,
+        system=system,
         operation='Sale',
         tradeDm=saleDm)
 
 def _calculatePriceModifier(
-        rules: traveller.Rules,
+        system: traveller.RuleSystem,
         operation: str,
         tradeDm: common.ScalarCalculation
         ) -> common.ScalarCalculation:
-    if rules == traveller.Rules.MGT:
+    if system == traveller.RuleSystem.MGT:
         modifierMap = _MgtPriceModifierMap
         minDm = _MgtMinPriceModifierDm
         maxDm = _MgtMaxPriceModifierDm
-    elif rules == traveller.Rules.MGT2:
+    elif system == traveller.RuleSystem.MGT2:
         modifierMap = _Mgt2PriceModifierMap
         minDm = _Mgt2MinPriceModifierDm
         maxDm = _Mgt2MaxPriceModifierDm
-    elif rules == traveller.Rules.MGT2022:
+    elif system == traveller.RuleSystem.MGT2022:
         modifierMap = _Mgt2022PriceModifierMap
         minDm = _Mgt2022MinPriceModifierDm
         maxDm = _Mgt2022MaxPriceModifierDm
@@ -1396,7 +1399,7 @@ _Mgt2TradeGoodData = [
         0, 0)
 ]
 
-_Mgt2TradeGoods = [TradeGood(rules=traveller.Rules.MGT2, data=data) for data in _Mgt2TradeGoodData]
+_Mgt2TradeGoods = [TradeGood(system=traveller.RuleSystem.MGT2, data=data) for data in _Mgt2TradeGoodData]
 _Mgt2TradeGoodsMap = {x.id(): x for x in _Mgt2TradeGoods}
 assert(len(_Mgt2TradeGoodsMap) == len(_Mgt2TradeGoods)) # Check for duplicate ids
 
@@ -2178,7 +2181,7 @@ _MgtTradeGoodData = [
         0, 0)
 ]
 
-_MgtTradeGoods = [TradeGood(rules=traveller.Rules.MGT, data=data) for data in _MgtTradeGoodData]
+_MgtTradeGoods = [TradeGood(system=traveller.RuleSystem.MGT, data=data) for data in _MgtTradeGoodData]
 
 _MgtTradeGoodsMap = {x.id(): x for x in _MgtTradeGoods}
 assert(len(_MgtTradeGoodsMap) == len(_MgtTradeGoods)) # Check for duplicate ids
@@ -2292,7 +2295,7 @@ _MgtPriceModifierMap = {
 #░░░░░     ░░░░░   ░░░░░░░░░     ░░░░░       ░░░░░░░░░░    ░░░░░░   ░░░░░░░░░░ ░░░░░░░░░░
 
 # Mongoose 2022 rules use the same Trade Good definitions as 2e
-_Mgt2022TradeGoods = [TradeGood(rules=traveller.Rules.MGT2022, data=data) for data in _Mgt2TradeGoodData]
+_Mgt2022TradeGoods = [TradeGood(system=traveller.RuleSystem.MGT2022, data=data) for data in _Mgt2TradeGoodData]
 _Mgt2022TradeGoodsMap = {x.id(): x for x in _Mgt2022TradeGoods}
 assert(len(_Mgt2022TradeGoodsMap) == len(_Mgt2022TradeGoods)) # Check for duplicate ids
 
