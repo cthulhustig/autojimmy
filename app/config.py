@@ -34,11 +34,11 @@ class Config(object):
     _ProxySvgCompositionKeyName = 'Proxy/SvgComposition'
 
     _RuleSystemKeyName = 'Game/Rules' # NOTE: This name isn't ideal but it is what it is for backwards compatibility
-    _RuleClassAFuelTypeKeyName = 'Game/RuleClassAFuelType'
-    _RuleClassBFuelTypeKeyName = 'Game/RuleClassBFuelType'
-    _RuleClassCFuelTypeKeyName = 'Game/RuleClassCFuelType'
-    _RuleClassDFuelTypeKeyName = 'Game/RuleClassDFuelType'
-    _RuleClassEFuelTypeKeyName = 'Game/RuleClassEFuelType'
+    _RuleClassAFuelTypeKeyName = 'Game/ClassAFuelTypeRule'
+    _RuleClassBFuelTypeKeyName = 'Game/ClassBFuelTypeRule'
+    _RuleClassCFuelTypeKeyName = 'Game/ClassCFuelTypeRule'
+    _RuleClassDFuelTypeKeyName = 'Game/ClassDFuelTypeRule'
+    _RuleClassEFuelTypeKeyName = 'Game/ClassEFuelTypeRule'
     _PlayerBrokerDmKeyName = 'Game/PlayerBrokerDM'
     _ShipTonnageKeyName = 'Game/ShipTonnage'
     _ShipJumpRatingKeyName = 'Game/ShipJumpRating'
