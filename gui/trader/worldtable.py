@@ -106,11 +106,13 @@ class WorldTable(gui.FrozenColumnListTable):
         GasGiantRefuelling = 'Gas Giant\nRefuelling'
         WaterRefuelling = 'Water\nRefuelling'
         FuelCache = 'Fuel\nCache'
+        Anomaly = 'Anomaly'
         Bases = 'Bases'
         ScoutBase = 'Scout Base'
         MilitaryBase = 'Military Base'
         OwnerWorld = 'Owner'
         ColonyWorlds = 'Colonies\n(Count)'
+        Remarks = 'Remarks'
 
     AllColumns = [
         ColumnType.World,
@@ -151,6 +153,8 @@ class WorldTable(gui.FrozenColumnListTable):
         ColumnType.MilitaryBase,
         ColumnType.OwnerWorld,
         ColumnType.ColonyWorlds,
+        ColumnType.Anomaly,
+        ColumnType.Remarks
     ]
 
     SystemColumns = [
@@ -171,6 +175,7 @@ class WorldTable(gui.FrozenColumnListTable):
         ColumnType.MilitaryBase,
         ColumnType.OwnerWorld,
         ColumnType.ColonyWorlds,
+        ColumnType.Anomaly,
     ]
 
     UWPColumns = [
@@ -423,8 +428,17 @@ class WorldTable(gui.FrozenColumnListTable):
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, uwp.code(traveller.UWP.Element.Hydrographics))
                     tagColour = app.tagColour(app.calculateHydrographicsTagLevel(world))
                 elif columnType == self.ColumnType.StarPortRefuelling:
+                    text = ''
+                    if world.hasStarPortRefuelling(rules=rules, includeUnrefined=False):
+                        text += 'refined'
+                    if world.hasStarPortRefuelling(rules=rules, includeRefined=False):
+                        if text:
+                            text += ' & '
+                        text += 'unrefined'
+                    if not text:
+                        text = 'none'
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setText('yes' if world.hasStarPortRefuelling(rules=rules) else 'no' )
+                    tableItem.setText(text)
                 elif columnType == self.ColumnType.GasGiantRefuelling:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setText('yes' if world.hasGasGiantRefuelling() else 'no' )
@@ -434,6 +448,9 @@ class WorldTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.FuelCache:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setText('yes' if world.isFuelCache() else 'no' )
+                elif columnType == self.ColumnType.Anomaly:
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setText('yes' if world.isAnomaly() else 'no' )                    
                 elif columnType == self.ColumnType.Resources:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Resources))
@@ -603,6 +620,10 @@ class WorldTable(gui.FrozenColumnListTable):
                     tableItem = gui.FormattedNumberTableWidgetItem(world.colonyCount())
                     if highestTagLevel:
                         tagColour = app.tagColour(highestTagLevel)
+                elif columnType == self.ColumnType.Remarks:
+                    remarks = world.remarks()
+                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem.setText(remarks.string())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
@@ -801,5 +822,8 @@ class WorldTable(gui.FrozenColumnListTable):
                     title='Colony Worlds',
                     strings=listStrings,
                     stringColours=listColours)
+        elif columnType == self.ColumnType.Remarks:
+            remarks = world.remarks()
+            return gui.createStringToolTip(remarks.string())
 
         return None
