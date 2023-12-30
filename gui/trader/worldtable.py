@@ -623,7 +623,7 @@ class WorldTable(gui.FrozenColumnListTable):
                 elif columnType == self.ColumnType.Remarks:
                     remarks = world.remarks()
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, remarks.string())
+                    tableItem.setText(remarks.string())
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
