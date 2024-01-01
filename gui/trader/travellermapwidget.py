@@ -1,5 +1,6 @@
 import app
 import enum
+import functools
 import gui
 import logging
 import traveller
@@ -300,6 +301,126 @@ class _InfoWidget(QtWidgets.QWidget):
         newWidth = self._resizeBaseWidth + delta
         self.setFixedWidth(newWidth)
 
+class _MapOptionSelectButton(gui.ComboBoxEx):
+    def __init__(
+            self,
+            group: QtWidgets.QActionGroup,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._group = group
+
+        selected = None
+        for action in self._group.actions():
+            self.addItem(action.text(), action)
+            if action.isChecked():
+                selected = action
+        if selected:
+            self.setCurrentByUserData(selected)
+
+        self.currentIndexChanged.connect(
+            self._selectionChanged)
+        
+        self._connections: typing.List[
+            typing.Tuple[QtWidgets.QAction, functools.partial]] = []
+        for action in self._group.actions():
+            partial = functools.partial(self._syncFromAction, action)
+            action.changed.connect(partial)
+            self._connections.append((action, partial))
+            
+    def __del__(self) -> None:
+        # Disconnect actions when widget is deleted to prevent C++ exception in
+        # QT implementation
+        for action, partial in self._connections:
+            action.changed.disconnect(partial)
+            
+    def _selectionChanged(self, index: int) -> None:
+        action = self.userDataByIndex(index)
+        if isinstance(action, QtWidgets.QAction):
+            action.trigger()
+      
+    def _syncFromAction(self, action: QtWidgets.QAction) -> None:
+        if action and action.isChecked():
+            self.setCurrentByUserData(action)
+
+class _MapOptionToggleButton(gui.ToggleButton):
+    def __init__(
+            self,
+            action: QtWidgets.QAction,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._action = action
+        self._syncFromAction()
+
+        self._action.changed.connect(
+            self._syncFromAction)
+        self.clicked.connect(
+            self._action.trigger)
+
+    def _syncFromAction(self) -> None:
+        self.setEnabled(self._action.isEnabled())
+        self.setChecked(self._action.isChecked())
+
+class _ConfigWidget(QtWidgets.QWidget):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self._optionsLayout = gui.FormLayoutEx()
+        self._optionsWidget = gui.LayoutWrapperWidget(
+            layout=self._optionsLayout)
+
+        self._scroller = _CustomScrollArea()
+        self._scroller.setWidgetResizable(True)
+        self._scroller.setWidget(self._optionsWidget)
+        self._scroller.setMinimumHeight(0)
+        self._scroller.setMaximumHeight(100000)
+        self._scroller.installEventFilter(self)
+
+        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addWidget(self._scroller, 1)
+
+        self.setStyleSheet(
+            'color:{textColour}; background-color:{bkColour}'.format(
+                textColour=_overlayTextColour(),
+                bkColour=_overlayBkColour()))
+        self.setMinimumHeight(0)
+        self.setLayout(widgetLayout)
+        self.setAutoFillBackground(True)
+        self.adjustSize()
+
+    def sizeHint(self) -> QtCore.QSize:
+        return self._scroller.sizeHint()
+    
+    def addOptions(
+            self,
+            section: str,
+            actions: typing.Union[typing.Iterable[QtWidgets.QAction], QtWidgets.QActionGroup]
+            ) -> None:
+        if isinstance(actions, QtWidgets.QActionGroup):
+            if actions.isExclusive():
+                selector = _MapOptionSelectButton(group=actions)
+                self._addRow(section, selector)
+            else:
+                # TODO: Handle section name
+                for action in actions.actions():
+                    button = _MapOptionToggleButton(action=action)
+                    self._addRow(action.text(), button)
+        else:
+            # TODO: Handle section name
+            for action in actions:
+                button = _MapOptionToggleButton(action=action)
+                self._addRow(action.text(), button)
+        self.adjustSize()
+
+    def _addRow(self, label: str, widget: QtWidgets.QWidget) -> None:
+        self._optionsLayout.addRow(label, widget)
+        label = self._optionsLayout.labelForField(widget)
+        label.setStyleSheet(f'background-color:#00000000')
+
 class TravellerMapWidget(gui.TravellerMapWidgetBase):
     class SelectionMode(enum.Enum):
         NoSelect = 0
@@ -368,6 +489,40 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setMinimumWidth(200)
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
+
+        baseConfigIcon = gui.loadIcon(id=gui.Icon.Settings)
+        configButtonIcon = QtGui.QIcon()
+        for availableSize in baseConfigIcon.availableSizes():
+            configButtonIcon.addPixmap(
+                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.On)
+            configButtonIcon.addPixmap(
+                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.Off)
+        self._configButton = _IconButton(
+            icon=configButtonIcon,
+            size=buttonSize,
+            parent=self)
+        self._configButton.setCheckable(True)
+        self._configButton.setChecked(True) # TODO: Should default to False
+        self._configButton.toggled.connect(self._showConfigToggled)
+
+        self._configWidget = _ConfigWidget(self)
+        self._configWidget.addOptions(
+            section='Style',
+            actions=self._sharedStyleGroup)
+        self._configWidget.addOptions(
+            section='Features',
+            actions=self._sharedFeatureGroup)
+        self._configWidget.addOptions(
+            section='Appearance',
+            actions=self._sharedAppearanceGroup)
+        self._configWidget.addOptions(
+            section='Overlays',
+            actions=self._sharedOverlayGroup)
+        self._configWidget.show() # TODO: Should default to hide
 
         self._layoutOverlayControls()
 
@@ -480,18 +635,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        usedHeight = self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing
-        usableHeight = event.size().height() - \
-            (usedHeight + (TravellerMapWidget._ControlWidgetInset * 2))
-        usableHeight = max(usableHeight, 0)
-
-        usableWidth = event.size().width() - \
-            (TravellerMapWidget._ControlWidgetInset * 2)
-
-        self._infoWidget.setMaximumHeight(usableHeight)
-        self._infoWidget.setMaximumWidth(usableWidth)
-        self._infoWidget.adjustSize()
+        self._layoutOverlayControls()
         return super().resizeEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -585,27 +729,58 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super()._handleLeftClickEvent(sectorHex=sectorHex)
 
     def _layoutOverlayControls(self) -> None:
+        self._clampInfoWidgetSize()
+
         self._searchWidget.move(
             TravellerMapWidget._ControlWidgetInset,
             TravellerMapWidget._ControlWidgetInset)
 
         self._searchButton.move(
             TravellerMapWidget._ControlWidgetInset + \
-            self._searchWidget.width(),
+                self._searchWidget.width(),
             TravellerMapWidget._ControlWidgetInset)
 
         self._infoButton.move(
             TravellerMapWidget._ControlWidgetInset + \
-            self._searchWidget.width() + \
-            self._searchButton.width() + \
-            TravellerMapWidget._ControlWidgetSpacing,
+                self._searchWidget.width() + \
+                self._searchButton.width() + \
+                TravellerMapWidget._ControlWidgetSpacing,
             TravellerMapWidget._ControlWidgetInset)
 
         self._infoWidget.move(
             TravellerMapWidget._ControlWidgetInset,
             TravellerMapWidget._ControlWidgetInset + \
-            self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing)
+                self._searchWidget.height() + \
+                TravellerMapWidget._ControlWidgetSpacing)
+        
+        self._configButton.move(
+            self.width() - \
+                (self._configButton.width() + \
+                TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)
+        
+        configSize = self._configWidget.size()
+        self._configWidget.move(
+            self.width() - \
+                (TravellerMapWidget._ControlWidgetInset + \
+                 configSize.width()),
+            TravellerMapWidget._ControlWidgetInset +
+                self._searchWidget.height() + \
+                TravellerMapWidget._ControlWidgetSpacing)
+        
+    def _clampInfoWidgetSize(self) -> None:
+        usedHeight = self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing
+        usableHeight = self.height() - \
+            (usedHeight + (TravellerMapWidget._ControlWidgetInset * 2))
+        usableHeight = max(usableHeight, 0)
+
+        usableWidth = self.width() - \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+
+        self._infoWidget.setMaximumHeight(usableHeight)
+        self._infoWidget.setMaximumWidth(usableWidth)
+        self._infoWidget.adjustSize()
 
     def _searchWorldTextEdited(self) -> None:
         # Clear the current info world (and hide the widget) as soon as the user starts editing the
@@ -649,3 +824,9 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         # want to clear the info world. If the user was to re-enable the info widget straight away
         # they would expect to see the same world as it was previously showing
         self._infoWidget.setWorld(self._infoWorld if self._infoButton.isChecked() else None)
+
+    def _showConfigToggled(self) -> None:
+        if self._configButton.isChecked():
+            self._configWidget.show()
+        else:
+            self._configWidget.hide()

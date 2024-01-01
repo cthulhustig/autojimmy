@@ -22,6 +22,7 @@ class Icon(enum.Enum):
     ZoomIn = 'zoom_in.svg'
     ZoomOut = 'zoom_out.svg'
     ZoomToFit = 'zoom_to_fit.svg'
+    Settings = 'settings.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override
