@@ -363,6 +363,7 @@ class _MapOptionToggleButton(gui.ToggleButton):
     def _syncFromAction(self) -> None:
         self.setEnabled(self._action.isEnabled())
         self.setChecked(self._action.isChecked())
+        self.setToolTip(self._action.toolTip())
 
 class _ConfigWidget(QtWidgets.QWidget):
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
