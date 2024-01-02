@@ -3,9 +3,11 @@ import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 # https://stackoverflow.com/questions/14780517/toggle-switch-in-qt
-# I've made minor updates to namespaces and to add typing support
-# plus one bug fix to explicitly convert a value to an int when
-# calling setPixelSize in paintEvent
+# I've made the following changes
+# - Updated to use full namespaces for classes and enums
+# - Updated to use typing
+# - Fixed exception in paintEvent where a float was being passed to setPixelSize
+# - Added support for interface scaling
 class ToggleButton(QtWidgets.QAbstractButton):
     def __init__(
             self,
