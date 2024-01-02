@@ -1,3 +1,4 @@
+import app
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -9,7 +10,7 @@ class ToggleButton(QtWidgets.QAbstractButton):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None,
-            track_radius: int = 10, # TODO: I suspect these values won't scale when interface scaling is enabled
+            track_radius: int = 10,
             thumb_radius: int = 8
             ) -> None:
         super().__init__(parent=parent)
@@ -18,8 +19,11 @@ class ToggleButton(QtWidgets.QAbstractButton):
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
 
-        self._track_radius = track_radius
-        self._thumb_radius = thumb_radius
+        # Scale control by interface scale. Use half scale as we're scaling a
+        # radius rather than a diameter
+        interface_scale = app.Config.instance().interfaceScale() * 0.5
+        self._track_radius = int(track_radius * interface_scale)
+        self._thumb_radius = int(thumb_radius * interface_scale)
 
         self._margin = max(0, self._thumb_radius - self._track_radius)
         self._base_offset = max(self._thumb_radius, self._track_radius)

@@ -584,7 +584,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             size=buttonSize,
             parent=self)
         self._configButton.setCheckable(True)
-        self._configButton.setChecked(True) # TODO: Should default to False
+        self._configButton.setChecked(False)
         self._configButton.toggled.connect(self._showConfigToggled)
 
         self._configWidget = _ConfigWidget(self)
@@ -600,7 +600,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._configWidget.addOptions(
             section='Overlays',
             actions=self._sharedOverlayGroup)
-        self._configWidget.show() # TODO: Should default to hide
+        self._configWidget.hide()
 
         self._layoutOverlayControls()
 
