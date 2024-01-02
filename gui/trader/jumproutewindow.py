@@ -821,12 +821,12 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRatingOverlayAction.setCheckable(True)
         self._jumpRatingOverlayAction.setChecked(False)
         self._jumpRatingOverlayAction.triggered.connect(
-            self._jumpRatingOverlayUpdated)
+            self._updateJumpOverlays)
         self._worldTaggingOverlayAction = QtWidgets.QAction('World Tagging', self)
         self._worldTaggingOverlayAction.setCheckable(True)
         self._worldTaggingOverlayAction.setChecked(False)
         self._worldTaggingOverlayAction.triggered.connect(
-            self._worldTaggingOverlayUpdated)
+            self._updateJumpOverlays)
         self._travellerMapWidget.addConfigActions(
             section='Jump Overlays',
             actions=[self._jumpRatingOverlayAction, self._worldTaggingOverlayAction])
@@ -1461,12 +1461,6 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-
-    def _jumpRatingOverlayUpdated(self) -> None:
-        self._updateJumpOverlays()
-
-    def _worldTaggingOverlayUpdated(self) -> None:
-        self._updateJumpOverlays()
 
     def _updateJumpOverlays(self) -> None:
         for handle in self._jumpOverlayHandles:
