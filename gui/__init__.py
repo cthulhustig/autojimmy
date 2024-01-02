@@ -20,6 +20,7 @@ from .common.togglebutton import *
 from .common.dualtextbutton import *
 from .common.rangespinboxwidget import *
 from .common.enumcombobox import *
+from .common.sectionwidget import *
 from .common.expander import *
 from .common.sectionlist import *
 from .common.verticaltabs import *

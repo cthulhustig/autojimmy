@@ -369,13 +369,18 @@ class _ConfigWidget(QtWidgets.QWidget):
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
-        self._optionsLayout = gui.FormLayoutEx()
-        self._optionsWidget = gui.LayoutWrapperWidget(
-            layout=self._optionsLayout)
+        self._optionsWidget = gui.SectionGroupWidget()
+        self._optionsWidget.setStyleSheet(f'background-color:#00000000')
+        optionsLayout = QtWidgets.QVBoxLayout()
+        optionsLayout.addWidget(self._optionsWidget)
+        optionsLayout.addStretch()
+
+        wrapperWidget = gui.LayoutWrapperWidget(
+            layout=optionsLayout)
 
         self._scroller = _CustomScrollArea()
         self._scroller.setWidgetResizable(True)
-        self._scroller.setWidget(self._optionsWidget)
+        self._scroller.setWidget(wrapperWidget)
         self._scroller.setMinimumHeight(0)
         self._scroller.setMaximumHeight(100000)
         self._scroller.installEventFilter(self)
@@ -399,28 +404,29 @@ class _ConfigWidget(QtWidgets.QWidget):
     def addOptions(
             self,
             section: str,
-            actions: typing.Union[typing.Iterable[QtWidgets.QAction], QtWidgets.QActionGroup]
+            actions: QtWidgets.QActionGroup
             ) -> None:
-        if isinstance(actions, QtWidgets.QActionGroup):
-            if actions.isExclusive():
-                selector = _MapOptionSelectButton(group=actions)
-                self._addRow(section, selector)
-            else:
-                # TODO: Handle section name
-                for action in actions.actions():
-                    button = _MapOptionToggleButton(action=action)
-                    self._addRow(action.text(), button)
+        if actions.isExclusive():
+            selector = _MapOptionSelectButton(group=actions)
+            self._optionsWidget.addSectionContent(
+                label=section,
+                content=selector)
         else:
-            # TODO: Handle section name
-            for action in actions:
-                button = _MapOptionToggleButton(action=action)
-                self._addRow(action.text(), button)
-        self.adjustSize()
+            layout = QtWidgets.QGridLayout()
+            for action in actions.actions():
+                row = layout.rowCount()
 
-    def _addRow(self, label: str, widget: QtWidgets.QWidget) -> None:
-        self._optionsLayout.addRow(label, widget)
-        label = self._optionsLayout.labelForField(widget)
-        label.setStyleSheet(f'background-color:#00000000')
+                button = _MapOptionToggleButton(action=action)
+                layout.addWidget(button, row, 0)
+
+                label = QtWidgets.QLabel(action.text())
+                label.setStyleSheet(f'background-color:#00000000')
+                layout.addWidget(label, row, 1)
+            self._optionsWidget.addSectionContent(
+                label=section,
+                content=layout)
+        self._optionsWidget.adjustSize()              
+        self.adjustSize()
 
 class TravellerMapWidget(gui.TravellerMapWidgetBase):
     class SelectionMode(enum.Enum):
@@ -730,7 +736,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super()._handleLeftClickEvent(sectorHex=sectorHex)
 
     def _layoutOverlayControls(self) -> None:
-        self._clampInfoWidgetSize()
+        self._clampWidgetSizes()
 
         self._searchWidget.move(
             TravellerMapWidget._ControlWidgetInset,
@@ -769,7 +775,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 self._searchWidget.height() + \
                 TravellerMapWidget._ControlWidgetSpacing)
         
-    def _clampInfoWidgetSize(self) -> None:
+    def _clampWidgetSizes(self) -> None:
         usedHeight = self._searchWidget.height() + \
             TravellerMapWidget._ControlWidgetSpacing
         usableHeight = self.height() - \
@@ -782,6 +788,10 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setMaximumHeight(usableHeight)
         self._infoWidget.setMaximumWidth(usableWidth)
         self._infoWidget.adjustSize()
+
+        self._configWidget.setMaximumHeight(usableHeight)
+        self._configWidget.setMaximumWidth(usableWidth)
+        self._configWidget.adjustSize()
 
     def _searchWorldTextEdited(self) -> None:
         # Clear the current info world (and hide the widget) as soon as the user starts editing the
