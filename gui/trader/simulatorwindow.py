@@ -72,7 +72,7 @@ class _RandomSeedWidget(QtWidgets.QWidget):
         self._numberLineEdit.setNumber(self._generateRandomSeed())
 
         self._newSeedButton = QtWidgets.QPushButton()
-        self._newSeedButton.setIcon(gui.loadIcon(gui.Icon.RevertFile))
+        self._newSeedButton.setIcon(gui.loadIcon(gui.Icon.Reload))
         self._newSeedButton.clicked.connect(self._newSeedButtonClicked)
         self._newSeedButton.setFixedSize(
             self._numberLineEdit.height(),

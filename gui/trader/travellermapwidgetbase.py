@@ -60,53 +60,6 @@ class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         elif level == QtWebEngineWidgets.QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel:
             logging.error(logMessage)
 
-class _MapStyleToggleAction(QtWidgets.QAction):
-    def __init__(
-            self,
-            style: travellermap.Style,
-            parent: typing.Optional[QtCore.QObject] = None
-            ) -> None:
-        super().__init__(style.value, parent)
-
-        self._style = style
-
-        self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapStyle() == style)
-
-        # It's important that this is connected to the trigger signal before any instances
-        # of TravellerMapWidget. This call needs to made first as it will write the updated
-        # setting to the config so the instances of TravellerMapWidget can read it back when
-        # updating their URL.
-        self.triggered.connect(self._optionToggled)
-
-    def _optionToggled(self) -> None:
-        if self.isChecked():
-            app.Config.instance().setMapStyle(style=self._style)
-
-class _MapOptionToggleAction(QtWidgets.QAction):
-    def __init__(
-            self,
-            option: travellermap.Option,
-            parent: typing.Optional[QtCore.QObject] = None
-            ) -> None:
-        super().__init__(option.value, parent)
-
-        self._option = option
-
-        self.setCheckable(True)
-        self.setChecked(app.Config.instance().mapOption(option=option))
-
-        # It's important that this is connected to the trigger signal before any instances
-        # of TravellerMapWidget. This call needs to made first as it will write the updated
-        # setting to the config so the instances of TravellerMapWidget can read it back when
-        # updating their URL.
-        self.triggered.connect(self._optionToggled)
-
-    def _optionToggled(self) -> None:
-        app.Config.instance().setMapOption(
-            option=self._option,
-            enabled=self.isChecked())
-
 class _HexOverlay(object):
     def __init__(
             self,
@@ -195,12 +148,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
     # Next script id (used for debugging)
     _nextScriptId = 1
 
-    # Actions shared with all instances of this widget
-    _sharedStyleActions: typing.List[_MapStyleToggleAction] = []
-    _sharedFeatureActions: typing.List[_MapOptionToggleAction] = []
-    _sharedAppearanceActions: typing.List[_MapOptionToggleAction] = []
-    _sharedOverlayActions: typing.List[_MapOptionToggleAction] = []
-
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -220,13 +167,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         self._toolTipDisplayPos = None
         self._toolTipQueuePos = None
         self._toolTipScriptRunning = False
-
-        self._stylesAction = None
-        self._featuresAction = None
-        self._appearancesAction = None
-        self._overlaysAction = None
-        self._reloadAction = None
-        self._styleOptionGroup = None
 
         if not TravellerMapWidgetBase._sharedProfile:
             # Create a shared profile for use by all instances of the widget. It's important to use
@@ -264,8 +204,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         self.setLayout(layout)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
-
-        self._createActions()
 
         self._loadMap()
 
@@ -633,21 +571,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             ) -> None:
         self._toolTipCallback = callback
 
-    def stylesAction(self) -> QtWidgets.QAction:
-        return self._stylesAction
-
-    def featuresAction(self) -> QtWidgets.QAction:
-        return self._featuresAction
-
-    def appearancesAction(self) -> QtWidgets.QAction:
-        return self._appearancesAction
-
-    def overlaysAction(self) -> QtWidgets.QAction:
-        return self._overlaysAction
-
-    def reloadAction(self) -> QtWidgets.QAction:
-        return self._reloadAction
-
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._mapWidget.focusProxy():
             if event.type() == QtCore.QEvent.Type.MouseButtonPress:
@@ -687,96 +610,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             QtGui.QRegion(0, 0, size.width(), size.height()))
         painter.end()
         return image
-
-    def _createActions(self) -> None:
-        if not TravellerMapWidgetBase._sharedStyleActions:
-            for style in travellermap.Style:
-                TravellerMapWidgetBase._sharedStyleActions.append(
-                    _MapStyleToggleAction(style=style))
-
-        if not TravellerMapWidgetBase._sharedFeatureActions:
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.GalacticDirections))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.SectorGrid))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.SectorNames))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.Borders))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.Routes))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.RegionNames))
-            TravellerMapWidgetBase._sharedFeatureActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.ImportantWorlds))
-
-        if not TravellerMapWidgetBase._sharedAppearanceActions:
-            TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.WorldColours))
-            TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.FilledBorders))
-            TravellerMapWidgetBase._sharedAppearanceActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.DimUnofficial))
-
-        if not TravellerMapWidgetBase._sharedOverlayActions:
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.ImportanceOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.PopulationOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.CapitalsOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.MinorRaceOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.DroyneWorldOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.AncientSitesOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.StellarOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.EmpressWaveOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.QrekrshaZoneOverlay))
-            TravellerMapWidgetBase._sharedOverlayActions.append(_MapOptionToggleAction(
-                option=travellermap.Option.MainsOverlay))
-
-        styleMenu = QtWidgets.QMenu('Style', self)
-        self._styleOptionGroup = QtWidgets.QActionGroup(self)
-        for action in TravellerMapWidgetBase._sharedStyleActions:
-            self._styleOptionGroup.addAction(action)
-            action.triggered.connect(self.reload)
-            styleMenu.addAction(action)
-        self._stylesAction = QtWidgets.QAction('Styles', self)
-        self._stylesAction.setMenu(styleMenu)
-        self.addAction(self._stylesAction)
-
-        featureMenu = QtWidgets.QMenu('Features', self)
-        for action in TravellerMapWidgetBase._sharedFeatureActions:
-            action.triggered.connect(self.reload)
-            featureMenu.addAction(action)
-        self._featuresAction = QtWidgets.QAction('Features', self)
-        self._featuresAction.setMenu(featureMenu)
-        self.addAction(self._featuresAction)
-
-        appearanceMenu = QtWidgets.QMenu('Appearance', self)
-        for action in TravellerMapWidgetBase._sharedAppearanceActions:
-            action.triggered.connect(self.reload)
-            appearanceMenu.addAction(action)
-        self._appearancesAction = QtWidgets.QAction('Appearance', self)
-        self._appearancesAction.setMenu(appearanceMenu)
-        self.addAction(self._appearancesAction)
-
-        overlayMenu = QtWidgets.QMenu('Overlays', self)
-        for action in TravellerMapWidgetBase._sharedOverlayActions:
-            action.triggered.connect(self.reload)
-            overlayMenu.addAction(action)
-        self._overlaysAction = QtWidgets.QAction('Overlays', self)
-        self._overlaysAction.setMenu(overlayMenu)
-        self.addAction(self._overlaysAction)
-
-        self._reloadAction = QtWidgets.QAction('Reload', self)
-        self._reloadAction.triggered.connect(self.reload)
-        self.addAction(self._reloadAction)
 
     # Replace the standard Util.fetchImage function with one that does a round robin
     # of of hosts for loopback requests in order to work around the hard coded limit

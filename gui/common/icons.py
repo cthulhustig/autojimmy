@@ -14,7 +14,6 @@ class Icon(enum.Enum):
     DeleteFile = 'delete_file.svg'
     CopyFile = 'copy_file.svg'
     RenameFile = 'rename_file.svg'
-    RevertFile = 'revert_file.svg'
     ImportFile = 'import_file.svg'
     ExportFile = 'export_file.svg'
     Search = 'search.svg'
@@ -22,6 +21,8 @@ class Icon(enum.Enum):
     ZoomIn = 'zoom_in.svg'
     ZoomOut = 'zoom_out.svg'
     ZoomToFit = 'zoom_to_fit.svg'
+    Settings = 'settings.svg'
+    Reload = 'reload.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

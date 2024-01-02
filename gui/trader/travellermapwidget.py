@@ -1,8 +1,10 @@
 import app
 import enum
+import functools
 import gui
 import logging
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -25,6 +27,54 @@ def _overlayHighlightColour() -> str:
     colour = QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Highlight)
     colour.setAlpha(_OverlayHighlightAlpha)
     return gui.colourToString(colour)
+
+
+class _MapStyleToggleAction(QtWidgets.QAction):
+    def __init__(
+            self,
+            style: travellermap.Style,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(style.value, parent)
+
+        self._style = style
+
+        self.setCheckable(True)
+        self.setChecked(app.Config.instance().mapStyle() == style)
+
+        # It's important that this is connected to the trigger signal before any instances
+        # of TravellerMapWidget. This call needs to made first as it will write the updated
+        # setting to the config so the instances of TravellerMapWidget can read it back when
+        # updating their URL.
+        self.triggered.connect(self._optionToggled)
+
+    def _optionToggled(self) -> None:
+        if self.isChecked():
+            app.Config.instance().setMapStyle(style=self._style)
+
+class _MapOptionToggleAction(QtWidgets.QAction):
+    def __init__(
+            self,
+            option: travellermap.Option,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(option.value, parent)
+
+        self._option = option
+
+        self.setCheckable(True)
+        self.setChecked(app.Config.instance().mapOption(option=option))
+
+        # It's important that this is connected to the trigger signal before any instances
+        # of TravellerMapWidget. This call needs to made first as it will write the updated
+        # setting to the config so the instances of TravellerMapWidget can read it back when
+        # updating their URL.
+        self.triggered.connect(self._optionToggled)
+
+    def _optionToggled(self) -> None:
+        app.Config.instance().setMapOption(
+            option=self._option,
+            enabled=self.isChecked())
 
 class _SearchComboBox(gui.WorldSearchComboBox):
     def __init__(self, *args, **kwargs):
@@ -300,6 +350,141 @@ class _InfoWidget(QtWidgets.QWidget):
         newWidth = self._resizeBaseWidth + delta
         self.setFixedWidth(newWidth)
 
+class _MapOptionSelector(gui.ComboBoxEx):
+    def __init__(
+            self,
+            group: QtWidgets.QActionGroup,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._group = group
+
+        selected = None
+        for action in self._group.actions():
+            self.addItem(action.text(), action)
+            if action.isChecked():
+                selected = action
+        if selected:
+            self.setCurrentByUserData(selected)
+
+        self.currentIndexChanged.connect(
+            self._selectionChanged)
+
+        self._connections: typing.List[
+            typing.Tuple[QtWidgets.QAction, functools.partial]] = []
+        for action in self._group.actions():
+            partial = functools.partial(self._syncFromAction, action)
+            action.changed.connect(partial)
+            self._connections.append((action, partial))
+
+    def __del__(self) -> None:
+        # Disconnect actions when widget is deleted to prevent C++ exception in
+        # QT implementation
+        for action, partial in self._connections:
+            action.changed.disconnect(partial)
+
+    def _selectionChanged(self, index: int) -> None:
+        action = self.userDataByIndex(index)
+        if isinstance(action, QtWidgets.QAction):
+            action.trigger()
+
+    def _syncFromAction(self, action: QtWidgets.QAction) -> None:
+        if action and action.isChecked():
+            self.setCurrentByUserData(action)
+
+class _MapOptionToggle(gui.ToggleButton):
+    def __init__(
+            self,
+            action: QtWidgets.QAction,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._action = action
+        self._syncFromAction()
+
+        self._action.changed.connect(
+            self._syncFromAction)
+        self.clicked.connect(
+            self._action.trigger)
+
+    def _syncFromAction(self) -> None:
+        self.setEnabled(self._action.isEnabled())
+        self.setChecked(self._action.isChecked())
+        self.setToolTip(self._action.toolTip())
+
+class _ConfigWidget(QtWidgets.QWidget):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self._optionsWidget = gui.SectionGroupWidget()
+        self._optionsWidget.setStyleSheet(f'background-color:#00000000')
+        optionsLayout = QtWidgets.QVBoxLayout()
+        optionsLayout.addWidget(self._optionsWidget)
+        optionsLayout.addStretch()
+
+        wrapperWidget = gui.LayoutWrapperWidget(
+            layout=optionsLayout)
+
+        self._scroller = _CustomScrollArea()
+        self._scroller.setWidgetResizable(True)
+        self._scroller.setWidget(wrapperWidget)
+        self._scroller.setMinimumHeight(0)
+        self._scroller.setMaximumHeight(100000)
+        self._scroller.installEventFilter(self)
+
+        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addWidget(self._scroller, 1)
+
+        self.setStyleSheet(
+            'color:{textColour}; background-color:{bkColour}'.format(
+                textColour=_overlayTextColour(),
+                bkColour=_overlayBkColour()))
+        self.setMinimumHeight(0)
+        self.setLayout(widgetLayout)
+        self.setAutoFillBackground(True)
+        self.adjustSize()
+
+    def sizeHint(self) -> QtCore.QSize:
+        return self._scroller.sizeHint()
+
+    def addOptions(
+            self,
+            section: str,
+            actions: typing.Union[QtWidgets.QActionGroup, typing.Iterable[QtWidgets.QAction]]
+            ) -> None:
+        if isinstance(actions, QtWidgets.QActionGroup):
+            if actions.isExclusive():
+                # Group is exclusive so add a combo box to allow one of the
+                # actions to be selected
+                selector = _MapOptionSelector(group=actions)
+                self._optionsWidget.addSectionContent(
+                    label=section,
+                    content=selector)
+                return
+
+            # The group is not exclusive so add each action individually
+            actions = actions.actions()
+
+        layout = QtWidgets.QGridLayout()
+        for action in actions:
+            row = layout.rowCount()
+
+            button = _MapOptionToggle(action=action)
+            layout.addWidget(button, row, 0)
+
+            label = QtWidgets.QLabel(action.text())
+            label.setStyleSheet(f'background-color:#00000000')
+            layout.addWidget(label, row, 1)
+        self._optionsWidget.addSectionContent(
+            label=section,
+            content=layout)
+
+        self._optionsWidget.adjustSize()
+        self.adjustSize()
+
 class TravellerMapWidget(gui.TravellerMapWidgetBase):
     class SelectionMode(enum.Enum):
         NoSelect = 0
@@ -311,13 +496,21 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     _StateVersion = 'TravellerMapWidget_v1'
 
     _ControlWidgetInset = 20
-    _ControlWidgetSpacing = 10
+    _ControlWidgetSpacing = 5
+
+    # Actions shared with all instances of this widget
+    _sharedStyleGroup = None
+    _sharedFeatureGroup = None
+    _sharedAppearanceGroup = None
+    _sharedOverlayGroup = None
 
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
+
+        self._initOptionActions()
 
         self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
         self._selectedWorlds: typing.List[traveller.World] = []
@@ -369,7 +562,64 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
 
+        self._reloadButton = _IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Reload),
+            size=buttonSize,
+            parent=self)
+        self._reloadButton.clicked.connect(self.reload)
+
+        baseConfigIcon = gui.loadIcon(id=gui.Icon.Settings)
+        configButtonIcon = QtGui.QIcon()
+        for availableSize in baseConfigIcon.availableSizes():
+            configButtonIcon.addPixmap(
+                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.On)
+            configButtonIcon.addPixmap(
+                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+                QtGui.QIcon.Mode.Normal,
+                QtGui.QIcon.State.Off)
+        self._configButton = _IconButton(
+            icon=configButtonIcon,
+            size=buttonSize,
+            parent=self)
+        self._configButton.setCheckable(True)
+        self._configButton.setChecked(False)
+        self._configButton.toggled.connect(self._showConfigToggled)
+
+        self._configWidget = _ConfigWidget(self)
+        self._configWidget.addOptions(
+            section='Style',
+            actions=self._sharedStyleGroup)
+        self._configWidget.addOptions(
+            section='Features',
+            actions=self._sharedFeatureGroup)
+        self._configWidget.addOptions(
+            section='Appearance',
+            actions=self._sharedAppearanceGroup)
+        self._configWidget.addOptions(
+            section='Overlays',
+            actions=self._sharedOverlayGroup)
+        self._configWidget.hide()
+
         self._layoutOverlayControls()
+
+    def __del__(self) -> None:
+        if TravellerMapWidget._sharedStyleGroup:
+            for action in TravellerMapWidget._sharedStyleGroup.actions():
+                action.triggered.disconnect(self.reload)
+
+        if TravellerMapWidget._sharedFeatureGroup:
+            for action in TravellerMapWidget._sharedFeatureGroup.actions():
+                action.triggered.disconnect(self.reload)
+
+        if TravellerMapWidget._sharedAppearanceGroup:
+            for action in TravellerMapWidget._sharedAppearanceGroup.actions():
+                action.triggered.disconnect(self.reload)
+
+        if TravellerMapWidget._sharedOverlayGroup:
+            for action in TravellerMapWidget._sharedOverlayGroup.actions():
+                action.triggered.disconnect(self.reload)
 
     def selectedWorlds(self) -> typing.Iterable[traveller.World]:
         return self._selectedWorlds
@@ -459,6 +709,15 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     def setInfoEnabled(self, enabled: bool) -> None:
         self._infoButton.setChecked(enabled)
 
+    def addConfigActions(
+            self,
+            section: str,
+            actions: typing.Union[QtWidgets.QActionGroup, typing.Iterable[QtWidgets.QAction]]
+            ) -> None:
+        self._configWidget.addOptions(
+            section=section,
+            actions=actions)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._searchWidget or object == self._searchButton:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -480,53 +739,49 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        usedHeight = self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing
-        usableHeight = event.size().height() - \
-            (usedHeight + (TravellerMapWidget._ControlWidgetInset * 2))
-        usableHeight = max(usableHeight, 0)
-
-        usableWidth = event.size().width() - \
-            (TravellerMapWidget._ControlWidgetInset * 2)
-
-        self._infoWidget.setMaximumHeight(usableHeight)
-        self._infoWidget.setMaximumWidth(usableWidth)
-        self._infoWidget.adjustSize()
+        self._layoutOverlayControls()
         return super().resizeEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
-        # Search widget and buttons have a fixed size so just use their current position and size to
-        # calculate their min bounding rect
-        fixedSearchWidgetRect = QtCore.QRect(
-            self._searchWidget.pos(),
-            self._searchWidget.size())
-        fixedSearchButtonRect = QtCore.QRect(
-            self._searchButton.pos(),
-            self._searchButton.size())
-        fixedInfoButtonRect = QtCore.QRect(
-            self._infoButton.pos(),
-            self._infoButton.size())
+        searchWidgetSize = self._searchWidget.size()
+        searchButtonSize = self._searchButton.size()
+        infoButtonSize = self._infoButton.size()
+        reloadButtonSize = self._reloadButton.size()
+        configButtonSize = self._configButton.size()
+        infoWidgetMinSize = self._infoWidget.minimumSize()
+        configWidgetMinSize = self._configWidget.minimumSize()
 
-        # The info widget can be resized so use its current position and min sizes to calculate its
-        # min bounding rect
-        minInfoWidgetRect = QtCore.QRect(
-            self._infoWidget.pos(),
-            self._infoWidget.minimumSize())
+        toolbarWidth = searchWidgetSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            searchButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            infoButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            reloadButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            configButtonSize.width()
+        toolbarHeight = max(
+            searchWidgetSize.height(),
+            searchButtonSize.height(),
+            infoButtonSize.height(),
+            reloadButtonSize.height(),
+            configButtonSize.height())
 
-        # Calculate the bounding rect for all the
-        overlayRect = QtCore.QRect(fixedSearchWidgetRect)
-        overlayRect = overlayRect.united(fixedSearchButtonRect)
-        overlayRect = overlayRect.united(fixedInfoButtonRect)
-        overlayRect = overlayRect.united(minInfoWidgetRect)
+        paneWidth = infoWidgetMinSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            configWidgetMinSize.width()
+        paneHeight = max(
+            infoWidgetMinSize.height(),
+            configWidgetMinSize.height())
 
-        # Expand bounding rect by the control widget inset
-        overlayRect = overlayRect.marginsAdded(QtCore.QMargins(
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset))
+        minWidth = max(toolbarWidth, paneWidth) + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        minHeight = toolbarHeight + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            paneHeight + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
 
-        return overlayRect.size()
+        return QtCore.QSize(minWidth, minHeight)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -553,6 +808,106 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setFixedWidth(stream.readUInt32())
 
         return True
+
+    def _initOptionActions(self) -> None:
+        if not TravellerMapWidget._sharedStyleGroup:
+            TravellerMapWidget._sharedStyleGroup = \
+                QtWidgets.QActionGroup(None)
+            TravellerMapWidget._sharedStyleGroup.setExclusive(True)
+
+            for style in travellermap.Style:
+                action = _MapStyleToggleAction(style=style)
+                TravellerMapWidget._sharedStyleGroup.addAction(action)
+
+        if not TravellerMapWidget._sharedFeatureGroup:
+            TravellerMapWidget._sharedFeatureGroup = \
+                QtWidgets.QActionGroup(None)
+            TravellerMapWidget._sharedFeatureGroup.setExclusive(False)
+
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.GalacticDirections))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.SectorGrid))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.SectorNames))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.Borders))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.Routes))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.RegionNames))
+            TravellerMapWidget._sharedFeatureGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.ImportantWorlds))
+
+        if not TravellerMapWidget._sharedAppearanceGroup:
+            TravellerMapWidget._sharedAppearanceGroup = \
+                QtWidgets.QActionGroup(None)
+            TravellerMapWidget._sharedAppearanceGroup.setExclusive(False)
+
+            TravellerMapWidget._sharedAppearanceGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.WorldColours))
+            TravellerMapWidget._sharedAppearanceGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.FilledBorders))
+            TravellerMapWidget._sharedAppearanceGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.DimUnofficial))
+
+        if not TravellerMapWidget._sharedOverlayGroup:
+            TravellerMapWidget._sharedOverlayGroup = \
+                QtWidgets.QActionGroup(None)
+            TravellerMapWidget._sharedOverlayGroup.setExclusive(False)
+
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.ImportanceOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.PopulationOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.CapitalsOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.MinorRaceOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.DroyneWorldOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.AncientSitesOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.StellarOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.EmpressWaveOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.QrekrshaZoneOverlay))
+            TravellerMapWidget._sharedOverlayGroup.addAction(
+                _MapOptionToggleAction(
+                    option=travellermap.Option.MainsOverlay))
+
+        for action in TravellerMapWidget._sharedStyleGroup.actions():
+            action.triggered.connect(self.reload)
+
+        for action in TravellerMapWidget._sharedFeatureGroup.actions():
+            action.triggered.connect(self.reload)
+
+        for action in TravellerMapWidget._sharedAppearanceGroup.actions():
+            action.triggered.connect(self.reload)
+
+        for action in TravellerMapWidget._sharedOverlayGroup.actions():
+            action.triggered.connect(self.reload)
 
     def _handleLeftClickEvent(
             self,
@@ -585,6 +940,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super()._handleLeftClickEvent(sectorHex=sectorHex)
 
     def _layoutOverlayControls(self) -> None:
+        self._clampWidgetSizes()
+
         self._searchWidget.move(
             TravellerMapWidget._ControlWidgetInset,
             TravellerMapWidget._ControlWidgetInset)
@@ -606,6 +963,49 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             TravellerMapWidget._ControlWidgetInset + \
             self._searchWidget.height() + \
             TravellerMapWidget._ControlWidgetSpacing)
+
+        self._reloadButton.move(
+            self.width() - \
+            (self._reloadButton.width() + \
+             TravellerMapWidget._ControlWidgetSpacing + \
+             self._configButton.width() + \
+             TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)
+
+        self._configButton.move(
+            self.width() - \
+            (self._configButton.width() + \
+             TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)
+
+        configSize = self._configWidget.size()
+        self._configWidget.move(
+            self.width() - \
+            (TravellerMapWidget._ControlWidgetInset + \
+             configSize.width()),
+            TravellerMapWidget._ControlWidgetInset +
+            self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing)
+
+    def _clampWidgetSizes(self) -> None:
+        usedHeight = self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        remainingHeight = self.height() - usedHeight
+        remainingHeight = max(remainingHeight, 0)
+
+        usedWidth = self._configWidget.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        remainingWidth = self.width() - usedWidth
+        remainingWidth = max(remainingWidth, 0)
+
+        self._infoWidget.setMaximumHeight(remainingHeight)
+        self._infoWidget.setMaximumWidth(remainingWidth)
+        self._infoWidget.adjustSize()
+
+        self._configWidget.setMaximumHeight(remainingHeight)
+        self._configWidget.adjustSize()
 
     def _searchWorldTextEdited(self) -> None:
         # Clear the current info world (and hide the widget) as soon as the user starts editing the
@@ -649,3 +1049,9 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         # want to clear the info world. If the user was to re-enable the info widget straight away
         # they would expect to see the same world as it was previously showing
         self._infoWidget.setWorld(self._infoWorld if self._infoButton.isChecked() else None)
+
+    def _showConfigToggled(self) -> None:
+        if self._configButton.isChecked():
+            self._configWidget.show()
+        else:
+            self._configWidget.hide()
