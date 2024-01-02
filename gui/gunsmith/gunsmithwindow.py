@@ -386,7 +386,7 @@ class GunsmithWindow(gui.WindowWidget):
         self._weaponsListBox.addAction(self._renameWeaponAction)
         self._weaponsListToolbar.addAction(self._renameWeaponAction)
 
-        self._revertWeaponAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.RevertFile), 'Revert...', self)
+        self._revertWeaponAction = QtWidgets.QAction(gui.loadIcon(gui.Icon.Reload), 'Revert...', self)
         self._revertWeaponAction.triggered.connect(self._revertWeaponClicked)
         self._weaponsListBox.addAction(self._revertWeaponAction)
         self._weaponsListToolbar.addAction(self._revertWeaponAction)

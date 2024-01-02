@@ -14,7 +14,6 @@ class Icon(enum.Enum):
     DeleteFile = 'delete_file.svg'
     CopyFile = 'copy_file.svg'
     RenameFile = 'rename_file.svg'
-    RevertFile = 'revert_file.svg'
     ImportFile = 'import_file.svg'
     ExportFile = 'export_file.svg'
     Search = 'search.svg'
