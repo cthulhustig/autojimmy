@@ -254,7 +254,7 @@ class SectionGroupWidget(QtWidgets.QWidget):
             ) -> None:
         assert(isinstance(section, SectionWidget))
         self._sections.append(section)
-        self._layout.insertWidget(index, section, stretch, alignment)            
+        self._layout.insertWidget(index, section, stretch, alignment)
 
     def _insertSectionContent(
             self,

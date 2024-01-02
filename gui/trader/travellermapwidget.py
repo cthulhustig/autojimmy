@@ -370,25 +370,25 @@ class _MapOptionSelector(gui.ComboBoxEx):
 
         self.currentIndexChanged.connect(
             self._selectionChanged)
-        
+
         self._connections: typing.List[
             typing.Tuple[QtWidgets.QAction, functools.partial]] = []
         for action in self._group.actions():
             partial = functools.partial(self._syncFromAction, action)
             action.changed.connect(partial)
             self._connections.append((action, partial))
-            
+
     def __del__(self) -> None:
         # Disconnect actions when widget is deleted to prevent C++ exception in
         # QT implementation
         for action, partial in self._connections:
             action.changed.disconnect(partial)
-            
+
     def _selectionChanged(self, index: int) -> None:
         action = self.userDataByIndex(index)
         if isinstance(action, QtWidgets.QAction):
             action.trigger()
-      
+
     def _syncFromAction(self, action: QtWidgets.QAction) -> None:
         if action and action.isChecked():
             self.setCurrentByUserData(action)
@@ -449,7 +449,7 @@ class _ConfigWidget(QtWidgets.QWidget):
 
     def sizeHint(self) -> QtCore.QSize:
         return self._scroller.sizeHint()
-    
+
     def addOptions(
             self,
             section: str,
@@ -464,7 +464,7 @@ class _ConfigWidget(QtWidgets.QWidget):
                     label=section,
                     content=selector)
                 return
-            
+
             # The group is not exclusive so add each action individually
             actions = actions.actions()
 
@@ -502,7 +502,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     _sharedStyleGroup = None
     _sharedFeatureGroup = None
     _sharedAppearanceGroup = None
-    _sharedOverlayGroup = None    
+    _sharedOverlayGroup = None
 
     def __init__(
             self,
@@ -510,7 +510,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             ) -> None:
         super().__init__(parent)
 
-        self._initOptionActions()        
+        self._initOptionActions()
 
         self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
         self._selectedWorlds: typing.List[traveller.World] = []
@@ -766,21 +766,21 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             infoButtonSize.height(),
             reloadButtonSize.height(),
             configButtonSize.height())
-        
+
         paneWidth = infoWidgetMinSize.width() + \
             TravellerMapWidget._ControlWidgetSpacing + \
             configWidgetMinSize.width()
         paneHeight = max(
             infoWidgetMinSize.height(),
             configWidgetMinSize.height())
-        
+
         minWidth = max(toolbarWidth, paneWidth) + \
             (TravellerMapWidget._ControlWidgetInset * 2)
         minHeight = toolbarHeight + \
             TravellerMapWidget._ControlWidgetSpacing + \
             paneHeight + \
             (TravellerMapWidget._ControlWidgetInset * 2)
-        
+
         return QtCore.QSize(minWidth, minHeight)
 
     def saveState(self) -> QtCore.QByteArray:
@@ -808,7 +808,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setFixedWidth(stream.readUInt32())
 
         return True
-    
+
     def _initOptionActions(self) -> None:
         if not TravellerMapWidget._sharedStyleGroup:
             TravellerMapWidget._sharedStyleGroup = \
@@ -896,7 +896,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             TravellerMapWidget._sharedOverlayGroup.addAction(
                 _MapOptionToggleAction(
                     option=travellermap.Option.MainsOverlay))
-            
+
         for action in TravellerMapWidget._sharedStyleGroup.actions():
             action.triggered.connect(self.reload)
 
@@ -948,45 +948,45 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self._searchButton.move(
             TravellerMapWidget._ControlWidgetInset + \
-                self._searchWidget.width(),
+            self._searchWidget.width(),
             TravellerMapWidget._ControlWidgetInset)
 
         self._infoButton.move(
             TravellerMapWidget._ControlWidgetInset + \
-                self._searchWidget.width() + \
-                self._searchButton.width() + \
-                TravellerMapWidget._ControlWidgetSpacing,
+            self._searchWidget.width() + \
+            self._searchButton.width() + \
+            TravellerMapWidget._ControlWidgetSpacing,
             TravellerMapWidget._ControlWidgetInset)
 
         self._infoWidget.move(
             TravellerMapWidget._ControlWidgetInset,
             TravellerMapWidget._ControlWidgetInset + \
-                self._searchWidget.height() + \
-                TravellerMapWidget._ControlWidgetSpacing)
-        
+            self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing)
+
         self._reloadButton.move(
             self.width() - \
-                (self._reloadButton.width() + \
-                TravellerMapWidget._ControlWidgetSpacing + \
-                self._configButton.width() + \
-                TravellerMapWidget._ControlWidgetInset),
-            TravellerMapWidget._ControlWidgetInset)            
-        
+            (self._reloadButton.width() + \
+             TravellerMapWidget._ControlWidgetSpacing + \
+             self._configButton.width() + \
+             TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)
+
         self._configButton.move(
             self.width() - \
-                (self._configButton.width() + \
-                TravellerMapWidget._ControlWidgetInset),
+            (self._configButton.width() + \
+             TravellerMapWidget._ControlWidgetInset),
             TravellerMapWidget._ControlWidgetInset)
-        
+
         configSize = self._configWidget.size()
         self._configWidget.move(
             self.width() - \
-                (TravellerMapWidget._ControlWidgetInset + \
-                 configSize.width()),
+            (TravellerMapWidget._ControlWidgetInset + \
+             configSize.width()),
             TravellerMapWidget._ControlWidgetInset +
-                self._searchWidget.height() + \
-                TravellerMapWidget._ControlWidgetSpacing)
-        
+            self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing)
+
     def _clampWidgetSizes(self) -> None:
         usedHeight = self._searchWidget.height() + \
             TravellerMapWidget._ControlWidgetSpacing + \
