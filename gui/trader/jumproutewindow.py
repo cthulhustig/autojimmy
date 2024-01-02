@@ -365,9 +365,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRoute = None
         self._routeLogistics = None
         self._zoomToJumpRoute = False
-
-        self._showJumpRatingOverlay = True
-        self._showWorldTaggingOverlay = True
         self._jumpOverlayHandles = set()
 
         self._setupJumpWorldsControls()
@@ -514,17 +511,19 @@ class JumpRouteWindow(gui.WindowWidget):
         if storedValue:
             self._mainSplitter.restoreState(storedValue)
 
-        self._showJumpRatingOverlay = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ShowJumpRatingOverlay',
-            type=bool,
-            default=False)
+        self._jumpRatingOverlayAction.setChecked(
+            gui.safeLoadSetting(
+                settings=self._settings,
+                key='ShowJumpRatingOverlay',
+                type=bool,
+                default=False))
 
-        self._showWorldTaggingOverlay = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ShowWorldTaggingOverlay',
-            type=bool,
-            default=False)
+        self._worldTaggingOverlayAction.setChecked(
+            gui.safeLoadSetting(
+                settings=self._settings,
+                key='ShowWorldTaggingOverlay',
+                type=bool,
+                default=False))
 
         self._settings.endGroup()
 
@@ -549,8 +548,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._settings.setValue('RefuellingPlanTableState', self._refuellingPlanTable.saveState())
         self._settings.setValue('TableSplitterState', self._tableSplitter.saveState())
         self._settings.setValue('MainSplitterState', self._mainSplitter.saveState())
-        self._settings.setValue('ShowJumpRatingOverlay', self._showJumpRatingOverlay)
-        self._settings.setValue('ShowWorldTaggingOverlay', self._showWorldTaggingOverlay)
+        self._settings.setValue('ShowJumpRatingOverlay', self._jumpRatingOverlayAction.isChecked())
+        self._settings.setValue('ShowWorldTaggingOverlay', self._worldTaggingOverlayAction.isChecked())
 
         self._settings.endGroup()
 
@@ -817,6 +816,20 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
+
+        self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
+        self._jumpRatingOverlayAction.setCheckable(True)
+        self._jumpRatingOverlayAction.setChecked(False)
+        self._jumpRatingOverlayAction.triggered.connect(
+            self._jumpRatingOverlayUpdated)        
+        self._worldTaggingOverlayAction = QtWidgets.QAction('World Tagging', self)
+        self._worldTaggingOverlayAction.setCheckable(True)
+        self._worldTaggingOverlayAction.setChecked(False)
+        self._worldTaggingOverlayAction.triggered.connect(
+            self._worldTaggingOverlayUpdated)  
+        self._travellerMapWidget.addConfigActions(
+            section='Jump Overlays',
+            actions=[self._jumpRatingOverlayAction, self._worldTaggingOverlayAction])
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
@@ -1228,31 +1241,6 @@ class JumpRouteWindow(gui.WindowWidget):
         action.setEnabled(True)
         action.triggered.connect(self._exportMapScreenshot)
 
-        # Add separator between jump route and map options
-        menuItems.append(None)
-
-        menuItems.append(self._travellerMapWidget.stylesAction())
-        menuItems.append(self._travellerMapWidget.featuresAction())
-        menuItems.append(self._travellerMapWidget.appearancesAction())
-        menuItems.append(self._travellerMapWidget.overlaysAction())
-
-        menu = QtWidgets.QMenu('Jump Overlays', self)
-        menuItems.append(menu)
-        action = QtWidgets.QAction('Jump Rating', self)
-        action.setCheckable(True)
-        action.setChecked(self._showJumpRatingOverlay)
-        action.setEnabled(True)
-        action.triggered.connect(lambda: self._toggleJumpRatingOverlay())
-        menu.addAction(action)
-        action = QtWidgets.QAction('World Tagging', self)
-        action.setCheckable(True)
-        action.setChecked(self._showWorldTaggingOverlay)
-        action.setEnabled(True)
-        action.triggered.connect(lambda: self._toggleWorldTaggingOverlay())
-        menu.addAction(action)
-
-        menuItems.append(self._travellerMapWidget.reloadAction())
-
         gui.displayMenu(
             parent=self,
             items=menuItems,
@@ -1474,14 +1462,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _toggleJumpRatingOverlay(self) -> None:
-        self._showJumpRatingOverlay = \
-            not self._showJumpRatingOverlay
+    def _jumpRatingOverlayUpdated(self) -> None:
         self._updateJumpOverlays()
 
-    def _toggleWorldTaggingOverlay(self) -> None:
-        self._showWorldTaggingOverlay = \
-            not self._showWorldTaggingOverlay
+    def _worldTaggingOverlayUpdated(self) -> None:
         self._updateJumpOverlays()
 
     def _updateJumpOverlays(self) -> None:
@@ -1489,7 +1473,9 @@ class JumpRouteWindow(gui.WindowWidget):
             self._travellerMapWidget.removeOverlayGroup(handle=handle)
         self._jumpOverlayHandles.clear()
 
-        if not (self._showJumpRatingOverlay or self._showWorldTaggingOverlay):
+        showJumpRatingOverlay = self._jumpRatingOverlayAction.isChecked()
+        showWorldTaggingOverlay = self._worldTaggingOverlayAction.isChecked()
+        if not (showJumpRatingOverlay or showWorldTaggingOverlay):
             return # Nothing more to do
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
@@ -1498,7 +1484,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         jumpRating = self._shipJumpRatingSpinBox.value()
 
-        if self._showJumpRatingOverlay:
+        if showJumpRatingOverlay:
             isDarkMapStyle = travellermap.isDarkStyle(
                 style=app.Config.instance().mapStyle())
             colour = self._JumpRatingOverlayDarkStyleColour \
@@ -1511,7 +1497,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 lineWidth=self._JumpRatingOverlayLineWidth)
             self._jumpOverlayHandles.add(handle)
 
-        if self._showWorldTaggingOverlay:
+        if showWorldTaggingOverlay:
             try:
                 worlds = traveller.WorldManager.instance().worldsInArea(
                     sectorName=startWorld.sectorName(),

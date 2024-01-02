@@ -4,6 +4,7 @@ import functools
 import gui
 import logging
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -301,7 +302,7 @@ class _InfoWidget(QtWidgets.QWidget):
         newWidth = self._resizeBaseWidth + delta
         self.setFixedWidth(newWidth)
 
-class _MapOptionSelectButton(gui.ComboBoxEx):
+class _MapOptionSelector(gui.ComboBoxEx):
     def __init__(
             self,
             group: QtWidgets.QActionGroup,
@@ -344,7 +345,7 @@ class _MapOptionSelectButton(gui.ComboBoxEx):
         if action and action.isChecked():
             self.setCurrentByUserData(action)
 
-class _MapOptionToggleButton(gui.ToggleButton):
+class _MapOptionToggle(gui.ToggleButton):
     def __init__(
             self,
             action: QtWidgets.QAction,
@@ -404,28 +405,36 @@ class _ConfigWidget(QtWidgets.QWidget):
     def addOptions(
             self,
             section: str,
-            actions: QtWidgets.QActionGroup
+            actions: typing.Union[QtWidgets.QActionGroup, typing.Iterable[QtWidgets.QAction]]
             ) -> None:
-        if actions.isExclusive():
-            selector = _MapOptionSelectButton(group=actions)
-            self._optionsWidget.addSectionContent(
-                label=section,
-                content=selector)
-        else:
-            layout = QtWidgets.QGridLayout()
-            for action in actions.actions():
-                row = layout.rowCount()
+        if isinstance(actions, QtWidgets.QActionGroup):
+            if actions.isExclusive():
+                # Group is exclusive so add a combo box to allow one of the
+                # actions to be selected
+                selector = _MapOptionSelector(group=actions)
+                self._optionsWidget.addSectionContent(
+                    label=section,
+                    content=selector)
+                return
+            
+            # The group is not exclusive so add each action individually
+            actions = actions.actions()
 
-                button = _MapOptionToggleButton(action=action)
-                layout.addWidget(button, row, 0)
+        layout = QtWidgets.QGridLayout()
+        for action in actions:
+            row = layout.rowCount()
 
-                label = QtWidgets.QLabel(action.text())
-                label.setStyleSheet(f'background-color:#00000000')
-                layout.addWidget(label, row, 1)
-            self._optionsWidget.addSectionContent(
-                label=section,
-                content=layout)
-        self._optionsWidget.adjustSize()              
+            button = _MapOptionToggle(action=action)
+            layout.addWidget(button, row, 0)
+
+            label = QtWidgets.QLabel(action.text())
+            label.setStyleSheet(f'background-color:#00000000')
+            layout.addWidget(label, row, 1)
+        self._optionsWidget.addSectionContent(
+            label=section,
+            content=layout)
+
+        self._optionsWidget.adjustSize()
         self.adjustSize()
 
 class TravellerMapWidget(gui.TravellerMapWidgetBase):
@@ -439,7 +448,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     _StateVersion = 'TravellerMapWidget_v1'
 
     _ControlWidgetInset = 20
-    _ControlWidgetSpacing = 10
+    _ControlWidgetSpacing = 5
 
     def __init__(
             self,
@@ -496,6 +505,12 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setMinimumWidth(200)
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
+
+        self._reloadButton = _IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Reload),
+            size=buttonSize,
+            parent=self)
+        self._reloadButton.clicked.connect(self.reload)
 
         baseConfigIcon = gui.loadIcon(id=gui.Icon.Settings)
         configButtonIcon = QtGui.QIcon()
@@ -621,6 +636,15 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     def setInfoEnabled(self, enabled: bool) -> None:
         self._infoButton.setChecked(enabled)
 
+    def addConfigActions(
+            self,
+            section: str,
+            actions: typing.Union[QtWidgets.QActionGroup, typing.Iterable[QtWidgets.QAction]]
+            ) -> None:
+        self._configWidget.addOptions(
+            section=section,
+            actions=actions)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self._searchWidget or object == self._searchButton:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -646,38 +670,45 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         return super().resizeEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
-        # Search widget and buttons have a fixed size so just use their current position and size to
-        # calculate their min bounding rect
-        fixedSearchWidgetRect = QtCore.QRect(
-            self._searchWidget.pos(),
-            self._searchWidget.size())
-        fixedSearchButtonRect = QtCore.QRect(
-            self._searchButton.pos(),
-            self._searchButton.size())
-        fixedInfoButtonRect = QtCore.QRect(
-            self._infoButton.pos(),
-            self._infoButton.size())
+        searchWidgetSize = self._searchWidget.size()
+        searchButtonSize = self._searchButton.size()
+        infoButtonSize = self._infoButton.size()
+        reloadButtonSize = self._reloadButton.size()
+        configButtonSize = self._configButton.size()
+        infoWidgetMinSize = self._infoWidget.minimumSize()
+        configWidgetMinSize = self._configWidget.minimumSize()
 
-        # The info widget can be resized so use its current position and min sizes to calculate its
-        # min bounding rect
-        minInfoWidgetRect = QtCore.QRect(
-            self._infoWidget.pos(),
-            self._infoWidget.minimumSize())
-
-        # Calculate the bounding rect for all the
-        overlayRect = QtCore.QRect(fixedSearchWidgetRect)
-        overlayRect = overlayRect.united(fixedSearchButtonRect)
-        overlayRect = overlayRect.united(fixedInfoButtonRect)
-        overlayRect = overlayRect.united(minInfoWidgetRect)
-
-        # Expand bounding rect by the control widget inset
-        overlayRect = overlayRect.marginsAdded(QtCore.QMargins(
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset))
-
-        return overlayRect.size()
+        toolbarWidth = searchWidgetSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            searchButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            infoButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            reloadButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            configButtonSize.width()
+        toolbarHeight = max(
+            searchWidgetSize.height(),
+            searchButtonSize.height(),
+            infoButtonSize.height(),
+            reloadButtonSize.height(),
+            configButtonSize.height())
+        
+        paneWidth = infoWidgetMinSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            configWidgetMinSize.width()
+        paneHeight = max(
+            infoWidgetMinSize.height(),
+            configWidgetMinSize.height())
+        
+        minWidth = max(toolbarWidth, paneWidth) + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        minHeight = toolbarHeight + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            paneHeight + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        
+        return QtCore.QSize(minWidth, minHeight)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -760,6 +791,14 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 self._searchWidget.height() + \
                 TravellerMapWidget._ControlWidgetSpacing)
         
+        self._reloadButton.move(
+            self.width() - \
+                (self._reloadButton.width() + \
+                TravellerMapWidget._ControlWidgetSpacing + \
+                self._configButton.width() + \
+                TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)            
+        
         self._configButton.move(
             self.width() - \
                 (self._configButton.width() + \
@@ -777,20 +816,22 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         
     def _clampWidgetSizes(self) -> None:
         usedHeight = self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing
-        usableHeight = self.height() - \
-            (usedHeight + (TravellerMapWidget._ControlWidgetInset * 2))
-        usableHeight = max(usableHeight, 0)
-
-        usableWidth = self.width() - \
+            TravellerMapWidget._ControlWidgetSpacing + \
             (TravellerMapWidget._ControlWidgetInset * 2)
+        remainingHeight = self.height() - usedHeight
+        remainingHeight = max(remainingHeight, 0)
 
-        self._infoWidget.setMaximumHeight(usableHeight)
-        self._infoWidget.setMaximumWidth(usableWidth)
+        usedWidth = self._configWidget.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        remainingWidth = self.width() - usedWidth
+        remainingWidth = max(remainingWidth, 0)
+
+        self._infoWidget.setMaximumHeight(remainingHeight)
+        self._infoWidget.setMaximumWidth(remainingWidth)
         self._infoWidget.adjustSize()
 
-        self._configWidget.setMaximumHeight(usableHeight)
-        self._configWidget.setMaximumWidth(usableWidth)
+        self._configWidget.setMaximumHeight(remainingHeight)
         self._configWidget.adjustSize()
 
     def _searchWorldTextEdited(self) -> None:
