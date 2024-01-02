@@ -10,7 +10,6 @@ class SectionWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._content = None
-        self._contentHeight = None
 
         self._label = QtWidgets.QLabel(label)
 
