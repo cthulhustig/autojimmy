@@ -23,6 +23,7 @@ class Icon(enum.Enum):
     ZoomToFit = 'zoom_to_fit.svg'
     Settings = 'settings.svg'
     Reload = 'reload.svg'
+    Key = 'key.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override
