@@ -1,8 +1,10 @@
 import app
+import base64
 import enum
 import functools
 import gui
 import logging
+import os
 import traveller
 import travellermap
 import typing
@@ -28,6 +30,38 @@ def _overlayHighlightColour() -> str:
     colour.setAlpha(_OverlayHighlightAlpha)
     return gui.colourToString(colour)
 
+def _createOnOffIcon(source: QtGui.QIcon) -> QtGui.QIcon:
+    icon = QtGui.QIcon()
+    for availableSize in source.availableSizes():
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.On)
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off)
+    return icon
+
+# Force a min font size of 10pt. That was the default before I added font
+# scaling and the change to a user not using scaling is quite jarring
+def _setMinFontSize(widget: QtWidgets.QWidget):
+    font = widget.font()
+    if font.pointSize() < 10:
+        font.setPointSize(10)
+        widget.setFont(font)
+
+class _OverlayLabel(QtWidgets.QLabel):
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ..., flags: typing.Union[QtCore.Qt.WindowFlags, QtCore.Qt.WindowType] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, text: str, parent: typing.Optional[QtWidgets.QWidget] = ..., flags: typing.Union[QtCore.Qt.WindowFlags, QtCore.Qt.WindowType] = ...) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.setStyleSheet(f'background-color:#00000000')
+        _setMinFontSize(widget=self)
 
 class _MapStyleToggleAction(QtWidgets.QAction):
     def __init__(
@@ -194,7 +228,7 @@ class _InfoWidget(QtWidgets.QWidget):
 
         self._world = None
 
-        self._label = QtWidgets.QLabel()
+        self._label = _OverlayLabel()
         self._label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         self._label.setWordWrap(True)
         self._label.setSizePolicy(
@@ -202,14 +236,6 @@ class _InfoWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._label.setMinimumHeight(0)
         self._label.setMaximumHeight(100000)
-        self._label.setStyleSheet(f'background-color:#00000000')
-
-        # Force a min font size of 10pt. That was the default before I added font
-        # scaling and the change to a user not using scaling is quite jarring
-        font = self._label.font()
-        if font.pointSize() < 10:
-            font.setPointSize(10)
-            self._label.setFont(font)
 
         self._scroller = _CustomScrollArea()
         self._scroller.setWidgetResizable(True)
@@ -350,6 +376,273 @@ class _InfoWidget(QtWidgets.QWidget):
         newWidth = self._resizeBaseWidth + delta
         self.setFixedWidth(newWidth)
 
+class _LegendWidget(QtWidgets.QWidget):
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self._label = _OverlayLabel()
+        self._label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._label.setWordWrap(True)
+        self._label.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._label.setMinimumHeight(0)
+        self._label.setMaximumHeight(100000)
+        self._label.setContentsMargins(20, 10, 20, 10)
+
+        self._scroller = _CustomScrollArea()
+        self._scroller.setWidgetResizable(True)
+        self._scroller.setWidget(self._label)
+        self._scroller.setMinimumHeight(0)
+        self._scroller.setMaximumHeight(100000)
+        self._scroller.installEventFilter(self)
+
+        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addWidget(self._scroller, 1)
+
+        self.setMinimumHeight(0)
+        self.setLayout(widgetLayout)
+        self.setAutoFillBackground(True)
+        self.syncContent()
+        self.adjustSize()
+
+    def sizeHint(self) -> QtCore.QSize:
+        return self._scroller.sizeHint()
+
+    # This is based on the legend definition in index.html & index.css. Along
+    # with some details from Sectorsheet.cs. It's been modified heavily to
+    # work around the fact QLabel only supports a limited html subset.
+    def syncContent(self):
+        style = app.Config.instance().mapStyle()
+
+        textStyle = 'color: #FFFFFF;'
+        backgroundStyle = 'background-color: #000000;'
+        largeGlyphStyle = 'width: 20px; text-align: center; font-size: 19pt;'
+        middleGlyphStyle = 'width: 20px; text-align: center; font-size: 14pt;'
+        smallGlyphStyle = 'width: 20px; text-align: center; font-size: 13pt;'
+        lowPopulationStyle = ''
+        highPopulationStyle = ''
+        capitalStyle = ''
+
+        highlightColour = '#E32736'
+        hasWaterFillColour = '#00BFFF'
+        hasWaterOutlineColour = None
+        noWaterFillColour = '#F0F0F0'
+        noWaterOutlineColour = None
+        greenZoneColour = '#80c676'
+        amberZoneColour = '#FFCC00'
+        redZoneColour = '#E32736'
+
+        worldGlyphSize = int(12 * app.Config.instance().interfaceScale())
+
+        if style is travellermap.Style.Print:
+            textStyle = 'color: black;'
+            backgroundStyle = 'background-color: #FFFFFF;'
+            noWaterFillColour = '#FFFFFF'
+            noWaterOutlineColour = '#6F6F6F'
+        elif style is travellermap.Style.Draft:
+            textStyle = 'color: #B0000000;' # Note that this is alpha blended
+            backgroundStyle = 'background-color: #FAEBD7;'
+            highlightColour = '#B0FF0000' # Note that this is alpha blended
+            hasWaterOutlineColour = '#B0000000' # Note that this is alpha blended
+            hasWaterFillColour = None
+            noWaterFillColour = '#B0000000' # Note that this is alpha blended
+            noWaterOutlineColour = '#B0000000' # Note that this is alpha blended
+            amberZoneColour = '#B0000000' # Note that this is alpha blended
+            lowPopulationStyle = 'text-transform: uppercase;'
+            highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
+            capitalStyle = 'text-transform: uppercase;'            
+        elif style is travellermap.Style.Atlas:
+            textStyle = 'color: black;'
+            backgroundStyle = 'background-color: #FFFFFF;'
+            highlightColour = '#808080'
+            hasWaterFillColour = '#000000'
+            noWaterFillColour = '#FFFFFF'
+            noWaterOutlineColour = '#000000'
+            amberZoneColour = '#C0C0C0'
+            redZoneColour = '#000000'
+        elif style is travellermap.Style.Mongoose:
+            textStyle = 'color: #000000;'
+            backgroundStyle = 'background-color: #E6E7E8;'
+            hasWaterFillColour = '#0000CD'
+            noWaterFillColour = '#BDB76B'
+            hasWaterOutlineColour = noWaterOutlineColour = '#A9A9A9'
+            amberZoneColour = '#FBB040'
+            lowPopulationStyle = 'text-transform: uppercase;'
+            highPopulationStyle = 'text-transform: uppercase; font-weight: bold;'
+            capitalStyle = 'text-transform: uppercase;'
+        elif style is travellermap.Style.Fasa:
+            textStyle = 'color: #5C4033;'
+            backgroundStyle = 'background-color: #FFFFFF;'
+            amberZoneColour = '#5C4033'
+            redZoneColour = '#805C4033' # Note that this is alpha blended
+        elif style is travellermap.Style.Terminal:
+            textStyle = 'color: #00FFFF; font-family: "Courier New", "Courier", monospace;'
+            hasWaterFillColour = '#000000'
+            hasWaterOutlineColour = '#00FFFF'
+            noWaterFillColour = '#00FFFF'
+
+        characteristicItems = []
+        if app.Config.instance().mapOption(travellermap.Option.WorldColours) and \
+            style is not travellermap.Style.Atlas:
+            characteristicItems.extend([
+                ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
+                ('Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#6AA84F'), ''),
+                ('Rich', self._createWorldGlyph(size=worldGlyphSize, fill='#800080'), ''),
+                ('Industrial', self._createWorldGlyph(size=worldGlyphSize, fill='#808080'), ''),
+                ('Corrosive/Insidious', self._createWorldGlyph(size=worldGlyphSize, fill='#BE5F06'), ''),
+                ('Vacuum', self._createWorldGlyph(size=worldGlyphSize, fill='#000000', outline='#FFFFFF'), '')
+            ])
+        characteristicItems.extend([
+            ('Water Present', self._createWorldGlyph(size=worldGlyphSize, fill=hasWaterFillColour, outline=hasWaterOutlineColour), ''),
+            ('No Water Present', self._createWorldGlyph(size=worldGlyphSize, fill=noWaterFillColour, outline=noWaterOutlineColour), ''),
+            ('Asteroid Belt', ':::', middleGlyphStyle),
+            ('Unknown', '&#x2217;', middleGlyphStyle),
+            ('Anomaly', '&#x2316;', f'{middleGlyphStyle} color: {highlightColour};'),
+        ])
+
+        baseItems = [
+            ('Imperial Naval Base', '&#x2605;', smallGlyphStyle),
+            ('Imperial Scout Base', '&#x25B2;', middleGlyphStyle),
+            ('Imperial Scout Way Station', '&#x25B2;', f'{middleGlyphStyle} color: {highlightColour};'),
+            ('Imperial Naval Depot', '&#x25A0;', middleGlyphStyle),
+            ('Zhodani Base', '&diams;', largeGlyphStyle),
+            ('Zhodani Relay Station', '&diams;', f'{largeGlyphStyle} color: {highlightColour};'),
+            ('Other Naval / Tlauku Base', '&#x2605;', f'{smallGlyphStyle} color: {highlightColour};'),
+            ('Other Naval Outpost / Depot', '&#x25A0;', f'{middleGlyphStyle} color: {highlightColour};'),
+            ('Corsair / Clan / Embassy', '&#x2217;&#x2217;', f'{smallGlyphStyle}'),
+            ('Military Base / Garrison', '&#x2726;', middleGlyphStyle),
+            ('Independent Base', '&bull;', largeGlyphStyle),
+            ('Research Station', '&Gamma;', f'{middleGlyphStyle} color: {highlightColour};'),
+            ('Imperial Reserve', '<b>R</b>', middleGlyphStyle),
+            ('Penal Colony', '<b>P</b>', f'{middleGlyphStyle} color: {highlightColour};'),
+            ('Prison, Exile Camp', '<b>X</b>', middleGlyphStyle),
+        ]
+
+        zoneItems = []
+        if style is travellermap.Style.Mongoose:
+            zoneItems.append(('Green Zone', '&#x25AC;', f'{largeGlyphStyle} color: {greenZoneColour};'))
+        zoneItems.extend([
+            ('Amber Zone', '&#x25AC;', f'{largeGlyphStyle} color: {amberZoneColour};'),
+            ('Red Zone', '&#x25AC;', f'{largeGlyphStyle} color: {redZoneColour};')
+        ])
+
+        populationItems = [
+            ('Under 1 billion', 'Wef', lowPopulationStyle),
+            ('Over 1 billion', 'YNAM', highPopulationStyle),
+            ('Subsector capitals', 'Highlighted', f'{capitalStyle} color: {highlightColour};')
+        ]
+
+        legendContent = '<html>'
+        legendContent += f'<h2 style="text-align: center; text-transform: uppercase; text-decoration: underline;">Map Legend</h2>'
+
+        imageData = self._loadLegendImage(imageFile=f'Legend_1003_{style.name.lower()}.png')
+        if imageData:
+            legendContent += f'<center><img src=data:image/png;base64,{imageData}></center>'
+
+        legendContent += '<br>'
+
+        imageData = self._loadLegendImage(imageFile=f'Legend_1006_{style.name.lower()}.png')
+        if imageData:
+            legendContent += f'<center><img src=data:image/png;base64,{imageData}></center>'
+
+        if style is not travellermap.Style.Candy and \
+                style is not travellermap.Style.Fasa:
+            legendContent += self._createLegendSection(
+                title='World Characteristics',
+                items=characteristicItems)
+            legendContent += self._createLegendSection(
+                title='Bases',
+                items=baseItems)
+        legendContent += self._createLegendSection(
+            title='Travel Zones',
+            items=zoneItems)
+
+        if style is not travellermap.Style.Fasa:
+            legendContent += self._createLegendSection(
+                title='Population',
+                items=populationItems)
+
+        legendContent += '</html>'
+
+        self._label.setStyleSheet(f'{textStyle} {backgroundStyle}')
+        self._label.setText(legendContent)
+
+        return legendContent
+
+    def _loadLegendImage(
+            self,
+            imageFile: str
+            ) -> typing.Optional[str]:
+        installDir = app.Config.instance().installDir()
+        imagePath = os.path.join(installDir, 'data', 'legend', imageFile)
+        try:
+            with open(imagePath, 'rb') as file:
+                return base64.b64encode(file.read()).decode()
+        except Exception as ex:
+            logging.error(
+                f'An exception occurred while loading legend image {imagePath}',
+                exc_info=ex)
+            return None
+
+    def _createLegendSection(
+            self,
+            title: str,
+            items: typing.Iterable[typing.Tuple[str, typing.Union[str, bytes], str]] # (Text, Glyph, Style)
+            ) -> str:
+        sectionText = f'<h2 style="text-align: center; text-transform: uppercase; text-decoration: underline;">{title}</h2>'
+        sectionText += '<center><table>'
+
+        for text, glyph, style in items:
+            sectionText += '<tr>'
+            sectionText += f'<td valign=middle align=center style="{style}">'
+            if isinstance(glyph, str):
+                sectionText += glyph
+            else:
+                sectionText += f'<center><img src=data:image/png;base64,{base64.b64encode(glyph).decode()}></center>'
+            sectionText += '</td>'
+            # The text is added with an extra leading space in order to add some
+            # padding between the glyph and the text. This is pretty hacky but
+            # it means interface scaling is automatically applied to the padding
+            sectionText += f'<td valign=middle>&nbsp;{text}</td>'
+            sectionText += '</tr>'
+
+        sectionText += '</table></center>'
+
+        return sectionText
+
+    def _createWorldGlyph(
+            self,
+            size: int,
+            fill: typing.Optional[str] = None,
+            outline: typing.Optional[str] = None
+            ) -> bytes:
+        if fill is None:
+            fill = QtCore.Qt.GlobalColor.transparent
+        if outline is None:
+            outline = fill
+
+        pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
+
+        pixmap = QtGui.QPixmap(QtCore.QSize(size, size) * pixelRatio)
+        pixmap.fill(QtCore.Qt.GlobalColor.transparent)
+
+        painter = QtGui.QPainter()
+        painter.begin(pixmap)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+
+        painter.setPen(QtGui.QColor(outline))
+        painter.setBrush(QtGui.QColor(fill))
+        painter.drawEllipse(pixmap.rect())
+
+        painter.end()
+
+        glyphBytes = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(glyphBytes)
+        pixmap.save(buffer, 'PNG')
+        return glyphBytes.data()
+
 class _MapOptionSelector(gui.ComboBoxEx):
     def __init__(
             self,
@@ -377,6 +670,8 @@ class _MapOptionSelector(gui.ComboBoxEx):
             partial = functools.partial(self._syncFromAction, action)
             action.changed.connect(partial)
             self._connections.append((action, partial))
+
+        _setMinFontSize(widget=self)
 
     def __del__(self) -> None:
         # Disconnect actions when widget is deleted to prevent C++ exception in
@@ -420,6 +715,8 @@ class _ConfigWidget(QtWidgets.QWidget):
 
         self._optionsWidget = gui.SectionGroupWidget()
         self._optionsWidget.setStyleSheet(f'background-color:#00000000')
+        _setMinFontSize(widget=self._optionsWidget)
+
         optionsLayout = QtWidgets.QVBoxLayout()
         optionsLayout.addWidget(self._optionsWidget)
         optionsLayout.addStretch()
@@ -475,8 +772,7 @@ class _ConfigWidget(QtWidgets.QWidget):
             button = _MapOptionToggle(action=action)
             layout.addWidget(button, row, 0)
 
-            label = QtWidgets.QLabel(action.text())
-            label.setStyleSheet(f'background-color:#00000000')
+            label = _OverlayLabel(action.text())
             layout.addWidget(label, row, 1)
         self._optionsWidget.addSectionContent(
             label=section,
@@ -538,19 +834,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchButton.installEventFilter(self)
         self._searchButton.clicked.connect(self._searchButtonClicked)
 
-        baseInfoIcon = gui.loadIcon(id=gui.Icon.Info)
-        infoButtonIcon = QtGui.QIcon()
-        for availableSize in baseInfoIcon.availableSizes():
-            infoButtonIcon.addPixmap(
-                baseInfoIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
-                QtGui.QIcon.Mode.Normal,
-                QtGui.QIcon.State.On)
-            infoButtonIcon.addPixmap(
-                baseInfoIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
-                QtGui.QIcon.Mode.Normal,
-                QtGui.QIcon.State.Off)
         self._infoButton = _IconButton(
-            icon=infoButtonIcon,
+            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Info)),
             size=buttonSize,
             parent=self)
         self._infoButton.setCheckable(True)
@@ -568,19 +853,19 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             parent=self)
         self._reloadButton.clicked.connect(self.reload)
 
-        baseConfigIcon = gui.loadIcon(id=gui.Icon.Settings)
-        configButtonIcon = QtGui.QIcon()
-        for availableSize in baseConfigIcon.availableSizes():
-            configButtonIcon.addPixmap(
-                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
-                QtGui.QIcon.Mode.Normal,
-                QtGui.QIcon.State.On)
-            configButtonIcon.addPixmap(
-                baseConfigIcon.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
-                QtGui.QIcon.Mode.Normal,
-                QtGui.QIcon.State.Off)
+        self._legendButton = _IconButton(
+            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
+            size=buttonSize,
+            parent=self)
+        self._legendButton.setCheckable(True)
+        self._legendButton.setChecked(False)
+        self._legendButton.toggled.connect(self._showLegendToggled)
+
+        self._legendWidget = _LegendWidget(self)
+        self._legendWidget.hide()
+
         self._configButton = _IconButton(
-            icon=configButtonIcon,
+            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Settings)),
             size=buttonSize,
             parent=self)
         self._configButton.setCheckable(True)
@@ -602,24 +887,24 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             actions=self._sharedOverlayGroup)
         self._configWidget.hide()
 
-        self._layoutOverlayControls()
+        self._configureOverlayControls()
 
     def __del__(self) -> None:
         if TravellerMapWidget._sharedStyleGroup:
             for action in TravellerMapWidget._sharedStyleGroup.actions():
-                action.triggered.disconnect(self.reload)
+                action.triggered.disconnect(self._displayOptionChanged)
 
         if TravellerMapWidget._sharedFeatureGroup:
             for action in TravellerMapWidget._sharedFeatureGroup.actions():
-                action.triggered.disconnect(self.reload)
+                action.triggered.disconnect(self._displayOptionChanged)
 
         if TravellerMapWidget._sharedAppearanceGroup:
             for action in TravellerMapWidget._sharedAppearanceGroup.actions():
-                action.triggered.disconnect(self.reload)
+                action.triggered.disconnect(self._displayOptionChanged)
 
         if TravellerMapWidget._sharedOverlayGroup:
             for action in TravellerMapWidget._sharedOverlayGroup.actions():
-                action.triggered.disconnect(self.reload)
+                action.triggered.disconnect(self._displayOptionChanged)
 
     def selectedWorlds(self) -> typing.Iterable[traveller.World]:
         return self._selectedWorlds
@@ -739,7 +1024,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        self._layoutOverlayControls()
+        self._configureOverlayControls()
         return super().resizeEvent(event)
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -747,8 +1032,10 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         searchButtonSize = self._searchButton.size()
         infoButtonSize = self._infoButton.size()
         reloadButtonSize = self._reloadButton.size()
+        keyButtonSize = self._legendButton.size()
         configButtonSize = self._configButton.size()
         infoWidgetMinSize = self._infoWidget.minimumSize()
+        legendWidgetMinSize = self._legendWidget.minimumSize()
         configWidgetMinSize = self._configWidget.minimumSize()
 
         toolbarWidth = searchWidgetSize.width() + \
@@ -759,19 +1046,23 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             TravellerMapWidget._ControlWidgetSpacing + \
             reloadButtonSize.width() + \
             TravellerMapWidget._ControlWidgetSpacing + \
+            keyButtonSize.width() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
             configButtonSize.width()
         toolbarHeight = max(
             searchWidgetSize.height(),
             searchButtonSize.height(),
             infoButtonSize.height(),
             reloadButtonSize.height(),
+            keyButtonSize.height(),
             configButtonSize.height())
 
         paneWidth = infoWidgetMinSize.width() + \
             TravellerMapWidget._ControlWidgetSpacing + \
-            configWidgetMinSize.width()
+            max(legendWidgetMinSize.width(), configWidgetMinSize.width())
         paneHeight = max(
             infoWidgetMinSize.height(),
+            legendWidgetMinSize.height(),
             configWidgetMinSize.height())
 
         minWidth = max(toolbarWidth, paneWidth) + \
@@ -898,16 +1189,16 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                     option=travellermap.Option.MainsOverlay))
 
         for action in TravellerMapWidget._sharedStyleGroup.actions():
-            action.triggered.connect(self.reload)
+            action.triggered.connect(self._displayOptionChanged)
 
         for action in TravellerMapWidget._sharedFeatureGroup.actions():
-            action.triggered.connect(self.reload)
+            action.triggered.connect(self._displayOptionChanged)
 
         for action in TravellerMapWidget._sharedAppearanceGroup.actions():
-            action.triggered.connect(self.reload)
+            action.triggered.connect(self._displayOptionChanged)
 
         for action in TravellerMapWidget._sharedOverlayGroup.actions():
-            action.triggered.connect(self.reload)
+            action.triggered.connect(self._displayOptionChanged)
 
     def _handleLeftClickEvent(
             self,
@@ -939,9 +1230,44 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         # Call base implementation to generate left click event
         super()._handleLeftClickEvent(sectorHex=sectorHex)
 
-    def _layoutOverlayControls(self) -> None:
-        self._clampWidgetSizes()
+    def _displayOptionChanged(self) -> None:
+        self._legendWidget.syncContent()
+        self._configureOverlayControls()
+        self.reload()
 
+    def _configureOverlayControls(self) -> None:
+        self._resizeOverlayWidgets()
+        self._positionOverlayWidgets()
+
+    def _resizeOverlayWidgets(self) -> None:
+        usedHeight = self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing + \
+            (TravellerMapWidget._ControlWidgetInset * 2)
+        remainingHeight = self.height() - usedHeight
+        remainingHeight = max(remainingHeight, 0)
+
+        usedWidth = TravellerMapWidget._ControlWidgetInset * 2
+        if self._legendButton.isChecked() or self._configButton.isChecked():
+            if self._legendButton.isChecked():
+                usedWidth += self._legendWidget.width()
+            else:
+                usedWidth += self._configWidget.width()
+
+            usedWidth += TravellerMapWidget._ControlWidgetSpacing
+        remainingWidth = self.width() - usedWidth
+        remainingWidth = max(remainingWidth, 0)
+
+        self._infoWidget.setMaximumHeight(remainingHeight)
+        self._infoWidget.setMaximumWidth(remainingWidth)
+        self._infoWidget.adjustSize()
+
+        self._legendWidget.setMaximumHeight(remainingHeight)
+        self._legendWidget.adjustSize()
+
+        self._configWidget.setMaximumHeight(remainingHeight)
+        self._configWidget.adjustSize()
+
+    def _positionOverlayWidgets(self) -> None:
         self._searchWidget.move(
             TravellerMapWidget._ControlWidgetInset,
             TravellerMapWidget._ControlWidgetInset)
@@ -958,15 +1284,19 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             TravellerMapWidget._ControlWidgetSpacing,
             TravellerMapWidget._ControlWidgetInset)
 
-        self._infoWidget.move(
-            TravellerMapWidget._ControlWidgetInset,
-            TravellerMapWidget._ControlWidgetInset + \
-            self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing)
-
         self._reloadButton.move(
             self.width() - \
             (self._reloadButton.width() + \
+             TravellerMapWidget._ControlWidgetSpacing + \
+             self._legendButton.width() + \
+             TravellerMapWidget._ControlWidgetSpacing + \
+             self._configButton.width() + \
+             TravellerMapWidget._ControlWidgetInset),
+            TravellerMapWidget._ControlWidgetInset)
+
+        self._legendButton.move(
+            self.width() - \
+            (self._legendButton.width() + \
              TravellerMapWidget._ControlWidgetSpacing + \
              self._configButton.width() + \
              TravellerMapWidget._ControlWidgetInset),
@@ -974,38 +1304,29 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self._configButton.move(
             self.width() - \
-            (self._configButton.width() + \
+            (self._configButton.width() +
              TravellerMapWidget._ControlWidgetInset),
             TravellerMapWidget._ControlWidgetInset)
 
+        vertOffset = TravellerMapWidget._ControlWidgetInset + \
+            self._searchWidget.height() + \
+            TravellerMapWidget._ControlWidgetSpacing
+
+        self._infoWidget.move(
+            TravellerMapWidget._ControlWidgetInset,
+            vertOffset)
+
+        legendSize = self._legendWidget.size()
+        self._legendWidget.move(
+            self.width() - (TravellerMapWidget._ControlWidgetInset +
+                            legendSize.width()),
+            vertOffset)
+
         configSize = self._configWidget.size()
         self._configWidget.move(
-            self.width() - \
-            (TravellerMapWidget._ControlWidgetInset + \
-             configSize.width()),
-            TravellerMapWidget._ControlWidgetInset +
-            self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing)
-
-    def _clampWidgetSizes(self) -> None:
-        usedHeight = self._searchWidget.height() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
-            (TravellerMapWidget._ControlWidgetInset * 2)
-        remainingHeight = self.height() - usedHeight
-        remainingHeight = max(remainingHeight, 0)
-
-        usedWidth = self._configWidget.width() + \
-            TravellerMapWidget._ControlWidgetSpacing + \
-            (TravellerMapWidget._ControlWidgetInset * 2)
-        remainingWidth = self.width() - usedWidth
-        remainingWidth = max(remainingWidth, 0)
-
-        self._infoWidget.setMaximumHeight(remainingHeight)
-        self._infoWidget.setMaximumWidth(remainingWidth)
-        self._infoWidget.adjustSize()
-
-        self._configWidget.setMaximumHeight(remainingHeight)
-        self._configWidget.adjustSize()
+            self.width() - (TravellerMapWidget._ControlWidgetInset +
+                            configSize.width()),
+            vertOffset)
 
     def _searchWorldTextEdited(self) -> None:
         # Clear the current info world (and hide the widget) as soon as the user starts editing the
@@ -1050,8 +1371,18 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         # they would expect to see the same world as it was previously showing
         self._infoWidget.setWorld(self._infoWorld if self._infoButton.isChecked() else None)
 
+    def _showLegendToggled(self) -> None:
+        if self._legendButton.isChecked():
+            self._configButton.setChecked(False)
+            self._legendWidget.show()
+        else:
+            self._legendWidget.hide()
+        self._configureOverlayControls()
+
     def _showConfigToggled(self) -> None:
         if self._configButton.isChecked():
+            self._legendButton.setChecked(False)
             self._configWidget.show()
         else:
             self._configWidget.hide()
+        self._configureOverlayControls()
