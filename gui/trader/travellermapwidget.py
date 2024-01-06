@@ -450,6 +450,9 @@ class _LegendWidget(QtWidgets.QWidget):
             noWaterFillColour = '#B0000000' # Note that this is alpha blended
             noWaterOutlineColour = '#B0000000' # Note that this is alpha blended
             amberZoneColour = '#B0000000' # Note that this is alpha blended
+            lowPopulationStyle = 'text-transform: uppercase;'
+            highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
+            capitalStyle = 'text-transform: uppercase;'            
         elif style is travellermap.Style.Atlas:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
