@@ -63,13 +63,13 @@ _BaseDetailsSectionText = \
 _AccessoriesSectionText = \
     'This section shows the details of the weapon with different removable accessories attached. ' \
     'Attribute values and notes from the Basic Configuration section apply unless alternates are ' \
-    'specified. Traits show are the complete list of traits for the weapon when the accessory is ' \
-    'attached.'
+    'specified. The traits shown are the complete list of traits for the weapon when the ' \
+    'accessory is attached.'
 _AmmoSectionText = \
-    'This section shows the details of the weapon when loaded with different types of ammunition ' \
-    'and, if appropriate, magazines. Attribute values and notes from the Basic Configuration ' \
-    'section apply unless alternates are specified. Traits show are the complete list of traits for ' \
-    'the weapon when using the ammunition/magazine.'
+    'This section shows the details of the base weapon when loaded with different types of ' \
+    'ammunition and, if appropriate, magazines. Attribute values and notes from the Basic ' \
+    'Configuration section apply unless alternates are specified. The traits shown are the ' \
+    'complete list of traits for the base weapon when using the ammunition/magazine.'
 
 # Mapping that defines alternate strings to be used for attributes. If an attribute
 # doesn't have an entry its name will be used
