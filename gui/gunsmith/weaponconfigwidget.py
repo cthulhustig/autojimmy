@@ -22,6 +22,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
         self._requirement = requirement
         self._currentOptions: typing.Dict[QtWidgets.QWidget, gunsmith.ComponentOption] = {}
+        self._widgetConnections: typing.Dict[QtWidgets.QWidget, QtCore.QMetaObject.Connection] = {}
 
         self._comboBox = gui.ComboBoxEx()
         self._comboBox.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
@@ -34,16 +35,17 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         comboLayout.setContentsMargins(0, 0, 0, 0)
         comboLayout.addWidget(self._comboBox)
 
+        self._deleteButton = None
         if deletable:
             closeIcon = gui.loadIcon(gui.Icon.CloseTab)
-            deleteButton = QtWidgets.QPushButton()
-            deleteButton.setIcon(closeIcon)
-            deleteButton.setSizePolicy(
+            self._deleteButton = QtWidgets.QPushButton()
+            self._deleteButton.setIcon(closeIcon)
+            self._deleteButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            deleteButton.clicked.connect(self.deleteClicked.emit)
+            self._deleteButton.clicked.connect(self._deleteButtonClicked)
 
-            comboLayout.addWidget(deleteButton, alignment=QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+            comboLayout.addWidget(self._deleteButton, alignment=QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         comboLayout.addStretch(1)
 
         self._optionsLayout = gui.VBoxLayoutEx()
@@ -59,6 +61,14 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             current=current)
 
         self.setLayout(widgetLayout)
+
+    def teardown(self) -> None:
+        self._comboBox.currentIndexChanged.disconnect(self._selectionChanged)
+        if self._deleteButton:
+            self._deleteButton.clicked.disconnect(self._deleteButtonClicked)
+
+        for widget in list(self._currentOptions.keys()):
+            self._removeOptionWidget(widget=widget)
 
     # Note this intentionally includes the None component for optional components
     def componentCount(self) -> int:
@@ -139,6 +149,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: gunsmith.ComponentOption
             ) -> None:
         widget = None
+        connection = None
         fullRow = False
         alignment = QtCore.Qt.AlignmentFlag(0)
         if isinstance(option, gunsmith.BooleanComponentOption):
@@ -147,7 +158,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
+            connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, gunsmith.StringComponentOption):
             widget = gui.LineEditEx()
@@ -155,7 +166,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
+            connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
         elif isinstance(option, gunsmith.IntegerComponentOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
@@ -173,7 +184,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
+            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, gunsmith.FloatComponentOption):
             widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
@@ -194,7 +205,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
+            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, gunsmith.EnumComponentOption):
             widget = gui.EnumComboBox(
@@ -206,7 +217,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            widget.currentIndexChanged.connect(lambda: self._comboBoxChanged(widget, option))
+            connection = widget.currentIndexChanged.connect(lambda: self._comboBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
 
         if widget:
@@ -215,6 +226,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setToolTip(gui.createStringToolTip(description, escape=False))
 
             self._currentOptions[widget] = option
+            self._widgetConnections[widget] = connection
             if fullRow:
                 self._optionsLayout.insertWidget(
                     index,
@@ -233,6 +245,26 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             ) -> None:
         self._optionsLayout.removeWidget(widget)
         del self._currentOptions[widget]
+
+        connection = self._widgetConnections[widget]
+        del self._widgetConnections[widget]
+
+        if connection:
+            if isinstance(widget, gui.CheckBoxEx):
+                widget.stateChanged.disconnect(connection)
+            if isinstance(widget, gui.LineEditEx):
+                widget.textChanged.disconnect(connection)
+            elif isinstance(widget, gui.SpinBoxEx):
+                widget.valueChanged.disconnect(connection)
+            elif isinstance(widget, gui.OptionalSpinBox):
+                widget.valueChanged.disconnect(connection)
+            elif isinstance(widget, gui.DoubleSpinBoxEx):
+                widget.valueChanged.disconnect(connection)
+            elif isinstance(widget, gui.OptionalDoubleSpinBox):
+                widget.valueChanged.disconnect(connection)
+            elif isinstance(widget, gui.EnumComboBox):
+                widget.currentIndexChanged.disconnect(connection)
+
         widget.setParent(None)
         widget.setHidden(True)
         widget.deleteLater()
@@ -363,7 +395,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
+    def _deleteButtonClicked(self) -> None:
+        self.deleteClicked.emit()
+
 class _StageWidget(QtWidgets.QWidget):
+    stageChanged = QtCore.pyqtSignal(gunsmith.ConstructionStage)
+
     def __init__(
             self,
             weapon: gunsmith.Weapon,
@@ -380,6 +417,9 @@ class _StageWidget(QtWidgets.QWidget):
     def stage(self) -> gunsmith.ConstructionStage:
         return self._stage
 
+    def teardown(self) -> None:
+        raise RuntimeError('The teardown method must be implemented by classes derived from _StageWidget')
+
     def synchronise(self) -> None:
         raise RuntimeError('The synchronise method must be implemented by classes derived from _StageWidget')
 
@@ -387,8 +427,6 @@ class _StageWidget(QtWidgets.QWidget):
         raise RuntimeError('The isPointless method must be implemented by classes derived from _StageWidget')
 
 class _SingleSelectStageWidget(_StageWidget):
-    stageChanged = QtCore.pyqtSignal(gunsmith.ConstructionStage)
-
     def __init__(
             self,
             weapon: gunsmith.Weapon,
@@ -413,6 +451,10 @@ class _SingleSelectStageWidget(_StageWidget):
         self.setLayout(self._layout)
 
         self.synchronise()
+
+    def teardown(self) -> None:
+        self._componentWidget.componentChanged.disconnect(self._componentChanged)
+        self._componentWidget.teardown()
 
     def synchronise(self) -> None:
         currentComponents = self._stage.components()
@@ -467,8 +509,6 @@ class _SingleSelectStageWidget(_StageWidget):
         self.stageChanged.emit(self._stage)
 
 class _MultiSelectStageWidget(_StageWidget):
-    stageChanged = QtCore.pyqtSignal(gunsmith.ConstructionStage)
-
     _RowSpacing = 20
 
     def __init__(
@@ -498,6 +538,11 @@ class _MultiSelectStageWidget(_StageWidget):
         self.setLayout(self._layout)
 
         self.synchronise()
+
+    def teardown(self) -> None:
+        self._addButton.clicked.disconnect(self._addClicked)
+        for widget in list(self._currentComponents.keys()):
+            self._removeComponentWidget(widget)
 
     def synchronise(self) -> None:
         stageComponents = list(self._stage.components()) # Copy list to allow easier removing while iterating
@@ -554,8 +599,8 @@ class _MultiSelectStageWidget(_StageWidget):
             # only the adding of a component in the first place is optional
             requirement=gunsmith.ConstructionStage.RequirementLevel.Mandatory,
             deletable=True)
-        componentWidget.componentChanged.connect(lambda: self._componentChanged(componentWidget))
-        componentWidget.deleteClicked.connect(lambda: self._deleteClicked(componentWidget))
+        componentWidget.componentChanged.connect(self._componentChanged)
+        componentWidget.deleteClicked.connect(self._deleteClicked)
 
         self._layout.insertWidget(row, componentWidget)
         self._currentComponents[componentWidget] = component
@@ -568,6 +613,11 @@ class _MultiSelectStageWidget(_StageWidget):
             ) -> None:
         self._layout.removeWidget(widget)
         del self._currentComponents[widget]
+
+        widget.componentChanged.disconnect(self._componentChanged)
+        widget.deleteClicked.disconnect(self._deleteClicked)
+
+        widget.teardown()
         widget.setParent(None)
         widget.setHidden(True)
         widget.deleteLater()
@@ -623,19 +673,17 @@ class _MultiSelectStageWidget(_StageWidget):
         self._updateAllComponentWidgets(skipWidget=widget)
         self.stageChanged.emit(self._stage)
 
-    def _deleteClicked(
-            self,
-            widget: _ComponentConfigWidget
-            ) -> None:
+    def _deleteClicked(self) -> None:
+        widget = self.sender()
+        assert(isinstance(widget, _ComponentConfigWidget))
         self._removeComponentWidget(widget=widget)
         self._updateWeaponComponent(removeComponent=widget.currentComponent())
         self._updateAllComponentWidgets()
         self.stageChanged.emit(self._stage)
 
-    def _componentChanged(
-            self,
-            widget: _ComponentConfigWidget
-            ) -> None:
+    def _componentChanged(self) -> None:
+        widget = self.sender()
+        assert(isinstance(widget, _ComponentConfigWidget))
         oldComponent = self._currentComponents[widget]
         newComponent = widget.currentComponent()
         self._updateWeaponComponent(
@@ -672,6 +720,11 @@ class _StageGroupWidget(QtWidgets.QWidget):
         layout.addWidget(self._configurationWidget)
 
         self.setLayout(layout)
+
+    def teardown(self) -> None:
+        self._configurationWidget.expansionChanged.disconnect(self._expansionChanged)
+        for stage in list(self._stageWidgets.keys()):
+            self.removeStage(stage=stage)
 
     def stageCount(self) -> int:
         return len(self._stageWidgets)
@@ -718,14 +771,18 @@ class _StageGroupWidget(QtWidgets.QWidget):
             self,
             stage: gunsmith.ConstructionStage
             ) -> None:
+        self._stageOrder.remove(stage)
+
         widget = self._stageWidgets.get(stage)
         if not widget:
             return
 
-        self._stageOrder.remove(stage)
         del self._stageWidgets[stage]
 
         self._configurationWidget.removeContent(content=widget)
+        widget.stageChanged.disconnect(self._stageStateChanged)
+
+        widget.teardown()
         widget.setParent(None)
         widget.setHidden(True)
         widget.deleteLater()
@@ -841,6 +898,10 @@ class _SequenceStagesWidget(_StageGroupWidget):
             expanded=True)
 
         self.synchronise()
+
+    def teardown(self) -> None:
+        self._weaponTypeComboBox.currentIndexChanged.disconnect(self._weaponTypeChanged)
+        super().teardown()
 
     def synchronise(self) -> None:
         # Update the weapon type combo box. Signals are blocked when doing this to prevent
@@ -1238,18 +1299,31 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
     def _removeWidgets(self) -> None:
         for sequenceWidget in self._sequenceWidgets.values():
+            sequenceWidget.weaponTypeChanged.disconnect(self._weaponTypeChanged)
+            sequenceWidget.stageChanged.disconnect(self._stageChanged)
+            sequenceWidget.expansionChanged.disconnect(self._expansionChanged)
+            sequenceWidget.teardown()
             self._removeWidget(widget=sequenceWidget)
         self._sequenceWidgets.clear()
 
         if self._commonWidget:
+            self._commonWidget.stageChanged.disconnect(self._stageChanged)
+            self._commonWidget.expansionChanged.disconnect(self._expansionChanged)
+            self._commonWidget.teardown()
             self._removeWidget(widget=self._commonWidget)
             self._commonWidget = None
 
         if self._loadingWidget:
+            self._loadingWidget.stageChanged.disconnect(self._stageChanged)
+            self._loadingWidget.expansionChanged.disconnect(self._expansionChanged)
+            self._loadingWidget.teardown()
             self._removeWidget(widget=self._loadingWidget)
             self._loadingWidget = None
 
         if self._munitionsWidget:
+            self._munitionsWidget.stageChanged.disconnect(self._stageChanged)
+            self._munitionsWidget.expansionChanged.disconnect(self._expansionChanged)
+            self._munitionsWidget.teardown()
             self._removeWidget(widget=self._munitionsWidget)
             self._munitionsWidget = None
 

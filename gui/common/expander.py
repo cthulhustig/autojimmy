@@ -146,7 +146,7 @@ class ExpanderWidget(QtWidgets.QWidget):
             contentHeight = 0
             if expanded:
                 contentLayout = self._contentArea.layout()
-                contentHeight = contentLayout.sizeHint().height()
+                contentHeight = contentLayout.sizeHint().height() if contentLayout else 0
                 requiredHeight += contentHeight
             self.setMaximumHeight(requiredHeight)
             self.setMinimumHeight(requiredHeight)
@@ -373,6 +373,8 @@ class ExpanderGroupWidget(QtWidgets.QWidget):
         self._layout.removeWidget(content)
 
         if expander:
+            expander.expansionChanged.disconnect(self._expansionChanged)
+
             # Destroy the expander after removing it. Reset the parent on the widget to detach it
             # from the parent the widget that the layout would have set for it (i.e. the widget the
             # layout is attached to). I'm not sure why removeWidget doesn't do this as it would seem
@@ -440,8 +442,7 @@ class ExpanderGroupWidget(QtWidgets.QWidget):
             alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
             ) -> None:
         assert(isinstance(expander, ExpanderWidget))
-        expander.expansionChanged.connect(
-            lambda expanded, animated: self._expansionChanged(expander, expanded, animated))
+        expander.expansionChanged.connect(self._expansionChanged)
         self._expanders.append(expander)
         self._layout.insertWidget(index, expander, stretch, alignment)
 
@@ -479,10 +480,12 @@ class ExpanderGroupWidget(QtWidgets.QWidget):
 
     def _expansionChanged(
             self,
-            expander: ExpanderWidget,
             expanded: bool,
             animated: bool
             ) -> None:
+        expander = self.sender()
+        assert(isinstance(expander, ExpanderWidget))
+
         # Generate event to let external observers know of expansion change
         self.expansionChanged.emit(expander.content(), expanded, animated)
 
@@ -537,9 +540,6 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
             ) -> None:
         super().__init__(parent=parent)
         self._storedExpansionStates: typing.Optional[typing.Dict[str, bool]] = None
-
-        self.expansionChanged.connect(
-            lambda content, expanded, animated: self._updateExpansionState(content, expanded))
 
     def setPersistExpanderStates(self, enable: bool):
         if enable and (self._storedExpansionStates == None):
@@ -596,6 +596,31 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
                 expanded = storedState
 
         return super()._insertExpandingContent(index, label, content, expanded, stretch, alignment)
+    
+    def _expansionChanged(
+            self,
+            expanded: bool,
+            animated: bool
+            ) -> None:
+        super()._expansionChanged(expanded, animated)
+
+        expander = self.sender()
+        assert(isinstance(expander, ExpanderWidget))        
+        self._updateExpansionState(
+            content=expander.content(),
+            expanded=expanded)
+    
+    def _silentlyUpdateExpander(
+            self,
+            expander: ExpanderWidget,
+            expanded: bool,
+            animated: bool
+            ) -> None:
+        super()._silentlyUpdateExpander(expander, expanded, animated)
+ 
+        self._updateExpansionState(
+            content=expander.content(),
+            expanded=expanded)        
 
     def _updateExpansionState(
             self,
