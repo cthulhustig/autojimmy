@@ -1059,14 +1059,14 @@ class PdfExporter(object):
             text=f'{section.name()} Total',
             style=_TableDataBoldStyle)
 
-        cost = section.totalCost()
+        cost = section.totalCost().value()
         costElement = self._createParagraph(
-            text=f'Cr{common.formatNumber(number=cost.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}',
+            text=f'Cr{common.formatNumber(number=cost, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}' if cost else '-',
             style=_TableDataBoldStyle)
 
-        weight = section.totalWeight()
+        weight = section.totalWeight().value()
         weightElement = self._createParagraph(
-            text=f'{common.formatNumber(number=weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg',
+            text=f'{common.formatNumber(number=weight, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg' if weight else '-',
             style=_TableDataBoldStyle)
 
         factorsElement = self._createParagraph(
