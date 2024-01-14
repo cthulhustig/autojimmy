@@ -1445,6 +1445,33 @@ class Weapon(object):
                             cost=step.cost(),
                             weight=step.weight(),
                             factors=step.factors())
+                        
+        for sequenceIndex, sequence in enumerate(self._sequenceStates.values()):
+            sectionName = self._prefixManifestText(
+                sequenceIndex=sequenceIndex,
+                baseText=gunsmith.ConstructionPhase.Finalisation.value)
+
+            manifestSection = None
+            for component in sequence.components(phase=gunsmith.ConstructionPhase.Finalisation):
+                steps = sequence.steps(component=component)
+                if not steps:
+                    continue
+
+                for step in steps:
+                    if not step.cost() and not step.weight() and not step.factors():
+                        continue
+
+                    if not manifestSection:
+                        manifestSection = manifest.createSection(name=sectionName)
+
+                    entryText = self._prefixManifestText(
+                        sequenceIndex=sequenceIndex,
+                        baseText=f'{step.type()}: {step.name()}')
+                    manifestSection.createEntry(
+                        component=entryText,
+                        cost=step.cost(),
+                        weight=step.weight(),
+                        factors=step.factors())
 
         return manifest
 
