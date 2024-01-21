@@ -163,7 +163,7 @@ class MultiMount(gunsmith.MultiMountInterface):
         # Basic Multi-Mount Step
         #
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Weapon Count x{weaponCount.value()}',
             type=self.typeString())
 
@@ -179,10 +179,10 @@ class MultiMount(gunsmith.MultiMountInterface):
         step.setWeight(weight=gunsmith.ConstantModifier(value=additionalWeight))
 
         additionalCost = common.Calculator.multiply(
-            lhs=context.totalCost(sequence=None), # Total cost at point multi-mount is applied
+            lhs=context.totalCredits(sequence=None), # Total cost at point multi-mount is applied
             rhs=additionalWeapons,
             name=f'{self.componentString()} Additional Weapon Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=additionalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=additionalCost))
 
         barrelCount = context.attributeValue(
             sequence=sequence,
@@ -257,7 +257,7 @@ class MultiMount(gunsmith.MultiMountInterface):
         else:
             return # Multi-mount hasn't given an increase in fire rate
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'{fireRateTrait.value} Upgrade',
             type=self.typeString())
 
@@ -363,10 +363,10 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
             value=multiMount.weaponCount(),
             name='Multi-Mount Weapon Count')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.componentString(),
             type=self.typeString(),
-            cost=gunsmith.MultiplierModifier(value=weaponCount),
+            credits=gunsmith.MultiplierModifier(value=weaponCount),
             weight=gunsmith.MultiplierModifier(value=weaponCount))
 
         context.applyStep(

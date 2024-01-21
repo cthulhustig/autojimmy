@@ -190,7 +190,7 @@ class Barrel(gunsmith.BarrelInterface):
         if additionalBarrels.value() <= 0:
             return # Nothing more to do
 
-        barrelCost = baseStep.cost()
+        barrelCost = baseStep.credits()
         additionalCost = common.Calculator.multiply(
             lhs=barrelCost.numericModifier(),
             rhs=additionalBarrels,
@@ -211,10 +211,10 @@ class Barrel(gunsmith.BarrelInterface):
             rhs=additionalBarrels,
             name=f'Total Additional Barrel Weight')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Additional {self.instanceString()} Barrel x{additionalBarrels.value()}',
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=additionalCost),
+            credits=gunsmith.ConstantModifier(value=additionalCost),
             weight=gunsmith.ConstantModifier(value=additionalWeight))
         context.applyStep(
             sequence=sequence,
@@ -224,8 +224,8 @@ class Barrel(gunsmith.BarrelInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -260,7 +260,7 @@ class Barrel(gunsmith.BarrelInterface):
         cost = None
         if self._costPercentage:
             cost = common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=sequence),
+                value=context.receiverCredits(sequence=sequence),
                 percentage=self._costPercentage,
                 name=f'{self.componentString()} Barrel Cost')
         else:
@@ -274,7 +274,7 @@ class Barrel(gunsmith.BarrelInterface):
                 rhs=self._HeavyCostMultiplier,
                 name=f'Heavy {cost.name()}')
 
-        step.setCost(cost=gunsmith.ConstantModifier(value=cost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=cost))
 
         # Don't apply range modifier if using rocket propelled ammo
         if self._rangeModifierPercentage and not isRocket:
@@ -449,7 +449,7 @@ class MinimalBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         isRocket = self._isRocket(sequence=sequence, context=context)
@@ -529,7 +529,7 @@ class ShortBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Apply damage reduction due to barrel length to conventional weapons firing high-velocity
@@ -592,7 +592,7 @@ class HandgunBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Handgun barrel penetrator modifier is not applied if CoreRulesCompatible is enabled or the
@@ -649,7 +649,7 @@ class AssaultBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Apply damage reduction due to barrel length to conventional weapons firing high-velocity
@@ -698,7 +698,7 @@ class CarbineBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Apply damage reduction due to barrel length to conventional weapons firing non-gauss
@@ -760,7 +760,7 @@ class LongBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._Note)
         return step
@@ -785,7 +785,7 @@ class VeryLongBarrel(Barrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._Note)
         return step

@@ -81,10 +81,10 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
             rhs=loaderCount,
             name=f'{self.componentString()} Cost')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=totalCost),
+            credits=gunsmith.ConstantModifier(value=totalCost),
             notes=[self._LoaderNote])
 
         context.applyStep(

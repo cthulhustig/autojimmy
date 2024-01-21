@@ -201,7 +201,7 @@ class _GrenadeImpl(object):
             context: gunsmith.ConstructionContextInterface,
             numberOfGrenades: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         isAdvancedFusing = self._isAdvancedFusingCompatible(sequence=sequence, context=context) \
             and self._isAdvancedFusingOption.value()
@@ -225,7 +225,7 @@ class _GrenadeImpl(object):
             lhs=cost,
             rhs=numberOfGrenades,
             name='Total Cartridge Grenade Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         cartridgeWeight = common.Calculator.equals(
             value=self._payloadWeight,
@@ -1392,7 +1392,7 @@ class LauncherAmmoLoaded(gunsmith.AmmoLoadedInterface):
             attributeId=gunsmith.AttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1793,7 +1793,7 @@ class LauncherAmmoQuantity(gunsmith.AmmoQuantityInterface):
             value=self._numberOfGrenadesOption.value(),
             name='Specified Number Of Cartridge Grenades')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -2149,7 +2149,7 @@ class HandGrenadeQuantity(gunsmith.HandGrenadeQuantityInterface):
             value=self._numberOfGrenadesOption.value(),
             name='Specified Number Of Grenades')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

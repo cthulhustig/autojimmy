@@ -93,7 +93,7 @@ class _PowerPackImpl(object):
             packWeight: common.ScalarCalculation,
             numberOfPacks: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         totalWeight = common.Calculator.multiply(
             lhs=packWeight,
@@ -105,7 +105,7 @@ class _PowerPackImpl(object):
             lhs=self._costPerKg,
             rhs=totalWeight,
             name=f'{self.componentString()} Power Pack Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         factors = []
         notes = []
@@ -274,7 +274,7 @@ class InternalPowerPackLoaded(gunsmith.InternalPowerPackLoadedInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -368,7 +368,7 @@ class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -497,7 +497,7 @@ class InternalPowerPackQuantity(PowerPackQuantity):
             value=self._numberOfPacksOption.value(),
             name='Specified Number Of Power Packs')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -576,7 +576,7 @@ class ExternalPowerPackQuantity(PowerPackQuantity):
             value=self._numberOfPacksOption.value(),
             name='Specified Number Of Power Packs')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

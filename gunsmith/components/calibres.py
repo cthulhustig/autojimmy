@@ -188,7 +188,7 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
         if not self.isRocket():
             return # Nothing more to do
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name='Rocket Propelled Modification',
             type=self.typeString())
 
@@ -244,8 +244,8 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.componentString(), # Use base name as we don't want Rocket included, that's a separate step
             type=self.typeString())
 
@@ -279,7 +279,7 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
                 value=self._weightModifierPercentage))
 
         if self._costModifierPercentage:
-            step.setCost(cost=gunsmith.PercentageModifier(
+            step.setCredits(credits=gunsmith.PercentageModifier(
                 value=self._costModifierPercentage))
 
         if self._capacityModifierPercentage:
@@ -502,7 +502,7 @@ class SmoothboreCalibre(ConventionalCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         basePenetration = \
@@ -585,7 +585,7 @@ class SmallSmoothboreCalibre(SmoothboreCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if context.hasComponent(
@@ -627,7 +627,7 @@ class LightSmoothboreCalibre(SmoothboreCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         receiver = context.findFirstComponent(
@@ -682,7 +682,7 @@ class StandardSmoothboreCalibre(SmoothboreCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         receiver = context.findFirstComponent(
@@ -746,7 +746,7 @@ class HeavySmoothboreCalibre(SmoothboreCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if context.hasComponent(
@@ -915,7 +915,7 @@ class AntiMaterialRifleCalibre(RifleCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -967,7 +967,7 @@ class HeavyAntiMaterialRifleCalibre(RifleCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -1038,7 +1038,7 @@ class ArchaicCalibre(ConventionalCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.ModifyAttributeFactor(
@@ -1102,7 +1102,7 @@ class ArchaicSmoothboreCalibre(ArchaicCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._ArchaicSmoothboreNote)
         return step
@@ -1172,7 +1172,7 @@ class LowRecoilCalibre(ConventionalCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -1242,7 +1242,7 @@ class GaussCalibre(ConventionalCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -1417,7 +1417,7 @@ class ShotgunGaussCalibre(GaussCalibre):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         step.addFactor(factor=gunsmith.ModifyAttributeFactor(

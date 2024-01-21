@@ -164,7 +164,7 @@ class _AmmoImpl(object):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCost = context.attributeValue(
             sequence=sequence,
@@ -187,7 +187,7 @@ class _AmmoImpl(object):
             lhs=ammoCost,
             rhs=numberOfRounds,
             name=f'Total Ammo Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         factors = []
         notes = []
@@ -407,7 +407,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -455,7 +455,7 @@ class _EnhancedWoundingAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -521,7 +521,7 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -603,7 +603,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -708,7 +708,7 @@ class _GasAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -796,7 +796,7 @@ class _HEAPAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -856,7 +856,7 @@ class _IncendiaryAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -918,7 +918,7 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -989,7 +989,7 @@ class _PelletAmmoImpl(_AmmoImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -1086,7 +1086,7 @@ class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
             attributeId=gunsmith.AttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1277,7 +1277,7 @@ class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
             value=self._numberOfRoundsOption.value(),
             name='Specified Number Of Rounds')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

@@ -613,6 +613,8 @@ class PdfExporter(object):
             ) -> typing.Mapping[str, typing.Collection[str]]:
         results = dict()
         for step in weapon.steps(sequence=sequence):
+            assert(isinstance(step, gunsmith.WeaponStep))
+
             notes = step.notes()
             if notes:
                 results[f'{step.type()}: {step.name()}'] = list(notes)
@@ -628,6 +630,8 @@ class PdfExporter(object):
         processed = set()
 
         for step in weapon.steps(sequence=sequence):
+            assert(isinstance(step, gunsmith.WeaponStep))
+
             rule = f'{step.type()}: {step.name()}'
             processed.add(rule)
 
@@ -1004,7 +1008,7 @@ class PdfExporter(object):
             text=entry.component(),
             style=_TableDataNormalStyle)
 
-        cost = entry.cost()
+        cost = entry.cost(costId=gunsmith.WeaponCost.Credits)
         if cost:
             costString = cost.displayString(
                 decimalPlaces=gunsmith.ConstructionDecimalPlaces)
@@ -1017,7 +1021,7 @@ class PdfExporter(object):
             text=costString,
             style=_TableDataNormalStyle)
 
-        weight = entry.weight()
+        weight = entry.cost(costId=gunsmith.WeaponCost.Weight)
         if weight:
             weightString = weight.displayString(
                 decimalPlaces=gunsmith.ConstructionDecimalPlaces)
@@ -1059,12 +1063,12 @@ class PdfExporter(object):
             text=f'{section.name()} Total',
             style=_TableDataBoldStyle)
 
-        cost = section.totalCost().value()
+        cost = section.totalCost(costId=gunsmith.WeaponCost.Credits).value()
         costElement = self._createParagraph(
             text=f'Cr{common.formatNumber(number=cost, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}' if cost else '-',
             style=_TableDataBoldStyle)
 
-        weight = section.totalWeight().value()
+        weight = section.totalCost(costId=gunsmith.WeaponCost.Weight).value()
         weightElement = self._createParagraph(
             text=f'{common.formatNumber(number=weight, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg' if weight else '-',
             style=_TableDataBoldStyle)
@@ -1088,12 +1092,12 @@ class PdfExporter(object):
             text='Total',
             style=_TableDataBoldStyle)
 
-        cost = manifest.totalCost()
+        cost = manifest.totalCost(costId=gunsmith.WeaponCost.Credits)
         costElement = self._createParagraph(
             text=f'Cr{common.formatNumber(number=cost.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}',
             style=_TableDataBoldStyle)
 
-        weight = manifest.totalWeight()
+        weight = manifest.totalCost(costId=gunsmith.WeaponCost.Weight)
         weightElement = self._createParagraph(
             text=f'{common.formatNumber(number=weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg',
             style=_TableDataBoldStyle)
@@ -1212,6 +1216,8 @@ class PdfExporter(object):
             ]]
 
         for step in weapon.steps(sequence=sequence):
+            assert(isinstance(step, gunsmith.WeaponStep))
+            
             notes = step.notes()
             if not notes:
                 continue
@@ -1686,7 +1692,7 @@ class PdfExporter(object):
                 attributeId=gunsmith.AttributeId.AmmoCapacity),
             style=_TableDataNormalStyle)
 
-        magazineCost = weapon.phaseCost(phase=gunsmith.ConstructionPhase.Loading)
+        magazineCost = weapon.phaseCredits(phase=gunsmith.ConstructionPhase.Loading)
         magazineCost = magazineCost.value()
         magazineCostString = \
             '-' \

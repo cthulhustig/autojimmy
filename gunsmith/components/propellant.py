@@ -75,8 +75,8 @@ class PropellantType(gunsmith.PropellantTypeInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -164,7 +164,7 @@ class GeneratedGasPropellantType(PropellantType):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         propellantWeight = context.attributeValue(
@@ -176,7 +176,7 @@ class GeneratedGasPropellantType(PropellantType):
             lhs=propellantWeight,
             rhs=self._MachineryCostPerKg,
             name=f'Cost Of Generated Gas Machinery For {propellantWeight.value()}kg Of Propellant')
-        step.setCost(cost=gunsmith.ConstantModifier(value=machineryCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=machineryCost))
 
         return step
 
@@ -247,10 +247,10 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
             rhs=propellantCostPerKg,
             name='Propellant Cost')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=propellantCost),
+            credits=gunsmith.ConstantModifier(value=propellantCost),
             weight=gunsmith.ConstantModifier(value=propellantWeight))
         context.applyStep(
             sequence=sequence,

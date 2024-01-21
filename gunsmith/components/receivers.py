@@ -214,13 +214,13 @@ class ConventionalReceiver(gunsmith.ReceiverInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         step.setWeight(weight=gunsmith.ConstantModifier(value=self._baseWeight))
-        step.setCost(cost=gunsmith.ConstantModifier(value=self._baseCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=self._baseCost))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
             attributeId=gunsmith.AttributeId.AmmoCapacity,
@@ -429,7 +429,7 @@ class HeavyWeaponReceiver(ConventionalReceiver):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         baseRecoil = common.ScalarCalculation(
@@ -658,11 +658,11 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=self._baseCost),
+            credits=gunsmith.ConstantModifier(value=self._baseCost),
             weight=gunsmith.ConstantModifier(value=self._baseWeight))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -916,7 +916,7 @@ class SupportLauncherReceiver(LauncherReceiver):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         baseCapacity = common.ScalarCalculation(
@@ -1226,10 +1226,10 @@ class _DirectedEnergyReceiverImpl(object):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         step.setWeight(weight=gunsmith.ConstantModifier(value=self._baseWeight))
-        step.setCost(cost=gunsmith.ConstantModifier(value=self._baseCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=self._baseCost))
 
         damageDice = common.ScalarCalculation(
             value=self._baseDamageDiceOption.value(),
@@ -1460,7 +1460,7 @@ class PowerPackReceiver(gunsmith.ReceiverInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1543,7 +1543,7 @@ class EnergyCartridgeReceiver(gunsmith.ReceiverInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1823,7 +1823,7 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1848,7 +1848,7 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
             lhs=totalWeight,
             rhs=self._costPerKg,
             name=f'{self.componentString()} Structure Base Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
             attributeId=gunsmith.AttributeId.PropellantWeight,

@@ -64,12 +64,12 @@ class ConstructionContextInterface(object):
             ) -> common.ScalarCalculation:
         raise RuntimeError('The phaseWeight method must be implemented by classes derived from ConstructionContextInterface')
 
-    def phaseCost(
+    def phaseCredits(
             self,
             phase: gunsmith.ConstructionPhase,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        raise RuntimeError('The phaseCost method must be implemented by classes derived from ConstructionContextInterface')
+        raise RuntimeError('The phaseCredits method must be implemented by classes derived from ConstructionContextInterface')
 
     def receiverWeight(
             self,
@@ -77,11 +77,11 @@ class ConstructionContextInterface(object):
             ) -> common.ScalarCalculation:
         raise RuntimeError('The receiverWeight method must be implemented by classes derived from ConstructionContextInterface')
 
-    def receiverCost(
+    def receiverCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        raise RuntimeError('The receiverCost method must be implemented by classes derived from ConstructionContextInterface')
+        raise RuntimeError('The receiverCredits method must be implemented by classes derived from ConstructionContextInterface')
 
     # Basic weapon weight (doesn't include accessories or ammo)
     def baseWeight(
@@ -91,11 +91,11 @@ class ConstructionContextInterface(object):
         raise RuntimeError('The baseWeight method must be implemented by classes derived from ConstructionContextInterface')
 
     # Basic weapon cost (doesn't include accessories or ammo)
-    def baseCost(
+    def baseCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        raise RuntimeError('The baseCost method must be implemented by classes derived from ConstructionContextInterface')
+        raise RuntimeError('The baseCredits method must be implemented by classes derived from ConstructionContextInterface')
 
     def totalWeight(
             self,
@@ -103,11 +103,11 @@ class ConstructionContextInterface(object):
             ) -> common.ScalarCalculation:
         raise RuntimeError('The totalWeight method must be implemented by classes derived from ConstructionContextInterface')
 
-    def totalCost(
+    def totalCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        raise RuntimeError('The totalCost method must be implemented by classes derived from ConstructionContextInterface')
+        raise RuntimeError('The totalCredits method must be implemented by classes derived from ConstructionContextInterface')
 
     def applyStep(
             self,

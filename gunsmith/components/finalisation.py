@@ -114,7 +114,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
         if not isBulky:
             return # Nothing to do
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Uncompensated Heavy Handgun Calibre',
             type='Usability',
             factors=[gunsmith.SetAttributeFactor(attributeId=gunsmith.AttributeId.Bulky)])
@@ -148,7 +148,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
             sequence=sequence,
             attributeId=gunsmith.AttributeId.Auto)
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Recoil ({recoil.value()})',
             type='Usability')
 
@@ -218,7 +218,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
         formatNoScopeSuffix = lambda hasAlt: ' (Without Scope)' if hasAlt else ' (With And Without Scope)' if hasScope else ''
 
         if noScopeShort:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Short' + formatNoScopeSuffix(hasAlt=withScopeShort != None),
                 type='Range',
                 notes=[noScopeShort])
@@ -227,7 +227,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 step=step)
 
         if withScopeShort:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Short (With Scope)',
                 type='Range',
                 notes=[withScopeShort])
@@ -236,7 +236,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 step=step)
 
         if noScopeLong:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Long' + formatNoScopeSuffix(hasAlt=withScopeLong != None),
                 type='Range',
                 notes=[noScopeLong])
@@ -245,7 +245,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 step=step)
 
         if withScopeLong:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Long (With Scope)',
                 type='Range',
                 notes=[withScopeLong])
@@ -254,7 +254,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 step=step)
 
         if noScopeExtreme:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Extreme' + formatNoScopeSuffix(hasAlt=withScopeExtreme != None),
                 type='Range',
                 notes=[noScopeExtreme])
@@ -263,7 +263,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 step=step)
 
         if withScopeExtreme:
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name='Extreme (With Scope)',
                 type='Range',
                 notes=[withScopeExtreme])
@@ -381,7 +381,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
         heatGeneration = heatGeneration.value()
 
         burstFireNote = f'Firing a burst gives Damage +{autoScore}, uses {autoScore} rounds of ammunition and generates Heat +{heatGeneration}.'
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Burst Fire',
             type='Auto Fire',
             notes=[burstFireNote])
@@ -400,7 +400,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
             if hasRequiredMechanism:
                 fullAutoNote = f'Firing full auto allows {autoScore} attacks to be made in a round, uses {autoScore * 3} rounds of ammunition and generates Heat +{heatGeneration}. ' + \
                     'These attacks can be made against separate targets so long as they are all within 6m of one another.'
-                step = gunsmith.ConstructionStep(
+                step = gunsmith.WeaponStep(
                     name=f'Full Auto',
                     type='Auto Fire',
                     notes=[fullAutoNote])
@@ -472,7 +472,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
             values=malfunctionModifiers,
             name='Malfunction DM')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name='Malfunction DM',
             type='Resilience',
             factors=[gunsmith.SetAttributeFactor(
@@ -572,7 +572,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
             rhs=common.ScalarCalculation(value=10),
             name='Destroyed Threshold')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Mishap',
             type='Resilience',
             notes=[
@@ -718,7 +718,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
         if not factors:
             return
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Penetration ({penetration})',
             type='Trait',
             factors=factors)
@@ -748,7 +748,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
             return # Nothing to do
 
         # The weapon has Bulky and Very Bulky, Bulky is redundant so remove it
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Remove Redundant Bulky Trait',
             type='Trait',
             factors=[gunsmith.DeleteAttributeFactor(attributeId=gunsmith.AttributeId.Bulky)])
@@ -884,7 +884,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
                 notes.append(f'Targets must make an END({target.value()}+) check or be unable to take their next set of actions.')
 
             if notes:
-                step = gunsmith.ConstructionStep(
+                step = gunsmith.WeaponStep(
                     name=name,
                     type='Trait',
                     notes=notes)
@@ -914,7 +914,7 @@ class FinalisationComponent(gunsmith.ComponentInterface):
         else:
             notes.append('DM-2 to attack rolls when trying to hit a specific body part.')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name='Specific Location',
             type='Traveller Companion',
             notes=notes)

@@ -77,13 +77,13 @@ class Mechanism(gunsmith.MechanismInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         if self._costModifierPercentage:
-            step.setCost(cost=gunsmith.PercentageModifier(
+            step.setCredits(credits=gunsmith.PercentageModifier(
                 value=self._costModifierPercentage))
 
         return step
@@ -167,7 +167,7 @@ class SingleShotMechanism(Mechanism):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         barrelCount = context.attributeValue(
@@ -236,7 +236,7 @@ class RepeaterMechanism(Mechanism):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Apply capacity modification if weapon isn't a smoothbore
@@ -304,7 +304,7 @@ class AutoMechanism(Mechanism):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if self._autoModifier:
@@ -388,7 +388,7 @@ class MechanicalRotaryMechanism(AutoMechanism):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         barrelCount = context.attributeValue(

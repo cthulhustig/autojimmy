@@ -116,11 +116,11 @@ class _ProjectileMagazineImpl(object):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         if self._weaponPercentageCost:
             itemCost = common.Calculator.takePercentage(
-                value=context.baseCost(sequence=sequence), # Only include cost of this weapon sequence
+                value=context.baseCredits(sequence=sequence), # Only include cost of this weapon sequence
                 percentage=self._weaponPercentageCost,
                 name=f'{self.componentString()} Cost')
             assert(itemCost)
@@ -128,7 +128,7 @@ class _ProjectileMagazineImpl(object):
                 lhs=itemCost,
                 rhs=numberOfMagazines,
                 name=f'{self.componentString()} Cost')
-            step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+            step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         if self._quickdrawModifier:
             factor = gunsmith.ModifyAttributeFactor(
@@ -163,7 +163,7 @@ class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -233,7 +233,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -331,7 +331,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -449,7 +449,7 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -465,7 +465,7 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             lhs=unloadedCost,
             rhs=numberOfMagazines,
             name=f'{self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         if context.hasComponent(
                 componentType=gunsmith.LauncherReceiver,
@@ -575,8 +575,8 @@ class ConventionalMagazineLoaded(gunsmith.MagazineLoadedInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -640,7 +640,7 @@ class BeltConventionalMagazineLoaded(ConventionalMagazineLoaded):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         loadedWeight = common.ScalarCalculation(
@@ -711,7 +711,7 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -840,7 +840,7 @@ class LauncherMagazineLoaded(gunsmith.MagazineLoadedInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -946,7 +946,7 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1147,7 +1147,7 @@ class _EnergyCartridgeMagazineImpl(object):
             ammoCapacity: common.ScalarCalculation,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         cartridgeWeight = _EnergyCartridgeMagazineImpl._CartridgeWeightMap[self._cartridgeType]
         cartridgeCost = _EnergyCartridgeMagazineImpl._CartridgeCostMap[self._cartridgeType]
@@ -1181,7 +1181,7 @@ class _EnergyCartridgeMagazineImpl(object):
             lhs=magazineCost,
             rhs=numberOfMagazines,
             name=f'Total {self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         if self._quickdrawModifier:
             factor = gunsmith.ModifyAttributeFactor(
@@ -1221,7 +1221,7 @@ class _StandardEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
@@ -1281,7 +1281,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
@@ -1366,7 +1366,7 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
@@ -1479,7 +1479,7 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             context: gunsmith.ConstructionContextInterface,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCapacity = common.ScalarCalculation(
             value=self._capacityOption.value(),
@@ -1500,7 +1500,7 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             lhs=unloadedCost,
             rhs=numberOfMagazines,
             name=f'{self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         factors = []
 
@@ -1566,7 +1566,7 @@ class EnergyCartridgeMagazineLoaded(gunsmith.MagazineLoadedInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1816,7 +1816,7 @@ class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

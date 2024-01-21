@@ -90,7 +90,7 @@ class WeaponManifestTable(gui.ListTable):
             if columnType == self.ColumnType.Component:
                 tableItem = QtWidgets.QTableWidgetItem(entry.component())
             elif columnType == self.ColumnType.Cost:
-                cost = entry.cost()
+                cost = entry.cost(costId=gunsmith.WeaponCost.Credits)
                 if cost:
                     text = cost.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
@@ -101,7 +101,7 @@ class WeaponManifestTable(gui.ListTable):
                     text = '-'
                 tableItem = QtWidgets.QTableWidgetItem(text)
             elif columnType == self.ColumnType.Weight:
-                weight = entry.weight()
+                weight = entry.cost(costId=gunsmith.WeaponCost.Weight)
                 if weight:
                     text = weight.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
@@ -140,14 +140,14 @@ class WeaponManifestTable(gui.ListTable):
             if columnType == self.ColumnType.Component:
                 tableItem = QtWidgets.QTableWidgetItem(f'{section.name()} Total')
             elif columnType == self.ColumnType.Cost:
-                cost = section.totalCost()
+                cost = section.totalCost(costId=gunsmith.WeaponCost.Credits)
                 if cost.value():
                     itemText = f'Cr{common.formatNumber(cost.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}'
                 else:
                     itemText = '-'
                 tableItem = QtWidgets.QTableWidgetItem(itemText)
             elif columnType == self.ColumnType.Weight:
-                weight = section.totalWeight()
+                weight = section.totalCost(costId=gunsmith.WeaponCost.Weight)
                 if weight.value():
                     itemText = f'{common.formatNumber(weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg'
                 else:
@@ -177,11 +177,11 @@ class WeaponManifestTable(gui.ListTable):
             if columnType == self.ColumnType.Component:
                 tableItem = QtWidgets.QTableWidgetItem(f'Total')
             elif columnType == self.ColumnType.Cost:
-                cost = manifest.totalCost()
+                cost = manifest.totalCost(costId=gunsmith.WeaponCost.Credits)
                 tableItem = QtWidgets.QTableWidgetItem(
                     f'Cr{common.formatNumber(cost.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}')
             elif columnType == self.ColumnType.Weight:
-                weight = manifest.totalWeight()
+                weight = manifest.totalCost(costId=gunsmith.WeaponCost.Weight)
                 tableItem = QtWidgets.QTableWidgetItem(
                     f'{common.formatNumber(weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg')
             elif columnType == self.ColumnType.Factors:
@@ -210,24 +210,24 @@ class WeaponManifestTable(gui.ListTable):
         if column == WeaponManifestTable.ColumnType.Cost or \
                 column == WeaponManifestTable.ColumnType.Component:
             if isinstance(rowObject, gunsmith.ManifestEntry):
-                costModifier = rowObject.cost()
+                costModifier = rowObject.cost(costId=gunsmith.WeaponCost.Credits)
                 if costModifier:
                     calculations.append(costModifier.numericModifier())
             elif isinstance(rowObject, gunsmith.ManifestSection):
-                calculations.append(rowObject.totalCost())
+                calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Credits))
             elif isinstance(rowObject, gunsmith.Manifest):
-                calculations.append(rowObject.totalCost())
+                calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Credits))
 
         if column == WeaponManifestTable.ColumnType.Weight or \
                 column == WeaponManifestTable.ColumnType.Component:
             if isinstance(rowObject, gunsmith.ManifestEntry):
-                weightModifier = rowObject.weight()
+                weightModifier = rowObject.cost(costId=gunsmith.WeaponCost.Weight)
                 if weightModifier:
                     calculations.append(weightModifier.numericModifier())
             elif isinstance(rowObject, gunsmith.ManifestSection):
-                calculations.append(rowObject.totalWeight())
+                calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Weight))
             elif isinstance(rowObject, gunsmith.Manifest):
-                calculations.append(rowObject.totalWeight())
+                calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Weight))
 
         if column == WeaponManifestTable.ColumnType.Factors or \
                 column == WeaponManifestTable.ColumnType.Component:

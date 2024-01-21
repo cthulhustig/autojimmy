@@ -55,7 +55,7 @@ class StandardFireRate(FireRate):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -203,8 +203,8 @@ class AdvancedFireRate(FireRate):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -331,7 +331,7 @@ class RFFireRate(AdvancedFireRate):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         autoScore = context.attributeValue(
@@ -346,7 +346,7 @@ class RFFireRate(AdvancedFireRate):
             lhs=autoScore,
             rhs=self._CostIncreaseConstant,
             name=f'RF Receiver Cost Multiplier')
-        step.setCost(cost=gunsmith.MultiplierModifier(
+        step.setCredits(credits=gunsmith.MultiplierModifier(
             value=costMultiplier))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -469,7 +469,7 @@ class VRFFireRate(AdvancedFireRate):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if self._applyCostWeightOption.value():
@@ -490,7 +490,7 @@ class VRFFireRate(AdvancedFireRate):
                 lhs=autoScore,
                 rhs=costConstant,
                 name=f'VRF Receiver Cost Multiplier')
-            step.setCost(cost=gunsmith.MultiplierModifier(
+            step.setCredits(credits=gunsmith.MultiplierModifier(
                 value=costMultiplier))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(

@@ -100,7 +100,7 @@ class _EnergyCartridgeImpl(object):
             context: gunsmith.ConstructionContextInterface,
             numberOfCartridges: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         totalWeight = common.Calculator.multiply(
             lhs=self._cartridgeWeight,
@@ -112,7 +112,7 @@ class _EnergyCartridgeImpl(object):
             lhs=self._cartridgeCost,
             rhs=numberOfCartridges,
             name=f'Total Cartridge Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         powerPerShot = context.attributeValue(
             sequence=sequence,
@@ -302,7 +302,7 @@ class EnergyCartridgeLoaded(gunsmith.AmmoLoadedInterface):
             attributeId=gunsmith.AttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -497,7 +497,7 @@ class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
             value=self._numberOfCartridgeOption.value(),
             name='Specified Number Of Cartridges')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

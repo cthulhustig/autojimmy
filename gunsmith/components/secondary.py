@@ -86,7 +86,7 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -99,15 +99,15 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
                 sequence=sequence),
             name='Secondary Weapon Weight')
         secondaryCost = common.Calculator.add(
-            lhs=context.phaseCost(
+            lhs=context.phaseCredits(
                 phase=gunsmith.ConstructionPhase.Receiver,
                 sequence=sequence),
-            rhs=context.phaseCost(
+            rhs=context.phaseCredits(
                 phase=gunsmith.ConstructionPhase.Barrel,
                 sequence=sequence),
             name='Secondary Weapon Cost')
 
-        step.setCost(cost=gunsmith.ConstantModifier(
+        step.setCredits(credits=gunsmith.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=secondaryCost,
                 percentage=self._MountCostModifierPercentage,

@@ -46,7 +46,7 @@ class InitialisationComponent(gunsmith.ComponentInterface):
         if not context.isRuleEnabled(rule=gunsmith.RuleId.CoreRulesCompatible):
             return # Nothing to do
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Core Rules Compatibility',
             type='Rules',
             notes=['Some construction values may have been modified to make it easier to use the weapon in existing games where players or npcs are using weapons from other rule books.'])

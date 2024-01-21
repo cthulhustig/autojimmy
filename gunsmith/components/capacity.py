@@ -164,14 +164,14 @@ class DesiredCapacityModification(CapacityModification):
                 rhs=levelCount,
                 name=f'Ammo Capacity Decrease Level {levelCount.value()} Receiver Cost Modifier Percentage')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         step.setWeight(weight=gunsmith.PercentageModifier(
             value=weightModifierPercentage))
 
-        step.setCost(cost=gunsmith.PercentageModifier(
+        step.setCredits(credits=gunsmith.PercentageModifier(
             value=costModifierPercentage))
 
         step.addFactor(factor=gunsmith.SetAttributeFactor(
@@ -222,7 +222,7 @@ class IncreaseCapacityModification(CapacityModification):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -241,7 +241,7 @@ class IncreaseCapacityModification(CapacityModification):
             lhs=self._PerIncreaseLevelCostPercentage,
             rhs=increaseLevels,
             name=f'{self.componentString()} Receiver Cost Modifier Percentage')
-        step.setCost(cost=gunsmith.PercentageModifier(
+        step.setCredits(credits=gunsmith.PercentageModifier(
             value=costModifierPercentage))
 
         capacityModifierPercentage = common.Calculator.multiply(
@@ -347,7 +347,7 @@ class DecreaseCapacityModification(CapacityModification):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -366,7 +366,7 @@ class DecreaseCapacityModification(CapacityModification):
             lhs=self._PerDecreaseLevelCostPercentage,
             rhs=decreaseLevels,
             name=f'{self.componentString()} Receiver Cost Modifier Percentage')
-        step.setCost(cost=gunsmith.PercentageModifier(
+        step.setCredits(credits=gunsmith.PercentageModifier(
             value=costModifierPercentage))
 
         capacityModifierPercentage = common.Calculator.multiply(

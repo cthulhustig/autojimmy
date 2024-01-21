@@ -93,7 +93,7 @@ class StocklessStock(Stock):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -159,7 +159,7 @@ class FoldingStock(Stock):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -169,9 +169,9 @@ class FoldingStock(Stock):
                 percentage=self._WeightPercentage,
                 name='Folding Stock Weight')))
 
-        step.setCost(cost=gunsmith.ConstantModifier(
+        step.setCredits(credits=gunsmith.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._CostPercentage,
                 name='Folding Stock Cost')))
 
@@ -213,7 +213,7 @@ class FullStock(Stock):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -223,9 +223,9 @@ class FullStock(Stock):
                 percentage=self._WeightPercentage,
                 name='Full Stock Weight')))
 
-        step.setCost(cost=gunsmith.ConstantModifier(
+        step.setCredits(credits=gunsmith.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._CostPercentage,
                 name='Full Stock Cost')))
 
@@ -268,7 +268,7 @@ class SupportMountAccessory(Stock):
             ) -> None:
         cost = gunsmith.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._ReceiverCostPercentage,
                 name=f'Support Mount Cost'))
 
@@ -278,10 +278,10 @@ class SupportMountAccessory(Stock):
                 percentage=self._ReceiverWeightPercentage,
                 name=f'Support Mount Weight'))
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=cost,
+            credits=cost,
             weight=weight)
         context.applyStep(
             sequence=sequence,

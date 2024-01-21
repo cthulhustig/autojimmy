@@ -83,8 +83,8 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -143,7 +143,7 @@ class CompleteMultiBarrelSetup(MultiBarrel):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         barrelCount = common.ScalarCalculation(
@@ -174,7 +174,7 @@ class CompleteMultiBarrelSetup(MultiBarrel):
             lhs=self._ReceiverCostPercentageIncrement,
             rhs=additionalBarrels,
             name=f'{self.componentString()} Setup Receiver Cost Modifier Percentage')
-        step.setCost(cost=gunsmith.PercentageModifier(value=costModifierPercentage))
+        step.setCredits(credits=gunsmith.PercentageModifier(value=costModifierPercentage))
 
         return step
 

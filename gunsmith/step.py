@@ -139,20 +139,21 @@ class DeleteAttributeFactor(AttributeFactor):
             ) -> None:
         attributeGroup.deleteAttribute(attributeId=self._attributeId)
 
+class ConstructionCost(enum.Enum):
+    pass
+
 class ConstructionStep(object):
     def __init__(
             self,
             name: str,
             type: str,
-            cost: typing.Optional[gunsmith.NumericModifierInterface] = None,
-            weight: typing.Optional[gunsmith.NumericModifierInterface] = None,
+            costs: typing.Optional[typing.Mapping[ConstructionCost, gunsmith.NumericModifierInterface]] = None,
             factors: typing.Optional[typing.Iterable[FactorInterface]] = None,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         self._name = name
         self._type = type
-        self._cost = cost
-        self._weight = weight
+        self._costs = dict(costs) if costs != None else {}
         self._factors = list(factors) if factors != None else []
         self._notes = list(notes) if notes != None else []
 
@@ -162,23 +163,21 @@ class ConstructionStep(object):
     def type(self) -> str:
         return self._type
 
-    def cost(self) -> typing.Optional[gunsmith.NumericModifierInterface]:
-        return self._cost
-
+    def cost(
+            self,
+            costId: ConstructionCost
+            ) -> typing.Optional[gunsmith.NumericModifierInterface]:
+        return self._costs.get(costId)
+    
     def setCost(
             self,
-            cost: gunsmith.NumericModifierInterface
+            costId: ConstructionCost,
+            value: gunsmith.NumericModifierInterface
             ) -> None:
-        self._cost = cost
+        self._costs[costId] = value
 
-    def weight(self) -> typing.Optional[gunsmith.NumericModifierInterface]:
-        return self._weight
-
-    def setWeight(
-            self,
-            weight: gunsmith.NumericModifierInterface
-            ) -> None:
-        self._weight = weight
+    def costs(self) -> typing.Mapping[ConstructionCost, gunsmith.NumericModifierInterface]:
+        return self._costs
 
     def factors(self) -> typing.Iterable[FactorInterface]:
         return self._factors
@@ -200,24 +199,56 @@ class ConstructionStep(object):
 
     @staticmethod
     def calculateSequenceCost(
+            costId: ConstructionCost,
             steps: typing.Iterable['ConstructionStep']
             ) -> typing.Optional[common.ScalarCalculation]:
         total = gunsmith.calculateNumericModifierSequence(
-            modifiers=[step.cost() for step in steps if step.cost()])
+            modifiers=[step.cost(costId=costId) for step in steps if step.cost(costId=costId)])
         if not total:
             return None
         return common.Calculator.equals(
             value=total,
-            name='Total Cost')
+            name=f'Total {costId.value}')
+    
+class WeaponCost(ConstructionCost):
+    Credits = 'Credit Cost'
+    Weight = 'Weight Cost'
 
-    @staticmethod
-    def calculateSequenceWeight(
-            steps: typing.Iterable['ConstructionStep']
-            ) -> typing.Optional[common.ScalarCalculation]:
-        total = gunsmith.calculateNumericModifierSequence(
-            modifiers=[step.weight() for step in steps if step.weight()])
-        if not total:
-            return None
-        return common.Calculator.equals(
-            value=total,
-            name='Total Weight')
+class WeaponStep(ConstructionStep):
+    def __init__(
+            self,
+            name: str,
+            type: str,
+            credits: typing.Optional[gunsmith.NumericModifierInterface] = None,
+            weight: typing.Optional[gunsmith.NumericModifierInterface] = None,
+            factors: typing.Optional[typing.Iterable[FactorInterface]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            name=name,
+            type=type,
+            factors=factors,
+            notes=notes)
+        if credits:
+            self.setCredits(credits=credits)
+        if weight:
+            self.setWeight(weight=weight)
+
+    def credits(self) -> typing.Optional[gunsmith.NumericModifierInterface]:
+        return self.cost(costId=WeaponCost.Credits)
+    
+    def setCredits(
+            self,
+            credits: gunsmith.NumericModifierInterface
+            ) -> None:
+        self.setCost(costId=WeaponCost.Credits, value=credits)
+
+    def weight(self) -> typing.Optional[gunsmith.NumericModifierInterface]:
+        return self.cost(costId=WeaponCost.Weight)
+
+    def setWeight(
+            self,
+            weight: gunsmith.NumericModifierInterface
+            ) -> None:
+        self.setCost(costId=WeaponCost.Weight, value=weight)
+

@@ -19,9 +19,9 @@ class _SequenceState(object):
         self._phaseStages: typing.Dict[gunsmith.ConstructionPhase, typing.List[gunsmith.ConstructionStage]] = {}
         self._componentTypeStages: typing.Dict[typing.Type[gunsmith.ComponentInterface], typing.List[gunsmith.ConstructionStage]] = {}
         self._attributes = gunsmith.AttributesGroup()
-        self._phaseSteps: typing.Dict[gunsmith.ConstructionPhase, typing.List[gunsmith.ConstructionStep]] = {}
-        self._stepComponents: typing.Dict[gunsmith.ConstructionStep, gunsmith.ComponentInterface] = {}
-        self._componentSteps: typing.Dict[gunsmith.ComponentInterface, typing.List[gunsmith.ConstructionStep]] = {}
+        self._phaseSteps: typing.Dict[gunsmith.ConstructionPhase, typing.List[gunsmith.WeaponStep]] = {}
+        self._stepComponents: typing.Dict[gunsmith.WeaponStep, gunsmith.ComponentInterface] = {}
+        self._componentSteps: typing.Dict[gunsmith.ComponentInterface, typing.List[gunsmith.WeaponStep]] = {}
         if stages:
             self.setStages(stages=stages)
 
@@ -115,7 +115,7 @@ class _SequenceState(object):
             self,
             phase: gunsmith.ConstructionPhase,
             component: gunsmith.ComponentInterface,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         phaseSteps = self._phaseSteps.get(phase)
         if phaseSteps == None:
@@ -141,7 +141,7 @@ class _SequenceState(object):
             self,
             component: typing.Optional[gunsmith.ComponentInterface] = None,
             phase: typing.Optional[gunsmith.ConstructionPhase] = None
-            ) -> typing.Collection[gunsmith.ConstructionStep]:
+            ) -> typing.Collection[gunsmith.WeaponStep]:
         if component:
             return self._componentSteps.get(component, [])
 
@@ -157,7 +157,7 @@ class _SequenceState(object):
     def components(
             self,
             phase: typing.Optional[gunsmith.ConstructionPhase] = None,
-            step: typing.Optional[gunsmith.ConstructionStep] = None
+            step: typing.Optional[gunsmith.WeaponStep] = None
             ) -> typing.Collection[gunsmith.ComponentInterface]:
         if step:
             component = self._stepComponents.get(step, [])
@@ -242,39 +242,24 @@ class _SequenceState(object):
 
     def phaseCost(
             self,
+            costId: gunsmith.ConstructionCost,
             phase: gunsmith.ConstructionPhase
             ) -> common.ScalarCalculation:
         steps = self._phaseSteps.get(phase)
         if not steps:
             return common.ScalarCalculation(
                 value=0,
-                name=f'Total {phase.value} Cost')
+                name=f'Total {phase.value} {costId.value}')
 
-        cost = gunsmith.ConstructionStep.calculateSequenceCost(steps=steps)
+        cost = gunsmith.WeaponStep.calculateSequenceCost(
+            costId=costId,
+            steps=steps)
         if not cost:
             raise RuntimeError(
-                f'Unable to calculate cost for phase {phase.value} as starting modifier is not absolute')
+                f'Unable to calculate {costId.value} for phase {phase.value} as starting modifier is not absolute')
         return common.Calculator.rename(
             value=cost,
-            name=f'Total {phase.value} Cost')
-
-    def phaseWeight(
-            self,
-            phase: gunsmith.ConstructionPhase
-            ) -> common.ScalarCalculation:
-        steps = self._phaseSteps.get(phase)
-        if not steps:
-            return common.ScalarCalculation(
-                value=0,
-                name=f'Total {phase.value} Weight')
-
-        weight = gunsmith.ConstructionStep.calculateSequenceWeight(steps=steps)
-        if not weight:
-            raise RuntimeError(
-                f'Unable to calculate weight for phase {phase.value} as starting modifier is not absolute')
-        return common.Calculator.rename(
-            value=weight,
-            name=f'Total {phase.value} Weight')
+            name=f'Total {phase.value} {costId.value}')
 
     def resetConstruction(self) -> None:
         self._attributes.clear()
@@ -381,11 +366,11 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             calculationName='Total Combat Weight',
             sequence=sequence)
 
-    def combatCost(
+    def combatCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        return self._multiPhaseCost(
+        return self._multiPhaseCredits(
             phases=gunsmith.CombatReadyConstructionPhases,
             calculationName='Total Combat Cost',
             sequence=sequence)
@@ -495,7 +480,9 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             sequenceState = self._sequenceStates.get(sequence)
             if not sequenceState:
                 raise RuntimeError(f'Unknown sequence {sequence}')
-            return sequenceState.phaseWeight(phase=phase)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Weight,
+                phase=phase)
 
         if (phase in gunsmith.CommonConstructionPhases) or (len(self._sequenceStates) == 1):
             # This is a common phase or there is only one sequence. In the case of a common phase
@@ -507,17 +494,21 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
                     value=0,
                     name=f'Total {phase.value} Weight')
             sequenceState = next(iter(self._sequenceStates.values()))
-            return sequenceState.phaseWeight(phase=phase)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Weight,
+                phase=phase)
 
         # Add the phase weight for each stage
         weights = []
         for sequenceState in self._sequenceStates.values():
-            weights.append(sequenceState.phaseWeight(phase=phase))
+            weights.append(sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Weight,
+                phase=phase))
         return common.Calculator.sum(
             values=weights,
             name=f'Total {phase.value} Weight')
 
-    def phaseCost(
+    def phaseCredits(
             self,
             phase: gunsmith.ConstructionPhase,
             sequence: typing.Optional[str]
@@ -526,7 +517,9 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             sequenceState = self._sequenceStates.get(sequence)
             if not sequenceState:
                 raise RuntimeError(f'Unknown sequence {sequence}')
-            return sequenceState.phaseCost(phase=phase)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Credits,
+                phase=phase)
 
         if (phase in gunsmith.CommonConstructionPhases) or (len(self._sequenceStates) == 1):
             # This is a common phase or there is only one sequence. In the case of a common phase
@@ -538,12 +531,16 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
                     value=0,
                     name=f'Total {phase.value} Cost')
             sequenceState = next(iter(self._sequenceStates.values()))
-            return sequenceState.phaseCost(phase=phase)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Credits,
+                phase=phase)
 
         # Add the phase weight for each stage
         costs = []
         for sequenceState in self._sequenceStates.values():
-            costs.append(sequenceState.phaseCost(phase=phase))
+            costs.append(sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Credits,
+                phase=phase))
         return common.Calculator.sum(
             values=costs,
             name=f'Total {phase.value} Cost')
@@ -556,11 +553,13 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             sequenceState = self._sequenceStates.get(sequence)
             if not sequenceState:
                 raise RuntimeError(f'Unknown sequence {sequence}')
-            return sequenceState.phaseWeight(phase=gunsmith.ConstructionPhase.Receiver)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Weight,
+                phase=gunsmith.ConstructionPhase.Receiver)
 
         return self.phaseWeight(phase=gunsmith.ConstructionPhase.Receiver, sequence=None)
 
-    def receiverCost(
+    def receiverCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
@@ -568,9 +567,11 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             sequenceState = self._sequenceStates.get(sequence)
             if not sequenceState:
                 raise RuntimeError(f'Unknown sequence {sequence}')
-            return sequenceState.phaseCost(phase=gunsmith.ConstructionPhase.Receiver)
+            return sequenceState.phaseCost(
+                costId=gunsmith.WeaponCost.Credits,
+                phase=gunsmith.ConstructionPhase.Receiver)
 
-        return self.phaseCost(phase=gunsmith.ConstructionPhase.Receiver, sequence=None)
+        return self.phaseCredits(phase=gunsmith.ConstructionPhase.Receiver, sequence=None)
 
     def baseWeight(
             self,
@@ -581,11 +582,11 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             calculationName='Total Base Weight',
             sequence=sequence)
 
-    def baseCost(
+    def baseCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        return self._multiPhaseCost(
+        return self._multiPhaseCredits(
             phases=gunsmith.BaseWeaponConstructionPhases,
             calculationName='Total Base Cost',
             sequence=sequence)
@@ -599,11 +600,11 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             calculationName='Total Weight',
             sequence=sequence)
 
-    def totalCost(
+    def totalCredits(
             self,
             sequence: typing.Optional[str]
             ) -> common.ScalarCalculation:
-        return self._multiPhaseCost(
+        return self._multiPhaseCredits(
             phases=gunsmith.ConstructionPhase,
             calculationName='Total Cost',
             sequence=sequence)
@@ -611,7 +612,7 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
     def applyStep(
             self,
             sequence: str,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
@@ -636,7 +637,7 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             values=weights,
             name=calculationName)
 
-    def _multiPhaseCost(
+    def _multiPhaseCredits(
             self,
             phases: typing.Iterable[gunsmith.ConstructionPhase],
             calculationName: str,
@@ -644,7 +645,7 @@ class _ConstructionContext(gunsmith.ConstructionContextInterface):
             ) -> common.ScalarCalculation:
         costs = []
         for phase in phases:
-            costs.append(self.phaseCost(
+            costs.append(self.phaseCredits(
                 phase=phase,
                 sequence=sequence))
         return common.Calculator.sum(
@@ -1119,7 +1120,7 @@ class Weapon(object):
             sequence: str,
             component: typing.Optional[gunsmith.ComponentInterface] = None,
             phase: typing.Optional[gunsmith.ConstructionPhase] = None,
-            ) -> typing.Collection[gunsmith.ConstructionStep]:
+            ) -> typing.Collection[gunsmith.WeaponStep]:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
@@ -1133,29 +1134,29 @@ class Weapon(object):
         return self._constructionContext.phaseWeight(phase=phase, sequence=None)
 
     # This returns the total cost of the specified phase for all weapon sequences
-    def phaseCost(
+    def phaseCredits(
             self,
             phase: gunsmith.ConstructionPhase
             ) -> common.ScalarCalculation:
-        return self._constructionContext.phaseCost(phase=phase, sequence=None)
+        return self._constructionContext.phaseCredits(phase=phase, sequence=None)
 
     def baseWeight(self) -> common.ScalarCalculation:
         return self._constructionContext.baseWeight(sequence=None)
 
-    def baseCost(self) -> common.ScalarCalculation:
-        return self._constructionContext.baseCost(sequence=None)
+    def baseCredits(self) -> common.ScalarCalculation:
+        return self._constructionContext.baseCredits(sequence=None)
 
     def combatWeight(self) -> common.ScalarCalculation:
         return self._constructionContext.combatWeight(sequence=None)
 
-    def combatCost(self) -> common.ScalarCalculation:
-        return self._constructionContext.combatCost(sequence=None)
+    def combatCredits(self) -> common.ScalarCalculation:
+        return self._constructionContext.combatCredits(sequence=None)
 
     def totalWeight(self) -> common.ScalarCalculation:
         return self._constructionContext.totalWeight(sequence=None)
 
-    def totalCost(self) -> common.ScalarCalculation:
-        return self._constructionContext.totalCost(sequence=None)
+    def totalCredits(self) -> common.ScalarCalculation:
+        return self._constructionContext.totalCredits(sequence=None)
 
     def _resetConstruction(self) -> None:
         self._isIncomplete = False
@@ -1325,7 +1326,7 @@ class Weapon(object):
     def _createManifest(
             self
             ) -> gunsmith.Manifest:
-        manifest = gunsmith.Manifest()
+        manifest = gunsmith.Manifest(costsType=gunsmith.WeaponCost)
 
         for sequenceIndex, sequence in enumerate(self._sequenceStates.values()):
             for phase in gunsmith.SequenceConstructionPhases:
@@ -1338,21 +1339,23 @@ class Weapon(object):
                     steps = sequence.steps(component=component)
                     if not steps:
                         continue
+                    
                     if not manifestSection:
                         manifestSection = manifest.createSection(name=sectionName)
                     for step in steps:
+                        assert(isinstance(step, gunsmith.WeaponStep))
+
                         entryText = self._prefixManifestText(
                             sequenceIndex=sequenceIndex,
                             baseText=f'{step.type()}: {step.name()}')
                         manifestSection.createEntry(
                             component=entryText,
-                            cost=step.cost(),
-                            weight=step.weight(),
+                            costs=step.costs(),
                             factors=step.factors())
 
         for phase in gunsmith.CommonConstructionPhases:
-            componentMap: typing.Dict[gunsmith.ComponentInterface, typing.Dict[str, gunsmith.ConstructionStep]] = {}
-            stepFactors: typing.Dict[gunsmith.ConstructionStep, typing.Dict[int, typing.List[gunsmith.FactorInterface]]] = {}
+            componentMap: typing.Dict[gunsmith.ComponentInterface, typing.Dict[str, gunsmith.WeaponStep]] = {}
+            stepFactors: typing.Dict[gunsmith.WeaponStep, typing.Dict[int, typing.List[gunsmith.FactorInterface]]] = {}
             for sequenceIndex, sequence in enumerate(self._sequenceStates.values()):
                 for component in sequence.components(phase=phase):
                     steps = sequence.steps(component=component)
@@ -1365,12 +1368,14 @@ class Weapon(object):
                         componentMap[component] = stepNameMap
 
                     for step in steps:
+                        assert(isinstance(step, gunsmith.WeaponStep))
+
                         commonStep = stepNameMap.get(step.name())
                         if not commonStep:
-                            commonStep = gunsmith.ConstructionStep(
+                            commonStep = gunsmith.WeaponStep(
                                 name=step.name(),
                                 type=step.type(),
-                                cost=step.cost(),
+                                credits=step.credits(),
                                 weight=step.weight())
                             stepNameMap[step.name()] = commonStep
                             stepFactors[commonStep] = {}
@@ -1418,8 +1423,7 @@ class Weapon(object):
                 for step in stepMap.values():
                     manifestSection.createEntry(
                         component=f'{step.type()}: {step.name()}',
-                        cost=step.cost(),
-                        weight=step.weight(),
+                        costs=step.costs(),
                         factors=step.factors())
 
         for phase in gunsmith.AncillaryConstructionPhases:
@@ -1442,8 +1446,7 @@ class Weapon(object):
                             baseText=f'{step.type()}: {step.name()}')
                         manifestSection.createEntry(
                             component=entryText,
-                            cost=step.cost(),
-                            weight=step.weight(),
+                            costs=step.costs(),
                             factors=step.factors())
                         
         for sequenceIndex, sequence in enumerate(self._sequenceStates.values()):
@@ -1458,7 +1461,9 @@ class Weapon(object):
                     continue
 
                 for step in steps:
-                    if not step.cost() and not step.weight() and not step.factors():
+                    assert(isinstance(step, gunsmith.WeaponStep))
+
+                    if not step.credits() and not step.weight() and not step.factors():
                         continue
 
                     if not manifestSection:
@@ -1469,8 +1474,7 @@ class Weapon(object):
                         baseText=f'{step.type()}: {step.name()}')
                     manifestSection.createEntry(
                         component=entryText,
-                        cost=step.cost(),
-                        weight=step.weight(),
+                        costs=step.costs(),
                         factors=step.factors())
 
         return manifest

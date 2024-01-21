@@ -81,7 +81,7 @@ class _FuelImpl(object):
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         if includeWeight:
             step.setWeight(weight=gunsmith.ConstantModifier(value=fuelWeight))
@@ -90,7 +90,7 @@ class _FuelImpl(object):
             lhs=self._costPerKg,
             rhs=fuelWeight,
             name='Total Fuel Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
 
         factors = []
 
@@ -210,7 +210,7 @@ class _SuppressantFuelImpl(_FuelImpl):
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -299,7 +299,7 @@ class _CryogenicFuelImpl(_FuelImpl):
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -357,7 +357,7 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
         # Fuel Step
         #
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -381,7 +381,7 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
         # Propellant Step
         #
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name='Propellant',
             type=self.typeString())
 
@@ -397,7 +397,7 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
             lhs=propellantCostPerKg,
             rhs=propellantWeight,
             name='Propellant Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=propellantCost))
+        step.setCredits(credits=gunsmith.ConstantModifier(value=propellantCost))
 
         context.applyStep(
             sequence=sequence,
@@ -484,7 +484,7 @@ class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
             sequence: str,
             context: gunsmith.ConstructionContextInterface
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

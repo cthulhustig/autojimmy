@@ -212,17 +212,17 @@ class Feed(gunsmith.FeedInterface):
                 if bulkLevel != None:
                     factors = [gunsmith.SetAttributeFactor(attributeId=bulkLevel)]
 
-                step = gunsmith.ConstructionStep(
+                step = gunsmith.WeaponStep(
                     name=f'Powered Feed Assist',
                     type=self.typeString(),
-                    cost=gunsmith.MultiplierModifier(value=self._PoweredAssistCostMultiplier),
+                    credits=gunsmith.MultiplierModifier(value=self._PoweredAssistCostMultiplier),
                     weight=gunsmith.MultiplierModifier(value=self._PoweredAssistWeightMultiplier),
                     factors=factors)
             if self._feedAssistOption.value() == FeedAssist.VRF:
-                step = gunsmith.ConstructionStep(
+                step = gunsmith.WeaponStep(
                     name=f'VRF Feed Assist',
                     type=self.typeString(),
-                    cost=gunsmith.MultiplierModifier(value=self._VRFAssistCostMultiplier),
+                    credits=gunsmith.MultiplierModifier(value=self._VRFAssistCostMultiplier),
                     weight=gunsmith.MultiplierModifier(value=self._VRFAssistWeightMultiplier),
                     factors=[gunsmith.SetAttributeFactor(
                         attributeId=gunsmith.AttributeId.VeryBulky)])
@@ -238,7 +238,7 @@ class Feed(gunsmith.FeedInterface):
 
         if self._isEnergyCartridgeWeapon(sequence=sequence, context=context) \
                 and not self._cartridgeEjectOption.value():
-            step = gunsmith.ConstructionStep(
+            step = gunsmith.WeaponStep(
                 name=f'Non-Ejecting Energy Cartridges',
                 type=self.typeString())
             step.addFactor(factor=gunsmith.ModifyAttributeFactor(
@@ -253,8 +253,8 @@ class Feed(gunsmith.FeedInterface):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -263,7 +263,7 @@ class Feed(gunsmith.FeedInterface):
                 value=self._weightModifierPercentage))
 
         if self._costModifierPercentage:
-            step.setCost(cost=gunsmith.PercentageModifier(
+            step.setCredits(credits=gunsmith.PercentageModifier(
                 value=self._costModifierPercentage))
 
         return step
@@ -399,7 +399,7 @@ class FixedDrumMagazineFeed(Feed):
             self,
             sequence: str,
             context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         capacityIncrease = common.ScalarCalculation(
