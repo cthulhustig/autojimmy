@@ -168,7 +168,7 @@ class ConstructionStep(object):
             costId: ConstructionCost
             ) -> typing.Optional[construction.NumericModifierInterface]:
         return self._costs.get(costId)
-    
+
     def setCost(
             self,
             costId: ConstructionCost,

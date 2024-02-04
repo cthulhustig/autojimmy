@@ -43,7 +43,7 @@ class WeaponContext(construction.ConstructionContext):
         self._rules = set(rules) if rules else set()
 
     def isRuleEnabled(self, rule: gunsmith.RuleId):
-        return rule in self._rules        
+        return rule in self._rules
 
     def rules(self) -> typing.Collection[gunsmith.RuleId]:
         return self._rules
@@ -58,7 +58,7 @@ class WeaponContext(construction.ConstructionContext):
             self._rules.add(rule)
 
         if regenerate:
-            self.regenerate()            
+            self.regenerate()
 
     def enableRule(
             self,
@@ -68,7 +68,7 @@ class WeaponContext(construction.ConstructionContext):
         self._rules.add(rule)
 
         if regenerate:
-            self.regenerate()        
+            self.regenerate()
 
     def disableRule(
             self,
@@ -79,7 +79,7 @@ class WeaponContext(construction.ConstructionContext):
             self._rules.remove(rule)
 
         if regenerate:
-            self.regenerate()            
+            self.regenerate()
 
     def clearRules(
             self,
@@ -100,7 +100,7 @@ class WeaponContext(construction.ConstructionContext):
         assert(isinstance(sequenceState, WeaponSequenceState))
 
         return sequenceState.weaponType()
-    
+
     def setWeaponType(
             self,
             sequence: str,
@@ -116,7 +116,7 @@ class WeaponContext(construction.ConstructionContext):
         sequenceState.setWeaponType(
             weaponType=weaponType,
             stages=stages)
-        
+
         if regenerate:
             self.regenerate()
 
@@ -256,7 +256,7 @@ class WeaponContext(construction.ConstructionContext):
         return self._multiPhaseCredits(
             phases=gunsmith.WeaponPhase,
             calculationName='Total Cost',
-            sequence=sequence)            
+            sequence=sequence)
 
     def combatWeight(
             self,
@@ -606,7 +606,7 @@ class Weapon(object):
         # For multi-sequence weapons the Quickdraw value is the sum of the
         # Quickdraw values for all sequences
         if (attributeId == gunsmith.WeaponAttribute.Quickdraw) and \
-            (self._constructionContext.sequenceCount() > 1):
+                (self._constructionContext.sequenceCount() > 1):
             return self._calculateQuickdrawScore()
 
         return sequenceState.attribute(attributeId=attributeId)
@@ -693,7 +693,7 @@ class Weapon(object):
                     steps = sequence.steps(component=component)
                     if not steps:
                         continue
-                    
+
                     if not manifestSection:
                         manifestSection = manifest.createSection(name=sectionName)
                     for step in steps:
@@ -804,7 +804,7 @@ class Weapon(object):
                             component=entryText,
                             costs=step.costs(),
                             factors=step.factors())
-                        
+
         for sequenceIndex, sequence in enumerate(sequenceStates):
             assert(isinstance(sequence, WeaponSequenceState))
             sectionName = self._prefixManifestText(

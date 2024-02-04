@@ -58,7 +58,7 @@ class ConstructionContextInterface(object):
             step: construction.ConstructionStep
             ) -> None:
         raise RuntimeError('The addStep method must be implemented by classes derived from ConstructionContextInterface')
-    
+
 class ComponentInterface(object):
     def componentString(self) -> str:
         raise RuntimeError('The componentString method must be implemented by classes derived from ComponentInterface')

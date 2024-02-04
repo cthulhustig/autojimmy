@@ -281,14 +281,14 @@ class SequenceState(object):
                 if stopOnFirst:
                     return matched
         return matched
-    
+
 # TODO: once this is split into generic and weapon specific classes,
 # It should be moved into a separate file
 class ConstructionContext(construction.ConstructionContextInterface):
     def __init__(
             self,
             phasesType: typing.Type[construction.ConstructionPhase],
-            componentsType: typing.Type[construction.ComponentInterface],            
+            componentsType: typing.Type[construction.ComponentInterface],
             techLevel: int
             ) -> None:
         self._phasesType = phasesType
@@ -309,7 +309,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
         self._techLevel = techLevel
 
         if regenerate:
-            self.regenerate()                
+            self.regenerate()
 
     def sequences(self) -> typing.Iterable[str]:
         return list(self._sequenceStates.keys())
@@ -323,7 +323,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
         self._sequenceStates[sequence] = sequenceState
 
         if regenerate:
-            self.regenerate()        
+            self.regenerate()
 
     def removeSequence(
             self,
@@ -339,10 +339,10 @@ class ConstructionContext(construction.ConstructionContextInterface):
         # If the primary sequence was deleted set the first remaining sequence
         # as the primary
         if sequenceState.isPrimary() and len(self._sequenceStates) > 0:
-            self._sequenceStates[0].setPrimary(primary=True)        
+            self._sequenceStates[0].setPrimary(primary=True)
 
         if regenerate:
-            self.regenerate()            
+            self.regenerate()
 
     def sequenceCount(self) -> int:
         return len(self._sequenceStates)
@@ -363,17 +363,17 @@ class ConstructionContext(construction.ConstructionContextInterface):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.isPrimary()         
+        return sequenceState.isPrimary()
 
     def state(
             self,
             sequence: str
             ) -> typing.Optional[SequenceState]:
         return self._sequenceStates.get(sequence)
-    
+
     def states(self) -> typing.Iterable[SequenceState]:
         return list(self._sequenceStates.values())
-        
+
     def stages(
             self,
             sequence: typing.Optional[str] = None,
@@ -396,7 +396,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
                 for stage in sequenceState.stages(phase=phase, componentType=componentType):
                     if stage not in matched: # Avoid duplicates for common stages
                         matched.append(stage)
-        return matched        
+        return matched
 
     def addComponent(
             self,
@@ -432,7 +432,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
             removeComponent=oldComponent,
             addComponent=newComponent,
             regenerate=regenerate)
-        
+
     def clearComponents(
             self,
             phase: typing.Optional[construction.ConstructionPhase] = None,
@@ -450,7 +450,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
         if regenerate:
             self.regenerate()
 
-        return modified        
+        return modified
 
     def createSteps(
             self,
@@ -463,7 +463,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
             self._activeComponent.createSteps(sequence=sequence, context=self)
         self._activeStage = None
         self._activeComponent = None
-    
+
     def regenerate(
             self,
             stopStage: typing.Optional[construction.ConstructionStage] = None
@@ -474,7 +474,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
             if self._regeneratePhase(
                     phase=phase,
                     stopStage=stopStage):
-                break  
+                break
 
     def constructionNotes(
             self,
@@ -533,7 +533,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
                 if component not in matched: # Prevent duplicates for common phases
                     matched.append(component)
         return matched
-    
+
     # The replaceComponent parameter can be used to get the list of components that would be
     # compatible if the specified component was being replaced. If the replaceComponent is
     # compatible with the weapon (which generally it always should be) then it will be included
@@ -602,7 +602,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
                     component=replaceComponent)
                 self.regenerate() # Regenerate the entire weapon to get it back to a good state
 
-        return compatible    
+        return compatible
 
     def hasComponent(
             self,
@@ -619,7 +619,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
             if sequenceState.hasComponent(componentType=componentType):
                 return True
         return False
-    
+
     def attributeValue(
             self,
             attributeId: construction.ConstructionAttribute,
@@ -652,7 +652,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
             component=self._activeComponent,
             phase=self._activeStage.phase(),
             step=step)
-        
+
     def _resetConstruction(self) -> None:
         self._isIncomplete = False
         for state in self._sequenceStates.values():
@@ -816,4 +816,3 @@ class ConstructionContext(construction.ConstructionContextInterface):
             # Something went wrong so just restore previous state
             stage.setComponents(components=originalComponents)
             raise
-    

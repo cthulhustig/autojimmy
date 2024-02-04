@@ -27,7 +27,7 @@ class WeaponStep(construction.ConstructionStep):
 
     def credits(self) -> typing.Optional[construction.NumericModifierInterface]:
         return self.cost(costId=WeaponCost.Credits)
-    
+
     def setCredits(
             self,
             credits: construction.NumericModifierInterface
@@ -42,4 +42,3 @@ class WeaponStep(construction.ConstructionStep):
             weight: construction.NumericModifierInterface
             ) -> None:
         self.setCost(costId=WeaponCost.Weight, value=weight)
-

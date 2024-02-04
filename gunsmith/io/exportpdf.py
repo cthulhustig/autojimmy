@@ -1218,7 +1218,7 @@ class PdfExporter(object):
 
         for step in weapon.steps(sequence=sequence):
             assert(isinstance(step, gunsmith.WeaponStep))
-            
+
             notes = step.notes()
             if not notes:
                 continue
