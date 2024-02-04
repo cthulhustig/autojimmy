@@ -63,7 +63,7 @@ class StocklessStock(Stock):
     def __init__(self) -> None:
         super().__init__()
 
-        self._useAttackModifierOption = construction.BooleanComponentOption(
+        self._useAttackModifierOption = construction.BooleanOption(
             id='UseAttackModifier',
             name='Use Attack Modifier',
             value=True,
@@ -114,7 +114,7 @@ class StocklessStock(Stock):
                     sequence=None)
             if hasRequiredReceiver:
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                    attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                     modifier=construction.ConstantModifier(
                         value=self._QuickdrawModifier)))
 

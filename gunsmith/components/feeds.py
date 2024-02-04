@@ -106,7 +106,7 @@ class Feed(gunsmith.FeedInterface):
         self._weightModifierPercentage = weightModifierPercentage
         self._costModifierPercentage = costModifierPercentage
 
-        self._feedAssistOption = construction.EnumComponentOption(
+        self._feedAssistOption = construction.EnumOption(
             id='FeedAssist',
             name='Feed Assist',
             type=FeedAssist,
@@ -115,17 +115,17 @@ class Feed(gunsmith.FeedInterface):
             description=Feed._FeedAssistTypeOptionDescription,
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._poweredFeedBulkLevelOption = construction.EnumComponentOption(
+        self._poweredFeedBulkLevelOption = construction.EnumOption(
             id='PoweredFeedBulkLevel',
             name='Bulky/Very Bulky Trait',
-            type=gunsmith.WeaponAttribute,
+            type=gunsmith.WeaponAttributeId,
             value=None,
             isOptional=True,
-            options=[gunsmith.WeaponAttribute.Bulky, gunsmith.WeaponAttribute.VeryBulky],
+            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=Feed._PoweredFeedAssistBulkLevelOptionDescription,
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._cartridgeEjectOption = construction.BooleanComponentOption(
+        self._cartridgeEjectOption = construction.BooleanOption(
             id='CartridgeEject',
             name='Ejecting',
             value=True,
@@ -226,7 +226,7 @@ class Feed(gunsmith.FeedInterface):
                     credits=construction.MultiplierModifier(value=self._VRFAssistCostMultiplier),
                     weight=construction.MultiplierModifier(value=self._VRFAssistWeightMultiplier),
                     factors=[construction.SetAttributeFactor(
-                        attributeId=gunsmith.WeaponAttribute.VeryBulky)])
+                        attributeId=gunsmith.WeaponAttributeId.VeryBulky)])
 
             if step:
                 context.applyStep(
@@ -243,7 +243,7 @@ class Feed(gunsmith.FeedInterface):
                 name=f'Non-Ejecting Energy Cartridges',
                 type=self.typeString())
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Hazardous,
+                attributeId=gunsmith.WeaponAttributeId.Hazardous,
                 modifier=construction.ConstantModifier(
                     value=self._NonEjectingEnergyCartridgeHazardousModifier)))
             context.applyStep(
@@ -367,7 +367,7 @@ class FixedDrumMagazineFeed(Feed):
             componentString=f'Fixed Drum Magazine',
             costModifierPercentage=+5)
 
-        self._capacityIncreaseOption = construction.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=150,
@@ -407,18 +407,18 @@ class FixedDrumMagazineFeed(Feed):
             value=self._capacityIncreaseOption.value(),
             name='Specified Ammo Capacity Increase Percentage')
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True)))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Inaccurate,
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
             modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
             modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 

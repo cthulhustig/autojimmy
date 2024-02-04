@@ -131,12 +131,12 @@ class _PowerPackImpl(object):
         # Modify the power rather than setting it to allow the power of internal and external power
         # packs to be cumulative
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Power,
+            attributeId=gunsmith.WeaponAttributeId.Power,
             modifier=construction.ConstantModifier(value=power)))
 
         powerPerShot = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PowerPerShot)
+            attributeId=gunsmith.WeaponAttributeId.PowerPerShot)
         assert(isinstance(powerPerShot, common.ScalarCalculation)) # Construction logic should enforce this
         shotsPerPack = common.Calculator.divideFloor(
             lhs=power,
@@ -145,7 +145,7 @@ class _PowerPackImpl(object):
         # Modify the ammo capacity rather than setting it to allow the ammo capacity of internal and
         # external power packs to be cumulative
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.ConstantModifier(value=shotsPerPack)))
 
         if powerPerShot.value() > self._maxPower.value():
@@ -155,7 +155,7 @@ class _PowerPackImpl(object):
                 rhs=self._maxPower,
                 name=f'{self.componentString()} Power Pack Unreliable Modifier Due To Excessive Power Draw')
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Unreliable,
+                attributeId=gunsmith.WeaponAttributeId.Unreliable,
                 modifier=construction.ConstantModifier(value=unreliableModifier)))
 
             notes.append(f'Excess power draw from power pack causes Unreliable +{unreliableModifier.value()}')
@@ -329,7 +329,7 @@ class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
         super().__init__()
         self._impl = impl
 
-        self._weightOption = construction.FloatComponentOption(
+        self._weightOption = construction.FloatOption(
             id='Weight',
             name='Weight',
             value=weight if weight != None else 1.0,
@@ -429,7 +429,7 @@ class PowerPackQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfPacksOption = construction.IntegerComponentOption(
+        self._numberOfPacksOption = construction.IntegerOption(
             id='Quantity',
             name='Packs',
             value=1,
@@ -546,7 +546,7 @@ class ExternalPowerPackQuantity(PowerPackQuantity):
     def __init__(self, impl: _PowerPackImpl) -> None:
         super().__init__(impl)
 
-        self._weightOption = construction.FloatComponentOption(
+        self._weightOption = construction.FloatOption(
             id='Weight',
             name='Weight',
             value=1.0,

@@ -2,7 +2,6 @@ import common
 import enum
 import construction
 import typing
-import uuid
 
 class CompatibilityException(Exception):
     pass
@@ -192,19 +191,19 @@ class SequenceState(object):
 
     def attribute(
             self,
-            attributeId: construction.ConstructionAttribute
+            attributeId: construction.ConstructionAttributeId
             ) -> construction.AttributeInterface:
         return self._attributes.attribute(attributeId=attributeId)
 
     def attributeValue(
             self,
-            attributeId: construction.ConstructionAttribute
+            attributeId: construction.ConstructionAttributeId
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         return self._attributes.attributeValue(attributeId=attributeId)
 
     def hasAttribute(
             self,
-            attributeId: construction.ConstructionAttribute
+            attributeId: construction.ConstructionAttributeId
             ) -> bool:
         return self._attributes.hasAttribute(attributeId=attributeId)
 
@@ -282,9 +281,7 @@ class SequenceState(object):
                     return matched
         return matched
 
-# TODO: once this is split into generic and weapon specific classes,
-# It should be moved into a separate file
-class ConstructionContext(construction.ConstructionContextInterface):
+class ConstructionContext(object):
     def __init__(
             self,
             phasesType: typing.Type[construction.ConstructionPhase],
@@ -349,7 +346,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
 
     def clearSequences(self) -> None:
         self._activeSequence = None
-        # TODO: Should self._activeComponent also be set to None
+        self._activeComponent = None
         self._sequenceStates.clear()
 
         # Reset construction to clear stored state. No point regenerating as
@@ -622,7 +619,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
 
     def attributeValue(
             self,
-            attributeId: construction.ConstructionAttribute,
+            attributeId: construction.ConstructionAttributeId,
             sequence: str
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         sequenceState = self._sequenceStates.get(sequence)
@@ -632,7 +629,7 @@ class ConstructionContext(construction.ConstructionContextInterface):
 
     def hasAttribute(
             self,
-            attributeId: construction.ConstructionAttribute,
+            attributeId: construction.ConstructionAttributeId,
             sequence: str
             ) -> bool:
         sequenceState = self._sequenceStates.get(sequence)

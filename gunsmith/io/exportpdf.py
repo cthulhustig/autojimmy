@@ -75,25 +75,25 @@ _AmmoSectionText = \
 # Mapping that defines alternate strings to be used for attributes. If an attribute
 # doesn't have an entry its name will be used
 _AttributeHeaderOverrideMap = {
-    gunsmith.WeaponAttribute.AmmoCapacity: 'Ammo\nCapacity',
-    gunsmith.WeaponAttribute.AmmoCost: 'Ammo\nCost',
-    gunsmith.WeaponAttribute.BarrelCount: 'Barrel\nCount',
-    gunsmith.WeaponAttribute.HeatGeneration: 'Heat\nGeneration',
-    gunsmith.WeaponAttribute.AutoHeatGeneration: 'Auto Heat\nGeneration',
-    gunsmith.WeaponAttribute.HeatDissipation: 'Heat\nDissipation',
-    gunsmith.WeaponAttribute.OverheatThreshold: 'Overheat\nThreshold',
-    gunsmith.WeaponAttribute.DangerHeatThreshold: 'Danger Heat\nThreshold',
-    gunsmith.WeaponAttribute.DisasterHeatThreshold: 'Disaster Heat\nThreshold',
-    gunsmith.WeaponAttribute.MalfunctionDM: 'Malfunction\nDM',
-    gunsmith.WeaponAttribute.AutoRecoil: 'Auto\nRecoil',
-    gunsmith.WeaponAttribute.PropellantWeight: 'Propellant\nWeight',
-    gunsmith.WeaponAttribute.FuelWeight: 'Fuel\nWeight',
-    gunsmith.WeaponAttribute.PropellantCost: 'Propellant\nCost Per Kg',
-    gunsmith.WeaponAttribute.FuelCost: 'Fuel Cost\nPer Kg',
-    gunsmith.WeaponAttribute.MaxDamageDice: 'Max Damage\nDice',
-    gunsmith.WeaponAttribute.PowerPerShot: 'Power\nPer Shot',
-    gunsmith.WeaponAttribute.EmissionsSignature: 'Emissions\nSignature',
-    gunsmith.WeaponAttribute.PhysicalSignature: 'Physical\nSignature'
+    gunsmith.WeaponAttributeId.AmmoCapacity: 'Ammo\nCapacity',
+    gunsmith.WeaponAttributeId.AmmoCost: 'Ammo\nCost',
+    gunsmith.WeaponAttributeId.BarrelCount: 'Barrel\nCount',
+    gunsmith.WeaponAttributeId.HeatGeneration: 'Heat\nGeneration',
+    gunsmith.WeaponAttributeId.AutoHeatGeneration: 'Auto Heat\nGeneration',
+    gunsmith.WeaponAttributeId.HeatDissipation: 'Heat\nDissipation',
+    gunsmith.WeaponAttributeId.OverheatThreshold: 'Overheat\nThreshold',
+    gunsmith.WeaponAttributeId.DangerHeatThreshold: 'Danger Heat\nThreshold',
+    gunsmith.WeaponAttributeId.DisasterHeatThreshold: 'Disaster Heat\nThreshold',
+    gunsmith.WeaponAttributeId.MalfunctionDM: 'Malfunction\nDM',
+    gunsmith.WeaponAttributeId.AutoRecoil: 'Auto\nRecoil',
+    gunsmith.WeaponAttributeId.PropellantWeight: 'Propellant\nWeight',
+    gunsmith.WeaponAttributeId.FuelWeight: 'Fuel\nWeight',
+    gunsmith.WeaponAttributeId.PropellantCost: 'Propellant\nCost Per Kg',
+    gunsmith.WeaponAttributeId.FuelCost: 'Fuel Cost\nPer Kg',
+    gunsmith.WeaponAttributeId.MaxDamageDice: 'Max Damage\nDice',
+    gunsmith.WeaponAttributeId.PowerPerShot: 'Power\nPer Shot',
+    gunsmith.WeaponAttributeId.EmissionsSignature: 'Emissions\nSignature',
+    gunsmith.WeaponAttributeId.PhysicalSignature: 'Physical\nSignature'
 }
 
 _NormalStyle = ParagraphStyle(
@@ -802,7 +802,7 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
-            attributeIds: typing.Iterable[gunsmith.WeaponAttribute],
+            attributeIds: typing.Iterable[gunsmith.WeaponAttributeId],
             alwaysSignNumbers: bool = False,
             useDashForNoValue: bool = False
             ) -> typing.Tuple[typing.List[Paragraph], typing.List[Paragraph]]:
@@ -1336,13 +1336,13 @@ class PdfExporter(object):
         rangeElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Range),
+                attributeId=gunsmith.WeaponAttributeId.Range),
             style=_TableDataNormalStyle)
 
         damageElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage),
+                attributeId=gunsmith.WeaponAttributeId.Damage),
             style=_TableDataNormalStyle)
 
         weaponWeight = weapon.combatWeight()
@@ -1354,7 +1354,7 @@ class PdfExporter(object):
         capacityElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity),
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity),
             style=_TableDataNormalStyle)
 
         accessoryWeightString = \
@@ -1368,13 +1368,13 @@ class PdfExporter(object):
         quickdrawElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Quickdraw),
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw),
             style=_TableDataNormalStyle)
 
         malfunctionElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.MalfunctionDM),
+                attributeId=gunsmith.WeaponAttributeId.MalfunctionDM),
             style=_TableDataNormalStyle)
 
         traitsElement = self._createTraitsParagraph(
@@ -1598,7 +1598,7 @@ class PdfExporter(object):
                 if flagOptions:
                     # Add an entry for each option toggled to the non-default value
                     for option in flagOptions:
-                        assert(isinstance(option, construction.BooleanComponentOption)) # Currently only booleans are supported
+                        assert(isinstance(option, construction.BooleanOption)) # Currently only booleans are supported
                         option.setValue(not option.value())
                         weapon.regenerate()
                         ammoNotes = self._diffConstructionNotes(
@@ -1672,13 +1672,13 @@ class PdfExporter(object):
         rangeElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Range),
+                attributeId=gunsmith.WeaponAttributeId.Range),
             style=_TableDataNormalStyle)
 
         damageElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage),
+                attributeId=gunsmith.WeaponAttributeId.Damage),
             style=_TableDataNormalStyle)
 
         weaponWeight = weapon.combatWeight()
@@ -1690,7 +1690,7 @@ class PdfExporter(object):
         capacityElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity),
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity),
             style=_TableDataNormalStyle)
 
         magazineCost = weapon.phaseCredits(phase=gunsmith.WeaponPhase.Loading)
@@ -1716,13 +1716,13 @@ class PdfExporter(object):
         quickdrawElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Quickdraw),
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw),
             style=_TableDataNormalStyle)
 
         malfunctionElement = self._createAttributeParagraph(
             attribute=weapon.attribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.MalfunctionDM),
+                attributeId=gunsmith.WeaponAttributeId.MalfunctionDM),
             style=_TableDataNormalStyle)
 
         traitsElement = self._createTraitsParagraph(

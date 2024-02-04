@@ -40,7 +40,7 @@ class ComponentOption(object):
     def reset(self) -> None:
         raise RuntimeError('The reset method must be implemented by classes derived from ComponentOption')
 
-class BooleanComponentOption(ComponentOption):
+class BooleanOption(ComponentOption):
     def __init__(
             self,
             id: str,
@@ -72,7 +72,7 @@ class BooleanComponentOption(ComponentOption):
     def reset(self) -> None:
         self._value = self._default
 
-class StringComponentOption(ComponentOption):
+class StringOption(ComponentOption):
     def __init__(
             self,
             id: str,
@@ -104,7 +104,7 @@ class StringComponentOption(ComponentOption):
     def reset(self) -> None:
         self._value = self._default
 
-class IntegerComponentOption(ComponentOption):
+class IntegerOption(ComponentOption):
     def __init__(
             self,
             id: str,
@@ -185,7 +185,7 @@ class IntegerComponentOption(ComponentOption):
 
         self._value = value
 
-class FloatComponentOption(ComponentOption):
+class FloatOption(ComponentOption):
     def __init__(
             self,
             id: str,
@@ -266,7 +266,7 @@ class FloatComponentOption(ComponentOption):
 
         self._value = value
 
-class EnumComponentOption(ComponentOption):
+class EnumOption(ComponentOption):
     def __init__(
             self,
             id: str,

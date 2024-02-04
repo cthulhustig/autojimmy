@@ -133,7 +133,7 @@ class _ProjectileMagazineImpl(object):
 
         if self._quickdrawModifier:
             factor = construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._quickdrawModifier))
             if not applyModifiers:
@@ -178,7 +178,7 @@ class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             magazineWeight = common.Calculator.multiply(
                 lhs=ammoCapacity,
@@ -212,7 +212,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
             weaponPercentageCost=2,
             quickdrawModifier=-2)
 
-        self._capacityIncreaseOption = construction.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 50,
@@ -248,7 +248,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             capacityIncrease = common.ScalarCalculation(
                 value=self._capacityIncreaseOption.value(),
@@ -270,7 +270,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
             value=self._capacityIncreaseOption.value(),
             name='Specified Extended Magazine Capacity Percentage Modifier')
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True))
@@ -310,7 +310,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
             weaponPercentageCost=5,
             quickdrawModifier=-6)
 
-        self._capacityIncreaseOption = construction.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 150,
@@ -346,7 +346,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             capacityIncrease = common.ScalarCalculation(
                 value=self._capacityIncreaseOption.value(),
@@ -370,18 +370,18 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
             value=self._capacityIncreaseOption.value(),
             name='Specified Drum Magazine Capacity Percentage Modifier')
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True)))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Inaccurate,
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
             modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
             modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
@@ -418,14 +418,14 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             componentString='Belt',
             quickdrawModifier=-8)
 
-        self._capacityOption = construction.IntegerComponentOption(
+        self._capacityOption = construction.IntegerOption(
             id='Capacity',
             name='Capacity',
             value=capacity if capacity != None else 100,
             minValue=1,
             description='Specify the number of rounds of ammunition held by the belt.')
 
-        self._unloadedCostOption = construction.FloatComponentOption(
+        self._unloadedCostOption = construction.FloatOption(
             id='UnloadedCost',
             name='Unloaded Cost',
             value=unloadedCost if unloadedCost != None else 0,
@@ -488,11 +488,11 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             value=self._capacityOption.value(),
             name='Specified Belt Capacity')
         factors.append(construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=ammoCapacity))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Inaccurate,
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
             modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
@@ -625,7 +625,7 @@ class BeltConventionalMagazineLoaded(ConventionalMagazineLoaded):
             capacity=capacity,
             unloadedCost=unloadedCost))
 
-        self._loadedWeightOption = construction.FloatComponentOption(
+        self._loadedWeightOption = construction.FloatOption(
             id='LoadedWeight',
             name='Loaded Weight',
             value=loadedWeight if loadedWeight != None else 0,
@@ -663,7 +663,7 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = construction.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -761,7 +761,7 @@ class BeltConventionalMagazineQuantity(ConventionalMagazineQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_BeltProjectileMagazineImpl())
 
-        self._loadedWeightOption = construction.FloatComponentOption(
+        self._loadedWeightOption = construction.FloatOption(
             id='LoadedWeight',
             name='Loaded Weight',
             value=0,
@@ -898,7 +898,7 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = construction.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -1087,7 +1087,7 @@ class _EnergyCartridgeMagazineImpl(object):
         self._costMultiplier = costMultiplier
         self._quickdrawModifier = quickdrawModifier
 
-        self._reusableOption = construction.BooleanComponentOption(
+        self._reusableOption = construction.BooleanOption(
             id='Reusable',
             name='Reusable',
             value=isReusable if isReusable != None else True, # Environmentally friendly by default :)
@@ -1186,7 +1186,7 @@ class _EnergyCartridgeMagazineImpl(object):
 
         if self._quickdrawModifier:
             factor = construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._quickdrawModifier))
             if not applyModifiers:
@@ -1226,7 +1226,7 @@ class _StandardEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
 
         super().updateStep(
@@ -1260,7 +1260,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityIncreaseOption = construction.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 50,
@@ -1289,7 +1289,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             name='Specified Extended Magazine Capacity Percentage Modifier')
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
         ammoCapacity = common.Calculator.applyPercentage(
             value=ammoCapacity,
@@ -1305,7 +1305,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             step=step)
 
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True))
@@ -1345,7 +1345,7 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityIncreaseOption = construction.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 150,
@@ -1374,7 +1374,7 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             name='Specified Drum Magazine Capacity Percentage Modifier')
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
         ammoCapacity = common.Calculator.applyPercentage(
             value=ammoCapacity,
@@ -1395,18 +1395,18 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             value=self._capacityIncreaseOption.value(),
             name='Specified Drum Magazine Capacity Percentage Modifier')
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True)))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Inaccurate,
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
             modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
             modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
@@ -1448,14 +1448,14 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityOption = construction.IntegerComponentOption(
+        self._capacityOption = construction.IntegerOption(
             id='Capacity',
             name='Capacity',
             value=capacity if capacity != None else 100,
             minValue=1,
             description='Specify the number of rounds of ammunition held by the belt.')
 
-        self._unloadedCostOption = construction.FloatComponentOption(
+        self._unloadedCostOption = construction.FloatOption(
             id='UnloadedCost',
             name='Unloaded Cost',
             value=unloadedCost if unloadedCost != None else 0,
@@ -1509,11 +1509,11 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             value=self._capacityOption.value(),
             name='Specified Belt Capacity')
         factors.append(construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=ammoCapacity))
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Inaccurate,
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
             modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
@@ -1770,7 +1770,7 @@ class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = construction.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,

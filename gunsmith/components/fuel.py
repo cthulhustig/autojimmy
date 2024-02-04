@@ -14,7 +14,7 @@ class _FuelImpl(object):
             minTechLevel: typing.Union[int, common.ScalarCalculation],
             costPerKg: typing.Union[int, float, common.ScalarCalculation],
             damageDice: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            traitMap: typing.Optional[typing.Mapping[gunsmith.WeaponAttribute, typing.Union[int, common.ScalarCalculation, common.DiceRoll]]] = None,
+            traitMap: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, typing.Union[int, common.ScalarCalculation, common.DiceRoll]]] = None,
             ) -> None:
         if not isinstance(minTechLevel, common.ScalarCalculation):
             minTechLevel = common.ScalarCalculation(
@@ -99,7 +99,7 @@ class _FuelImpl(object):
             # This sets the damage rather than modifying it as projectors don't have a damage
             # other than what comes from the fuel
             factors.append(construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=common.DiceRoll(
                     count=self._damageDice,
                     type=common.DieType.D6)))
@@ -132,8 +132,8 @@ class _LiquidFuelImpl(_FuelImpl):
             costPerKg=25,
             damageDice=3,
             traitMap={
-                gunsmith.WeaponAttribute.Incendiary: 1,
-                gunsmith.WeaponAttribute.Burn: 1})
+                gunsmith.WeaponAttributeId.Incendiary: 1,
+                gunsmith.WeaponAttributeId.Burn: 1})
 
 class _JelliedFuelImpl(_FuelImpl):
     """
@@ -159,8 +159,8 @@ class _JelliedFuelImpl(_FuelImpl):
             costPerKg=75,
             damageDice=4,
             traitMap={
-                gunsmith.WeaponAttribute.Incendiary: 1,
-                gunsmith.WeaponAttribute.Burn: self._BurnTrait})
+                gunsmith.WeaponAttributeId.Incendiary: 1,
+                gunsmith.WeaponAttributeId.Burn: self._BurnTrait})
 
 class _IrritantFuelImpl(_FuelImpl):
     """
@@ -222,7 +222,7 @@ class _SuppressantFuelImpl(_FuelImpl):
             step=step)
 
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             modifier=construction.PercentageModifier(
                 value=self._RangeModifierPercentage))
         if not applyModifiers:
@@ -274,8 +274,8 @@ class _AdvancedFuelImpl(_FuelImpl):
             costPerKg=150,
             damageDice=5,
             traitMap={
-                gunsmith.WeaponAttribute.Incendiary: self._IncendiaryTrait,
-                gunsmith.WeaponAttribute.Burn: self._BurnTrait})
+                gunsmith.WeaponAttributeId.Incendiary: self._IncendiaryTrait,
+                gunsmith.WeaponAttributeId.Burn: self._BurnTrait})
 
 class _CryogenicFuelImpl(_FuelImpl):
     """
@@ -364,7 +364,7 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
 
         fuelWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.FuelWeight)
+            attributeId=gunsmith.WeaponAttributeId.FuelWeight)
         assert(isinstance(fuelWeight, common.ScalarCalculation)) # Construction logic should enforce this
         self._impl.updateStep(
             sequence=sequence,
@@ -388,11 +388,11 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PropellantWeight)
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
         propellantCostPerKg = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PropellantCost)
+            attributeId=gunsmith.WeaponAttributeId.PropellantCost)
         assert(isinstance(propellantCostPerKg, common.ScalarCalculation)) # Construction logic should enforce this
         propellantCost = common.Calculator.multiply(
             lhs=propellantCostPerKg,
@@ -445,7 +445,7 @@ class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._fuelWeightOption = construction.FloatComponentOption(
+        self._fuelWeightOption = construction.FloatOption(
             id='Weight',
             name='Weight',
             value=1.0,

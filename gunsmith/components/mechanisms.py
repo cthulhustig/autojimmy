@@ -173,14 +173,14 @@ class SingleShotMechanism(Mechanism):
 
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.BarrelCount)
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         ammoCapacity = common.Calculator.equals(
             value=barrelCount,
             name=f'{self.componentString()} Ammo Capacity')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=ammoCapacity))
 
         return step
@@ -245,7 +245,7 @@ class RepeaterMechanism(Mechanism):
                 componentType=gunsmith.SmoothboreCalibre,
                 sequence=sequence):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
                 modifier=construction.PercentageModifier(
                     value=self._RepeaterAmmoCapacityModifierPercentage,
                     roundDown=True)))
@@ -310,7 +310,7 @@ class AutoMechanism(Mechanism):
 
         if self._autoModifier:
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Auto,
+                attributeId=gunsmith.WeaponAttributeId.Auto,
                 modifier=construction.ConstantModifier(
                     value=self._autoModifier)))
 
@@ -394,7 +394,7 @@ class MechanicalRotaryMechanism(AutoMechanism):
 
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.BarrelCount)
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         autoModifier = common.Calculator.divideFloor(
@@ -403,7 +403,7 @@ class MechanicalRotaryMechanism(AutoMechanism):
             name=f'{self.componentString()} Auto Modifier')
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Auto,
+            attributeId=gunsmith.WeaponAttributeId.Auto,
             modifier=construction.ConstantModifier(
                 value=autoModifier)))
 

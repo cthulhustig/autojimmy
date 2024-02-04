@@ -117,7 +117,7 @@ class _EnergyCartridgeImpl(object):
 
         powerPerShot = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PowerPerShot)
+            attributeId=gunsmith.WeaponAttributeId.PowerPerShot)
         assert(isinstance(powerPerShot, common.ScalarCalculation)) # Construction logic should enforce this
 
         factors = []
@@ -130,7 +130,7 @@ class _EnergyCartridgeImpl(object):
                 rhs=powerPerShot,
                 name=f'{self.componentString()} Energy Cartridge Unreliable Modifier Due To Overpowered Cartridge')
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Unreliable,
+                attributeId=gunsmith.WeaponAttributeId.Unreliable,
                 modifier=construction.ConstantModifier(
                     value=unreliableModifier)))
             notes.append(f'Overpowered energy cartridge causes Unreliable +{unreliableModifier.value()}')
@@ -138,7 +138,7 @@ class _EnergyCartridgeImpl(object):
             # An underpowered cartridge is being used
             currentDamageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(currentDamageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             # Calculate the max damage dice that the cartridge allows and the modifier required to
@@ -157,7 +157,7 @@ class _EnergyCartridgeImpl(object):
 
             if damageDiceModifier.value() != 0:
                 factors.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Damage,
+                    attributeId=gunsmith.WeaponAttributeId.Damage,
                     modifier=construction.DiceRollModifier(
                         countModifier=damageDiceModifier)))
                 notes.append(f'Underpowered energy cartridge causes damage reduction of {abs(damageDiceModifier.value())}D')
@@ -300,7 +300,7 @@ class EnergyCartridgeLoaded(gunsmith.AmmoLoadedInterface):
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
         step = gunsmith.WeaponStep(
@@ -454,7 +454,7 @@ class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfCartridgeOption = construction.IntegerComponentOption(
+        self._numberOfCartridgeOption = construction.IntegerOption(
             id='Quantity',
             name='Cartridge',
             value=1,

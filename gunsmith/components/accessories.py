@@ -48,7 +48,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._attachedOption = construction.EnumComponentOption(
+        self._attachedOption = construction.EnumOption(
             id='Attachment',
             name='Attachment',
             type=_AttachmentType,
@@ -210,33 +210,33 @@ class SuppressorAccessory(BarrelAccessory):
                 # Only apply signature modification if the weapon actually has a physical signature
                 if context.hasAttribute(
                         sequence=sequence,
-                        attributeId=gunsmith.WeaponAttribute.PhysicalSignature):
+                        attributeId=gunsmith.WeaponAttributeId.PhysicalSignature):
                     operations.append(construction.ModifyAttributeFactor(
-                        attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                        attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                         modifier=construction.ConstantModifier(
                             value=self._physicalSignatureModifier)))
 
             if self._rangeModifierPercentage:
                 operations.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Range,
+                    attributeId=gunsmith.WeaponAttributeId.Range,
                     modifier=construction.PercentageModifier(
                         value=self._rangeModifierPercentage)))
 
             if self._quickdrawModifier:
                 operations.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                    attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                     modifier=construction.ConstantModifier(
                         value=self._quickdrawModifier)))
 
             if self._penetrationModifier:
                 operations.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Penetration,
+                    attributeId=gunsmith.WeaponAttributeId.Penetration,
                     modifier=construction.ConstantModifier(
                         value=self._penetrationModifier)))
 
             if self._inaccurateModifier:
                 operations.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Inaccurate,
+                    attributeId=gunsmith.WeaponAttributeId.Inaccurate,
                     modifier=construction.ConstantModifier(
                         value=self._inaccurateModifier)))
 
@@ -450,7 +450,7 @@ class CupDischargerAccessory(BarrelAccessory):
                 value=self._FixedWeight))
 
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 
@@ -483,7 +483,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._attachedOption = construction.EnumComponentOption(
+        self._attachedOption = construction.EnumOption(
             id='Attachment',
             name='Attachment',
             type=_AttachmentType,
@@ -610,13 +610,13 @@ class SightAccessory(WeaponAccessory):
             # only be included once
             if self._quickdrawModifier and context.isPrimary(sequence=sequence):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                    attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                     modifier=construction.ConstantModifier(
                         value=self._quickdrawModifier)))
 
             if self._scopeTrait:
                 step.addFactor(factor=construction.SetAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Scope))
+                    attributeId=gunsmith.WeaponAttributeId.Scope))
 
             if self._notes:
                 for note in self._notes:
@@ -867,7 +867,7 @@ class BlingAccessory(WeaponAccessory):
             componentString='Bling',
             defaultAttachType=_AttachmentType.Fixed)
 
-        self._costOption = construction.FloatComponentOption(
+        self._costOption = construction.FloatOption(
             id='Cost',
             name='Cost',
             value=0,
@@ -929,7 +929,7 @@ class FlashlightAccessory(WeaponAccessory):
         # only be included once
         if self.isAttached() and context.isPrimary(sequence=sequence):
             operations.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 
@@ -1088,7 +1088,7 @@ class LowTechGunCameraAccessory(GunCameraAccessory):
         # only be included once
         if self.isAttached() and context.isPrimary(sequence=sequence):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 

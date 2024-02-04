@@ -12,25 +12,25 @@ def serialiseOptions(
     options = []
     for option in component.options():
         value = option.value()
-        if isinstance(option, construction.BooleanComponentOption):
+        if isinstance(option, construction.BooleanOption):
             assert(isinstance(value, bool))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, construction.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerOption):
             assert(isinstance(value, int))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, construction.FloatComponentOption):
+        elif isinstance(option, construction.FloatOption):
             assert(isinstance(value, float) or isinstance(value, int))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, construction.EnumComponentOption):
+        elif isinstance(option, construction.EnumOption):
             assert(value == None or isinstance(value, enum.Enum))
             options.append({
                 'id': option.id(),
@@ -74,13 +74,13 @@ def deserialiseOptions(
                 continue
             optionValue = pendingOptions[optionId]
 
-            if isinstance(option, construction.BooleanComponentOption):
+            if isinstance(option, construction.BooleanOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, construction.IntegerComponentOption):
+            elif isinstance(option, construction.IntegerOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, construction.FloatComponentOption):
+            elif isinstance(option, construction.FloatOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, construction.EnumComponentOption):
+            elif isinstance(option, construction.EnumOption):
                 enumValue = None
                 if optionValue != None:
                     enumType = option.type()

@@ -51,7 +51,7 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
     def __init__(self) -> None:
         super().__init__()
 
-        self._quickdrawModifierOption = construction.IntegerComponentOption(
+        self._quickdrawModifierOption = construction.IntegerOption(
             id='QuickdrawModifier',
             name='Secondary Weapon Quickdraw Modifier',
             value=-1,
@@ -127,7 +127,7 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
                 name='Specified Secondary Weapon Quickdraw Modifier')
 
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=quickdrawModifier)))
 

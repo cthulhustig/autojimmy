@@ -168,7 +168,7 @@ class ConventionalReceiver(gunsmith.ReceiverInterface):
         self._baseDisasterHeatThreshold = baseDisasterHeatThreshold
         self._baseRecoil = baseRecoil
 
-        self._baseEmissionsSignatureOption = construction.EnumComponentOption(
+        self._baseEmissionsSignatureOption = construction.EnumOption(
             id='EmissionsSignature',
             name='Base Emissions Signature',
             type=gunsmith.Signature,
@@ -224,43 +224,43 @@ class ConventionalReceiver(gunsmith.ReceiverInterface):
         step.setCredits(credits=construction.ConstantModifier(value=self._baseCost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=self._baseCapacity))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             value=self._baseQuickdraw if context.isPrimary(sequence=sequence) else _SecondaryWeaponBaseQuickdraw))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+            attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
             value=self._baseHeatDissipation))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+            attributeId=gunsmith.WeaponAttributeId.OverheatThreshold,
             value=self._baseOverheatThreshold))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+            attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold,
             value=self._baseDangerHeatThreshold))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+            attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold,
             value=self._baseDisasterHeatThreshold))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.BarrelCount,
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount,
             value=self._BarrelCount))
 
         if self._baseRecoil:
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Recoil,
+                attributeId=gunsmith.WeaponAttributeId.Recoil,
                 value=self._baseRecoil))
 
         emissionsSignature = self._baseEmissionsSignatureOption.value()
         if emissionsSignature:
             assert(isinstance(emissionsSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                attributeId=gunsmith.WeaponAttributeId.EmissionsSignature,
                 value=emissionsSignature))
 
         return step
@@ -413,7 +413,7 @@ class HeavyWeaponReceiver(ConventionalReceiver):
             baseDangerHeatThreshold=60,
             baseDisasterHeatThreshold=90)
 
-        self._baseRecoilOption = construction.IntegerComponentOption(
+        self._baseRecoilOption = construction.IntegerOption(
             id='Recoil',
             name='Base Recoil',
             value=HeavyWeaponReceiver._DefaultBaseRecoilValue,
@@ -437,7 +437,7 @@ class HeavyWeaponReceiver(ConventionalReceiver):
             value=self._baseRecoilOption.value(),
             name=f'Specified {self.componentString()} Receiver Base Recoil')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Recoil,
+            attributeId=gunsmith.WeaponAttributeId.Recoil,
             value=baseRecoil))
 
         return step
@@ -516,7 +516,7 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
             baseCost: typing.Union[int, float, common.ScalarCalculation],
             baseRange: typing.Union[int, common.ScalarCalculation],
             baseCapacity: typing.Union[int, common.ScalarCalculation] = None,
-            sizeTrait: typing.Optional[gunsmith.WeaponAttribute] = None
+            sizeTrait: typing.Optional[gunsmith.WeaponAttributeId] = None
             ) -> None:
         super().__init__()
 
@@ -548,7 +548,7 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
         self._baseCapacity = baseCapacity
         self._sizeTrait = sizeTrait
 
-        self._basePhysicalSignatureOption = construction.EnumComponentOption(
+        self._basePhysicalSignatureOption = construction.EnumOption(
             id='PhysicalSignature',
             name='Base Physical Signature',
             type=gunsmith.Signature,
@@ -556,7 +556,7 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=LauncherReceiver._BasePhysicalSignatureOptionDescription)
 
-        self._baseEmissionsSignatureOption = construction.EnumComponentOption(
+        self._baseEmissionsSignatureOption = construction.EnumOption(
             id='EmissionsSignature',
             name='Base Emissions Signature',
             type=gunsmith.Signature,
@@ -564,41 +564,41 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=LauncherReceiver._BaseEmissionsSignatureOptionDescription)
 
-        self._enableHeatOption = construction.BooleanComponentOption(
+        self._enableHeatOption = construction.BooleanOption(
             id='EnableBaseHeat',
             name='Specify Base Heat Values',
             value=False,
             description=_EnableBaseHeatOptionDescription)
 
-        self._baseHeatGenerationOption = construction.IntegerComponentOption(
+        self._baseHeatGenerationOption = construction.IntegerOption(
             id='HeatGeneration',
             name='Base Heat Per Attack',
             value=0,
             minValue=0,
             description=_BaseHeatGenerationOptionDescription)
 
-        self._baseHeatDissipationOption = construction.IntegerComponentOption(
+        self._baseHeatDissipationOption = construction.IntegerOption(
             id='HeatDissipation',
             name='Base Heat Dissipation',
             value=0,
             minValue=0,
             description=_BaseHeatDissipationOptionDescription)
 
-        self._baseOverheatThresholdOption = construction.IntegerComponentOption(
+        self._baseOverheatThresholdOption = construction.IntegerOption(
             id='OverheatThreshold',
             name='Base Overheat Threshold',
             value=0,
             minValue=0,
             description=_BaseOverheatThresholdOptionDescription)
 
-        self._baseDangerHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDangerHeatThresholdOption = construction.IntegerOption(
             id='DangerHeatThreshold',
             name='Base Danger Heat Threshold',
             value=0,
             minValue=0,
             description=_BaseDangerHeatThresholdOptionDescription)
 
-        self._baseDisasterHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDisasterHeatThresholdOption = construction.IntegerOption(
             id='DisasterHeatThreshold',
             name='Base Disaster Heat Threshold',
             value=0,
@@ -667,34 +667,34 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
             weight=construction.ConstantModifier(value=self._baseWeight))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._baseRange))
 
         if self._baseCapacity:
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
                 value=self._baseCapacity))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.BarrelCount,
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount,
             value=self._BarrelCount))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             value=self._QuickdrawModifier if context.isPrimary(sequence=sequence) else _SecondaryWeaponBaseQuickdraw))
 
         physicalSignature = self._basePhysicalSignatureOption.value()
         if physicalSignature:
             assert(isinstance(physicalSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                 value=physicalSignature))
 
         emissionsSignature = self._baseEmissionsSignatureOption.value()
         if emissionsSignature:
             assert(isinstance(emissionsSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                attributeId=gunsmith.WeaponAttributeId.EmissionsSignature,
                 value=emissionsSignature))
 
         if self._enableHeatOption.value():
@@ -702,35 +702,35 @@ class LauncherReceiver(gunsmith.ReceiverInterface):
                 value=self._baseHeatGenerationOption.value(),
                 name='Specified Base Heat Generation')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatGeneration,
+                attributeId=gunsmith.WeaponAttributeId.HeatGeneration,
                 value=baseHeatGeneration))
 
             baseHeatDissipation = common.ScalarCalculation(
                 value=self._baseHeatDissipationOption.value(),
                 name='Specified Base Heat Dissipation')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
                 value=baseHeatDissipation))
 
             baseOverheatThreshold = common.ScalarCalculation(
                 value=self._baseOverheatThresholdOption.value(),
                 name='Specified Base Overheat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.OverheatThreshold,
                 value=baseOverheatThreshold))
 
             baseDangerHeatThreshold = common.ScalarCalculation(
                 value=self._baseDangerHeatThresholdOption.value(),
                 name='Specified Base Danger Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold,
                 value=baseDangerHeatThreshold))
 
             baseDisasterHeaHeatThreshold = common.ScalarCalculation(
                 value=self._baseDisasterHeatThresholdOption.value(),
                 name='Specified Base Disaster Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold,
                 value=baseDisasterHeaHeatThreshold))
 
         if self._sizeTrait:
@@ -760,7 +760,7 @@ class SingleShotLauncherReceiver(LauncherReceiver):
             baseCost=baseCost,
             baseRange=baseRange,
             baseCapacity=1,
-            sizeTrait=gunsmith.WeaponAttribute.Bulky)
+            sizeTrait=gunsmith.WeaponAttributeId.Bulky)
 
 class LightSingleShotLauncherReceiver(SingleShotLauncherReceiver):
     """
@@ -815,7 +815,7 @@ class SemiAutomaticLauncherReceiver(LauncherReceiver):
             baseCost: typing.Union[int, float, common.ScalarCalculation],
             baseRange: typing.Union[int, common.ScalarCalculation],
             baseCapacity: typing.Union[int, common.ScalarCalculation] = None,
-            sizeTrait: typing.Optional[gunsmith.WeaponAttribute] = None
+            sizeTrait: typing.Optional[gunsmith.WeaponAttributeId] = None
             ) -> None:
         super().__init__(
             componentString=componentString,
@@ -849,7 +849,7 @@ class LightSemiAutomaticLauncherReceiver(SemiAutomaticLauncherReceiver):
             baseCost=400,
             baseRange=200,
             baseCapacity=3,
-            sizeTrait=gunsmith.WeaponAttribute.Bulky)
+            sizeTrait=gunsmith.WeaponAttributeId.Bulky)
 
 class StandardSemiAutomaticLauncherReceiver(SemiAutomaticLauncherReceiver):
     """
@@ -872,7 +872,7 @@ class StandardSemiAutomaticLauncherReceiver(SemiAutomaticLauncherReceiver):
             baseCost=500,
             baseRange=300,
             baseCapacity=3,
-            sizeTrait=gunsmith.WeaponAttribute.VeryBulky)
+            sizeTrait=gunsmith.WeaponAttributeId.VeryBulky)
 
 class SupportLauncherReceiver(LauncherReceiver):
     _BaseCapacityOptionDescription = \
@@ -901,7 +901,7 @@ class SupportLauncherReceiver(LauncherReceiver):
             baseCost=baseCost,
             baseRange=baseRange)
 
-        self._baseCapacityOption = construction.IntegerComponentOption(
+        self._baseCapacityOption = construction.IntegerOption(
             id='Capacity',
             name='Base Capacity',
             value=1,
@@ -924,7 +924,7 @@ class SupportLauncherReceiver(LauncherReceiver):
             value=self._baseCapacityOption.value(),
             name='Specified Base Capacity')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=baseCapacity))
 
         return step
@@ -1121,7 +1121,7 @@ class _DirectedEnergyReceiverImpl(object):
         self._baseRange = baseRange
         self._baseQuickdraw = baseQuickdraw
 
-        self._baseDamageDiceOption = construction.IntegerComponentOption(
+        self._baseDamageDiceOption = construction.IntegerOption(
             id='DamageDice',
             name='Base Damage Dice',
             value=self._maxDamageDice.value(),
@@ -1129,7 +1129,7 @@ class _DirectedEnergyReceiverImpl(object):
             maxValue=self._maxDamageDice.value(),
             description='Specify the Base Damage Dice for the weapon.')
 
-        self._basePhysicalSignatureOption = construction.EnumComponentOption(
+        self._basePhysicalSignatureOption = construction.EnumOption(
             id='PhysicalSignature',
             name='Base Physical Signature',
             type=gunsmith.Signature,
@@ -1137,7 +1137,7 @@ class _DirectedEnergyReceiverImpl(object):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=_DirectedEnergyReceiverImpl._BasePhysicalSignatureOptionDescription)
 
-        self._baseEmissionsSignatureOption = construction.EnumComponentOption(
+        self._baseEmissionsSignatureOption = construction.EnumOption(
             id='EmissionsSignature',
             name='Base Emissions Signature',
             type=gunsmith.Signature,
@@ -1145,34 +1145,34 @@ class _DirectedEnergyReceiverImpl(object):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=_DirectedEnergyReceiverImpl._BaseEmissionsSignatureOptionDescription)
 
-        self._enableHeatOption = construction.BooleanComponentOption(
+        self._enableHeatOption = construction.BooleanOption(
             id='EnableBaseHeat',
             name='Specify Base Heat Values',
             value=False,
             description=_EnableBaseHeatOptionDescription)
 
-        self._baseHeatDissipationOption = construction.IntegerComponentOption(
+        self._baseHeatDissipationOption = construction.IntegerOption(
             id='HeatDissipation',
             name='Base Heat Dissipation',
             value=0,
             minValue=0,
             description=_BaseHeatDissipationOptionDescription)
 
-        self._baseOverheatThresholdOption = construction.IntegerComponentOption(
+        self._baseOverheatThresholdOption = construction.IntegerOption(
             id='OverheatThreshold',
             name='Base Overheat Threshold',
             value=0,
             minValue=0,
             description=_BaseOverheatThresholdOptionDescription)
 
-        self._baseDangerHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDangerHeatThresholdOption = construction.IntegerOption(
             id='DangerHeatThreshold',
             name='Base Danger Heat Threshold',
             value=0,
             minValue=0,
             description=_BaseDangerHeatThresholdOptionDescription)
 
-        self._baseDisasterHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDisasterHeatThresholdOption = construction.IntegerOption(
             id='DisasterHeatThreshold',
             name='Base Disaster Heat Threshold',
             value=0,
@@ -1236,7 +1236,7 @@ class _DirectedEnergyReceiverImpl(object):
             value=self._baseDamageDiceOption.value(),
             name='Specified Receiver Damage Dice')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Damage,
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=common.DiceRoll(
                 count=damageDice,
                 type=common.DieType.D6)))
@@ -1245,48 +1245,48 @@ class _DirectedEnergyReceiverImpl(object):
             value=damageDice,
             name=f'{self.componentString()} Receiver Power Per Shot')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.PowerPerShot,
+            attributeId=gunsmith.WeaponAttributeId.PowerPerShot,
             value=powerPerShot))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.MaxDamageDice,
+            attributeId=gunsmith.WeaponAttributeId.MaxDamageDice,
             value=self._maxDamageDice))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._baseRange))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.BarrelCount,
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount,
             value=self._BarrelCount))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             value=self._baseQuickdraw if context.isPrimary(sequence=sequence) else _SecondaryWeaponBaseQuickdraw))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.ZeroG))
+            attributeId=gunsmith.WeaponAttributeId.ZeroG))
 
         basePenetration = \
             _DirectedEnergyReceiverImpl._CoreRulesCompatibilityPenetrationTrait \
             if context.isRuleEnabled(rule=gunsmith.RuleId.CoreRulesCompatible) else \
             _DirectedEnergyReceiverImpl._StandardPenetrationTrait
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Penetration,
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
             value=basePenetration))
 
         physicalSignature = self._basePhysicalSignatureOption.value()
         if physicalSignature:
             assert(isinstance(physicalSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                 value=physicalSignature))
 
         emissionsSignature = self._baseEmissionsSignatureOption.value()
         if emissionsSignature:
             assert(isinstance(emissionsSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                attributeId=gunsmith.WeaponAttributeId.EmissionsSignature,
                 value=emissionsSignature))
 
         if self._enableHeatOption.value():
@@ -1294,28 +1294,28 @@ class _DirectedEnergyReceiverImpl(object):
                 value=self._baseHeatDissipationOption.value(),
                 name='Specified Base Heat Dissipation')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
                 value=baseHeatDissipation))
 
             baseOverheatThreshold = common.ScalarCalculation(
                 value=self._baseOverheatThresholdOption.value(),
                 name='Specified Base Overheat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.OverheatThreshold,
                 value=baseOverheatThreshold))
 
             baseDangerHeatThreshold = common.ScalarCalculation(
                 value=self._baseDangerHeatThresholdOption.value(),
                 name='Specified Base Danger Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold,
                 value=baseDangerHeatThreshold))
 
             baseDisasterHeaHeatThreshold = common.ScalarCalculation(
                 value=self._baseDisasterHeatThresholdOption.value(),
                 name='Specified Base Disaster Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold,
                 value=baseDisasterHeaHeatThreshold))
 
 class _MinimalDirectedEnergyReceiverImpl(_DirectedEnergyReceiverImpl):
@@ -1504,7 +1504,7 @@ class EnergyCartridgeReceiver(gunsmith.ReceiverInterface):
         super().__init__()
         self._impl = impl
 
-        self._baseCapacityOption = construction.IntegerComponentOption(
+        self._baseCapacityOption = construction.IntegerOption(
             id='BaseCapacity',
             name='Base Capacity',
             value=1,
@@ -1557,7 +1557,7 @@ class EnergyCartridgeReceiver(gunsmith.ReceiverInterface):
             value=self._baseCapacityOption.value(),
             name='Specified Receiver Base Capacity')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=baseCapacity))
 
         context.applyStep(
@@ -1705,21 +1705,21 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
         self._baseQuickdraw = baseQuickdraw
         self._baseBlast = baseBlast
 
-        self._fuelWeightOption = construction.FloatComponentOption(
+        self._fuelWeightOption = construction.FloatOption(
             id='FuelWeight',
             name='Fuel Weight',
             value=1.0,
             minValue=0.1,
             description='Specify the weight of fuel the weapon can hold.')
 
-        self._propellantWeightOption = construction.FloatComponentOption(
+        self._propellantWeightOption = construction.FloatOption(
             id='PropellantWeight',
             name='Propellant Weight',
             value=1.0,
             minValue=0.1,
             description='Specify the weight of propellant the weapon can hold.')
 
-        self._physicalSignatureOption = construction.EnumComponentOption(
+        self._physicalSignatureOption = construction.EnumOption(
             id='PhysicalSignature',
             name='Base Physical Signature',
             type=gunsmith.Signature,
@@ -1727,7 +1727,7 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=ProjectorReceiver._BasePhysicalSignatureOptionDescription)
 
-        self._emissionsSignatureOption = construction.EnumComponentOption(
+        self._emissionsSignatureOption = construction.EnumOption(
             id='EmissionsSignature',
             name='Base Emissions Signature',
             type=gunsmith.Signature,
@@ -1735,41 +1735,41 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
             isOptional=True, # Allow it to be optional as the rules don't explicitly give values
             description=ProjectorReceiver._BaseEmissionsSignatureOptionDescription)
 
-        self._enableHeatOption = construction.BooleanComponentOption(
+        self._enableHeatOption = construction.BooleanOption(
             id='EnableBaseHeat',
             name='Specify Base Heat Values',
             value=False,
             description=_EnableBaseHeatOptionDescription)
 
-        self._baseHeatGenerationOption = construction.IntegerComponentOption(
+        self._baseHeatGenerationOption = construction.IntegerOption(
             id='HeatGeneration',
             name='Base Heat Per Attack',
             value=0,
             minValue=0,
             description=_BaseHeatGenerationOptionDescription)
 
-        self._baseHeatDissipationOption = construction.IntegerComponentOption(
+        self._baseHeatDissipationOption = construction.IntegerOption(
             id='HeatDissipation',
             name='Base Heat Dissipation',
             value=0,
             minValue=0,
             description=_BaseHeatDissipationOptionDescription)
 
-        self._baseOverheatThresholdOption = construction.IntegerComponentOption(
+        self._baseOverheatThresholdOption = construction.IntegerOption(
             id='OverheatThreshold',
             name='Base Overheat Threshold',
             value=0,
             minValue=0,
             description=_BaseOverheatThresholdOptionDescription)
 
-        self._baseDangerHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDangerHeatThresholdOption = construction.IntegerOption(
             id='DangerHeatThreshold',
             name='Base Danger Heat Threshold',
             value=0,
             minValue=0,
             description=_BaseDangerHeatThresholdOptionDescription)
 
-        self._baseDisasterHeatThresholdOption = construction.IntegerComponentOption(
+        self._baseDisasterHeatThresholdOption = construction.IntegerOption(
             id='DisasterHeatThreshold',
             name='Base Disaster Heat Threshold',
             value=0,
@@ -1852,41 +1852,41 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.PropellantWeight,
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight,
             value=propellantWeight))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.FuelWeight,
+            attributeId=gunsmith.WeaponAttributeId.FuelWeight,
             value=fuelWeight))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.BarrelCount,
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount,
             value=self._BarrelCount))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             value=self._baseQuickdraw if context.isPrimary(sequence=sequence) else _SecondaryWeaponBaseQuickdraw))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Blast,
+            attributeId=gunsmith.WeaponAttributeId.Blast,
             value=self._baseBlast))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
             value=self._HazardousTrait))
 
         physicalSignature = self._physicalSignatureOption.value()
         if physicalSignature:
             assert(isinstance(physicalSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                 value=physicalSignature))
 
         emissionsSignature = self._emissionsSignatureOption.value()
         if emissionsSignature:
             assert(isinstance(emissionsSignature, gunsmith.Signature))
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                attributeId=gunsmith.WeaponAttributeId.EmissionsSignature,
                 value=emissionsSignature))
 
         if self._enableHeatOption.value():
@@ -1894,35 +1894,35 @@ class ProjectorReceiver(gunsmith.ReceiverInterface):
                 value=self._baseHeatGenerationOption.value(),
                 name='Specified Base Heat Generation')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatGeneration,
+                attributeId=gunsmith.WeaponAttributeId.HeatGeneration,
                 value=baseHeatGeneration))
 
             baseHeatDissipation = common.ScalarCalculation(
                 value=self._baseHeatDissipationOption.value(),
                 name='Specified Base Heat Dissipation')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
                 value=baseHeatDissipation))
 
             baseOverheatThreshold = common.ScalarCalculation(
                 value=self._baseOverheatThresholdOption.value(),
                 name='Specified Base Overheat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.OverheatThreshold,
                 value=baseOverheatThreshold))
 
             baseDangerHeatThreshold = common.ScalarCalculation(
                 value=self._baseDangerHeatThresholdOption.value(),
                 name='Specified Base Danger Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold,
                 value=baseDangerHeatThreshold))
 
             baseDisasterHeaHeatThreshold = common.ScalarCalculation(
                 value=self._baseDisasterHeatThresholdOption.value(),
                 name='Specified Base Disaster Heat Threshold')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+                attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold,
                 value=baseDisasterHeaHeatThreshold))
 
         loadWeight = propellantWeight.value() + fuelWeight.value()

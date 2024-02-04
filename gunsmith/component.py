@@ -5,8 +5,6 @@ import typing
 class WeaponComponentInterface(construction.ComponentInterface):
     pass
 
-# TODO: I do wonder if these are actually needed when in most (possibly all) cases there
-# is just a single class that implements each of the interfaces.
 class ReceiverInterface(WeaponComponentInterface):
     pass
 

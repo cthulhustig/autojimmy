@@ -90,7 +90,7 @@ class DesiredCapacityModification(CapacityModification):
     def __init__(self) -> None:
         super().__init__()
 
-        self._requiredCapacityOption = construction.IntegerComponentOption(
+        self._requiredCapacityOption = construction.IntegerOption(
             id='Capacity',
             name='Required Capacity',
             value=1,
@@ -112,7 +112,7 @@ class DesiredCapacityModification(CapacityModification):
             ) -> None:
         currentCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(currentCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
         maxCapacity = common.Calculator.floor(
@@ -176,7 +176,7 @@ class DesiredCapacityModification(CapacityModification):
             value=costModifierPercentage))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=capacity))
 
         context.applyStep(
@@ -202,7 +202,7 @@ class IncreaseCapacityModification(CapacityModification):
     def __init__(self) -> None:
         super().__init__()
 
-        self._increaseLevelsOption = construction.IntegerComponentOption(
+        self._increaseLevelsOption = construction.IntegerOption(
             id='Levels',
             name='Increase Levels',
             value=1,
@@ -250,7 +250,7 @@ class IncreaseCapacityModification(CapacityModification):
             rhs=common.ScalarCalculation(value=10),
             name=f'{self.componentString()} Ammo Capacity Modifier Percentage')
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityModifierPercentage,
                 roundDown=True)))
@@ -300,7 +300,7 @@ class DecreaseCapacityModification(CapacityModification):
                 value=decreaseLevels,
                 name=f'Capacity Decrease levels')
 
-        self._decreaseLevelsOption = construction.IntegerComponentOption(
+        self._decreaseLevelsOption = construction.IntegerOption(
             id='Levels',
             name='Decrease Levels',
             value=1,
@@ -375,7 +375,7 @@ class DecreaseCapacityModification(CapacityModification):
             rhs=common.ScalarCalculation(value=-10),
             name=f'{self.componentString()} Ammo Capacity Modifier Percentage')
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             modifier=construction.PercentageModifier(
                 value=capacityModifierPercentage,
                 roundDown=True)))
@@ -392,7 +392,7 @@ class DecreaseCapacityModification(CapacityModification):
             ) -> int:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         if not isinstance(ammoCapacity, common.ScalarCalculation):
             return 0
 
@@ -404,7 +404,7 @@ class DecreaseCapacityModification(CapacityModification):
             # equal to the number of barrels
             barrelCount = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.BarrelCount)
+                attributeId=gunsmith.WeaponAttributeId.BarrelCount)
             if not isinstance(ammoCapacity, common.ScalarCalculation):
                 return 0
             minCapacity = barrelCount.value()

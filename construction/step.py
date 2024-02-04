@@ -3,142 +3,10 @@ import enum
 import construction
 import typing
 
-class FactorInterface(object):
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        raise RuntimeError('The calculations method must be implemented by the class derived from Factor')
-
-    def displayString(self) -> str:
-        raise RuntimeError('The displayString method must be implemented by the class derived from Factor')
-
-class StringFactor(FactorInterface):
-    def __init__(
-            self,
-            string: str
-            ) -> None:
-        super().__init__()
-        self._string = string
-
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        return []
-
-    def displayString(self) -> str:
-        return self._string
-
-# The NonModifyingFactor is used when we want the factor details to be displayed in the manifest but not
-# applied to the weapon (e.g. secondary weapon factors or munitions quantities).
-class NonModifyingFactor(FactorInterface):
-    def __init__(
-            self,
-            factor: FactorInterface,
-            prefix: typing.Optional[str] = None
-            ) -> None:
-        super().__init__()
-        self._factor = factor
-        self._prefix = prefix
-
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        return self._factor.calculations()
-
-    def displayString(self) -> str:
-        if self._prefix:
-            return self._prefix + self._factor.displayString()
-        return self._factor.displayString()
-
-class AttributeFactor(FactorInterface):
-    def applyTo(
-            self,
-            attributeGroup: construction.AttributesGroup
-            ) -> None:
-        raise RuntimeError('The applyTo method must be implemented by the class derived from TraitFactor')
-
-class SetAttributeFactor(AttributeFactor):
-    def __init__(
-            self,
-            attributeId: construction.ConstructionAttribute,
-            value: typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]] = None
-            ) -> None:
-        super().__init__()
-        assert(isinstance(attributeId, construction.ConstructionAttribute))
-        self._attributeId = attributeId
-        self._value = value
-
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        if isinstance(self._value, common.ScalarCalculation):
-            return [self._value]
-        elif isinstance(self._value, common.DiceRoll):
-            return [self._value.dieCount(), self._value.constant()]
-        return []
-
-    def displayString(self) -> str:
-        displayString = self._attributeId.value
-
-        if isinstance(self._value, common.ScalarCalculation):
-            displayString += ' = ' + common.formatNumber(
-                number=self._value.value(),
-                alwaysIncludeSign=False)
-        elif isinstance(self._value, common.DiceRoll):
-            displayString += ' = ' + str(self._value)
-        elif isinstance(self._value, enum.Enum):
-            displayString += ' = ' + str(self._value.value)
-
-        return displayString
-
-    def applyTo(
-            self,
-            attributeGroup: construction.AttributesGroup
-            ) -> None:
-        attributeGroup.setAttribute(
-            attributeId=self._attributeId,
-            value=self._value)
-
-class ModifyAttributeFactor(AttributeFactor):
-    def __init__(
-            self,
-            attributeId: construction.ConstructionAttribute,
-            modifier: construction.ModifierInterface
-            ) -> None:
-        super().__init__()
-        assert(isinstance(attributeId, construction.ConstructionAttribute))
-        assert(isinstance(modifier, construction.ModifierInterface))
-        self._attributeId = attributeId
-        self._modifier = modifier
-
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        return self._modifier.calculations()
-
-    def displayString(self) -> str:
-        return self._attributeId.value + ' ' + \
-            self._modifier.displayString()
-
-    def applyTo(
-            self,
-            attributeGroup: construction.AttributesGroup
-            ) -> None:
-        attributeGroup.modifyAttribute(
-            attributeId=self._attributeId,
-            modifier=self._modifier)
-
-class DeleteAttributeFactor(AttributeFactor):
-    def __init__(
-            self,
-            attributeId: construction.ConstructionAttribute
-            ) -> None:
-        super().__init__()
-        assert(isinstance(attributeId, construction.ConstructionAttribute))
-        self._attributeId = attributeId
-
-    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        return []
-
-    def displayString(self) -> str:
-        return 'Removes ' + self._attributeId.value
-
-    def applyTo(
-            self,
-            attributeGroup: construction.AttributesGroup
-            ) -> None:
-        attributeGroup.deleteAttribute(attributeId=self._attributeId)
-
+# Construction implementations should create an enum derived from this class
+# with entries for each of the costs that a component can have (e.g. credits,
+# weight). The value of the entry should be the human readable name of the
+# attribute to be displayed to the user
 class ConstructionCost(enum.Enum):
     pass
 
@@ -148,7 +16,7 @@ class ConstructionStep(object):
             name: str,
             type: str,
             costs: typing.Optional[typing.Mapping[ConstructionCost, construction.NumericModifierInterface]] = None,
-            factors: typing.Optional[typing.Iterable[FactorInterface]] = None,
+            factors: typing.Optional[typing.Iterable[construction.FactorInterface]] = None,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         self._name = name
@@ -179,12 +47,12 @@ class ConstructionStep(object):
     def costs(self) -> typing.Mapping[ConstructionCost, construction.NumericModifierInterface]:
         return self._costs
 
-    def factors(self) -> typing.Iterable[FactorInterface]:
+    def factors(self) -> typing.Iterable[construction.FactorInterface]:
         return self._factors
 
     def addFactor(
             self,
-            factor: FactorInterface
+            factor: construction.FactorInterface
             ) -> None:
         self._factors.append(factor)
 

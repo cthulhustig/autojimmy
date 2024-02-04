@@ -17,7 +17,7 @@ class Distraction(enum.Enum):
     Potent = 'Potent'
     Overwhelming = 'Overwhelming'
 
-class WeaponAttribute(construction.ConstructionAttribute):
+class WeaponAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Weapons (Numeric unless otherwise stated)
     Range = 'Range'
     Damage = 'Damage' # This is a DiceRoll
@@ -92,97 +92,97 @@ class WeaponAttribute(construction.ConstructionAttribute):
 
 
 TraitAttributeIds = [
-    WeaponAttribute.Bulky,
-    WeaponAttribute.VeryBulky,
-    WeaponAttribute.Scope,
-    WeaponAttribute.ZeroG,
-    WeaponAttribute.Corrosive,
-    WeaponAttribute.RF,
-    WeaponAttribute.VRF,
-    WeaponAttribute.Stun,
-    WeaponAttribute.Auto,
-    WeaponAttribute.Inaccurate,
-    WeaponAttribute.Hazardous,
-    WeaponAttribute.Unreliable,
-    WeaponAttribute.SlowLoader,
-    WeaponAttribute.Ramshackle,
-    WeaponAttribute.AP,
-    WeaponAttribute.LoPen,
-    WeaponAttribute.Spread,
-    WeaponAttribute.Blast,
-    WeaponAttribute.Incendiary,
-    WeaponAttribute.Burn,
-    WeaponAttribute.PulseIntensity,
-    WeaponAttribute.PhysicalSignature,
-    WeaponAttribute.EmissionsSignature,
-    WeaponAttribute.Distraction
+    WeaponAttributeId.Bulky,
+    WeaponAttributeId.VeryBulky,
+    WeaponAttributeId.Scope,
+    WeaponAttributeId.ZeroG,
+    WeaponAttributeId.Corrosive,
+    WeaponAttributeId.RF,
+    WeaponAttributeId.VRF,
+    WeaponAttributeId.Stun,
+    WeaponAttributeId.Auto,
+    WeaponAttributeId.Inaccurate,
+    WeaponAttributeId.Hazardous,
+    WeaponAttributeId.Unreliable,
+    WeaponAttributeId.SlowLoader,
+    WeaponAttributeId.Ramshackle,
+    WeaponAttributeId.AP,
+    WeaponAttributeId.LoPen,
+    WeaponAttributeId.Spread,
+    WeaponAttributeId.Blast,
+    WeaponAttributeId.Incendiary,
+    WeaponAttributeId.Burn,
+    WeaponAttributeId.PulseIntensity,
+    WeaponAttributeId.PhysicalSignature,
+    WeaponAttributeId.EmissionsSignature,
+    WeaponAttributeId.Distraction
 ]
 
 ConventionalWeaponAttributeIds = [
-    WeaponAttribute.Range,
-    WeaponAttribute.Damage,
-    WeaponAttribute.AmmoCapacity,
-    WeaponAttribute.Quickdraw,
-    WeaponAttribute.Penetration,
-    WeaponAttribute.Recoil,
-    WeaponAttribute.AutoRecoil,
-    WeaponAttribute.AmmoCost,
-    WeaponAttribute.BarrelCount,
+    WeaponAttributeId.Range,
+    WeaponAttributeId.Damage,
+    WeaponAttributeId.AmmoCapacity,
+    WeaponAttributeId.Quickdraw,
+    WeaponAttributeId.Penetration,
+    WeaponAttributeId.Recoil,
+    WeaponAttributeId.AutoRecoil,
+    WeaponAttributeId.AmmoCost,
+    WeaponAttributeId.BarrelCount,
 ]
 
 LauncherWeaponAttributeIds = [
-    WeaponAttribute.Range,
-    WeaponAttribute.Damage,
-    WeaponAttribute.AmmoCapacity,
-    WeaponAttribute.Quickdraw,
-    WeaponAttribute.AmmoCost,
-    WeaponAttribute.BarrelCount
+    WeaponAttributeId.Range,
+    WeaponAttributeId.Damage,
+    WeaponAttributeId.AmmoCapacity,
+    WeaponAttributeId.Quickdraw,
+    WeaponAttributeId.AmmoCost,
+    WeaponAttributeId.BarrelCount
 ]
 
 PowerPackEnergyWeaponAttributeIds = [
-    WeaponAttribute.Range,
-    WeaponAttribute.Damage,
-    WeaponAttribute.AmmoCapacity,
-    WeaponAttribute.Quickdraw,
-    WeaponAttribute.Penetration,
-    WeaponAttribute.BarrelCount,
-    WeaponAttribute.Power,
-    WeaponAttribute.PowerPerShot,
-    WeaponAttribute.MaxDamageDice,
+    WeaponAttributeId.Range,
+    WeaponAttributeId.Damage,
+    WeaponAttributeId.AmmoCapacity,
+    WeaponAttributeId.Quickdraw,
+    WeaponAttributeId.Penetration,
+    WeaponAttributeId.BarrelCount,
+    WeaponAttributeId.Power,
+    WeaponAttributeId.PowerPerShot,
+    WeaponAttributeId.MaxDamageDice,
 ]
 
 CartridgeEnergyWeaponAttributeIds = [
-    WeaponAttribute.Range,
-    WeaponAttribute.Damage,
-    WeaponAttribute.AmmoCapacity,
-    WeaponAttribute.Quickdraw,
-    WeaponAttribute.Penetration,
-    WeaponAttribute.AmmoCost,
-    WeaponAttribute.BarrelCount,
-    WeaponAttribute.Power,
-    WeaponAttribute.PowerPerShot,
-    WeaponAttribute.MaxDamageDice
+    WeaponAttributeId.Range,
+    WeaponAttributeId.Damage,
+    WeaponAttributeId.AmmoCapacity,
+    WeaponAttributeId.Quickdraw,
+    WeaponAttributeId.Penetration,
+    WeaponAttributeId.AmmoCost,
+    WeaponAttributeId.BarrelCount,
+    WeaponAttributeId.Power,
+    WeaponAttributeId.PowerPerShot,
+    WeaponAttributeId.MaxDamageDice
 ]
 
 ProjectorWeaponAttributeIds = [
-    WeaponAttribute.Range,
-    WeaponAttribute.Damage,
-    WeaponAttribute.AmmoCapacity,
-    WeaponAttribute.Quickdraw,
-    WeaponAttribute.BarrelCount,
-    WeaponAttribute.FuelWeight,
-    WeaponAttribute.FuelCost,
-    WeaponAttribute.PropellantWeight,
-    WeaponAttribute.PropellantCost
+    WeaponAttributeId.Range,
+    WeaponAttributeId.Damage,
+    WeaponAttributeId.AmmoCapacity,
+    WeaponAttributeId.Quickdraw,
+    WeaponAttributeId.BarrelCount,
+    WeaponAttributeId.FuelWeight,
+    WeaponAttributeId.FuelCost,
+    WeaponAttributeId.PropellantWeight,
+    WeaponAttributeId.PropellantCost
 ]
 
 ReliabilityAttributeIds = [
-    WeaponAttribute.HeatGeneration,
-    WeaponAttribute.AutoHeatGeneration,
-    WeaponAttribute.HeatDissipation,
-    WeaponAttribute.OverheatThreshold,
-    WeaponAttribute.DangerHeatThreshold,
-    WeaponAttribute.DisasterHeatThreshold,
-    WeaponAttribute.MalfunctionDM,
-    WeaponAttribute.Armour
+    WeaponAttributeId.HeatGeneration,
+    WeaponAttributeId.AutoHeatGeneration,
+    WeaponAttributeId.HeatDissipation,
+    WeaponAttributeId.OverheatThreshold,
+    WeaponAttributeId.DangerHeatThreshold,
+    WeaponAttributeId.DisasterHeatThreshold,
+    WeaponAttributeId.MalfunctionDM,
+    WeaponAttributeId.Armour
 ]

@@ -1,5 +1,5 @@
 from .rules import *
-from .attributes import *
+from .attribute import *
 from .construction import *
 from .step import *
 from .component import *

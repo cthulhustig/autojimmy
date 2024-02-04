@@ -121,7 +121,7 @@ class Barrel(gunsmith.BarrelInterface):
         self._physicalSignatureModifier = physicalSignatureModifier
         self._maxEnergyWeaponDamageDice = maxEnergyWeaponDamageDice
 
-        self._isHeavyOption = construction.BooleanComponentOption(
+        self._isHeavyOption = construction.BooleanOption(
             id='Heavy',
             name='Heavy',
             value=False,
@@ -180,7 +180,7 @@ class Barrel(gunsmith.BarrelInterface):
         # for each barrel
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.BarrelCount)
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         additionalBarrels = common.Calculator.subtract(
@@ -280,14 +280,14 @@ class Barrel(gunsmith.BarrelInterface):
         # Don't apply range modifier if using rocket propelled ammo
         if self._rangeModifierPercentage and not isRocket:
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Range,
+                attributeId=gunsmith.WeaponAttributeId.Range,
                 modifier=construction.PercentageModifier(
                     value=self._rangeModifierPercentage)))
 
         # Don't apply penetration modifier if using rocket propelled ammo
         if self._penetrationModifier and not isRocket:
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Penetration,
+                attributeId=gunsmith.WeaponAttributeId.Penetration,
                 modifier=construction.ConstantModifier(
                     value=self._penetrationModifier)))
 
@@ -295,7 +295,7 @@ class Barrel(gunsmith.BarrelInterface):
         # modifiers are handled differently for secondary weapons
         if self._quickdrawModifier and context.isPrimary(sequence=sequence):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._quickdrawModifier)))
 
@@ -303,9 +303,9 @@ class Barrel(gunsmith.BarrelInterface):
             # Only add signature modifier if weapon has a physical signature
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature):
+                    attributeId=gunsmith.WeaponAttributeId.PhysicalSignature):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                    attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                     modifier=construction.ConstantModifier(
                         value=self._physicalSignatureModifier)))
 
@@ -319,16 +319,16 @@ class Barrel(gunsmith.BarrelInterface):
         if self._maxEnergyWeaponDamageDice and isEnergyWeapon:
             currentMaxDamageDice = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.MaxDamageDice)
+                attributeId=gunsmith.WeaponAttributeId.MaxDamageDice)
             assert(isinstance(currentMaxDamageDice, common.ScalarCalculation)) # Construction logic should enforce this
             if self._maxEnergyWeaponDamageDice.value() < currentMaxDamageDice.value():
                 step.addFactor(factor=construction.SetAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.MaxDamageDice,
+                    attributeId=gunsmith.WeaponAttributeId.MaxDamageDice,
                     value=self._maxEnergyWeaponDamageDice))
 
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             wastedDamage = common.Calculator.subtract(
@@ -339,7 +339,7 @@ class Barrel(gunsmith.BarrelInterface):
                     value=wastedDamage,
                     name=f'{self.componentString()} Barrel Damage Dice Wasted Due To Barrel Limit')
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Damage,
+                    attributeId=gunsmith.WeaponAttributeId.Damage,
                     modifier=construction.DiceRollModifier(
                         countModifier=damageDiceModifier)))
 
@@ -349,7 +349,7 @@ class Barrel(gunsmith.BarrelInterface):
         # Apply heavy barrel modifications
         if self._isHeavyOption.value():
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
                 modifier=construction.ConstantModifier(
                     value=self._HeavyQuickdrawModifier)))
 
@@ -357,9 +357,9 @@ class Barrel(gunsmith.BarrelInterface):
             # as rules don't specify it
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.HeatDissipation):
+                    attributeId=gunsmith.WeaponAttributeId.HeatDissipation):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                    attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
                     modifier=construction.ConstantModifier(
                         value=self._HeavyHeatDissipationModifier)))
 
@@ -367,9 +367,9 @@ class Barrel(gunsmith.BarrelInterface):
             # as rules don't specify it
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.OverheatThreshold):
+                    attributeId=gunsmith.WeaponAttributeId.OverheatThreshold):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+                    attributeId=gunsmith.WeaponAttributeId.OverheatThreshold,
                     modifier=construction.PercentageModifier(
                         value=self._HeavyHeatMisshapeModifierPercentage,
                         roundDown=True)))
@@ -378,9 +378,9 @@ class Barrel(gunsmith.BarrelInterface):
             # as rules don't specify it
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold):
+                    attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+                    attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold,
                     modifier=construction.PercentageModifier(
                         value=self._HeavyHeatMisshapeModifierPercentage,
                         roundDown=True)))
@@ -389,9 +389,9 @@ class Barrel(gunsmith.BarrelInterface):
             # as rules don't specify it
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold):
+                    attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold):
                 step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+                    attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold,
                     modifier=construction.PercentageModifier(
                         value=self._HeavyHeatMisshapeModifierPercentage,
                         roundDown=True)))
@@ -458,7 +458,7 @@ class MinimalBarrel(Barrel):
         # Don't apply range modifier if using rocket propelled ammo
         if not isRocket:
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Range,
+                attributeId=gunsmith.WeaponAttributeId.Range,
                 value=self._FixedRange))
 
         if context.hasComponent(
@@ -466,7 +466,7 @@ class MinimalBarrel(Barrel):
                 sequence=sequence):
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             damageDieCount = damageRoll.dieCount()
@@ -486,7 +486,7 @@ class MinimalBarrel(Barrel):
                 type=common.DieType.D3,
                 constant=damageRoll.constant())
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=damageRoll))
 
         return step
@@ -540,7 +540,7 @@ class ShortBarrel(Barrel):
             sequence=sequence) # Only interested in calibre from sequence barrel is part of
         if calibre and calibre.isHighVelocity() and not isinstance(calibre, gunsmith.GaussCalibre):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 modifier=construction.DiceRollModifier(
                     countModifier=self._HighVelocityDamageDiceModifier)))
 
@@ -601,7 +601,7 @@ class HandgunBarrel(Barrel):
         if not context.isRuleEnabled(rule=gunsmith.RuleId.CoreRulesCompatible) and \
                 not self._isRocket(sequence=sequence, context=context):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Penetration,
+                attributeId=gunsmith.WeaponAttributeId.Penetration,
                 modifier=construction.ConstantModifier(
                     value=HandgunBarrel._HandgunBarrelPenetrationModifier)))
 
@@ -612,7 +612,7 @@ class HandgunBarrel(Barrel):
             sequence=sequence) # Only interested in calibre from sequence barrel is part of
         if calibre and calibre.isHighVelocity() and not isinstance(calibre, gunsmith.GaussCalibre):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 modifier=construction.DiceRollModifier(
                     countModifier=self._HighVelocityDamageDiceModifier)))
 
@@ -660,7 +660,7 @@ class AssaultBarrel(Barrel):
             sequence=sequence) # Only interested in calibre from sequence barrel is part of
         if calibre and calibre.isHighVelocity() and not isinstance(calibre, gunsmith.GaussCalibre):
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 modifier=construction.DiceRollModifier(
                     countModifier=self._HighVelocityDamageDiceModifier)))
 
@@ -712,7 +712,7 @@ class CarbineBarrel(Barrel):
         if calibre and not isinstance(calibre, gunsmith.GaussCalibre):
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             damageModifier = common.Calculator.multiply(
@@ -723,7 +723,7 @@ class CarbineBarrel(Barrel):
                 name='Carbine Barrel Damage Modifier')
 
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 modifier=construction.DiceRollModifier(
                     constantModifier=damageModifier)))
 

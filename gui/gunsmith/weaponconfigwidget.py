@@ -153,7 +153,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         connection = None
         fullRow = False
         alignment = QtCore.Qt.AlignmentFlag(0)
-        if isinstance(option, construction.BooleanComponentOption):
+        if isinstance(option, construction.BooleanOption):
             widget = gui.CheckBoxEx()
             widget.setChecked(option.value())
             widget.setSizePolicy(
@@ -161,14 +161,14 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        if isinstance(option, construction.StringComponentOption):
+        if isinstance(option, construction.StringOption):
             widget = gui.LineEditEx()
             widget.setText(option.value())
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
-        elif isinstance(option, construction.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
             if option.min() != None:
@@ -187,7 +187,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        elif isinstance(option, construction.FloatComponentOption):
+        elif isinstance(option, construction.FloatOption):
             widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
 
             if option.min() != None:
@@ -208,7 +208,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        elif isinstance(option, construction.EnumComponentOption):
+        elif isinstance(option, construction.EnumOption):
             widget = gui.EnumComboBox(
                 type=option.type(),
                 value=option.value(),
@@ -279,13 +279,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             assert(False) # Shouldn't happen
             return
 
-        if isinstance(option, construction.BooleanComponentOption):
+        if isinstance(option, construction.BooleanOption):
             assert(isinstance(widget, gui.CheckBoxEx))
             widget.setChecked(option.value())
-        if isinstance(option, construction.StringComponentOption):
+        if isinstance(option, construction.StringOption):
             assert(isinstance(widget, gui.LineEditEx))
             widget.setText(option.value())
-        elif isinstance(option, construction.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerOption):
             assert(isinstance(widget, gui.SpinBoxEx))
             if option.min() != None:
                 widget.setMinimum(option.min())
@@ -298,7 +298,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setMaximum(2147483647)
 
             widget.setValue(option.value())
-        elif isinstance(option, construction.FloatComponentOption):
+        elif isinstance(option, construction.FloatOption):
             assert(isinstance(widget, gui.DoubleSpinBoxEx))
             if option.min() != None:
                 widget.setDecimalsForValue(option.min())
@@ -313,7 +313,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setMaximum(2147483647)
 
             widget.setValue(option.value())
-        elif isinstance(option, construction.EnumComponentOption):
+        elif isinstance(option, construction.EnumOption):
             assert(isinstance(widget, gui.EnumComboBox))
             widget.setEnumType(
                 type=option.type(),
@@ -328,7 +328,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _checkBoxChanged(
             self,
             widget: gui.CheckBoxEx,
-            option: construction.BooleanComponentOption
+            option: construction.BooleanOption
             ) -> None:
         try:
             option.setValue(value=widget.isChecked())
@@ -345,7 +345,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _textEditChanged(
             self,
             widget: QtWidgets.QLineEdit,
-            option: construction.StringComponentOption
+            option: construction.StringOption
             ) -> None:
         try:
             option.setValue(value=widget.text())
@@ -362,7 +362,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _spinBoxChanged(
             self,
             widget: typing.Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
-            option: construction.IntegerComponentOption
+            option: construction.IntegerOption
             ) -> None:
         try:
             option.setValue(value=widget.value())
@@ -379,7 +379,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _comboBoxChanged(
             self,
             widget: QtWidgets.QComboBox,
-            option: construction.EnumComponentOption
+            option: construction.EnumOption
             ) -> None:
         try:
             if widget.currentIndex() < 0:

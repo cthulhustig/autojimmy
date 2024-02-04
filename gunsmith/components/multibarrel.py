@@ -29,7 +29,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
 
         self._componentString = componentString
 
-        self._barrelCountOption = construction.IntegerComponentOption(
+        self._barrelCountOption = construction.IntegerOption(
             id='Count',
             name='Count',
             value=2,
@@ -93,12 +93,12 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
             value=self._barrelCountOption.value(),
             name='Specified Barrel Count')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.BarrelCount,
+            attributeId=gunsmith.WeaponAttributeId.BarrelCount,
             value=barrelCount))
 
         if context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.HeatDissipation):
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation):
             additionalBarrels = common.Calculator.subtract(
                 lhs=barrelCount,
                 rhs=common.ScalarCalculation(value=1),
@@ -108,7 +108,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
                 rhs=additionalBarrels,
                 name='Multiple Barrel Heat Dissipation Modifier')
             step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation,
                 modifier=construction.ConstantModifier(value=heatModifier)))
 
         return step
@@ -160,7 +160,7 @@ class CompleteMultiBarrelSetup(MultiBarrel):
             rhs=additionalBarrels,
             name=f'{self.componentString()} Quickdraw Modifier')
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             modifier=construction.ConstantModifier(
                 value=quickdrawModifier)))
 

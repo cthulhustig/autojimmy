@@ -25,7 +25,7 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
         self._componentString = componentString
         self._fixedCost = fixedCost
 
-        self._numberOfLoadersOption = construction.IntegerComponentOption(
+        self._numberOfLoadersOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,

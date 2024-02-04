@@ -122,25 +122,25 @@ class WeaponMalfunctionGraph(QtWidgets.QWidget):
 
         overheatThreshold = self._weapon.attributeValue(
             sequence=self._sequence,
-            attributeId=gunsmith.WeaponAttribute.OverheatThreshold)
+            attributeId=gunsmith.WeaponAttributeId.OverheatThreshold)
         if not isinstance(overheatThreshold, common.ScalarCalculation):
             return
 
         dangerThreshold = self._weapon.attributeValue(
             sequence=self._sequence,
-            attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold)
+            attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold)
         if not isinstance(overheatThreshold, common.ScalarCalculation):
             return
 
         disasterThreshold = self._weapon.attributeValue(
             sequence=self._sequence,
-            attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold)
+            attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold)
         if not isinstance(disasterThreshold, common.ScalarCalculation):
             return
 
         malfunctionDM = self._weapon.attributeValue(
             sequence=self._sequence,
-            attributeId=gunsmith.WeaponAttribute.MalfunctionDM)
+            attributeId=gunsmith.WeaponAttributeId.MalfunctionDM)
         if not isinstance(malfunctionDM, common.ScalarCalculation):
             return
 

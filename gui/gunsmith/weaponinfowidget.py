@@ -243,7 +243,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
 
     def _configureControls(
             self,
-            typeAttributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttribute]]
+            typeAttributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttributeId]]
             ) -> None:
         if not typeAttributeIds:
             # No (or unrecognised) weapon, nothing to display
@@ -296,7 +296,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
     def _updateAttributeLayout(
             self,
             layout: gui.FormLayoutEx,
-            attributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttribute]],
+            attributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttributeId]],
             isTraitAttributes: bool,
             startRow: int = 0
             ) -> None:

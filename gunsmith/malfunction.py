@@ -103,19 +103,19 @@ def calculateMalfunctionProbability(
 
     overheatThreshold = weapon.attributeValue(
         sequence=sequence,
-        attributeId=gunsmith.WeaponAttribute.OverheatThreshold)
+        attributeId=gunsmith.WeaponAttributeId.OverheatThreshold)
     if not isinstance(overheatThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have an ScalarCalculation OverheatThreshold attribute')
 
     dangerThreshold = weapon.attributeValue(
         sequence=sequence,
-        attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold)
+        attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold)
     if not isinstance(dangerThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation DangerHeatThreshold attribute')
 
     disasterThreshold = weapon.attributeValue(
         sequence=sequence,
-        attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold)
+        attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold)
     if not isinstance(disasterThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation DisasterHeatThreshold attribute')
 
@@ -124,7 +124,7 @@ def calculateMalfunctionProbability(
 
     malfunctionDm = weapon.attributeValue(
         sequence=sequence,
-        attributeId=gunsmith.WeaponAttribute.MalfunctionDM)
+        attributeId=gunsmith.WeaponAttributeId.MalfunctionDM)
     if not isinstance(malfunctionDm, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation MalfunctionDM attribute')
 

@@ -85,13 +85,13 @@ class _AmmoImpl(object):
         self._costMultiplier = costMultiplier
         self._penetrationModifier = penetrationModifier
 
-        self._isSmartOption = construction.BooleanComponentOption(
+        self._isSmartOption = construction.BooleanOption(
             id='Smart',
             name='Smart',
             value=isSmart if isSmart != None else False,
             description='Specify if this is smart ammunition.',
             enabled=False) # Optional, enabled if supported in updateOptions
-        self._isStealthOption = construction.BooleanComponentOption(
+        self._isStealthOption = construction.BooleanOption(
             id='Stealth',
             name='Stealth',
             value=isStealth if isStealth != None else False,
@@ -169,7 +169,7 @@ class _AmmoImpl(object):
             ) -> None:
         ammoCost = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCost)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCost)
         assert(isinstance(ammoCost, common.ScalarCalculation)) # Construction logic should enforce this
 
         costMultiplier = self._calculateCostMultiplier()
@@ -195,13 +195,13 @@ class _AmmoImpl(object):
 
         if costMultiplier:
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.AmmoCost,
+                attributeId=gunsmith.WeaponAttributeId.AmmoCost,
                 modifier=construction.MultiplierModifier(
                     value=costMultiplier)))
 
         if self._penetrationModifier:
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Penetration,
+                attributeId=gunsmith.WeaponAttributeId.Penetration,
                 modifier=construction.ConstantModifier(
                     value=self._penetrationModifier)))
 
@@ -218,7 +218,7 @@ class _AmmoImpl(object):
             # Apply signature increase if an Extreme Stealth weapon is loaded with standard ammo. As
             # this is conventional ammo the weapon is expected to always have a physical signature
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
                 modifier=construction.ConstantModifier(
                     value=self._ExtremeStealthRegularAmmoSignatureModifier)))
 
@@ -385,7 +385,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             isSmart=isSmart,
             isStealth=isStealth)
 
-        self._distractionTypeOption = construction.EnumComponentOption(
+        self._distractionTypeOption = construction.EnumOption(
             id='DistractionType',
             name='Distraction Type',
             type=gunsmith.Distraction,
@@ -418,7 +418,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             step=step)
 
         factor = construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Distraction,
+            attributeId=gunsmith.WeaponAttributeId.Distraction,
             value=self._distractionTypeOption.value())
         if not applyModifiers:
             factor = construction.NonModifyingFactor(factor=factor)
@@ -467,7 +467,7 @@ class _EnhancedWoundingAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageModifier = common.Calculator.multiply(
@@ -475,7 +475,7 @@ class _EnhancedWoundingAmmoImpl(_AmmoImpl):
             rhs=damageRoll.dieCount(),
             name='Enhanced Wounding Ammo Damage Modifier')
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Damage,
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             modifier=construction.DiceRollModifier(
                 constantModifier=damageModifier))
         if not applyModifiers:
@@ -535,7 +535,7 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageDiceModifier = common.Calculator.multiply(
@@ -548,13 +548,13 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
             rhs=self._ConstantDamageDiceConstant,
             name='Explosive Ammo Damage Dice Modifier')
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Damage,
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             modifier=construction.DiceRollModifier(
                 countModifier=damageDiceModifier)))
 
         # As this is conventional ammo the weapon is expected to always have a physical signature
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
             modifier=construction.ConstantModifier(
                 value=self._PhysicalSignatureModifier)))
 
@@ -617,7 +617,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         if damageRoll.dieCount().value() == 0:
@@ -625,7 +625,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
         elif damageRoll.dieType() == common.DieType.D3:
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             damageConstant = common.Calculator.equals(
@@ -634,7 +634,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
             damageRoll = common.DiceRoll(constant=damageConstant)
 
             factors.append(construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=damageRoll))
         elif damageRoll.dieType() == common.DieType.D6:
             damageRoll = common.DiceRoll(
@@ -642,13 +642,13 @@ class _FlechetteAmmoImpl(_AmmoImpl):
                 type=common.DieType.D3,
                 constant=damageRoll.constant())
             factors.append(construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.Damage,
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=damageRoll))
         else:
             assert(False) # This should never happen
 
         factors.append(construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._FixedRange))
 
         barrel = context.findFirstComponent(
@@ -660,7 +660,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
         assert(spreadModifier) # This should never happen
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Spread,
+            attributeId=gunsmith.WeaponAttributeId.Spread,
             modifier=construction.ConstantModifier(
                 value=spreadModifier)))
 
@@ -720,7 +720,7 @@ class _GasAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageRoll = common.DiceRoll(
@@ -728,7 +728,7 @@ class _GasAmmoImpl(_AmmoImpl):
             type=damageRoll.dieType())
 
         factor = construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Damage,
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=damageRoll)
         if not applyModifiers:
             factor = construction.NonModifyingFactor(factor=factor)
@@ -808,7 +808,7 @@ class _HEAPAmmoImpl(_AmmoImpl):
 
         # As this is conventional ammo the weapon is expected to always have a physical signature
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
             modifier=construction.ConstantModifier(
                 value=self._PhysicalSignatureModifier))
         if not applyModifiers:
@@ -867,7 +867,7 @@ class _IncendiaryAmmoImpl(_AmmoImpl):
             step=step)
 
         factor = construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Incendiary,
+            attributeId=gunsmith.WeaponAttributeId.Incendiary,
             modifier=construction.ConstantModifier(
                 value=self._IncendiaryTrait))
         if not applyModifiers:
@@ -897,7 +897,7 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
             isSmart=isSmart,
             isStealth=isStealth)
 
-        self._penetrationOption = construction.IntegerComponentOption(
+        self._penetrationOption = construction.IntegerOption(
             id='Penetration',
             name='Penetration Modifier',
             value=penetration if penetration != None else -1,
@@ -934,13 +934,13 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
             value=self._penetrationOption.value(),
             name='Specified Penetration Modifier')
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Penetration,
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
             modifier=construction.ConstantModifier(
                 value=penetrationModifier)))
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageRoll = common.DiceRoll(
@@ -948,7 +948,7 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
             type=common.DieType.D3,
             constant=damageRoll.constant())
         factors.append(construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Damage,
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=damageRoll))
 
         for factor in factors:
@@ -1010,14 +1010,14 @@ class _PelletAmmoImpl(_AmmoImpl):
         assert(spreadModifier) # This should never happen
 
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             modifier=construction.PercentageModifier(
                 value=_PelletAmmoImpl._PelletRangeModifier)))
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Spread,
+            attributeId=gunsmith.WeaponAttributeId.Spread,
             modifier=construction.ConstantModifier(value=spreadModifier)))
         factors.append(construction.ModifyAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Penetration,
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
             modifier=construction.ConstantModifier(
                 value=common.Calculator.negate(
                     value=spreadModifier,
@@ -1084,7 +1084,7 @@ class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
         step = gunsmith.WeaponStep(
@@ -1234,7 +1234,7 @@ class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfRoundsOption = construction.IntegerComponentOption(
+        self._numberOfRoundsOption = construction.IntegerOption(
             id='Quantity',
             name='Rounds',
             value=1,

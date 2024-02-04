@@ -418,7 +418,7 @@ class Weapon(object):
             sequence=sequence,
             regenerate=regenerate)
 
-    def clearSequences(self):
+    def clearSequences(self) -> None:
         self._constructionContext.clearSequences()
 
         # Remove components from common stages
@@ -586,7 +586,7 @@ class Weapon(object):
     def hasAttribute(
             self,
             sequence: str,
-            attributeId: gunsmith.WeaponAttribute
+            attributeId: gunsmith.WeaponAttributeId
             ) -> bool:
         return self._constructionContext.hasAttribute(
             sequence=sequence,
@@ -595,7 +595,7 @@ class Weapon(object):
     def attribute(
             self,
             sequence: str,
-            attributeId: gunsmith.WeaponAttribute,
+            attributeId: gunsmith.WeaponAttributeId,
             ) -> typing.Optional[construction.AttributeInterface]:
         sequenceState = self._constructionContext.state(
             sequence=sequence)
@@ -605,7 +605,7 @@ class Weapon(object):
 
         # For multi-sequence weapons the Quickdraw value is the sum of the
         # Quickdraw values for all sequences
-        if (attributeId == gunsmith.WeaponAttribute.Quickdraw) and \
+        if (attributeId == gunsmith.WeaponAttributeId.Quickdraw) and \
                 (self._constructionContext.sequenceCount() > 1):
             return self._calculateQuickdrawScore()
 
@@ -614,7 +614,7 @@ class Weapon(object):
     def attributeValue(
             self,
             sequence: str,
-            attributeId: gunsmith.WeaponAttribute,
+            attributeId: gunsmith.WeaponAttributeId,
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         # Call this classes implementation of attribute is important to get the
         # correct Quickdraw value
@@ -856,11 +856,11 @@ class Weapon(object):
         scores = []
         for sequenceState in self._constructionContext.states():
             assert(isinstance(sequenceState, WeaponSequenceState))
-            attribute = sequenceState.attribute(attributeId=gunsmith.WeaponAttribute.Quickdraw)
+            attribute = sequenceState.attribute(attributeId=gunsmith.WeaponAttributeId.Quickdraw)
             if isinstance(attribute, construction.NumericAttribute):
                 scores.append(attribute.value())
         return construction.NumericAttribute(
-            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            attributeId=gunsmith.WeaponAttributeId.Quickdraw,
             value=common.Calculator.sum(
                 values=scores,
                 name='Total Quickdraw Score'))

@@ -118,7 +118,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
         step = gunsmith.WeaponStep(
             name=f'Uncompensated Heavy Handgun Calibre',
             type='Usability',
-            factors=[construction.SetAttributeFactor(attributeId=gunsmith.WeaponAttribute.Bulky)])
+            factors=[construction.SetAttributeFactor(attributeId=gunsmith.WeaponAttributeId.Bulky)])
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -141,13 +141,13 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             ) -> None:
         recoil = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Recoil)
+            attributeId=gunsmith.WeaponAttributeId.Recoil)
         if not isinstance(recoil, common.ScalarCalculation):
             return # Nothing to do
 
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
 
         step = gunsmith.WeaponStep(
             name=f'Recoil ({recoil.value()})',
@@ -163,7 +163,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
                 rhs=autoScore,
                 name='Auto Recoil')
             step.addFactor(construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.AutoRecoil,
+                attributeId=gunsmith.WeaponAttributeId.AutoRecoil,
                 value=autoRecoil))
 
             step.addNote(
@@ -188,13 +188,13 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             ) -> None:
         baseRange = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Range)
+            attributeId=gunsmith.WeaponAttributeId.Range)
         if not baseRange or not isinstance(baseRange, common.ScalarCalculation):
             return # Can't calculate range modifiers so nothing to do
 
         hasScope = context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Scope)
+            attributeId=gunsmith.WeaponAttributeId.Scope)
 
         noScopeShort, noScopeLong, noScopeExtreme = \
             FinalisationComponent._generateRangeNotes(
@@ -369,14 +369,14 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             ) -> None:
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
         if not isinstance(autoScore, common.ScalarCalculation):
             return
         autoScore = autoScore.value()
 
         heatGeneration = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.AutoHeatGeneration)
+            attributeId=gunsmith.WeaponAttributeId.AutoHeatGeneration)
         if not isinstance(heatGeneration, common.ScalarCalculation):
             return
         heatGeneration = heatGeneration.value()
@@ -449,7 +449,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
 
         damage = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         if damage:
             assert(isinstance(damage, common.DiceRoll))
             malfunctionModifiers.append(common.Calculator.negate(
@@ -457,14 +457,14 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
 
         hazardousScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Hazardous)
+            attributeId=gunsmith.WeaponAttributeId.Hazardous)
         if hazardousScore:
             assert(isinstance(hazardousScore, common.ScalarCalculation))
             malfunctionModifiers.append(hazardousScore)
 
         ramshackleScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Ramshackle)
+            attributeId=gunsmith.WeaponAttributeId.Ramshackle)
         if ramshackleScore:
             assert(isinstance(ramshackleScore, common.ScalarCalculation))
             malfunctionModifiers.append(ramshackleScore)
@@ -477,7 +477,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             name='Malfunction DM',
             type='Resilience',
             factors=[construction.SetAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.MalfunctionDM,
+                attributeId=gunsmith.WeaponAttributeId.MalfunctionDM,
                 value=malfunctionDM)])
         context.applyStep(
             sequence=sequence,
@@ -555,7 +555,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
 
         armourLevel = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Armour)
+            attributeId=gunsmith.WeaponAttributeId.Armour)
         if isinstance(armourLevel, common.ScalarCalculation):
             mishapThreshold = common.Calculator.add(
                 lhs=mishapThreshold,
@@ -611,7 +611,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
         # Convert Penetration attribute to LoPen/AP trait (Field Catalogue p18)
         penetration = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Penetration)
+            attributeId=gunsmith.WeaponAttributeId.Penetration)
         if not penetration:
             return # Nothing to do
 
@@ -638,12 +638,12 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             assert(loPenModifier)
 
             factors.append(construction.ModifyAttributeFactor(
-                attributeId=gunsmith.WeaponAttribute.LoPen,
+                attributeId=gunsmith.WeaponAttributeId.LoPen,
                 modifier=construction.ConstantModifier(value=loPenModifier)))
         elif penetration > 0:
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             apModifier = None
@@ -706,13 +706,13 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
 
             if apModifier:
                 factors.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.AP,
+                    attributeId=gunsmith.WeaponAttributeId.AP,
                     modifier=construction.ConstantModifier(
                         value=apModifier)))
 
             if damageModifier:
                 factors.append(construction.ModifyAttributeFactor(
-                    attributeId=gunsmith.WeaponAttribute.Damage,
+                    attributeId=gunsmith.WeaponAttributeId.Damage,
                     modifier=construction.DiceRollModifier(
                         constantModifier=damageModifier)))
 
@@ -742,17 +742,17 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             ) -> None:
         if not context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.VeryBulky) or \
+                attributeId=gunsmith.WeaponAttributeId.VeryBulky) or \
             not context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.WeaponAttribute.Bulky):
+                attributeId=gunsmith.WeaponAttributeId.Bulky):
             return # Nothing to do
 
         # The weapon has Bulky and Very Bulky, Bulky is redundant so remove it
         step = gunsmith.WeaponStep(
             name=f'Remove Redundant Bulky Trait',
             type='Trait',
-            factors=[construction.DeleteAttributeFactor(attributeId=gunsmith.WeaponAttribute.Bulky)])
+            factors=[construction.DeleteAttributeFactor(attributeId=gunsmith.WeaponAttributeId.Bulky)])
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -768,85 +768,85 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
 
             name = trait.value
             notes = []
-            if trait == gunsmith.WeaponAttribute.Bulky:
+            if trait == gunsmith.WeaponAttributeId.Bulky:
                 notes.append('If the user has a STR less than 9, all attack rolls have a negative DM equal to their difference between their STR DM and +1.')
-            elif trait == gunsmith.WeaponAttribute.VeryBulky:
+            elif trait == gunsmith.WeaponAttributeId.VeryBulky:
                 notes.append('If the user has a STR less than 12, all attack rolls have a negative DM equal to the difference between their STR DM and +2.')
-            elif trait == gunsmith.WeaponAttribute.Scope:
+            elif trait == gunsmith.WeaponAttributeId.Scope:
                 pass # This is handled by the range modifiers finalisation step
-            elif trait == gunsmith.WeaponAttribute.ZeroG:
+            elif trait == gunsmith.WeaponAttributeId.ZeroG:
                 notes.append('The weapon can be used in zero gravity without requiring an Athletics (DEX) check.')
-            elif trait == gunsmith.WeaponAttribute.Corrosive:
+            elif trait == gunsmith.WeaponAttributeId.Corrosive:
                 notes.append('Corrosive weapons inflict normal damage on the first round, then on each round after that another roll is made with the damage reduced by 1D. This stops when the number of damage dice reaches zero.')
                 notes.append('Armour protects as normal against corrosive weapons. However corrosive materials destroy armour at a rate of 1 point per dice of damage for each round they\'re in contact.')
-            elif trait == gunsmith.WeaponAttribute.RF:
+            elif trait == gunsmith.WeaponAttributeId.RF:
                 pass # This is an internal trait so has no notes
-            elif trait == gunsmith.WeaponAttribute.VRF:
+            elif trait == gunsmith.WeaponAttributeId.VRF:
                 pass # This is an internal trait so has no notes
-            elif trait == gunsmith.WeaponAttribute.Stun:
+            elif trait == gunsmith.WeaponAttributeId.Stun:
                 notes.append('Damage from stun weapons is only deducted from END, taking into account any armour. If the targets END is reduced to 0 they will be incapacitated for a number of rounds equal to the amount the damage exceeded their END.')
                 notes.append('Damage caused by stun weapons is completely healed by one hour of rest.')
-            elif trait == gunsmith.WeaponAttribute.Auto:
+            elif trait == gunsmith.WeaponAttributeId.Auto:
                 pass # This is handled by the auto modifier finalisation step
-            elif trait == gunsmith.WeaponAttribute.Inaccurate:
+            elif trait == gunsmith.WeaponAttributeId.Inaccurate:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'DM-{abs(value.value())} to attack rolls at ranges > 10m.')
-            elif trait == gunsmith.WeaponAttribute.Hazardous:
+            elif trait == gunsmith.WeaponAttributeId.Hazardous:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'DM-{abs(value.value())} when rolling against the Malfunction table on p8 of the Field Catalogue.')
-            elif trait == gunsmith.WeaponAttribute.Unreliable:
+            elif trait == gunsmith.WeaponAttributeId.Unreliable:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'When the weapon is used an additional 1D of a different colour is rolled. If it comes up <= {value.value()} a malfunction occurs and a roll must be made against the Malfunction table on p8 of the Field Catalogue.')
-            elif trait == gunsmith.WeaponAttribute.SlowLoader:
+            elif trait == gunsmith.WeaponAttributeId.SlowLoader:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'The weapon takes {value.value()} minor actions to reload. The user can make an Average(8+) Gun Combat check to reduce the load time by a number of minor actions equal to the Effect of the roll.')
-            elif trait == gunsmith.WeaponAttribute.Ramshackle:
+            elif trait == gunsmith.WeaponAttributeId.Ramshackle:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'DM-{abs(value.value())} to attack rolls.')
                 notes.append(f'DM-{abs(value.value())} when rolling against the Malfunction table on p8 of the Field Catalogue.')
-            elif trait == gunsmith.WeaponAttribute.AP:
+            elif trait == gunsmith.WeaponAttributeId.AP:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'Targets armour value is reduced by {value.value()}.')
-            elif trait == gunsmith.WeaponAttribute.LoPen:
+            elif trait == gunsmith.WeaponAttributeId.LoPen:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'Targets armour value is multiplied by {value.value()}.')
-            elif trait == gunsmith.WeaponAttribute.Spread:
+            elif trait == gunsmith.WeaponAttributeId.Spread:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 range = context.attributeValue(
                     sequence=sequence,
-                    attributeId=gunsmith.WeaponAttribute.Range)
+                    attributeId=gunsmith.WeaponAttributeId.Range)
                 assert(isinstance(range, common.ScalarCalculation))
                 range = common.formatNumber(number=range.value())
                 name += f' ({value.value()})'
                 notes.append(f'DM+{value.value()} to attack rolls at ranges <= {range}m.')
-            elif trait == gunsmith.WeaponAttribute.Blast:
+            elif trait == gunsmith.WeaponAttributeId.Blast:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'Upon a successful attack, damage is rolled against all targets within {value.value()}m.')
                 notes.append(f'A target cannot dodge a blast attack but they can dive for cover. Cover can be used if it lies between the target and the center of the blast radius.')
-            elif trait == gunsmith.WeaponAttribute.PulseIntensity:
+            elif trait == gunsmith.WeaponAttributeId.PulseIntensity:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation))
                 name += f' ({value.value()})'
                 notes.append(f'The EMP pulse will destroy unshielded systems with a TL < {value.value() - 2} and cause unshielded systems with a TL <= {value.value() + 2} to shut down for 1D minutes.')
                 notes.append(f'The EMP pulse may disrupt shielded systems and systems with a TL > {value.value() + 2}. Roll 2D against the Disruption table on p26 of the Field Catalogue with a positive DM+1 for every TL above {value.value()} and an additional DM+2 if the systems are intended for military use.')
-            elif trait == gunsmith.WeaponAttribute.Incendiary:
+            elif trait == gunsmith.WeaponAttributeId.Incendiary:
                 # Note this can be a scalar or dice roll
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation) or isinstance(value, common.DiceRoll))
@@ -856,28 +856,28 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
                 else:
                     name += f' ({str(value)})'
                     notes.append(f'When rolling against the Flammability table on p7 of the Field Catalogue, roll {str(value)} and use the result as a positive modifier.')
-            elif trait == gunsmith.WeaponAttribute.Burn:
+            elif trait == gunsmith.WeaponAttributeId.Burn:
                 # Note this can be a scalar or dice roll
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, common.ScalarCalculation) or isinstance(value, common.DiceRoll))
                 rounds = value.value() if isinstance(value, common.ScalarCalculation) else str(value)
                 name += f' ({rounds})'
                 notes.append(f'After the initial attack, half the attack damage is applied each round for {rounds} rounds. Armour protects against this damage each round.')
-            elif trait == gunsmith.WeaponAttribute.EmissionsSignature:
+            elif trait == gunsmith.WeaponAttributeId.EmissionsSignature:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Signature))
                 name += f' ({value.value})'
                 modifier = FinalisationComponent._SignatureDetectionModifierMap[value]
                 modifier = common.formatNumber(number=modifier.value(), alwaysIncludeSign=True)
                 notes.append(f'DM{modifier} modifier to checks to detect the firing of the weapon using sensors.')
-            elif trait == gunsmith.WeaponAttribute.PhysicalSignature:
+            elif trait == gunsmith.WeaponAttributeId.PhysicalSignature:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Signature))
                 name += f' ({value.value})'
                 modifier = FinalisationComponent._SignatureDetectionModifierMap[value]
                 modifier = common.formatNumber(number=modifier.value(), alwaysIncludeSign=True)
                 notes.append(f'DM{modifier} modifier to checks to detect the firing of the weapon using physical means (e.g. audibly or visually).')
-            elif trait == gunsmith.WeaponAttribute.Distraction:
+            elif trait == gunsmith.WeaponAttributeId.Distraction:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Distraction))
                 name += f' ({value.value})'
@@ -906,7 +906,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             ) -> None:
         hasAutoScore = context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
         notes = []
 
         if hasAutoScore:

@@ -82,12 +82,12 @@ class PropellantType(gunsmith.PropellantTypeInterface):
             type=self.typeString())
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.Range,
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._baseRange))
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PropellantWeight)
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
 
         attacksPerTank = common.Calculator.floor(
@@ -96,11 +96,11 @@ class PropellantType(gunsmith.PropellantTypeInterface):
                 rhs=self._attacksPerKg),
             name=f'Attacks With {propellantWeight.value()}kg of {self.componentString()} Propellant')
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=attacksPerTank))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=gunsmith.WeaponAttribute.PropellantCost,
+            attributeId=gunsmith.WeaponAttributeId.PropellantCost,
             value=self._costPerKg))
 
         return step
@@ -170,7 +170,7 @@ class GeneratedGasPropellantType(PropellantType):
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PropellantWeight)
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
 
         machineryCost = common.Calculator.multiply(
@@ -192,7 +192,7 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._propellantWeightOption = construction.FloatComponentOption(
+        self._propellantWeightOption = construction.FloatOption(
             id='Weight',
             name='Weight',
             value=1.0,
@@ -237,7 +237,7 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
             ) -> None:
         propellantCostPerKg = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.WeaponAttribute.PropellantCost)
+            attributeId=gunsmith.WeaponAttributeId.PropellantCost)
         assert(isinstance(propellantCostPerKg, common.ScalarCalculation)) # Construction logic should enforce this
 
         propellantWeight = common.ScalarCalculation(
