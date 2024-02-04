@@ -5,10 +5,10 @@ import typing
 
 class FactorInterface(object):
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        raise RuntimeError('The calculations method must be implemented by the class derived from Factor')
+        raise RuntimeError('The calculations method must be implemented by the class derived from FactorInterface')
 
     def displayString(self) -> str:
-        raise RuntimeError('The displayString method must be implemented by the class derived from Factor')
+        raise RuntimeError('The displayString method must be implemented by the class derived from FactorInterface')
 
 class StringFactor(FactorInterface):
     def __init__(
