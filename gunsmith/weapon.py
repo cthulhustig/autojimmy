@@ -535,7 +535,7 @@ class Weapon(object):
             sequence: typing.Optional[str] = None,
             regenerate: bool = True
             ) -> bool: # True if modified, otherwise False
-        self._constructionContext.clearComponents(
+        return self._constructionContext.clearComponents(
             phase=phase,
             sequence=sequence,
             regenerate=regenerate)
