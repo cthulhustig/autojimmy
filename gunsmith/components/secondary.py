@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -50,7 +51,7 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
     def __init__(self) -> None:
         super().__init__()
 
-        self._quickdrawModifierOption = gunsmith.IntegerComponentOption(
+        self._quickdrawModifierOption = construction.IntegerComponentOption(
             id='QuickdrawModifier',
             name='Secondary Weapon Quickdraw Modifier',
             value=-1,
@@ -66,25 +67,25 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Not compatible with primary weapon
         return not context.isPrimary(sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._quickdrawModifierOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -92,28 +93,28 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
 
         secondaryWeight = common.Calculator.add(
             lhs=context.phaseWeight(
-                phase=gunsmith.ConstructionPhase.Receiver,
+                phase=gunsmith.WeaponPhase.Receiver,
                 sequence=sequence),
             rhs=context.phaseWeight(
-                phase=gunsmith.ConstructionPhase.Barrel,
+                phase=gunsmith.WeaponPhase.Barrel,
                 sequence=sequence),
             name='Secondary Weapon Weight')
         secondaryCost = common.Calculator.add(
             lhs=context.phaseCredits(
-                phase=gunsmith.ConstructionPhase.Receiver,
+                phase=gunsmith.WeaponPhase.Receiver,
                 sequence=sequence),
             rhs=context.phaseCredits(
-                phase=gunsmith.ConstructionPhase.Barrel,
+                phase=gunsmith.WeaponPhase.Barrel,
                 sequence=sequence),
             name='Secondary Weapon Cost')
 
-        step.setCredits(credits=gunsmith.ConstantModifier(
+        step.setCredits(credits=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=secondaryCost,
                 percentage=self._MountCostModifierPercentage,
                 name='Secondary Weapon Mounting Cost')))
 
-        step.setWeight(weight=gunsmith.ConstantModifier(
+        step.setWeight(weight=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=secondaryWeight,
                 percentage=self._MountWeightModifierPercentage,
@@ -125,9 +126,9 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
                 value=quickdrawModifier,
                 name='Specified Secondary Weapon Quickdraw Modifier')
 
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=quickdrawModifier)))
 
         context.applyStep(

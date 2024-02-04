@@ -1,3 +1,4 @@
+import construction
 import gui
 import gunsmith
 import logging
@@ -12,16 +13,16 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            components: typing.Optional[typing.Iterable[gunsmith.ComponentInterface]] = None,
-            current: typing.Optional[gunsmith.ComponentInterface] = None,
-            requirement: gunsmith.ConstructionStage.RequirementLevel = gunsmith.ConstructionStage.RequirementLevel.Optional,
+            components: typing.Optional[typing.Iterable[gunsmith.WeaponComponentInterface]] = None,
+            current: typing.Optional[gunsmith.WeaponComponentInterface] = None,
+            requirement: construction.ConstructionStage.RequirementLevel = construction.ConstructionStage.RequirementLevel.Optional,
             deletable: bool = False,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
 
         self._requirement = requirement
-        self._currentOptions: typing.Dict[QtWidgets.QWidget, gunsmith.ComponentOption] = {}
+        self._currentOptions: typing.Dict[QtWidgets.QWidget, construction.ComponentOption] = {}
         self._widgetConnections: typing.Dict[QtWidgets.QWidget, QtCore.QMetaObject.Connection] = {}
 
         self._comboBox = gui.ComboBoxEx()
@@ -77,12 +78,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def optionCount(self) -> int:
         return self._optionsLayout.count()
 
-    def currentComponent(self) -> typing.Optional[gunsmith.ComponentInterface]:
+    def currentComponent(self) -> typing.Optional[gunsmith.WeaponComponentInterface]:
         return self._comboBox.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
     def setCurrentComponent(
             self,
-            current: typing.Optional[gunsmith.ComponentInterface]
+            current: typing.Optional[gunsmith.WeaponComponentInterface]
             ) -> bool:
         for index in range(self._comboBox.count()):
             component = self._comboBox.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
@@ -94,8 +95,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     def setComponents(
             self,
-            components: typing.Optional[typing.Iterable[gunsmith.ComponentInterface]],
-            current: typing.Optional[gunsmith.ComponentInterface] = None,
+            components: typing.Optional[typing.Iterable[gunsmith.WeaponComponentInterface]],
+            current: typing.Optional[gunsmith.WeaponComponentInterface] = None,
             ) -> None:
         oldCurrent = self.currentComponent()
 
@@ -103,9 +104,9 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             self._comboBox.clear()
 
             includeNone = True
-            if self._requirement == gunsmith.ConstructionStage.RequirementLevel.Mandatory:
+            if self._requirement == construction.ConstructionStage.RequirementLevel.Mandatory:
                 includeNone = False
-            elif self._requirement == gunsmith.ConstructionStage.RequirementLevel.Desirable:
+            elif self._requirement == construction.ConstructionStage.RequirementLevel.Desirable:
                 includeNone = not components
 
             if includeNone:
@@ -146,13 +147,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _insertOptionWidget(
             self,
             index: int,
-            option: gunsmith.ComponentOption
+            option: construction.ComponentOption
             ) -> None:
         widget = None
         connection = None
         fullRow = False
         alignment = QtCore.Qt.AlignmentFlag(0)
-        if isinstance(option, gunsmith.BooleanComponentOption):
+        if isinstance(option, construction.BooleanComponentOption):
             widget = gui.CheckBoxEx()
             widget.setChecked(option.value())
             widget.setSizePolicy(
@@ -160,14 +161,14 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        if isinstance(option, gunsmith.StringComponentOption):
+        if isinstance(option, construction.StringComponentOption):
             widget = gui.LineEditEx()
             widget.setText(option.value())
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
-        elif isinstance(option, gunsmith.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerComponentOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
             if option.min() != None:
@@ -186,7 +187,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        elif isinstance(option, gunsmith.FloatComponentOption):
+        elif isinstance(option, construction.FloatComponentOption):
             widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
 
             if option.min() != None:
@@ -207,7 +208,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
-        elif isinstance(option, gunsmith.EnumComponentOption):
+        elif isinstance(option, construction.EnumComponentOption):
             widget = gui.EnumComboBox(
                 type=option.type(),
                 value=option.value(),
@@ -278,13 +279,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             assert(False) # Shouldn't happen
             return
 
-        if isinstance(option, gunsmith.BooleanComponentOption):
+        if isinstance(option, construction.BooleanComponentOption):
             assert(isinstance(widget, gui.CheckBoxEx))
             widget.setChecked(option.value())
-        if isinstance(option, gunsmith.StringComponentOption):
+        if isinstance(option, construction.StringComponentOption):
             assert(isinstance(widget, gui.LineEditEx))
             widget.setText(option.value())
-        elif isinstance(option, gunsmith.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerComponentOption):
             assert(isinstance(widget, gui.SpinBoxEx))
             if option.min() != None:
                 widget.setMinimum(option.min())
@@ -297,7 +298,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setMaximum(2147483647)
 
             widget.setValue(option.value())
-        elif isinstance(option, gunsmith.FloatComponentOption):
+        elif isinstance(option, construction.FloatComponentOption):
             assert(isinstance(widget, gui.DoubleSpinBoxEx))
             if option.min() != None:
                 widget.setDecimalsForValue(option.min())
@@ -312,7 +313,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setMaximum(2147483647)
 
             widget.setValue(option.value())
-        elif isinstance(option, gunsmith.EnumComponentOption):
+        elif isinstance(option, construction.EnumComponentOption):
             assert(isinstance(widget, gui.EnumComboBox))
             widget.setEnumType(
                 type=option.type(),
@@ -327,7 +328,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _checkBoxChanged(
             self,
             widget: gui.CheckBoxEx,
-            option: gunsmith.BooleanComponentOption
+            option: construction.BooleanComponentOption
             ) -> None:
         try:
             option.setValue(value=widget.isChecked())
@@ -344,7 +345,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _textEditChanged(
             self,
             widget: QtWidgets.QLineEdit,
-            option: gunsmith.StringComponentOption
+            option: construction.StringComponentOption
             ) -> None:
         try:
             option.setValue(value=widget.text())
@@ -361,7 +362,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _spinBoxChanged(
             self,
             widget: typing.Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
-            option: gunsmith.IntegerComponentOption
+            option: construction.IntegerComponentOption
             ) -> None:
         try:
             option.setValue(value=widget.value())
@@ -378,7 +379,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _comboBoxChanged(
             self,
             widget: QtWidgets.QComboBox,
-            option: gunsmith.EnumComponentOption
+            option: construction.EnumComponentOption
             ) -> None:
         try:
             if widget.currentIndex() < 0:
@@ -399,12 +400,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         self.deleteClicked.emit()
 
 class _StageWidget(QtWidgets.QWidget):
-    stageChanged = QtCore.pyqtSignal(gunsmith.ConstructionStage)
+    stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
     def __init__(
             self,
             weapon: gunsmith.Weapon,
-            stage: gunsmith.ConstructionStage,
+            stage: construction.ConstructionStage,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -414,7 +415,7 @@ class _StageWidget(QtWidgets.QWidget):
     def weapon(self) -> gunsmith.Weapon:
         return self._weapon
 
-    def stage(self) -> gunsmith.ConstructionStage:
+    def stage(self) -> construction.ConstructionStage:
         return self._stage
 
     def teardown(self) -> None:
@@ -430,7 +431,7 @@ class _SingleSelectStageWidget(_StageWidget):
     def __init__(
             self,
             weapon: gunsmith.Weapon,
-            stage: gunsmith.ConstructionStage,
+            stage: construction.ConstructionStage,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
@@ -514,7 +515,7 @@ class _MultiSelectStageWidget(_StageWidget):
     def __init__(
             self,
             weapon: gunsmith.Weapon,
-            stage: gunsmith.ConstructionStage,
+            stage: construction.ConstructionStage,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
@@ -522,7 +523,7 @@ class _MultiSelectStageWidget(_StageWidget):
             stage=stage,
             parent=parent)
 
-        self._currentComponents: typing.Dict[_ComponentConfigWidget, gunsmith.ComponentInterface] = {}
+        self._currentComponents: typing.Dict[_ComponentConfigWidget, gunsmith.WeaponComponentInterface] = {}
 
         self._addButton = QtWidgets.QPushButton('Add Component')
         self._addButton.setSizePolicy(
@@ -574,7 +575,7 @@ class _MultiSelectStageWidget(_StageWidget):
 
     def _addComponentWidget(
             self,
-            component: typing.Optional[gunsmith.ComponentInterface] = None
+            component: typing.Optional[gunsmith.WeaponComponentInterface] = None
             ) -> _ComponentConfigWidget:
         return self._insertComponentWidget(
             row=self._layout.count() - 1,
@@ -583,7 +584,7 @@ class _MultiSelectStageWidget(_StageWidget):
     def _insertComponentWidget(
             self,
             row: int,
-            component: typing.Optional[gunsmith.ComponentInterface] = None
+            component: typing.Optional[gunsmith.WeaponComponentInterface] = None
             ) -> _ComponentConfigWidget:
         compatibleComponents = self._weapon.findCompatibleComponents(
             stage=self._stage,
@@ -597,7 +598,7 @@ class _MultiSelectStageWidget(_StageWidget):
             current=component,
             # Mandatory in the sense, if you add a component you must select what type it is. It's
             # only the adding of a component in the first place is optional
-            requirement=gunsmith.ConstructionStage.RequirementLevel.Mandatory,
+            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
             deletable=True)
         componentWidget.componentChanged.connect(self._componentChanged)
         componentWidget.deleteClicked.connect(self._deleteClicked)
@@ -645,8 +646,8 @@ class _MultiSelectStageWidget(_StageWidget):
 
     def _updateWeaponComponent(
             self,
-            removeComponent: typing.Optional[gunsmith.ComponentInterface] = None,
-            addComponent: typing.Optional[gunsmith.ComponentInterface] = None
+            removeComponent: typing.Optional[gunsmith.WeaponComponentInterface] = None,
+            addComponent: typing.Optional[gunsmith.WeaponComponentInterface] = None
             ) -> None:
         try:
             self._weapon.replaceComponent(
@@ -695,7 +696,7 @@ class _MultiSelectStageWidget(_StageWidget):
         self.stageChanged.emit(self._stage)
 
 class _StageGroupWidget(QtWidgets.QWidget):
-    stageChanged = QtCore.pyqtSignal(gunsmith.ConstructionStage)
+    stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
     expansionChanged = QtCore.pyqtSignal(str, bool)
 
     _StateVersion = 'StageGroupWidget_v1'
@@ -708,8 +709,8 @@ class _StageGroupWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._weapon = weapon
-        self._stageOrder: typing.List[gunsmith.ConstructionStage] = []
-        self._stageWidgets: typing.Dict[gunsmith.ConstructionStage, _StageWidget] = {}
+        self._stageOrder: typing.List[construction.ConstructionStage] = []
+        self._stageWidgets: typing.Dict[construction.ConstructionStage, _StageWidget] = {}
         self._stageExpansions: typing.Dict[str, bool] = {}
 
         self._configurationWidget = gui.ExpanderGroupWidget()
@@ -731,7 +732,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
 
     def addStage(
             self,
-            stage: gunsmith.ConstructionStage,
+            stage: construction.ConstructionStage,
             stageName: typing.Optional[str] = None
             ) -> None:
         self.insertStage(
@@ -742,7 +743,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
     def insertStage(
             self,
             index: int,
-            stage: gunsmith.ConstructionStage,
+            stage: construction.ConstructionStage,
             stageName: typing.Optional[str] = None
             ) -> None:
         if stage.singular():
@@ -769,7 +770,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
 
     def removeStage(
             self,
-            stage: gunsmith.ConstructionStage
+            stage: construction.ConstructionStage
             ) -> None:
         self._stageOrder.remove(stage)
 
@@ -790,7 +791,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
     def stageAt(
             self,
             index: int
-            ) -> typing.Optional[gunsmith.ConstructionStage]:
+            ) -> typing.Optional[construction.ConstructionStage]:
         widget = self._configurationWidget.contentFromIndex(index)
         if not isinstance(widget, _StageWidget):
             return None
@@ -798,7 +799,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
 
     def stageLabel(
             self,
-            stage: gunsmith.ConstructionStage
+            stage: construction.ConstructionStage
             ) -> typing.Optional[str]:
         stageWidget = self._stageWidgets.get(stage)
         if not stageWidget:
@@ -824,7 +825,7 @@ class _StageGroupWidget(QtWidgets.QWidget):
 
     def _stageStateChanged(
             self,
-            stage: gunsmith.ConstructionStage
+            stage: construction.ConstructionStage
             ) -> None:
         self.stageChanged.emit(stage)
 
@@ -915,7 +916,7 @@ class _SequenceStagesWidget(_StageGroupWidget):
                 label=self._formatSectionName(baseText='Weapon Type:'))
 
         # Create a list of all the required phase stages for this sequence
-        stages: typing.List[gunsmith.ConstructionStage] = []
+        stages: typing.List[construction.ConstructionStage] = []
         for phase in gunsmith.SequenceConstructionPhases:
             stages.extend(self._weapon.stages(sequence=self._sequence, phase=phase))
 
@@ -965,7 +966,7 @@ class _CommonStagesWidget(_StageGroupWidget):
 
     def synchronise(self) -> None:
         # Create a list of all the common phase stages
-        stages: typing.List[gunsmith.ConstructionStage] = []
+        stages: typing.List[construction.ConstructionStage] = []
         for phase in gunsmith.CommonConstructionPhases:
             stages.extend(self._weapon.stages(phase=phase))
 
@@ -986,7 +987,7 @@ class _PhaseStagesWidget(_StageGroupWidget):
     def __init__(
             self,
             weapon: gunsmith.Weapon,
-            phase: gunsmith.ConstructionPhase,
+            phase: gunsmith.WeaponPhase,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(weapon=weapon, parent=parent)
@@ -995,7 +996,7 @@ class _PhaseStagesWidget(_StageGroupWidget):
 
     def synchronise(self) -> None:
         # Create a list of all the stages for this phase across all sequences
-        stages: typing.Dict[gunsmith.ConstructionStage, str] = {}
+        stages: typing.Dict[construction.ConstructionStage, str] = {}
         sequences = self._weapon.sequences()
         for sequence in sequences:
             prefix = _generateSequencePrefix(
@@ -1277,7 +1278,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
         self._loadingWidget = _PhaseStagesWidget(
             weapon=self._weapon,
-            phase=gunsmith.ConstructionPhase.Loading)
+            phase=gunsmith.WeaponPhase.Loading)
         self._loadingWidget.expandStages(expansionMap=self._stageExpansionMap, animated=False)
         self._loadingWidget.stageChanged.connect(self._stageChanged)
         self._loadingWidget.expansionChanged.connect(self._expansionChanged)
@@ -1288,7 +1289,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
         self._munitionsWidget = _PhaseStagesWidget(
             weapon=self._weapon,
-            phase=gunsmith.ConstructionPhase.Munitions)
+            phase=gunsmith.WeaponPhase.Munitions)
         self._munitionsWidget.expandStages(expansionMap=self._stageExpansionMap, animated=False)
         self._munitionsWidget.stageChanged.connect(self._stageChanged)
         self._munitionsWidget.expansionChanged.connect(self._expansionChanged)
@@ -1342,7 +1343,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
     def _stageChanged(
             self,
-            stage: gunsmith.ConstructionStage
+            stage: construction.ConstructionStage
             ) -> None:
         self._synchroniseStages()
         self.weaponChanged.emit(self._weapon)

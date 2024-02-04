@@ -1,4 +1,5 @@
 import app
+import construction
 import common
 import enum
 import gui
@@ -79,7 +80,7 @@ class _WeightLineEdit(_CalculationLineEdit):
 class _AttributeLineEdit(_CalculationLineEdit):
     def __init__(
             self,
-            attribute: gunsmith.AttributeInterface,
+            attribute: construction.AttributeInterface,
             isTrait: bool,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -89,7 +90,7 @@ class _AttributeLineEdit(_CalculationLineEdit):
 
     def setAttribute(
             self,
-            attribute: gunsmith.AttributeInterface,
+            attribute: construction.AttributeInterface,
             isTrait: bool
             ) -> None:
         self._attribute = attribute
@@ -242,7 +243,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
 
     def _configureControls(
             self,
-            typeAttributeIds: typing.Optional[typing.Iterable[gunsmith.AttributeId]]
+            typeAttributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttribute]]
             ) -> None:
         if not typeAttributeIds:
             # No (or unrecognised) weapon, nothing to display
@@ -295,7 +296,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
     def _updateAttributeLayout(
             self,
             layout: gui.FormLayoutEx,
-            attributeIds: typing.Optional[typing.Iterable[gunsmith.AttributeId]],
+            attributeIds: typing.Optional[typing.Iterable[gunsmith.WeaponAttribute]],
             isTraitAttributes: bool,
             startRow: int = 0
             ) -> None:

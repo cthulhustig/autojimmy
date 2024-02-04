@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gunsmith
 import logging
@@ -6,30 +7,30 @@ import json
 import typing
 
 def serialiseOptions(
-        component: gunsmith.ComponentInterface
+        component: gunsmith.WeaponComponentInterface
         ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
     options = []
     for option in component.options():
         value = option.value()
-        if isinstance(option, gunsmith.BooleanComponentOption):
+        if isinstance(option, construction.BooleanComponentOption):
             assert(isinstance(value, bool))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, gunsmith.IntegerComponentOption):
+        elif isinstance(option, construction.IntegerComponentOption):
             assert(isinstance(value, int))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, gunsmith.FloatComponentOption):
+        elif isinstance(option, construction.FloatComponentOption):
             assert(isinstance(value, float) or isinstance(value, int))
             options.append({
                 'id': option.id(),
                 'value': value
             })
-        elif isinstance(option, gunsmith.EnumComponentOption):
+        elif isinstance(option, construction.EnumComponentOption):
             assert(value == None or isinstance(value, enum.Enum))
             options.append({
                 'id': option.id(),
@@ -40,7 +41,7 @@ def serialiseOptions(
 
 def deserialiseOptions(
         weapon: gunsmith.Weapon,
-        component: gunsmith.ComponentInterface,
+        component: gunsmith.WeaponComponentInterface,
         dataList: typing.Iterable[typing.Mapping[str, typing.Any]]
         ) -> None:
     # Note that this code is more complicated than you might expect as it has to cope with the fact
@@ -73,13 +74,13 @@ def deserialiseOptions(
                 continue
             optionValue = pendingOptions[optionId]
 
-            if isinstance(option, gunsmith.BooleanComponentOption):
+            if isinstance(option, construction.BooleanComponentOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, gunsmith.IntegerComponentOption):
+            elif isinstance(option, construction.IntegerComponentOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, gunsmith.FloatComponentOption):
+            elif isinstance(option, construction.FloatComponentOption):
                 option.setValue(value=optionValue)
-            elif isinstance(option, gunsmith.EnumComponentOption):
+            elif isinstance(option, construction.EnumComponentOption):
                 enumValue = None
                 if optionValue != None:
                     enumType = option.type()
@@ -105,7 +106,7 @@ def deserialiseOptions(
     weapon.regenerate()
 
 def serialiseComponentList(
-        components: typing.Iterable[gunsmith.ComponentInterface]
+        components: typing.Iterable[gunsmith.WeaponComponentInterface]
         ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
     serialised = []
     for component in components:
@@ -118,8 +119,8 @@ def serialiseComponentList(
 def serialiseComponents(
         weapon: gunsmith.Weapon
         ) -> typing.Mapping[str, typing.Any]:
-    sequenceComponents: typing.Dict[str, typing.List[gunsmith.ComponentInterface]] = {}
-    commonComponents: typing.List[gunsmith.ComponentInterface] = []
+    sequenceComponents: typing.Dict[str, typing.List[gunsmith.WeaponComponentInterface]] = {}
+    commonComponents: typing.List[gunsmith.WeaponComponentInterface] = []
     for stage in weapon.stages():
         if stage.phase() in gunsmith.InternalConstructionPhases:
             continue # Don't write internal phases
@@ -155,9 +156,9 @@ def serialiseComponents(
 def deserialiseComponentList(
     weapon: gunsmith.Weapon,
     components: typing.Iterable[typing.Mapping[str, typing.Any]],
-    componentTypeMap: typing.Mapping[str, typing.Type[gunsmith.ComponentInterface]]
+    componentTypeMap: typing.Mapping[str, typing.Type[gunsmith.WeaponComponentInterface]]
     ) -> typing.List[typing.Tuple[
-        gunsmith.ComponentInterface,
+        gunsmith.WeaponComponentInterface,
         typing.Optional[typing.Iterable[typing.Mapping[str, typing.Any]]] # This is still serialised
         ]]:
     deserialised = []
@@ -191,7 +192,7 @@ def deserialiseComponents(
         raise RuntimeError('Component data is missing the common element')
 
     componentClasses = common.getSubclasses(
-        classType=gunsmith.ComponentInterface,
+        classType=gunsmith.WeaponComponentInterface,
         topLevelOnly=True)
     componentTypeMap = {}
     for componentClass in componentClasses:
@@ -202,7 +203,7 @@ def deserialiseComponents(
     sequenceComponentMap: typing.Dict[
         str,
         typing.List[typing.Tuple[
-            gunsmith.ComponentInterface,
+            gunsmith.WeaponComponentInterface,
             typing.Optional[typing.Iterable[typing.Mapping[str, typing.Any]]]
             ]]] = {}
     for sequenceData in sequenceDataList:

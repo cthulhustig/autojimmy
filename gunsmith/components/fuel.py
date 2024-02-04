@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -13,7 +14,7 @@ class _FuelImpl(object):
             minTechLevel: typing.Union[int, common.ScalarCalculation],
             costPerKg: typing.Union[int, float, common.ScalarCalculation],
             damageDice: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            traitMap: typing.Optional[typing.Mapping[gunsmith.AttributeId, typing.Union[int, common.ScalarCalculation, common.DiceRoll]]] = None,
+            traitMap: typing.Optional[typing.Mapping[gunsmith.WeaponAttribute, typing.Union[int, common.ScalarCalculation, common.DiceRoll]]] = None,
             ) -> None:
         if not isinstance(minTechLevel, common.ScalarCalculation):
             minTechLevel = common.ScalarCalculation(
@@ -54,7 +55,7 @@ class _FuelImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel.value():
             return False
@@ -64,41 +65,41 @@ class _FuelImpl(object):
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
             step:  gunsmith.WeaponStep
             ) -> None:
         if includeWeight:
-            step.setWeight(weight=gunsmith.ConstantModifier(value=fuelWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=fuelWeight))
 
         totalCost = common.Calculator.multiply(
             lhs=self._costPerKg,
             rhs=fuelWeight,
             name='Total Fuel Cost')
-        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         factors = []
 
         if self._damageDice:
             # This sets the damage rather than modifying it as projectors don't have a damage
             # other than what comes from the fuel
-            factors.append(gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
+            factors.append(construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Damage,
                 value=common.DiceRoll(
                     count=self._damageDice,
                     type=common.DieType.D6)))
@@ -106,13 +107,13 @@ class _FuelImpl(object):
         for trait, value in self._traitMap.items():
             # The fact that this is setting the value rather than modifying it is important. The
             # value may be a DiceRoll and using them as a modifier isn't supported
-            factors.append(gunsmith.SetAttributeFactor(
+            factors.append(construction.SetAttributeFactor(
                 attributeId=trait,
                 value=value))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _LiquidFuelImpl(_FuelImpl):
@@ -131,8 +132,8 @@ class _LiquidFuelImpl(_FuelImpl):
             costPerKg=25,
             damageDice=3,
             traitMap={
-                gunsmith.AttributeId.Incendiary: 1,
-                gunsmith.AttributeId.Burn: 1})
+                gunsmith.WeaponAttribute.Incendiary: 1,
+                gunsmith.WeaponAttribute.Burn: 1})
 
 class _JelliedFuelImpl(_FuelImpl):
     """
@@ -158,8 +159,8 @@ class _JelliedFuelImpl(_FuelImpl):
             costPerKg=75,
             damageDice=4,
             traitMap={
-                gunsmith.AttributeId.Incendiary: 1,
-                gunsmith.AttributeId.Burn: self._BurnTrait})
+                gunsmith.WeaponAttribute.Incendiary: 1,
+                gunsmith.WeaponAttribute.Burn: self._BurnTrait})
 
 class _IrritantFuelImpl(_FuelImpl):
     """
@@ -206,7 +207,7 @@ class _SuppressantFuelImpl(_FuelImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
@@ -220,12 +221,12 @@ class _SuppressantFuelImpl(_FuelImpl):
             applyModifiers=applyModifiers,
             step=step)
 
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
-            modifier=gunsmith.PercentageModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Range,
+            modifier=construction.PercentageModifier(
                 value=self._RangeModifierPercentage))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
 class _BattlechemFuelImpl(_FuelImpl):
@@ -273,8 +274,8 @@ class _AdvancedFuelImpl(_FuelImpl):
             costPerKg=150,
             damageDice=5,
             traitMap={
-                gunsmith.AttributeId.Incendiary: self._IncendiaryTrait,
-                gunsmith.AttributeId.Burn: self._BurnTrait})
+                gunsmith.WeaponAttribute.Incendiary: self._IncendiaryTrait,
+                gunsmith.WeaponAttribute.Burn: self._BurnTrait})
 
 class _CryogenicFuelImpl(_FuelImpl):
     """
@@ -295,7 +296,7 @@ class _CryogenicFuelImpl(_FuelImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             fuelWeight: common.ScalarCalculation,
             includeWeight: bool,
             applyModifiers: bool,
@@ -334,24 +335,24 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         #
         # Fuel Step
@@ -363,7 +364,7 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
 
         fuelWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.FuelWeight)
+            attributeId=gunsmith.WeaponAttribute.FuelWeight)
         assert(isinstance(fuelWeight, common.ScalarCalculation)) # Construction logic should enforce this
         self._impl.updateStep(
             sequence=sequence,
@@ -387,17 +388,17 @@ class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PropellantWeight)
+            attributeId=gunsmith.WeaponAttribute.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
         propellantCostPerKg = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PropellantCost)
+            attributeId=gunsmith.WeaponAttribute.PropellantCost)
         assert(isinstance(propellantCostPerKg, common.ScalarCalculation)) # Construction logic should enforce this
         propellantCost = common.Calculator.multiply(
             lhs=propellantCostPerKg,
             rhs=propellantWeight,
             name='Propellant Cost')
-        step.setCredits(credits=gunsmith.ConstantModifier(value=propellantCost))
+        step.setCredits(credits=construction.ConstantModifier(value=propellantCost))
 
         context.applyStep(
             sequence=sequence,
@@ -444,7 +445,7 @@ class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._fuelWeightOption = gunsmith.FloatComponentOption(
+        self._fuelWeightOption = construction.FloatComponentOption(
             id='Weight',
             name='Weight',
             value=1.0,
@@ -463,11 +464,11 @@ class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._fuelWeightOption]
         options.extend(self._impl.options())
         return options
@@ -475,14 +476,14 @@ class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),

@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gunsmith
 import typing
@@ -47,7 +48,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._attachedOption = gunsmith.EnumComponentOption(
+        self._attachedOption = construction.EnumComponentOption(
             id='Attachment',
             name='Attachment',
             type=_AttachmentType,
@@ -64,7 +65,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if self._minTechLevel != None:
             if context.techLevel() < self._minTechLevel:
@@ -81,7 +82,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
             componentType=type(self),
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._attachedOption.isEnabled():
             options.append(self._attachedOption)
@@ -90,7 +91,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -176,7 +177,7 @@ class SuppressorAccessory(BarrelAccessory):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -188,14 +189,14 @@ class SuppressorAccessory(BarrelAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         cost = None
         weight = None
         operations = []
 
         if self._receiverCostPercentage:
-            cost = gunsmith.ConstantModifier(
+            cost = construction.ConstantModifier(
                 value=common.Calculator.takePercentage(
                     value=context.receiverCredits(sequence=sequence),
                     percentage=self._receiverCostPercentage,
@@ -203,40 +204,40 @@ class SuppressorAccessory(BarrelAccessory):
 
         if self.isAttached():
             if self._fixedWeight:
-                weight = gunsmith.ConstantModifier(value=self._fixedWeight)
+                weight = construction.ConstantModifier(value=self._fixedWeight)
 
             if self._physicalSignatureModifier:
                 # Only apply signature modification if the weapon actually has a physical signature
                 if context.hasAttribute(
                         sequence=sequence,
-                        attributeId=gunsmith.AttributeId.PhysicalSignature):
-                    operations.append(gunsmith.ModifyAttributeFactor(
-                        attributeId=gunsmith.AttributeId.PhysicalSignature,
-                        modifier=gunsmith.ConstantModifier(
+                        attributeId=gunsmith.WeaponAttribute.PhysicalSignature):
+                    operations.append(construction.ModifyAttributeFactor(
+                        attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                        modifier=construction.ConstantModifier(
                             value=self._physicalSignatureModifier)))
 
             if self._rangeModifierPercentage:
-                operations.append(gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Range,
-                    modifier=gunsmith.PercentageModifier(
+                operations.append(construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Range,
+                    modifier=construction.PercentageModifier(
                         value=self._rangeModifierPercentage)))
 
             if self._quickdrawModifier:
-                operations.append(gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Quickdraw,
-                    modifier=gunsmith.ConstantModifier(
+                operations.append(construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                    modifier=construction.ConstantModifier(
                         value=self._quickdrawModifier)))
 
             if self._penetrationModifier:
-                operations.append(gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Penetration,
-                    modifier=gunsmith.ConstantModifier(
+                operations.append(construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Penetration,
+                    modifier=construction.ConstantModifier(
                         value=self._penetrationModifier)))
 
             if self._inaccurateModifier:
-                operations.append(gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Inaccurate,
-                    modifier=gunsmith.ConstantModifier(
+                operations.append(construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Inaccurate,
+                    modifier=construction.ConstantModifier(
                         value=self._inaccurateModifier)))
 
         step = gunsmith.WeaponStep(
@@ -354,7 +355,7 @@ class MuzzleDischargerAccessory(BarrelAccessory):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -366,18 +367,18 @@ class MuzzleDischargerAccessory(BarrelAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
 
         for note in self._Notes:
             step.addNote(note=note)
 
         if self.isAttached():
-            step.setWeight(weight=gunsmith.ConstantModifier(
+            step.setWeight(weight=construction.ConstantModifier(
                 value=self._FixedWeight))
 
         context.applyStep(
@@ -422,7 +423,7 @@ class CupDischargerAccessory(BarrelAccessory):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -434,23 +435,23 @@ class CupDischargerAccessory(BarrelAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
 
         for note in self._Notes:
             step.addNote(note=note)
 
         if self.isAttached():
-            step.setWeight(weight=gunsmith.ConstantModifier(
+            step.setWeight(weight=construction.ConstantModifier(
                 value=self._FixedWeight))
 
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 
         context.applyStep(
@@ -482,7 +483,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._attachedOption = gunsmith.EnumComponentOption(
+        self._attachedOption = construction.EnumComponentOption(
             id='Attachment',
             name='Attachment',
             type=_AttachmentType,
@@ -499,7 +500,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if self._minTechLevel != None:
             if context.techLevel() < self._minTechLevel:
@@ -518,7 +519,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
             componentType=type(self),
             sequence=None)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._attachedOption.isEnabled():
             options.append(self._attachedOption)
@@ -527,7 +528,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -592,30 +593,30 @@ class SightAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         if self._fixedCost:
-            step.setCredits(credits=gunsmith.ConstantModifier(value=self._fixedCost))
+            step.setCredits(credits=construction.ConstantModifier(value=self._fixedCost))
 
         if self.isAttached():
             if self._fixedWeight:
-                step.setWeight(weight=gunsmith.ConstantModifier(value=self._fixedWeight))
+                step.setWeight(weight=construction.ConstantModifier(value=self._fixedWeight))
 
             # Only apply the quickdraw modifier to the primary as this is a weapon feature so it should
             # only be included once
             if self._quickdrawModifier and context.isPrimary(sequence=sequence):
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Quickdraw,
-                    modifier=gunsmith.ConstantModifier(
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                    modifier=construction.ConstantModifier(
                         value=self._quickdrawModifier)))
 
             if self._scopeTrait:
-                step.addFactor(factor=gunsmith.SetAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Scope))
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Scope))
 
             if self._notes:
                 for note in self._notes:
@@ -841,7 +842,7 @@ class BayonetLugAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -866,14 +867,14 @@ class BlingAccessory(WeaponAccessory):
             componentString='Bling',
             defaultAttachType=_AttachmentType.Fixed)
 
-        self._costOption = gunsmith.FloatComponentOption(
+        self._costOption = construction.FloatComponentOption(
             id='Cost',
             name='Cost',
             value=0,
             minValue=0,
             description='Specify the amount to the accessory.')
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._costOption)
         return options
@@ -881,7 +882,7 @@ class BlingAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         cost = common.ScalarCalculation(
             value=self._costOption.value(),
@@ -890,7 +891,7 @@ class BlingAccessory(WeaponAccessory):
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=cost))
+            credits=construction.ConstantModifier(value=cost))
 
         context.applyStep(
             sequence=sequence,
@@ -919,17 +920,17 @@ class FlashlightAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        cost = gunsmith.ConstantModifier(value=self._FixedCost)
+        cost = construction.ConstantModifier(value=self._FixedCost)
         operations = []
 
         # Only apply the quickdraw modifier to the primary as this is a weapon feature so it should
         # only be included once
         if self.isAttached() and context.isPrimary(sequence=sequence):
-            operations.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            operations.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 
         step = gunsmith.WeaponStep(
@@ -979,21 +980,21 @@ class GraviticSystemAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         weaponWeight = context.baseWeight(sequence=None) # Use whole weapon base weight
-        step.setCredits(credits=gunsmith.ConstantModifier(
+        step.setCredits(credits=construction.ConstantModifier(
             value=common.Calculator.multiply(
                 lhs=weaponWeight,
                 rhs=self._PerWeaponKgCost,
                 name='Gravitic System Cost')))
 
         if self.isAttached():
-            step.setWeight(weight=gunsmith.ConstantModifier(
+            step.setWeight(weight=construction.ConstantModifier(
                 value=common.Calculator.multiply(
                     lhs=weaponWeight,
                     rhs=self._WeaponWeightMultiplier,
@@ -1031,7 +1032,7 @@ class GunCameraAccessory(WeaponAccessory):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1044,7 +1045,7 @@ class GunCameraAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -1053,12 +1054,12 @@ class GunCameraAccessory(WeaponAccessory):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         return gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
 
 class LowTechGunCameraAccessory(GunCameraAccessory):
     """
@@ -1079,16 +1080,16 @@ class LowTechGunCameraAccessory(GunCameraAccessory):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         # Only apply the quickdraw modifier to the primary as this is a weapon feature so it should
         # only be included once
         if self.isAttached() and context.isPrimary(sequence=sequence):
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=self._QuickdrawModifier)))
 
         return step
@@ -1142,7 +1143,7 @@ class BipodAccessory(WeaponAccessory):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1173,7 +1174,7 @@ class BipodAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -1188,14 +1189,14 @@ class BipodAccessory(WeaponAccessory):
             value=context.receiverCredits(sequence=None), # Use cost of all receivers
             percentage=receiverCostPercentage,
             name=f'{self.componentString()} Cost')
-        step.setCredits(credits=gunsmith.ConstantModifier(value=cost))
+        step.setCredits(credits=construction.ConstantModifier(value=cost))
 
         if self.isAttached():
             weight = common.Calculator.takePercentage(
                 value=context.receiverWeight(sequence=None), # Use weight of all receivers
                 percentage=self._ReceiverWeightPercentage,
                 name=f'{self.componentString()} Weight')
-            step.setWeight(weight=gunsmith.ConstantModifier(value=weight))
+            step.setWeight(weight=construction.ConstantModifier(value=weight))
 
             for note in self._Notes:
                 step.addNote(note=note)
@@ -1235,15 +1236,15 @@ class UnderBarrelRailAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
 
         if self.isAttached():
-            step.setWeight(weight=gunsmith.ConstantModifier(
+            step.setWeight(weight=construction.ConstantModifier(
                 value=self._FixedWeight))
             step.addNote(note=self._Note)
 
@@ -1279,15 +1280,15 @@ class LaserDesignatorAccessory(WeaponAccessory):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
-        step.setCredits(credits=gunsmith.ConstantModifier(value=self._FixedCost))
+        step.setCredits(credits=construction.ConstantModifier(value=self._FixedCost))
 
         if self.isAttached():
-            step.setWeight(weight=gunsmith.ConstantModifier(value=self._FixedWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=self._FixedWeight))
             step.addNote(note=self._Note)
 
         context.applyStep(

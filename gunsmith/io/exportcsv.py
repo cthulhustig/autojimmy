@@ -1,4 +1,5 @@
 import common
+import construction
 import copy
 import csv
 import gunsmith
@@ -27,7 +28,7 @@ def exportToCsv(
                 if cost:
                     costString = cost.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(cost, gunsmith.ConstantModifier):
+                    if isinstance(cost, construction.ConstantModifier):
                         costString = costString.strip('+')
                         costString = 'Cr' + costString
                 else:
@@ -37,7 +38,7 @@ def exportToCsv(
                 if weight:
                     weightString = weight.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(weight, gunsmith.ConstantModifier):
+                    if isinstance(weight, construction.ConstantModifier):
                         weightString = weightString.strip('+')
                         weightString += 'kg'
                 else:

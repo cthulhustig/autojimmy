@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gui
 import gunsmith
@@ -82,7 +83,7 @@ class WeaponManifestTable(gui.ListTable):
     def _fillManifestEntryRow(
             self,
             row: int,
-            entry: gunsmith.ManifestEntry
+            entry: construction.ManifestEntry
             ) -> None:
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
@@ -94,7 +95,7 @@ class WeaponManifestTable(gui.ListTable):
                 if cost:
                     text = cost.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(cost, gunsmith.ConstantModifier):
+                    if isinstance(cost, construction.ConstantModifier):
                         text = text.strip('+')
                         text = 'Cr' + text
                 else:
@@ -105,7 +106,7 @@ class WeaponManifestTable(gui.ListTable):
                 if weight:
                     text = weight.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(weight, gunsmith.ConstantModifier):
+                    if isinstance(weight, construction.ConstantModifier):
                         text = text.strip('+')
                         text += 'kg'
                 else:
@@ -130,7 +131,7 @@ class WeaponManifestTable(gui.ListTable):
     def _fillManifestSectionTotalRow(
             self,
             row: int,
-            section: gunsmith.ManifestSection
+            section: construction.ManifestSection
             ) -> None:
         bkColour = QtWidgets.QApplication.palette().color(
             QtGui.QPalette.ColorRole.AlternateBase)
@@ -169,7 +170,7 @@ class WeaponManifestTable(gui.ListTable):
     def _fillManifestTotalRow(
             self,
             row: int,
-            manifest: gunsmith.Manifest
+            manifest: construction.Manifest
             ) -> None:
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
@@ -209,29 +210,29 @@ class WeaponManifestTable(gui.ListTable):
 
         if column == WeaponManifestTable.ColumnType.Cost or \
                 column == WeaponManifestTable.ColumnType.Component:
-            if isinstance(rowObject, gunsmith.ManifestEntry):
+            if isinstance(rowObject, construction.ManifestEntry):
                 costModifier = rowObject.cost(costId=gunsmith.WeaponCost.Credits)
                 if costModifier:
                     calculations.append(costModifier.numericModifier())
-            elif isinstance(rowObject, gunsmith.ManifestSection):
+            elif isinstance(rowObject, construction.ManifestSection):
                 calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Credits))
-            elif isinstance(rowObject, gunsmith.Manifest):
+            elif isinstance(rowObject, construction.Manifest):
                 calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Credits))
 
         if column == WeaponManifestTable.ColumnType.Weight or \
                 column == WeaponManifestTable.ColumnType.Component:
-            if isinstance(rowObject, gunsmith.ManifestEntry):
+            if isinstance(rowObject, construction.ManifestEntry):
                 weightModifier = rowObject.cost(costId=gunsmith.WeaponCost.Weight)
                 if weightModifier:
                     calculations.append(weightModifier.numericModifier())
-            elif isinstance(rowObject, gunsmith.ManifestSection):
+            elif isinstance(rowObject, construction.ManifestSection):
                 calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Weight))
-            elif isinstance(rowObject, gunsmith.Manifest):
+            elif isinstance(rowObject, construction.Manifest):
                 calculations.append(rowObject.totalCost(costId=gunsmith.WeaponCost.Weight))
 
         if column == WeaponManifestTable.ColumnType.Factors or \
                 column == WeaponManifestTable.ColumnType.Component:
-            if isinstance(rowObject, gunsmith.ManifestEntry):
+            if isinstance(rowObject, construction.ManifestEntry):
                 for factor in rowObject.factors():
                     calculations.extend(factor.calculations())
 

@@ -1,13 +1,13 @@
 import common
-import gunsmith
+import construction
 import typing
 
 class ManifestEntry(object):
     def __init__(
             self,
             component: str,
-            costs: typing.Optional[typing.Mapping[gunsmith.ConstructionCost, gunsmith.NumericModifierInterface]] = None,
-            factors: typing.Optional[typing.Iterable[gunsmith.FactorInterface]] = None
+            costs: typing.Optional[typing.Mapping[construction.ConstructionCost, construction.NumericModifierInterface]] = None,
+            factors: typing.Optional[typing.Iterable[construction.FactorInterface]] = None
             ) -> None:
         self._text = component
         self._costs = dict(costs) if costs else {}
@@ -16,10 +16,10 @@ class ManifestEntry(object):
     def component(self) -> str:
         return self._text
 
-    def cost(self, costId: gunsmith.ConstructionCost):
+    def cost(self, costId: construction.ConstructionCost):
         return self._costs.get(costId)
 
-    def factors(self) -> typing.Collection[gunsmith.FactorInterface]:
+    def factors(self) -> typing.Collection[construction.FactorInterface]:
         return self._factors
 
 class ManifestSection(object):
@@ -39,8 +39,8 @@ class ManifestSection(object):
     def createEntry(
             self,
             component: str,
-            costs: typing.Optional[typing.Mapping[gunsmith.ConstructionCost, gunsmith.NumericModifierInterface]] = None,
-            factors: typing.Optional[typing.Iterable[gunsmith.FactorInterface]] = None
+            costs: typing.Optional[typing.Mapping[construction.ConstructionCost, construction.NumericModifierInterface]] = None,
+            factors: typing.Optional[typing.Iterable[construction.FactorInterface]] = None
             ) -> None:
         entry = ManifestEntry(
             component=component,
@@ -51,9 +51,9 @@ class ManifestSection(object):
 
     def totalCost(
             self,
-            costId: gunsmith.ConstructionCost
+            costId: construction.ConstructionCost
             ) -> common.ScalarCalculation:
-        total = gunsmith.calculateNumericModifierSequence(
+        total = construction.calculateNumericModifierSequence(
             modifiers=[entry.cost(costId=costId) for entry in self._entries if entry.cost(costId=costId)])
         if not total:
             raise RuntimeError(
@@ -65,12 +65,12 @@ class ManifestSection(object):
 class Manifest(object):
     def __init__(
             self,
-            costsType: typing.Type[gunsmith.ConstructionCost]
+            costsType: typing.Type[construction.ConstructionCost]
             ) -> None:
         self._costsType = costsType
         self._sections: typing.List[ManifestSection] = []
 
-    def costsType(self) -> typing.Type[gunsmith.ConstructionCost]:
+    def costsType(self) -> typing.Type[construction.ConstructionCost]:
         return self._costsType
 
     def sections(self) -> typing.Collection[ManifestSection]:
@@ -86,7 +86,7 @@ class Manifest(object):
 
     def totalCost(
             self,
-            costId: gunsmith.ConstructionCost
+            costId: construction.ConstructionCost
             ) -> common.ScalarCalculation:
         costs = []
         for section in self._sections:

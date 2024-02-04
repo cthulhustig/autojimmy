@@ -1,8 +1,7 @@
 import common
+import construction
 import gunsmith
 import typing
-
-from gunsmith.component import ConstructionContextInterface
 
 class MultiMount(gunsmith.MultiMountInterface):
     """
@@ -103,14 +102,14 @@ class MultiMount(gunsmith.MultiMountInterface):
                 value=weaponCount,
                 name='Multi-Mount Weapon Count')
 
-        self._weaponCountOption = gunsmith.IntegerComponentOption(
+        self._weaponCountOption = construction.IntegerComponentOption(
             id='Count',
             name='Count',
             value=2,
             minValue=2,
             description='Specify the number of identical weapons that are used to create the multi-mount setup.')
 
-        self._quickdrawModifierOption = gunsmith.IntegerComponentOption(
+        self._quickdrawModifierOption = construction.IntegerComponentOption(
             id='QuickdrawModifier',
             name='Secondary Weapon Quickdraw Modifier',
             value=0,
@@ -132,7 +131,7 @@ class MultiMount(gunsmith.MultiMountInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver. All sequences are checked as it
         # should be enabled if any weapon has one
@@ -140,20 +139,20 @@ class MultiMount(gunsmith.MultiMountInterface):
             componentType=gunsmith.ReceiverInterface,
             sequence=None)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._weaponCountOption, self._quickdrawModifierOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         weaponCount = common.ScalarCalculation(
             value=self._weaponCountOption.value(),
@@ -176,17 +175,17 @@ class MultiMount(gunsmith.MultiMountInterface):
             lhs=context.totalWeight(sequence=None), # Total weight at point multi-mount is applied
             rhs=additionalWeapons,
             name=f'{self.componentString()} Additional Weapon Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=additionalWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=additionalWeight))
 
         additionalCost = common.Calculator.multiply(
             lhs=context.totalCredits(sequence=None), # Total cost at point multi-mount is applied
             rhs=additionalWeapons,
             name=f'{self.componentString()} Additional Weapon Cost')
-        step.setCredits(credits=gunsmith.ConstantModifier(value=additionalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=additionalCost))
 
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.BarrelCount)
+            attributeId=gunsmith.WeaponAttribute.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         # Only apply quickdraw modifier to primary weapon as this is a common component so
@@ -196,9 +195,9 @@ class MultiMount(gunsmith.MultiMountInterface):
             quickdrawModifier = common.ScalarCalculation(
                 value=quickdrawModifier,
                 name='Specified Secondary Weapon Quickdraw Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=quickdrawModifier)))
 
         # Apply Auto modifier
@@ -208,9 +207,9 @@ class MultiMount(gunsmith.MultiMountInterface):
             name=f'{self.componentString()} Auto Modifier')
 
         if autoModifier.value() > 0:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Auto,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Auto,
+                modifier=construction.ConstantModifier(
                     value=autoModifier)))
 
         context.applyStep(
@@ -233,7 +232,7 @@ class MultiMount(gunsmith.MultiMountInterface):
         # value as the previous step has been applied
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Auto)
+            attributeId=gunsmith.WeaponAttribute.Auto)
         if not isinstance(autoScore, common.ScalarCalculation):
             return # Nothing to do
 
@@ -244,14 +243,14 @@ class MultiMount(gunsmith.MultiMountInterface):
         if autoScore.value() >= self._VRFMinAutoLevel.value() \
             or context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.RF):
+                attributeId=gunsmith.WeaponAttribute.RF):
             # Multi-Mount gives VRF
-            fireRateTrait = gunsmith.AttributeId.VRF
+            fireRateTrait = gunsmith.WeaponAttribute.VRF
             damageDiceDivisor = self._VRFDamageDiceDivisor
             heatMultiplier = self._VRFHeatMultiplier
         elif autoScore.value() >= self._RFMinAutoLevel.value():
             # Multi-Mount gives RF
-            fireRateTrait = gunsmith.AttributeId.RF
+            fireRateTrait = gunsmith.WeaponAttribute.RF
             damageDiceDivisor = self._RFDamageDiceDivisor
             heatMultiplier = self._RFHeatMultiplier
         else:
@@ -263,7 +262,7 @@ class MultiMount(gunsmith.MultiMountInterface):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttribute.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         # AP modifier should be calculated before rapid fire damage dice are added as it's
@@ -272,9 +271,9 @@ class MultiMount(gunsmith.MultiMountInterface):
             value=damageRoll.dieCount(),
             name=f'{fireRateTrait.value} {self.componentString()} AP Modifier')
         if apModifier.value() > 0:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AP,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.AP,
+                modifier=construction.ConstantModifier(
                     value=apModifier)))
 
         additionalDamageDice: common.ScalarCalculation = common.Calculator.divideFloor(
@@ -282,15 +281,15 @@ class MultiMount(gunsmith.MultiMountInterface):
             rhs=damageDiceDivisor,
             name=f'{fireRateTrait.value} {self.componentString()} Additional Damage Dice')
         if additionalDamageDice.value() > 0:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
-                modifier=gunsmith.DiceRollModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Damage,
+                modifier=construction.DiceRollModifier(
                     countModifier=additionalDamageDice)))
 
         # Only update AutoHeatGeneration if heat rules are enabled for the weapon
         if context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.HeatDissipation):
+                attributeId=gunsmith.WeaponAttribute.HeatDissipation):
             totalDamageDice = common.Calculator.add(
                 lhs=damageRoll.dieCount(),
                 rhs=additionalDamageDice,
@@ -301,11 +300,11 @@ class MultiMount(gunsmith.MultiMountInterface):
                     lhs=totalDamageDice,
                     rhs=heatMultiplier),
                 name=f'{fireRateTrait.value} {self.componentString()} Heat Generation')
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.AutoHeatGeneration,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.AutoHeatGeneration,
                 value=heatGeneration))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(attributeId=fireRateTrait))
+        step.addFactor(factor=construction.SetAttributeFactor(attributeId=fireRateTrait))
 
         context.applyStep(
             sequence=sequence,
@@ -326,7 +325,7 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not context.hasComponent(sequence=sequence, componentType=gunsmith.MultiMount):
             return False
@@ -340,20 +339,20 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
                 sequence=sequence,
                 componentType=gunsmith.AmmoLoadedInterface)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         multiMount = context.findFirstComponent(
             sequence=sequence,
@@ -366,8 +365,8 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
         step = gunsmith.WeaponStep(
             name=self.componentString(),
             type=self.typeString(),
-            credits=gunsmith.MultiplierModifier(value=weaponCount),
-            weight=gunsmith.MultiplierModifier(value=weaponCount))
+            credits=construction.MultiplierModifier(value=weaponCount),
+            weight=construction.MultiplierModifier(value=weaponCount))
 
         context.applyStep(
             sequence=sequence,

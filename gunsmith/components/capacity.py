@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -19,7 +20,7 @@ class CapacityModification(gunsmith.CapacityModificationInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
@@ -43,13 +44,13 @@ class CapacityModification(gunsmith.CapacityModificationInterface):
                 componentType=gunsmith.StandardSingleShotLauncherReceiver,
                 sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -89,7 +90,7 @@ class DesiredCapacityModification(CapacityModification):
     def __init__(self) -> None:
         super().__init__()
 
-        self._requiredCapacityOption = gunsmith.IntegerComponentOption(
+        self._requiredCapacityOption = construction.IntegerComponentOption(
             id='Capacity',
             name='Required Capacity',
             value=1,
@@ -99,7 +100,7 @@ class DesiredCapacityModification(CapacityModification):
     def componentString(self) -> str:
         return 'Desired Capacity'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._requiredCapacityOption)
         return options
@@ -107,11 +108,11 @@ class DesiredCapacityModification(CapacityModification):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         currentCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
         assert(isinstance(currentCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
         maxCapacity = common.Calculator.floor(
@@ -168,14 +169,14 @@ class DesiredCapacityModification(CapacityModification):
             name=self.instanceString(),
             type=self.typeString())
 
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifierPercentage))
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifierPercentage))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
             value=capacity))
 
         context.applyStep(
@@ -201,7 +202,7 @@ class IncreaseCapacityModification(CapacityModification):
     def __init__(self) -> None:
         super().__init__()
 
-        self._increaseLevelsOption = gunsmith.IntegerComponentOption(
+        self._increaseLevelsOption = construction.IntegerComponentOption(
             id='Levels',
             name='Increase Levels',
             value=1,
@@ -212,7 +213,7 @@ class IncreaseCapacityModification(CapacityModification):
     def componentString(self) -> str:
         return 'Capacity Increase'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._increaseLevelsOption)
         return options
@@ -220,7 +221,7 @@ class IncreaseCapacityModification(CapacityModification):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -234,23 +235,23 @@ class IncreaseCapacityModification(CapacityModification):
             lhs=self._PerIncreaseLevelWeightPercentage,
             rhs=increaseLevels,
             name=f'{self.componentString()} Receiver Weight Modifier Percentage')
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifierPercentage))
 
         costModifierPercentage = common.Calculator.multiply(
             lhs=self._PerIncreaseLevelCostPercentage,
             rhs=increaseLevels,
             name=f'{self.componentString()} Receiver Cost Modifier Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifierPercentage))
 
         capacityModifierPercentage = common.Calculator.multiply(
             lhs=increaseLevels,
             rhs=common.ScalarCalculation(value=10),
             name=f'{self.componentString()} Ammo Capacity Modifier Percentage')
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityModifierPercentage,
                 roundDown=True)))
 
@@ -299,7 +300,7 @@ class DecreaseCapacityModification(CapacityModification):
                 value=decreaseLevels,
                 name=f'Capacity Decrease levels')
 
-        self._decreaseLevelsOption = gunsmith.IntegerComponentOption(
+        self._decreaseLevelsOption = construction.IntegerComponentOption(
             id='Levels',
             name='Decrease Levels',
             value=1,
@@ -313,7 +314,7 @@ class DecreaseCapacityModification(CapacityModification):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -321,7 +322,7 @@ class DecreaseCapacityModification(CapacityModification):
             sequence=sequence,
             context=context) > 0
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._decreaseLevelsOption)
         return options
@@ -329,7 +330,7 @@ class DecreaseCapacityModification(CapacityModification):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         super().updateOptions(sequence=sequence, context=context)
         maxLevel = self._calculateMaxDecrease(
@@ -345,7 +346,7 @@ class DecreaseCapacityModification(CapacityModification):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -359,23 +360,23 @@ class DecreaseCapacityModification(CapacityModification):
             lhs=self._PerDecreaseLevelWeightPercentage,
             rhs=decreaseLevels,
             name=f'{self.componentString()} Receiver Weight Modifier Percentage')
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifierPercentage))
 
         costModifierPercentage = common.Calculator.multiply(
             lhs=self._PerDecreaseLevelCostPercentage,
             rhs=decreaseLevels,
             name=f'{self.componentString()} Receiver Cost Modifier Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifierPercentage))
 
         capacityModifierPercentage = common.Calculator.multiply(
             lhs=decreaseLevels,
             rhs=common.ScalarCalculation(value=-10),
             name=f'{self.componentString()} Ammo Capacity Modifier Percentage')
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityModifierPercentage,
                 roundDown=True)))
 
@@ -387,11 +388,11 @@ class DecreaseCapacityModification(CapacityModification):
     def _calculateMaxDecrease(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> int:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
         if not isinstance(ammoCapacity, common.ScalarCalculation):
             return 0
 
@@ -403,7 +404,7 @@ class DecreaseCapacityModification(CapacityModification):
             # equal to the number of barrels
             barrelCount = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.BarrelCount)
+                attributeId=gunsmith.WeaponAttribute.BarrelCount)
             if not isinstance(ammoCapacity, common.ScalarCalculation):
                 return 0
             minCapacity = barrelCount.value()

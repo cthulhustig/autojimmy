@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -39,7 +40,7 @@ class Mechanism(gunsmith.MechanismInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel:
             return False
@@ -54,20 +55,20 @@ class Mechanism(gunsmith.MechanismInterface):
             componentType=gunsmith.ReceiverInterface,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -76,14 +77,14 @@ class Mechanism(gunsmith.MechanismInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         if self._costModifierPercentage:
-            step.setCredits(credits=gunsmith.PercentageModifier(
+            step.setCredits(credits=construction.PercentageModifier(
                 value=self._costModifierPercentage))
 
         return step
@@ -105,7 +106,7 @@ class SemiAutomaticMechanism(Mechanism):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -147,7 +148,7 @@ class SingleShotMechanism(Mechanism):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -166,20 +167,20 @@ class SingleShotMechanism(Mechanism):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.BarrelCount)
+            attributeId=gunsmith.WeaponAttribute.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         ammoCapacity = common.Calculator.equals(
             value=barrelCount,
             name=f'{self.componentString()} Ammo Capacity')
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
             value=ammoCapacity))
 
         return step
@@ -219,7 +220,7 @@ class RepeaterMechanism(Mechanism):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -235,7 +236,7 @@ class RepeaterMechanism(Mechanism):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -243,9 +244,9 @@ class RepeaterMechanism(Mechanism):
         if not context.hasComponent(
                 componentType=gunsmith.SmoothboreCalibre,
                 sequence=sequence):
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCapacity,
-                modifier=gunsmith.PercentageModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+                modifier=construction.PercentageModifier(
                     value=self._RepeaterAmmoCapacityModifierPercentage,
                     roundDown=True)))
 
@@ -281,7 +282,7 @@ class AutoMechanism(Mechanism):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -303,14 +304,14 @@ class AutoMechanism(Mechanism):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if self._autoModifier:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Auto,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Auto,
+                modifier=construction.ConstantModifier(
                     value=self._autoModifier)))
 
         return step
@@ -375,7 +376,7 @@ class MechanicalRotaryMechanism(AutoMechanism):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -387,13 +388,13 @@ class MechanicalRotaryMechanism(AutoMechanism):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         barrelCount = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.BarrelCount)
+            attributeId=gunsmith.WeaponAttribute.BarrelCount)
         assert(isinstance(barrelCount, common.ScalarCalculation)) # Construction logic should enforce this
 
         autoModifier = common.Calculator.divideFloor(
@@ -401,9 +402,9 @@ class MechanicalRotaryMechanism(AutoMechanism):
             rhs=self._BarrelDivisor,
             name=f'{self.componentString()} Auto Modifier')
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Auto,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Auto,
+            modifier=construction.ConstantModifier(
                 value=autoModifier)))
 
         return step

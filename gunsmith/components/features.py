@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gunsmith
 import typing
@@ -42,7 +43,7 @@ class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Enforce minimum TL
         if self._minTechLevel and context.techLevel() < self._minTechLevel.value():
@@ -59,20 +60,20 @@ class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
             componentType=type(self),
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -81,17 +82,17 @@ class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         if self._weightModifierPercentage:
-            step.setWeight(weight=gunsmith.PercentageModifier(
+            step.setWeight(weight=construction.PercentageModifier(
                 value=self._weightModifierPercentage))
         if self._costModifierPercentage:
-            step.setCredits(credits=gunsmith.PercentageModifier(
+            step.setCredits(credits=construction.PercentageModifier(
                 value=self._costModifierPercentage))
 
         return step
@@ -124,7 +125,7 @@ class AdvancedProjectileWeaponFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -140,22 +141,22 @@ class AdvancedProjectileWeaponFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Range,
+            modifier=construction.PercentageModifier(
                 value=self._RangeModifierPercentage)))
 
         if not context.hasComponent(
                 componentType=gunsmith.ArchaicCalibre,
                 sequence=sequence):
             # Projectile weapons are always expected to have a physical signature
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.PhysicalSignature,
-                modifier=gunsmith.ConstantModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                modifier=construction.ConstantModifier(
                     value=self._PhysicalSignatureModifier)))
 
         return step
@@ -175,7 +176,7 @@ class AccurisedFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._Note)
@@ -220,7 +221,7 @@ class BullpupFeature(ReceiverFeature):
             componentString='Bullpup',
             costModifierPercentage=+25)
 
-        self._setupOption = gunsmith.EnumComponentOption(
+        self._setupOption = construction.EnumComponentOption(
             id='Setup',
             name='Setup',
             type=BullpupFeature._HandedSetup,
@@ -235,7 +236,7 @@ class BullpupFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -244,7 +245,7 @@ class BullpupFeature(ReceiverFeature):
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._setupOption)
         return options
@@ -252,13 +253,13 @@ class BullpupFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Quickdraw,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            modifier=construction.ConstantModifier(
                 value=self._QuickdrawModifier)))
 
         setup = self._setupOption.value()
@@ -316,7 +317,7 @@ class SizeReductionFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -345,7 +346,7 @@ class SizeReductionFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -354,9 +355,9 @@ class SizeReductionFeature(ReceiverFeature):
         if not context.hasComponent(
                 componentType=gunsmith.PowerPackReceiver,
                 sequence=sequence):
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCapacity,
-                modifier=gunsmith.PercentageModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+                modifier=construction.PercentageModifier(
                     value=self._capacityModifierPercentage,
                     roundDown=True)))
 
@@ -365,7 +366,7 @@ class SizeReductionFeature(ReceiverFeature):
     def _checkCapacityCompatibility(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.hasComponent(
                 componentType=gunsmith.PowerPackReceiver,
@@ -376,7 +377,7 @@ class SizeReductionFeature(ReceiverFeature):
 
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity)
         if not isinstance(ammoCapacity, common.ScalarCalculation):
             return False
 
@@ -388,7 +389,7 @@ class SizeReductionFeature(ReceiverFeature):
             # equal to the number of barrels
             barrelCount = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.BarrelCount)
+                attributeId=gunsmith.WeaponAttribute.BarrelCount)
             if not isinstance(ammoCapacity, common.ScalarCalculation):
                 return False
             minCapacity = barrelCount.value()
@@ -466,7 +467,7 @@ class CoolingSystemFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Cooling System')
 
-        self._coolingTypeOption = gunsmith.EnumComponentOption(
+        self._coolingTypeOption = construction.EnumComponentOption(
             id='CoolingType',
             name='Cooling Type',
             type=CoolingSystemFeature._CoolingType,
@@ -480,7 +481,7 @@ class CoolingSystemFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -488,9 +489,9 @@ class CoolingSystemFeature(ReceiverFeature):
         # Only compatible with weapons that have the HeatDissipation attribute.
         return context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.HeatDissipation)
+            attributeId=gunsmith.WeaponAttribute.HeatDissipation)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._coolingTypeOption]
         options.extend(super().options())
         return options
@@ -498,7 +499,7 @@ class CoolingSystemFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -524,14 +525,14 @@ class CoolingSystemFeature(ReceiverFeature):
             value=heatModifier,
             name=f'{instanceString} Heat Dissipation Modifier')
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifier))
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifier))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.HeatDissipation,
-            modifier=gunsmith.ConstantModifier(value=heatModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+            modifier=construction.ConstantModifier(value=heatModifier)))
 
         return step
 
@@ -549,7 +550,7 @@ class GuidanceSystemFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -582,7 +583,7 @@ class HighCapacityFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -615,13 +616,13 @@ class HighCapacityFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=HighCapacityFeature._CapacityModifierPercentage,
                 roundDown=True)))
 
@@ -642,28 +643,28 @@ class HighQualityFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='High Quality')
 
-        self._rangeModifierOption = gunsmith.IntegerComponentOption(
+        self._rangeModifierOption = construction.IntegerComponentOption(
             id='RangeModifier',
             name='Range Modifier',
             value=0,
             minValue=0,
             description='Specify the Range increase given by the High Quality feature.')
 
-        self._costPercentageOption = gunsmith.FloatComponentOption(
+        self._costPercentageOption = construction.FloatComponentOption(
             id='CostIncrease',
             name='Receiver Cost Increase (%)',
             value=50,
             minValue=50,
             description='Specify the amount to spend on the feature.')
 
-        self._quickdrawModifierOption = gunsmith.IntegerComponentOption(
+        self._quickdrawModifierOption = construction.IntegerComponentOption(
             id='QuickdrawModifier',
             name='Quickdraw Modifier',
             value=0,
             minValue=0,
             description='Specify the Quickdraw increase given by the High Quality feature.')
 
-        self._damageDiceModifierOption = gunsmith.IntegerComponentOption(
+        self._damageDiceModifierOption = construction.IntegerComponentOption(
             id='DamageDiceModifier',
             name='Damage Dice Modifier',
             value=0,
@@ -671,7 +672,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Damage Dice increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._damageConstantModifierOption = gunsmith.IntegerComponentOption(
+        self._damageConstantModifierOption = construction.IntegerComponentOption(
             id='DamageConstantModifier',
             name='Damage Constant Modifier',
             value=0,
@@ -679,7 +680,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Constant Damage increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._recoilModifierOption = gunsmith.IntegerComponentOption(
+        self._recoilModifierOption = construction.IntegerComponentOption(
             id='RecoilModifier',
             name='Recoil Modifier',
             value=0,
@@ -687,7 +688,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Recoil reduction given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._penetrationModifierOption = gunsmith.IntegerComponentOption(
+        self._penetrationModifierOption = construction.IntegerComponentOption(
             id='PenetrationModifier',
             name='Penetration Modifier',
             value=0,
@@ -695,7 +696,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Penetration increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._heatDissipationModifierOption = gunsmith.IntegerComponentOption(
+        self._heatDissipationModifierOption = construction.IntegerComponentOption(
             id='HeatDissipationModifier',
             name='Heat Dissipation Modifier',
             value=0,
@@ -703,7 +704,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Heat Dissipation increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._overheatThresholdModifierOption = gunsmith.IntegerComponentOption(
+        self._overheatThresholdModifierOption = construction.IntegerComponentOption(
             id='OverheatThresholdModifier',
             name='Overheat Threshold Modifier',
             value=0,
@@ -711,7 +712,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Overheat Threshold increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._dangerHeatThresholdModifierOption = gunsmith.IntegerComponentOption(
+        self._dangerHeatThresholdModifierOption = construction.IntegerComponentOption(
             id='DangerHeatThresholdModifier',
             name='Danger Heat Threshold Modifier',
             value=0,
@@ -719,7 +720,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Danger Heat Threshold increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._disasterHeatThresholdModifierOption = gunsmith.IntegerComponentOption(
+        self._disasterHeatThresholdModifierOption = construction.IntegerComponentOption(
             id='DisasterHeatThresholdModifier',
             name='Disaster Heat Threshold Modifier',
             value=0,
@@ -727,7 +728,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Disaster Heat Threshold increase given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._physicalSignatureModifierOption = gunsmith.IntegerComponentOption(
+        self._physicalSignatureModifierOption = construction.IntegerComponentOption(
             id='PhysicalSignatureModifier',
             name='Physical Signature Modifier',
             value=0,
@@ -735,7 +736,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Physical Signature reduction given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._emissionsSignatureModifierOption = gunsmith.IntegerComponentOption(
+        self._emissionsSignatureModifierOption = construction.IntegerComponentOption(
             id='EmissionsSignatureModifier',
             name='Emission Signature Modifier',
             value=0,
@@ -743,7 +744,7 @@ class HighQualityFeature(ReceiverFeature):
             description='Specify the Emissions Signature reduction given by the High Quality feature.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._noteOption = gunsmith.StringComponentOption(
+        self._noteOption = construction.StringComponentOption(
             id='EffectNote',
             name='Effect Note',
             value='',
@@ -752,7 +753,7 @@ class HighQualityFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -760,7 +761,7 @@ class HighQualityFeature(ReceiverFeature):
             componentType=LowQualityFeature,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
 
         options.append(self._costPercentageOption)
@@ -804,7 +805,7 @@ class HighQualityFeature(ReceiverFeature):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         super().updateOptions(sequence=sequence, context=context)
 
@@ -849,32 +850,32 @@ class HighQualityFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         cost = common.ScalarCalculation(
             value=self._costPercentageOption.value(),
             name='Specified Receiver Cost Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(value=cost))
+        step.setCredits(credits=construction.PercentageModifier(value=cost))
 
         rangeModifier = self._rangeModifierOption.value()
         if rangeModifier > 0: # Range modifiers are positive
             rangeModifier = common.ScalarCalculation(
                 value=rangeModifier,
                 name='Specified Range Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Range,
-                modifier=gunsmith.ConstantModifier(value=rangeModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Range,
+                modifier=construction.ConstantModifier(value=rangeModifier)))
 
         quickdrawModifier = self._quickdrawModifierOption.value()
         if quickdrawModifier > 0: # Quickdraw modifiers are positive
             quickdrawModifier = common.ScalarCalculation(
                 value=quickdrawModifier,
                 name='Specified Quickdraw Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(value=quickdrawModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Quickdraw,
+                modifier=construction.ConstantModifier(value=quickdrawModifier)))
 
         if self._allowDamageModifier(sequence=sequence, context=context):
             damageDiceModifier = self._damageDiceModifierOption.value()
@@ -894,9 +895,9 @@ class HighQualityFeature(ReceiverFeature):
                 damageConstantModifier = None
 
             if damageDiceModifier or damageConstantModifier:
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Damage,
-                    modifier=gunsmith.DiceRollModifier(
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Damage,
+                    modifier=construction.DiceRollModifier(
                         countModifier=damageDiceModifier,
                         constantModifier=damageConstantModifier)))
 
@@ -906,9 +907,9 @@ class HighQualityFeature(ReceiverFeature):
                 recoilModifier = common.ScalarCalculation(
                     value=recoilModifier,
                     name='Specified Recoil Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Recoil,
-                    modifier=gunsmith.ConstantModifier(value=recoilModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Recoil,
+                    modifier=construction.ConstantModifier(value=recoilModifier)))
 
         if self._allowPenetrationModifier(sequence=sequence, context=context):
             penetrationModifier = self._penetrationModifierOption.value()
@@ -916,9 +917,9 @@ class HighQualityFeature(ReceiverFeature):
                 penetrationModifier = common.ScalarCalculation(
                     value=penetrationModifier,
                     name='Specified Penetration Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Penetration,
-                    modifier=gunsmith.ConstantModifier(value=penetrationModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.Penetration,
+                    modifier=construction.ConstantModifier(value=penetrationModifier)))
 
         if self._allowHeatModifier(sequence=sequence, context=context):
             heatDissipationModifier = self._heatDissipationModifierOption.value()
@@ -926,36 +927,36 @@ class HighQualityFeature(ReceiverFeature):
                 heatDissipationModifier = common.ScalarCalculation(
                     value=heatDissipationModifier,
                     name='Specified Heat Dissipation Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.HeatDissipation,
-                    modifier=gunsmith.ConstantModifier(value=heatDissipationModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                    modifier=construction.ConstantModifier(value=heatDissipationModifier)))
 
             overheatModifier = self._overheatThresholdModifierOption.value()
             if overheatModifier > 0: # Overheat threshold modifiers are positive
                 overheatModifier = common.ScalarCalculation(
                     value=overheatModifier,
                     name='Specified Overheat Threshold Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.OverheatThreshold,
-                    modifier=gunsmith.ConstantModifier(value=overheatModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.OverheatThreshold,
+                    modifier=construction.ConstantModifier(value=overheatModifier)))
 
             dangerHeatModifier = self._dangerHeatThresholdModifierOption.value()
             if dangerHeatModifier > 0: # Overheat threshold modifiers are positive
                 dangerHeatModifier = common.ScalarCalculation(
                     value=dangerHeatModifier,
                     name='Specified Danger Heat Threshold Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.DangerHeatThreshold,
-                    modifier=gunsmith.ConstantModifier(value=dangerHeatModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold,
+                    modifier=construction.ConstantModifier(value=dangerHeatModifier)))
 
             disasterHeatModifier = self._disasterHeatThresholdModifierOption.value()
             if disasterHeatModifier > 0: # Overheat threshold modifiers are positive
                 disasterHeatModifier = common.ScalarCalculation(
                     value=disasterHeatModifier,
                     name='Specified Disaster Heat Threshold Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.DisasterHeatThreshold,
-                    modifier=gunsmith.ConstantModifier(value=disasterHeatModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold,
+                    modifier=construction.ConstantModifier(value=disasterHeatModifier)))
 
         if self._allowPhysicalSignatureModifier(sequence=sequence, context=context):
             physicalSignatureModifier = self._physicalSignatureModifierOption.value()
@@ -963,9 +964,9 @@ class HighQualityFeature(ReceiverFeature):
                 physicalSignatureModifier = common.ScalarCalculation(
                     value=physicalSignatureModifier,
                     name='Specified Physical Signature Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.PhysicalSignature,
-                    modifier=gunsmith.ConstantModifier(value=physicalSignatureModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                    modifier=construction.ConstantModifier(value=physicalSignatureModifier)))
 
         if self._allowEmissionsSignatureModifier(sequence=sequence, context=context):
             emissionsSignatureModifier = self._emissionsSignatureModifierOption.value()
@@ -973,9 +974,9 @@ class HighQualityFeature(ReceiverFeature):
                 emissionsSignatureModifier = common.ScalarCalculation(
                     value=emissionsSignatureModifier,
                     name='Specified Emissions Signature Modifier')
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.EmissionsSignature,
-                    modifier=gunsmith.ConstantModifier(value=emissionsSignatureModifier)))
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                    modifier=construction.ConstantModifier(value=emissionsSignatureModifier)))
 
         effectNote = self._noteOption.value()
         if effectNote:
@@ -986,7 +987,7 @@ class HighQualityFeature(ReceiverFeature):
     def _allowDamageModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Damage modifiers only make sense for conventional and energy weapons.
         # Damage for launchers and projectors comes from the payload/fuel so the
@@ -1001,7 +1002,7 @@ class HighQualityFeature(ReceiverFeature):
     def _allowRecoilModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Recoil is only applied to conventional weapons
         return context.hasComponent(
@@ -1011,7 +1012,7 @@ class HighQualityFeature(ReceiverFeature):
     def _allowPenetrationModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Penetration only applies to conventional and directed energy weapons
         return context.hasComponent(
@@ -1027,23 +1028,23 @@ class HighQualityFeature(ReceiverFeature):
     def _allowHeatModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # It's important this check is made against HeatDissipating rather than HeatGeneration as
         # most weapon types don't have a HeatGeneration value until the fire rate is applied
         return context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.HeatDissipation)
+            attributeId=gunsmith.WeaponAttribute.HeatDissipation)
 
     def _allowPhysicalSignatureModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Archaic weapons can't have their physical signature lowered
         return context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PhysicalSignature) \
+            attributeId=gunsmith.WeaponAttribute.PhysicalSignature) \
             and not context.hasComponent(
                 componentType=gunsmith.ArchaicCalibre,
                 sequence=sequence)
@@ -1051,27 +1052,27 @@ class HighQualityFeature(ReceiverFeature):
     def _allowEmissionsSignatureModifier(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Archaic weapons can't have their physical signature lowered
         return context.hasAttribute(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.EmissionsSignature)
+            attributeId=gunsmith.WeaponAttribute.EmissionsSignature)
 
     def _updateHeatThresholdOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         currentOverheatThreshold = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.OverheatThreshold)
+            attributeId=gunsmith.WeaponAttribute.OverheatThreshold)
         currentDangerThreshold = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.DangerHeatThreshold)
+            attributeId=gunsmith.WeaponAttribute.DangerHeatThreshold)
         currentDisasterThreshold = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.DisasterHeatThreshold)
+            attributeId=gunsmith.WeaponAttribute.DisasterHeatThreshold)
         if not isinstance(currentOverheatThreshold, common.ScalarCalculation) or \
                 not isinstance(currentDangerThreshold, common.ScalarCalculation) or \
                 not isinstance(currentDisasterThreshold, common.ScalarCalculation):
@@ -1147,35 +1148,35 @@ class LowQualityFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Low Quality')
 
-        self._qualityLevelOption = gunsmith.EnumComponentOption(
+        self._qualityLevelOption = construction.EnumComponentOption(
             id='QualityLevel',
             name='Quality Level',
             type=LowQualityFeature._QualityLevel,
             value=LowQualityFeature._QualityLevel.Low,
             description='Specify the quality level.')
 
-        self._inaccurateLevelsOption = gunsmith.IntegerComponentOption(
+        self._inaccurateLevelsOption = construction.IntegerComponentOption(
             id='Inaccurate',
             name='Inaccurate Levels',
             value=1, # Required points for default of low quality
             minValue=0,
             description=LowQualityFeature._InaccurateOptionDescription)
 
-        self._hazardousLevelsOption = gunsmith.IntegerComponentOption(
+        self._hazardousLevelsOption = construction.IntegerComponentOption(
             id='Hazardous',
             name='Hazardous Levels',
             value=0,
             minValue=0,
             description=LowQualityFeature._HazardousOptionDescription)
 
-        self._ramshackleLevelsOption = gunsmith.IntegerComponentOption(
+        self._ramshackleLevelsOption = construction.IntegerComponentOption(
             id='Ramshackle',
             name='Ramshackle Levels',
             value=0,
             minValue=0,
             description=LowQualityFeature._RamshackleOptionDescription)
 
-        self._unreliableLevelsOption = gunsmith.IntegerComponentOption(
+        self._unreliableLevelsOption = construction.IntegerComponentOption(
             id='Unreliable',
             name='Unreliable Levels',
             value=0,
@@ -1189,7 +1190,7 @@ class LowQualityFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1198,7 +1199,7 @@ class LowQualityFeature(ReceiverFeature):
             componentType=HighQualityFeature,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._qualityLevelOption)
         options.append(self._inaccurateLevelsOption)
@@ -1210,7 +1211,7 @@ class LowQualityFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1259,12 +1260,12 @@ class LowQualityFeature(ReceiverFeature):
             step = gunsmith.WeaponStep(
                 name=self.instanceString(),
                 type=self.typeString(),
-                factors=[gunsmith.StringFactor(
+                factors=[construction.StringFactor(
                     string=f'WARNING: {requiredDeficiencyPoints.value()} deficiency points are required')],
                 notes=[f'{self.componentString()} not applied as insufficient deficiency points were specified, {totalPoints} were specified when {requiredDeficiencyPoints.value()} are required'])
             return step # Return this step rather than the one created by the base class
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifier))
 
         if totalPoints > requiredDeficiencyPoints.value():
@@ -1276,33 +1277,33 @@ class LowQualityFeature(ReceiverFeature):
             inaccurateModifier = common.Calculator.negate(
                 value=inaccurateLevels,
                 name='Inaccurate Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Inaccurate,
-                modifier=gunsmith.ConstantModifier(value=inaccurateModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Inaccurate,
+                modifier=construction.ConstantModifier(value=inaccurateModifier)))
 
         if hazardousLevels.value() > 0:
             hazardousModifier = common.Calculator.negate(
                 value=hazardousLevels,
                 name='Hazardous Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Hazardous,
-                modifier=gunsmith.ConstantModifier(value=hazardousModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Hazardous,
+                modifier=construction.ConstantModifier(value=hazardousModifier)))
 
         if ramshackleLevels.value() > 0:
             ramshackleModifier = common.Calculator.negate(
                 value=ramshackleLevels,
                 name='Ramshackle Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Ramshackle,
-                modifier=gunsmith.ConstantModifier(value=ramshackleModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Ramshackle,
+                modifier=construction.ConstantModifier(value=ramshackleModifier)))
 
         if unreliableLevels.value() > 0:
             unreliableModifier = common.Calculator.equals(
                 value=unreliableLevels,
                 name='Unreliable Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Unreliable,
-                modifier=gunsmith.ConstantModifier(value=unreliableModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Unreliable,
+                modifier=construction.ConstantModifier(value=unreliableModifier)))
 
         return step
 
@@ -1336,7 +1337,7 @@ class IncreasedFireRateFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Increased Fire Rate')
 
-        self._autoIncreaseOption = gunsmith.IntegerComponentOption(
+        self._autoIncreaseOption = construction.IntegerComponentOption(
             id='AutoIncrease',
             name='Auto Increase',
             value=1,
@@ -1350,7 +1351,7 @@ class IncreasedFireRateFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1360,7 +1361,7 @@ class IncreasedFireRateFeature(ReceiverFeature):
             componentType=gunsmith.AutoMechanism,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._autoIncreaseOption]
         options.extend(super().options())
         return options
@@ -1368,7 +1369,7 @@ class IncreasedFireRateFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1392,14 +1393,14 @@ class IncreasedFireRateFeature(ReceiverFeature):
             value=weightModifier,
             name=f'{instanceString} Receiver Weight Modifier Percentage')
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifier))
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifier))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Auto,
-            modifier=gunsmith.ConstantModifier(value=autoIncrease)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Auto,
+            modifier=construction.ConstantModifier(value=autoIncrease)))
 
         return step
 
@@ -1415,7 +1416,7 @@ class LightweightFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1447,13 +1448,13 @@ class LessDurableLightweightFeature(LightweightFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Hazardous,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
         return step
@@ -1489,13 +1490,13 @@ class LessDurableExtremeLightweightFeature(LightweightFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Hazardous,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Hazardous,
+            modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
         return step
@@ -1551,13 +1552,13 @@ class QuickdrawFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Quickdraw,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            modifier=construction.ConstantModifier(
                 value=self._QuickdrawIncrease)))
 
         for note in self._Notes:
@@ -1587,7 +1588,7 @@ class RecoilCompensationFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Recoil Compensation')
 
-        self._compensationLevelOption = gunsmith.IntegerComponentOption(
+        self._compensationLevelOption = construction.IntegerComponentOption(
             id='CompensationLevel',
             name='Compensation Level',
             value=1,
@@ -1601,7 +1602,7 @@ class RecoilCompensationFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1611,7 +1612,7 @@ class RecoilCompensationFeature(ReceiverFeature):
             componentType=gunsmith.ConventionalReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._compensationLevelOption]
         options.extend(super().options())
         return options
@@ -1619,7 +1620,7 @@ class RecoilCompensationFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1653,19 +1654,19 @@ class RecoilCompensationFeature(ReceiverFeature):
             value=compensationLevel,
             name=f'{instanceString} Recoil Modifier')
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifier))
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifier))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
-            modifier=gunsmith.DiceRollModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Damage,
+            modifier=construction.DiceRollModifier(
                 constantModifier=damageModifier)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Recoil,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Recoil,
+            modifier=construction.ConstantModifier(
                 value=recoilModifier)))
 
         return step
@@ -1687,7 +1688,7 @@ class RuggedFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=RuggedFeature._MalfunctionNote)
@@ -1713,7 +1714,7 @@ class ArmouredFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Armoured')
 
-        self._levelCountOption = gunsmith.IntegerComponentOption(
+        self._levelCountOption = construction.IntegerComponentOption(
             id='Levels',
             name='Levels',
             value=1,
@@ -1726,7 +1727,7 @@ class ArmouredFeature(ReceiverFeature):
     def instanceString(self) -> str:
         return f'{self.componentString()} ({self._levelCountOption.value()})'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._levelCountOption)
         return options
@@ -1734,7 +1735,7 @@ class ArmouredFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1746,16 +1747,16 @@ class ArmouredFeature(ReceiverFeature):
             lhs=self._PerLevelReceiverWeightIncrease,
             rhs=levelCount,
             name=f'Armoured Level {levelCount.value()} Receiver Weight Modifier Percentage')
-        step.setWeight(weight=gunsmith.PercentageModifier(value=weightModifierPercentage))
+        step.setWeight(weight=construction.PercentageModifier(value=weightModifierPercentage))
 
         costModifierPercentage = common.Calculator.multiply(
             lhs=self._PerLevelReceiverCostIncrease,
             rhs=levelCount,
             name=f'Armoured Level {levelCount.value()} Receiver Cost Modifier Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(value=costModifierPercentage))
+        step.setCredits(credits=construction.PercentageModifier(value=costModifierPercentage))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Armour,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Armour,
             value=levelCount))
 
         return step
@@ -1778,7 +1779,7 @@ class BulwarkedFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Bulwarked')
 
-        self._levelCountOption = gunsmith.IntegerComponentOption(
+        self._levelCountOption = construction.IntegerComponentOption(
             id='Levels',
             name='Levels',
             value=1,
@@ -1794,7 +1795,7 @@ class BulwarkedFeature(ReceiverFeature):
     def instanceString(self) -> str:
         return f'{self.componentString()} ({self._levelCountOption.value()})'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._levelCountOption)
         return options
@@ -1802,7 +1803,7 @@ class BulwarkedFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1814,13 +1815,13 @@ class BulwarkedFeature(ReceiverFeature):
             lhs=self._PerLevelReceiverWeightIncrease,
             rhs=levelCount,
             name=f'Bulwarked Level {levelCount.value()} Receiver Weight Modifier Percentage')
-        step.setWeight(weight=gunsmith.PercentageModifier(value=weightModifierPercentage))
+        step.setWeight(weight=construction.PercentageModifier(value=weightModifierPercentage))
 
         costModifierPercentage = common.Calculator.multiply(
             lhs=self._PerLevelReceiverCostIncrease,
             rhs=levelCount,
             name=f'Bulwarked Level {levelCount.value()} Receiver Cost Modifier Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(value=costModifierPercentage))
+        step.setCredits(credits=construction.PercentageModifier(value=costModifierPercentage))
 
         step.addNote(note=f'DM+{self._levelCountOption.value()} when rolling against the Malfunction table on p8 of the Field Catalogue.')
 
@@ -1846,7 +1847,7 @@ class DisguisedFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Disguised')
 
-        self._disguisedLevelOption = gunsmith.IntegerComponentOption(
+        self._disguisedLevelOption = construction.IntegerComponentOption(
             id='DisguisedLevel',
             name='Disguised Level',
             value=1,
@@ -1857,7 +1858,7 @@ class DisguisedFeature(ReceiverFeature):
     def instanceString(self) -> str:
         return f'{self.componentString()} ({self._disguisedLevelOption.value()})'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._disguisedLevelOption]
         options.extend(super().options())
         return options
@@ -1865,7 +1866,7 @@ class DisguisedFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1881,7 +1882,7 @@ class DisguisedFeature(ReceiverFeature):
             value=costModifier,
             name=f'{self.instanceString()} Receiver Cost Modifier Percentage')
 
-        step.setCredits(credits=gunsmith.PercentageModifier(
+        step.setCredits(credits=construction.PercentageModifier(
             value=costModifier))
 
         step.addNote(note=f'DM-{disgustedLevel.value()} on attempts to detect, notice or recognise it')
@@ -1892,7 +1893,7 @@ class StealthFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -1924,7 +1925,7 @@ class BasicStealthFeature(StealthFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1936,18 +1937,18 @@ class BasicStealthFeature(StealthFeature):
             # Only add signature modifier if the weapon has a physical signature
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.PhysicalSignature):
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.PhysicalSignature,
-                    modifier=gunsmith.ConstantModifier(
+                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature):
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                    modifier=construction.ConstantModifier(
                         value=self._PhysicalSignatureModifier)))
             # Only add signature modifier if the weapon has a emissions signature
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.EmissionsSignature):
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.EmissionsSignature,
-                    modifier=gunsmith.ConstantModifier(
+                    attributeId=gunsmith.WeaponAttribute.EmissionsSignature):
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                    modifier=construction.ConstantModifier(
                         value=self._EmissionsSignatureModifier)))
 
         return step
@@ -1983,7 +1984,7 @@ class ExtremeStealthFeature(StealthFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -1996,18 +1997,18 @@ class ExtremeStealthFeature(StealthFeature):
             # Only add signature modifier if the weapon has a physical signature
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.PhysicalSignature):
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.PhysicalSignature,
-                    modifier=gunsmith.ConstantModifier(
+                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature):
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.PhysicalSignature,
+                    modifier=construction.ConstantModifier(
                         value=self._PhysicalSignatureModifier)))
             # Only add signature modifier if the weapon has a emissions signature
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.EmissionsSignature):
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.EmissionsSignature,
-                    modifier=gunsmith.ConstantModifier(
+                    attributeId=gunsmith.WeaponAttribute.EmissionsSignature):
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttribute.EmissionsSignature,
+                    modifier=construction.ConstantModifier(
                         value=self._EmissionsSignatureModifier)))
 
         return step
@@ -2032,7 +2033,7 @@ class VacuumFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -2045,7 +2046,7 @@ class VacuumFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._Note)
@@ -2071,7 +2072,7 @@ class UnderwaterFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._Note)
@@ -2091,14 +2092,14 @@ class SlowLoaderFeature(ReceiverFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Slow Loader')
 
-        self._slowLoaderOption = gunsmith.IntegerComponentOption(
+        self._slowLoaderOption = construction.IntegerComponentOption(
             id='Score',
             name='Slow Loader Score',
             value=1,
             minValue=1,
             description=SlowLoaderFeature._SlowLoaderOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._slowLoaderOption]
         options.extend(super().options())
         return options
@@ -2106,16 +2107,16 @@ class SlowLoaderFeature(ReceiverFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         slowLoaderModifier = common.ScalarCalculation(
             value=self._slowLoaderOption.value(),
             name='Specified Slow Loader Modifier')
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.SlowLoader,
-            modifier=gunsmith.ConstantModifier(value=slowLoaderModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.SlowLoader,
+            modifier=construction.ConstantModifier(value=slowLoaderModifier)))
 
         return step
 
@@ -2136,7 +2137,7 @@ class EnergyWeaponFeature(ReceiverFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -2171,13 +2172,13 @@ class EfficientBeamGeneratorFeature(EnergyWeaponFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Range,
+            modifier=construction.PercentageModifier(
                 value=self._RangeModifierPercentage)))
 
         return step
@@ -2202,19 +2203,19 @@ class ImprovedBeamFocusFeature(EnergyWeaponFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttribute.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction order should enforce this
 
         if damageRoll.dieCount().value() >= 2:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
-                modifier=gunsmith.DiceRollModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Damage,
+                modifier=construction.DiceRollModifier(
                     constantModifier=self._DamageConstantModifier)))
 
         return step
@@ -2241,13 +2242,13 @@ class IntensifiedPulseFeature(EnergyWeaponFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Penetration,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Penetration,
+            modifier=construction.ConstantModifier(
                 value=self._PenetrationModifier)))
 
         return step
@@ -2279,13 +2280,13 @@ class VariableIntensityFeature(EnergyWeaponFeature):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         maxDamageDice = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.MaxDamageDice)
+            attributeId=gunsmith.WeaponAttribute.MaxDamageDice)
         assert(maxDamageDice) # Construction order should enforce this
         step.addNote(note=f'Damage can be set to value between 1D and {maxDamageDice.value()}D')
 
@@ -2311,7 +2312,7 @@ class InternalPowerPackFeature(EnergyWeaponFeature):
     def __init__(self) -> None:
         super().__init__(componentString='Internal Power Pack')
 
-        self._weightOption = gunsmith.FloatComponentOption(
+        self._weightOption = construction.FloatComponentOption(
             id='Weight',
             name='Weight',
             value=1,
@@ -2324,7 +2325,7 @@ class InternalPowerPackFeature(EnergyWeaponFeature):
     def instanceString(self) -> str:
         return f'{self.componentString()} ({self._weightOption.value()}kg)'
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._weightOption]
         options.extend(super().options())
         return options
@@ -2368,7 +2369,7 @@ class WeaponFeature(gunsmith.WeaponFeatureInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if self._minTechLevel != None:
             if context.techLevel() < self._minTechLevel:
@@ -2386,13 +2387,13 @@ class WeaponFeature(gunsmith.WeaponFeatureInterface):
             componentType=type(self),
             sequence=None) # Whole weapon search
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -2430,7 +2431,7 @@ class IntelligentWeaponFeature(WeaponFeature):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -2443,12 +2444,12 @@ class IntelligentWeaponFeature(WeaponFeature):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(self._fixedCost),
+            credits=construction.ConstantModifier(self._fixedCost),
             notes=[self._computerNote])
         context.applyStep(
             sequence=sequence,
@@ -2504,17 +2505,17 @@ class ModularisationWeaponFeature(WeaponFeature):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(
+            credits=construction.ConstantModifier(
                 value=common.Calculator.takePercentage(
                     value=context.receiverCredits(sequence=None), # Use cost of all receivers
                     percentage=self._ReceiverCostPercentage,
                     name=f'Modularisation Cost')),
-            weight=gunsmith.ConstantModifier(
+            weight=construction.ConstantModifier(
                 value=common.Calculator.takePercentage(
                     value=context.receiverWeight(sequence=None), # Use weight of all receivers
                     percentage=self._ReceiverWeightPercentage,
@@ -2547,12 +2548,12 @@ class SecureWeaponFeature(WeaponFeature):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -2616,19 +2617,19 @@ class StabilisationWeaponFeature(WeaponFeature):
             componentString='Stabilisation',
             minTechLevel=self._MinTechLevel)
 
-        self._affectsFireRateBulkLevelOption = gunsmith.BooleanComponentOption(
+        self._affectsFireRateBulkLevelOption = construction.BooleanComponentOption(
             id='AffectsFireRateBulkLevel',
             name='Affects Bulky & Very Bulky Traits For RF & VRF Weapons',
             value=False, # My reading of the rules is that it's due to weight so wouldn't be applied
             description=StabilisationWeaponFeature._AffectsFireRateBulkLevelOptionDescription)
 
-        self._affectsLauncherBulkLevelOption = gunsmith.BooleanComponentOption(
+        self._affectsLauncherBulkLevelOption = construction.BooleanComponentOption(
             id='AffectsFireRateBulkLevel',
             name='Affects Bulky & Very Bulky Traits For Grenade Launchers',
             value=True, # My reading of the rules is that it's not due to weight so would be applied
             description=StabilisationWeaponFeature._RemovesFireRateBulkLevelOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
 
         if self._affectsFireRateBulkLevelOption.isEnabled():
@@ -2642,7 +2643,7 @@ class StabilisationWeaponFeature(WeaponFeature):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         super().updateOptions(sequence=sequence, context=context)
         self._affectsFireRateBulkLevelOption.setEnabled(
@@ -2657,14 +2658,14 @@ class StabilisationWeaponFeature(WeaponFeature):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            credits=gunsmith.ConstantModifier(value=self._FixedCost))
+            credits=construction.ConstantModifier(value=self._FixedCost))
 
-        step.setWeight(weight=gunsmith.ConstantModifier(
+        step.setWeight(weight=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=context.receiverWeight(sequence=None), # Use weight of all receivers
                 percentage=self._ReceiverWeightPercentage,
@@ -2683,13 +2684,13 @@ class StabilisationWeaponFeature(WeaponFeature):
         if modifyBulkLevel:
             if context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.VeryBulky):
-                step.addFactor(factor=gunsmith.DeleteAttributeFactor(attributeId=gunsmith.AttributeId.VeryBulky))
-                step.addFactor(factor=gunsmith.SetAttributeFactor(attributeId=gunsmith.AttributeId.Bulky))
+                    attributeId=gunsmith.WeaponAttribute.VeryBulky):
+                step.addFactor(factor=construction.DeleteAttributeFactor(attributeId=gunsmith.WeaponAttribute.VeryBulky))
+                step.addFactor(factor=construction.SetAttributeFactor(attributeId=gunsmith.WeaponAttribute.Bulky))
             elif context.hasAttribute(
                     sequence=sequence,
-                    attributeId=gunsmith.AttributeId.Bulky):
-                step.addFactor(factor=gunsmith.DeleteAttributeFactor(attributeId=gunsmith.AttributeId.Bulky))
+                    attributeId=gunsmith.WeaponAttribute.Bulky):
+                step.addFactor(factor=construction.DeleteAttributeFactor(attributeId=gunsmith.WeaponAttribute.Bulky))
 
         step.addNote(note=StabilisationWeaponFeature._AimingModifierNote)
 
@@ -2699,7 +2700,7 @@ class StabilisationWeaponFeature(WeaponFeature):
 
     def _hasFireRateBulkModifier(
             self,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             sequence: str
             ) -> bool:
         if context.hasComponent(
@@ -2717,7 +2718,7 @@ class StabilisationWeaponFeature(WeaponFeature):
 
     def _isLauncherWeapon(
             self,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             sequence: str
             ) -> bool:
         return context.hasComponent(

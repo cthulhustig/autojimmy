@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -67,7 +68,7 @@ class _PowerPackImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if  context.techLevel() < self._MinTechLevel.value():
             return False
@@ -76,20 +77,20 @@ class _PowerPackImpl(object):
             componentType=gunsmith.PowerPackReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             packWeight: common.ScalarCalculation,
             numberOfPacks: common.ScalarCalculation,
             applyModifiers: bool,
@@ -99,13 +100,13 @@ class _PowerPackImpl(object):
             lhs=packWeight,
             rhs=numberOfPacks,
             name='Total Power Pack Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=totalWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=totalWeight))
 
         totalCost = common.Calculator.multiply(
             lhs=self._costPerKg,
             rhs=totalWeight,
             name=f'{self.componentString()} Power Pack Cost')
-        step.setCredits(credits=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         factors = []
         notes = []
@@ -129,13 +130,13 @@ class _PowerPackImpl(object):
             name=f'{self.componentString()} Power Pack Power')
         # Modify the power rather than setting it to allow the power of internal and external power
         # packs to be cumulative
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Power,
-            modifier=gunsmith.ConstantModifier(value=power)))
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Power,
+            modifier=construction.ConstantModifier(value=power)))
 
         powerPerShot = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PowerPerShot)
+            attributeId=gunsmith.WeaponAttribute.PowerPerShot)
         assert(isinstance(powerPerShot, common.ScalarCalculation)) # Construction logic should enforce this
         shotsPerPack = common.Calculator.divideFloor(
             lhs=power,
@@ -143,9 +144,9 @@ class _PowerPackImpl(object):
             name=f'{self.componentString()} Power Pack Max Shots')
         # Modify the ammo capacity rather than setting it to allow the ammo capacity of internal and
         # external power packs to be cumulative
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.ConstantModifier(value=shotsPerPack)))
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.AmmoCapacity,
+            modifier=construction.ConstantModifier(value=shotsPerPack)))
 
         if powerPerShot.value() > self._maxPower.value():
             # The power pack is underpowered for the required shot
@@ -153,15 +154,15 @@ class _PowerPackImpl(object):
                 lhs=powerPerShot,
                 rhs=self._maxPower,
                 name=f'{self.componentString()} Power Pack Unreliable Modifier Due To Excessive Power Draw')
-            factors.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Unreliable,
-                modifier=gunsmith.ConstantModifier(value=unreliableModifier)))
+            factors.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.Unreliable,
+                modifier=construction.ConstantModifier(value=unreliableModifier)))
 
             notes.append(f'Excess power draw from power pack causes Unreliable +{unreliableModifier.value()}')
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -249,7 +250,7 @@ class InternalPowerPackLoaded(gunsmith.InternalPowerPackLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -259,20 +260,20 @@ class InternalPowerPackLoaded(gunsmith.InternalPowerPackLoadedInterface):
             sequence=sequence,
             componentType=gunsmith.InternalPowerPackFeature)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -328,7 +329,7 @@ class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
         super().__init__()
         self._impl = impl
 
-        self._weightOption = gunsmith.FloatComponentOption(
+        self._weightOption = construction.FloatComponentOption(
             id='Weight',
             name='Weight',
             value=weight if weight != None else 1.0,
@@ -347,11 +348,11 @@ class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._weightOption]
         options.extend(self._impl.options())
         return options
@@ -359,14 +360,14 @@ class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -428,7 +429,7 @@ class PowerPackQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfPacksOption = gunsmith.IntegerComponentOption(
+        self._numberOfPacksOption = construction.IntegerComponentOption(
             id='Quantity',
             name='Packs',
             value=1,
@@ -444,11 +445,11 @@ class PowerPackQuantity(gunsmith.AmmoQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfPacksOption]
         options.extend(self._impl.options())
         return options
@@ -456,7 +457,7 @@ class PowerPackQuantity(gunsmith.AmmoQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
@@ -470,7 +471,7 @@ class InternalPowerPackQuantity(PowerPackQuantity):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence, context):
             return False
@@ -482,7 +483,7 @@ class InternalPowerPackQuantity(PowerPackQuantity):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         internalPackFeature = context.findFirstComponent(
             sequence=sequence,
@@ -545,7 +546,7 @@ class ExternalPowerPackQuantity(PowerPackQuantity):
     def __init__(self, impl: _PowerPackImpl) -> None:
         super().__init__(impl)
 
-        self._weightOption = gunsmith.FloatComponentOption(
+        self._weightOption = construction.FloatComponentOption(
             id='Weight',
             name='Weight',
             value=1.0,
@@ -558,7 +559,7 @@ class ExternalPowerPackQuantity(PowerPackQuantity):
     def componentString(self) -> str:
         return 'External ' + super().componentString()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._weightOption]
         options.extend(super().options())
         return options
@@ -566,7 +567,7 @@ class ExternalPowerPackQuantity(PowerPackQuantity):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         packWeight = common.ScalarCalculation(
             value=self._weightOption.value(),

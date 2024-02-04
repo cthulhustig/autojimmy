@@ -1,5 +1,4 @@
 import enum
-import gunsmith
 import typing
 
 class ComponentOption(object):

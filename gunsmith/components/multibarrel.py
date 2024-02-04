@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -28,7 +29,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
 
         self._componentString = componentString
 
-        self._barrelCountOption = gunsmith.IntegerComponentOption(
+        self._barrelCountOption = construction.IntegerComponentOption(
             id='Count',
             name='Count',
             value=2,
@@ -47,7 +48,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Not compatible with projects
         if context.hasComponent(
@@ -60,20 +61,20 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
             componentType=gunsmith.ReceiverInterface,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._barrelCountOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -82,7 +83,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = gunsmith.WeaponStep(
             name=self.instanceString(),
@@ -91,13 +92,13 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
         barrelCount = common.ScalarCalculation(
             value=self._barrelCountOption.value(),
             name='Specified Barrel Count')
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.BarrelCount,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.BarrelCount,
             value=barrelCount))
 
         if context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.HeatDissipation):
+                attributeId=gunsmith.WeaponAttribute.HeatDissipation):
             additionalBarrels = common.Calculator.subtract(
                 lhs=barrelCount,
                 rhs=common.ScalarCalculation(value=1),
@@ -106,9 +107,9 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
                 lhs=self._AdditionalBarrelHeatModifier,
                 rhs=additionalBarrels,
                 name='Multiple Barrel Heat Dissipation Modifier')
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.HeatDissipation,
-                modifier=gunsmith.ConstantModifier(value=heatModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttribute.HeatDissipation,
+                modifier=construction.ConstantModifier(value=heatModifier)))
 
         return step
 
@@ -142,7 +143,7 @@ class CompleteMultiBarrelSetup(MultiBarrel):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
@@ -158,23 +159,23 @@ class CompleteMultiBarrelSetup(MultiBarrel):
             lhs=self._AdditionalBarrelQuickdrawModifier,
             rhs=additionalBarrels,
             name=f'{self.componentString()} Quickdraw Modifier')
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Quickdraw,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttribute.Quickdraw,
+            modifier=construction.ConstantModifier(
                 value=quickdrawModifier)))
 
         weightModifierPercentage = common.Calculator.multiply(
             lhs=self._ReceiverWeightPercentageIncrement,
             rhs=additionalBarrels,
             name=f'{self.componentString()} Setup Receiver Weight Modifier Percentage')
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=weightModifierPercentage))
 
         costModifierPercentage = common.Calculator.multiply(
             lhs=self._ReceiverCostPercentageIncrement,
             rhs=additionalBarrels,
             name=f'{self.componentString()} Setup Receiver Cost Modifier Percentage')
-        step.setCredits(credits=gunsmith.PercentageModifier(value=costModifierPercentage))
+        step.setCredits(credits=construction.PercentageModifier(value=costModifierPercentage))
 
         return step
 
