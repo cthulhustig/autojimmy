@@ -49,7 +49,7 @@ class AttributeFactor(FactorInterface):
             self,
             attributeGroup: construction.AttributesGroup
             ) -> None:
-        raise RuntimeError('The applyTo method must be implemented by the class derived from TraitFactor')
+        raise RuntimeError('The applyTo method must be implemented by the class derived from AttributeFactor')
 
 class SetAttributeFactor(AttributeFactor):
     def __init__(
