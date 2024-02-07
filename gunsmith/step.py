@@ -1,9 +1,12 @@
 import construction
 import typing
 
+# NOTE: For display purposes the credit cost is just referred to as cost for
+# consistency with the Field Catalogue. The enum is named credits to
+# differentiate it from the more generic concept of a cost.
 class WeaponCost(construction.ConstructionCost):
-    Credits = 'Credit Cost'
-    Weight = 'Weight Cost'
+    Credits = 'Cost'
+    Weight = 'Weight'
 
 class WeaponStep(construction.ConstructionStep):
     def __init__(

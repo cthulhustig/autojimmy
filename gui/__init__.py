@@ -73,6 +73,7 @@ from .trader.purchasecalculatorwindow import *
 from .trader.salecalculatorwindow import *
 from .trader.simulatorwindow import *
 from .trader.customsectordialog import *
+from .construction.manifesttable import *
 from .gunsmith.weaponselectdialog import *
 from .gunsmith.weaponmalfunctiongraph import *
 from .gunsmith.weaponstorelist import *
