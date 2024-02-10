@@ -5,7 +5,7 @@ import gunsmith
 import typing
 import uuid
 
-class WeaponSequenceState(construction.SequenceState):
+class _WeaponSequenceState(construction.SequenceState):
     def __init__(
             self,
             weaponType: gunsmith.WeaponType,
@@ -97,7 +97,7 @@ class WeaponContext(construction.ConstructionContext):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        assert(isinstance(sequenceState, WeaponSequenceState))
+        assert(isinstance(sequenceState, _WeaponSequenceState))
 
         return sequenceState.weaponType()
 
@@ -111,7 +111,7 @@ class WeaponContext(construction.ConstructionContext):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        assert(isinstance(sequenceState, WeaponSequenceState))
+        assert(isinstance(sequenceState, _WeaponSequenceState))
 
         sequenceState.setWeaponType(
             weaponType=weaponType,
@@ -406,7 +406,7 @@ class Weapon(object):
             regenerate: bool = True
             ) -> str:
         sequence = str(uuid.uuid4())
-        sequenceState = WeaponSequenceState(
+        sequenceState = _WeaponSequenceState(
             weaponType=weaponType,
             isPrimary=self._constructionContext.sequenceCount() == 0,
             stages=self._createSequenceStages(weaponType=weaponType, sequence=sequence))
@@ -609,7 +609,7 @@ class Weapon(object):
             sequence=sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        assert(isinstance(sequenceState, WeaponSequenceState))
+        assert(isinstance(sequenceState, _WeaponSequenceState))
 
         # For multi-sequence weapons the Quickdraw value is the sum of the
         # Quickdraw values for all sequences
@@ -690,7 +690,7 @@ class Weapon(object):
         manifest = construction.Manifest(costsType=gunsmith.WeaponCost)
 
         for sequenceIndex, sequence in enumerate(sequenceStates):
-            assert(isinstance(sequence, WeaponSequenceState))
+            assert(isinstance(sequence, _WeaponSequenceState))
             for phase in gunsmith.SequenceConstructionPhases:
                 sectionName = self._prefixManifestText(
                     sequenceIndex=sequenceIndex,
@@ -719,7 +719,7 @@ class Weapon(object):
             componentMap: typing.Dict[gunsmith.WeaponComponentInterface, typing.Dict[str, gunsmith.WeaponStep]] = {}
             stepFactors: typing.Dict[gunsmith.WeaponStep, typing.Dict[int, typing.List[construction.FactorInterface]]] = {}
             for sequenceIndex, sequence in enumerate(sequenceStates):
-                assert(isinstance(sequence, WeaponSequenceState))
+                assert(isinstance(sequence, _WeaponSequenceState))
                 for component in sequence.components(phase=phase):
                     steps = sequence.steps(component=component)
                     if not steps:
@@ -791,7 +791,7 @@ class Weapon(object):
 
         for phase in gunsmith.AncillaryConstructionPhases:
             for sequenceIndex, sequence in enumerate(sequenceStates):
-                assert(isinstance(sequence, WeaponSequenceState))
+                assert(isinstance(sequence, _WeaponSequenceState))
                 sectionName = self._prefixManifestText(
                     sequenceIndex=sequenceIndex,
                     baseText=phase.value)
@@ -814,7 +814,7 @@ class Weapon(object):
                             factors=step.factors())
 
         for sequenceIndex, sequence in enumerate(sequenceStates):
-            assert(isinstance(sequence, WeaponSequenceState))
+            assert(isinstance(sequence, _WeaponSequenceState))
             sectionName = self._prefixManifestText(
                 sequenceIndex=sequenceIndex,
                 baseText=gunsmith.WeaponPhase.Finalisation.value)
@@ -863,7 +863,7 @@ class Weapon(object):
     def _calculateQuickdrawScore(self) -> construction.NumericAttribute:
         scores = []
         for sequenceState in self._constructionContext.states():
-            assert(isinstance(sequenceState, WeaponSequenceState))
+            assert(isinstance(sequenceState, _WeaponSequenceState))
             attribute = sequenceState.attribute(attributeId=gunsmith.WeaponAttributeId.Quickdraw)
             if isinstance(attribute, construction.NumericAttribute):
                 scores.append(attribute.value())
