@@ -531,10 +531,11 @@ class ConstructionContext(object):
                     matched.append(component)
         return matched
 
-    # The replaceComponent parameter can be used to get the list of components that would be
-    # compatible if the specified component was being replaced. If the replaceComponent is
-    # compatible with the weapon (which generally it always should be) then it will be included
-    # in the returned list of components
+    # The replaceComponent parameter can be used to get the list of components
+    # that would be compatible if the specified component was being replaced. If
+    # the replaceComponent is compatible with the context (which generally it
+    # always should be) then it will be included in the returned list of
+    # components
     def findCompatibleComponents(
             self,
             stage: construction.ConstructionStage,
@@ -556,10 +557,11 @@ class ConstructionContext(object):
 
         try:
             if restoreIndex >= 0:
-                # Regenerate the weapon up to this stage. This is VERY important as we need to
-                # regenerate attributes to the value the are when this stage is applied. When doing
-                # this it means this functor must fully regenerate the weapon once compatibility has
-                # been checked
+                # Regenerate the context up to this stage. Doing this is VERY
+                # important as we need to regenerate attributes to the value the
+                # are when this stage is applied. When doing this it means this
+                # functor must fully regenerate the context once compatibility
+                # has been checked
                 self.regenerate(stopStage=stage)
 
             componentTypes = common.getSubclasses(
@@ -577,17 +579,18 @@ class ConstructionContext(object):
                     component = componentType()
                     assert(isinstance(component, construction.ComponentInterface))
 
-                    # Initialise options to default values for the weapon. Note that the sequence
-                    # will be None for common components. The fact they're common means their
-                    # options shouldn't be dependant on the state of a specific sequence
+                    # Initialise options to default values for this context.
+                    # Note that the sequence will be None for common components.
+                    # The fact they're common means their options shouldn't be
+                    # dependant on the state of a specific sequence
                     component.updateOptions(
                         sequence=stage.sequence(),
                         context=self)
 
-                # Check if the component is compatible with the weapon in its current state. Note
-                # that the sequence will be None for common components. The fact they're common
-                # means their compatibility shouldn't be determined by the state of a specific
-                # sequence
+                # Check if the component is compatible with the context in its
+                # current state. Note that the sequence will be None for common
+                # components. The fact they're common means their compatibility
+                # shouldn't be determined by the state of a specific sequence
                 if component.isCompatible(
                         sequence=stage.sequence(),
                         context=self):
@@ -597,7 +600,8 @@ class ConstructionContext(object):
                 stage.insertComponent(
                     index=restoreIndex,
                     component=replaceComponent)
-                self.regenerate() # Regenerate the entire weapon to get it back to a good state
+                # Regenerate the entire context to get it back to a good state
+                self.regenerate()
 
         return compatible
 
@@ -665,13 +669,14 @@ class ConstructionContext(object):
                 if stage == stopStage:
                     return True
 
-                # Remove incompatible components from the stage. This may cause the weapon to have
-                # no component selected
+                # Remove incompatible components from the stage. This may cause
+                # the context to have no component selected
                 self._removeIncompatibleComponents(stage=stage)
 
                 if self._isIncomplete:
-                    # The weapon is incomplete so don't continue applying components, however we do
-                    # want to continue removing incompatible components from stages
+                    # The context is incomplete so don't continue applying
+                    # components, however we do want to continue removing 
+                    # incompatible components from stages
                     continue
 
                 # Get the list of components for the stage and make sure mandatory stages have a
@@ -689,18 +694,20 @@ class ConstructionContext(object):
                         and not defaultComponent.isCompatible(
                             sequence=sequence,
                             context=self):
-                        # The default component for this stage isn't compatible with the the current
-                        # weapon setup so it can't be used
+                        # The default component for this stage isn't compatible
+                        # with the the current context setup so it can't be used
                         defaultComponent = None
 
                     if not defaultComponent:
                         # Try to find any compatible components
                         compatible = self.findCompatibleComponents(stage=stage)
                         if not compatible:
-                            # There are no compatible components. If the stage is mandatory then it
-                            # means the weapon is incomplete. If the stage is was only desirable
-                            # then no selection is ok if there is nothing to select from. Either way
-                            # there is no more processing required for this stage
+                            # There were no compatible components found. If the
+                            # stage is mandatory then it means the context is
+                            # incomplete. If the stage is was only desirable
+                            # then no selection is ok if there is nothing to
+                            # select from. Either way there is no more
+                            # processing required for this stage
                             if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
                                 self._isIncomplete = True
                             continue
@@ -732,8 +739,8 @@ class ConstructionContext(object):
                 raise RuntimeError(f'Unknown sequence {stage.sequence()}')
 
         if removeComponent == addComponent:
-            # No need to check compatibility when replacing a component with its self
-            # just regenerate the weapon if requested
+            # No need to check compatibility when replacing a component with its
+            # self, just regenerate the context if requested
             if regenerate:
                 self.regenerate()
             return
@@ -752,11 +759,13 @@ class ConstructionContext(object):
             if not stage.matchesComponent(component=addComponent):
                 raise construction.CompatibilityException()
 
-            # Check that the component to be added is compatible with the weapon. This needs to be
-            # done after the component to be removed has been removed to allow for the case where
-            # one component is replacing a different version of the same component (e.g stealth
-            # replacing extreme stealth). Note that the sequence will be None for common components.
-            # The fact they're common means their compatibility shouldn't be determined by the
+            # Check that the component to be added is compatible with the
+            # context. This needs to be done after the component to be
+            # removed has been removed in order to to allow for the case where
+            # one component is replacing a different version of the same
+            # component (e.g stealth replacing extreme stealth). Note that the
+            # sequence will be None for common components. The fact they're
+            # common means their compatibility shouldn't be determined by the
             # state of a specific sequence
             if not addComponent.isCompatible(
                     sequence=stage.sequence(),
@@ -792,10 +801,10 @@ class ConstructionContext(object):
                 # order
                 stage.removeComponent(component=component)
 
-                # Check if the component is compatible with the weapon in its current state. Note
-                # that the sequence will be None for common components. The fact they're common
-                # means their compatibility shouldn't be determined by the state of a specific
-                # sequence
+                # Check if the component is compatible with the context in its
+                # current state. Note that the sequence will be None for common
+                # components. The fact they're common means their compatibility
+                # shouldn't be determined by the state of a specific sequence
                 if component.isCompatible(
                         sequence=stage.sequence(),
                         context=self):

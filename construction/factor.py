@@ -24,8 +24,9 @@ class StringFactor(FactorInterface):
     def displayString(self) -> str:
         return self._string
 
-# The NonModifyingFactor is used when we want the factor details to be displayed in the manifest but not
-# applied to the weapon (e.g. secondary weapon factors or munitions quantities).
+# The NonModifyingFactor is used when we want the factor details to be displayed
+# in the manifest but not applied to the context (e.g. secondary weapon factors
+# or munitions quantities).
 class NonModifyingFactor(FactorInterface):
     def __init__(
             self,
