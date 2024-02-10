@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -84,13 +85,13 @@ class _AmmoImpl(object):
         self._costMultiplier = costMultiplier
         self._penetrationModifier = penetrationModifier
 
-        self._isSmartOption = gunsmith.BooleanComponentOption(
+        self._isSmartOption = construction.BooleanOption(
             id='Smart',
             name='Smart',
             value=isSmart if isSmart != None else False,
             description='Specify if this is smart ammunition.',
             enabled=False) # Optional, enabled if supported in updateOptions
-        self._isStealthOption = gunsmith.BooleanComponentOption(
+        self._isStealthOption = construction.BooleanOption(
             id='Stealth',
             name='Stealth',
             value=isStealth if isStealth != None else False,
@@ -116,7 +117,7 @@ class _AmmoImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if self._minTechLevel != None:
             if context.techLevel() < self._minTechLevel:
@@ -127,7 +128,7 @@ class _AmmoImpl(object):
             componentType=gunsmith.ConventionalReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = []
 
         # Only include Smart option if weapon supports it.
@@ -143,7 +144,7 @@ class _AmmoImpl(object):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._isSmartOption.setEnabled(self._isSmartCompatible(
             sequence=sequence,
@@ -161,14 +162,14 @@ class _AmmoImpl(object):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCost = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCost)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCost)
         assert(isinstance(ammoCost, common.ScalarCalculation)) # Construction logic should enforce this
 
         costMultiplier = self._calculateCostMultiplier()
@@ -187,21 +188,21 @@ class _AmmoImpl(object):
             lhs=ammoCost,
             rhs=numberOfRounds,
             name=f'Total Ammo Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         factors = []
         notes = []
 
         if costMultiplier:
-            factors.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCost,
-                modifier=gunsmith.MultiplierModifier(
+            factors.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AmmoCost,
+                modifier=construction.MultiplierModifier(
                     value=costMultiplier)))
 
         if self._penetrationModifier:
-            factors.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Penetration,
-                modifier=gunsmith.ConstantModifier(
+            factors.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Penetration,
+                modifier=construction.ConstantModifier(
                     value=self._penetrationModifier)))
 
         if self._isSmartCompatible(sequence=sequence, context=context) \
@@ -216,14 +217,14 @@ class _AmmoImpl(object):
                 and not self._isStealthOption.value():
             # Apply signature increase if an Extreme Stealth weapon is loaded with standard ammo. As
             # this is conventional ammo the weapon is expected to always have a physical signature
-            factors.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.PhysicalSignature,
-                modifier=gunsmith.ConstantModifier(
+            factors.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
+                modifier=construction.ConstantModifier(
                     value=self._ExtremeStealthRegularAmmoSignatureModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -234,7 +235,7 @@ class _AmmoImpl(object):
     def _isSmartCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._SmartMinTechLevel:
             return False
@@ -246,7 +247,7 @@ class _AmmoImpl(object):
     def _isStealthCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return context.hasComponent(
             componentType=gunsmith.ExtremeStealthFeature,
@@ -340,7 +341,7 @@ class _AdvancedArmourPiercingAmmoImpl(_AmmoImpl):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -384,7 +385,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             isSmart=isSmart,
             isStealth=isStealth)
 
-        self._distractionTypeOption = gunsmith.EnumComponentOption(
+        self._distractionTypeOption = construction.EnumOption(
             id='DistractionType',
             name='Distraction Type',
             type=gunsmith.Distraction,
@@ -396,7 +397,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
     def distractionType(self) -> gunsmith.Distraction:
         return self._distractionTypeOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._distractionTypeOption)
         return options
@@ -404,10 +405,10 @@ class _DistractionAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -416,11 +417,11 @@ class _DistractionAmmoImpl(_AmmoImpl):
             applyModifiers=applyModifiers,
             step=step)
 
-        factor = gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Distraction,
+        factor = construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Distraction,
             value=self._distractionTypeOption.value())
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
         return step
@@ -452,10 +453,10 @@ class _EnhancedWoundingAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -466,19 +467,19 @@ class _EnhancedWoundingAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageModifier = common.Calculator.multiply(
             lhs=self._DamageIncreaseIncrement,
             rhs=damageRoll.dieCount(),
             name='Enhanced Wounding Ammo Damage Modifier')
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
-            modifier=gunsmith.DiceRollModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Damage,
+            modifier=construction.DiceRollModifier(
                 constantModifier=damageModifier))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
 class _ExplosiveAmmoImpl(_AmmoImpl):
@@ -518,10 +519,10 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -534,7 +535,7 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageDiceModifier = common.Calculator.multiply(
@@ -546,20 +547,20 @@ class _ExplosiveAmmoImpl(_AmmoImpl):
             lhs=damageDiceModifier,
             rhs=self._ConstantDamageDiceConstant,
             name='Explosive Ammo Damage Dice Modifier')
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
-            modifier=gunsmith.DiceRollModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Damage,
+            modifier=construction.DiceRollModifier(
                 countModifier=damageDiceModifier)))
 
         # As this is conventional ammo the weapon is expected to always have a physical signature
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.PhysicalSignature,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
+            modifier=construction.ConstantModifier(
                 value=self._PhysicalSignatureModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _FlechetteAmmoImpl(_AmmoImpl):
@@ -600,10 +601,10 @@ class _FlechetteAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -616,7 +617,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         if damageRoll.dieCount().value() == 0:
@@ -624,7 +625,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
         elif damageRoll.dieType() == common.DieType.D3:
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             damageConstant = common.Calculator.equals(
@@ -632,22 +633,22 @@ class _FlechetteAmmoImpl(_AmmoImpl):
                 name='Flechette Ammo Damage Constant')
             damageRoll = common.DiceRoll(constant=damageConstant)
 
-            factors.append(gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
+            factors.append(construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=damageRoll))
         elif damageRoll.dieType() == common.DieType.D6:
             damageRoll = common.DiceRoll(
                 count=damageRoll.dieCount(),
                 type=common.DieType.D3,
                 constant=damageRoll.constant())
-            factors.append(gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
+            factors.append(construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=damageRoll))
         else:
             assert(False) # This should never happen
 
-        factors.append(gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
+        factors.append(construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._FixedRange))
 
         barrel = context.findFirstComponent(
@@ -658,14 +659,14 @@ class _FlechetteAmmoImpl(_AmmoImpl):
         spreadModifier = _BarrelSpreadValues.get(type(barrel))
         assert(spreadModifier) # This should never happen
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Spread,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Spread,
+            modifier=construction.ConstantModifier(
                 value=spreadModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -674,7 +675,7 @@ class _FlechetteAmmoImpl(_AmmoImpl):
     def _isSmartCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return False # No smart variant of Flechette ammo
 
@@ -705,10 +706,10 @@ class _GasAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -719,18 +720,18 @@ class _GasAmmoImpl(_AmmoImpl):
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageRoll = common.DiceRoll(
             count=self._DamageDiceCount,
             type=damageRoll.dieType())
 
-        factor = gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
+        factor = construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=damageRoll)
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -773,7 +774,7 @@ class _HEAPAmmoImpl(_AmmoImpl):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -793,10 +794,10 @@ class _HEAPAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -806,12 +807,12 @@ class _HEAPAmmoImpl(_AmmoImpl):
             step=step)
 
         # As this is conventional ammo the weapon is expected to always have a physical signature
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.PhysicalSignature,
-            modifier=gunsmith.ConstantModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
+            modifier=construction.ConstantModifier(
                 value=self._PhysicalSignatureModifier))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -853,10 +854,10 @@ class _IncendiaryAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -865,12 +866,12 @@ class _IncendiaryAmmoImpl(_AmmoImpl):
             applyModifiers=applyModifiers,
             step=step)
 
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Incendiary,
-            modifier=gunsmith.ConstantModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Incendiary,
+            modifier=construction.ConstantModifier(
                 value=self._IncendiaryTrait))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -896,7 +897,7 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
             isSmart=isSmart,
             isStealth=isStealth)
 
-        self._penetrationOption = gunsmith.IntegerComponentOption(
+        self._penetrationOption = construction.IntegerOption(
             id='Penetration',
             name='Penetration Modifier',
             value=penetration if penetration != None else -1,
@@ -907,7 +908,7 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
     def penetration(self) -> int:
         return self._penetrationOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._penetrationOption)
         return options
@@ -915,10 +916,10 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -932,27 +933,27 @@ class _LowPenetrationAmmoImpl(_AmmoImpl):
         penetrationModifier = common.ScalarCalculation(
             value=self._penetrationOption.value(),
             name='Specified Penetration Modifier')
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Penetration,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
+            modifier=construction.ConstantModifier(
                 value=penetrationModifier)))
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         damageRoll = common.DiceRoll(
             count=damageRoll.dieCount(),
             type=common.DieType.D3,
             constant=damageRoll.constant())
-        factors.append(gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
+        factors.append(construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=damageRoll))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _PelletAmmoImpl(_AmmoImpl):
@@ -986,10 +987,10 @@ class _PelletAmmoImpl(_AmmoImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfRounds: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -1008,23 +1009,23 @@ class _PelletAmmoImpl(_AmmoImpl):
         spreadModifier = _BarrelSpreadValues.get(type(barrel))
         assert(spreadModifier) # This should never happen
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
-            modifier=gunsmith.PercentageModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Range,
+            modifier=construction.PercentageModifier(
                 value=_PelletAmmoImpl._PelletRangeModifier)))
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Spread,
-            modifier=gunsmith.ConstantModifier(value=spreadModifier)))
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Penetration,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Spread,
+            modifier=construction.ConstantModifier(value=spreadModifier)))
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
+            modifier=construction.ConstantModifier(
                 value=common.Calculator.negate(
                     value=spreadModifier,
                     name='Pellet Ammo Minimal Barrel Penetration Modifier'))))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
@@ -1051,7 +1052,7 @@ class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -1066,27 +1067,27 @@ class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
 
         return True # Compatible with all fixed magazine weapons
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1233,7 +1234,7 @@ class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfRoundsOption = gunsmith.IntegerComponentOption(
+        self._numberOfRoundsOption = construction.IntegerOption(
             id='Quantity',
             name='Rounds',
             value=1,
@@ -1252,11 +1253,11 @@ class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfRoundsOption]
         options.extend(self._impl.options())
         return options
@@ -1264,20 +1265,20 @@ class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfRounds = common.ScalarCalculation(
             value=self._numberOfRoundsOption.value(),
             name='Specified Number Of Rounds')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

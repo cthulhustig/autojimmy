@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -43,7 +44,7 @@ class PropellantType(gunsmith.PropellantTypeInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel:
             return False
@@ -52,20 +53,20 @@ class PropellantType(gunsmith.PropellantTypeInterface):
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -74,19 +75,19 @@ class PropellantType(gunsmith.PropellantTypeInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._baseRange))
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PropellantWeight)
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
 
         attacksPerTank = common.Calculator.floor(
@@ -94,12 +95,12 @@ class PropellantType(gunsmith.PropellantTypeInterface):
                 lhs=propellantWeight,
                 rhs=self._attacksPerKg),
             name=f'Attacks With {propellantWeight.value()}kg of {self.componentString()} Propellant')
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=attacksPerTank))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.PropellantCost,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.PropellantCost,
             value=self._costPerKg))
 
         return step
@@ -163,20 +164,20 @@ class GeneratedGasPropellantType(PropellantType):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         propellantWeight = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PropellantWeight)
+            attributeId=gunsmith.WeaponAttributeId.PropellantWeight)
         assert(isinstance(propellantWeight, common.ScalarCalculation)) # Construction logic should enforce this
 
         machineryCost = common.Calculator.multiply(
             lhs=propellantWeight,
             rhs=self._MachineryCostPerKg,
             name=f'Cost Of Generated Gas Machinery For {propellantWeight.value()}kg Of Propellant')
-        step.setCost(cost=gunsmith.ConstantModifier(value=machineryCost))
+        step.setCredits(credits=construction.ConstantModifier(value=machineryCost))
 
         return step
 
@@ -191,7 +192,7 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
         self._componentString = componentString
         self._minTechLevel = minTechLevel
 
-        self._propellantWeightOption = gunsmith.FloatComponentOption(
+        self._propellantWeightOption = construction.FloatOption(
             id='Weight',
             name='Weight',
             value=1.0,
@@ -210,7 +211,7 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel:
             return False
@@ -219,24 +220,24 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._propellantWeightOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         propellantCostPerKg = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PropellantCost)
+            attributeId=gunsmith.WeaponAttributeId.PropellantCost)
         assert(isinstance(propellantCostPerKg, common.ScalarCalculation)) # Construction logic should enforce this
 
         propellantWeight = common.ScalarCalculation(
@@ -247,11 +248,11 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
             rhs=propellantCostPerKg,
             name='Propellant Cost')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=propellantCost),
-            weight=gunsmith.ConstantModifier(value=propellantWeight))
+            credits=construction.ConstantModifier(value=propellantCost),
+            weight=construction.ConstantModifier(value=propellantWeight))
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -269,7 +270,7 @@ class CompressedGasPropellantQuantity(PropellantQuantity):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -291,7 +292,7 @@ class SupercompressedGasPropellantQuantity(PropellantQuantity):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -313,7 +314,7 @@ class GeneratedGasPropellantQuantity(PropellantQuantity):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False

@@ -1,5 +1,5 @@
 import enum
-import gunsmith
+import construction
 import typing
 
 class ConstructionStage(object):
@@ -12,11 +12,11 @@ class ConstructionStage(object):
             self,
             name: str,
             sequence: typing.Optional[str],
-            phase: gunsmith.ConstructionPhase,
+            phase: construction.ConstructionPhase,
             requirement: RequirementLevel,
             singular: bool,
-            baseType: typing.Type[gunsmith.ComponentInterface],
-            defaultType: typing.Optional[typing.Type[gunsmith.ComponentInterface]] = None
+            baseType: typing.Type[construction.ComponentInterface],
+            defaultType: typing.Optional[typing.Type[construction.ComponentInterface]] = None
             ) -> None:
         self._name = name
         self._sequence = sequence
@@ -25,7 +25,7 @@ class ConstructionStage(object):
         self._singular = singular
         self._baseType = baseType
         self._defaultType = defaultType
-        self._components: typing.List[gunsmith.ComponentInterface] = []
+        self._components: typing.List[construction.ComponentInterface] = []
 
     def name(self) -> str:
         return self._name
@@ -33,7 +33,7 @@ class ConstructionStage(object):
     def sequence(self) -> typing.Optional[str]:
         return self._sequence
 
-    def phase(self) -> gunsmith.ConstructionPhase:
+    def phase(self) -> construction.ConstructionPhase:
         return self._phase
 
     def requirement(self) -> RequirementLevel:
@@ -42,33 +42,33 @@ class ConstructionStage(object):
     def singular(self) -> bool:
         return self._singular
 
-    def baseType(self) -> typing.Type[gunsmith.ComponentInterface]:
+    def baseType(self) -> typing.Type[construction.ComponentInterface]:
         return self._baseType
 
-    def defaultComponent(self) -> typing.Optional[gunsmith.ComponentInterface]:
+    def defaultComponent(self) -> typing.Optional[construction.ComponentInterface]:
         return self._defaultType() if self._defaultType else None
 
     def matchesComponent(
             self,
-            component: typing.Type[gunsmith.ComponentInterface]
+            component: typing.Type[construction.ComponentInterface]
             ) -> bool:
         if not isinstance(component, type):
             component = type(component)
 
         return issubclass(component, self._baseType)
 
-    def components(self) -> typing.Collection[gunsmith.ComponentInterface]:
+    def components(self) -> typing.Collection[construction.ComponentInterface]:
         return self._components
 
     def setComponents(
             self,
-            components: typing.Iterable[gunsmith.ComponentInterface]
+            components: typing.Iterable[construction.ComponentInterface]
             ) -> None:
         self._components = list(components)
 
     def addComponent(
             self,
-            component: gunsmith.ComponentInterface
+            component: construction.ComponentInterface
             ) -> None:
         if self.singular() and len(self._components) > 0:
             self._components[0] = component
@@ -78,7 +78,7 @@ class ConstructionStage(object):
     def insertComponent(
             self,
             index: int,
-            component: gunsmith.ComponentInterface,
+            component: construction.ComponentInterface,
             ) -> None:
         if self.singular() and len(self._components) > 0:
             self._components[0] = component
@@ -87,7 +87,7 @@ class ConstructionStage(object):
 
     def removeComponent(
             self,
-            component: gunsmith.ComponentInterface,
+            component: construction.ComponentInterface,
             ) -> int:
         index = self._components.index(component)
         if index >= 0:

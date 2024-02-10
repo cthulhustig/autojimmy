@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -14,7 +15,7 @@ class Stock(gunsmith.StockInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver. A whole weapon search is used as
         # it can be any of the weapon sequences.
@@ -22,13 +23,13 @@ class Stock(gunsmith.StockInterface):
             componentType=gunsmith.ReceiverInterface,
             sequence=None)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -62,7 +63,7 @@ class StocklessStock(Stock):
     def __init__(self) -> None:
         super().__init__()
 
-        self._useAttackModifierOption = gunsmith.BooleanComponentOption(
+        self._useAttackModifierOption = construction.BooleanOption(
             id='UseAttackModifier',
             name='Use Attack Modifier',
             value=True,
@@ -74,7 +75,7 @@ class StocklessStock(Stock):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -83,7 +84,7 @@ class StocklessStock(Stock):
             componentType=gunsmith.BullpupFeature,
             sequence=None) # Incompatible if any weapon sequence has the bullpup feature
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._useAttackModifierOption]
         options.extend(super().options())
         return options
@@ -91,9 +92,9 @@ class StocklessStock(Stock):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -112,9 +113,9 @@ class StocklessStock(Stock):
                     componentType=gunsmith.LongarmReceiver,
                     sequence=None)
             if hasRequiredReceiver:
-                step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Quickdraw,
-                    modifier=gunsmith.ConstantModifier(
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttributeId.Quickdraw,
+                    modifier=construction.ConstantModifier(
                         value=self._QuickdrawModifier)))
 
         context.applyStep(
@@ -145,7 +146,7 @@ class FoldingStock(Stock):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -157,21 +158,21 @@ class FoldingStock(Stock):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
-        step.setWeight(weight=gunsmith.ConstantModifier(
+        step.setWeight(weight=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=context.receiverWeight(sequence=None), # Use weight of all receivers
                 percentage=self._WeightPercentage,
                 name='Folding Stock Weight')))
 
-        step.setCost(cost=gunsmith.ConstantModifier(
+        step.setCredits(credits=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._CostPercentage,
                 name='Folding Stock Cost')))
 
@@ -211,21 +212,21 @@ class FullStock(Stock):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
-        step.setWeight(weight=gunsmith.ConstantModifier(
+        step.setWeight(weight=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=context.receiverWeight(sequence=None), # Use weight of all receivers
                 percentage=self._WeightPercentage,
                 name='Full Stock Weight')))
 
-        step.setCost(cost=gunsmith.ConstantModifier(
+        step.setCredits(credits=construction.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._CostPercentage,
                 name='Full Stock Cost')))
 
@@ -252,7 +253,7 @@ class SupportMountAccessory(Stock):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -264,24 +265,24 @@ class SupportMountAccessory(Stock):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        cost = gunsmith.ConstantModifier(
+        cost = construction.ConstantModifier(
             value=common.Calculator.takePercentage(
-                value=context.receiverCost(sequence=None), # Use cost of all receivers
+                value=context.receiverCredits(sequence=None), # Use cost of all receivers
                 percentage=self._ReceiverCostPercentage,
                 name=f'Support Mount Cost'))
 
-        weight = gunsmith.ConstantModifier(
+        weight = construction.ConstantModifier(
             value=common.Calculator.takePercentage(
                 value=context.receiverWeight(sequence=None), # Use weight of all receivers
                 percentage=self._ReceiverWeightPercentage,
                 name=f'Support Mount Weight'))
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=cost,
+            credits=cost,
             weight=weight)
         context.applyStep(
             sequence=sequence,

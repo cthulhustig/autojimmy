@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gunsmith
 import typing
@@ -74,9 +75,9 @@ class _GrenadeImpl(object):
             payloadWeight: typing.Union[int, float, common.ScalarCalculation],
             payloadCost: typing.Union[int, float, common.ScalarCalculation],
             damageDice: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            flagTraits: typing.Optional[typing.Iterable[gunsmith.AttributeId]] = None,
-            numericTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
-            enumTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, enum.Enum]] = None,
+            flagTraits: typing.Optional[typing.Iterable[gunsmith.WeaponAttributeId]] = None,
+            numericTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
+            enumTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, enum.Enum]] = None,
             notes: typing.Optional[typing.Iterable[str]] = None,
             isAdvancedFusing: typing.Optional[bool] = None,
             isRAM: typing.Optional[bool] = None
@@ -120,14 +121,14 @@ class _GrenadeImpl(object):
                         name=f'{componentString} Cartridge Grenade {trait.value} Modifier')
                 self._numericTraits[trait] = value
 
-        self._isAdvancedFusingOption = gunsmith.BooleanComponentOption(
+        self._isAdvancedFusingOption = construction.BooleanOption(
             id='AdvancedFusing',
             name='Advanced Fusing',
             value=isAdvancedFusing if isAdvancedFusing != None else False,
             description='Specify if the cartridge grenade has advanced fusing.',
             enabled=False) # Optional, enabled if supported in updateOptions
 
-        self._isRAMOption = gunsmith.BooleanComponentOption(
+        self._isRAMOption = construction.BooleanOption(
             id='RAM',
             name='RAM',
             value=isRAM if isRAM != None else False,
@@ -153,7 +154,7 @@ class _GrenadeImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel.value():
             return False
@@ -166,7 +167,7 @@ class _GrenadeImpl(object):
             componentType=gunsmith.LauncherReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = []
 
         if self._isAdvancedFusingOption.isEnabled():
@@ -180,7 +181,7 @@ class _GrenadeImpl(object):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._isAdvancedFusingOption.setEnabled(self._isAdvancedFusingCompatible(
             sequence=sequence,
@@ -198,10 +199,10 @@ class _GrenadeImpl(object):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfGrenades: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         isAdvancedFusing = self._isAdvancedFusingCompatible(sequence=sequence, context=context) \
             and self._isAdvancedFusingOption.value()
@@ -225,7 +226,7 @@ class _GrenadeImpl(object):
             lhs=cost,
             rhs=numberOfGrenades,
             name='Total Cartridge Grenade Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         cartridgeWeight = common.Calculator.equals(
             value=self._payloadWeight,
@@ -234,7 +235,7 @@ class _GrenadeImpl(object):
             lhs=cartridgeWeight,
             rhs=numberOfGrenades,
             name='Total Cartridge Grenade Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=totalWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=totalWeight))
 
         factors = []
 
@@ -242,30 +243,30 @@ class _GrenadeImpl(object):
             # This sets the damage rather than modifying it as launchers only get their
             # damage from the grenade payload. Note that this ignores the damage that
             # is done by the physical projectile if it doesn't detonate
-            factors.append(gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
+            factors.append(construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Damage,
                 value=common.DiceRoll(
                     count=self._damageDice,
                     type=common.DieType.D6)))
 
         for trait in self._flagTraits:
-            factors.append(gunsmith.SetAttributeFactor(attributeId=trait))
+            factors.append(construction.SetAttributeFactor(attributeId=trait))
 
         for trait, value in self._enumTraits.items():
-            factors.append(gunsmith.SetAttributeFactor(
+            factors.append(construction.SetAttributeFactor(
                 attributeId=trait,
                 value=value))
 
         for trait, value in self._numericTraits.items():
-            factors.append(gunsmith.ModifyAttributeFactor(
+            factors.append(construction.ModifyAttributeFactor(
                 attributeId=trait,
-                modifier=gunsmith.ConstantModifier(value=value)))
+                modifier=construction.ConstantModifier(value=value)))
 
         if self._isLauncherGrenade:
             # Limit weapon range by the grenade range
             weaponRange = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Range)
+                attributeId=gunsmith.WeaponAttributeId.Range)
             assert(isinstance(weaponRange, common.ScalarCalculation)) # Construction logic should enforce this
 
             if isRAM:
@@ -278,13 +279,13 @@ class _GrenadeImpl(object):
                     lhs=weaponRange,
                     rhs=self._StandardCartridgeBaseRange,
                     name=f'Range With {self.componentString()} Cartridge Grenade')
-            factors.append(gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Range,
+            factors.append(construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Range,
                 value=weaponRange))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -294,14 +295,14 @@ class _GrenadeImpl(object):
     def _isAdvancedFusingCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return context.techLevel() >= self._AdvancedFusingMinTechLevel.value()
 
     def _isRAMCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._isLauncherGrenade:
             return False
@@ -316,9 +317,9 @@ class _MiniGrenadeImpl(_GrenadeImpl):
             payloadWeight: typing.Union[int, float, common.ScalarCalculation],
             payloadCost: typing.Union[int, float, common.ScalarCalculation],
             damageDice: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            flagTraits: typing.Optional[typing.Iterable[gunsmith.AttributeId]] = None,
-            numericTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
-            enumTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, enum.Enum]] = None,
+            flagTraits: typing.Optional[typing.Iterable[gunsmith.WeaponAttributeId]] = None,
+            numericTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
+            enumTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, enum.Enum]] = None,
             notes: typing.Optional[typing.Iterable[str]] = None,
             isAdvancedFusing: typing.Optional[bool] = None
             ) -> None:
@@ -338,7 +339,7 @@ class _MiniGrenadeImpl(_GrenadeImpl):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -360,7 +361,7 @@ class _MiniGrenadeImpl(_GrenadeImpl):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         super().updateOptions(sequence=sequence, context=context)
         self._isRAMOption.setEnabled(False) # RAM isn't an option for mini grenades
@@ -374,9 +375,9 @@ class _FullGrenadeImpl(_GrenadeImpl):
             payloadWeight: typing.Union[int, float, common.ScalarCalculation],
             payloadCost: typing.Union[int, float, common.ScalarCalculation],
             damageDice: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            flagTraits: typing.Optional[typing.Iterable[gunsmith.AttributeId]] = None,
-            numericTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
-            enumTraits: typing.Optional[typing.Mapping[gunsmith.AttributeId, enum.Enum]] = None,
+            flagTraits: typing.Optional[typing.Iterable[gunsmith.WeaponAttributeId]] = None,
+            numericTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, typing.Union[int, common.ScalarCalculation]]] = None,
+            enumTraits: typing.Optional[typing.Mapping[gunsmith.WeaponAttributeId, enum.Enum]] = None,
             notes: typing.Optional[typing.Iterable[str]] = None,
             isAdvancedFusing: typing.Optional[bool] = None,
             isRAM: typing.Optional[bool] = None
@@ -398,7 +399,7 @@ class _FullGrenadeImpl(_GrenadeImpl):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -437,7 +438,7 @@ class _MiniAntilaserAerosolGrenadeImpl(_MiniGrenadeImpl):
             minTechLevel=11,
             payloadWeight=0.3,
             payloadCost=10,
-            numericTraits={gunsmith.AttributeId.Blast: 6},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 6},
             notes=['Optical targeting suffers DM-2'],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
@@ -462,7 +463,7 @@ class _FullAntilaserAerosolGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=9,
             payloadWeight=0.5,
             payloadCost=15,
-            numericTraits={gunsmith.AttributeId.Blast: 9},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 9},
             notes=['Optical targeting suffers DM-2'],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
@@ -491,8 +492,8 @@ class _FullCorrosiveAerosolGrenadeImpl(_FullGrenadeImpl):
             payloadWeight=0.75,
             payloadCost=100,
             damageDice=3,
-            numericTraits={gunsmith.AttributeId.Blast: 9},
-            flagTraits=[gunsmith.AttributeId.Corrosive],
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 9},
+            flagTraits=[gunsmith.WeaponAttributeId.Corrosive],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -524,8 +525,8 @@ class _FullAntiArmourGrenadeImpl(_FullGrenadeImpl):
             payloadCost=50,
             damageDice=4,
             numericTraits={
-                gunsmith.AttributeId.AP: 8,
-                gunsmith.AttributeId.Blast: 1},
+                gunsmith.WeaponAttributeId.AP: 8,
+                gunsmith.WeaponAttributeId.Blast: 1},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -566,7 +567,7 @@ class _MiniBatonGrenadeImpl(_MiniGrenadeImpl):
             notes=[
                 'Damage delivered is considered to be tripled when determining if a knockdown has occurred',
                 'Has no effect against rigid armour'],
-            flagTraits=[gunsmith.AttributeId.Stun],
+            flagTraits=[gunsmith.WeaponAttributeId.Stun],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -607,7 +608,7 @@ class _FullBatonGrenadeImpl(_FullGrenadeImpl):
             notes=[
                 'Damage delivered is considered to be tripled when determining if a knockdown has occurred',
                 'Has no effect against rigid armour'],
-            flagTraits=[gunsmith.AttributeId.Stun],
+            flagTraits=[gunsmith.WeaponAttributeId.Stun],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -630,7 +631,7 @@ class _MiniBattlechemGrenadeImpl(_MiniGrenadeImpl):
             minTechLevel=10,
             payloadWeight=0.3,
             payloadCost=75,
-            numericTraits={gunsmith.AttributeId.Blast: 4},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 4},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -653,7 +654,7 @@ class _FullBattlechemGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=8,
             payloadWeight=0.5,
             payloadCost=125,
-            numericTraits={gunsmith.AttributeId.Blast: 9},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 9},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -680,8 +681,8 @@ class _MiniBreacherGrenadeImpl(_MiniGrenadeImpl):
             payloadCost=25,
             damageDice=2,
             numericTraits={
-                gunsmith.AttributeId.Blast: 1,
-                gunsmith.AttributeId.AP: 4},
+                gunsmith.WeaponAttributeId.Blast: 1,
+                gunsmith.WeaponAttributeId.AP: 4},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -708,8 +709,8 @@ class _FullBreacherGrenadeImpl(_FullGrenadeImpl):
             payloadCost=60,
             damageDice=4,
             numericTraits={
-                gunsmith.AttributeId.Blast: 1,
-                gunsmith.AttributeId.AP: 12},
+                gunsmith.WeaponAttributeId.Blast: 1,
+                gunsmith.WeaponAttributeId.AP: 12},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -737,8 +738,8 @@ class _FullCorrosiveGrenadeImpl(_FullGrenadeImpl):
             payloadWeight=0.5,
             payloadCost=75,
             damageDice=2,
-            numericTraits={gunsmith.AttributeId.Blast: 4},
-            flagTraits=[gunsmith.AttributeId.Corrosive],
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 4},
+            flagTraits=[gunsmith.WeaponAttributeId.Corrosive],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -765,7 +766,7 @@ class _FullCryogenicGrenadeImpl(_FullGrenadeImpl):
             payloadWeight=0.6,
             payloadCost=150,
             damageDice=5,
-            numericTraits={gunsmith.AttributeId.Blast: 5},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 5},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -788,7 +789,7 @@ class _MiniDistractionGrenadeImpl(_MiniGrenadeImpl):
             minTechLevel=9,
             payloadWeight=0.3,
             payloadCost=25,
-            enumTraits={gunsmith.AttributeId.Distraction: gunsmith.Distraction.Typical},
+            enumTraits={gunsmith.WeaponAttributeId.Distraction: gunsmith.Distraction.Typical},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -811,7 +812,7 @@ class _FullDistractionGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=7,
             payloadWeight=0.6,
             payloadCost=60,
-            enumTraits={gunsmith.AttributeId.Distraction: gunsmith.Distraction.Potent},
+            enumTraits={gunsmith.WeaponAttributeId.Distraction: gunsmith.Distraction.Potent},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -836,7 +837,7 @@ class _FullEMPGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=9,
             payloadWeight=0.5,
             payloadCost=100,
-            numericTraits={gunsmith.AttributeId.PulseIntensity: 9},
+            numericTraits={gunsmith.WeaponAttributeId.PulseIntensity: 9},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -861,7 +862,7 @@ class _FullAdvancedEMPGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=12,
             payloadWeight=0.75,
             payloadCost=150,
-            numericTraits={gunsmith.AttributeId.PulseIntensity: 12},
+            numericTraits={gunsmith.WeaponAttributeId.PulseIntensity: 12},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -885,8 +886,8 @@ class _MiniFireSuppressionGrenadeImpl(_MiniGrenadeImpl):
             minTechLevel=10,
             payloadWeight=0.4,
             payloadCost=10,
-            numericTraits={gunsmith.AttributeId.Blast: 2},
-            enumTraits={gunsmith.AttributeId.Distraction: gunsmith.Distraction.Small},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 2},
+            enumTraits={gunsmith.WeaponAttributeId.Distraction: gunsmith.Distraction.Small},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -910,8 +911,8 @@ class _FullFireSuppressionGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=8,
             payloadWeight=0.8,
             payloadCost=15,
-            numericTraits={gunsmith.AttributeId.Blast: 3},
-            enumTraits={gunsmith.AttributeId.Distraction: gunsmith.Distraction.Small},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 3},
+            enumTraits={gunsmith.WeaponAttributeId.Distraction: gunsmith.Distraction.Small},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -938,8 +939,8 @@ class _MiniFragmentationGrenadeImpl(_MiniGrenadeImpl):
             payloadCost=20,
             damageDice=3,
             numericTraits={
-                gunsmith.AttributeId.Blast: 4,
-                gunsmith.AttributeId.LoPen: 2},
+                gunsmith.WeaponAttributeId.Blast: 4,
+                gunsmith.WeaponAttributeId.LoPen: 2},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -966,8 +967,8 @@ class _FullFragmentationGrenadeImpl(_FullGrenadeImpl):
             payloadCost=30,
             damageDice=5,
             numericTraits={
-                gunsmith.AttributeId.Blast: 9,
-                gunsmith.AttributeId.LoPen: 2},
+                gunsmith.WeaponAttributeId.Blast: 9,
+                gunsmith.WeaponAttributeId.LoPen: 2},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -992,7 +993,7 @@ class _FullIncapacitantGasGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=7,
             payloadWeight=0.5,
             payloadCost=50,
-            numericTraits={gunsmith.AttributeId.Blast: 3},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 3},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1017,7 +1018,7 @@ class _FullToxinGasGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=9,
             payloadWeight=0.5,
             payloadCost=250,
-            numericTraits={gunsmith.AttributeId.Blast: 3},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 3},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1047,9 +1048,9 @@ class _FullAntipersonnelIncendiaryGrenadeImpl(_FullGrenadeImpl):
             payloadCost=75,
             damageDice=2,
             numericTraits={
-                gunsmith.AttributeId.Blast: 15,
-                gunsmith.AttributeId.Incendiary: 1,
-                gunsmith.AttributeId.Burn: 2},
+                gunsmith.WeaponAttributeId.Blast: 15,
+                gunsmith.WeaponAttributeId.Incendiary: 1,
+                gunsmith.WeaponAttributeId.Burn: 2},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1077,9 +1078,9 @@ class _MiniDemolitionIncendiaryGrenadeImpl(_MiniGrenadeImpl):
             payloadCost=50,
             damageDice=2,
             numericTraits={
-                gunsmith.AttributeId.Blast: 1,
-                gunsmith.AttributeId.Incendiary: 4,
-                gunsmith.AttributeId.Burn: 6},
+                gunsmith.WeaponAttributeId.Blast: 1,
+                gunsmith.WeaponAttributeId.Incendiary: 4,
+                gunsmith.WeaponAttributeId.Burn: 6},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
 
@@ -1107,9 +1108,9 @@ class _FullDemolitionIncendiaryGrenadeImpl(_FullGrenadeImpl):
             payloadCost=80,
             damageDice=3,
             numericTraits={
-                gunsmith.AttributeId.Blast: 2,
-                gunsmith.AttributeId.Incendiary: 6,
-                gunsmith.AttributeId.Burn: 6},
+                gunsmith.WeaponAttributeId.Blast: 2,
+                gunsmith.WeaponAttributeId.Incendiary: 6,
+                gunsmith.WeaponAttributeId.Burn: 6},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1138,8 +1139,8 @@ class _FullMicrogrenadeGrenadeImpl(_FullGrenadeImpl):
             payloadCost=150,
             damageDice=2,
             numericTraits={
-                gunsmith.AttributeId.Blast: 3,
-                gunsmith.AttributeId.LoPen: 3},
+                gunsmith.WeaponAttributeId.Blast: 3,
+                gunsmith.WeaponAttributeId.LoPen: 3},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1167,8 +1168,8 @@ class _MiniMultipleProjectileGrenadeImpl(_MiniGrenadeImpl):
             payloadCost=10,
             damageDice=5,
             numericTraits={
-                gunsmith.AttributeId.LoPen: 3,
-                gunsmith.AttributeId.Spread: 2},
+                gunsmith.WeaponAttributeId.LoPen: 3,
+                gunsmith.WeaponAttributeId.Spread: 2},
             notes=['Out to 10m, multiple projectile grenades do full damage after which it is halved to the maximum range of 25m, beyond which it is completely ineffective'],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing)
@@ -1197,8 +1198,8 @@ class _FullMultipleProjectileGrenadeImpl(_FullGrenadeImpl):
             payloadCost=15,
             damageDice=6,
             numericTraits={
-                gunsmith.AttributeId.LoPen: 3,
-                gunsmith.AttributeId.Spread: 4},
+                gunsmith.WeaponAttributeId.LoPen: 3,
+                gunsmith.WeaponAttributeId.Spread: 4},
             notes=['Out to 10m, multiple projectile grenades do full damage after which it is halved to the maximum range of 25m, beyond which it is completely ineffective'],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
@@ -1229,9 +1230,9 @@ class _FullPlasmaGrenadeImpl(_FullGrenadeImpl):
             payloadCost=200,
             damageDice=8,
             numericTraits={
-                gunsmith.AttributeId.Blast: 6,
-                gunsmith.AttributeId.LoPen: 2,
-                gunsmith.AttributeId.Incendiary: 4},
+                gunsmith.WeaponAttributeId.Blast: 6,
+                gunsmith.WeaponAttributeId.LoPen: 2,
+                gunsmith.WeaponAttributeId.Incendiary: 4},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1261,9 +1262,9 @@ class _FullAntiArmourPlasmaGrenadeImpl(_FullGrenadeImpl):
             payloadCost=250,
             damageDice=8,
             numericTraits={
-                gunsmith.AttributeId.Blast: 3,
-                gunsmith.AttributeId.AP: 6,
-                gunsmith.AttributeId.Incendiary: 4},
+                gunsmith.WeaponAttributeId.Blast: 3,
+                gunsmith.WeaponAttributeId.AP: 6,
+                gunsmith.WeaponAttributeId.Incendiary: 4},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1288,7 +1289,7 @@ class _FullSmokeGrenadeImpl(_FullGrenadeImpl):
             minTechLevel=6,
             payloadWeight=0.5,
             payloadCost=15,
-            numericTraits={gunsmith.AttributeId.Blast: 9},
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 9},
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1317,8 +1318,8 @@ class _FullStunGrenadeImpl(_FullGrenadeImpl):
             payloadWeight=0.5,
             payloadCost=30,
             damageDice=3,
-            numericTraits={gunsmith.AttributeId.Blast: 9},
-            flagTraits=[gunsmith.AttributeId.Stun],
+            numericTraits={gunsmith.WeaponAttributeId.Blast: 9},
+            flagTraits=[gunsmith.WeaponAttributeId.Stun],
             isLauncherGrenade=isLauncherGrenade,
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM)
@@ -1357,7 +1358,7 @@ class LauncherAmmoLoaded(gunsmith.AmmoLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -1372,27 +1373,27 @@ class LauncherAmmoLoaded(gunsmith.AmmoLoadedInterface):
 
         return True # Compatible with all fixed magazine weapons
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1749,7 +1750,7 @@ class LauncherAmmoQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfGrenadesOption = gunsmith.IntegerComponentOption(
+        self._numberOfGrenadesOption = construction.IntegerOption(
             id='Quantity',
             name='Grenades',
             value=1,
@@ -1768,11 +1769,11 @@ class LauncherAmmoQuantity(gunsmith.AmmoQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfGrenadesOption]
         options.extend(self._impl.options())
         return options
@@ -1780,20 +1781,20 @@ class LauncherAmmoQuantity(gunsmith.AmmoQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfGrenades = common.ScalarCalculation(
             value=self._numberOfGrenadesOption.value(),
             name='Specified Number Of Cartridge Grenades')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -2105,7 +2106,7 @@ class HandGrenadeQuantity(gunsmith.HandGrenadeQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfGrenadesOption = gunsmith.IntegerComponentOption(
+        self._numberOfGrenadesOption = construction.IntegerOption(
             id='Quantity',
             name='Grenades',
             value=1,
@@ -2124,11 +2125,11 @@ class HandGrenadeQuantity(gunsmith.HandGrenadeQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfGrenadesOption]
         options.extend(self._impl.options())
         return options
@@ -2136,20 +2137,20 @@ class HandGrenadeQuantity(gunsmith.HandGrenadeQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfGrenades = common.ScalarCalculation(
             value=self._numberOfGrenadesOption.value(),
             name='Specified Number Of Grenades')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

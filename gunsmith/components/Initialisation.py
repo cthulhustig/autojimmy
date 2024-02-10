@@ -1,7 +1,8 @@
+import construction
 import gunsmith
 import typing
 
-class InitialisationComponent(gunsmith.ComponentInterface):
+class InitialisationComponent(gunsmith.WeaponComponentInterface):
     def componentString(self) -> str:
         return 'Initialisation'
 
@@ -11,24 +12,24 @@ class InitialisationComponent(gunsmith.ComponentInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return True
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._createCoreRulesCompatibleStep(sequence=sequence, context=context)
 
@@ -41,12 +42,12 @@ class InitialisationComponent(gunsmith.ComponentInterface):
     def _createCoreRulesCompatibleStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         if not context.isRuleEnabled(rule=gunsmith.RuleId.CoreRulesCompatible):
             return # Nothing to do
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=f'Core Rules Compatibility',
             type='Rules',
             notes=['Some construction values may have been modified to make it easier to use the weapon in existing games where players or npcs are using weapons from other rule books.'])

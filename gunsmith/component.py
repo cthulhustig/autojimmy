@@ -1,205 +1,59 @@
-import common
-import enum
+import construction
 import gunsmith
 import typing
 
-class ConstructionContextInterface(object):
-    def isRuleEnabled(self, rule: gunsmith.RuleId) -> bool:
-        raise RuntimeError('The isRuleEnabled method must be implemented by classes derived from ConstructionContextInterface')
-
-    def techLevel(self) -> int:
-        raise RuntimeError('The techLevel method must be implemented by classes derived from ConstructionContextInterface')
-
-    def weaponType(
-            self,
-            sequence: str
-            ) -> gunsmith.WeaponType:
-        raise RuntimeError('The weaponType method must be implemented by classes derived from ConstructionContextInterface')
-
-    def isPrimary(
-            self,
-            sequence: str
-            ) -> bool:
-        raise RuntimeError('The techLevel method must be implemented by classes derived from ConstructionContextInterface')
-
-    def findFirstComponent(
-            self,
-            componentType: typing.Type['ComponentInterface'],
-            sequence: typing.Optional[str]
-            ) -> typing.Optional['ComponentInterface']:
-        raise RuntimeError('The findFirstComponent method must be implemented by classes derived from ConstructionContextInterface')
-
-    def findComponents(
-            self,
-            componentType: typing.Type['ComponentInterface'],
-            sequence: typing.Optional[str]
-            ) -> typing.Iterable['ComponentInterface']:
-        raise RuntimeError('The findComponents method must be implemented by classes derived from ConstructionContextInterface')
-
-    def hasComponent(
-            self,
-            componentType: typing.Type['ComponentInterface'],
-            sequence: typing.Optional[str]
-            ) -> bool:
-        raise RuntimeError('The hasComponent method must be implemented by classes derived from ConstructionContextInterface')
-
-    def attributeValue(
-            self,
-            attributeId: gunsmith.AttributeId,
-            sequence: str
-            ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
-        raise RuntimeError('The attributeValue method must be implemented by classes derived from ConstructionContextInterface')
-
-    def hasAttribute(
-            self,
-            attributeId: gunsmith.AttributeId,
-            sequence: str
-            ) -> bool:
-        raise RuntimeError('The hasAttribute method must be implemented by classes derived from ConstructionContextInterface')
-
-    def phaseWeight(
-            self,
-            phase: gunsmith.ConstructionPhase,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The phaseWeight method must be implemented by classes derived from ConstructionContextInterface')
-
-    def phaseCost(
-            self,
-            phase: gunsmith.ConstructionPhase,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The phaseCost method must be implemented by classes derived from ConstructionContextInterface')
-
-    def receiverWeight(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The receiverWeight method must be implemented by classes derived from ConstructionContextInterface')
-
-    def receiverCost(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The receiverCost method must be implemented by classes derived from ConstructionContextInterface')
-
-    # Basic weapon weight (doesn't include accessories or ammo)
-    def baseWeight(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The baseWeight method must be implemented by classes derived from ConstructionContextInterface')
-
-    # Basic weapon cost (doesn't include accessories or ammo)
-    def baseCost(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The baseCost method must be implemented by classes derived from ConstructionContextInterface')
-
-    def totalWeight(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The totalWeight method must be implemented by classes derived from ConstructionContextInterface')
-
-    def totalCost(
-            self,
-            sequence: typing.Optional[str]
-            ) -> common.ScalarCalculation:
-        raise RuntimeError('The totalCost method must be implemented by classes derived from ConstructionContextInterface')
-
-    def applyStep(
-            self,
-            sequence: str,
-            step: gunsmith.ConstructionStep
-            ) -> None:
-        raise RuntimeError('The addStep method must be implemented by classes derived from ConstructionContextInterface')
-
-class ComponentInterface(object):
-    def componentString(self) -> str:
-        raise RuntimeError('The componentString method must be implemented by classes derived from ComponentInterface')
-
-    def instanceString(self) -> str:
-        # Use component string for instance string by default
-        return self.componentString()
-
-    def typeString(self) -> str:
-        raise RuntimeError('The typeString method must be implemented by classes derived from ComponentInterface')
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: ConstructionContextInterface
-            ) -> bool:
-        raise RuntimeError('The isCompatible method must be implemented by classes derived from ComponentInterface')
-
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
-        raise RuntimeError('The options method must be implemented by classes derived from ComponentInterface')
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: ConstructionContextInterface
-            ) -> None:
-        raise RuntimeError('The updateOptions method must be implemented by classes derived from ComponentInterface')
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: ConstructionContextInterface
-            ) -> None:
-        raise RuntimeError('The createSteps method must be implemented by classes derived from ComponentInterface')
-
-class ReceiverInterface(ComponentInterface):
+class WeaponComponentInterface(construction.ComponentInterface):
     pass
 
-class CalibreInterface(ComponentInterface):
+class ReceiverInterface(WeaponComponentInterface):
+    pass
+
+class CalibreInterface(WeaponComponentInterface):
     def isRocket(self) -> bool:
         raise RuntimeError('The isRocket method must be implemented by classes derived from CalibreInterface')
 
     def isHighVelocity(self) -> bool:
         raise RuntimeError('The isHighVelocity method must be implemented by classes derived from CalibreInterface')
 
-class PropellantTypeInterface(ComponentInterface):
+class PropellantTypeInterface(WeaponComponentInterface):
     pass
 
-class FeedInterface(ComponentInterface):
+class FeedInterface(WeaponComponentInterface):
     pass
 
-class MultiBarrelInterface(ComponentInterface):
+class MultiBarrelInterface(WeaponComponentInterface):
     pass
 
-class MechanismInterface(ComponentInterface):
+class MechanismInterface(WeaponComponentInterface):
     pass
 
-class ReceiverFeatureInterface(ComponentInterface):
+class ReceiverFeatureInterface(WeaponComponentInterface):
     pass
 
-class CapacityModificationInterface(ComponentInterface):
+class CapacityModificationInterface(WeaponComponentInterface):
     pass
 
-class FireRateInterface(ComponentInterface):
+class FireRateInterface(WeaponComponentInterface):
     pass
 
-class BarrelInterface(ComponentInterface):
+class BarrelInterface(WeaponComponentInterface):
     pass
 
-class MultiMountInterface(ComponentInterface):
+class MultiMountInterface(WeaponComponentInterface):
     def weaponCount(self) -> int:
         raise RuntimeError('The weaponCount method must be implemented by classes derived from MultiMountInterface')
 
-class StockInterface(ComponentInterface):
+class StockInterface(WeaponComponentInterface):
     pass
 
-class WeaponFeatureInterface(ComponentInterface):
+class WeaponFeatureInterface(WeaponComponentInterface):
     pass
 
-class SecondaryMountInterface(ComponentInterface):
+class SecondaryMountInterface(WeaponComponentInterface):
     def weapon(self) -> typing.Optional['gunsmith.Weapon']:
         raise RuntimeError('The weapon method must be implemented by classes derived from SecondaryMountInterface')
 
-class AccessoryInterface(ComponentInterface):
+class AccessoryInterface(WeaponComponentInterface):
     def isDetachable(self) -> bool:
         raise RuntimeError('The isDetachable method must be implemented by classes derived from AccessoryInterface')
 
@@ -215,23 +69,23 @@ class BarrelAccessoryInterface(AccessoryInterface):
 class WeaponAccessoryInterface(AccessoryInterface):
     pass
 
-class LoaderQuantityInterface(ComponentInterface):
+class LoaderQuantityInterface(WeaponComponentInterface):
     pass
 
-class MagazineLoadedInterface(ComponentInterface):
+class MagazineLoadedInterface(WeaponComponentInterface):
     pass
 
-class MagazineQuantityInterface(ComponentInterface):
+class MagazineQuantityInterface(WeaponComponentInterface):
     def createLoadedMagazine(self) -> MagazineLoadedInterface:
         raise RuntimeError('The createLoadedMagazine method must be implemented by classes derived from MagazineQuantityInterface')
 
-class AmmoLoadedInterface(ComponentInterface):
+class AmmoLoadedInterface(WeaponComponentInterface):
     pass
 
-class MultiMountLoadedInterface(ComponentInterface):
+class MultiMountLoadedInterface(WeaponComponentInterface):
     pass
 
-class AmmoQuantityInterface(ComponentInterface):
+class AmmoQuantityInterface(WeaponComponentInterface):
     def createLoadedAmmo(self) -> AmmoLoadedInterface:
         raise RuntimeError('The createLoadedAmmo method must be implemented by classes derived from AmmoQuantityInterface')
 
@@ -241,8 +95,8 @@ class InternalPowerPackLoadedInterface(AmmoLoadedInterface):
 class ExternalPowerPackLoadedInterface(AmmoLoadedInterface):
     pass
 
-class ProjectorPropellantQuantityInterface(ComponentInterface):
+class ProjectorPropellantQuantityInterface(WeaponComponentInterface):
     pass
 
-class HandGrenadeQuantityInterface(ComponentInterface):
+class HandGrenadeQuantityInterface(WeaponComponentInterface):
     pass

@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -24,7 +25,7 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
         self._componentString = componentString
         self._fixedCost = fixedCost
 
-        self._numberOfLoadersOption = gunsmith.IntegerComponentOption(
+        self._numberOfLoadersOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -43,7 +44,7 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
@@ -58,20 +59,20 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
                 componentType=gunsmith.FixedMagazineFeed,
                 sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._numberOfLoadersOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         loaderCount = common.ScalarCalculation(
             value=self._numberOfLoadersOption.value(),
@@ -81,10 +82,10 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
             rhs=loaderCount,
             name=f'{self.componentString()} Cost')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString(),
-            cost=gunsmith.ConstantModifier(value=totalCost),
+            credits=construction.ConstantModifier(value=totalCost),
             notes=[self._LoaderNote])
 
         context.applyStep(

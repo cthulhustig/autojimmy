@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -74,7 +75,7 @@ class _EnergyCartridgeImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel.value():
             return False
@@ -84,39 +85,39 @@ class _EnergyCartridgeImpl(object):
             componentType=gunsmith.EnergyCartridgeReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfCartridges: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         totalWeight = common.Calculator.multiply(
             lhs=self._cartridgeWeight,
             rhs=numberOfCartridges,
             name=f'Total Cartridge Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=totalWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=totalWeight))
 
         totalCost = common.Calculator.multiply(
             lhs=self._cartridgeCost,
             rhs=numberOfCartridges,
             name=f'Total Cartridge Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         powerPerShot = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.PowerPerShot)
+            attributeId=gunsmith.WeaponAttributeId.PowerPerShot)
         assert(isinstance(powerPerShot, common.ScalarCalculation)) # Construction logic should enforce this
 
         factors = []
@@ -128,16 +129,16 @@ class _EnergyCartridgeImpl(object):
                 lhs=self._powerOutput,
                 rhs=powerPerShot,
                 name=f'{self.componentString()} Energy Cartridge Unreliable Modifier Due To Overpowered Cartridge')
-            factors.append(gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Unreliable,
-                modifier=gunsmith.ConstantModifier(
+            factors.append(construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Unreliable,
+                modifier=construction.ConstantModifier(
                     value=unreliableModifier)))
             notes.append(f'Overpowered energy cartridge causes Unreliable +{unreliableModifier.value()}')
         elif self._powerOutput.value() < powerPerShot.value():
             # An underpowered cartridge is being used
             currentDamageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             assert(isinstance(currentDamageRoll, common.DiceRoll)) # Construction logic should enforce this
 
             # Calculate the max damage dice that the cartridge allows and the modifier required to
@@ -155,15 +156,15 @@ class _EnergyCartridgeImpl(object):
                 name=f'{self.componentString()} Energy Cartridge Damage Dice Modifier Due To Underpowered Cartridge')
 
             if damageDiceModifier.value() != 0:
-                factors.append(gunsmith.ModifyAttributeFactor(
-                    attributeId=gunsmith.AttributeId.Damage,
-                    modifier=gunsmith.DiceRollModifier(
+                factors.append(construction.ModifyAttributeFactor(
+                    attributeId=gunsmith.WeaponAttributeId.Damage,
+                    modifier=construction.DiceRollModifier(
                         countModifier=damageDiceModifier)))
                 notes.append(f'Underpowered energy cartridge causes damage reduction of {abs(damageDiceModifier.value())}D')
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -278,31 +279,31 @@ class EnergyCartridgeLoaded(gunsmith.AmmoLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -328,7 +329,7 @@ class WeakEnergyCartridgeLoaded(EnergyCartridgeLoaded):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -360,7 +361,7 @@ class LightEnergyCartridgeLoaded(EnergyCartridgeLoaded):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -392,7 +393,7 @@ class StandardEnergyCartridgeLoaded(EnergyCartridgeLoaded):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -424,7 +425,7 @@ class HeavyEnergyCartridgeLoaded(EnergyCartridgeLoaded):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -453,7 +454,7 @@ class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfCartridgeOption = gunsmith.IntegerComponentOption(
+        self._numberOfCartridgeOption = construction.IntegerOption(
             id='Quantity',
             name='Cartridge',
             value=1,
@@ -472,11 +473,11 @@ class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfCartridgeOption]
         options.extend(self._impl.options())
         return options
@@ -484,20 +485,20 @@ class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfCartridges = common.ScalarCalculation(
             value=self._numberOfCartridgeOption.value(),
             name='Specified Number Of Cartridges')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

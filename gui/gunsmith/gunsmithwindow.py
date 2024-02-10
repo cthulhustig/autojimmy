@@ -502,7 +502,7 @@ class GunsmithWindow(gui.WindowWidget):
 
     def _updateResults(self) -> None:
         weapon = self._configurationWidget.weapon()
-        self._manifestTable.setWeapon(weapon=weapon)
+        self._manifestTable.setManifest(manifest=weapon.manifest())
         self._weaponInfoWidget.setWeapon(weapon=weapon)
 
     def _selectedWeaponChanged(self) -> None:

@@ -1,4 +1,5 @@
 import common
+import construction
 import enum
 import gunsmith
 import typing
@@ -30,7 +31,7 @@ _LightGrenadeMagazinePerGrenadeWeight = common.ScalarCalculation(
     name='Light Launcher Magazine Per Grenade Weight')
 def _calculateLauncherMagazinePerGrenadeWeight(
         sequence: str,
-        context: gunsmith.ConstructionContextInterface
+        context: gunsmith.WeaponContext
         ) -> common.ScalarCalculation:
     isLightLauncher = \
         context.hasComponent(
@@ -88,7 +89,7 @@ class _ProjectileMagazineImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
@@ -100,27 +101,27 @@ class _ProjectileMagazineImpl(object):
             componentType=gunsmith.RemovableMagazineFeed,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         if self._weaponPercentageCost:
             itemCost = common.Calculator.takePercentage(
-                value=context.baseCost(sequence=sequence), # Only include cost of this weapon sequence
+                value=context.baseCredits(sequence=sequence), # Only include cost of this weapon sequence
                 percentage=self._weaponPercentageCost,
                 name=f'{self.componentString()} Cost')
             assert(itemCost)
@@ -128,15 +129,15 @@ class _ProjectileMagazineImpl(object):
                 lhs=itemCost,
                 rhs=numberOfMagazines,
                 name=f'{self.componentString()} Cost')
-            step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+            step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         if self._quickdrawModifier:
-            factor = gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            factor = construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=self._quickdrawModifier))
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
@@ -160,10 +161,10 @@ class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -177,7 +178,7 @@ class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             magazineWeight = common.Calculator.multiply(
                 lhs=ammoCapacity,
@@ -185,7 +186,7 @@ class _StandardProjectileMagazineImpl(_ProjectileMagazineImpl):
                     sequence=sequence,
                     context=context),
                 name=f'{self.componentString()} Weight')
-            step.setWeight(weight=gunsmith.ConstantModifier(value=magazineWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=magazineWeight))
 
 class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
     """
@@ -211,7 +212,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
             weaponPercentageCost=2,
             quickdrawModifier=-2)
 
-        self._capacityIncreaseOption = gunsmith.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 50,
@@ -222,7 +223,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
     def capacityIncrease(self) -> int:
         return self._capacityIncreaseOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityIncreaseOption)
         return options
@@ -230,10 +231,10 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -247,7 +248,7 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             capacityIncrease = common.ScalarCalculation(
                 value=self._capacityIncreaseOption.value(),
@@ -263,18 +264,18 @@ class _ExtendedProjectileMagazineImpl(_ProjectileMagazineImpl):
                     sequence=sequence,
                     context=context),
                 name=f'{self.componentString()} Weight')
-            step.setWeight(weight=gunsmith.ConstantModifier(value=magazineWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=magazineWeight))
 
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
             name='Specified Extended Magazine Capacity Percentage Modifier')
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
 class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
@@ -309,7 +310,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
             weaponPercentageCost=5,
             quickdrawModifier=-6)
 
-        self._capacityIncreaseOption = gunsmith.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 150,
@@ -320,7 +321,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
     def capacityIncrease(self) -> int:
         return self._capacityIncreaseOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityIncreaseOption)
         return options
@@ -328,10 +329,10 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -345,7 +346,7 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
                 sequence=sequence):
             ammoCapacity = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.AmmoCapacity)
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
             assert(isinstance(ammoCapacity, common.ScalarCalculation)) # Construction logic should enforce this
             capacityIncrease = common.ScalarCalculation(
                 value=self._capacityIncreaseOption.value(),
@@ -361,32 +362,32 @@ class _RemovableDrumProjectileMagazineImpl(_ProjectileMagazineImpl):
                     sequence=sequence,
                     context=context),
                 name=f'{self.componentString()} Weight')
-            step.setWeight(weight=gunsmith.ConstantModifier(value=magazineWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=magazineWeight))
 
         factors = []
 
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
             name='Specified Drum Magazine Capacity Percentage Modifier')
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True)))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Hazardous,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
+            modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
@@ -417,14 +418,14 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             componentString='Belt',
             quickdrawModifier=-8)
 
-        self._capacityOption = gunsmith.IntegerComponentOption(
+        self._capacityOption = construction.IntegerOption(
             id='Capacity',
             name='Capacity',
             value=capacity if capacity != None else 100,
             minValue=1,
             description='Specify the number of rounds of ammunition held by the belt.')
 
-        self._unloadedCostOption = gunsmith.FloatComponentOption(
+        self._unloadedCostOption = construction.FloatOption(
             id='UnloadedCost',
             name='Unloaded Cost',
             value=unloadedCost if unloadedCost != None else 0,
@@ -437,7 +438,7 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
     def unloadedCost(self) -> float:
         return self._unloadedCostOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityOption)
         options.append(self._unloadedCostOption)
@@ -446,10 +447,10 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         super().updateStep(
             sequence=sequence,
@@ -465,7 +466,7 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
             lhs=unloadedCost,
             rhs=numberOfMagazines,
             name=f'{self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         if context.hasComponent(
                 componentType=gunsmith.LauncherReceiver,
@@ -479,25 +480,25 @@ class _BeltProjectileMagazineImpl(_ProjectileMagazineImpl):
                     sequence=sequence,
                     context=context),
                 name=f'{self.componentString()} Weight')
-            step.setWeight(weight=gunsmith.ConstantModifier(value=magazineWeight))
+            step.setWeight(weight=construction.ConstantModifier(value=magazineWeight))
 
         factors = []
 
         ammoCapacity = common.ScalarCalculation(
             value=self._capacityOption.value(),
             name='Specified Belt Capacity')
-        factors.append(gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
+        factors.append(construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=ammoCapacity))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -543,7 +544,7 @@ class ConventionalMagazineLoaded(gunsmith.MagazineLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -552,20 +553,20 @@ class ConventionalMagazineLoaded(gunsmith.MagazineLoadedInterface):
             componentType=gunsmith.ConventionalReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -574,9 +575,9 @@ class ConventionalMagazineLoaded(gunsmith.MagazineLoadedInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -624,14 +625,14 @@ class BeltConventionalMagazineLoaded(ConventionalMagazineLoaded):
             capacity=capacity,
             unloadedCost=unloadedCost))
 
-        self._loadedWeightOption = gunsmith.FloatComponentOption(
+        self._loadedWeightOption = construction.FloatOption(
             id='LoadedWeight',
             name='Loaded Weight',
             value=loadedWeight if loadedWeight != None else 0,
             minValue=0,
             description=_LoadedBeltWeightOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._loadedWeightOption)
         return options
@@ -639,14 +640,14 @@ class BeltConventionalMagazineLoaded(ConventionalMagazineLoaded):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         loadedWeight = common.ScalarCalculation(
             value=self._loadedWeightOption.value(),
             name='Specified Loaded Belt Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=loadedWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=loadedWeight))
 
         return step
 
@@ -662,7 +663,7 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = gunsmith.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -681,7 +682,7 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -690,7 +691,7 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
             componentType=gunsmith.ConventionalReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfMagazinesOption]
         options.extend(self._impl.options())
         return options
@@ -698,20 +699,20 @@ class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfMagazines = common.ScalarCalculation(
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -760,14 +761,14 @@ class BeltConventionalMagazineQuantity(ConventionalMagazineQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_BeltProjectileMagazineImpl())
 
-        self._loadedWeightOption = gunsmith.FloatComponentOption(
+        self._loadedWeightOption = construction.FloatOption(
             id='LoadedWeight',
             name='Loaded Weight',
             value=0,
             minValue=0,
             description=_LoadedBeltWeightOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._loadedWeightOption)
         return options
@@ -816,7 +817,7 @@ class LauncherMagazineLoaded(gunsmith.MagazineLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -825,22 +826,22 @@ class LauncherMagazineLoaded(gunsmith.MagazineLoadedInterface):
             componentType=gunsmith.LauncherReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -897,7 +898,7 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = gunsmith.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -916,7 +917,7 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not self._impl.isCompatible(sequence=sequence, context=context):
             return False
@@ -925,7 +926,7 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
             componentType=gunsmith.LauncherReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfMagazinesOption]
         options.extend(self._impl.options())
         return options
@@ -933,20 +934,20 @@ class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfMagazines = common.ScalarCalculation(
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1086,7 +1087,7 @@ class _EnergyCartridgeMagazineImpl(object):
         self._costMultiplier = costMultiplier
         self._quickdrawModifier = quickdrawModifier
 
-        self._reusableOption = gunsmith.BooleanComponentOption(
+        self._reusableOption = construction.BooleanOption(
             id='Reusable',
             name='Reusable',
             value=isReusable if isReusable != None else True, # Environmentally friendly by default :)
@@ -1111,7 +1112,7 @@ class _EnergyCartridgeMagazineImpl(object):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < _EnergyCartridgeMagazineImpl._CartridgeMinTechLevelMap[self._cartridgeType]:
             return False
@@ -1130,24 +1131,24 @@ class _EnergyCartridgeMagazineImpl(object):
                 componentType=gunsmith.RemovableMagazineFeed,
                 sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._reusableOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             ammoCapacity: common.ScalarCalculation,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         cartridgeWeight = _EnergyCartridgeMagazineImpl._CartridgeWeightMap[self._cartridgeType]
         cartridgeCost = _EnergyCartridgeMagazineImpl._CartridgeCostMap[self._cartridgeType]
@@ -1164,7 +1165,7 @@ class _EnergyCartridgeMagazineImpl(object):
             lhs=magazineWeight,
             rhs=numberOfMagazines,
             name=f'Total {self.componentString()} Weight')
-        step.setWeight(weight=gunsmith.ConstantModifier(value=totalWeight))
+        step.setWeight(weight=construction.ConstantModifier(value=totalWeight))
 
         magazineCost = common.Calculator.multiply(
             lhs=cartridgeCost,
@@ -1181,15 +1182,15 @@ class _EnergyCartridgeMagazineImpl(object):
             lhs=magazineCost,
             rhs=numberOfMagazines,
             name=f'Total {self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         if self._quickdrawModifier:
-            factor = gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Quickdraw,
-                modifier=gunsmith.ConstantModifier(
+            factor = construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Quickdraw,
+                modifier=construction.ConstantModifier(
                     value=self._quickdrawModifier))
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _StandardEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
@@ -1218,14 +1219,14 @@ class _StandardEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
 
         super().updateStep(
@@ -1259,7 +1260,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityIncreaseOption = gunsmith.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 50,
@@ -1270,7 +1271,7 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def capacityIncrease(self) -> int:
         return self._capacityIncreaseOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityIncreaseOption)
         return options
@@ -1278,17 +1279,17 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
             name='Specified Extended Magazine Capacity Percentage Modifier')
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
         ammoCapacity = common.Calculator.applyPercentage(
             value=ammoCapacity,
@@ -1303,13 +1304,13 @@ class _ExtendedEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             applyModifiers=applyModifiers,
             step=step)
 
-        factor = gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        factor = construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True))
         if not applyModifiers:
-            factor = gunsmith.NonModifyingFactor(factor=factor)
+            factor = construction.NonModifyingFactor(factor=factor)
         step.addFactor(factor=factor)
 
 class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
@@ -1344,7 +1345,7 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityIncreaseOption = gunsmith.FloatComponentOption(
+        self._capacityIncreaseOption = construction.FloatOption(
             id='CapacityIncrease',
             name='Capacity Increase (%)',
             value=capacityIncrease if capacityIncrease != None else 150,
@@ -1355,7 +1356,7 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def capacityIncrease(self) -> int:
         return self._capacityIncreaseOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityIncreaseOption)
         return options
@@ -1363,17 +1364,17 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step: gunsmith.ConstructionStep
+            step: gunsmith.WeaponStep
             ) -> None:
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
             name='Specified Drum Magazine Capacity Percentage Modifier')
         ammoCapacity = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.AmmoCapacity)
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity)
         assert(isinstance(ammoCapacity, common.ScalarCalculation))
         ammoCapacity = common.Calculator.applyPercentage(
             value=ammoCapacity,
@@ -1393,25 +1394,25 @@ class _RemovableDrumEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
         capacityIncrease = common.ScalarCalculation(
             value=self._capacityIncreaseOption.value(),
             name='Specified Drum Magazine Capacity Percentage Modifier')
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=capacityIncrease,
                 roundDown=True)))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Hazardous,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Hazardous,
+            modifier=construction.ConstantModifier(
                 value=self._HazardousModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
 class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
@@ -1447,14 +1448,14 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             cartridgeType=cartridgeType,
             isReusable=isReusable)
 
-        self._capacityOption = gunsmith.IntegerComponentOption(
+        self._capacityOption = construction.IntegerOption(
             id='Capacity',
             name='Capacity',
             value=capacity if capacity != None else 100,
             minValue=1,
             description='Specify the number of rounds of ammunition held by the belt.')
 
-        self._unloadedCostOption = gunsmith.FloatComponentOption(
+        self._unloadedCostOption = construction.FloatOption(
             id='UnloadedCost',
             name='Unloaded Cost',
             value=unloadedCost if unloadedCost != None else 0,
@@ -1467,7 +1468,7 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def unloadedCost(self) -> float:
         return self._unloadedCostOption.value()
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._capacityOption)
         options.append(self._unloadedCostOption)
@@ -1476,10 +1477,10 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
     def updateStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface,
+            context: gunsmith.WeaponContext,
             numberOfMagazines: common.ScalarCalculation,
             applyModifiers: bool,
-            step:  gunsmith.ConstructionStep
+            step:  gunsmith.WeaponStep
             ) -> None:
         ammoCapacity = common.ScalarCalculation(
             value=self._capacityOption.value(),
@@ -1500,25 +1501,25 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
             lhs=unloadedCost,
             rhs=numberOfMagazines,
             name=f'{self.componentString()} Cost')
-        step.setCost(cost=gunsmith.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         factors = []
 
         ammoCapacity = common.ScalarCalculation(
             value=self._capacityOption.value(),
             name='Specified Belt Capacity')
-        factors.append(gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
+        factors.append(construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
             value=ammoCapacity))
 
-        factors.append(gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        factors.append(construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._InaccurateModifier)))
 
         for factor in factors:
             if not applyModifiers:
-                factor = gunsmith.NonModifyingFactor(factor=factor)
+                factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
         if applyModifiers:
@@ -1547,26 +1548,26 @@ class EnergyCartridgeMagazineLoaded(gunsmith.MagazineLoadedInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
@@ -1769,7 +1770,7 @@ class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
         super().__init__()
         self._impl = impl
 
-        self._numberOfMagazinesOption = gunsmith.IntegerComponentOption(
+        self._numberOfMagazinesOption = construction.IntegerOption(
             id='Quantity',
             name='Quantity',
             value=1,
@@ -1791,11 +1792,11 @@ class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         return self._impl.isCompatible(sequence=sequence, context=context)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._numberOfMagazinesOption]
         options.extend(self._impl.options())
         return options
@@ -1803,20 +1804,20 @@ class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         self._impl.updateOptions(sequence=sequence, context=context)
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         numberOfMagazines = common.ScalarCalculation(
             value=self._numberOfMagazinesOption.value(),
             name='Specified Number Of Magazines')
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 

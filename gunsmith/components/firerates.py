@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -9,20 +10,20 @@ class FireRate(gunsmith.FireRateInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
             componentType=gunsmith.ReceiverInterface,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
@@ -53,15 +54,15 @@ class StandardFireRate(FireRate):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         if not context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.HeatDissipation):
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation):
             # Heat generation must be turned off for this weapon type so there are no modifiers to
             # apply, just add the step as it is and bail
             context.applyStep(
@@ -83,7 +84,7 @@ class StandardFireRate(FireRate):
             # calculated from damage
             damageRoll = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Damage)
+                attributeId=gunsmith.WeaponAttributeId.Damage)
             if damageRoll:
                 assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
@@ -91,28 +92,28 @@ class StandardFireRate(FireRate):
                     value=damageRoll.dieCount(),
                     name='Standard Fire Rate Heat Generation')
 
-                step.addFactor(factor=gunsmith.SetAttributeFactor(
-                    attributeId=gunsmith.AttributeId.HeatGeneration,
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=gunsmith.WeaponAttributeId.HeatGeneration,
                     value=heatGeneration))
         else:
             # For launchers & projects HeatGeneration is optionally specified when configuring the
             # receiver
             heatGeneration = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.HeatGeneration)
+                attributeId=gunsmith.WeaponAttributeId.HeatGeneration)
 
         if heatGeneration:
             autoScore = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Auto)
+                attributeId=gunsmith.WeaponAttributeId.Auto)
             if isinstance(autoScore, common.ScalarCalculation):
                 autoHeatGeneration = common.Calculator.add(
                     lhs=heatGeneration,
                     rhs=autoScore,
                     name='Auto Heat Generation')
 
-                step.addFactor(factor=gunsmith.SetAttributeFactor(
-                    attributeId=gunsmith.AttributeId.AutoHeatGeneration,
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=gunsmith.WeaponAttributeId.AutoHeatGeneration,
                     value=autoHeatGeneration))
 
         context.applyStep(
@@ -168,7 +169,7 @@ class AdvancedFireRate(FireRate):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -185,7 +186,7 @@ class AdvancedFireRate(FireRate):
         # Only compatible with weapons that have a high enough auto score
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
         if not autoScore or not isinstance(autoScore, common.ScalarCalculation):
             return False
         return autoScore.value() >= self._minAutoScore.value()
@@ -193,7 +194,7 @@ class AdvancedFireRate(FireRate):
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         context.applyStep(
             sequence=sequence,
@@ -202,20 +203,20 @@ class AdvancedFireRate(FireRate):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.instanceString(),
             type=self.typeString())
 
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
         assert(isinstance(autoScore, common.ScalarCalculation)) # Construction logic should enforce this
 
         damageRoll = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Damage)
+            attributeId=gunsmith.WeaponAttributeId.Damage)
         assert(isinstance(damageRoll, common.DiceRoll)) # Construction logic should enforce this
 
         # AP modifier should be calculated before rapid fire damage dice are added as it's
@@ -224,18 +225,18 @@ class AdvancedFireRate(FireRate):
             value=damageRoll.dieCount(),
             name=f'{self.componentString()} Fire Rate AP Modifier')
         if apModifier.value() > 0:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AP,
-                modifier=gunsmith.ConstantModifier(value=apModifier)))
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AP,
+                modifier=construction.ConstantModifier(value=apModifier)))
 
         additionalDamageDice = common.Calculator.divideFloor(
             lhs=damageRoll.dieCount(),
             rhs=self._damageDiceDivisor,
             name=f'{self.componentString()} Fire Rate Additional Damage Dice')
         if additionalDamageDice.value() > 0:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.Damage,
-                modifier=gunsmith.DiceRollModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Damage,
+                modifier=construction.DiceRollModifier(
                     countModifier=additionalDamageDice)))
 
         # Only update HeatGeneration and AutoHeatGeneration if heat rules are enabled for the
@@ -243,15 +244,15 @@ class AdvancedFireRate(FireRate):
         # enabled as weapons may not have a HeatGeneration value yet
         if context.hasAttribute(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.HeatDissipation):
+                attributeId=gunsmith.WeaponAttributeId.HeatDissipation):
             # Apply damage based HeatGeneration modifier in the same way as for StandardFireRate.
             # This is for when firing a single shot so uses the damage value without any modification
             # for RF/VRF file rate
             damageHeatGeneration = common.Calculator.equals(
                 value=damageRoll.dieCount(),
                 name='Standard Fire Rate Heat Generation')
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.HeatGeneration,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.HeatGeneration,
                 value=damageHeatGeneration))
 
             # AutoHeatGeneration should be calculated after additional damage dice are added
@@ -266,8 +267,8 @@ class AdvancedFireRate(FireRate):
                     rhs=self._heatMultiplier),
                 name=f'{self.componentString()} Fire Rate Heat Generation')
 
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.AutoHeatGeneration,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AutoHeatGeneration,
                 value=autoHeatGeneration))
 
         return step
@@ -330,30 +331,30 @@ class RFFireRate(AdvancedFireRate):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         autoScore = context.attributeValue(
             sequence=sequence,
-            attributeId=gunsmith.AttributeId.Auto)
+            attributeId=gunsmith.WeaponAttributeId.Auto)
         assert(isinstance(autoScore, common.ScalarCalculation)) # Construction logic should enforce this
 
-        step.setWeight(weight=gunsmith.MultiplierModifier(
+        step.setWeight(weight=construction.MultiplierModifier(
             value=self._WeightMultiplier))
 
         costMultiplier = common.Calculator.add(
             lhs=autoScore,
             rhs=self._CostIncreaseConstant,
             name=f'RF Receiver Cost Multiplier')
-        step.setCost(cost=gunsmith.MultiplierModifier(
+        step.setCredits(credits=construction.MultiplierModifier(
             value=costMultiplier))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.RF))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.RF))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Bulky))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Bulky))
 
         return step
 
@@ -427,36 +428,36 @@ class VRFFireRate(AdvancedFireRate):
             damageDiceDivisor=2,
             heatMultiplier=3)
 
-        self._applyCostWeightOption = gunsmith.BooleanComponentOption(
+        self._applyCostWeightOption = construction.BooleanOption(
             id='ApplyCostWeightModifiers',
             name='Apply Cost & Weight Modifiers',
             value=False,
             description=VRFFireRate._ApplyCostWeightOptionDescription)
 
-        self._costAutoModifierOption = gunsmith.IntegerComponentOption(
+        self._costAutoModifierOption = construction.IntegerOption(
             id='CostModifier',
             name='Receiver Cost Auto Modifier',
             value=2, # Default to RF value
             minValue=0,
             description=VRFFireRate._CostAutoModifierOptionDescription)
 
-        self._weightMultiplierOption = gunsmith.FloatComponentOption(
+        self._weightMultiplierOption = construction.FloatOption(
             id='WeightMultiplier',
             name='Receiver Weight Multiplier',
             value=2.0, # Default to RF value
             minValue=1.0,
             description=VRFFireRate._WeightMultiplierOptionDescription)
 
-        self._bulkLevelOption = gunsmith.EnumComponentOption(
+        self._bulkLevelOption = construction.EnumOption(
             id='BulkLevel',
             name='Bulky/Very Bulky Trait',
-            type=gunsmith.AttributeId,
-            value=gunsmith.AttributeId.Bulky, # Default to Bulky as that's what the RF capability gives
+            type=gunsmith.WeaponAttributeId,
+            value=gunsmith.WeaponAttributeId.Bulky, # Default to Bulky as that's what the RF capability gives
             isOptional=True,
-            options=[gunsmith.AttributeId.Bulky, gunsmith.AttributeId.VeryBulky],
+            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=VRFFireRate._BulkLevelOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._applyCostWeightOption)
         if self._applyCostWeightOption.value():
@@ -468,20 +469,20 @@ class VRFFireRate(AdvancedFireRate):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if self._applyCostWeightOption.value():
             autoScore = context.attributeValue(
                 sequence=sequence,
-                attributeId=gunsmith.AttributeId.Auto)
+                attributeId=gunsmith.WeaponAttributeId.Auto)
             assert(isinstance(autoScore, common.ScalarCalculation)) # Construction logic should enforce this
 
             weightMultiplier = common.ScalarCalculation(
                 value=self._weightMultiplierOption.value(),
                 name='Specified VRF Receiver Weight Multiplier')
-            step.setWeight(weight=gunsmith.MultiplierModifier(value=weightMultiplier))
+            step.setWeight(weight=construction.MultiplierModifier(value=weightMultiplier))
 
             costConstant = common.ScalarCalculation(
                 value=self._costAutoModifierOption.value(),
@@ -490,14 +491,14 @@ class VRFFireRate(AdvancedFireRate):
                 lhs=autoScore,
                 rhs=costConstant,
                 name=f'VRF Receiver Cost Multiplier')
-            step.setCost(cost=gunsmith.MultiplierModifier(
+            step.setCredits(credits=construction.MultiplierModifier(
                 value=costMultiplier))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.VRF))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.VRF))
 
         bulkLevel = self._bulkLevelOption.value()
         if bulkLevel:
-            step.addFactor(factor=gunsmith.SetAttributeFactor(attributeId=bulkLevel))
+            step.addFactor(factor=construction.SetAttributeFactor(attributeId=bulkLevel))
 
         return step

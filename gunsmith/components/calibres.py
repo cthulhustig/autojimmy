@@ -1,4 +1,5 @@
 import common
+import construction
 import gunsmith
 import typing
 
@@ -128,7 +129,7 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
         self._capacityModifierPercentage = capacityModifierPercentage
         self._recoilModifier = recoilModifier
 
-        self._isRocketOption = gunsmith.BooleanComponentOption(
+        self._isRocketOption = construction.BooleanOption(
             id='Rocket',
             name='Rocket Accelerated',
             value=False,
@@ -149,7 +150,7 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if context.techLevel() < self._minTechLevel:
             return False
@@ -158,20 +159,20 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
             componentType=gunsmith.ConventionalReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         return [self._isRocketOption]
 
     def updateOptions(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         pass
 
     def createSteps(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> None:
         #
         # Basic Step
@@ -188,50 +189,50 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
         if not self.isRocket():
             return # Nothing more to do
 
-        step = gunsmith.ConstructionStep(
+        step = gunsmith.WeaponStep(
             name='Rocket Propelled Modification',
             type=self.typeString())
 
-        step.setWeight(weight=gunsmith.PercentageModifier(
+        step.setWeight(weight=construction.PercentageModifier(
             value=self._RocketReceiverWeightModifierPercentage))
 
         # Override the range and physical signature rather than modifying them as the rules
         # gives absolute value rather than a number of modification levels
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._RocketBaseRange))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.PhysicalSignature,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
             value=self._RocketBasePhysicalSignature))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Penetration,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
             value=self._RocketBasePenetration))
 
         # Modify existing weapon attributes
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.PercentageModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.PercentageModifier(
                 value=self._RocketCapacityModifierPercentage,
                 roundDown=True)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCost,
-            modifier=gunsmith.MultiplierModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCost,
+            modifier=construction.MultiplierModifier(
                 value=self._RocketAmmoCostMultiplier)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Recoil,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Recoil,
+            modifier=construction.ConstantModifier(
                 value=self._RocketRecoilModifier)))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.ZeroG))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.ZeroG))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._RocketInaccurateModifier)))
 
         step.addNote(note=self._RocketNote)
@@ -243,49 +244,49 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
-        step = gunsmith.ConstructionStep(
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
+        step = gunsmith.WeaponStep(
             name=self.componentString(), # Use base name as we don't want Rocket included, that's a separate step
             type=self.typeString())
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Range,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Range,
             value=self._baseRange))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Damage,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Damage,
             value=common.DiceRoll(
                 count=self._baseDamageDiceCount,
                 type=common.DieType.D6,
                 constant=self._baseDamageConstant)))
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.PhysicalSignature,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.PhysicalSignature,
             value=self._basePhysicalSignature))
 
         if self._baseAmmoCost:
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCost,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AmmoCost,
                 value=self._baseAmmoCost))
 
         if self._basePenetration:
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Penetration,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Penetration,
                 value=self._basePenetration))
 
         if self._weightModifierPercentage:
-            step.setWeight(weight=gunsmith.PercentageModifier(
+            step.setWeight(weight=construction.PercentageModifier(
                 value=self._weightModifierPercentage))
 
         if self._costModifierPercentage:
-            step.setCost(cost=gunsmith.PercentageModifier(
+            step.setCredits(credits=construction.PercentageModifier(
                 value=self._costModifierPercentage))
 
         if self._capacityModifierPercentage:
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCapacity,
-                modifier=gunsmith.PercentageModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+                modifier=construction.PercentageModifier(
                     value=self._capacityModifierPercentage,
                     roundDown=True)))
 
@@ -298,9 +299,9 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
             recoilModifier = common.Calculator.equals(
                 value=self._baseDamageDiceCount,
                 name=f'{self.componentString()} Calibre Recoil Modifier')
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Recoil,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Recoil,
+            modifier=construction.ConstantModifier(
                 value=recoilModifier)))
 
         return step
@@ -501,16 +502,16 @@ class SmoothboreCalibre(ConventionalCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         basePenetration = \
             SmoothboreCalibre._SmoothboreCoreRulesCompatibilityBasePenetration \
             if context.isRuleEnabled(rule=gunsmith.RuleId.CoreRulesCompatible) else \
             SmoothboreCalibre._SmoothboreStandardBasePenetration
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Penetration,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Penetration,
             value=basePenetration))
 
         capacityOverride = None
@@ -535,20 +536,20 @@ class SmoothboreCalibre(ConventionalCalibre):
                         value=capacityOverride,
                         percentage=self._smoothboreCapacityModifierPercentage),
                     name=f'{self.componentString()} Calibre Ammo Capacity')
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCapacity,
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
                 value=capacityOverride))
         elif self._smoothboreCapacityModifierPercentage:
             # No capacity override so just modify the existing capacity
-            step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-                attributeId=gunsmith.AttributeId.AmmoCapacity,
-                modifier=gunsmith.PercentageModifier(
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+                modifier=construction.PercentageModifier(
                     value=self._smoothboreCapacityModifierPercentage,
                     roundDown=True)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(
                 value=self._SmoothboreInaccurateModifier)))
 
         step.addNote(note=self._SmoothboreNote)
@@ -584,15 +585,15 @@ class SmallSmoothboreCalibre(SmoothboreCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if context.hasComponent(
                 componentType=gunsmith.HandgunReceiver,
                 sequence=sequence):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Bulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Bulky))
 
         return step
 
@@ -626,8 +627,8 @@ class LightSmoothboreCalibre(SmoothboreCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         receiver = context.findFirstComponent(
@@ -635,11 +636,11 @@ class LightSmoothboreCalibre(SmoothboreCalibre):
             sequence=sequence) # Only interested in receiver from sequence calibre is part of
         assert(receiver) # Construction order should prevent this
         if isinstance(receiver, gunsmith.HandgunReceiver):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.VeryBulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.VeryBulky))
         elif isinstance(receiver, gunsmith.AssaultReceiver):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Bulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Bulky))
 
         return step
 
@@ -669,7 +670,7 @@ class StandardSmoothboreCalibre(SmoothboreCalibre):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -681,8 +682,8 @@ class StandardSmoothboreCalibre(SmoothboreCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         receiver = context.findFirstComponent(
@@ -690,11 +691,11 @@ class StandardSmoothboreCalibre(SmoothboreCalibre):
             sequence=sequence) # Only interested in receiver from sequence calibre is part of
         assert(receiver) # Construction order should prevent this
         if isinstance(receiver, gunsmith.AssaultReceiver):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.VeryBulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.VeryBulky))
         elif isinstance(receiver, gunsmith.LongarmReceiver):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.Bulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.Bulky))
 
         return step
 
@@ -729,7 +730,7 @@ class HeavySmoothboreCalibre(SmoothboreCalibre):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -745,15 +746,15 @@ class HeavySmoothboreCalibre(SmoothboreCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
         if context.hasComponent(
                 componentType=gunsmith.LongarmReceiver,
                 sequence=sequence):
-            step.addFactor(factor=gunsmith.SetAttributeFactor(
-                attributeId=gunsmith.AttributeId.VeryBulky))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=gunsmith.WeaponAttributeId.VeryBulky))
 
         return step
 
@@ -898,7 +899,7 @@ class AntiMaterialRifleCalibre(RifleCalibre):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -914,12 +915,12 @@ class AntiMaterialRifleCalibre(RifleCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.Bulky))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Bulky))
 
         return step
 
@@ -950,7 +951,7 @@ class HeavyAntiMaterialRifleCalibre(RifleCalibre):
     def isCompatible(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
+            context: gunsmith.WeaponContext
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
@@ -966,12 +967,12 @@ class HeavyAntiMaterialRifleCalibre(RifleCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.VeryBulky))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.VeryBulky))
 
         return step
 
@@ -1037,21 +1038,21 @@ class ArchaicCalibre(ConventionalCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.SlowLoader,
-            modifier=gunsmith.ConstantModifier(value=self._slowLoaderModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.SlowLoader,
+            modifier=construction.ConstantModifier(value=self._slowLoaderModifier)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Unreliable,
-            modifier=gunsmith.ConstantModifier(value=self._ArchaicCalibreUnreliableModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Unreliable,
+            modifier=construction.ConstantModifier(value=self._ArchaicCalibreUnreliableModifier)))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(value=self._ArchaicCalibreInaccurateModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(value=self._ArchaicCalibreInaccurateModifier)))
 
         return step
 
@@ -1101,8 +1102,8 @@ class ArchaicSmoothboreCalibre(ArchaicCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
         step.addNote(note=self._ArchaicSmoothboreNote)
         return step
@@ -1171,16 +1172,16 @@ class LowRecoilCalibre(ConventionalCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.ZeroG))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.ZeroG))
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.Inaccurate,
-            modifier=gunsmith.ConstantModifier(value=self._InaccurateModifier)))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.Inaccurate,
+            modifier=construction.ConstantModifier(value=self._InaccurateModifier)))
 
         return step
 
@@ -1241,12 +1242,12 @@ class GaussCalibre(ConventionalCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.EmissionsSignature,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.EmissionsSignature,
             value=self._baseEmissionsSignature))
 
         return step
@@ -1401,14 +1402,14 @@ class ShotgunGaussCalibre(GaussCalibre):
             baseEmissionsSignature=gunsmith.Signature.Low,
             capacityModifierPercentage=None) # Handle capacity modifier locally as it's using a multiplier rather than a percentage
 
-        self._ammoCostOption = gunsmith.IntegerComponentOption(
+        self._ammoCostOption = construction.IntegerOption(
             id='AmmoCost',
             name='Cost of 100 Rounds of Gauss Shotgun Ammo',
             value=50, # Default to base cost of small gauss ammo
             minValue=50,
             description=ShotgunGaussCalibre._AmmoCostOptionDescription)
 
-    def options(self) -> typing.List[gunsmith.ComponentOption]:
+    def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._ammoCostOption]
         options.extend(super().options())
         return options
@@ -1416,21 +1417,21 @@ class ShotgunGaussCalibre(GaussCalibre):
     def _createStep(
             self,
             sequence: str,
-            context: gunsmith.ConstructionContextInterface
-            ) -> gunsmith.ConstructionStep:
+            context: gunsmith.WeaponContext
+            ) -> gunsmith.WeaponStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        step.addFactor(factor=gunsmith.ModifyAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCapacity,
-            modifier=gunsmith.MultiplierModifier(
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCapacity,
+            modifier=construction.MultiplierModifier(
                 value=ShotgunGaussCalibre._AmmoCapacityMultiplier,
                 roundDown=True)))
 
         ammoCost = common.ScalarCalculation(
             value=self._ammoCostOption.value(),
             name='Specified Gauss Shotgun Base Ammo Cost')
-        step.addFactor(factor=gunsmith.SetAttributeFactor(
-            attributeId=gunsmith.AttributeId.AmmoCost,
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=gunsmith.WeaponAttributeId.AmmoCost,
             value=ammoCost))
 
         return step

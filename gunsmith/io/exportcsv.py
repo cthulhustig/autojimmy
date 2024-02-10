@@ -1,4 +1,5 @@
 import common
+import construction
 import copy
 import csv
 import gunsmith
@@ -23,21 +24,21 @@ def exportToCsv(
                 continue # Nothing to do for sections with no entries
 
             for entry in entries:
-                cost = entry.cost()
+                cost = entry.cost(costId=gunsmith.WeaponCost.Credits)
                 if cost:
                     costString = cost.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(cost, gunsmith.ConstantModifier):
+                    if isinstance(cost, construction.ConstantModifier):
                         costString = costString.strip('+')
                         costString = 'Cr' + costString
                 else:
                     costString = ''
 
-                weight = entry.weight()
+                weight = entry.cost(costId=gunsmith.WeaponCost.Weight)
                 if weight:
                     weightString = weight.displayString(
                         decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-                    if isinstance(weight, gunsmith.ConstantModifier):
+                    if isinstance(weight, construction.ConstantModifier):
                         weightString = weightString.strip('+')
                         weightString += 'kg'
                 else:
@@ -59,15 +60,15 @@ def exportToCsv(
             # Write section total
             writer.writerow([
                 f'{section.name()} Total',
-                _formatCostTotal(cost=section.totalCost()),
-                _formatWeightTotal(weight=section.totalWeight()),
+                _formatCostTotal(cost=section.totalCost(costId=gunsmith.WeaponCost.Credits)),
+                _formatWeightTotal(weight=section.totalCost(costId=gunsmith.WeaponCost.Weight)),
                 ''])
 
         # Write total
         writer.writerow([
             'Total',
-            _formatCostTotal(cost=manifest.totalCost()),
-            _formatWeightTotal(weight=manifest.totalWeight()),
+            _formatCostTotal(cost=manifest.totalCost(costId=gunsmith.WeaponCost.Credits)),
+            _formatWeightTotal(weight=manifest.totalCost(costId=gunsmith.WeaponCost.Weight)),
             ''])
 
 # Create a copy of the weapon for the export process. This has all accessories attached and all

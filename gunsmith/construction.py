@@ -1,4 +1,7 @@
+import construction
 import enum
+
+ConstructionDecimalPlaces = 3
 
 class WeaponType(enum.Enum):
     ConventionalWeapon = 'Conventional'
@@ -8,7 +11,7 @@ class WeaponType(enum.Enum):
     ProjectorWeapon = 'Projector'
 
 # The order of this enum determines construction order
-class ConstructionPhase(enum.Enum):
+class WeaponPhase(construction.ConstructionPhase):
     Initialisation = 'Initialisation'
     Receiver = 'Receiver'
     Barrel = 'Barrel'
@@ -25,53 +28,52 @@ class ConstructionPhase(enum.Enum):
 
 # Phases applied in sequence to create the primary or secondary weapons
 SequenceConstructionPhases = [
-    ConstructionPhase.Receiver,
-    ConstructionPhase.Barrel,
-    ConstructionPhase.BarrelAccessories,
-    ConstructionPhase.Mounting
+    WeaponPhase.Receiver,
+    WeaponPhase.Barrel,
+    WeaponPhase.BarrelAccessories,
+    WeaponPhase.Mounting
 ]
 
 # Phases that are applied to the weapon as a whole
 CommonConstructionPhases = [
-    ConstructionPhase.Stock,
-    ConstructionPhase.WeaponFeatures,
-    ConstructionPhase.WeaponAccessories,
-    ConstructionPhase.MultiMount,
+    WeaponPhase.Stock,
+    WeaponPhase.WeaponFeatures,
+    WeaponPhase.WeaponAccessories,
+    WeaponPhase.MultiMount,
 ]
 
 # Phases that don't affect the basic construction of the weapon
 AncillaryConstructionPhases = [
-    ConstructionPhase.Loading,
-    ConstructionPhase.Munitions
+    WeaponPhase.Loading,
+    WeaponPhase.Munitions
 ]
-
 
 # Internal phases
 InternalConstructionPhases = [
-    ConstructionPhase.Initialisation,
-    ConstructionPhase.Finalisation,
+    WeaponPhase.Initialisation,
+    WeaponPhase.Finalisation,
 ]
 
 # Phases that make up the base weapon. Conceptually these phases get the weapon to the
 # point that it's basically usable. Accessories, loading and munitions are not included.
 BaseWeaponConstructionPhases = [
-    ConstructionPhase.Receiver,
-    ConstructionPhase.Barrel,
-    ConstructionPhase.Mounting,
-    ConstructionPhase.Stock,
-    ConstructionPhase.WeaponFeatures
+    WeaponPhase.Receiver,
+    WeaponPhase.Barrel,
+    WeaponPhase.Mounting,
+    WeaponPhase.Stock,
+    WeaponPhase.WeaponFeatures
 ]
 
 # Phases that make the weapon ready for combat. Conceptually this includes all the phases
 # needed to get the stats for using the weapon in combat.
 CombatReadyConstructionPhases = [
-    ConstructionPhase.Receiver,
-    ConstructionPhase.Barrel,
-    ConstructionPhase.BarrelAccessories,
-    ConstructionPhase.Mounting,
-    ConstructionPhase.Stock,
-    ConstructionPhase.WeaponFeatures,
-    ConstructionPhase.WeaponAccessories,
-    ConstructionPhase.MultiMount,
-    ConstructionPhase.Loading
+    WeaponPhase.Receiver,
+    WeaponPhase.Barrel,
+    WeaponPhase.BarrelAccessories,
+    WeaponPhase.Mounting,
+    WeaponPhase.Stock,
+    WeaponPhase.WeaponFeatures,
+    WeaponPhase.WeaponAccessories,
+    WeaponPhase.MultiMount,
+    WeaponPhase.Loading
 ]
