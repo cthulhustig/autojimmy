@@ -318,6 +318,11 @@ class Weapon(object):
         self._weaponName = weaponName
         self._userNotes = userNotes if userNotes else ''
 
+        # NOTE: It's important that the context is created at construction and
+        # never recreated for the lifetime of the weapon as things like the UI
+        # may hold onto references to it.
+        # NOTE: It's also important that this class doesn't cache any state as
+        # the context may be modified without it knowing.
         self._constructionContext = WeaponContext(
             techLevel=techLevel,
             rules=rules)
@@ -385,6 +390,9 @@ class Weapon(object):
     def clearRules(self, regenerate: bool = True) -> None:
         self._constructionContext.clearRules(
             regenerate=regenerate)
+        
+    def context(self) -> WeaponContext:
+        return self._constructionContext
 
     def userNotes(self) -> str:
         return self._userNotes
