@@ -46,10 +46,11 @@ class SequenceState(object):
                 return stages
             return [stage for stage in stages if stage.matchesComponent(component=componentType)]
 
-        # It's important that, when returning stages for multiple phases, they're returned in
-        # construction order. Due to the way stages are added to _stageMap its values probably
-        # won't naturally be in the correct order. Doing this makes processing of the stages
-        # much simpler for consumers
+        # It's important that, when returning stages for multiple phases,
+        # they're returned in construction order. Due to the way stages are
+        # added to _stageMap its values probably won't naturally be in the
+        # correct order. Doing this makes processing of the stages much
+        # simpler for consumers
         matched = []
         for phase in self._phasesType:
             stages = self._phaseStages.get(phase)
@@ -82,12 +83,14 @@ class SequenceState(object):
             else:
                 phaseStages.append(stage)
 
-            # Update mapping of component types to stages with the stages that handle components of those
-            # types or components derived from those types. The later part is important as the
-            # mapping should contain entries for things like AccessoryInterface that map to all stages
-            # that deal with classes derived from AccessoryInterface even though those stages only
-            # match classes derived from that type. This is why the subclass check is performed in both
-            # directions rather than just checking that the stage matches the component type.
+            # Update mapping of component types to stages with the stages that
+            # handle components of those types or components derived from those
+            # types. The later part is important as the mapping should contain
+            # entries for things like AccessoryInterface that map to all stages
+            # that deal with classes derived from AccessoryInterface even though
+            # those stages only match classes derived from that type. This is
+            # why the subclass check is performed in both directions rather than
+            # just checking that the stage matches the component type.
             for componentType in componentTypes:
                 if issubclass(stage.baseType(), componentType) or \
                         issubclass(componentType, stage.baseType()):
@@ -153,7 +156,8 @@ class SequenceState(object):
             component = self._stepComponents.get(step, [])
             return [component] if component else []
 
-        # When returning components for multiple phases, return them in construction order
+        # When returning components for multiple phases, return them in
+        # construction order
         phaseList = self._phasesType if not phase else [phase]
         components = []
         for phase in phaseList:
@@ -220,7 +224,8 @@ class SequenceState(object):
                 for step in steps:
                     notes.extend(step.notes())
         else:
-            # Return notes in construction order if a specific phase isn't specified
+            # Return notes in construction order if a specific phase isn't
+            # specified
             phases = self._phasesType if not phase else [phase]
             for phase in phases:
                 steps = self._phaseSteps.get(phase)
@@ -269,8 +274,8 @@ class SequenceState(object):
         if not stages:
             return []
 
-        # When searching for components return them in construction order. This is done for
-        # consistency with how stages are returned
+        # When searching for components return them in construction order. This
+        # is done for consistency with how stages are returned
         matched = []
         for stage in stages:
             for component in stage.components():
@@ -443,7 +448,8 @@ class ConstructionContext(object):
                 stage.clearComponents()
                 modified = True
 
-        # If regenerate is specified always regenerate even if nothing was modified
+        # If regenerate is specified always regenerate even if nothing was
+        # modified
         if regenerate:
             self.regenerate()
 
@@ -549,10 +555,11 @@ class ConstructionContext(object):
 
         restoreIndex = -1
         if replaceComponent:
-            # In order to ignore a component it needs to be temporarily removed from the stage.
-            # When components are checking for the presence of a component it will result in a
-            # call back to the stage to check what components it contains. By removing the
-            # component from the list these checks won't see it.
+            # In order to ignore a component it needs to be temporarily removed
+            # from the stage. When components are checking for the presence of a
+            # component it will result in a call back to the stage to check what
+            # components it contains. By removing the component from the list
+            # these checks won't see it.
             restoreIndex = stage.removeComponent(replaceComponent)
 
         try:
@@ -571,8 +578,9 @@ class ConstructionContext(object):
             compatible = []
             for componentType in componentTypes:
                 if replaceComponent and componentType == type(replaceComponent):
-                    # This is the same type of component as the component being replaced so use
-                    # that component rather than creating a new component
+                    # This is the same type of component as the component being
+                    # replaced so use that component rather than creating a new
+                    # component
                     component = replaceComponent
                 else:
                     # Create a new component for the compatibility check
@@ -679,14 +687,14 @@ class ConstructionContext(object):
                     # incompatible components from stages
                     continue
 
-                # Get the list of components for the stage and make sure mandatory stages have a
-                # component selected
+                # Get the list of components for the stage and make sure
+                # mandatory stages have a component selected
                 components = stage.components()
                 if not components:
                     if stage.requirement() == construction.ConstructionStage.RequirementLevel.Optional:
-                        # The stage is optional so the fact there are currently no components is
-                        # completely valid, it does however mean there is nothing more to do for
-                        # this stage
+                        # The stage is optional so the fact there are currently
+                        # no components is completely valid, it does however
+                        # mean there is nothing more to do for this stage
                         continue
 
                     defaultComponent = stage.defaultComponent()
@@ -711,7 +719,8 @@ class ConstructionContext(object):
                             if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
                                 self._isIncomplete = True
                             continue
-                        defaultComponent = compatible[0] # Select the first compatible component
+                        # Select the first compatible component
+                        defaultComponent = compatible[0]
 
                     self.addComponent(
                         stage=stage,
@@ -794,11 +803,12 @@ class ConstructionContext(object):
 
         try:
             for component in originalComponents:
-                # Remove the component from the stage in order to perform the compatibility check.
-                # This is required to prevent the component causing its self to be reported as
-                # incompatible. The code that does this should take care that after the operation
-                # has completed, any components that weren't removed are still in the same relative
-                # order
+                # Remove the component from the stage in order to perform the
+                # compatibility check. This is required to prevent the component
+                # causing its self to be reported as incompatible. The code that
+                # does this should take care that after the operation has
+                # completed, any components that weren't removed are still in the
+                # same relative order
                 stage.removeComponent(component=component)
 
                 # Check if the component is compatible with the context in its
@@ -808,10 +818,11 @@ class ConstructionContext(object):
                 if component.isCompatible(
                         sequence=stage.sequence(),
                         context=self):
-                    # The basic component is compatible but the current options may not be, update
-                    # them to reset any that are incompatible. Note that the sequence will be None
-                    # for common components. The fact they're common means their options shouldn't
-                    # be dependant on the state of a specific sequence
+                    # The basic component is compatible but the options might
+                    # not be, update them to reset any that are incompatible.
+                    # Note that the sequence will be None for common components.
+                    # The fact they're common means their options shouldn't be
+                    # dependant on the state of a specific sequence
                     component.updateOptions(
                         sequence=stage.sequence(),
                         context=self)
