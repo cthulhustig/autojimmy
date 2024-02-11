@@ -479,6 +479,19 @@ class ConstructionContext(object):
                     stopStage=stopStage):
                 break
 
+    def phaseCost(
+            self,
+            sequence: str,
+            phase: construction.ConstructionPhase,
+            costId: construction.ConstructionCost
+            ) -> common.ScalarCalculation:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.phaseCost(
+            costId=costId,
+            phase=phase)
+
     def constructionNotes(
             self,
             sequence: str,
@@ -628,6 +641,16 @@ class ConstructionContext(object):
             if sequenceState.hasComponent(componentType=componentType):
                 return True
         return False
+    
+    def attribute(
+            self,
+            attributeId: construction.ConstructionAttributeId,
+            sequence: str
+            ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.attribute(attributeId=attributeId)    
 
     def attributeValue(
             self,

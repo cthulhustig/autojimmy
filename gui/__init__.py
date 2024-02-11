@@ -83,6 +83,9 @@ from .gunsmith.weaponmanifesttable import *
 from .gunsmith.weaponinfowidget import *
 from .gunsmith.weaponinfotabwidget import *
 from .gunsmith.gunsmithwindow import *
+from .robots.robotconfigwidget import *
+from .robots.robotmanifesttable import *
+from .robots.robotbuilderwindow import *
 from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
