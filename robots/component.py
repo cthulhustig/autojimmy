@@ -5,3 +5,12 @@ class RobotComponentInterface(construction.ComponentInterface):
 
 class ChassisInterface(RobotComponentInterface):
     pass
+
+class LocomotionInterface(RobotComponentInterface):
+    pass
+
+class PrimaryLocomotionInterface(LocomotionInterface):
+    pass
+
+class SecondaryLocomotionInterface(LocomotionInterface):
+    pass

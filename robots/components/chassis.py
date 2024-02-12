@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class RobotChassis(robots.ChassisInterface):
+class Chassis(robots.ChassisInterface):
     """
     - Trait: Large(Attack Roll DM) if Attack Roll DM > 0 (p13)
     - Trait: Small(Attack Roll DM) if Attack Roll DM < 0 (p13)
@@ -24,6 +24,7 @@ class RobotChassis(robots.ChassisInterface):
 
     # TODO: This is just a temporary value I hacked in. There must be an
     # absolute min somewhere in the rules
+    # - You can't get a Locomotion < TL5
     _MinTechLevel = 3
 
     # TODO: It might be worth a note to explain that the attack roll DM is a
@@ -106,12 +107,16 @@ class RobotChassis(robots.ChassisInterface):
             name=self.instanceString(),
             type=self.typeString())
         
-        step.setCost(
-            costId=robots.RobotCost.Credits,
-            value=construction.ConstantModifier(value=self._basicCost))
+        step.setCredits(
+            credits=construction.ConstantModifier(value=self._basicCost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.BaseSlots,
+            value=self._baseSlots))
+        
+        # Init Available Slots to the base slots
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.AvailableSlots,
             value=self._baseSlots))
         
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -133,7 +138,7 @@ class RobotChassis(robots.ChassisInterface):
 
         return step
 
-class Size1RobotChassis(RobotChassis):
+class Size1Chassis(Chassis):
     """
     - Base Slots: 1
     - Base Hits: 1
@@ -149,7 +154,7 @@ class Size1RobotChassis(RobotChassis):
             attackDM=-4,
             basicCost=100)
         
-class Size2RobotChassis(RobotChassis):
+class Size2Chassis(Chassis):
     """
     - Base Slots: 2
     - Base Hits: 4
@@ -165,7 +170,7 @@ class Size2RobotChassis(RobotChassis):
             attackDM=-3,
             basicCost=200)
 
-class Size3RobotChassis(RobotChassis):
+class Size3Chassis(Chassis):
     """
     - Base Slots: 4
     - Base Hits: 8
@@ -181,7 +186,7 @@ class Size3RobotChassis(RobotChassis):
             attackDM=-2,
             basicCost=400)
         
-class Size4RobotChassis(RobotChassis):
+class Size4Chassis(Chassis):
     """
     - Base Slots: 8
     - Base Hits: 12
@@ -197,7 +202,7 @@ class Size4RobotChassis(RobotChassis):
             attackDM=-1,
             basicCost=800)
         
-class Size5RobotChassis(RobotChassis):
+class Size5Chassis(Chassis):
     """
     - Base Slots: 16
     - Base Hits: 20
@@ -213,7 +218,7 @@ class Size5RobotChassis(RobotChassis):
             attackDM=+0,
             basicCost=1000)
         
-class Size6RobotChassis(RobotChassis):
+class Size6Chassis(Chassis):
     """
     - Base Slots: 32
     - Base Hits: 32
@@ -229,7 +234,7 @@ class Size6RobotChassis(RobotChassis):
             attackDM=+1,
             basicCost=2000)
         
-class Size7RobotChassis(RobotChassis):
+class Size7Chassis(Chassis):
     """
     - Base Slots: 64
     - Base Hits: 50
@@ -245,7 +250,7 @@ class Size7RobotChassis(RobotChassis):
             attackDM=+2,
             basicCost=4000)
         
-class Size8RobotChassis(RobotChassis):
+class Size8Chassis(Chassis):
     """
     - Base Slots: 128
     - Base Hits: 72

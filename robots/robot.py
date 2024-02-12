@@ -25,6 +25,28 @@ class RobotContext(construction.ConstructionContext):
             phasesType=robots.RobotPhase,
             componentsType=robots.RobotComponentInterface,
             techLevel=techLevel)
+        
+    def baseSlots(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        slots = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.BaseSlots)
+        if not isinstance(slots, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Base Slots')
+        return slots
+        
+    def baseChassisCredits(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        return self.phaseCost(
+            sequence=sequence,
+            phase=robots.RobotPhase.BaseChassis,
+            costId=robots.RobotCost.Credits)        
 
 class Robot(object):
     def __init__(
@@ -253,9 +275,25 @@ class Robot(object):
         stages.append(construction.ConstructionStage(
             name='Chassis',
             sequence=self._sequence,
-            phase=robots.RobotPhase.Chassis,
+            phase=robots.RobotPhase.BaseChassis,
             requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
             singular=True,
             baseType=robots.ChassisInterface))
+        
+        stages.append(construction.ConstructionStage(
+            name='Primary Locomotion',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.BaseChassis,
+            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
+            singular=True,
+            baseType=robots.PrimaryLocomotionInterface))
+        
+        stages.append(construction.ConstructionStage(
+            name='Secondary Locomotion',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.LocomotionOptions,
+            requirement=construction.ConstructionStage.RequirementLevel.Optional,
+            singular=False,
+            baseType=robots.SecondaryLocomotionInterface)) 
 
         return stages

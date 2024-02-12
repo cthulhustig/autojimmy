@@ -24,3 +24,21 @@ class RobotStep(construction.ConstructionStep):
             costs=costs,
             factors=factors,
             notes=notes)
+
+    def setCredits(
+            self,
+            credits: construction.NumericModifierInterface
+            ) -> None:
+        self.setCost(costId=RobotCost.Credits, value=credits)
+
+    def setSlots(
+            self,
+            slots: construction.NumericModifierInterface
+            ) -> None:
+        self.setCost(costId=RobotCost.Slots, value=slots)
+
+    def setBandwidth(
+            self,
+            bandwidth: construction.NumericModifierInterface
+            ) -> None:
+        self.setCost(costId=RobotCost.Bandwidth, value=bandwidth)
