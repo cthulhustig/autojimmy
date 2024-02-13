@@ -38,7 +38,7 @@ class _LocomotionImpl(object):
         name='TL12 Locomotion Endurance Increase')
     _TL15EnduranceIncreasePercent = common.ScalarCalculation(
         value=100,
-        name='TL12 Locomotion Endurance Increase')
+        name='TL15 Locomotion Endurance Increase')
     
     _BaseMovement = common.ScalarCalculation(
         value=5, # Meters per minor action

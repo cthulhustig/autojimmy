@@ -294,7 +294,15 @@ class Robot(object):
             phase=robots.RobotPhase.ChassisOptions,
             requirement=construction.ConstructionStage.RequirementLevel.Optional,
             singular=True,
-            baseType=robots.ArmourModificationInterface))         
+            baseType=robots.ArmourModificationInterface))
+
+        stages.append(construction.ConstructionStage(
+            name='Endurance Modification',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.ChassisOptions,
+            requirement=construction.ConstructionStage.RequirementLevel.Optional,
+            singular=True,
+            baseType=robots.EnduranceModificationInterface))               
         
         stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',

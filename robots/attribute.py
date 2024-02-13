@@ -19,6 +19,8 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     BaseHits = 'Base Hits'
     AttackRollDM = 'Attack Roll DM'
     AvailableSlots = 'Available Slots'
+    # TODO: I think Endurance can be a float. I'm not sure if it's important
+    # but I should probably figure it out
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
     Movement = 'Movement' # In meters

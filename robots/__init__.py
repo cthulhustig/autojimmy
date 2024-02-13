@@ -6,3 +6,4 @@ from .robot import *
 from .components.chassis import *
 from .components.locomotion import *
 from .components.armour import *
+from .components.endurance import *
