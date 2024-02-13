@@ -289,9 +289,17 @@ class Robot(object):
             baseType=robots.PrimaryLocomotionInterface))
         
         stages.append(construction.ConstructionStage(
+            name='Armour Modification',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.ChassisOptions,
+            requirement=construction.ConstructionStage.RequirementLevel.Optional,
+            singular=True,
+            baseType=robots.ArmourModificationInterface))         
+        
+        stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',
             sequence=self._sequence,
-            phase=robots.RobotPhase.LocomotionOptions,
+            phase=robots.RobotPhase.LocomotiveMods,
             requirement=construction.ConstructionStage.RequirementLevel.Optional,
             singular=False,
             baseType=robots.SecondaryLocomotionInterface)) 

@@ -14,3 +14,6 @@ class PrimaryLocomotionInterface(LocomotionInterface):
 
 class SecondaryLocomotionInterface(LocomotionInterface):
     pass
+
+class ArmourModificationInterface(LocomotionInterface):
+    pass

@@ -8,4 +8,4 @@ ConstructionDecimalPlaces = 3
 class RobotPhase(construction.ConstructionPhase):
     BaseChassis = 'Base Chassis'
     ChassisOptions = 'Chassis Options'
-    LocomotionOptions = 'Locomotion Options'
+    LocomotiveMods = 'Locomotive Modifications'

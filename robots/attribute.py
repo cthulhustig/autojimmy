@@ -7,6 +7,7 @@ import enum
 - TODO: This list is possibly incomplete, it might have come from the Vehicle rule book
 """
 class SpeedBand(enum.Enum):
+    Idle = 'Idle'
     VerySlow = 'Very Slow'
     Slow = 'Slow'
     Medium = 'Medium'
@@ -21,6 +22,9 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
     Movement = 'Movement' # In meters
+    # TODO: Need to work out if this should be Protection or Armour, I think
+    # it's the same thing and the rules use them interchangeably
+    Protection = 'Protection'
 
     # Robot Numeric Traits (p7)
     # TODO: The Large & Small traits should be mutually exclusive

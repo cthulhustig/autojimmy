@@ -59,7 +59,7 @@ class _LocomotionImpl(object):
             baseEndurance: typing.Union[int, common.ScalarCalculation],
             costMultiplier: typing.Union[int, common.ScalarCalculation],
             baseAgility: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            trait: typing.Optional[robots.RobotAttributeId] = None,
+            flagTrait: typing.Optional[robots.RobotAttributeId] = None,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__()
@@ -90,7 +90,7 @@ class _LocomotionImpl(object):
         self._baseEndurance = baseEndurance
         self._costMultiplier = costMultiplier
         self._baseAgility = baseAgility
-        self._trait = trait
+        self._flagTrait = flagTrait
         self._notes = notes
 
     def componentString(self) -> str:
@@ -180,6 +180,44 @@ class _LocomotionImpl(object):
             for note in self._notes:
                 step.addNote(note)
 
+class _FlyerLocomotionImpl(_LocomotionImpl):
+    """
+    - Trait: Flyer (Idle) (p17)
+    """
+    def __init__(
+            self,
+            isPrimary: bool,
+            componentString: str,
+            minTechLevel: typing.Union[int, common.ScalarCalculation],
+            baseAgility: typing.Union[int, common.ScalarCalculation],
+            baseEndurance: typing.Union[int, common.ScalarCalculation],
+            costMultiplier: typing.Union[int, common.ScalarCalculation],
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            isPrimary=isPrimary,
+            componentString=componentString,
+            minTechLevel=minTechLevel,
+            baseAgility=baseAgility,
+            baseEndurance=baseEndurance,
+            costMultiplier=costMultiplier,
+            notes=notes)
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Flyer,
+            value=robots.SpeedBand.Idle))
+
 class _NoLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
@@ -258,7 +296,7 @@ class _WheelsATVLocomotionImpl(_LocomotionImpl):
             componentString='Wheels, ATV',
             minTechLevel=5,
             baseAgility=+0,
-            trait=robots.RobotAttributeId.ATV,
+            flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
             costMultiplier=3)
         
@@ -278,11 +316,11 @@ class _TracksLocomotionImpl(_LocomotionImpl):
             componentString='Tracks',
             minTechLevel=5,
             baseAgility=-1,
-            trait=robots.RobotAttributeId.ATV,
+            flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
             costMultiplier=2)
         
-class _GravLocomotionImpl(_LocomotionImpl):
+class _GravLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 9
     - Agility: +1
@@ -297,11 +335,10 @@ class _GravLocomotionImpl(_LocomotionImpl):
             componentString='Grav',
             minTechLevel=9,
             baseAgility=+1,
-            trait=robots.RobotAttributeId.Flyer,
             baseEndurance=24,
             costMultiplier=20)
         
-class _AeroplaneLocomotionImpl(_LocomotionImpl):
+class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 5
     - Agility: +1
@@ -348,7 +385,6 @@ class _AeroplaneLocomotionImpl(_LocomotionImpl):
             componentString='Aeroplane',
             minTechLevel=5,
             baseAgility=+1,
-            trait=robots.RobotAttributeId.Flyer,
             baseEndurance=12,
             costMultiplier=12,
             notes=None) # Notes handled locally
@@ -389,11 +425,11 @@ class _AquaticLocomotionImpl(_LocomotionImpl):
             componentString='Aquatic',
             minTechLevel=6,
             baseAgility=-2,
-            trait=robots.RobotAttributeId.Seafarer,
+            flagTrait=robots.RobotAttributeId.Seafarer,
             baseEndurance=72,
             costMultiplier=4)
         
-class _VTOLLocomotionImpl(_LocomotionImpl):
+class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 7
     - Agility: +0
@@ -410,7 +446,6 @@ class _VTOLLocomotionImpl(_LocomotionImpl):
             componentString='VTOL',
             minTechLevel=7,
             baseAgility=+0,
-            trait=robots.RobotAttributeId.Flyer,
             baseEndurance=24,
             costMultiplier=14,
             notes=[
@@ -434,7 +469,7 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
             componentString='Walker',
             minTechLevel=8,
             baseAgility=+0,
-            trait=robots.RobotAttributeId.ATV,
+            flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
             costMultiplier=10)
         
@@ -454,7 +489,7 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             componentString='Hovercraft',
             minTechLevel=7,
             baseAgility=+1,
-            trait=robots.RobotAttributeId.ACV,
+            flagTrait=robots.RobotAttributeId.ACV,
             baseEndurance=24,
             costMultiplier=10,
             notes=['Agility -1 in thin atmosphere (p17)'])
@@ -495,7 +530,6 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
             componentString='Thruster',
             minTechLevel=7,
             baseAgility=+1,
-            trait=None, # Thrust trait is handled locally
             baseEndurance=2,
             costMultiplier=20)
         

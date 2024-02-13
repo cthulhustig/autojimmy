@@ -7,7 +7,27 @@ class Chassis(robots.ChassisInterface):
     """
     - Trait: Large(Attack Roll DM) if Attack Roll DM > 0 (p13)
     - Trait: Small(Attack Roll DM) if Attack Roll DM < 0 (p13)
+    - Trait: Protection (p19)
+        - TL6-8: Base Protection: 2
+        - TL9-11: Base Protection: 3
+        - TL12-14: Base Protection: 4
+        - TL15-17: Base Protection: 4
+        - TL18+: Base Protection: 5
     """
+
+    # List of tuples structured as follows
+    # Min TL, Max TL, Base Protection
+    _BaseProtectionDetails = [
+        (6, 8, 2),
+        (9, 11, 3),
+        (12, 14, 4),
+        (15, 17, 4),
+        (18, None, 5)
+    ]
+
+    # TODO: Androids and biological robots have no default protection (p18) and
+    # it sounds like they have different max values specified in their rules
+
     # TODO: I'm really not sure about my my interpretation of the value of
     # the Large/Small traits. The only difference between the Trait and the
     # Attack Roll DM attribute I can see so far is the wording fro the trait
@@ -25,7 +45,7 @@ class Chassis(robots.ChassisInterface):
     # TODO: This is just a temporary value I hacked in. There must be an
     # absolute min somewhere in the rules
     # - You can't get a Locomotion < TL5
-    _MinTechLevel = 3
+    _MinTechLevel = 5
 
     # TODO: It might be worth a note to explain that the attack roll DM is a
     # modifier on the attackers roll
@@ -135,6 +155,18 @@ class Chassis(robots.ChassisInterface):
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Large,
                 value=self._attackDM))
+            
+        currentTL = context.techLevel()
+        for minTL, maxTL, protection in Chassis._BaseProtectionDetails:
+            if currentTL >= minTL and ((maxTL == None) or (currentTL <= maxTL)):
+                range = '{minTL}-{maxTL}' if maxTL != None else '{minTL}+'
+                protection = common.ScalarCalculation(
+                    value=protection,
+                    name=f'TL{range} Base Protection')
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=robots.RobotAttributeId.Protection,
+                    value=protection))
+                break
 
         return step
 
