@@ -21,3 +21,6 @@ class ArmourModificationInterface(LocomotionInterface):
 class EnduranceModificationInterface(LocomotionInterface):
     pass
 
+class ResiliencyModificationInterface(LocomotionInterface):
+    pass
+

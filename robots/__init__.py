@@ -7,3 +7,4 @@ from .components.chassis import *
 from .components.locomotion import *
 from .components.armour import *
 from .components.endurance import *
+from .components.resiliency import *

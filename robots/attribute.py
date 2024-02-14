@@ -16,9 +16,9 @@ class SpeedBand(enum.Enum):
 class RobotAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Robots (Numeric unless otherwise stated)
     BaseSlots = 'Base Slots'
-    BaseHits = 'Base Hits'
-    AttackRollDM = 'Attack Roll DM'
     AvailableSlots = 'Available Slots'
+    AttackRollDM = 'Attack Roll DM'
+    Hits = 'Hits'
     # TODO: I think Endurance can be a float. I'm not sure if it's important
     # but I should probably figure it out
     Endurance = 'Endurance' # In hours

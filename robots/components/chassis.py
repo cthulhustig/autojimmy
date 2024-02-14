@@ -140,7 +140,7 @@ class Chassis(robots.ChassisInterface):
             value=self._baseSlots))
         
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.BaseHits,
+            attributeId=robots.RobotAttributeId.Hits,
             value=self._baseHits))
         
         step.addFactor(factor=construction.SetAttributeFactor(
