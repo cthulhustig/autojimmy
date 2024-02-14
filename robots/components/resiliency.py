@@ -82,9 +82,13 @@ class IncreaseResiliency(ResiliencyModification):
             value=self._hitsIncreaseOption.value(),
             name='Specified Hits Increase')
         
-        totalCost = common.Calculator.multiply(
+        totalCostPercent = common.Calculator.multiply(
             lhs=IncreaseResiliency._PerSlotCostPercent,
             rhs=hitsIncrease,
+            name='Total Resiliency Increase Cost Percentage')
+        totalCost = common.Calculator.takePercentage(
+            value=context.baseChassisCredits(sequence=sequence),
+            percentage=totalCostPercent,
             name='Total Resiliency Increase Cost')
         
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
