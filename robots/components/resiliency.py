@@ -41,10 +41,9 @@ class IncreaseResiliency(ResiliencyModification):
         return 'Resiliency Increase'
     
     def instanceString(self) -> str:
-        increase = self._hitsIncreaseOption.value()
-        return '{component} x {increase}'.format(
+        return '{component} +{increase} Hits'.format(
             component=self.componentString(),
-            increase=increase) 
+            increase=self._hitsIncreaseOption.value()) 
     
     def isCompatible(
             self,
@@ -132,10 +131,9 @@ class DecreaseResiliency(ResiliencyModification):
         return 'Resiliency Decrease'
     
     def instanceString(self) -> str:
-        increase = self._hitsDecreaseOption.value()
-        return '{component} x {increase}'.format(
+        return '{component} -{increase} Hits'.format(
             component=self.componentString(),
-            increase=increase) 
+            increase=self._hitsDecreaseOption.value()) 
     
     def isCompatible(
             self,

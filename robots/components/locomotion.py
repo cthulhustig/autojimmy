@@ -6,14 +6,15 @@ import typing
 class _LocomotionImpl(object):
     """
     All Locomotion Types:
-    - Base Movement: 5m per minor action (except for None Locomotion)        
     - At TL12 Base Endurance is increased by 50% (p19)
     - At TL15 Base Endurance is increased by 100% (p19)
     - Primary Locomotion
         - Base Chassis Cost: Basic Cost * Cost Multiplier
+        - Base Speed: 5m
     - Secondary Locomotion
         - Slots: 25% of Base Slots rounded up (p23)
         - Cost: Each slot costs Cr500 * Secondary Locomotion Cost Multiplier
+        - Base Speed: 5m
         - Requirement: Other than Thrusters, only compatible with a primary
         locomotion that has a greater or equal cost multiplier (p23). Thrusters
         are a special case and can be be used even if the primary has a lower
@@ -40,9 +41,9 @@ class _LocomotionImpl(object):
         value=100,
         name='TL15 Locomotion Endurance Increase')
     
-    _BaseMovement = common.ScalarCalculation(
-        value=5, # Meters per minor action
-        name='Base Metes Per Minor Action Movement')
+    _BaseSpeed = common.ScalarCalculation(
+        value=5,
+        name='Base Meters Per Minor Action')
     
     _SecondaryLocomotionSlotPercent = common.ScalarCalculation(
         value=25,
@@ -151,9 +152,13 @@ class _LocomotionImpl(object):
                     attributeId=robots.RobotAttributeId.Agility,
                     value=endurance))
                 
+                speed = common.Calculator.add(
+                    lhs=_LocomotionImpl._BaseSpeed,
+                    rhs=self._baseAgility,
+                    name=f'{self._componentString} Base Speed')
                 step.addFactor(factor=construction.SetAttributeFactor(
-                    attributeId=robots.RobotAttributeId.Movement,
-                    value=_LocomotionImpl._BaseMovement))
+                    attributeId=robots.RobotAttributeId.Speed,
+                    value=speed))
         else:
             baseSlots = context.baseSlots(sequence=sequence)
             requiredSlots = common.Calculator.ceil(
@@ -607,7 +612,7 @@ class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
             sequence=sequence,
             step=step)
                 
-class NonePrimaryLocomotion(PrimaryLocomotion):
+class NoPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_NoLocomotionImpl(isPrimary=True))
 

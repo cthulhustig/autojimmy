@@ -8,3 +8,5 @@ from .components.locomotion import *
 from .components.armour import *
 from .components.endurance import *
 from .components.resiliency import *
+from .components.agility import *
+from .components.speed import *

@@ -1,17 +1,20 @@
 import construction
 import enum
 
-"""
-- Used by Vehicle Speed Movement locomotion modification (p23)
-- NOTE: This feels similar to Physical Signature
-- TODO: This list is possibly incomplete, it might have come from the Vehicle rule book
-"""
+# NOTE: The robot rules don't give a complete list of Speed Bands these came
+# from the construction spreadsheet someone put together and I think it might be
+# based on the Speed Bands from the Vehicle Handbook
+# https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/
 class SpeedBand(enum.Enum):
     Idle = 'Idle'
     VerySlow = 'Very Slow'
     Slow = 'Slow'
     Medium = 'Medium'
     High = 'High'
+    Fast = 'Fast'
+    VeryHigh = 'Very Fast'
+    Subsonic = 'Subsonic'
+    Supersonic = 'Supersonic'
 
 class RobotAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Robots (Numeric unless otherwise stated)
@@ -23,7 +26,11 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # but I should probably figure it out
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
-    Movement = 'Movement' # In meters
+    # TODO: Need to work out if Movement (p16) is the same as Speed (p22). I
+    # think it's Speed as that's what it appears to be on the example robots
+    # from the book
+    Speed = 'Speed' # In meters
+    VehicleSpeed = 'Vehicle Speed' # SpeedBand
     # TODO: Need to work out if this should be Protection or Armour, I think
     # it's the same thing and the rules use them interchangeably
     Protection = 'Protection'

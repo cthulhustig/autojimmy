@@ -22,6 +22,35 @@ def extendEnum(
 
     return enum.Enum(baseEnum.__name__, dict(zip(names, values)))
 
+def enumFromIndex(
+        enumType: typing.Type[enum.Enum],
+        index: int
+        ) -> typing.Optional[enum.Enum]:
+    valueList = list(enumType)
+    if index < 0 or index >= len(valueList):
+        return None
+    return valueList[index]
+
+def enumToIndex(value: enum.Enum) -> int:
+    valueList = list(type(value))
+    return valueList.index(value)
+
+def incrementEnum(
+        value: enum.Enum,
+        count: int
+        ) -> enum.Enum:
+    valueList = list(type(value))
+    index = valueList.index(value)
+    return valueList[min(index + count, len(valueList) - 1)]
+    
+def decrementEnum(
+        value: enum.Enum,
+        count: int
+        ) -> enum.Enum:
+    valueList = list(type(value))
+    index = valueList.index(value)
+    return valueList[max(index - count, 0)]
+
 def isWindows() -> bool:
     return platform.system() == 'Windows'
 

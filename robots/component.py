@@ -15,12 +15,17 @@ class PrimaryLocomotionInterface(LocomotionInterface):
 class SecondaryLocomotionInterface(LocomotionInterface):
     pass
 
-class ArmourModificationInterface(LocomotionInterface):
+class ArmourModificationInterface(RobotComponentInterface):
     pass
 
-class EnduranceModificationInterface(LocomotionInterface):
+class EnduranceModificationInterface(RobotComponentInterface):
     pass
 
-class ResiliencyModificationInterface(LocomotionInterface):
+class ResiliencyModificationInterface(RobotComponentInterface):
     pass
 
+class AgilityEnhancementInterface(RobotComponentInterface):
+    pass
+
+class SpeedModificationInterface(RobotComponentInterface):
+    pass

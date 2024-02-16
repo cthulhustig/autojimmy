@@ -69,10 +69,9 @@ class IncreaseArmour(ArmourModification):
         return 'Armour Increase'
     
     def instanceString(self) -> str:
-        armourPoints = self._armourPointsOption.value()
-        return '{component} x {points}'.format(
+        return '{component} +{points}'.format(
             component=self.componentString(),
-            points=armourPoints) 
+            points=self._armourPointsOption.value()) 
 
     def isCompatible(
             self,
@@ -201,10 +200,9 @@ class DecreaseArmour(ArmourModification):
         return 'Armour Decrease'
     
     def instanceString(self) -> str:
-        armourPoints = self._armourPointsOption.value()
-        return '{component} x {points}'.format(
+        return '{component} -{points}'.format(
             component=self.componentString(),
-            points=armourPoints) 
+            points=self._armourPointsOption.value()) 
 
     def isCompatible(
             self,

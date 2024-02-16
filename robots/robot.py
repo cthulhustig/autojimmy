@@ -310,7 +310,26 @@ class Robot(object):
             phase=robots.RobotPhase.ChassisOptions,
             requirement=construction.ConstructionStage.RequirementLevel.Optional,
             singular=True,
-            baseType=robots.ResiliencyModificationInterface))            
+            baseType=robots.ResiliencyModificationInterface))  
+
+        stages.append(construction.ConstructionStage(
+            name='Agility Modification',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.LocomotiveMods,
+            requirement=construction.ConstructionStage.RequirementLevel.Optional,
+            singular=True,
+            baseType=robots.AgilityEnhancementInterface))
+        
+        # NOTE: It's important that this stage is mandatory in order to force
+        # robots with the Aeroplane locomotion type to have the Vehicle Movement
+        # Speed component
+        stages.append(construction.ConstructionStage(
+            name='Speed Modification',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.LocomotiveMods,
+            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
+            singular=True,
+            baseType=robots.SpeedModificationInterface))        
         
         stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',
