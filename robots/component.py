@@ -29,3 +29,15 @@ class AgilityEnhancementInterface(RobotComponentInterface):
 
 class SpeedModificationInterface(RobotComponentInterface):
     pass
+
+class ManipulatorInterface(RobotComponentInterface):
+    pass
+
+class BaseManipulatorInterface(ManipulatorInterface):
+    pass
+
+class AdditionalManipulatorInterface(ManipulatorInterface):
+    pass
+
+class LegManipulatorInterface(ManipulatorInterface):
+    pass

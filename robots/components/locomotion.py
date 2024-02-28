@@ -185,44 +185,6 @@ class _LocomotionImpl(object):
             for note in self._notes:
                 step.addNote(note)
 
-class _FlyerLocomotionImpl(_LocomotionImpl):
-    """
-    - Trait: Flyer (Idle) (p17)
-    """
-    def __init__(
-            self,
-            isPrimary: bool,
-            componentString: str,
-            minTechLevel: typing.Union[int, common.ScalarCalculation],
-            baseAgility: typing.Union[int, common.ScalarCalculation],
-            baseEndurance: typing.Union[int, common.ScalarCalculation],
-            costMultiplier: typing.Union[int, common.ScalarCalculation],
-            notes: typing.Optional[typing.Iterable[str]] = None
-            ) -> None:
-        super().__init__(
-            isPrimary=isPrimary,
-            componentString=componentString,
-            minTechLevel=minTechLevel,
-            baseAgility=baseAgility,
-            baseEndurance=baseEndurance,
-            costMultiplier=costMultiplier,
-            notes=notes)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.Flyer,
-            value=robots.SpeedBand.Idle))
-
 class _NoLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
@@ -263,7 +225,43 @@ class _NoLocomotionImpl(_LocomotionImpl):
             modifier=construction.PercentageModifier(
                 value=_NoLocomotionImpl._SlotGainPercent)))
         
-class _WheelsLocomotionImpl(_LocomotionImpl):
+class _AxelLocomotionImpl(_LocomotionImpl):
+    # TODO: Handle large numbers of axles optionally having a cost/slot count
+    def __init__(
+            self,
+            isPrimary: bool,
+            componentString: str,
+            minTechLevel: typing.Union[int, common.ScalarCalculation],
+            baseAgility: typing.Union[int, common.ScalarCalculation],
+            baseEndurance: typing.Union[int, common.ScalarCalculation],
+            costMultiplier: typing.Union[int, common.ScalarCalculation],
+            flagTrait: typing.Optional[robots.RobotAttributeId] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            isPrimary=isPrimary,
+            componentString=componentString,
+            minTechLevel=minTechLevel,
+            baseAgility=baseAgility,
+            baseEndurance=baseEndurance,
+            costMultiplier=costMultiplier,
+            flagTrait=flagTrait,
+            notes=notes)
+
+        self._axleCountOption = construction.IntegerOption(
+            id='AxleCount',
+            name='Axle Count',
+            value=2,
+            minValue=1,
+            description='Specify the number of axles the robot has.')        
+        
+    def axleCount(self) -> int:
+        return self._axleCountOption.value()
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._axleCountOption]               
+        
+class _WheelsLocomotionImpl(_AxelLocomotionImpl):
     """
     - TL: 5
     - Agility: +0
@@ -272,7 +270,6 @@ class _WheelsLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x2
     - Options: Number of axles
     """
-    # TODO: Add option for number of axles
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -280,9 +277,9 @@ class _WheelsLocomotionImpl(_LocomotionImpl):
             minTechLevel=5,
             baseAgility=+0,
             baseEndurance=72,
-            costMultiplier=2)   
+            costMultiplier=2)  
 
-class _WheelsATVLocomotionImpl(_LocomotionImpl):
+class _WheelsATVLocomotionImpl(_AxelLocomotionImpl):
     """
     - TL: 5
     - Agility: +0
@@ -324,6 +321,57 @@ class _TracksLocomotionImpl(_LocomotionImpl):
             flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
             costMultiplier=2)
+        
+        self._trackCountOption = construction.IntegerOption(
+            id='TrackCount',
+            name='Track Count',
+            value=2,
+            minValue=1,
+            description='Specify the number of tracks the robot has.')        
+        
+    def trackCount(self) -> int:
+        return self._trackCountOption.value()
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._trackCountOption]   
+        
+class _FlyerLocomotionImpl(_LocomotionImpl):
+    """
+    - Trait: Flyer (Idle) (p17)
+    """
+    def __init__(
+            self,
+            isPrimary: bool,
+            componentString: str,
+            minTechLevel: typing.Union[int, common.ScalarCalculation],
+            baseAgility: typing.Union[int, common.ScalarCalculation],
+            baseEndurance: typing.Union[int, common.ScalarCalculation],
+            costMultiplier: typing.Union[int, common.ScalarCalculation],
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            isPrimary=isPrimary,
+            componentString=componentString,
+            minTechLevel=minTechLevel,
+            baseAgility=baseAgility,
+            baseEndurance=baseEndurance,
+            costMultiplier=costMultiplier,
+            notes=notes)
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Flyer,
+            value=robots.SpeedBand.Idle))
         
 class _GravLocomotionImpl(_FlyerLocomotionImpl):
     """
@@ -478,6 +526,19 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
             baseEndurance=72,
             costMultiplier=10)
         
+        self._legCountOption = construction.IntegerOption(
+            id='LegCount',
+            name='Leg Count',
+            value=2,
+            minValue=2,
+            description='Specify the number of legs the robot has.')        
+        
+    def legCount(self) -> int:
+        return self._legCountOption.value()
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._legCountOption]    
+        
 class _HovercraftLocomotionImpl(_LocomotionImpl):
     """
     - TL: 7
@@ -619,14 +680,26 @@ class NoPrimaryLocomotion(PrimaryLocomotion):
 class WheelsPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsLocomotionImpl(isPrimary=True))
+        
+    def axleCount(self) -> int:
+        assert(isinstance(self._impl, _WheelsLocomotionImpl))
+        return self._impl.axleCount()
 
 class WheelsATVPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsATVLocomotionImpl(isPrimary=True))
 
+    def axleCount(self) -> int:
+        assert(isinstance(self._impl, _WheelsATVLocomotionImpl))
+        return self._impl.axleCount()         
+
 class TracksPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_TracksLocomotionImpl(isPrimary=True))
+
+    def trackCount(self) -> int:
+        assert(isinstance(self._impl, _TracksLocomotionImpl))
+        return self._impl.trackCount()          
 
 class GravPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
@@ -647,6 +720,10 @@ class VTOLPrimaryLocomotion(PrimaryLocomotion):
 class WalkerPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WalkerLocomotionImpl(isPrimary=True))
+
+    def legCount(self) -> int:
+        assert(isinstance(self._impl, _WalkerLocomotionImpl))
+        return self._impl.legCount()
 
 class HovercraftPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
@@ -732,15 +809,27 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
         
 class WheelsSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WheelsLocomotionImpl(isPrimary=False))
+        super().__init__(impl=_WheelsLocomotionImpl(isPrimary=False)) 
+
+    def axleCount(self) -> int:
+        assert(isinstance(self._impl, _WheelsLocomotionImpl))
+        return self._impl.axleCount()        
 
 class WheelsATVSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsATVLocomotionImpl(isPrimary=False))
 
+    def axleCount(self) -> int:
+        assert(isinstance(self._impl, _WheelsATVLocomotionImpl))
+        return self._impl.axleCount()
+
 class TracksSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_TracksLocomotionImpl(isPrimary=False))
+
+    def trackCount(self) -> int:
+        assert(isinstance(self._impl, _TracksLocomotionImpl))
+        return self._impl.trackCount()        
 
 class GravSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
@@ -756,7 +845,11 @@ class VTOLSecondaryLocomotion(SecondaryLocomotion):
 
 class WalkerSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WalkerLocomotionImpl(isPrimary=False))
+        super().__init__(impl=_WalkerLocomotionImpl(isPrimary=False)) 
+
+    def legCount(self) -> int:
+        assert(isinstance(self._impl, _WalkerLocomotionImpl))
+        return self._impl.legCount()            
 
 class HovercraftSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:

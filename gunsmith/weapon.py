@@ -921,10 +921,11 @@ class Weapon(object):
             name='Initialisation',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.Initialisation,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
             baseType=gunsmith.InitialisationComponent,
-            defaultType=gunsmith.InitialisationComponent)]
+            defaultType=gunsmith.InitialisationComponent,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1)]
 
     def _createReceiverStages(
             self,
@@ -937,35 +938,39 @@ class Weapon(object):
             name='Receiver',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=gunsmith.ReceiverInterface))
+            baseType=gunsmith.ReceiverInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))
 
         if weaponType == gunsmith.WeaponType.ConventionalWeapon:
             stages.append(construction.ConstructionStage(
                 name='Calibre',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-                singular=True,
-                baseType=gunsmith.CalibreInterface))
+                baseType=gunsmith.CalibreInterface,
+                # Mandatory single component
+                minComponents=1,
+                maxComponents=1))
 
         if weaponType != gunsmith.WeaponType.ProjectorWeapon:
             stages.append(construction.ConstructionStage(
                 name='Multi-Barrel',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.MultiBarrelInterface))
+                baseType=gunsmith.MultiBarrelInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
 
             stages.append(construction.ConstructionStage(
                 name='Mechanism',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-                singular=True,
-                baseType=gunsmith.MechanismInterface))
+                baseType=gunsmith.MechanismInterface,
+                # Mandatory single component
+                minComponents=1,
+                maxComponents=1))
         else:
             # Having Propellant before Structure Feature is important as, in the case of
             # generated gas, there is a fixed receiver cost modification so you'll get different
@@ -976,17 +981,19 @@ class Weapon(object):
                 name='Propellant',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-                singular=True,
-                baseType=gunsmith.PropellantTypeInterface))
+                baseType=gunsmith.PropellantTypeInterface,
+                # Mandatory single component
+                minComponents=1,
+                maxComponents=1))
 
         stages.append(construction.ConstructionStage(
             name='Receiver Features',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=False,
-            baseType=gunsmith.ReceiverFeatureInterface))
+            baseType=gunsmith.ReceiverFeatureInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
 
         if weaponType == gunsmith.WeaponType.ConventionalWeapon or \
                 weaponType == gunsmith.WeaponType.GrenadeLauncherWeapon or \
@@ -995,18 +1002,20 @@ class Weapon(object):
                 name='Capacity Modification',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.CapacityModificationInterface))
+                baseType=gunsmith.CapacityModificationInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
 
             # Feeds are processed after features and capacity so they can use the final receiver capacity
             stages.append(construction.ConstructionStage(
                 name='Feed',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-                singular=True,
-                baseType=gunsmith.FeedInterface))
+                baseType=gunsmith.FeedInterface,
+                # Mandatory single component
+                minComponents=1,
+                maxComponents=1))
 
         # Fire Rate needs to be applied after Features as it needs to know the final Auto Score. It
         # needs to be applied after Feature as it needs to know if an RF/VRF feed is fitted
@@ -1014,9 +1023,10 @@ class Weapon(object):
             name='Fire Rate',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=gunsmith.FireRateInterface))
+            baseType=gunsmith.FireRateInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))
 
         return stages
 
@@ -1032,21 +1042,23 @@ class Weapon(object):
                 name='Barrel',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Barrel,
-                requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-                singular=True,
                 baseType=gunsmith.BarrelInterface,
                 # Default to Handgun as Minimal is a terrible default. We don't want to re-order the list
                 # of barrels in code as the order they're defined determines the order they appear in lists
                 # so they should stay in length order
-                defaultType=gunsmith.HandgunBarrel))
+                defaultType=gunsmith.HandgunBarrel,
+                # Mandatory single component
+                minComponents=1,
+                maxComponents=1))
 
             stages.append(construction.ConstructionStage(
                 name='Barrel Accessories',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.BarrelAccessories,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=False,
-                baseType=gunsmith.BarrelAccessoryInterface))
+                baseType=gunsmith.BarrelAccessoryInterface,
+                # Optional multi component
+                minComponents=None,
+                maxComponents=None))
 
         return stages
 
@@ -1059,45 +1071,52 @@ class Weapon(object):
             name='Mounting',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Mounting,
-            requirement=construction.ConstructionStage.RequirementLevel.Desirable, # Will be None for primary
-            singular=True,
-            baseType=gunsmith.SecondaryMountInterface)]
+            baseType=gunsmith.SecondaryMountInterface,
+            # Optional single component 
+            minComponents=0,
+            maxComponents=1,
+            # Force the stage to have a component if any are compatible
+            forceComponent=True)]
 
     def _createStockStages(self) -> typing.Iterable[construction.ConstructionStage]:
         return [construction.ConstructionStage(
             name='Stock',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.Stock,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=gunsmith.StockInterface)]
+            baseType=gunsmith.StockInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1)]
 
     def _createWeaponFeatureStages(self) -> typing.Iterable[construction.ConstructionStage]:
         return [construction.ConstructionStage(
             name='Weapon Features',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.WeaponFeatures,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=False,
-            baseType=gunsmith.WeaponFeatureInterface)]
+            baseType=gunsmith.WeaponFeatureInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None)]
 
     def _createWeaponAccessoriesStages(self) -> typing.Iterable[construction.ConstructionStage]:
         return [construction.ConstructionStage(
             name='Weapon Accessories',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.WeaponAccessories,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=False,
-            baseType=gunsmith.WeaponAccessoryInterface)]
+            baseType=gunsmith.WeaponAccessoryInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None)]
 
     def _createMultiMountStages(self) -> typing.Iterable[construction.ConstructionStage]:
         return [construction.ConstructionStage(
             name='Multi-Mount',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.MultiMount,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=True,
-            baseType=gunsmith.MultiMountInterface)]
+            baseType=gunsmith.MultiMountInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1)]
 
     def _createLoadingStages(
             self,
@@ -1113,9 +1132,10 @@ class Weapon(object):
                 name='Loaded Magazine',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.MagazineLoadedInterface))
+                baseType=gunsmith.MagazineLoadedInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
 
         if weaponType != gunsmith.WeaponType.PowerPackWeapon:
             if weaponType == gunsmith.WeaponType.ConventionalWeapon:
@@ -1130,37 +1150,43 @@ class Weapon(object):
                 name=loadedAmmoStageName,
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.AmmoLoadedInterface))
+                baseType=gunsmith.AmmoLoadedInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
         else:
             stages.append(construction.ConstructionStage(
                 name='Inserted Internal Power Pack',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.InternalPowerPackLoadedInterface))
+                baseType=gunsmith.InternalPowerPackLoadedInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
 
             stages.append(construction.ConstructionStage(
                 name='Attached External Power Pack',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=True,
-                baseType=gunsmith.ExternalPowerPackLoadedInterface))
+                baseType=gunsmith.ExternalPowerPackLoadedInterface,
+                # Optional single component
+                minComponents=0,
+                maxComponents=1))
 
         # This stage is a hack to multiply the cost/weight of loaded ammo and magazine by the
-        # number of multi-mounted weapons. In order for calculations to be consistent this stage
+        # number of multi-mounted weapons. In order for calculations to be consistent, this stage
         # MUST be after the other loading stages as they generate constant cost/weight values but
         # this stage generates relative values
         stages.append(construction.ConstructionStage(
             name='Multi-Mount Loading',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Loading,
-            requirement=construction.ConstructionStage.RequirementLevel.Desirable,
-            singular=True,
-            baseType=gunsmith.MultiMountLoadedInterface))
+            baseType=gunsmith.MultiMountLoadedInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1,
+            # Force the stage to have a component if any are compatible
+            forceComponent=True))
 
         return stages
 
@@ -1180,18 +1206,20 @@ class Weapon(object):
                 name='Magazine Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=False,
-                baseType=gunsmith.MagazineQuantityInterface))
+                baseType=gunsmith.MagazineQuantityInterface,
+                # Optional multi component
+                minComponents=None,
+                maxComponents=None))
 
         if weaponType == gunsmith.WeaponType.ConventionalWeapon:
             stages.append(construction.ConstructionStage(
                 name='Loader Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=False,
-                baseType=gunsmith.LoaderQuantityInterface))
+                baseType=gunsmith.LoaderQuantityInterface,
+                # Optional multi component
+                minComponents=None,
+                maxComponents=None))
 
         if weaponType == gunsmith.WeaponType.ConventionalWeapon:
             ammoQuantityStageName = 'Ammo Quantities'
@@ -1207,18 +1235,20 @@ class Weapon(object):
             name=ammoQuantityStageName,
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Munitions,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=False,
-            baseType=gunsmith.AmmoQuantityInterface))
+            baseType=gunsmith.AmmoQuantityInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
 
         if weaponType == gunsmith.WeaponType.ProjectorWeapon:
             stages.append(construction.ConstructionStage(
                 name='Propellant Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                requirement=construction.ConstructionStage.RequirementLevel.Optional,
-                singular=False,
-                baseType=gunsmith.ProjectorPropellantQuantityInterface))
+                baseType=gunsmith.ProjectorPropellantQuantityInterface,
+                # Optional multi component
+                minComponents=None,
+                maxComponents=None))
 
         return stages
 
@@ -1227,7 +1257,8 @@ class Weapon(object):
             name='Finalisation',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.Finalisation,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
             baseType=gunsmith.FinalisationComponent,
-            defaultType=gunsmith.FinalisationComponent)]
+            defaultType=gunsmith.FinalisationComponent,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1)]

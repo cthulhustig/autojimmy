@@ -1,23 +1,23 @@
 import construction
 import enum
 
-# NOTE: The robot rules don't give a complete list of Speed Bands these came
-# from the construction spreadsheet someone put together and I think it might be
-# based on the Speed Bands from the Vehicle Handbook
-# https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/
+# NOTE: It looks like these come from the core rules (p130)
 class SpeedBand(enum.Enum):
+    Stopped = 'Stopped'
     Idle = 'Idle'
     VerySlow = 'Very Slow'
     Slow = 'Slow'
     Medium = 'Medium'
     High = 'High'
     Fast = 'Fast'
-    VeryHigh = 'Very Fast'
+    VeryFast = 'Very Fast'
     Subsonic = 'Subsonic'
     Supersonic = 'Supersonic'
+    Hypersonic = 'Hypersonic'
 
 class RobotAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Robots (Numeric unless otherwise stated)
+    Size = 'Size'
     BaseSlots = 'Base Slots'
     AvailableSlots = 'Available Slots'
     AttackRollDM = 'Attack Roll DM'

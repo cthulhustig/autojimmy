@@ -460,12 +460,14 @@ class ConstructionContext(object):
             sequence: str,
             stage: construction.ConstructionStage
             ) -> None:
-        self._activeStage = stage
-        components = stage.components()
-        for self._activeComponent in components:
-            self._activeComponent.createSteps(sequence=sequence, context=self)
-        self._activeStage = None
-        self._activeComponent = None
+        components = stage.components()           
+        try:
+            self._activeStage = stage
+            for self._activeComponent in components:
+                self._activeComponent.createSteps(sequence=sequence, context=self)
+        finally:
+            self._activeStage = None
+            self._activeComponent = None
 
     def regenerate(
             self,
@@ -594,6 +596,17 @@ class ConstructionContext(object):
                     # This is the same type of component as the component being
                     # replaced so use that component rather than creating a new
                     # component
+                    # TODO: I really wish I had written down _why_ this is done
+                    # or if it's even important. It could have been an
+                    # optimisation to save creating a new component but that
+                    # seems unlikely as it will make effectively no difference.
+                    # One thing that this behaviour means is the component that
+                    # is checked for compatibility will have the options of the
+                    # replaceComponent rather than default options for the
+                    # component. However I can't think why that would be
+                    # required.
+                    # Could possibly check old svn repo to see what other
+                    # changes were made when this code was added
                     component = replaceComponent
                 else:
                     # Create a new component for the compatibility check
@@ -710,45 +723,39 @@ class ConstructionContext(object):
                     # incompatible components from stages
                     continue
 
-                # Get the list of components for the stage and make sure
-                # mandatory stages have a component selected
-                components = stage.components()
-                if not components:
-                    if stage.requirement() == construction.ConstructionStage.RequirementLevel.Optional:
-                        # The stage is optional so the fact there are currently
-                        # no components is completely valid, it does however
-                        # mean there is nothing more to do for this stage
-                        continue
+                if not stage.isValid():
+                    while stage.componentCount() < stage.minComponents():
+                        defaultComponent = stage.defaultComponent()
+                        if defaultComponent \
+                            and not defaultComponent.isCompatible(
+                                sequence=sequence,
+                                context=self):
+                            # The default component for this stage isn't compatible
+                            # with the the current context setup so it can't be used
+                            defaultComponent = None
 
-                    defaultComponent = stage.defaultComponent()
-                    if defaultComponent \
-                        and not defaultComponent.isCompatible(
-                            sequence=sequence,
-                            context=self):
-                        # The default component for this stage isn't compatible
-                        # with the the current context setup so it can't be used
-                        defaultComponent = None
+                        if not defaultComponent:
+                            # Try to find any compatible components
+                            compatible = self.findCompatibleComponents(stage=stage)
+                            if not compatible:
+                                # There were no compatible components found. If the
+                                # stage is mandatory then it means the context is
+                                # incomplete. If the stage is was only desirable
+                                # then no selection is ok if there is nothing to
+                                # select from.
+                                if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
+                                    self._isIncomplete = True
+                                break
+                            # Select the first compatible component
+                            defaultComponent = compatible[0]
 
-                    if not defaultComponent:
-                        # Try to find any compatible components
-                        compatible = self.findCompatibleComponents(stage=stage)
-                        if not compatible:
-                            # There were no compatible components found. If the
-                            # stage is mandatory then it means the context is
-                            # incomplete. If the stage is was only desirable
-                            # then no selection is ok if there is nothing to
-                            # select from. Either way there is no more
-                            # processing required for this stage
-                            if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
-                                self._isIncomplete = True
-                            continue
-                        # Select the first compatible component
-                        defaultComponent = compatible[0]
-
-                    self.addComponent(
-                        stage=stage,
-                        component=defaultComponent,
-                        regenerate=False)
+                        self.addComponent(
+                            stage=stage,
+                            component=defaultComponent,
+                            regenerate=False)
+                        
+                    while stage.componentCount() > stage.maxComponents():
+                        stage.removeComponentAt(index=-1)
 
                 # Create steps for the stage
                 self.createSteps(
@@ -805,6 +812,17 @@ class ConstructionContext(object):
                 raise construction.CompatibilityException()
 
             if removedIndex == None:
+                # Remove the most recently added component if there isn't
+                # enough free space. There is no obviously correct option
+                # between removing the oldest or newest. I've gone with
+                # removing the newest as removing the oldest would have may make
+                # more of a change to component compatibility of there is ever
+                # one component where its compatibility requires the another
+                # component to have already been added to the same stage
+                # TODO: This code is ugly, do something nicer
+                if not stage.hasFreeCapacity(requiredCapacity=1):
+                    stage.removeComponentAt(index=-1)
+
                 stage.addComponent(addComponent)
             else:
                 stage.insertComponent(removedIndex, addComponent)
@@ -828,10 +846,10 @@ class ConstructionContext(object):
             for component in originalComponents:
                 # Remove the component from the stage in order to perform the
                 # compatibility check. This is required to prevent the component
-                # causing its self to be reported as incompatible. The code that
-                # does this should take care that after the operation has
-                # completed, any components that weren't removed are still in the
-                # same relative order
+                # causing its self to be reported as incompatible.
+                # NOTE: This code should take care that, after the  operation
+                # has completed, any components that weren't removed are still
+                # in the same relative order
                 stage.removeComponent(component=component)
 
                 # Check if the component is compatible with the context in its
@@ -850,7 +868,8 @@ class ConstructionContext(object):
                         sequence=stage.sequence(),
                         context=self)
 
-                    # Add the component back onto the stage
+                    # Add the component back onto the stage. No need to check
+                    # the stage max size as we know it has the capacity
                     stage.addComponent(component=component)
         except:
             # Something went wrong so just restore previous state

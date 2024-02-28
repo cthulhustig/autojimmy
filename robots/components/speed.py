@@ -50,8 +50,8 @@ class NoSpeedModification(SpeedModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        if not super().isCompatible(sequence=sequence, context=context):
-            return False
+        # NOTE: Don't call base class as this component should be compatible
+        # with all robots apart from the noted exception
 
         # Not compatible with Aeroplane primary locomotion
         locomotion = context.findFirstComponent(
@@ -325,7 +325,7 @@ class TacticalSpeedReduction(SpeedModification):
 
         speedModifier = common.Calculator.negate(
             value=levelsTaken,
-            name='Total Tactical Speed Reduction Speed Modified')
+            name='Total Tactical Speed Reduction Speed Modifier')
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(speedModifier)))
@@ -387,11 +387,16 @@ class VehicleSpeedMovement(SpeedModification):
     # NOTE: The table on p23 doesn't have a Speed Band entry for Aeroplane. The
     # rules are really unclear, p17 says aeroplane locomotion can't go slower
     # than Slow (otherwise it stalls) and that any aeroplane locomotion robot
-    # can be launched from a vehicle moving at Medium speed.
-    # I've gone with Medium as it's the same as the spreadsheet although I'm
-    # not completely convinced it's the correct interpretation. It all depends
-    # of if aeroplane locomotion robots that can't take off using just their
-    # primary locomotion are a thing?
+    # can be launched from a vehicle moving at Medium speed. That would suggest
+    # the a default of either Slow or Medium, it depends on if it makes sense to
+    # have an aeroplane robot that can't take off without the use of a secondary
+    # or external form of locomotion.
+    # I've gone with Medium as it's the same as the Mongoose and fan created
+    # spreadsheets. However it seems odd to me that this means it's not possible
+    # to create an aeroplane robot that is capable of supersonic speeds without
+    # the use of a secondary form of locomotion. With the speed band increase
+    # being limited to 3 levels it means the base speed band would need to be
+    # VeryFast to allow it to be increased to Supersonic
     # NOTE: The table on p23 doesn't have an entry for Thrusters. I've no idea
     # what that is. It could be because Thruster locomotion gives the Thruster
     # trait, but that doesn't really make sense as the Thruster trait is in G

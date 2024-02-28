@@ -276,49 +276,55 @@ class Robot(object):
             name='Chassis',
             sequence=self._sequence,
             phase=robots.RobotPhase.BaseChassis,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=robots.ChassisInterface))
+            baseType=robots.ChassisInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))
         
         stages.append(construction.ConstructionStage(
             name='Primary Locomotion',
             sequence=self._sequence,
             phase=robots.RobotPhase.BaseChassis,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=robots.PrimaryLocomotionInterface))
+            baseType=robots.PrimaryLocomotionInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))
         
         stages.append(construction.ConstructionStage(
             name='Armour Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=True,
-            baseType=robots.ArmourModificationInterface))
+            baseType=robots.ArmourModificationInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))
 
         stages.append(construction.ConstructionStage(
             name='Endurance Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=True,
-            baseType=robots.EnduranceModificationInterface))     
+            baseType=robots.EnduranceModificationInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))     
 
         stages.append(construction.ConstructionStage(
             name='Resiliency Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=True,
-            baseType=robots.ResiliencyModificationInterface))  
+            baseType=robots.ResiliencyModificationInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))  
 
         stages.append(construction.ConstructionStage(
             name='Agility Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=True,
-            baseType=robots.AgilityEnhancementInterface))
+            baseType=robots.AgilityEnhancementInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))
         
         # NOTE: It's important that this stage is mandatory in order to force
         # robots with the Aeroplane locomotion type to have the Vehicle Movement
@@ -327,16 +333,45 @@ class Robot(object):
             name='Speed Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            singular=True,
-            baseType=robots.SpeedModificationInterface))        
+            baseType=robots.SpeedModificationInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))        
         
         stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            requirement=construction.ConstructionStage.RequirementLevel.Optional,
-            singular=False,
-            baseType=robots.SecondaryLocomotionInterface)) 
+            baseType=robots.SecondaryLocomotionInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None)) 
+        
+        stages.append(construction.ConstructionStage(
+            name='Base Manipulators',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Manipulators,
+            baseType=robots.BaseManipulatorInterface,
+            # Mandatory fixed size
+            minComponents=2,
+            maxComponents=2))
+        
+        stages.append(construction.ConstructionStage(
+            name='Additional Manipulators',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Manipulators,
+            baseType=robots.AdditionalManipulatorInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Leg Manipulators',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Manipulators,
+            baseType=robots.LegManipulatorInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))        
 
         return stages

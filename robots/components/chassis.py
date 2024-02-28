@@ -52,13 +52,20 @@ class Chassis(robots.ChassisInterface):
 
     def __init__(
             self,
-            componentString: str,
+            size: typing.Union[int, common.ScalarCalculation],
             baseSlots: typing.Union[int, common.ScalarCalculation],
             baseHits: typing.Union[int, common.ScalarCalculation],
             attackDM: typing.Union[int, common.ScalarCalculation],
             basicCost: typing.Union[int, common.ScalarCalculation],
             ) -> None:
         super().__init__()
+
+        if not isinstance(size, common.ScalarCalculation):
+            size = common.ScalarCalculation(
+                value=size,
+                name=f'Chassis Size')        
+
+        componentString = f'Size {size.value()}'
 
         if not isinstance(baseSlots, common.ScalarCalculation):
             baseSlots = common.ScalarCalculation(
@@ -81,6 +88,7 @@ class Chassis(robots.ChassisInterface):
                 name=f'{componentString} Chassis Basic Cost')        
 
         self._componentString = componentString
+        self._size = size
         self._baseSlots = baseSlots
         self._baseHits = baseHits
         self._attackDM = attackDM
@@ -129,6 +137,10 @@ class Chassis(robots.ChassisInterface):
         
         step.setCredits(
             credits=construction.ConstantModifier(value=self._basicCost))
+        
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Size,
+            value=self._size))        
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.BaseSlots,
@@ -180,7 +192,7 @@ class Size1Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 1',
+            size=1,
             baseSlots=1,
             baseHits=1,
             attackDM=-4,
@@ -196,7 +208,7 @@ class Size2Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 2',
+            size=2,
             baseSlots=2,
             baseHits=4,
             attackDM=-3,
@@ -212,7 +224,7 @@ class Size3Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 3',
+            size=3,
             baseSlots=4,
             baseHits=8,
             attackDM=-2,
@@ -228,7 +240,7 @@ class Size4Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 4',
+            size=4,
             baseSlots=8,
             baseHits=12,
             attackDM=-1,
@@ -244,7 +256,7 @@ class Size5Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 5',
+            size=5,
             baseSlots=16,
             baseHits=20,
             attackDM=+0,
@@ -260,7 +272,7 @@ class Size6Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 6',
+            size=6,
             baseSlots=32,
             baseHits=32,
             attackDM=+1,
@@ -276,7 +288,7 @@ class Size7Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 7',
+            size=7,
             baseSlots=64,
             baseHits=50,
             attackDM=+2,
@@ -292,7 +304,7 @@ class Size8Chassis(Chassis):
 
     def __init__(self) -> None:
         super().__init__(
-            componentString='Size 8',
+            size=8,
             baseSlots=128,
             baseHits=72,
             attackDM=+3,

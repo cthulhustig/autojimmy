@@ -278,47 +278,56 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             assert(False) # Shouldn't happen
             return
 
-        if isinstance(option, construction.BooleanOption):
-            assert(isinstance(widget, gui.CheckBoxEx))
-            widget.setChecked(option.value())
-        if isinstance(option, construction.StringOption):
-            assert(isinstance(widget, gui.LineEditEx))
-            widget.setText(option.value())
-        elif isinstance(option, construction.IntegerOption):
-            assert(isinstance(widget, gui.SpinBoxEx))
-            if option.min() != None:
-                widget.setMinimum(option.min())
-            else:
-                widget.setMinimum(-2147483648)
+        # NOTE: Block signals when syncing controls to option. This prevents
+        # current control values being pushed to the option due to events that
+        # are generated while part way through. For example updating the max/min
+        # of a spin box can cause a value changed event which causes which ever
+        # value the control has clamped it's value to being pushed back to the
+        # option when the option has already been clamped to a different value.
+        # TODO: This change will probably need a decent amount of regression
+        # testing
+        with gui.SignalBlocker(widget=widget):
+            if isinstance(option, construction.BooleanOption):
+                assert(isinstance(widget, gui.CheckBoxEx))
+                widget.setChecked(option.value())
+            if isinstance(option, construction.StringOption):
+                assert(isinstance(widget, gui.LineEditEx))
+                widget.setText(option.value())
+            elif isinstance(option, construction.IntegerOption):
+                assert(isinstance(widget, gui.SpinBoxEx))
+                if option.min() != None:
+                    widget.setMinimum(option.min())
+                else:
+                    widget.setMinimum(-2147483648)
 
-            if option.max() != None:
-                widget.setMaximum(option.max())
-            else:
-                widget.setMaximum(2147483647)
+                if option.max() != None:
+                    widget.setMaximum(option.max())
+                else:
+                    widget.setMaximum(2147483647)
 
-            widget.setValue(option.value())
-        elif isinstance(option, construction.FloatOption):
-            assert(isinstance(widget, gui.DoubleSpinBoxEx))
-            if option.min() != None:
-                widget.setDecimalsForValue(option.min())
-                widget.setMinimum(option.min())
-            else:
-                widget.setMinimum(-2147483648)
+                widget.setValue(option.value())
+            elif isinstance(option, construction.FloatOption):
+                assert(isinstance(widget, gui.DoubleSpinBoxEx))
+                if option.min() != None:
+                    widget.setDecimalsForValue(option.min())
+                    widget.setMinimum(option.min())
+                else:
+                    widget.setMinimum(-2147483648)
 
-            if option.max() != None:
-                widget.setDecimalsForValue(option.max())
-                widget.setMaximum(option.max())
-            else:
-                widget.setMaximum(2147483647)
+                if option.max() != None:
+                    widget.setDecimalsForValue(option.max())
+                    widget.setMaximum(option.max())
+                else:
+                    widget.setMaximum(2147483647)
 
-            widget.setValue(option.value())
-        elif isinstance(option, construction.EnumOption):
-            assert(isinstance(widget, gui.EnumComboBox))
-            widget.setEnumType(
-                type=option.type(),
-                options=option.options(),
-                isOptional=option.isOptional())
-            widget.setCurrentEnum(value=option.value())
+                widget.setValue(option.value())
+            elif isinstance(option, construction.EnumOption):
+                assert(isinstance(widget, gui.EnumComboBox))
+                widget.setEnumType(
+                    type=option.type(),
+                    options=option.options(),
+                    isOptional=option.isOptional())
+                widget.setCurrentEnum(value=option.value())
 
     def _selectionChanged(self) -> None:
         self._updateOptionControls()
@@ -401,114 +410,6 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
-    def __init__(
-            self,
-            context: construction.ConstructionContext,
-            stage: construction.ConstructionStage,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(parent)
-        self._context = context
-        self._stage = stage
-
-    def context(self) -> construction.ConstructionContext:
-        return self._context
-
-    def stage(self) -> construction.ConstructionStage:
-        return self._stage
-
-    def teardown(self) -> None:
-        raise RuntimeError('The teardown method must be implemented by classes derived from _StageWidget')
-
-    def synchronise(self) -> None:
-        raise RuntimeError('The synchronise method must be implemented by classes derived from _StageWidget')
-
-    def isPointless(self) -> bool:
-        raise RuntimeError('The isPointless method must be implemented by classes derived from _StageWidget')
-
-class _SingleSelectStageWidget(_StageWidget):
-    def __init__(
-            self,
-            context: construction.ConstructionContext,
-            stage: construction.ConstructionStage,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(
-            context=context,
-            stage=stage,
-            parent=parent)
-
-        self._currentComponent = None
-
-        self._componentWidget = _ComponentConfigWidget(
-            requirement=self._stage.requirement())
-        self._componentWidget.componentChanged.connect(self._componentChanged)
-
-        self._layout = QtWidgets.QVBoxLayout()
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addWidget(self._componentWidget)
-
-        self.setLayout(self._layout)
-
-        self.synchronise()
-
-    def teardown(self) -> None:
-        self._componentWidget.componentChanged.disconnect(self._componentChanged)
-        self._componentWidget.teardown()
-
-    def synchronise(self) -> None:
-        currentComponents = self._stage.components()
-        self._currentComponent = currentComponents[0] if currentComponents else None
-        compatibleComponents = self._context.findCompatibleComponents(
-            stage=self._stage,
-            replaceComponent=self._currentComponent)
-
-        # Block signals while new state is pushed to component widget
-        with gui.SignalBlocker(widget=self._componentWidget):
-            self._componentWidget.setComponents(
-                components=compatibleComponents,
-                current=self._currentComponent)
-
-    def isPointless(self) -> bool:
-        if self._componentWidget.componentCount() <= 0:
-            return True # Single select widgets with no options to select are always pointless
-        if self._componentWidget.optionCount() > 0:
-            return False # Single select widgets aren't pointless if the current component has options
-        # Single select widgets are pointless if there is only one entry for the user to select (and
-        # it has no options)
-        return self._componentWidget.componentCount() <= 1
-
-    def _updateConstruction(self) -> None:
-        component = self._componentWidget.currentComponent()
-        try:
-            if component != self._currentComponent:
-                # The component has changed so replace the current component with the new one. Note
-                # that either the current component or the new component may be None (indicating there
-                # is no component). In those cases this will have the effect of adding the new component
-                # or removing the old component respectively
-                self._context.replaceComponent(
-                    stage=self._stage,
-                    oldComponent=self._currentComponent,
-                    newComponent=component,
-                    regenerate=True)
-                self._currentComponent = component
-            else:
-                # It's the same component instance but the options may have changed so regenerate
-                # the context
-                self._context.regenerate()
-        except Exception as ex:
-            message = 'Failed to update context'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _componentChanged(self) -> None:
-        self._updateConstruction()
-        self.stageChanged.emit(self._stage)
-
-class _MultiSelectStageWidget(_StageWidget):
     _RowSpacing = 20
 
     def __init__(
@@ -517,30 +418,45 @@ class _MultiSelectStageWidget(_StageWidget):
             stage: construction.ConstructionStage,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__(
-            context=context,
-            stage=stage,
-            parent=parent)
+        super().__init__(parent=parent)
+        
+        self._context = context
+        self._stage = stage        
+
+        minComponents = self._stage.minComponents()
+        maxComponents = self._stage.maxComponents()
+        self._dynamic = (minComponents == None or maxComponents == None) or \
+            (maxComponents > 1 and minComponents < maxComponents)
 
         self._currentComponents: typing.Dict[_ComponentConfigWidget, construction.ComponentInterface] = {}
-
-        self._addButton = QtWidgets.QPushButton('Add Component')
-        self._addButton.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._addButton.clicked.connect(self._addClicked)
+        
+        self._addButton = None
+        if self._dynamic:
+            self._addButton = QtWidgets.QPushButton('Add Component')
+            self._addButton.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Fixed,
+                QtWidgets.QSizePolicy.Policy.Fixed)
+            self._addButton.clicked.connect(self._addClicked)
 
         self._layout = QtWidgets.QVBoxLayout()
-        self._layout.setSpacing(_MultiSelectStageWidget._RowSpacing)
+        self._layout.setSpacing(_StageWidget._RowSpacing)
         self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addWidget(self._addButton)
+        if self._addButton:
+            self._layout.addWidget(self._addButton)
 
         self.setLayout(self._layout)
 
         self.synchronise()
 
+    def context(self) -> construction.ConstructionContext:
+        return self._context
+
+    def stage(self) -> construction.ConstructionStage:
+        return self._stage
+
     def teardown(self) -> None:
-        self._addButton.clicked.disconnect(self._addClicked)
+        if self._addButton:
+            self._addButton.clicked.disconnect(self._addClicked)
         for widget in list(self._currentComponents.keys()):
             self._removeComponentWidget(widget)
 
@@ -565,12 +481,41 @@ class _MultiSelectStageWidget(_StageWidget):
                 with gui.SignalBlocker(widget=widget):
                     self._updateComponentWidget(widget=widget)
 
+        if not self._dynamic:
+            maxComponents = self._stage.maxComponents()
+            if maxComponents:
+                while len(self._currentComponents) < maxComponents:
+                    if not self._addComponentWidget():
+                        # No widget added for whatever reason, bail to avoid an
+                        # infinite loop
+                        break
+
     def isPointless(self) -> bool:
-        if len(self._currentComponents) > 0:
-            return False # Multi-select widgets that have components aren't pointless
-        # Multi-select widgets are pointless if there are no options for the
-        # user to select
-        return not self._context.findCompatibleComponents(stage=self._stage)
+        if self._dynamic:
+            if len(self._currentComponents) > 0:
+                # Dynamic widgets that have components aren't pointless
+                return False
+            # Dynamic widgets are pointless if there are no components for the
+            # user to select
+            return not self._context.findCompatibleComponents(stage=self._stage)
+        else:
+            hasChoice = False
+            for widget in self._currentComponents:
+                if widget.componentCount() > 1:
+                    # This widget has more than one component to select so the
+                    # user has a choice in their selection
+                    hasChoice = True
+                    break
+
+                if widget.optionCount() > 0:
+                    # Fixed widgets are never pointless if any of the component
+                    # widgets have options
+                    return False
+
+            # Fixed widgets are pointless if none of the component widgets give
+            # the user a choice in which component to select _and_ none of them
+            # have any options
+            return not hasChoice
 
     def _addComponentWidget(
             self,
@@ -588,17 +533,25 @@ class _MultiSelectStageWidget(_StageWidget):
         compatibleComponents = self._context.findCompatibleComponents(
             stage=self._stage,
             replaceComponent=component)
-        if not compatibleComponents:
-            return None
-        if not component:
-            component = compatibleComponents[0]
+
+        if self._dynamic:
+            if not compatibleComponents:
+                return None
+            
+            if not component:
+                component = compatibleComponents[0]            
+
+            # Mandatory in the sense, if you add a component you must select what type it is. It's
+            # only the adding of a component in the first place is optional            
+            requirement = construction.ConstructionStage.RequirementLevel.Mandatory
+        else:
+            requirement = self._stage.requirement()
+
         componentWidget = _ComponentConfigWidget(
             components=compatibleComponents,
             current=component,
-            # Mandatory in the sense, if you add a component you must select what type it is. It's
-            # only the adding of a component in the first place is optional
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            deletable=True)
+            requirement=requirement,
+            deletable=self._dynamic)
         componentWidget.componentChanged.connect(self._componentChanged)
         componentWidget.deleteClicked.connect(self._deleteClicked)
 
@@ -622,6 +575,14 @@ class _MultiSelectStageWidget(_StageWidget):
         widget.setHidden(True)
         widget.deleteLater()
 
+    # TODO: I think it would probably make sense if this function blocked
+    # signals in a similar way to _ComponentConfigWidget._updateOptionWidget.
+    # This function is called in two places
+    # - synchronise: This wraps the call to this function with a signal blocker
+    # - _updateAllComponentWidgets: This doesn't use a signal blocker but I can't
+    # think why signals would be needed
+    #
+    # Any change to this will need a lot of regression testing
     def _updateComponentWidget(
             self,
             widget: _ComponentConfigWidget
@@ -649,11 +610,14 @@ class _MultiSelectStageWidget(_StageWidget):
             addComponent: typing.Optional[construction.ComponentInterface] = None
             ) -> None:
         try:
-            self._context.replaceComponent(
-                stage=self._stage,
-                oldComponent=removeComponent,
-                newComponent=addComponent,
-                regenerate=True)
+            if removeComponent != addComponent:
+                self._context.replaceComponent(
+                    stage=self._stage,
+                    oldComponent=removeComponent,
+                    newComponent=addComponent,
+                    regenerate=True)
+            else:
+                self._context.regenerate()
         except Exception as ex:
             message = 'Failed to replace component'
             logging.error(message, exc_info=ex)
@@ -745,16 +709,10 @@ class StageGroupWidget(QtWidgets.QWidget):
             stage: construction.ConstructionStage,
             stageName: typing.Optional[str] = None
             ) -> None:
-        if stage.singular():
-            widget = _SingleSelectStageWidget(
-                context=self._context,
-                stage=stage)
-            widget.stageChanged.connect(self._stageStateChanged)
-        else:
-            widget = _MultiSelectStageWidget(
-                context=self._context,
-                stage=stage)
-            widget.stageChanged.connect(self._stageStateChanged)
+        widget = _StageWidget(
+            context=self._context,
+            stage=stage)
+        widget.stageChanged.connect(self._stageStateChanged)
 
         self._stageOrder.insert(index, stage)
         self._stageWidgets[stage] = widget

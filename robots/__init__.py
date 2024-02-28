@@ -10,3 +10,4 @@ from .components.endurance import *
 from .components.resiliency import *
 from .components.agility import *
 from .components.speed import *
+from .components.manipulators import *
