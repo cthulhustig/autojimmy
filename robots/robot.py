@@ -260,10 +260,20 @@ class Robot(object):
                     manifestSection = manifest.createSection(name=sectionName)
                 for step in steps:
                     entryText = f'{step.type()}: {step.name()}'
+
+                    factors = []
+                    for factor in step.factors():
+                        if isinstance(factor, construction.AttributeFactor) and \
+                            factor.attributeId() in robots.InternalAttributeIds:
+                            # Don't include attribute factors that modify internal
+                            # attributes
+                            continue
+                        factors.append(factor)
+
                     manifestSection.createEntry(
                         component=entryText,
                         costs=step.costs(),
-                        factors=step.factors())
+                        factors=factors)
 
         return manifest
 

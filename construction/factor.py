@@ -46,6 +46,9 @@ class NonModifyingFactor(FactorInterface):
         return self._factor.displayString()
 
 class AttributeFactor(FactorInterface):
+    def attributeId(self) -> construction.ConstructionAttributeId:
+        raise RuntimeError('The attributeId method must be implemented by the class derived from AttributeFactor') 
+
     def applyTo(
             self,
             attributeGroup: construction.AttributesGroup
@@ -62,6 +65,9 @@ class SetAttributeFactor(AttributeFactor):
         assert(isinstance(attributeId, construction.ConstructionAttributeId))
         self._attributeId = attributeId
         self._value = value
+
+    def attributeId(self) -> construction.ConstructionAttributeId:
+        return self._attributeId
 
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
         if isinstance(self._value, common.ScalarCalculation):
@@ -104,6 +110,9 @@ class ModifyAttributeFactor(AttributeFactor):
         self._attributeId = attributeId
         self._modifier = modifier
 
+    def attributeId(self) -> construction.ConstructionAttributeId:
+        return self._attributeId
+
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
         return self._modifier.calculations()
 
@@ -127,6 +136,9 @@ class DeleteAttributeFactor(AttributeFactor):
         super().__init__()
         assert(isinstance(attributeId, construction.ConstructionAttributeId))
         self._attributeId = attributeId
+
+    def attributeId(self) -> construction.ConstructionAttributeId:
+        return self._attributeId
 
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
         return []

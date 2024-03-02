@@ -35,6 +35,11 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # it's the same thing and the rules use them interchangeably
     Protection = 'Protection'
 
+    # This attribute is a hack to allow zero slot options to track how many zero
+    # slot options have been added to know if they should start consuming a slot.
+    # This attribute shouldn't be included in the manifest
+    ZeroSlotCount = 'Zero Slot Count'
+
     # Robot Numeric Traits (p7)
     # TODO: The Large & Small traits should be mutually exclusive
     Large = 'Large'
@@ -56,3 +61,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
 
     # Locomotion Enum Traits (p17)
     Flyer = 'Flyer' # SpeedBand
+
+InternalAttributeIds = [
+    RobotAttributeId.ZeroSlotCount
+]

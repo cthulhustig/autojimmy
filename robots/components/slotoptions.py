@@ -25,35 +25,6 @@ class _OptionLevel(enum.Enum):
 #                                                                                                          ░░░░░           
 
 class _ZeroSlotImpl(object):
-    """
-    Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
-    additional zero-slot options cost 1 slot
-    """
-    # TODO: Handle the fact that zero slot options cost 1 slot after the 'free'
-    # limit has been reached.
-    # - Ideally this would be done with logic in the zero cost option that added
-    #   a 1 slot cost for options over the limit. Unfortunately I don't think
-    #   there is any way for a component to reliably know if it would be free at
-    #   the point updateStage is called
-    #   - IMPORTANT: I think this should be possible by creating a UsedZeroSlot
-    #     attribute and having each zero slot component increment it as part of
-    #     it's stage update. This value can be checked (before being incremented)
-    #     to determine if the slot cost should be applied
-    #   - If not, One hack might be to retrieve all components of the type. The
-    #     component could find its self in the returned list then use the index
-    #     it was as determine if the slot cost should be applied (i.e. if the
-    #     index is higher than the limit). This is pretty hacky though as it
-    #     assumes the order of the components returned by the search will be
-    #     consistent when each component calls it during when updating its steps.
-    # - If I can't do this with logic in the zero slot option then I'll need to
-    #   also add slot cost variants of each zero slot option so the user can
-    #   add them in the slot cost option phase.
-    #   - IMPORTANT: This approach is complicated by the fact there is at least
-    #     one instance (Transceivers) where there are already zero slot and
-    #     slot cost variants. It's not obvious how I would handle this as the
-    #     zero slot transceiver types would somehow need to be merged into the
-    #     slot cost Transceiver.
-
     def __init__(
             self,
             componentString: str,
@@ -1692,6 +1663,8 @@ class VisualSpectrumSensorDefaultSuite(DefaultSuiteOption):
         
 class ZeroSlotOption(robots.ZeroSlotOptionInterface):
     """
+    Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
+    additional zero-slot options cost 1 slot    
     Requirement: Zero slot options should be incompatible with their default
     suite counterpart
     """
@@ -1699,7 +1672,11 @@ class ZeroSlotOption(robots.ZeroSlotOptionInterface):
     # - IMPORTANT: If I end up adding slot cost variants of zero slot options to
     #   handle the 1 slot cost for options over the 'free' limit, then those
     #   components will need to be incompatible with the default suite _and_
-    #   zero slot equivalents
+    #   zero slot equivalents 
+
+    _ZeroSlotCountIncrement = common.ScalarCalculation(
+        value=1,
+        name='Zero-Slot Count Increment')
 
     def __init__(
             self,
@@ -1756,11 +1733,57 @@ class ZeroSlotOption(robots.ZeroSlotOptionInterface):
         self._impl.updateStep(
             sequence=sequence,
             context=context,
-            step=step)        
+            step=step)
+        
+        slots = self._calcSlotRequirement(
+            sequence=sequence,
+            context=context)
+        if slots:
+            step.setSlots(slots=construction.ConstantModifier(value=slots))
+
+        # Increment the zero-slot count, if this is the first zero-slot option
+        # it will be set to 1
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.ZeroSlotCount,
+            modifier=construction.ConstantModifier(
+                value=ZeroSlotOption._ZeroSlotCountIncrement)))
                         
         context.applyStep(
             sequence=sequence,
             step=step)
+        
+    def _calcSlotRequirement(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> typing.Optional[common.ScalarCalculation]:
+        robotSize = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Size,
+            sequence=sequence)
+        assert(isinstance(robotSize, common.ScalarCalculation))
+       
+        limit = robotSize.value() + context.techLevel()
+                
+        currentCount = context.attributeValue(
+            attributeId=robots.RobotAttributeId.ZeroSlotCount,
+            sequence=sequence)
+        if not currentCount:
+            return None
+        elif isinstance(currentCount, common.ScalarCalculation):
+            if currentCount.value() < limit:
+                return None
+        else:
+            # TODO: Handle this better
+            return None
+        
+        slots = common.ScalarCalculation(
+            value=1,
+            name='Slots Required For Zero-Slot Options Over The {limit} Option Threshold')
+
+        # Additional step for clarity
+        return common.Calculator.equals(
+            value=slots,
+            name=f'{self.componentString()} Slot Requirement')
 
 class VisualConcealmentZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
