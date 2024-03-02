@@ -1680,10 +1680,12 @@ class ZeroSlotOption(robots.ZeroSlotOptionInterface):
 
     def __init__(
             self,
-            impl: _ZeroSlotImpl
+            impl: _ZeroSlotImpl,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]]
             ) -> None:
         super().__init__()
         self._impl = impl
+        self._incompatibleTypes = incompatibleTypes
 
     def instanceString(self) -> str:
         return self._impl.instanceString()
@@ -1703,6 +1705,13 @@ class ZeroSlotOption(robots.ZeroSlotOptionInterface):
             sequence=sequence,
             context=context):
             return False
+        
+        if self._incompatibleTypes:
+            for componentType in self._incompatibleTypes:
+                if context.hasComponent(
+                    componentType=componentType,
+                    sequence=sequence):
+                    return False
         
         # Don't allow multiple options of the same type
         return not context.hasComponent(
@@ -1787,119 +1796,177 @@ class ZeroSlotOption(robots.ZeroSlotOptionInterface):
 
 class VisualConcealmentZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VisualConcealmentZeroSlotImpl())
+        super().__init__(
+            impl=_VisualConcealmentZeroSlotImpl(),
+            incompatibleTypes=[VisualConcealmentDefaultSuite])
 
 class AudibleConcealmentZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_AudibleConcealmentZeroSlotImpl())
+        super().__init__(
+            impl=_AudibleConcealmentZeroSlotImpl(),
+            incompatibleTypes=[AudibleConcealmentDefaultSuite])
 
 class OlfactoryConcealmentZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_OlfactoryConcealmentZeroSlotImpl())
+        super().__init__(
+            impl=_OlfactoryConcealmentZeroSlotImpl(),
+            incompatibleTypes=[OlfactoryConcealmentDefaultSuite])
 
 class HostileEnvironmentProtectionZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_HostileEnvironmentProtectionZeroSlotImpl())  
+        super().__init__(
+            impl=_HostileEnvironmentProtectionZeroSlotImpl(),
+            incompatibleTypes=[HostileEnvironmentProtectionDefaultSuite])  
 
 class ReflectArmourZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_ReflectArmourZeroSlotImpl())
+        super().__init__(
+            impl=_ReflectArmourZeroSlotImpl(),
+            incompatibleTypes=[ReflectArmourDefaultSuite])
 
 class SolarCoatingZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_SolarCoatingZeroSlotImpl()) 
+        super().__init__(
+            impl=_SolarCoatingZeroSlotImpl(),
+            incompatibleTypes=[SolarCoatingDefaultSuite]) 
 
 class VacuumEnvironmentProtectionZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VacuumEnvironmentProtectionZeroSlotImpl()) 
+        super().__init__(
+            impl=_VacuumEnvironmentProtectionZeroSlotImpl(),
+            incompatibleTypes=[VacuumEnvironmentProtectionDefaultSuite]) 
 
 class DroneInterfaceZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_DroneInterfaceZeroSlotImpl(isDefaultSuite=False)) 
+        super().__init__(
+            impl=_DroneInterfaceZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[DroneInterfaceDefaultSuite]) 
 
 class EncryptionModuleZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_EncryptionModuleZeroSlotImpl())
+        super().__init__(
+            impl=_EncryptionModuleZeroSlotImpl(),
+            incompatibleTypes=[EncryptionModuleDefaultSuite])
 
 class TransceiverZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_TransceiverZeroSlotImpl(isDefaultSuite=False))
+        super().__init__(
+            impl=_TransceiverZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[TransceiverDefaultSuite])
 
 class VideoScreenZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VideoScreenZeroSlotImpl(isDefaultSuite=False))
+        super().__init__(
+            impl=_VideoScreenZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[VideoScreenDefaultSuite])
 
 class VoderSpeakerZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VoderSpeakerZeroSlotImpl(isDefaultSuite=False))
+        super().__init__(
+            impl=_VoderSpeakerZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[VoderSpeakerDefaultSuite])
 
 class WirelessDataLinkZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_WirelessDataLinkZeroSlotImpl(isDefaultSuite=False))
+        super().__init__(
+            impl=_WirelessDataLinkZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[WirelessDataLinkDefaultSuite])
 
 class GeckoGrippersZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_GeckoGrippersZeroSlotImpl())
+        super().__init__(
+            impl=_GeckoGrippersZeroSlotImpl(),
+            incompatibleTypes=[GeckoGrippersDefaultSuite])
 
 class InjectorNeedleZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_InjectorNeedleZeroSlotImpl())
+        super().__init__(
+            impl=_InjectorNeedleZeroSlotImpl(),
+            incompatibleTypes=[InjectorNeedleDefaultSuite])
 
 class LaserDesignatorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_LaserDesignatorZeroSlotImpl())
+        super().__init__(
+            impl=_LaserDesignatorZeroSlotImpl(),
+            incompatibleTypes=[LaserDesignatorDefaultSuite])
 
 class MagneticGrippersZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_MagneticGrippersZeroSlotImpl())
+        super().__init__(
+            impl=_MagneticGrippersZeroSlotImpl(),
+            incompatibleTypes=[MagneticGrippersDefaultSuite])
 
 class ParasiticLinkZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_ParasiticLinkZeroSlotImpl())
+        super().__init__(
+            impl=_ParasiticLinkZeroSlotImpl(),
+            incompatibleTypes=[ParasiticLinkDefaultSuite])
 
 class SelfMaintenanceEnhancementZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_SelfMaintenanceEnhancementZeroSlotImpl())
+        super().__init__(
+            impl=_SelfMaintenanceEnhancementZeroSlotImpl(),
+            incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuite])
 
 class StingerZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_StingerZeroSlotImpl())
+        super().__init__(
+            impl=_StingerZeroSlotImpl(),
+            incompatibleTypes=[StingerDefaultSuite])
 
 class AtmosphericSensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_AtmosphericSensorZeroSlotImpl())
+        super().__init__(
+            impl=_AtmosphericSensorZeroSlotImpl(),
+            incompatibleTypes=[AtmosphericSensorDefaultSuite])
 
 class AuditorySensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_AuditorySensorZeroSlotImpl(isDefaultSuite=False))
+        super().__init__(
+            impl=_AuditorySensorZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[AuditorySensorDefaultSuite])
 
 class EnvironmentalProcessorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_EnvironmentalProcessorZeroSlotImpl())
+        super().__init__(
+            impl=_EnvironmentalProcessorZeroSlotImpl(),
+            incompatibleTypes=[EnvironmentalProcessorDefaultSuite])
         
 class GeigerCounterZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_GeigerCounterZeroSlotImpl())
+        super().__init__(
+            impl=_GeigerCounterZeroSlotImpl(),
+            incompatibleTypes=[GeigerCounterDefaultSuite])
 
 class LightIntensifierSensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_LightIntensifierSensorZeroSlotImpl())     
+        super().__init__(
+            impl=_LightIntensifierSensorZeroSlotImpl(),
+            incompatibleTypes=[LightIntensifierSensorDefaultSuite])     
 
 class OlfactorySensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_OlfactorySensorZeroSlotImpl())
+        super().__init__(
+            impl=_OlfactorySensorZeroSlotImpl(),
+            incompatibleTypes=[OlfactorySensorDefaultSuite])
 
 class PRISSensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_PRISSensorZeroSlotImpl())       
+        super().__init__(
+            impl=_PRISSensorZeroSlotImpl(),
+            incompatibleTypes=[PRISSensorDefaultSuite])       
 
 class ThermalSensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_ThermalSensorZeroSlotImpl())  
+        super().__init__(
+            impl=_ThermalSensorZeroSlotImpl(),
+            incompatibleTypes=[ThermalSensorDefaultSuite])  
 
 class VisualSpectrumSensorZeroSlot(ZeroSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VisualSpectrumSensorZeroSlotImpl(isDefaultSuite=False))    
+        super().__init__(
+            impl=_VisualSpectrumSensorZeroSlotImpl(isDefaultSuite=False),
+            incompatibleTypes=[VisualSpectrumSensorDefaultSuite])    
 
 
 #   █████████  ████            █████         █████████                    █████   
