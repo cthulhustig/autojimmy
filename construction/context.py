@@ -473,6 +473,9 @@ class ConstructionContext(object):
             self,
             stopStage: typing.Optional[construction.ConstructionStage] = None
             ) -> None:
+        # TODO: This whole block should probably be wrapped in a try catch
+        # that sets the _isIncomplete flag. It should then rethrow the error
+        # so higher layers can handle the failure
         self._resetConstruction()
 
         for phase in self._phasesType:

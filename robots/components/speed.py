@@ -228,9 +228,9 @@ class TacticalSpeedReduction(SpeedModification):
     """
     - Cost Saving: 10% of Base Chassis Cost per meter reduced
     - Endurance: +10% per meter reduced
-    - Compatibility: Not compatible with Agile locomotion modification
-    - Compatibility: Not compatible with Tactical Speed Enhancement    
-    - Compatibility: Not compatible with Vehicle Speed Movement locomotion modification
+    - Requirement: Not compatible with Agile locomotion modification
+    - Requirement: Not compatible with Tactical Speed Enhancement    
+    - Requirement: Not compatible with Vehicle Speed Movement locomotion modification
     - Requirement: Not compatible with Aeroplane primary locomotion  
     - Requirement: Can't reduce robot speed below 1
     """

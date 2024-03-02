@@ -181,6 +181,11 @@ class _LocomotionImpl(object):
             step.setSlots(
                 slots=construction.ConstantModifier(value=requiredSlots))
 
+        if self._flagTrait:
+            for trait in self._flagTrait:
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=trait))
+
         if self._notes:
             for note in self._notes:
                 step.addNote(note)
@@ -546,9 +551,10 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
     - Traits: ACV
     - Base Endurance: 24 hours
     - Cost Multiplier: x10
-    - Comment: Agility -1 in thin atmosphere (p17)       
+    - Note: Agility -1 in thin atmosphere (p17)       
     """
     # TODO: No idea what the equivalent of axle count would be
+
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,

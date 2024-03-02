@@ -39,6 +39,12 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # TODO: The Large & Small traits should be mutually exclusive
     Large = 'Large'
     Small = 'Small'
+    Rads = 'Rads'
+
+    # Robot Flag Traits (p7)
+    HeightenedSenses = 'Heightened Senses'
+    IrVision = 'IR Vision'
+    IrUvVision = 'IR/UV Vision'
 
     # Locomotion Flag Traits (p17)
     ATV = 'ATV'

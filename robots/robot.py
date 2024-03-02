@@ -372,6 +372,24 @@ class Robot(object):
             baseType=robots.LegManipulatorInterface,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))        
+            maxComponents=None)) 
 
+        stages.append(construction.ConstructionStage(
+            name='Default Suite',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.DefaultSuiteOptionInterface,
+            # Mandatory fixed size
+            minComponents=5,
+            maxComponents=5))
+        
+        stages.append(construction.ConstructionStage(
+            name='Zero-Slot',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.ZeroSlotOptionInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None)) 
+        
         return stages

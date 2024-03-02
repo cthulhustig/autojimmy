@@ -41,3 +41,15 @@ class AdditionalManipulatorInterface(ManipulatorInterface):
 
 class LegManipulatorInterface(ManipulatorInterface):
     pass
+
+class SlotOptionsInterface(RobotComponentInterface):
+    pass
+
+class DefaultSuiteOptionInterface(SlotOptionsInterface):
+    pass
+
+class ZeroSlotOptionInterface(SlotOptionsInterface):
+    pass
+
+class SlotCostOptionInterface(SlotOptionsInterface):
+    pass

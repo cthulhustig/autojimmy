@@ -10,3 +10,4 @@ class RobotPhase(construction.ConstructionPhase):
     ChassisOptions = 'Chassis Options'
     LocomotiveMods = 'Locomotive Modifications'
     Manipulators = 'Manipulators'
+    SlotOptions = 'Slot Options'

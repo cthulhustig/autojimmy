@@ -11,3 +11,4 @@ from .components.resiliency import *
 from .components.agility import *
 from .components.speed import *
 from .components.manipulators import *
+from .components.slotoptions import *

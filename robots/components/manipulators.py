@@ -40,7 +40,7 @@ class _ManipulatorImpl(object):
             - Requirement: Can only increase DEX up to TL+3
     Walker Leg Manipulators
         - Cost: Cr100 * Size per leg
-        - Compatibility: Only compatible with Walker locomotion type
+        - Requirement: Only compatible with Walker locomotion type
         - NOTE: The rules say walker legs can't have their size modified (p26).
         I assume this also means they can't have their STR/DEX modified either.
         - IMPORTANT: I think this could just be handled by a combo box that
