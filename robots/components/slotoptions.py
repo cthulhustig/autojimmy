@@ -1,6 +1,8 @@
+from typing import List
 import common
 import construction
 import enum
+import math
 import robots
 import typing
 
@@ -12,2340 +14,15 @@ class _OptionLevel(enum.Enum):
     Advanced = 'Advanced'
     Superior = 'Superior'
 
-#  ███████████                                 █████████  ████            █████       █████                           ████ 
-# ░█░░░░░░███                                 ███░░░░░███░░███           ░░███       ░░███                           ░░███ 
-# ░     ███░    ██████  ████████   ██████    ░███    ░░░  ░███   ██████  ███████      ░███  █████████████   ████████  ░███ 
-#      ███     ███░░███░░███░░███ ███░░███   ░░█████████  ░███  ███░░███░░░███░       ░███ ░░███░░███░░███ ░░███░░███ ░███ 
-#     ███     ░███████  ░███ ░░░ ░███ ░███    ░░░░░░░░███ ░███ ░███ ░███  ░███        ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
-#   ████     █░███░░░   ░███     ░███ ░███    ███    ░███ ░███ ░███ ░███  ░███ ███    ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
-#  ███████████░░██████  █████    ░░██████    ░░█████████  █████░░██████   ░░█████     █████ █████░███ █████ ░███████  █████
-# ░░░░░░░░░░░  ░░░░░░  ░░░░░      ░░░░░░      ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░     ░░░░░ ░░░░░ ░░░ ░░░░░  ░███░░░  ░░░░░ 
-#                                                                                                           ░███           
-#                                                                                                           █████          
-#                                                                                                          ░░░░░           
+class _OptionSize(enum.Enum):
+    Small = 'Small'
+    Medium = 'Medium'
+    Large = 'Large'
 
-class _ZeroSlotImpl(object):
-    def __init__(
-            self,
-            componentString: str,
-            minTL: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            perBaseSlotCost: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            constantCost: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
-            notes: typing.Iterable[str] = None,
-            ) -> None:
-        super().__init__()
 
-        if minTL != None and not isinstance(minTL, common.ScalarCalculation):
-            minTL = common.ScalarCalculation(
-                value=minTL,
-                name=f'{componentString} Minimum TL') 
-
-        if perBaseSlotCost != None and constantCost != None:
-            raise ValueError('A component can\'t have a per slot _and_ constant cost.')
-        if perBaseSlotCost != None and not isinstance(perBaseSlotCost, common.ScalarCalculation):
-            perBaseSlotCost = common.ScalarCalculation(
-                value=perBaseSlotCost,
-                name=f'{componentString} Per Base Slot Cost')
-        elif constantCost != None and not isinstance(constantCost, common.ScalarCalculation):
-            constantCost = common.ScalarCalculation(
-                value=constantCost,
-                name=f'{componentString} Cost')
-
-        self._componentString = componentString
-        self._minTL = minTL
-        self._perBaseSlotCost = perBaseSlotCost
-        self._constantCost = constantCost
-        self._notes = notes
-
-    def instanceString(self) -> str:
-        return self.componentString()
-
-    def componentString(self) -> str:
-        return self._componentString
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> bool:
-        if self._minTL and \
-                context.techLevel() < self._minTL.value():
-            return False
-
-        return True
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        cost = None
-        if self._perBaseSlotCost != None: 
-            cost = common.Calculator.multiply(
-                lhs=self._perBaseSlotCost,
-                rhs=context.baseSlots(sequence=sequence),
-                name=f'{self.componentString()} Cost')
-        elif self._constantCost != None:
-            cost = self._constantCost
-            
-        if cost:
-            step.setCredits(
-                credits=construction.ConstantModifier(value=cost))
-
-        if self._notes:
-            for note in self._notes:
-                step.addNote(note)
-
-class _EnumSelectZeroSlotImpl(_ZeroSlotImpl):
-    def __init__(
-            self,
-            componentString: str,
-            enumType: typing.Type[enum.Enum],
-            optionId: str,
-            optionName: str,
-            optionDescription: str,
-            optionDefault: enum.Enum,
-            minTLMap: typing.Mapping[_OptionLevel, int]
-            ) -> None:
-        super().__init__(
-            componentString=componentString,
-            minTL=min(minTLMap.values())) # Absolute min
-        
-        self._minTLMap = minTLMap
-
-        self._enumOption = construction.EnumOption(
-            id=optionId,
-            name=optionName,
-            type=enumType,
-            value=optionDefault,
-            description=optionDescription)
-
-    def instanceString(self) -> str:
-        value: enum.Enum = self._enumOption.value()
-        return f'{self.componentString()} ({value.value})'
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        options = super().options()
-        options.append(self._enumOption)
-        return options
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        super().updateOptions(
-            sequence=sequence,
-            context=context)
-
-        currentTL = context.techLevel()
-        options = []
-        for level, levelTL in self._minTLMap.items():
-            if currentTL >= levelTL:
-                options.append(level)
-        self._enumOption.setOptions(options=options)
-
-class _VisualConcealmentZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    <ALL>
-    - Requirement: Not compatible with Reflect Armour
-    - Requirement: Not compatible with Solar Coating
-    Primitive
-    - Min TL: 1
-    - Cost: Cr1 * Base Slots
-    - Note: Detection DM -1 at >= 500m
-    Basic
-    - Min TL: 4
-    - Cost: Cr4 * Base Slots
-    - Note: Detection DM -2 at >= 250m
-    Improved
-    - Min TL: 7
-    - Cost: Cr40 * Base Slots
-    - Note: Detection DM -2 at >= 100m
-    Enhanced
-    - Min TL: 11
-    - Cost: Cr100 * Base Slots
-    - Note: Detection DM -3 at >= 50m
-    Advanced
-    - Min TL: 12
-    - Cost: Cr500 * Base Slots
-    - Note: Detection DM -4 at >= 10m
-    Superior
-    - Min TL: 13
-    - Cost: Cr2500 * Base Slots
-    - Note: Detection DM -4 at >= 1m or over      
-    """
-    # TODO: I'm not sure if I should include the comments as the values are only
-    # values for size 5 robots
-    # TODO: Handle comparability with reflect armour and solar coating
-    # - This is complicated by the fact zero-slot components will need to be
-    #   incompatible with default suite (i.e. zero cost visual concealment is
-    #   incompatible with default suite reflect)
-
-    _MinTLMap = {
-        _OptionLevel.Primitive: 1,
-        _OptionLevel.Basic: 4,
-        _OptionLevel.Improved: 7,
-        _OptionLevel.Enhanced: 11,
-        _OptionLevel.Advanced: 12,
-        _OptionLevel.Superior: 13,
-    }
-
-    _CostPerSlotMap = {
-        _OptionLevel.Primitive: 1,
-        _OptionLevel.Basic: 4,
-        _OptionLevel.Improved: 40,
-        _OptionLevel.Enhanced: 100,
-        _OptionLevel.Advanced: 500,
-        _OptionLevel.Superior: 2500,
-    }
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Visual Concealment',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the concealment level.',
-            optionDefault=_OptionLevel.Basic,
-            minTLMap=_VisualConcealmentZeroSlotImpl._MinTLMap)
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_VisualConcealmentZeroSlotImpl._CostPerSlotMap[level],
-            name=f'{level.value} Visual Concealment Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
-        
-class _AudibleConcealmentZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic
-    - Min TL: 5
-    - Cost: Cr5 * Base Slots
-    - Note: Detection DM -1 at >= 50m
-    Improved
-    - Min TL: 8
-    - Cost: Cr10 * Base Slots
-    - Note: Detection DM -2 at >= 10m
-    Advanced
-    - Min TL: 10
-    - Cost: Cr50 * Base Slots
-    - Note: Detection DM -3 at >= 50m    
-    """
-    # TODO: I'm not sure if I should include the comments
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 5,
-        _OptionLevel.Improved: 8,
-        _OptionLevel.Advanced: 10,
-    }
-
-    _CostPerSlotMap = {
-        _OptionLevel.Basic: 5,
-        _OptionLevel.Improved: 10,
-        _OptionLevel.Advanced: 50,
-    }
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Audible Concealment',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the concealment level.',            
-            optionDefault=_OptionLevel.Basic,
-            minTLMap=_AudibleConcealmentZeroSlotImpl._MinTLMap)
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_AudibleConcealmentZeroSlotImpl._CostPerSlotMap[level],
-            name=f'{level.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
-        
-class _OlfactoryConcealmentZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic
-    - Min TL: 7
-    - Cost: Cr10 * Base Slots
-    - Note: Detection DM -1 at >= 100m
-    Improved
-    - Min TL: 9
-    - Cost: Cr20 * Base Slots
-    - Note: Detection DM -2 at >= 20m
-    Advanced
-    - Min TL: 12
-    - Cost: Cr100 * Base Slots
-    - Note: Detection DM -3 at >= 10m
-    """
-    # TODO: I'm not sure if I should include the comments
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 7,
-        _OptionLevel.Improved: 9,
-        _OptionLevel.Advanced: 12,
-    }
-
-    _CostPerSlotMap = {
-        _OptionLevel.Basic: 10,
-        _OptionLevel.Improved: 20,
-        _OptionLevel.Advanced: 100,
-    }
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Olfactory Concealment',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the concealment level.', 
-            optionDefault=_OptionLevel.Basic,           
-            minTLMap=_OlfactoryConcealmentZeroSlotImpl._MinTLMap)  
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_OlfactoryConcealmentZeroSlotImpl._CostPerSlotMap[level],
-            name=f'{level.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
-        
-class _HostileEnvironmentProtectionZeroSlotImpl(_ZeroSlotImpl):
-    """
-    - Min TL: 6
-    - Cost: Cr300 * Base Slots
-    - Trait: Rads +500
-    """
-    _RadsTrait = common.ScalarCalculation(
-        value=+500,
-        name='Hostile Environment Protection Rads Modifier')
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Hostile Environment Protection',
-            minTL=6,
-            perBaseSlotCost=300)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(sequence, context, step)
-
-        step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.Rads,
-            modifier=construction.ConstantModifier(
-                value=_HostileEnvironmentProtectionZeroSlotImpl._RadsTrait)))
-        
-class _ReflectArmourZeroSlotImpl(_ZeroSlotImpl):
-    """
-    - Min TL: 10
-    - Cost: Cr100 * Base Slots
-    - Requirement: Not compatible with Camouflage: Visual Concealment
-    - Requirement: Not compatible with Solar Coating
-    """
-    # NOTE: Compatibility with other components is handled by the component
-    # class rather than the implementation as it needs component level
-    # knowledge
-    # TODO: Implement incomparability with other components
-    # - This is complicated by the fact zero-slot components will need to be
-    #   incompatible with default suite (i.e. zero cost visual concealment is
-    #   incompatible with default suite reflect)    
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Reflect Armour',
-            minTL=10,
-            perBaseSlotCost=100)
-        
-class _SolarCoatingZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    <ALL>
-    - Requirement: Not compatible with Camouflage: Visual Concealment
-    - Requirement: Not compatible with Reflect Armour
-    Basic
-    - Min TL: 6
-    - Cost: Cr500 * Base Slots
-    - Note: Max ground speed of 1m per round when relying on solar coating for power
-    - Note: Unable to fly when relying on using solar coating for power
-    - Note: Can fully recharge in 4 * Endurance hours if robot is dormant
-    Improved
-    - Min TL: 8
-    - Cost: Cr100 * Base Slots
-    - Note: Max ground speed of 2m per round when relying on solar coating for power
-    - Note: Unable to fly when relying on using solar coating for power
-    - Note: Can fully recharge in Endurance hours if robot is dormant
-    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging              
-    Enhanced
-    - Min TL: 10
-    - Cost: Cr200 * Base Slots
-    - Note: Max ground speed of 4m per round when relying on solar coating for power
-    - Note: Max flying speed of 1m per round when relying on solar coating for power
-    - Note: Can fully recharge in Endurance hours if robot is dormant 
-    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging                         
-    Advanced
-    - Min TL: 12
-    - Cost: Cr500 * Base Slots
-    - Note: Ground speed is not reduced when relying on solar coating for power
-    - Note: Max flying speed of 2m per round when relying on solar coating for power
-    - Note: Can fully recharge in Endurance hours if robot is dormant
-    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging    
-    """
-    # NOTE: Compatibility with other components is handled by the component
-    # class rather than the implementation as it needs component level
-    # knowledge
-    # TODO: Implement incomparability with other components
-    # - This is complicated by the fact zero-slot components will need to be
-    #   incompatible with default suite (i.e. zero cost visual concealment is
-    #   incompatible with default suite reflect)    
-    # TODO: Add notes
-    # TODO: Handle notes that use Endurance hours. Ideally they would be filled
-    # in to give actual hours rather than the formula. If they can be done here
-    # depends on if endurance has been fully calculated yet
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 6,
-        _OptionLevel.Improved: 8,
-        _OptionLevel.Enhanced: 10,
-        _OptionLevel.Advanced: 12,
-    }
-
-    _CostPerSlotMap = {
-        _OptionLevel.Basic: 500,
-        _OptionLevel.Improved: 100,
-        _OptionLevel.Enhanced: 200,
-        _OptionLevel.Advanced: 500,
-    }
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Solar Coating',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the solar coating level.',
-            optionDefault=_OptionLevel.Basic,            
-            minTLMap=_SolarCoatingZeroSlotImpl._MinTLMap)
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_SolarCoatingZeroSlotImpl._CostPerSlotMap[level],
-            name=f'{level.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
-
-class _VacuumEnvironmentProtectionZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Standard
-    - Min TL: 7
-    - Cost: Cr600 * Base Slots
-    - Requirement: Not compatible with biological robots
-    Biological
-    - Min TL: 10
-    - Cost: Cr50000 * Base Slots 
-    - Requirement: Only compatible with biological robots
-    """
-    # TODO: Handle only compatible with biological robots after I
-    # add support for biological
-
-    class _ProtectionType(enum.Enum):
-        Standard = 'Standard'
-        Biological = 'Biological'
-
-    _MinTLMap = {
-        _ProtectionType.Standard: 7,
-        _ProtectionType.Biological: 10
-    }
-
-    _CostPerSlotMap = {
-        _ProtectionType.Standard: 600,
-        _ProtectionType.Biological: 50000
-    }
-
-    def __init__(
-            self,
-            ) -> None:
-        super().__init__(
-            componentString='Vacuum Environment Protection',
-            enumType=_VacuumEnvironmentProtectionZeroSlotImpl._ProtectionType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the protection type.',
-            optionDefault=_VacuumEnvironmentProtectionZeroSlotImpl._ProtectionType.Standard,      
-            minTLMap=_VacuumEnvironmentProtectionZeroSlotImpl._MinTLMap)   
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        protection = self._enumOption.value()
-        assert(isinstance(protection, _VacuumEnvironmentProtectionZeroSlotImpl._ProtectionType))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_VacuumEnvironmentProtectionZeroSlotImpl._CostPerSlotMap[protection],
-            name=f'{protection.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
-        
-class _DroneInterfaceZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 6
-    Cost: Cr100 or free if Default Suite
-    Requirement: A drone interface requires a separate transceiver to be installed (p34)
-    """
-    # TODO: Handle the fact it requires a receiver
-    # - I think this means it you also have to take a zero-slot or slot cost
-    #   transceiver (there are transceivers of both types)
-    # - Could handle it with a note in finalisation.
-    #   - I think I do something similar in the gunsmith where Warning notes are
-    #     added
-    # - Could add a separate step in this component for a transceiver
-    #   - Might actually need to be the component code that does this as it
-    #     creates the step not the impl
-    #   - Would need to make the transceiver zero-slot _and_ slot cost options
-    #     incompatible with the drone interface so the user doesn't add it twice
-    #   - Ideally it would have a check box that controls if it's added
-    #     (defaulted to true). This would allow for things like external
-    #     transceivers
-
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Drone Interface',
-            minTL=6,
-            constantCost=None if isDefaultSuite else 100)
-        
-class _EncryptionModuleZeroSlotImpl(_ZeroSlotImpl):
-    """
-    - Min TL: 6
-    - Cost: Cr4000
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Encryption Module',
-            minTL=6,
-            constantCost=4000)
-        
-class _TransceiverZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic 5km
-        - Min TL: 7
-        - Cost: Cr250 or free if Default Suite
-    Improved 5km:
-        - Min TL: 8
-        - Cost: Cr100 or free if Default Suite
-    Improved 50km:
-        - Min TL: 8
-        - Cost: Cr500
-    Improved 500km
-        - Min TL: 9
-        - Cost: Cr1000
-    Improved 5,000km
-        - Min TL: 9
-        - Cost: Cr5000
-    Enhanced 50km
-        - Min TL: 10
-        - Cost: Cr250
-    Enhanced 500km
-        - Min TL: 11
-        - Cost: Cr500
-    Enhanced 5,000km
-        - Min TL: 12
-        - Cost: Cr1000
-    Advanced 50km
-        - Min TL: 13
-        - Cost: Cr100
-    Advanced 500km
-        - Min TL: 14
-        - Cost: Cr250
-    Advanced 5,000km
-        - Min TL: 15
-        - Cost: Cr500
-    """
-    # NOTE: There are also larger transceivers available as slot cost options
-    # TODO: Figure out how I'm going to handle the fact there are zero slot
-    # and slot cost transceivers
-    # TODO: I think there is scope for improving usability by reducing the
-    # options that are shown to the user as some options wouldn't make logical
-    # sense. For example, if your at designing a TL 14 robot there seems little
-    # point giving the user the option to select Enhanced 500km as Advanced
-    # 500km is half the price so they would only ever select that. I think it
-    # should be possible to just get it down to a drop down where the user
-    # selects the range they desired from a list of ranges available at that TL.
-    # IMPORTANT: There may be some complexity around the 2 types that are free
-    # for default suite
-
-    class _TransceiverType(enum.Enum):
-        Basic5km = 'Basic 5km'
-        Improved5km = 'Improved 5km'
-        Improved50km = 'Improved 50km'
-        Improved500km = 'Improved 500km'
-        Improved5000km = 'Improved 5,000km'
-        Enhanced50km = 'Enhanced 50km'
-        Enhanced500km = 'Enhanced 500km'
-        Enhanced5000km = 'Enhanced 5,000km'
-        Advanced50km = 'Advanced 50km'
-        Advanced500km = 'Advanced 500km'
-        Advanced5000km = 'Advanced 5,000km'
-
-    _MinTLMap = {
-        _TransceiverType.Basic5km: 7,
-        _TransceiverType.Improved5km: 8,
-        _TransceiverType.Improved50km: 8,
-        _TransceiverType.Improved500km: 9,
-        _TransceiverType.Improved5000km: 9,
-        _TransceiverType.Enhanced50km: 10,
-        _TransceiverType.Enhanced500km: 11,
-        _TransceiverType.Enhanced5000km: 12,
-        _TransceiverType.Advanced50km: 13,
-        _TransceiverType.Advanced500km: 14,
-        _TransceiverType.Advanced5000km: 15
-    }
-
-    _CostMap = {
-        _TransceiverType.Basic5km: 250,
-        _TransceiverType.Improved5km: 100,
-        _TransceiverType.Improved50km: 500,
-        _TransceiverType.Improved500km: 1000,
-        _TransceiverType.Improved5000km: 5000,
-        _TransceiverType.Enhanced50km: 250,
-        _TransceiverType.Enhanced500km: 500,
-        _TransceiverType.Enhanced5000km: 1000,
-        _TransceiverType.Advanced50km: 100,
-        _TransceiverType.Advanced500km: 250,
-        _TransceiverType.Advanced5000km: 500
-    }
-
-    _FreeDefaultSuiteTypes = [
-        _TransceiverType.Basic5km,
-        _TransceiverType.Improved5km
-    ]
-
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Transceiver',
-            enumType=_TransceiverZeroSlotImpl._TransceiverType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the transceiver type.',
-            optionDefault=_TransceiverZeroSlotImpl._TransceiverType.Basic5km,                  
-            minTLMap=_TransceiverZeroSlotImpl._MinTLMap)
-        
-        self._isDefaultSuite = isDefaultSuite
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        transceiverType = self._enumOption.value()
-        assert(isinstance(transceiverType, _TransceiverZeroSlotImpl._TransceiverType))
-
-        if not self._isDefaultSuite or \
-                (transceiverType not in _TransceiverZeroSlotImpl._FreeDefaultSuiteTypes):
-            cost = common.ScalarCalculation(
-                value=_TransceiverZeroSlotImpl._CostMap[transceiverType],
-                name=f'{transceiverType.value} {self.componentString()} Cost')
-
-            step.setCredits(
-                credits=construction.ConstantModifier(value=cost))
-            
-class _VideoScreenZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic Panel
-        - Min TL: 7
-        - Cost: Cr200 or free if Default Suite
-    Improved Panel
-        - Min TL: 8
-        - Cost: Cr500
-    Advanced Panel
-        - Min TL: 10
-        - Cost: Cr2000
-    Basic Full Surface
-        - Min TL: 7
-        - Cost: Cr200 * Base Slots
-    Improved Full Surface
-        - Min TL: 8
-        - Cost: Cr500 * Base Slots
-    Advanced Full Surface
-        - Min TL: 10
-        - Cost: Cr2000 * Base Slots
-    """
-
-    class _ScreenType(enum.Enum):
-        BasicPanel = 'Basic Panel'
-        ImprovedPanel = 'Improved Panel'
-        AdvancedPanel = 'Advanced Panel'
-        BasicFullSurface = 'Basic Full Surface'
-        ImprovedFullSurface = 'Improved Full Surface'
-        AdvancedFullSurface = 'Advanced Full Surface'
-
-    _MinTLMap = {
-        _ScreenType.BasicPanel: 7,
-        _ScreenType.ImprovedPanel: 8,
-        _ScreenType.AdvancedPanel: 10,
-        _ScreenType.BasicFullSurface: 7,
-        _ScreenType.ImprovedFullSurface: 8,
-        _ScreenType.AdvancedFullSurface: 10
-    }
-
-    _CostMap = {
-        # Constant costs
-        _ScreenType.BasicPanel: (200, True), # TODO: Or free for default suite
-        _ScreenType.ImprovedPanel: (500, True),
-        _ScreenType.AdvancedPanel: (2000, True),
-        # Per slot costs
-        _ScreenType.BasicFullSurface: (200, False),
-        _ScreenType.ImprovedFullSurface: (500, False),
-        _ScreenType.AdvancedFullSurface: (2000, False)
-    }
-
-    _FreeDefaultSuiteTypes = [_ScreenType.BasicPanel]
-
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Video Screen',
-            enumType=_VideoScreenZeroSlotImpl._ScreenType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the screen type.',
-            optionDefault=_VideoScreenZeroSlotImpl._ScreenType.BasicPanel,                      
-            minTLMap=_VideoScreenZeroSlotImpl._MinTLMap)
-        
-        self._isDefaultSuite = isDefaultSuite   
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        screenType = self._enumOption.value()
-        assert(isinstance(screenType, _VideoScreenZeroSlotImpl._ScreenType))
-
-        if not self._isDefaultSuite or \
-            screenType not in _VideoScreenZeroSlotImpl._FreeDefaultSuiteTypes:
-
-            cost, isConstantCost = _VideoScreenZeroSlotImpl._CostMap[screenType]
-            cost = common.ScalarCalculation(
-                value=cost,
-                name='{type} {component} {wording}'.format(
-                    type=screenType.value,
-                    component=self.componentString(),
-                    wording='Cost' if isConstantCost else 'Cost Per Slot'))
-
-            if not isConstantCost:
-                cost = common.Calculator.multiply(
-                    lhs=cost,
-                    rhs=context.baseSlots(sequence=sequence),
-                    name='{type} {component} Cost'.format(
-                        type=screenType.value,
-                        component=self.componentString()))
-
-            step.setCredits(
-                credits=construction.ConstantModifier(value=cost))
-        
-class _VoderSpeakerZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Standard
-    - Min TL: 8
-    - Cost: Cr100 or free if Default Suite
-    Broad Spectrum
-    - Min TL: 10
-    - Cost: Cr500
-    """
-    # TODO: Handle only compatible with biological robots after I
-    # add support for biological
-
-    class _SpeakerType(enum.Enum):
-        Standard = 'Standard'
-        BroadSpectrum = 'Broad Spectrum'
-
-    _MinTLMap = {
-        _SpeakerType.Standard: 8,
-        _SpeakerType.BroadSpectrum: 10
-    }
-
-    _CostMap = {
-        _SpeakerType.Standard: 100,
-        _SpeakerType.BroadSpectrum: 500
-    }
-
-    _FreeDefaultSuiteTypes = [_SpeakerType.Standard]
-
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Voder Speaker',
-            enumType=_VoderSpeakerZeroSlotImpl._SpeakerType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the speaker type.',            
-            optionDefault=_VoderSpeakerZeroSlotImpl._SpeakerType.Standard,                      
-            minTLMap=_VoderSpeakerZeroSlotImpl._MinTLMap)
-
-        self._isDefaultSuite = isDefaultSuite
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        speakerType = self._enumOption.value()
-        assert(isinstance(speakerType, _VoderSpeakerZeroSlotImpl._SpeakerType))
-
-        if not self._isDefaultSuite or \
-            (speakerType not in _VoderSpeakerZeroSlotImpl._FreeDefaultSuiteTypes):
-            cost = common.ScalarCalculation(
-                value=_VoderSpeakerZeroSlotImpl._CostMap[speakerType],
-                name=f'{speakerType.value} {self.componentString()} Cost')
-
-            step.setCredits(
-                credits=construction.ConstantModifier(value=cost))
-
-class _WirelessDataLinkZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 8
-    Cost: Cr10 or free if Default Suite
-    """
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Wireless Data Link',
-            minTL=8,
-            constantCost=None if isDefaultSuite else 10)
-        
-class _GeckoGrippersZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 9
-    Cost: Cr500 * Base Slots
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Gecko Grippers',
-            minTL=9,
-            perBaseSlotCost=500)
-        
-class _InjectorNeedleZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 7
-    Cost: Cr20
-    Requirement: Multiple Injector Needle can be installed, each taking up a zero-slot option
-    """
-    # TODO: Handle multiple needles
-    # - Could make this an integer option
-    #   - This would need to handle the case where some of the needles take up
-    #     a slot due to the zero slot limit being reached
-    # - Could make it so it's not incompatible with its self
-    #   - This would need to be done in the component by overriding the base
-    #     comparability check
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Injector Needle',
-            minTL=7,
-            constantCost=20) 
-
-class _LaserDesignatorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 7
-    Cost: Cr500
-    """
-    # TODO: Fire Control System needs to add a note that it receives a DM+2 to
-    # attack designated targets
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Laser Designator',
-            minTL=7,
-            constantCost=500)
-        
-class _MagneticGrippersZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 8
-    Cost: Cr10 * Base Slots
-    Note: Robot can grip to metallic surfaces in gravity of 0-1.5G
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Magnetic Grippers',
-            minTL=8,
-            perBaseSlotCost=10,
-            notes=['Robot can grip to metallic surfaces in gravity of 0-1.5G'])
-        
-class _ParasiticLinkZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 10
-    Cost: Cr10000
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Parasitic Link',
-            minTL=10,
-            constantCost=10000)
-        
-class _SelfMaintenanceEnhancementZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic
-    - Min TL: 7
-    - Cost: Cr20000 * Base Slots
-    - Note: The robot requires maintenance every 12 years.
-    - Note: If the maintenance schedule is not followed, a Malfunction Check (108) must be made every year
-    Improved
-    - Min TL: 8
-    - Cost: Cr50000 * Base Slots
-    - Note: The robot requires maintenance every 24 years.
-    - Note: If the maintenance schedule is not followed, a Malfunction Check (108) must be made every 2 years
-    """
-    # TODO: This is another component where there are zero-slot and slot cost
-    # versions
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 7,
-        _OptionLevel.Improved: 8
-    }
-
-    # Data Structure: Cost Per Base Slot, Maintenance Period, Malfunction Check
-    _DataMap = {
-        _OptionLevel.Basic: (20000, 12, 1),
-        _OptionLevel.Improved: (50000, 24, 2)
-    }
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Self-Maintenance Enhancement',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the maintenance level.',            
-            optionDefault=_OptionLevel.Basic,                      
-            minTLMap=_SelfMaintenanceEnhancementZeroSlotImpl._MinTLMap)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        perSlotCost, maintenancePeriod, malfunctionCheck = \
-            _SelfMaintenanceEnhancementZeroSlotImpl._DataMap[level]
-        
-        baseString = f'{level.value} {self.componentString()}'
-        perSlotCost = common.ScalarCalculation(
-            value=perSlotCost,
-            name=f'{baseString} Per Base Slot Cost')
-        totalCost = common.Calculator.multiply(
-            lhs=perSlotCost,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{baseString} Total Cost')
-        step.setCredits(
-            credits=construction.ConstantModifier(value=totalCost))        
-
-        step.addNote(
-            note='The robot requires maintenance every {period} years'.format(
-                period=maintenancePeriod))
-        step.addNote(
-            note='If the maintenance schedule is not followed, a Malfunction Check must be made every {wording} (p108) '.format(
-                wording='year' if malfunctionCheck == 1 else f'{malfunctionCheck} years'))
-
-class _StingerZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 7
-    Cost: Cr10
-    Requirement: Multiple Stingers can be installed each taking up a zero-slot option
-    Note: Does 1 point of damage and has AP equal to the base armour of a robot of it's TL (see table on p19)
-    """
-    # TODO: Handle multiple stingers
-    # - Could make this an integer option
-    #   - This would need to handle the case where some of the stingers take up
-    #     a slot due to the zero slot limit being reached
-    # - Could make it so it's not incompatible with its self
-    #   - This would need to be done in the component by overriding the base
-    #     comparability check
-
-    _TL6to8APTrait = common.ScalarCalculation(
-        value=2,
-        name='TL 6-8 Stinger AP Trait')
-    _TL9to11APTrait = common.ScalarCalculation(
-        value=3,
-        name='TL 9-11 Stinger AP Trait')
-    _TL12to17APTrait = common.ScalarCalculation(
-        value=4,
-        name='TL 12-17 Stinger AP Trait')
-    _TL18PlusAPTrait = common.ScalarCalculation(
-        value=6,
-        name='TL 18+ Stinger AP Trait')
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Stinger',
-            minTL=6,
-            constantCost=10)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        currentTL = context.techLevel()
-        apTrait = None
-        if currentTL >= 18:
-            apTrait = _StingerZeroSlotImpl._TL18PlusAPTrait
-        elif currentTL >= 12:
-            apTrait = _StingerZeroSlotImpl._TL12to17APTrait
-        elif currentTL >= 9:
-            apTrait = _StingerZeroSlotImpl._TL9to11APTrait
-        elif currentTL >= 6:
-            apTrait = _StingerZeroSlotImpl._TL6to8APTrait
-
-        if apTrait:        
-            step.addNote(f'Does 1 point of damage and has AP {apTrait.value()}')
-
-class _AtmosphericSensorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 8
-    Cost: Cr100
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Atmospheric Sensor',
-            minTL=8,
-            constantCost=100)
-
-class _AuditorySensorZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Standard
-    - Min TL: 5
-    - Cost: Cr10 or free if Default Suite
-    Broad Spectrum
-    - Min TL: 8
-    - Cost: Cr200
-    - Trait: Heightened Senses
-    """
-
-    class _SensorType(enum.Enum):
-        Standard = 'Standard'
-        BroadSpectrum = 'Broad Spectrum'
-
-    _MinTLMap = {
-        _SensorType.Standard: 5,
-        _SensorType.BroadSpectrum: 8
-    }
-
-    _CostMap = {
-        _SensorType.Standard: 10,
-        _SensorType.BroadSpectrum: 200
-    }
-
-    _FreeDefaultSuiteTypes = [_SensorType.Standard]
-
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Auditory Sensor',
-            enumType=_VoderSpeakerZeroSlotImpl._SpeakerType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the sensor type.',            
-            optionDefault=_VoderSpeakerZeroSlotImpl._SpeakerType.Standard,                      
-            minTLMap=_VoderSpeakerZeroSlotImpl._MinTLMap)
-
-        self._isDefaultSuite = isDefaultSuite
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        speakerType = self._enumOption.value()
-        assert(isinstance(speakerType, _VoderSpeakerZeroSlotImpl._SpeakerType))
-
-        if not self._isDefaultSuite or \
-            (speakerType not in _AuditorySensorZeroSlotImpl._FreeDefaultSuiteTypes):
-            cost = common.ScalarCalculation(
-                value=_VoderSpeakerZeroSlotImpl._CostMap[speakerType],
-                name=f'{speakerType.value} {self.componentString()} Cost')
-
-            step.setCredits(
-                credits=construction.ConstantModifier(value=cost))
-            
-        if speakerType == _AuditorySensorZeroSlotImpl._SensorType.BroadSpectrum:
-            step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=robots.RobotAttributeId.HeightenedSenses))
-
-class _EnvironmentalProcessorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 10
-    Cost: Cr10000
-    Trait: Heightened Senses
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Environmental Processor',
-            minTL=10,
-            constantCost=10000)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.HeightenedSenses))
-
-class _GeigerCounterZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 8
-    Cost: Cr400
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Geiger Counter',
-            minTL=8,
-            constantCost=400)
-        
-class _LightIntensifierSensorZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic
-    - Min TL: 7
-    - Cost: Cr500
-    Advanced
-    - Min TL: 9
-    - Cost: Cr1250
-    - Trait: IR Vision
-    """
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 7,
-        _OptionLevel.Advanced: 9
-    }
-
-    # Data Structure: Cost, Trait
-    _DataMap = {
-        _OptionLevel.Basic: (500, None),
-        _OptionLevel.Advanced: (1250, robots.RobotAttributeId.IrVision)
-    }
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Light Intensifier Sensor',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the sensor level.',            
-            optionDefault=_OptionLevel.Basic,                      
-            minTLMap=_LightIntensifierSensorZeroSlotImpl._MinTLMap)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        cost, trait = _LightIntensifierSensorZeroSlotImpl._DataMap[level]
-
-        cost = common.ScalarCalculation(
-            value=cost,
-            name=f'{level.value} {self.componentString()} Cost')
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))        
-
-        if trait:
-            step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=trait))
-            
-class _OlfactorySensorZeroSlotImpl(_EnumSelectZeroSlotImpl):
-    """
-    Basic
-    - Min TL: 8
-    - Cost: Cr1000
-    Improved
-    - Min TL: 10
-    - Cost: Cr3500
-    - Trait: Heightened Senses
-    Advanced
-    - Min TL: 12
-    - Cost: Cr10000
-    - Trait: Heightened Senses
-    """
-
-    _MinTLMap = {
-        _OptionLevel.Basic: 8,
-        _OptionLevel.Improved: 10,
-        _OptionLevel.Advanced: 12
-    }
-
-    # Data Structure: Cost, Trait
-    _DataMap = {
-        _OptionLevel.Basic: (1000, None),
-        _OptionLevel.Improved: (3500, robots.RobotAttributeId.HeightenedSenses),
-        _OptionLevel.Advanced: (10000, robots.RobotAttributeId.HeightenedSenses)
-    }
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Olfactory Sensor',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the sensor level.',            
-            optionDefault=_OptionLevel.Basic,                      
-            minTLMap=_OlfactorySensorZeroSlotImpl._MinTLMap)
-        
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        cost, trait = _OlfactorySensorZeroSlotImpl._DataMap[level]
-
-        cost = common.ScalarCalculation(
-            value=cost,
-            name=f'{level.value} {self.componentString()} Cost')
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))        
-
-        if trait:
-            step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=trait))
-            
-class _PRISSensorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    Min TL: 12
-    Cost: Cr2000
-    Trait: IR/UV Vision
-    """
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='PRIS Sensor',
-            minTL=12,
-            constantCost=2000)
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.IrUvVision))
-        
-class _ThermalSensorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    - Min TL: 6
-    - Cost: Cr500
-    - Trait: IR Vision
-    """
-    # TODO: According to p39 this is redundant if the robot has the TL 9 Light
-    # Intensifier Sensor or PRIS Sensor. I'm not sure if it's worth the hassle
-    # of adding that compatibility check
-
-    def __init__(self) -> None:
-        super().__init__(
-            componentString='Thermal Sensor',
-            minTL=6,
-            constantCost=500)
-
-    def updateStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext,
-            step: robots.RobotStep
-            ) -> None:
-        super().updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.IrVision))
-
-class _VisualSpectrumSensorZeroSlotImpl(_ZeroSlotImpl):
-    """
-    - 
-    - Min TL: 7
-    - Cost: Cr50 or free if Default Suite
-    """
-    def __init__(
-            self,
-            isDefaultSuite: bool
-            ) -> None:
-        super().__init__(
-            componentString='Visual Spectrum Sensor',
-            minTL=7,
-            constantCost=None if isDefaultSuite else 50)
-
-
-
-#  ██████████               ██████                       ████   █████        █████████              ███   █████            
-# ░░███░░░░███             ███░░███                     ░░███  ░░███        ███░░░░░███            ░░░   ░░███             
-#  ░███   ░░███  ██████   ░███ ░░░   ██████   █████ ████ ░███  ███████     ░███    ░░░  █████ ████ ████  ███████    ██████ 
-#  ░███    ░███ ███░░███ ███████    ░░░░░███ ░░███ ░███  ░███ ░░░███░      ░░█████████ ░░███ ░███ ░░███ ░░░███░    ███░░███
-#  ░███    ░███░███████ ░░░███░      ███████  ░███ ░███  ░███   ░███        ░░░░░░░░███ ░███ ░███  ░███   ░███    ░███████ 
-#  ░███    ███ ░███░░░    ░███      ███░░███  ░███ ░███  ░███   ░███ ███    ███    ░███ ░███ ░███  ░███   ░███ ███░███░░░  
-#  ██████████  ░░██████   █████    ░░████████ ░░████████ █████  ░░█████    ░░█████████  ░░████████ █████  ░░█████ ░░██████ 
-# ░░░░░░░░░░    ░░░░░░   ░░░░░      ░░░░░░░░   ░░░░░░░░ ░░░░░    ░░░░░      ░░░░░░░░░    ░░░░░░░░ ░░░░░    ░░░░░   ░░░░░░  
-
-class DefaultSuiteOption(robots.DefaultSuiteOptionInterface):
-    def __init__(
-            self,
-            impl: _ZeroSlotImpl
-            ) -> None:
-        super().__init__()
-        self._impl = impl
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()
-
-    def componentString(self) -> str:
-        return self._impl.componentString()
-    
-    def typeString(self) -> str:
-        return 'Default Suite'
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> bool:
-        if not self._impl.isCompatible(
-            sequence=sequence,
-            context=context):
-            return False
-        
-        # Don't allow multiple options of the same type
-        return not context.hasComponent(
-            componentType=type(self),
-            sequence=sequence)        
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return self._impl.options()
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        return self._impl.updateOptions(
-            sequence=sequence,
-            context=context)
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())
-        
-        self._impl.updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)        
-                        
-        context.applyStep(
-            sequence=sequence,
-            step=step)
-
-class VisualConcealmentDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VisualConcealmentZeroSlotImpl())
-
-class AudibleConcealmentDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_AudibleConcealmentZeroSlotImpl())
-
-class OlfactoryConcealmentDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_OlfactoryConcealmentZeroSlotImpl())
-
-class HostileEnvironmentProtectionDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_HostileEnvironmentProtectionZeroSlotImpl())  
-
-class ReflectArmourDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_ReflectArmourZeroSlotImpl())
-
-class SolarCoatingDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_SolarCoatingZeroSlotImpl()) 
-
-class VacuumEnvironmentProtectionDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VacuumEnvironmentProtectionZeroSlotImpl()) 
-
-class DroneInterfaceDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_DroneInterfaceZeroSlotImpl(isDefaultSuite=True)) 
-
-class EncryptionModuleDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_EncryptionModuleZeroSlotImpl())
-
-class TransceiverDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_TransceiverZeroSlotImpl(isDefaultSuite=True))
-
-class VideoScreenDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VideoScreenZeroSlotImpl(isDefaultSuite=True))
-
-class VoderSpeakerDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VoderSpeakerZeroSlotImpl(isDefaultSuite=True))
-
-class WirelessDataLinkDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_WirelessDataLinkZeroSlotImpl(isDefaultSuite=True))
-
-class GeckoGrippersDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_GeckoGrippersZeroSlotImpl())
-
-class InjectorNeedleDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_InjectorNeedleZeroSlotImpl())
-
-class LaserDesignatorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_LaserDesignatorZeroSlotImpl())
-
-class MagneticGrippersDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_MagneticGrippersZeroSlotImpl())
-
-class ParasiticLinkDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_ParasiticLinkZeroSlotImpl())
-
-class SelfMaintenanceEnhancementDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_SelfMaintenanceEnhancementZeroSlotImpl())
-
-class StingerDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_StingerZeroSlotImpl())
-
-class AtmosphericSensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_AtmosphericSensorZeroSlotImpl())
-
-class AuditorySensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_AuditorySensorZeroSlotImpl(isDefaultSuite=True))
-
-class EnvironmentalProcessorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_EnvironmentalProcessorZeroSlotImpl())
-        
-class GeigerCounterDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_GeigerCounterZeroSlotImpl())
-
-class LightIntensifierSensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_LightIntensifierSensorZeroSlotImpl())     
-
-class OlfactorySensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_OlfactorySensorZeroSlotImpl())
-
-class PRISSensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_PRISSensorZeroSlotImpl())       
-
-class ThermalSensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_ThermalSensorZeroSlotImpl())  
-
-class VisualSpectrumSensorDefaultSuite(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VisualSpectrumSensorZeroSlotImpl(isDefaultSuite=True))         
-
-
-
-#  ███████████                                         █████████  ████            █████   
-# ░█░░░░░░███                                         ███░░░░░███░░███           ░░███    
-# ░     ███░    ██████  ████████   ██████            ░███    ░░░  ░███   ██████  ███████  
-#      ███     ███░░███░░███░░███ ███░░███ ██████████░░█████████  ░███  ███░░███░░░███░   
-#     ███     ░███████  ░███ ░░░ ░███ ░███░░░░░░░░░░  ░░░░░░░░███ ░███ ░███ ░███  ░███    
-#   ████     █░███░░░   ░███     ░███ ░███            ███    ░███ ░███ ░███ ░███  ░███ ███
-#  ███████████░░██████  █████    ░░██████            ░░█████████  █████░░██████   ░░█████ 
-# ░░░░░░░░░░░  ░░░░░░  ░░░░░      ░░░░░░              ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░  
-        
-class ZeroSlotOption(robots.ZeroSlotOptionInterface):
-    """
-    Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
-    additional zero-slot options cost 1 slot    
-    Requirement: Zero slot options should be incompatible with their default
-    suite counterpart
-    """
-    # TODO: Handle component being incompatible with default suite counterpart
-    # - IMPORTANT: If I end up adding slot cost variants of zero slot options to
-    #   handle the 1 slot cost for options over the 'free' limit, then those
-    #   components will need to be incompatible with the default suite _and_
-    #   zero slot equivalents 
-
-    _ZeroSlotCountIncrement = common.ScalarCalculation(
-        value=1,
-        name='Zero-Slot Count Increment')
-
-    def __init__(
-            self,
-            impl: _ZeroSlotImpl,
-            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]]
-            ) -> None:
-        super().__init__()
-        self._impl = impl
-        self._incompatibleTypes = incompatibleTypes
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()
-
-    def componentString(self) -> str:
-        return self._impl.componentString()
-    
-    def typeString(self) -> str:
-        return 'Zero-Slot'
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> bool:
-        if not self._impl.isCompatible(
-            sequence=sequence,
-            context=context):
-            return False
-        
-        if self._incompatibleTypes:
-            for componentType in self._incompatibleTypes:
-                if context.hasComponent(
-                    componentType=componentType,
-                    sequence=sequence):
-                    return False
-        
-        # Don't allow multiple options of the same type
-        return not context.hasComponent(
-            componentType=type(self),
-            sequence=sequence)        
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return self._impl.options()
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        return self._impl.updateOptions(
-            sequence=sequence,
-            context=context)
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())
-        
-        self._impl.updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        slots = self._calcSlotRequirement(
-            sequence=sequence,
-            context=context)
-        if slots:
-            step.setSlots(slots=construction.ConstantModifier(value=slots))
-
-        # Increment the zero-slot count, if this is the first zero-slot option
-        # it will be set to 1
-        step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.ZeroSlotCount,
-            modifier=construction.ConstantModifier(
-                value=ZeroSlotOption._ZeroSlotCountIncrement)))
-                        
-        context.applyStep(
-            sequence=sequence,
-            step=step)
-        
-    def _calcSlotRequirement(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> typing.Optional[common.ScalarCalculation]:
-        robotSize = context.attributeValue(
-            attributeId=robots.RobotAttributeId.Size,
-            sequence=sequence)
-        assert(isinstance(robotSize, common.ScalarCalculation))
-       
-        limit = robotSize.value() + context.techLevel()
-                
-        currentCount = context.attributeValue(
-            attributeId=robots.RobotAttributeId.ZeroSlotCount,
-            sequence=sequence)
-        if not currentCount:
-            return None
-        elif isinstance(currentCount, common.ScalarCalculation):
-            if currentCount.value() < limit:
-                return None
-        else:
-            # TODO: Handle this better
-            return None
-        
-        slots = common.ScalarCalculation(
-            value=1,
-            name='Slots Required For Zero-Slot Options Over The {limit} Option Threshold')
-
-        # Additional step for clarity
-        return common.Calculator.equals(
-            value=slots,
-            name=f'{self.componentString()} Slot Requirement')
-
-class VisualConcealmentZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VisualConcealmentZeroSlotImpl(),
-            incompatibleTypes=[VisualConcealmentDefaultSuite])
-
-class AudibleConcealmentZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AudibleConcealmentZeroSlotImpl(),
-            incompatibleTypes=[AudibleConcealmentDefaultSuite])
-
-class OlfactoryConcealmentZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_OlfactoryConcealmentZeroSlotImpl(),
-            incompatibleTypes=[OlfactoryConcealmentDefaultSuite])
-
-class HostileEnvironmentProtectionZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_HostileEnvironmentProtectionZeroSlotImpl(),
-            incompatibleTypes=[HostileEnvironmentProtectionDefaultSuite])  
-
-class ReflectArmourZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ReflectArmourZeroSlotImpl(),
-            incompatibleTypes=[ReflectArmourDefaultSuite])
-
-class SolarCoatingZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SolarCoatingZeroSlotImpl(),
-            incompatibleTypes=[SolarCoatingDefaultSuite]) 
-
-class VacuumEnvironmentProtectionZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VacuumEnvironmentProtectionZeroSlotImpl(),
-            incompatibleTypes=[VacuumEnvironmentProtectionDefaultSuite]) 
-
-class DroneInterfaceZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_DroneInterfaceZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[DroneInterfaceDefaultSuite]) 
-
-class EncryptionModuleZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_EncryptionModuleZeroSlotImpl(),
-            incompatibleTypes=[EncryptionModuleDefaultSuite])
-
-class TransceiverZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_TransceiverZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[TransceiverDefaultSuite])
-
-class VideoScreenZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VideoScreenZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[VideoScreenDefaultSuite])
-
-class VoderSpeakerZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VoderSpeakerZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[VoderSpeakerDefaultSuite])
-
-class WirelessDataLinkZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_WirelessDataLinkZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[WirelessDataLinkDefaultSuite])
-
-class GeckoGrippersZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_GeckoGrippersZeroSlotImpl(),
-            incompatibleTypes=[GeckoGrippersDefaultSuite])
-
-class InjectorNeedleZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_InjectorNeedleZeroSlotImpl(),
-            incompatibleTypes=[InjectorNeedleDefaultSuite])
-
-class LaserDesignatorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_LaserDesignatorZeroSlotImpl(),
-            incompatibleTypes=[LaserDesignatorDefaultSuite])
-
-class MagneticGrippersZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_MagneticGrippersZeroSlotImpl(),
-            incompatibleTypes=[MagneticGrippersDefaultSuite])
-
-class ParasiticLinkZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ParasiticLinkZeroSlotImpl(),
-            incompatibleTypes=[ParasiticLinkDefaultSuite])
-
-class SelfMaintenanceEnhancementZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SelfMaintenanceEnhancementZeroSlotImpl(),
-            incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuite])
-
-class StingerZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_StingerZeroSlotImpl(),
-            incompatibleTypes=[StingerDefaultSuite])
-
-class AtmosphericSensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AtmosphericSensorZeroSlotImpl(),
-            incompatibleTypes=[AtmosphericSensorDefaultSuite])
-
-class AuditorySensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AuditorySensorZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[AuditorySensorDefaultSuite])
-
-class EnvironmentalProcessorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_EnvironmentalProcessorZeroSlotImpl(),
-            incompatibleTypes=[EnvironmentalProcessorDefaultSuite])
-        
-class GeigerCounterZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_GeigerCounterZeroSlotImpl(),
-            incompatibleTypes=[GeigerCounterDefaultSuite])
-
-class LightIntensifierSensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_LightIntensifierSensorZeroSlotImpl(),
-            incompatibleTypes=[LightIntensifierSensorDefaultSuite])     
-
-class OlfactorySensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_OlfactorySensorZeroSlotImpl(),
-            incompatibleTypes=[OlfactorySensorDefaultSuite])
-
-class PRISSensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_PRISSensorZeroSlotImpl(),
-            incompatibleTypes=[PRISSensorDefaultSuite])       
-
-class ThermalSensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ThermalSensorZeroSlotImpl(),
-            incompatibleTypes=[ThermalSensorDefaultSuite])  
-
-class VisualSpectrumSensorZeroSlot(ZeroSlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VisualSpectrumSensorZeroSlotImpl(isDefaultSuite=False),
-            incompatibleTypes=[VisualSpectrumSensorDefaultSuite])    
-
-
-#   █████████  ████            █████         █████████                    █████   
-#  ███░░░░░███░░███           ░░███         ███░░░░░███                  ░░███    
-# ░███    ░░░  ░███   ██████  ███████      ███     ░░░   ██████   █████  ███████  
-# ░░█████████  ░███  ███░░███░░░███░      ░███          ███░░███ ███░░  ░░░███░   
-#  ░░░░░░░░███ ░███ ░███ ░███  ░███       ░███         ░███ ░███░░█████   ░███    
-#  ███    ░███ ░███ ░███ ░███  ░███ ███   ░░███     ███░███ ░███ ░░░░███  ░███ ███
-# ░░█████████  █████░░██████   ░░█████     ░░█████████ ░░██████  ██████   ░░█████ 
-#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░       ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░          
 """
 Slot Cost Options
-- Chassis Options
-    - Active Camouflage
-        - Min TL: 15
-        - Cost: Cr10000 * Base Slots
-        - Slots: 1
-        - Skill: Stealth 4
-        - Trait: Invisible
-        - Note: DM-4 to Recon and Electronics  (sensors) checks to detect the robot
-    - Corrosive Environment Protection
-        - Min TL: 9
-        - Cost: Cr600 * Base Slots
-        - Slots: 1
-    - Insidious Environment Protection
-        - Min TL: 11
-        - Cost: Cr3000 * Base Slots
-        - Slots: 1
-    - Radiation Environment Protection
-        - Min TL: 7
-        - Cost: Cr600 * Base Slots * levels
-        - Slots: 1 per level 
-        - Trait: Rads +(TL * 50 * levels)
-        - Option: Number of levels (1 to infinity)
-    - Self-Repairing Chassis
-        - Min TL: 11
-        - Cost: Cr1000 * Base Slots
-        - Slots: 5% of Base Slots rounded up
-    - Submersible Environment Protection
-        - <ALL>
-            - Option: Number of levels
-                - The min is 1 but the max is dependant on the % of base slots each level takes
-            - Note: VTOL and aeroplane locomotion can't be used while submerged
-            - Note: Locomotion other than aquatic suffers an Agility -2 modifier while submerged
-        - Basic
-            - Min TL: 4
-            - Cost: Cr200 * Base Slots * levels
-            - Slots: (5% of Base Slots * levels) rounded up
-                - NOTE: Rules explicitly say that rounding is done after multiplying by levels
-            - Note: Safe Depth (50m * levels)
-        - Improved
-            - Min TL: 6
-            - Cost: Cr400 * Base Slots * levels
-            - Slots: (2% of Base Slots * levels) rounded up
-                - NOTE: Rules explicitly say that rounding is done after multiplying by levels            
-            - Note: Safe Depth (200m * levels)
-        - Enhanced
-            - Min TL: 9
-            - Cost: Cr800 * Base Slots * levels
-            - Slots: (2% of Base Slots * levels) rounded up
-                - NOTE: Rules explicitly say that rounding is done after multiplying by levels 
-            - Note: Safe Depth (600m * levels)
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr1000 * Base Slots * levels
-            - Slots: (2% of Base Slots * levels) rounded up
-                - NOTE: Rules explicitly say that rounding is done after multiplying by levels 
-            - Note: Safe Depth (2000m * levels)
-        - Superior
-            - Min TL: 15
-            - Cost: Cr2000 * Base Slots * levels
-            - Slots: (2% of Base Slots * levels) rounded up
-                - NOTE: Rules explicitly say that rounding is done after multiplying by levels 
-            - Note: Safe Depth (4000m * levels)
-- Cleaning Options
-    - <ALL>
-        - Option: Number of levels
-    - Domestic Cleaning Equipment
-        - Small
-            - Min TL: 5
-            - Cost: Cr100 * levels
-            - Slots: 1 * levels
-        - Medium
-            - Min TL: 5
-            - Cost: Cr1000 * levels
-            - Slots: 4 * levels
-        - Large
-            - Min TL: 5
-            - Cost: Cr5000 * levels
-            - Slots: 8 * levels
-    - Industrial Cleaning Equipment
-        - Small
-            - Min TL: 5
-            - Cost: Cr500 * levels
-            - Slots: 2 * levels
-        - Medium
-            - Min TL: 5
-            - Cost: Cr5000 * levels
-            - Slots: 8 * levels
-        - Large
-            - Min TL: 5
-            - Cost: Cr20000 * levels
-            - Slots: 16 * levels
-- Communication Options
-    - High Fidelity Sound System
-        - Basic
-            - Min TL: 6
-            - Cost: Cr1500
-            - Slots: 4
-        - Improved
-            - Min TL: 8
-            - Cost: Cr2500
-            - Slots: 3
-        - Enhanced
-            - Min TL: 11
-            - Cost: Cr4000
-            - Slots: 3
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr5000
-            - Slots: 2
-    - Robotic Drone Controller
-        - <ALL>
-            - Option: Biologically-Controlled check box
-                - When checked the controller is limited to 1 drone but the Electronics (remote ops) level isn't limited
-                - This affects which comments will be added
-            - Complex: The controlling robot must have a Electronics (remote ops) skill
-                - Best way I can think to handle this is a finalisation step that adds a warning if the robot doesn't have the skill
-        - Basic
-            - Min TL: 7
-            - Cost: Cr2000
-            - Slots: 2
-            - Note: Can control a max of 1 drone
-            - Note: Electronics (remote ops) skill is limited to 0 when using Robotic Drone Controller
-        - Improved
-            - Min TL: 9
-            - Cost: Cr10000
-            - Slots: 1
-            - Note: Can control a max of 2 drone
-            - Note: Electronics (remote ops) skill is limited to 1 when using Robotic Drone Controller
-    - Satellite Uplink
-        - Min TL: 6
-        - Cost: Cr1000
-        - Slots: 2
-        - Complex Requirement: Requires a Transceiver with at least 500km range
-            - If I'm having zero-slot options in the same stage as slot cost options then this will need a dependsOn relationship to force Satellite Uplink to be added/processed after Transceivers
-            - This will have to cope with the fact Transceiver can also be in the Default Suite which will probably be different components
-    - Swarm Controller
-        - <ALL>
-            - Complex: The controlling robot must have a Electronics (remote ops) skill
-                - Best way I can think to handle this is a finalisation step that adds a warning if the robot doesn't have the skill
-        - Basic
-            - Min TL: 8
-            - Cost: Cr10000
-            - Slots: 3
-            - Note: Swarms are limited to 1 task with a maximum complexity of Average (8+)
-            - Note: Electronics (remote ops) skill is limited to 0 when using Swarm Controller
-        - Improved
-            - Min TL: 10
-            - Cost: Cr20000
-            - Slots: 2
-            - Note: Swarms are limited to 2 tasks with a maximum complexity of Difficult (10+)
-            - Note: Electronics (remote ops) skill is limited to 1 when using Swarm Controller  
-        - Enhanced
-            - Min TL: 12
-            - Cost: Cr50000
-            - Slots: 1
-            - Note: Swarms are limited to 3 tasks with a maximum complexity of Very Difficult (12+)
-            - Note: Electronics (remote ops) skill is limited to 2 when using Swarm Controller  
-        - Advanced
-            - Min TL: 14
-            - Cost: Cr100000
-            - Slots: 1
-            - Note: Swarms are limited to 4 tasks with a maximum complexity of Formidable (14+)
-            - Note: Electronics (remote ops) skill is limited to 3 when using Swarm Controller 
-    - Tightbeam Communicator
-        - Min TL: 8
-        - Cost: Cr2000
-        - Slots: 1
-        - Note: Range is 5000km
-    - Transceivers
-        - Basic 50km
-            - Min TL: 7
-            - Cost: Cr1000
-            - Slots: 1
-        - Basic 500km
-            - Min TL: 7
-            - Cost: Cr2000
-            - Slots: 1
-        - Basic 5,000km
-            - Min TL: 7
-            - Cost: Cr10000
-            - Slots: 2
-        - Basic 50,000km
-            - Min TL: 8
-            - Cost: Cr20000
-            - Slots: 4
-        - Basic 500,000km
-            - Min TL: 9
-            - Cost: Cr50000
-            - Slots: 8
-        - Improved 50,000km
-            - Min TL: 10
-            - Cost: Cr10000
-            - Slots: 2
-        - Improved 500,000km
-            - Min TL: 11
-            - Cost: Cr25000
-            - Slots: 4
-        - Enhanced 50,000km
-            - Min TL: 12
-            - Cost: Cr5000
-            - Slots: 1
-        - Enhanced 500,000km
-            - Min TL: 13
-            - Cost: Cr10000
-            - Slots: 2
-        - Advanced 50,000km
-            - Min TL: 15
-            - Cost: Cr2500
-            - Slots: 1
-        - Advanced 500,000km
-            - Min TL: 16
-            - Cost: Cr5000
-            - Slots: 1
-        - IMPORTANT: These need to be merged into the zero-slot Transceivers but it looks like it should be straight forward to do
-            - Just need to make sure these ones don't show up in the Default Suite options
-- Medical Options
-    - Medical Chamber
-        - Min TL: 8
-        - Cost: Cr200 per slot allocated to the chamber
-        - Slots: The number of slots allocated to the chamber
-        - Option: Spin box to select the number of slots to allocate to chamber (range: 1 to Base Slots)
-        - Option: Combo box to _optionally_ select Berth option
-            - Cryoberth (basic)
-                - Min TL: 10
-                - Cost: Cr20000
-                - Slots: 8
-            - Cryoberth (improved)
-                - Min TL: 12
-                - Cost: Cr20000
-                - Slots 8
-            - Low berth (basic)
-                - Min TL: 10
-                - Cost: Cr20000
-                - Slots: 8
-            - Low berth (improved)
-                - Min TL: 12
-                - Cost: Cr20000
-                - Slots: 8
-        - Option: Combo box to _optionally_ select Nanobot option
-            - Applicator
-                - Min TL: 13
-                - Cost: Cr100000
-                - Slots: 4
-            - Applicator & Generator
-                - Min TL: 13
-                - Cost: Cr200000
-                - Slots: 8
-        - Option: Check box for Reanimation
-            - Min TL: 14
-            - Cost: Cr900000
-            - Slots: 8
-        - Option: Spin box to select number of species specific addons (min: 0)
-            - Min TL: 10
-            - Cost: Cr10000 per addon
-            - Slots: 4 per addon
-            - IMPORTANT: Whatever the count is set to that number of string options should be created so the user can enter the name of the species it's for
-        - Requirement: A robot should have at least one manipulator of Size 3 or greater
-        - Complex: A Medical Chamber adds +1 to the Maximum Skill level supported by a Medkit option
-            - I think this is going to require a dependsOn relation ship but it will be defined by the Medikit as it will need to be processed after the Medical Chamber
-        - IMPORTANT: This component is going to have a lot of options, it should split them all into separate steps so they all get their own line item on the manifest
-    - Medkit
-        - <All>
-            - Complex: The Max Skill level can be increased by 1 if the robot has a Medical Chamber slot cost option
-                - This will require a dependsOn relationship so Medikit is processed after Medical Chamber
-            - Note: Replenishing Medikit costs Cr500
-        - Medikit (basic)
-            - Min TL: 8
-            - Cost: Cr1000
-            - Slots: 1
-            - Note: Medic skill is limited to 0 when using Medikit
-        - Medikit (improved)
-            - Min TL: 10
-            - Cost: Cr1500
-            - Slots: 1
-            - Note: Medic skill is limited to 1 when using Medikit            
-        - Medikit (enhanced)
-            - Min TL: 12
-            - Cost: Cr5000
-            - Slots: 1
-            - Note: Medic skill is limited to 2 when using Medikit
-        - Medikit (advanced)
-            - Min TL: 14
-            - Cost: Cr10000
-            - Slots: 1
-            - Note: Medic skill is limited to 3 when using Medikit
 - Miscellaneous Options
-    - Agricultural Equipment
-        - <ALL>
-            - Option: Levels
-        - Small
-            - Min TL: 5
-            - Cost: Cr100 * levels
-            - Slots: 1 * levels
-        - Medium
-            - Min TL: 5
-            - Cost: Cr1000 * levels
-            - Slots: 4 * levels
-        - Large
-            - Min TL: 5
-            - Cost: Cr10000 * levels
-            - Slots: 16 * levels
-    - Autobar
-        - Basic
-            - Min TL: 8
-            - Cost: Cr500
-            - Slots: 2
-            - Note: Steward and Profession (bartender) skills is limited to 0 when using Autobar
-            - Note: Replenishing the autobar costs Cr250
-        - Improved
-            - Min TL: 9
-            - Cost: Cr1000
-            - Slots: 2
-            - Note: Steward and Profession (bartender) skills are limited to 1 when using Autobar
-            - Note: Replenishing the autobar costs Cr500
-        - Enhanced
-            - Min TL: 10
-            - Cost: Cr2000
-            - Slots: 2
-            - Note: Steward and Profession (bartender) skills are limited to 2 when using Autobar
-            - Note: Replenishing the autobar costs Cr1000
-        - Advanced
-            - Min TL: 11
-            - Cost: Cr5000
-            - Slots: 2
-            - Note: Steward and Profession (bartender) skills are limited to 3 when using Autobar
-            - Note: Replenishing the autobar costs Cr2500
-    - Autochef
-        - Basic
-            - Min TL: 9
-            - Cost: Cr500
-            - Slots: 3
-            - Note: Steward and Profession (chef) skills are limited to 0 when using Autobar
-        - Improved
-            - Min TL: 10
-            - Cost: Cr2000
-            - Slots: 3
-            - Note: Steward and Profession (chef) skills are limited to 1 when using Autobar
-        - Enhanced
-            - Min TL: 11
-            - Cost: Cr5000
-            - Slots: 3
-            - Note: Steward and Profession (chef) skills are limited to 2 when using Autobar
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr10000
-            - Slots: 3
-            - Note: Steward and Profession (chef) skills are limited to 3 when using Autobar 
-    - Autopilot
-        - <ALL>
-            - Requirement: I get the feeling this should require the Vehicle Speed Movement locomotion modification (or at least it's pointless without it) 
-            - Complex: Autopilot and skill level packages do not stack; the higher of autopilot or vehicle operating skill applies.
-                - This feels like a comment but not sure where to add it. Might need to be in the skill so it can check if there is an autopilot component or Vehicle Speed Movement locomotion modification (as it gives autopilot 0)
-        - Improved
-            - Min TL: 7
-            - Cost: Cr7500
-            - Slots: 1
-            - Trait: Autopilot = 1
-        - Enhanced
-            - Min TL: 9
-            - Cost: Cr10000
-            - Slots: 1
-            - Trait: Autopilot = 2
-        - Advanced
-            - Min TL: 11
-            - Cost: Cr15000
-            - Slots: 1
-            - Trait: Autopilot = 3
     - Bioreaction Chamber
         - <ALL>
             - Option: Spin box to choose number of slots to allocate (range: 1-Base Slots)
@@ -2490,18 +167,6 @@ Slot Cost Options
             - Note: The robot is vaporised
             - Note: Anyone within the blast radius will take 10DD damage
             - Note: The explosion has the Blast 1000 and Radiation traits
-    - Self-Maintenance Enhancement
-        - Enhanced
-            - Min TL: 13
-            - Cost: Cr200000 * Base Slots
-            - Trait: Maintenance Period = 60 years
-            - Trait: Malfunction Check = 5 year
-        - Advanced
-            - Min TL: 15
-            - Cost: Cr500000 * Base Slots
-            - Trait: Maintenance Period = Indefinite
-            - Trait: Malfunction Check = Indefinite
-        - IMPORTANT: This should be merged in with the equivalent zero-slot options
     - Stealth
         - Basic
             - Min TL: 7
@@ -2812,17 +477,4364 @@ Slot Cost Options
         - Complex: Stylist Toolkits are species specific so I need to support more than 1
             - This could probably just be a spin box to select the number and dynamically created text entries
             - Each one needs to be added as it's own row to the manifest
-- Weapons
-    - Weapons are COMPLEX and will probably need to be handled separately from the other slot options
-    - I think a lot of how they work will be determined by how manipulators are implemented
-        - It might be easier if each manipulator is an instance of a component
-    - I think basically what I need to do is to let the user create however many mounts they require
-        - These can be slot mounted in the torso where they take slots or on manipulators where they don't take slots
-        - When attaching to manipulators there are minimum manipulator sizes for the different levels of weapon mount
-        - I assume leg manipulators can also have weapon mounts
-        - It looks like weapon mount autoloader is just an option on a weapon mount
-    - Fire Control then needs to be a separate stage after the weapon mounts as we need a way to link instances of fire control to multiple mounts (up to 4)
-    - I'm not sure if I need a way to select the actual weapon as well
-        - Could have a hard coded list of weapons from the field catalogue like the spreadsheet does 
-        - Ideally it would let you select weapons created in the gunsmith but that isn't trivial
 """
+
+
+#   █████████  ████            █████          ███████               █████     ███                         █████                           ████ 
+#  ███░░░░░███░░███           ░░███         ███░░░░░███            ░░███     ░░░                         ░░███                           ░░███ 
+# ░███    ░░░  ░███   ██████  ███████      ███     ░░███ ████████  ███████   ████   ██████  ████████      ░███  █████████████   ████████  ░███ 
+# ░░█████████  ░███  ███░░███░░░███░      ░███      ░███░░███░░███░░░███░   ░░███  ███░░███░░███░░███     ░███ ░░███░░███░░███ ░░███░░███ ░███ 
+#  ░░░░░░░░███ ░███ ░███ ░███  ░███       ░███      ░███ ░███ ░███  ░███     ░███ ░███ ░███ ░███ ░███     ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
+#  ███    ░███ ░███ ░███ ░███  ░███ ███   ░░███     ███  ░███ ░███  ░███ ███ ░███ ░███ ░███ ░███ ░███     ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
+# ░░█████████  █████░░██████   ░░█████     ░░░███████░   ░███████   ░░█████  █████░░██████  ████ █████    █████ █████░███ █████ ░███████  █████
+#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░        ░░░░░░░     ░███░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░    ░░░░░ ░░░░░ ░░░ ░░░░░  ░███░░░  ░░░░░ 
+#                                                        ░███                                                                   ░███           
+#                                                        █████                                                                  █████          
+#                                                       ░░░░░                                                                  ░░░░░                  
+
+class _SlotOptionImpl(object):   
+    def __init__(
+            self,
+            componentString: str,
+            minTL: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__()
+
+        if minTL != None and not isinstance(minTL, common.ScalarCalculation):
+            minTL = common.ScalarCalculation(
+                value=minTL,
+                name=f'{componentString} Minimum TL') 
+
+        self._componentString = componentString
+        self._minTL = minTL
+        self._incompatibleTypes = incompatibleTypes
+
+    def instanceString(self) -> str:
+        return self.componentString()
+
+    def componentString(self) -> str:
+        return self._componentString
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if self._minTL and \
+                context.techLevel() < self._minTL.value():
+            return False
+        
+        if self._incompatibleTypes:
+            for componentType in self._incompatibleTypes:
+                if context.hasComponent(
+                    componentType=componentType,
+                    sequence=sequence):
+                    return False        
+
+        return True
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return []
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        pass
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str,
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from _SlotOptionImpl so must implement createSteps')
+
+class _SingleStepSlotOptionImpl(_SlotOptionImpl):
+    """
+    Zero-Slot
+    - Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
+    additional zero-slot options cost 1 slot    
+    - Requirement: Zero slot options should be incompatible with their default
+    suite counterpart
+    """
+    # TODO: Handle component being incompatible with default suite counterpart
+    # - IMPORTANT: If I end up adding slot cost variants of zero slot options to
+    #   handle the 1 slot cost for options over the 'free' limit, then those
+    #   components will need to be incompatible with the default suite _and_
+    #   zero slot equivalents
+    _DefaultSuiteCount = 5 
+   
+    def __init__(
+            self,
+            componentString: str,
+            minTL: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            perBaseSlotCost: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            constantCost: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            percentBaseSlots: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            constantSlots: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            notes: typing.Iterable[str] = None,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString=componentString,
+            minTL=minTL,
+            incompatibleTypes=incompatibleTypes)
+
+        if perBaseSlotCost != None and constantCost != None:
+            raise ValueError('A component can\'t have a per slot _and_ constant cost.')
+        if perBaseSlotCost != None and not isinstance(perBaseSlotCost, common.ScalarCalculation):
+            perBaseSlotCost = common.ScalarCalculation(
+                value=perBaseSlotCost,
+                name=f'{componentString} Per Base Slot Cost')
+        elif constantCost != None and not isinstance(constantCost, common.ScalarCalculation):
+            constantCost = common.ScalarCalculation(
+                value=constantCost,
+                name=f'{componentString} Cost')
+            
+        if percentBaseSlots != None and constantSlots != None:
+            raise ValueError('A component can\'t have a percentage _and_ constant slot requirement.')
+        if percentBaseSlots != None and not isinstance(percentBaseSlots, common.ScalarCalculation):
+            percentBaseSlots = common.ScalarCalculation(
+                value=percentBaseSlots,
+                name=f'{componentString} Base Slot Percentage')
+        elif constantSlots != None and not isinstance(constantSlots, common.ScalarCalculation):
+            constantSlots = common.ScalarCalculation(
+                value=constantSlots,
+                name=f'{componentString} Slot Requirement')
+
+        self._perBaseSlotCost = perBaseSlotCost
+        self._constantCost = constantCost
+        self._percentBaseSlots = percentBaseSlots
+        self._constantSlots = constantSlots
+        self._notes = notes
+
+    def isZeroSlot(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from _SlotOptionImpl so must implement isZeroSlot')
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str,
+            ) -> None:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=typeString)
+        
+        self.updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)        
+                        
+        context.applyStep(
+            sequence=sequence,
+            step=step)  
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        cost = None
+        if self._perBaseSlotCost: 
+            cost = common.Calculator.multiply(
+                lhs=self._perBaseSlotCost,
+                rhs=context.baseSlots(sequence=sequence),
+                name=f'{self.componentString()} Cost')
+        elif self._constantCost:
+            cost = self._constantCost
+            
+        if cost:
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
+            
+        slots = None
+        if self.isZeroSlot():
+            slots = self._calcZeroSlotRequiredSlots(
+                sequence=sequence,
+                context=context)
+
+            # Increment the zero-slot count, if this is the first zero-slot option
+            # it will be set to 1
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=robots.RobotAttributeId.ZeroSlotCount,
+                modifier=construction.ConstantModifier(
+                    value=SlotOption._ZeroSlotCountIncrement)))
+        elif self._percentBaseSlots:
+            slots = common.Calculator.ceil(
+                value=common.Calculator.takePercentage(
+                    value=context.baseSlots(sequence=sequence),
+                    percentage=self._percentBaseSlots),
+                name=f'{self.componentString()} Required Slots')
+        elif self._constantSlots:
+            slots = self._constantSlots
+
+        if slots:
+            step.setSlots(
+                slots=construction.ConstantModifier(value=slots))
+
+        if self._notes:
+            for note in self._notes:
+                step.addNote(note)
+
+    def _calcZeroSlotRequiredSlots(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> typing.Optional[common.ScalarCalculation]:
+        robotSize = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Size,
+            sequence=sequence)
+        assert(isinstance(robotSize, common.ScalarCalculation))
+       
+        limit = robotSize.value() + context.techLevel() + \
+            _SingleStepSlotOptionImpl._DefaultSuiteCount
+                
+        currentCount = context.attributeValue(
+            attributeId=robots.RobotAttributeId.ZeroSlotCount,
+            sequence=sequence)
+        if not currentCount:
+            # There have been no zero slot components added yet so we know the
+            # limit hasn't been reached so there is no slots required
+            return None
+        elif isinstance(currentCount, common.ScalarCalculation):
+            if currentCount.value() < limit:
+                # The zero slot limit hasn't been reached yet so there is no
+                # slots required
+                return None
+        else:
+            # TODO: Handle this better
+            return None
+        
+        slots = common.ScalarCalculation(
+            value=1,
+            name='Slots Required For Zero-Slot Options Over The {limit} Option Threshold')
+
+        # Additional step for clarity
+        return common.Calculator.equals(
+            value=slots,
+            name=f'{self.componentString()} Slot Requirement')
+
+class _EnumSelectSlotOptionImpl(_SingleStepSlotOptionImpl):
+    def __init__(
+            self,
+            componentString: str,
+            enumType: typing.Type[enum.Enum],
+            optionId: str,
+            optionName: str,
+            optionDescription: str,
+            optionDefault: enum.Enum,
+            # If optionChoices is specified then it will be used as the list of
+            # enums that the user can select from. If None is specified then
+            # all enums of enumType can be selected from
+            optionChoices: typing.Optional[typing.Iterable[enum.Enum]] = None,
+            # If minTLMap is specified then the list of options that can be
+            # selected will be filtered based on the robots TL.
+            # NOTE: If specified minTLMap MUST contain an entry for all enums
+            # that can be a valid choice. If an enum doesn't have an entry in
+            # the map it will never be a possible selection
+            minTLMap: typing.Optional[typing.Mapping[enum.Enum, int]] = None,
+            # Absolute min TL, if minTLMap is also specified then the maximum
+            # of this and the entry from the map will be used
+            minTL: typing.Optional[int] = None,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString=componentString,
+            minTL=minTL,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._enumType = enumType
+        self._selectableEnums = optionChoices
+        self._minTLMap = minTLMap
+
+        self._enumOption = construction.EnumOption(
+            id=optionId,
+            name=optionName,
+            type=enumType,
+            value=optionDefault,
+            description=optionDescription)
+
+    def instanceString(self) -> str:
+        value: enum.Enum = self._enumOption.value()
+        return f'{self.componentString()} ({value.value})'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+        
+        validEnums = self._calcValidEnums(sequence=sequence, context=context)
+        return len(validEnums) > 0
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._enumOption)
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        super().updateOptions(
+            sequence=sequence,
+            context=context)
+        
+        validEnums = self._calcValidEnums(sequence=sequence, context=context)
+        self._enumOption.setOptions(options=validEnums)
+
+    def _calcValidEnums(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> typing.Iterable[enum.Enum]:
+        possibleEnums = self._selectableEnums if self._selectableEnums else self._enumType
+        if not self._minTLMap:
+            return possibleEnums
+        
+        robotTL = context.techLevel()
+        validEnums = []
+        for possibleEnum in possibleEnums:
+            minTL = self._minTLMap.get(possibleEnum, None)
+            if minTL != None and robotTL >= minTL:
+                validEnums.append(possibleEnum)
+        return validEnums    
+
+class _VisualConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    <ALL>
+    - Requirement: Not compatible with Reflect Armour
+    - Requirement: Not compatible with Solar Coating
+    Primitive
+    - Min TL: 1
+    - Cost: Cr1 * Base Slots
+    - Note: Detection DM -1 at >= 500m
+    Basic
+    - Min TL: 4
+    - Cost: Cr4 * Base Slots
+    - Note: Detection DM -2 at >= 250m
+    Improved
+    - Min TL: 7
+    - Cost: Cr40 * Base Slots
+    - Note: Detection DM -2 at >= 100m
+    Enhanced
+    - Min TL: 11
+    - Cost: Cr100 * Base Slots
+    - Note: Detection DM -3 at >= 50m
+    Advanced
+    - Min TL: 12
+    - Cost: Cr500 * Base Slots
+    - Note: Detection DM -4 at >= 10m
+    Superior
+    - Min TL: 13
+    - Cost: Cr2500 * Base Slots
+    - Note: Detection DM -4 at >= 1m or over      
+    """
+    # TODO: I'm not sure if I should include the comments as the values are only
+    # values for size 5 robots
+    # TODO: Handle comparability with reflect armour and solar coating
+    # - This is complicated by the fact zero-slot components will need to be
+    #   incompatible with default suite (i.e. zero cost visual concealment is
+    #   incompatible with default suite reflect)
+
+    _MinTLMap = {
+        _OptionLevel.Primitive: 1,
+        _OptionLevel.Basic: 4,
+        _OptionLevel.Improved: 7,
+        _OptionLevel.Enhanced: 11,
+        _OptionLevel.Advanced: 12,
+        _OptionLevel.Superior: 13,
+    }
+
+    _CostPerSlotMap = {
+        _OptionLevel.Primitive: 1,
+        _OptionLevel.Basic: 4,
+        _OptionLevel.Improved: 40,
+        _OptionLevel.Enhanced: 100,
+        _OptionLevel.Advanced: 500,
+        _OptionLevel.Superior: 2500,
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Visual Concealment',
+            enumType=_OptionLevel,
+            optionId='Level',
+            optionName='Level',
+            optionDescription='Specify the concealment level.',
+            optionDefault=_OptionLevel.Basic,
+            minTLMap=_VisualConcealmentSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        level = self._enumOption.value()
+        assert(isinstance(level, _OptionLevel))
+
+        costPerSlot = common.ScalarCalculation(
+            value=_VisualConcealmentSlotOptionImpl._CostPerSlotMap[level],
+            name=f'{level.value} Visual Concealment Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=costPerSlot,
+            rhs=context.baseSlots(sequence=sequence),
+            name=f'{self.componentString()} Cost')
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+class _AudibleConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic
+    - Min TL: 5
+    - Cost: Cr5 * Base Slots
+    - Note: Detection DM -1 at >= 50m
+    Improved
+    - Min TL: 8
+    - Cost: Cr10 * Base Slots
+    - Note: Detection DM -2 at >= 10m
+    Advanced
+    - Min TL: 10
+    - Cost: Cr50 * Base Slots
+    - Note: Detection DM -3 at >= 50m    
+    """
+    # TODO: I'm not sure if I should include the comments
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 5,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Advanced: 10,
+    }
+
+    _CostPerSlotMap = {
+        _OptionLevel.Basic: 5,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Advanced: 50,
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Audible Concealment',
+            enumType=_OptionLevel,
+            optionId='Level',
+            optionName='Level',
+            optionDescription='Specify the concealment level.',            
+            optionDefault=_OptionLevel.Basic,
+            minTLMap=_AudibleConcealmentSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        level = self._enumOption.value()
+        assert(isinstance(level, _OptionLevel))
+
+        costPerSlot = common.ScalarCalculation(
+            value=_AudibleConcealmentSlotOptionImpl._CostPerSlotMap[level],
+            name=f'{level.value} {self.componentString()} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=costPerSlot,
+            rhs=context.baseSlots(sequence=sequence),
+            name=f'{self.componentString()} Cost')
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+class _OlfactoryConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic
+    - Min TL: 7
+    - Cost: Cr10 * Base Slots
+    - Note: Detection DM -1 at >= 100m
+    Improved
+    - Min TL: 9
+    - Cost: Cr20 * Base Slots
+    - Note: Detection DM -2 at >= 20m
+    Advanced
+    - Min TL: 12
+    - Cost: Cr100 * Base Slots
+    - Note: Detection DM -3 at >= 10m
+    """
+    # TODO: I'm not sure if I should include the comments
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Improved: 9,
+        _OptionLevel.Advanced: 12,
+    }
+
+    _CostPerSlotMap = {
+        _OptionLevel.Basic: 10,
+        _OptionLevel.Improved: 20,
+        _OptionLevel.Advanced: 100,
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Olfactory Concealment',
+            enumType=_OptionLevel,
+            optionId='Level',
+            optionName='Level',
+            optionDescription='Specify the concealment level.', 
+            optionDefault=_OptionLevel.Basic,           
+            minTLMap=_OlfactoryConcealmentSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)  
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        level = self._enumOption.value()
+        assert(isinstance(level, _OptionLevel))
+
+        costPerSlot = common.ScalarCalculation(
+            value=_OlfactoryConcealmentSlotOptionImpl._CostPerSlotMap[level],
+            name=f'{level.value} {self.componentString()} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=costPerSlot,
+            rhs=context.baseSlots(sequence=sequence),
+            name=f'{self.componentString()} Cost')
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+class _HostileEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 6
+    Cost: Cr300 * Base Slots
+    Trait: Rads +500
+    """
+    _RadsTrait = common.ScalarCalculation(
+        value=+500,
+        name='Hostile Environment Protection Rads Modifier')
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Hostile Environment Protection',
+            minTL=6,
+            perBaseSlotCost=300,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(sequence, context, step)
+
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Rads,
+            modifier=construction.ConstantModifier(
+                value=_HostileEnvironmentProtectionSlotOptionImpl._RadsTrait)))
+        
+class _ReflectArmourSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 10
+    Cost: Cr100 * Base Slots
+    Requirement: Not compatible with Camouflage: Visual Concealment
+    Requirement: Not compatible with Solar Coating
+    """
+    # NOTE: Compatibility with other components is handled by the component
+    # class rather than the implementation as it needs component level
+    # knowledge
+    # TODO: Implement incomparability with other components
+    # - This is complicated by the fact zero-slot components will need to be
+    #   incompatible with default suite (i.e. zero cost visual concealment is
+    #   incompatible with default suite reflect)    
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Reflect Armour',
+            minTL=10,
+            perBaseSlotCost=100,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    <ALL>
+    - Requirement: Not compatible with Camouflage: Visual Concealment
+    - Requirement: Not compatible with Reflect Armour
+    Basic
+    - Min TL: 6
+    - Cost: Cr500 * Base Slots
+    - Note: Max ground speed of 1m per round when relying on solar coating for power
+    - Note: Unable to fly when relying on using solar coating for power
+    - Note: Can fully recharge in 4 * Endurance hours if robot is dormant
+    Improved
+    - Min TL: 8
+    - Cost: Cr100 * Base Slots
+    - Note: Max ground speed of 2m per round when relying on solar coating for power
+    - Note: Unable to fly when relying on using solar coating for power
+    - Note: Can fully recharge in Endurance hours if robot is dormant
+    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging              
+    Enhanced
+    - Min TL: 10
+    - Cost: Cr200 * Base Slots
+    - Note: Max ground speed of 4m per round when relying on solar coating for power
+    - Note: Max flying speed of 1m per round when relying on solar coating for power
+    - Note: Can fully recharge in Endurance hours if robot is dormant 
+    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging                         
+    Advanced
+    - Min TL: 12
+    - Cost: Cr500 * Base Slots
+    - Note: Ground speed is not reduced when relying on solar coating for power
+    - Note: Max flying speed of 2m per round when relying on solar coating for power
+    - Note: Can fully recharge in Endurance hours if robot is dormant
+    - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging    
+    """
+    # NOTE: Compatibility with other components is handled by the component
+    # class rather than the implementation as it needs component level
+    # knowledge
+    # TODO: Implement incomparability with other components
+    # - This is complicated by the fact zero-slot components will need to be
+    #   incompatible with default suite (i.e. zero cost visual concealment is
+    #   incompatible with default suite reflect)    
+    # TODO: Add notes
+    # TODO: Handle notes that use Endurance hours. Ideally they would be filled
+    # in to give actual hours rather than the formula. If they can be done here
+    # depends on if endurance has been fully calculated yet
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 6,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 12,
+    }
+
+    _CostPerSlotMap = {
+        _OptionLevel.Basic: 500,
+        _OptionLevel.Improved: 100,
+        _OptionLevel.Enhanced: 200,
+        _OptionLevel.Advanced: 500,
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Solar Coating',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the solar coating type.',
+            optionDefault=_OptionLevel.Basic,            
+            minTLMap=_SolarCoatingSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        level = self._enumOption.value()
+        assert(isinstance(level, _OptionLevel))
+
+        costPerSlot = common.ScalarCalculation(
+            value=_SolarCoatingSlotOptionImpl._CostPerSlotMap[level],
+            name=f'{level.value} {self.componentString()} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=costPerSlot,
+            rhs=context.baseSlots(sequence=sequence),
+            name=f'{self.componentString()} Cost')
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+
+class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Standard
+    - Min TL: 7
+    - Cost: Cr600 * Base Slots
+    - Requirement: Not compatible with biological robots
+    Biological
+    - Min TL: 10
+    - Cost: Cr50000 * Base Slots 
+    - Requirement: Only compatible with biological robots
+    """
+    # TODO: Handle only compatible with biological robots after I
+    # add support for biological
+
+    class _ProtectionType(enum.Enum):
+        Standard = 'Standard'
+        Biological = 'Biological'
+
+    _MinTLMap = {
+        _ProtectionType.Standard: 7,
+        _ProtectionType.Biological: 10
+    }
+
+    _CostPerSlotMap = {
+        _ProtectionType.Standard: 600,
+        _ProtectionType.Biological: 50000
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Vacuum Environment Protection',
+            enumType=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the protection type.',
+            optionDefault=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType.Standard,      
+            minTLMap=_VacuumEnvironmentProtectionSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)  
+
+    def isZeroSlot(self) -> bool:
+        return True         
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        protection = self._enumOption.value()
+        assert(isinstance(protection, _VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType))
+
+        costPerSlot = common.ScalarCalculation(
+            value=_VacuumEnvironmentProtectionSlotOptionImpl._CostPerSlotMap[protection],
+            name=f'{protection.value} {self.componentString()} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=costPerSlot,
+            rhs=context.baseSlots(sequence=sequence),
+            name=f'{self.componentString()} Cost')
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+class _DroneInterfaceSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 6
+    Cost: Cr100 or free if Default Suite
+    Requirement: A drone interface requires a separate transceiver to be installed (p34)
+    """
+    # TODO: Handle the fact it requires a receiver
+    # - I think this means it you also have to take a zero-slot or slot cost
+    #   transceiver (there are transceivers of both types)
+    # - Could handle it with a note in finalisation.
+    #   - I think I do something similar in the gunsmith where Warning notes are
+    #     added
+    # - Could add a separate step in this component for a transceiver
+    #   - Might actually need to be the component code that does this as it
+    #     creates the step not the impl
+    #   - Would need to make the transceiver zero-slot _and_ slot cost options
+    #     incompatible with the drone interface so the user doesn't add it twice
+    #   - Ideally it would have a check box that controls if it's added
+    #     (defaulted to true). This would allow for things like external
+    #     transceivers
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Drone Interface',
+            minTL=6,
+            constantCost=None if isDefaultSuite else 100,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True             
+        
+class _EncryptionModuleSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 6
+    - Cost: Cr4000
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Encryption Module',
+            minTL=6,
+            constantCost=4000)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _TransceiverSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic 5km
+    - Min TL: 7
+    - Cost: Cr250 or free if Default Suite
+    Basic 50km
+    - Min TL: 7
+    - Cost: Cr1000
+    - Slots: 1
+    Basic 500km
+    - Min TL: 7
+    - Cost: Cr2000
+    - Slots: 1
+    Basic 5,000km
+    - Min TL: 7
+    - Cost: Cr10000
+    - Slots: 2
+    Basic 50,000km
+    - Min TL: 8
+    - Cost: Cr20000
+    - Slots: 4
+    Basic 500,000km
+    - Min TL: 9
+    - Cost: Cr50000
+    - Slots: 8        
+    Improved 5km:
+    - Min TL: 8
+    - Cost: Cr100 or free if Default Suite
+    Improved 50km:
+    - Min TL: 8
+    - Cost: Cr500
+    Improved 500km
+    - Min TL: 9
+    - Cost: Cr1000
+    Improved 5,000km
+    - Min TL: 9
+    - Cost: Cr5000
+    Improved 50,000km
+    - Min TL: 10
+    - Cost: Cr10000
+    - Slots: 2
+    Improved 500,000km
+    - Min TL: 11
+    - Cost: Cr25000
+    - Slots: 4        
+    Enhanced 50km
+    - Min TL: 10
+    - Cost: Cr250
+    Enhanced 500km
+    - Min TL: 11
+    - Cost: Cr500
+    Enhanced 5,000km
+    - Min TL: 12
+    - Cost: Cr1000
+    Enhanced 50,000km
+    - Min TL: 12
+    - Cost: Cr5000
+    - Slots: 1
+    Enhanced 500,000km
+    - Min TL: 13
+    - Cost: Cr10000
+    - Slots: 2    
+    Advanced 50km
+    - Min TL: 13
+    - Cost: Cr100
+    Advanced 500km
+    - Min TL: 14
+    - Cost: Cr250
+    Advanced 5,000km
+    - Min TL: 15
+    - Cost: Cr500
+    Advanced 50,000km
+    - Min TL: 15
+    - Cost: Cr2500
+    - Slots: 1
+    Advanced 500,000km
+    - Min TL: 16
+    - Cost: Cr5000
+    - Slots: 1
+    """
+    # NOTE: Some transceiver types are zero slot options and some are slot
+    # cost options
+    # TODO: I think there is scope for improving usability by reducing the
+    # options that are shown to the user as some options wouldn't make logical
+    # sense. For example, if your at designing a TL 14 robot there seems little
+    # point giving the user the option to select Enhanced 500km as Advanced
+    # 500km is half the price so they would only ever select that. I think it
+    # should be possible to just get it down to a drop down where the user
+    # selects the range they desired from a list of ranges available at that TL.
+    # IMPORTANT: There may be some complexity around the 2 types that are free
+    # for default suite
+
+    class _TransceiverType(enum.Enum):
+        Basic5km = 'Basic 5km'
+        Basic50km = 'Basic 50km'
+        Basic500km = 'Basic 500km'
+        Basic5000km = 'Basic 5,000km'
+        Basic50000km = 'Basic 50,000km'
+        Basic500000km = 'Basic 500,000km'
+        Improved5km = 'Improved 5km'
+        Improved50km = 'Improved 50km'
+        Improved500km = 'Improved 500km'
+        Improved5000km = 'Improved 5,000km'
+        Improved50000km = 'Improved 50,000km'
+        Improved500000km = 'Improved 500,000km'
+        Enhanced50km = 'Enhanced 50km'
+        Enhanced500km = 'Enhanced 500km'
+        Enhanced5000km = 'Enhanced 5,000km'
+        Enhanced50000km = 'Enhanced 50,000km'
+        Enhanced500000km = 'Enhanced 500,000km'
+        Advanced50km = 'Advanced 50km'
+        Advanced500km = 'Advanced 500km'
+        Advanced5000km = 'Advanced 5,000km'
+        Advanced50000km = 'Advanced 50,000km'
+        Advanced500000km = 'Advanced 500,000km'
+
+    _MinTLMap = {
+        _TransceiverType.Basic5km: 7,
+        _TransceiverType.Basic50km: 7,
+        _TransceiverType.Basic500km: 7,
+        _TransceiverType.Basic5000km: 7,
+        _TransceiverType.Basic50000km: 8,
+        _TransceiverType.Basic500000km: 9,
+        _TransceiverType.Improved5km: 8,
+        _TransceiverType.Improved50km: 8,
+        _TransceiverType.Improved500km: 9,
+        _TransceiverType.Improved5000km: 9,
+        _TransceiverType.Improved50000km: 10,
+        _TransceiverType.Improved500000km: 11,
+        _TransceiverType.Enhanced50km: 10,
+        _TransceiverType.Enhanced500km: 11,
+        _TransceiverType.Enhanced5000km: 12,
+        _TransceiverType.Enhanced50000km: 12,
+        _TransceiverType.Enhanced500000km: 13,
+        _TransceiverType.Advanced50km: 13,
+        _TransceiverType.Advanced500km: 14,
+        _TransceiverType.Advanced5000km: 15,
+        _TransceiverType.Advanced50000km: 15,
+        _TransceiverType.Advanced500000km: 16
+    }
+
+    # Data Structure: Cost, Slots, Range
+    _DataMap = {
+        _TransceiverType.Basic5km: (250, None, 5),
+        _TransceiverType.Basic50km: (1000, 1, 50),
+        _TransceiverType.Basic500km: (2000, 1, 500),
+        _TransceiverType.Basic5000km: (10000, 2, 5000),
+        _TransceiverType.Basic50000km: (20000, 4, 50000),
+        _TransceiverType.Basic500000km: (50000, 8, 500000),       
+        _TransceiverType.Improved5km: (100, None, 5),
+        _TransceiverType.Improved50km: (500, None, 50),
+        _TransceiverType.Improved500km: (1000, None, 500),
+        _TransceiverType.Improved5000km: (5000, None, 5000),
+        _TransceiverType.Improved50000km: (10000, 2, 50000),
+        _TransceiverType.Improved500000km: (25000, 4, 500000),
+        _TransceiverType.Enhanced50km: (250, None, 50),
+        _TransceiverType.Enhanced500km: (500, None, 500),
+        _TransceiverType.Enhanced5000km: (1000, None, 5000),
+        _TransceiverType.Enhanced50000km: (5000, 1, 50000),
+        _TransceiverType.Enhanced500000km: (10000, 2, 500000), 
+        _TransceiverType.Advanced50km: (100, None, 50),
+        _TransceiverType.Advanced500km: (250, None, 500),
+        _TransceiverType.Advanced5000km: (500, None, 5000),
+        _TransceiverType.Advanced50000km: (2500, 1, 50000),
+        _TransceiverType.Advanced500000km: (5000, 1, 500000)
+    }
+
+    _FreeDefaultSuiteTypes = [
+        _TransceiverType.Basic5km,
+        _TransceiverType.Improved5km
+    ]
+
+    _ZeroSlotTypes = [
+        _TransceiverType.Basic5km ,
+        _TransceiverType.Improved5km,
+        _TransceiverType.Improved50km,
+        _TransceiverType.Improved500km,
+        _TransceiverType.Improved5000km,
+        _TransceiverType.Enhanced50km,
+        _TransceiverType.Enhanced500km,
+        _TransceiverType.Enhanced5000km,
+        _TransceiverType.Advanced50km,
+        _TransceiverType.Advanced500km,
+        _TransceiverType.Advanced5000km,
+    ]
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Transceiver',
+            enumType=_TransceiverSlotOptionImpl._TransceiverType,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the transceiver type.',
+            # NOTE: The default here is important as an Improved 5km Transceiver
+            # is part of the canonical default suite for a robot. That means it
+            # needs to be the default here so when construction logic creates a
+            # Transceiver component for the default suite it will default to the
+            # correct type
+            optionDefault=_TransceiverSlotOptionImpl._TransceiverType.Improved5km,                  
+            minTLMap=_TransceiverSlotOptionImpl._MinTLMap,
+            optionChoices=_TransceiverSlotOptionImpl._ZeroSlotTypes if isDefaultSuite else None,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._isDefaultSuite = isDefaultSuite
+
+    def range(self) -> int:
+        transceiverType = self._enumOption.value()
+        assert(isinstance(transceiverType, _TransceiverSlotOptionImpl._TransceiverType))
+
+        _, _, range = _TransceiverSlotOptionImpl._DataMap[transceiverType]
+        return range
+
+    def isZeroSlot(self) -> bool:
+        transceiverType = self._enumOption.value()
+        return transceiverType in _TransceiverSlotOptionImpl._ZeroSlotTypes
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        transceiverType = self._enumOption.value()
+        assert(isinstance(transceiverType, _TransceiverSlotOptionImpl._TransceiverType))
+
+        cost, slots, _ = _TransceiverSlotOptionImpl._DataMap[transceiverType]
+
+        ignoreCost = self._isDefaultSuite and \
+            (transceiverType in _TransceiverSlotOptionImpl._FreeDefaultSuiteTypes)
+
+        if cost and not ignoreCost:
+            cost = common.ScalarCalculation(
+                value=cost,
+                name=f'{transceiverType.value} {self.componentString()} Cost')
+
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
+            
+        if slots:
+            slots = common.ScalarCalculation(
+                value=slots,
+                name=f'{transceiverType.value} {self.componentString()} Required Slots')
+
+            step.setSlots(
+                slots=construction.ConstantModifier(value=slots))
+            
+class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic Panel
+        - Min TL: 7
+        - Cost: Cr200 or free if Default Suite
+    Improved Panel
+        - Min TL: 8
+        - Cost: Cr500
+    Advanced Panel
+        - Min TL: 10
+        - Cost: Cr2000
+    Basic Full Surface
+        - Min TL: 7
+        - Cost: Cr200 * Base Slots
+    Improved Full Surface
+        - Min TL: 8
+        - Cost: Cr500 * Base Slots
+    Advanced Full Surface
+        - Min TL: 10
+        - Cost: Cr2000 * Base Slots
+    """
+
+    class _ScreenType(enum.Enum):
+        BasicPanel = 'Basic Panel'
+        ImprovedPanel = 'Improved Panel'
+        AdvancedPanel = 'Advanced Panel'
+        BasicFullSurface = 'Basic Full Surface'
+        ImprovedFullSurface = 'Improved Full Surface'
+        AdvancedFullSurface = 'Advanced Full Surface'
+
+    _MinTLMap = {
+        _ScreenType.BasicPanel: 7,
+        _ScreenType.ImprovedPanel: 8,
+        _ScreenType.AdvancedPanel: 10,
+        _ScreenType.BasicFullSurface: 7,
+        _ScreenType.ImprovedFullSurface: 8,
+        _ScreenType.AdvancedFullSurface: 10
+    }
+
+    _CostMap = {
+        # Constant costs
+        _ScreenType.BasicPanel: (200, True), # TODO: Or free for default suite
+        _ScreenType.ImprovedPanel: (500, True),
+        _ScreenType.AdvancedPanel: (2000, True),
+        # Per slot costs
+        _ScreenType.BasicFullSurface: (200, False),
+        _ScreenType.ImprovedFullSurface: (500, False),
+        _ScreenType.AdvancedFullSurface: (2000, False)
+    }
+
+    _FreeDefaultSuiteTypes = [_ScreenType.BasicPanel]
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Video Screen',
+            enumType=_VideoScreenSlotOptionImpl._ScreenType,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the screen type.',
+            optionDefault=_VideoScreenSlotOptionImpl._ScreenType.BasicPanel,                      
+            minTLMap=_VideoScreenSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._isDefaultSuite = isDefaultSuite  
+
+    def isZeroSlot(self) -> bool:
+        return True         
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        screenType = self._enumOption.value()
+        assert(isinstance(screenType, _VideoScreenSlotOptionImpl._ScreenType))
+
+        if not self._isDefaultSuite or \
+            screenType not in _VideoScreenSlotOptionImpl._FreeDefaultSuiteTypes:
+
+            cost, isConstantCost = _VideoScreenSlotOptionImpl._CostMap[screenType]
+            cost = common.ScalarCalculation(
+                value=cost,
+                name='{type} {component} {wording}'.format(
+                    type=screenType.value,
+                    component=self.componentString(),
+                    wording='Cost' if isConstantCost else 'Cost Per Slot'))
+
+            if not isConstantCost:
+                cost = common.Calculator.multiply(
+                    lhs=cost,
+                    rhs=context.baseSlots(sequence=sequence),
+                    name='{type} {component} Cost'.format(
+                        type=screenType.value,
+                        component=self.componentString()))
+
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
+        
+class _VoderSpeakerSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Standard
+    - Min TL: 8
+    - Cost: Cr100 or free if Default Suite
+    Broad Spectrum
+    - Min TL: 10
+    - Cost: Cr500
+    """
+    # TODO: Handle only compatible with biological robots after I
+    # add support for biological
+
+    class _SpeakerType(enum.Enum):
+        Standard = 'Standard'
+        BroadSpectrum = 'Broad Spectrum'
+
+    _MinTLMap = {
+        _SpeakerType.Standard: 8,
+        _SpeakerType.BroadSpectrum: 10
+    }
+
+    _CostMap = {
+        _SpeakerType.Standard: 100,
+        _SpeakerType.BroadSpectrum: 500
+    }
+
+    _FreeDefaultSuiteTypes = [_SpeakerType.Standard]
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Voder Speaker',
+            enumType=_VoderSpeakerSlotOptionImpl._SpeakerType,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the speaker type.',            
+            optionDefault=_VoderSpeakerSlotOptionImpl._SpeakerType.Standard,                      
+            minTLMap=_VoderSpeakerSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+
+        self._isDefaultSuite = isDefaultSuite
+
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        speakerType = self._enumOption.value()
+        assert(isinstance(speakerType, _VoderSpeakerSlotOptionImpl._SpeakerType))
+
+        if not self._isDefaultSuite or \
+            (speakerType not in _VoderSpeakerSlotOptionImpl._FreeDefaultSuiteTypes):
+            cost = common.ScalarCalculation(
+                value=_VoderSpeakerSlotOptionImpl._CostMap[speakerType],
+                name=f'{speakerType.value} {self.componentString()} Cost')
+
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
+
+class _WirelessDataLinkSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 8
+    Cost: Cr10 or free if Default Suite
+    """
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Wireless Data Link',
+            minTL=8,
+            constantCost=None if isDefaultSuite else 10,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _GeckoGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 9
+    Cost: Cr500 * Base Slots
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Gecko Grippers',
+            minTL=9,
+            perBaseSlotCost=500,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _InjectorNeedleSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 7
+    Cost: Cr20
+    Requirement: Multiple Injector Needle can be installed, each taking up a zero-slot option
+    """
+    # TODO: Handle multiple needles
+    # - Could make this an integer option
+    #   - This would need to handle the case where some of the needles take up
+    #     a slot due to the zero slot limit being reached
+    # - Could make it so it's not incompatible with its self
+    #   - This would need to be done in the component by overriding the base
+    #     comparability check
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Injector Needle',
+            minTL=7,
+            constantCost=20,
+            incompatibleTypes=incompatibleTypes) 
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+class _LaserDesignatorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 7
+    Cost: Cr500
+    """
+    # TODO: Fire Control System needs to add a note that it receives a DM+2 to
+    # attack designated targets
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Laser Designator',
+            minTL=7,
+            constantCost=500,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _MagneticGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 8
+    Cost: Cr10 * Base Slots
+    Note: Robot can grip to metallic surfaces in gravity of 0-1.5G
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Magnetic Grippers',
+            minTL=8,
+            perBaseSlotCost=10,
+            notes=['Robot can grip to metallic surfaces in gravity of 0-1.5G'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True         
+        
+class _ParasiticLinkSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 10
+    Cost: Cr10000
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Parasitic Link',
+            minTL=10,
+            constantCost=10000,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic (p37)
+    - Min TL: 7
+    - Cost: Cr20000 * Base Slots
+    - Note: The robot requires maintenance every 12 years.
+    - Note: If the maintenance schedule is not followed, a Malfunction Check (108) must be made every year
+    Improved (p37)
+    - Min TL: 8
+    - Cost: Cr50000 * Base Slots
+    - Note: The robot requires maintenance every 24 years.
+    - Note: If the maintenance schedule is not followed, a Malfunction Check (108) must be made every 2 years
+    Enhanced (p54)
+    - Min TL: 13
+    - Cost: Cr200000 * Base Slots
+    - Slots: 10% of Base Slots
+    - Trait: Maintenance Period = 60 years
+    - Trait: Malfunction Check = 5 year
+    Advanced (p54)
+    - Min TL: 15
+    - Cost: Cr500000 * Base Slots
+    - Slots: 10% of Base Slots
+    - Trait: Maintenance Period = Indefinite
+    - Trait: Malfunction Check = Indefinite
+    """
+    # NOTE: Some maintenance types are zero slot options and some are slot
+    # cost options
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 13,
+        _OptionLevel.Advanced: 15,
+    }
+
+    # Data Structure: Cost Per Base Slot, Base Slot Percentage, Maintenance Period, Malfunction Check
+    _DataMap = {
+        _OptionLevel.Basic: (20000, None, 12, 1),
+        _OptionLevel.Improved: (50000, None, 24, 2),
+        _OptionLevel.Improved: (200000, 10, 60, 5),
+        _OptionLevel.Advanced: (500000, 10, None, None)
+    }
+
+    _ZeroSlotTypes = [
+        _OptionLevel.Basic,
+        _OptionLevel.Improved
+    ]    
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Self-Maintenance Enhancement',
+            enumType=_OptionLevel,
+            optionId='Level',
+            optionName='Level',
+            optionDescription='Specify the maintenance level.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_SelfMaintenanceEnhancementSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._isDefaultSuite = isDefaultSuite
+        
+    def isZeroSlot(self) -> bool:
+        transceiverType = self._enumOption.value()
+        return transceiverType in _SelfMaintenanceEnhancementSlotOptionImpl._ZeroSlotTypes
+    
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        if self._isDefaultSuite:
+            # Only zero-slot options can be selected whe part of the default
+            # suite
+            self._enumOption.setOptions(
+                _SelfMaintenanceEnhancementSlotOptionImpl._ZeroSlotTypes)    
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        level = self._enumOption.value()
+        assert(isinstance(level, _OptionLevel))
+
+        perSlotCost, percentageSlots, maintenancePeriod, malfunctionCheck = \
+            _SelfMaintenanceEnhancementSlotOptionImpl._DataMap[level]
+        
+        baseString = f'{level.value} {self.componentString()}'
+        
+        if perSlotCost:
+            perSlotCost = common.ScalarCalculation(
+                value=perSlotCost,
+                name=f'{baseString} Per Base Slot Cost')
+            totalCost = common.Calculator.multiply(
+                lhs=perSlotCost,
+                rhs=context.baseSlots(sequence=sequence),
+                name=f'{baseString} Total Cost')
+            step.setCredits(
+                credits=construction.ConstantModifier(value=totalCost))
+
+        if percentageSlots:
+            percentageSlots = common.ScalarCalculation(
+                value=percentageSlots,
+                name=f'{baseString} Base Slot Percentage')
+            slots = common.Calculator.ceil(
+                value=common.Calculator.takePercentage(
+                    value=context.baseSlots(sequence=sequence),
+                    percentage=percentageSlots),
+                name=f'{baseString} Required Slots')
+            step.setSlots(
+                slots=construction.ConstantModifier(value=slots))            
+
+        if maintenancePeriod:
+            step.addNote(
+                note='The robot requires maintenance every {period} years'.format(
+                    period=maintenancePeriod))
+            step.addNote(
+                note='If the maintenance schedule is not followed, a Malfunction Check must be made every {wording} (p108) '.format(
+                    wording='year' if malfunctionCheck == 1 else f'{malfunctionCheck} years'))
+        else:
+            step.addNote(note='The robot can operate indefinitely without maintenance')
+
+class _StingerSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 7
+    Cost: Cr10
+    Requirement: Multiple Stingers can be installed each taking up a zero-slot option
+    Note: Does 1 point of damage and has AP equal to the base armour of a robot of it's TL (see table on p19)
+    """
+    # TODO: Handle multiple stingers
+    # - Could make this an integer option
+    #   - This would need to handle the case where some of the stingers take up
+    #     a slot due to the zero slot limit being reached
+    # - Could make it so it's not incompatible with its self
+    #   - This would need to be done in the component by overriding the base
+    #     comparability check
+
+    _TL6to8APTrait = common.ScalarCalculation(
+        value=2,
+        name='TL 6-8 Stinger AP Trait')
+    _TL9to11APTrait = common.ScalarCalculation(
+        value=3,
+        name='TL 9-11 Stinger AP Trait')
+    _TL12to17APTrait = common.ScalarCalculation(
+        value=4,
+        name='TL 12-17 Stinger AP Trait')
+    _TL18PlusAPTrait = common.ScalarCalculation(
+        value=6,
+        name='TL 18+ Stinger AP Trait')
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Stinger',
+            minTL=6,
+            constantCost=10,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        currentTL = context.techLevel()
+        apTrait = None
+        if currentTL >= 18:
+            apTrait = _StingerSlotOptionImpl._TL18PlusAPTrait
+        elif currentTL >= 12:
+            apTrait = _StingerSlotOptionImpl._TL12to17APTrait
+        elif currentTL >= 9:
+            apTrait = _StingerSlotOptionImpl._TL9to11APTrait
+        elif currentTL >= 6:
+            apTrait = _StingerSlotOptionImpl._TL6to8APTrait
+
+        if apTrait:        
+            step.addNote(f'Does 1 point of damage and has AP {apTrait.value()}')
+
+class _AtmosphericSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 8
+    Cost: Cr100
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Atmospheric Sensor',
+            minTL=8,
+            constantCost=100,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+class _AuditorySensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Standard
+    - Min TL: 5
+    - Cost: Cr10 or free if Default Suite
+    Broad Spectrum
+    - Min TL: 8
+    - Cost: Cr200
+    - Trait: Heightened Senses
+    """
+
+    class _SensorType(enum.Enum):
+        Standard = 'Standard'
+        BroadSpectrum = 'Broad Spectrum'
+
+    _MinTLMap = {
+        _SensorType.Standard: 5,
+        _SensorType.BroadSpectrum: 8
+    }
+
+    _CostMap = {
+        _SensorType.Standard: 10,
+        _SensorType.BroadSpectrum: 200
+    }
+
+    _FreeDefaultSuiteTypes = [_SensorType.Standard]
+
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Auditory Sensor',
+            enumType=_AuditorySensorSlotOptionImpl._SensorType,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the sensor type.',            
+            optionDefault=_AuditorySensorSlotOptionImpl._SensorType.Standard,                      
+            minTLMap=_AuditorySensorSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+
+        self._isDefaultSuite = isDefaultSuite
+
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        speakerType = self._enumOption.value()
+        assert(isinstance(speakerType, _AuditorySensorSlotOptionImpl._SensorType))
+
+        if not self._isDefaultSuite or \
+            (speakerType not in _AuditorySensorSlotOptionImpl._FreeDefaultSuiteTypes):
+            cost = common.ScalarCalculation(
+                value=_AuditorySensorSlotOptionImpl._CostMap[speakerType],
+                name=f'{speakerType.value} {self.componentString()} Cost')
+
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
+            
+        if speakerType == _AuditorySensorSlotOptionImpl._SensorType.BroadSpectrum:
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.HeightenedSenses))
+
+class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 10
+    Cost: Cr10000
+    Trait: Heightened Senses
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Environmental Processor',
+            minTL=10,
+            constantCost=10000,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.HeightenedSenses))
+
+class _GeigerCounterSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 8
+    Cost: Cr400
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Geiger Counter',
+            minTL=8,
+            constantCost=400,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+class _LightIntensifierSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic
+    - Min TL: 7
+    - Cost: Cr500
+    Advanced
+    - Min TL: 9
+    - Cost: Cr1250
+    - Trait: IR Vision
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Advanced: 9
+    }
+
+    # Data Structure: Cost, Trait
+    _DataMap = {
+        _OptionLevel.Basic: (500, None),
+        _OptionLevel.Advanced: (1250, robots.RobotAttributeId.IrVision)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Light Intensifier Sensor',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the sensor type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_LightIntensifierSensorSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        sensorType = self._enumOption.value()
+        assert(isinstance(sensorType, _OptionLevel))
+
+        cost, trait = _LightIntensifierSensorSlotOptionImpl._DataMap[sensorType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{sensorType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))        
+
+        if trait:
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=trait))
+            
+class _OlfactorySensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic
+    - Min TL: 8
+    - Cost: Cr1000
+    Improved
+    - Min TL: 10
+    - Cost: Cr3500
+    - Trait: Heightened Senses
+    Advanced
+    - Min TL: 12
+    - Cost: Cr10000
+    - Trait: Heightened Senses
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 8,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost, Trait
+    _DataMap = {
+        _OptionLevel.Basic: (1000, None),
+        _OptionLevel.Improved: (3500, robots.RobotAttributeId.HeightenedSenses),
+        _OptionLevel.Advanced: (10000, robots.RobotAttributeId.HeightenedSenses)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Olfactory Sensor',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the sensor type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_OlfactorySensorSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        sensorType = self._enumOption.value()
+        assert(isinstance(sensorType, _OptionLevel))
+
+        cost, trait = _OlfactorySensorSlotOptionImpl._DataMap[sensorType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{sensorType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))        
+
+        if trait:
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=trait))
+            
+class _PRISSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 12
+    Cost: Cr2000
+    Trait: IR/UV Vision
+    """
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='PRIS Sensor',
+            minTL=12,
+            constantCost=2000,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.IrUvVision))
+        
+class _ThermalSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 6
+    - Cost: Cr500
+    - Trait: IR Vision
+    """
+    # TODO: According to p39 this is redundant if the robot has the TL 9 Light
+    # Intensifier Sensor or PRIS Sensor. I'm not sure if it's worth the hassle
+    # of adding that compatibility check
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Thermal Sensor',
+            minTL=6,
+            constantCost=500,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.IrVision))
+
+class _VisualSpectrumSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - 
+    - Min TL: 7
+    - Cost: Cr50 or free if Default Suite
+    """
+    def __init__(
+            self,
+            isDefaultSuite: bool,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Visual Spectrum Sensor',
+            minTL=7,
+            constantCost=None if isDefaultSuite else 50,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return True        
+
+class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 15
+    Cost: Cr10000 * Base Slots
+    Slots: 1
+    Skill: Stealth 4
+    Trait: Invisible
+    Note: DM-4 to Recon and Electronics (sensors) checks to detect the robot
+    """
+    # TODO: Handle stealth skill
+    # TODO: I think the DM-4 is the modifier for this component having the
+    # Invisible trait. It means if I add a generic finalisation step to add
+    # notes based on traits then this note will need removed as it will be a
+    # duplicate rather than an additional -4
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Active Camouflage',
+            minTL=15,
+            perBaseSlotCost=10000,
+            constantSlots=1,
+            notes=['DM-4 to Recon and Electronics (sensors) checks to detect the robot'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False        
+        
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(sequence, context, step)
+
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Invisible))
+        
+class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 9
+    Cost: Cr600 * Base Slots
+    Slots: 1
+    """
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Corrosive Environment Protection',
+            minTL=9,
+            perBaseSlotCost=600,
+            constantSlots=1,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False    
+    
+class _InsidiousEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 11
+    Cost: Cr3000 * Base Slots
+    Slots: 1
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Insidious Environment Protection',
+            minTL=11,
+            perBaseSlotCost=3000,
+            constantSlots=1,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False  
+    
+class _RadiationEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 7
+    Cost: Cr600 * Base Slots * levels
+    Slots: 1 per level 
+    Trait: Rads +(TL * 50 * levels)
+    Option: Number of levels (1 to infinity)
+    """
+    _PerBaseSlotCost = common.ScalarCalculation(
+        value=600,
+        name='Radiation Environment Protection Per Base Slot Cost')
+    _RequiredSlots = common.ScalarCalculation(
+        value=1,
+        name='Radiation Environment Protection Required Slots')
+    _BaseRadProtection = common.ScalarCalculation(
+        value=+50,
+        name='Radiation Environment Protection Base Rads Trait')
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Radiation Environment Protection',
+            minTL=7,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._levelsOption = construction.IntegerOption(
+            id='Levels',
+            name='Levels',
+            value=1,
+            maxValue=100,
+            minValue=1,
+            description='Specify the number of levels of protection.')        
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def instanceString(self) -> str:
+        levels: int = self._levelsOption.value()
+        return f'{self.componentString()} x {levels}'
+
+    def componentString(self) -> str:
+        return self._componentString
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._levelsOption]
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        levels = common.ScalarCalculation(
+            value=self._levelsOption.value(),
+            name='Specified Levels')
+        robotTL = common.ScalarCalculation(
+            value=context.techLevel(),
+            name='Robot TL')
+        
+        cost = common.Calculator.multiply(
+            lhs=common.Calculator.multiply(
+                lhs=_RadiationEnvironmentProtectionSlotOptionImpl._PerBaseSlotCost,
+                rhs=context.baseSlots(sequence=sequence)),
+            rhs=levels,
+            name=f'{self.componentString()} Total Cost')
+        step.setCredits(credits=construction.ConstantModifier(value=cost))
+
+        slots = common.Calculator.multiply(
+            lhs=_RadiationEnvironmentProtectionSlotOptionImpl._RequiredSlots,
+            rhs=levels,
+            name=f'{self.componentString()} Total Required Slots')
+        step.setSlots(slots=construction.ConstantModifier(value=slots))
+
+        rads = common.Calculator.multiply(
+            lhs=common.Calculator.multiply(
+                lhs=_RadiationEnvironmentProtectionSlotOptionImpl._BaseRadProtection,
+                rhs=robotTL),
+            rhs=levels,
+            name=f'{self.componentString()} Total Rads Trait')
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Rads,
+            modifier=construction.ConstantModifier(value=rads)))
+        
+class _SelfRepairingChassisSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    Min TL: 11
+    Cost: Cr1000 * Base Slots
+    Slots: 5% of Base Slots rounded up
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Self-Repairing Chassis',
+            minTL=11,
+            perBaseSlotCost=1000,
+            percentBaseSlots=5,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False 
+
+class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    <ALL> (p42)
+    - Option: Number of levels
+    - Note: VTOL and aeroplane locomotion can't be used while submerged
+    - Note: Locomotion other than aquatic suffers an Agility -2 modifier while submerged
+    Basic
+    - Min TL: 4
+    - Cost: Cr200 * Base Slots * levels
+    - Slots: (5% of Base Slots * levels) rounded up
+    - Note: Safe Depth (50m * levels)
+    Improved
+    - Min TL: 6
+    - Cost: Cr400 * Base Slots * levels
+    - Slots: (2% of Base Slots * levels) rounded up
+    - Note: Safe Depth (200m * levels)
+    Enhanced
+    - Min TL: 9
+    - Cost: Cr800 * Base Slots * levels
+    - Slots: (2% of Base Slots * levels) rounded up
+    - Note: Safe Depth (600m * levels)
+    Advanced
+    - Min TL: 12
+    - Cost: Cr1000 * Base Slots * levels
+    - Slots: (2% of Base Slots * levels) rounded up
+    - Note: Safe Depth (2000m * levels)
+    Superior
+    - Min TL: 15
+    - Cost: Cr2000 * Base Slots * levels
+    - Slots: (2% of Base Slots * levels) rounded up
+    - Note: Safe Depth (4000m * levels)
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 4,
+        _OptionLevel.Improved: 6,
+        _OptionLevel.Enhanced: 9,
+        _OptionLevel.Advanced: 12,
+        _OptionLevel.Superior: 15,
+    }
+
+    # Data Structure: Cost Per Base Slot, Base Slot Percentage, Safe Depth
+    _DataMap = {
+        _OptionLevel.Basic: (200, 5, 50),
+        _OptionLevel.Improved: (400, 2, 200),
+        _OptionLevel.Improved: (800, 2, 600),
+        _OptionLevel.Advanced: (1000, 2, 2000),
+        _OptionLevel.Superior: (2000, 2, 4000)
+    }
+
+    _UnusableLocomotions = [
+        robots.AeroplanePrimaryLocomotion,
+        robots.VTOLPrimaryLocomotion,
+        robots.VTOLSecondaryLocomotion
+    ]
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Submersible Environment Protection',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the protection type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_SubmersibleEnvironmentProtectionSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._levelsOption = construction.IntegerOption(
+            id='Levels',
+            name='Levels',
+            value=1,
+            maxValue=1, # Set in updateOptions
+            minValue=1,
+            description='Specify the number of levels of protection.')           
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def instanceString(self) -> str:
+        levels: int = self._levelsOption.value()
+        return f'{self.componentString()} x {levels}'    
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._levelsOption)
+        return options
+    
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        protectionType = self._enumOption.value()
+        assert(isinstance(protectionType, _OptionLevel))
+
+        _, percentageSlots, _ = \
+            _SubmersibleEnvironmentProtectionSlotOptionImpl._DataMap[protectionType]
+        
+        maxLevels = math.floor(100 / percentageSlots)
+        self._levelsOption.setMax(maxLevels)
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        levels = common.ScalarCalculation(
+            value=self._levelsOption.value(),
+            name='Specified Levels')
+
+        protectionType = self._enumOption.value()
+        assert(isinstance(protectionType, _OptionLevel))
+
+        perSlotCost, percentageSlots, maxDepth = \
+            _SubmersibleEnvironmentProtectionSlotOptionImpl._DataMap[protectionType]
+        
+        baseString = f'{protectionType.value} {self.componentString()}'
+        
+        if perSlotCost:
+            perSlotCost = common.ScalarCalculation(
+                value=perSlotCost,
+                name=f'{baseString} Per Base Slot Cost')
+            totalCost = common.Calculator.multiply(
+                lhs=common.Calculator.multiply(
+                    lhs=perSlotCost,
+                    rhs=context.baseSlots(sequence=sequence)),
+                rhs=levels,
+                name=f'{baseString} Total Cost')
+            step.setCredits(
+                credits=construction.ConstantModifier(value=totalCost))
+
+        if percentageSlots:
+            percentageSlots = common.ScalarCalculation(
+                value=percentageSlots,
+                name=f'{baseString} Base Slot Percentage')
+            totalSlots = common.Calculator.ceil(
+                value=common.Calculator.multiply(
+                    lhs=common.Calculator.takePercentage(
+                        value=context.baseSlots(sequence=sequence),
+                        percentage=percentageSlots),
+                    rhs=levels),
+                name=f'{baseString} Total Required Slots')
+            step.setSlots(
+                slots=construction.ConstantModifier(value=totalSlots))            
+
+        maxDepth *= levels.value()
+        step.addNote(note=f'Safe depth for the robot is {maxDepth}m')
+
+        locomotions = context.findComponents(
+            componentType=robots.LocomotionInterface,
+            sequence=sequence)
+        unusableLocomotions = []
+        modifiedLocomotions = []
+        for locomotion in locomotions:
+            locomotionType = type(locomotion)
+            if locomotionType == robots.NoPrimaryLocomotion:
+                continue # Ignore no motion
+            if locomotionType in _SubmersibleEnvironmentProtectionSlotOptionImpl._UnusableLocomotions:
+                locomotionName = locomotion.componentString()
+                if locomotionName not in unusableLocomotions:
+                    unusableLocomotions.append(locomotionName)
+            elif locomotionType != robots.AquaticPrimaryLocomotion and \
+                locomotionType != robots.AquaticSecondaryLocomotion:
+                locomotionName = locomotion.componentString()
+                if locomotionName not in modifiedLocomotions:
+                    modifiedLocomotions.append(locomotionName)
+        if unusableLocomotions:
+            names = common.humanFriendlyListString(unusableLocomotions)
+            step.addNote(note=f'{names} locomotion can\'t be used while submerged')
+        if modifiedLocomotions:
+            names = common.humanFriendlyListString(modifiedLocomotions)
+            step.addNote(note=f'{names} locomotion suffer Agility -2 while submerged')
+
+class _CleaningEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Min TL: 5
+    """
+
+    def __init__(
+            self,
+            componentString: str,
+            # Data Structure: Cost, Slots, Square Meters per Hour
+            dataMap: typing.Mapping[_OptionSize, typing.Tuple[int, int, int]],
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString=componentString,
+            minTL=5,
+            enumType=_OptionSize,
+            optionId='Size',
+            optionName='Size',
+            optionDescription='Specify the cleaning equipment size.',            
+            optionDefault=_OptionSize.Small,                      
+            incompatibleTypes=incompatibleTypes)
+        
+        self._dataMap = dataMap
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        size = self._enumOption.value()
+        assert(isinstance(size, _OptionSize))
+
+        cost, slots, speed = self._dataMap[size]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{size.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{size.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(f'Can clean {speed} square meters per hour')
+
+class _DomesticCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
+    """
+    Small
+    - Min TL: 5
+    - Cost: Cr100
+    - Slots: 1
+    - Note: Can clean 10 square meters per hour
+    Medium
+    - Min TL: 5
+    - Cost: Cr1000
+    - Slots: 4
+    - Note: Can clean 50 square meters per hour
+    Large
+    - Min TL: 5
+    - Cost: Cr5000
+    - Slots: 8
+    - Note: Can clean 120 square meters per hour
+    """
+    # Data Structure: Cost, Slots, Square Meters per Hour
+    _DataMap = {
+        _OptionSize.Small: (100, 1, 10),
+        _OptionSize.Medium: (1000, 4, 50),
+        _OptionSize.Large: (5000, 8, 120)
+    }
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Domestic Cleaning Equipment',
+            dataMap=_DomesticCleaningEquipmentSlotOptionImpl._DataMap,                  
+            incompatibleTypes=incompatibleTypes)
+        
+class _IndustrialCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
+    """
+    Small
+    - Min TL: 5
+    - Cost: Cr500
+    - Slots: 2
+    - Note: Can clean 10 square meters per hour
+    Medium
+    - Min TL: 5
+    - Cost: Cr5000
+    - Slots: 8
+    - Note: Can clean 50 square meters per hour
+    Large
+    - Min TL: 5
+    - Cost: Cr20000
+    - Slots: 16
+    - Note: Can clean 120 square meters per hour
+    """
+    # Data Structure: Cost, Slots, Square Meters per Hour
+    _DataMap = {
+        _OptionSize.Small: (500, 2, 10),
+        _OptionSize.Medium: (5000, 8, 50),
+        _OptionSize.Large: (20000, 16, 120)
+    }
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Industrial Cleaning Equipment',
+            dataMap=_IndustrialCleaningEquipmentSlotOptionImpl._DataMap,                  
+            incompatibleTypes=incompatibleTypes)
+        
+class _HighFidelitySoundSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    Basic
+    - Min TL: 6
+    - Cost: Cr1500
+    - Slots: 4
+    Improved
+    - Min TL: 8
+    - Cost: Cr2500
+    - Slots: 3
+    Enhanced
+    - Min TL: 11
+    - Cost: Cr4000
+    - Slots: 3
+    Advanced
+    - Min TL: 12
+    - Cost: Cr5000
+    - Slots: 2
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 6,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 11,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost, Slots
+    _DataMap = {
+        _OptionLevel.Basic: (1500, 4),
+        _OptionLevel.Improved: (2500, 3),
+        _OptionLevel.Enhanced: (4000, 3),
+        _OptionLevel.Advanced: (5000, 2)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='High Fidelity Sound System',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_HighFidelitySoundSystemSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        systemType = self._enumOption.value()
+        assert(isinstance(systemType, _OptionLevel))
+
+        cost, slots = _HighFidelitySoundSystemSlotOptionImpl._DataMap[systemType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{systemType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{systemType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+
+class _RoboticDroneControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Option: Biologically-Controlled check box
+            - When checked the controller is limited to 1 drone but the Electronics (remote ops) level isn't limited
+        - Requirement: The robot must have a transceiver
+        - Requirement: The controlling robot must have a Electronics (remote ops) skill
+    - Basic
+        - Min TL: 7
+        - Cost: Cr2000
+        - Slots: 2
+        - Note: Can control a max of 1 drone
+        - Note: Electronics (remote ops) skill is limited to 0 when using Robotic Drone Controller
+    - Improved
+        - Min TL: 9
+        - Cost: Cr10000
+        - Slots: 1
+        - Note: Can control a max of 2 drone
+        - Note: Electronics (remote ops) skill is limited to 1 when using Robotic Drone Controller
+    - Enhanced
+        - Min TL: 10
+        - Cost: Cr20000
+        - Slots: 1
+        - Note: Can control a max of 4 drone
+        - Note: Electronics (remote ops) skill is limited to 2 when using Robotic Drone Controller
+    - Advanced
+        - Min TL: 11
+        - Cost: Cr50000
+        - Slots: 1
+        - Note: Can control a max of 8 drone
+        - Note: Electronics (remote ops) skill is limited to 3 when using Robotic Drone Controller
+    """
+    # TODO: Handle skill requirements
+    # - Best way I can think to handle this is a finalisation step that adds a
+    # warning if the robot doesn't have the skill
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Improved: 9,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 11
+    }
+
+    # Data Structure: Cost, Slots, Max Drones, Max Skill
+    _DataMap = {
+        _OptionLevel.Basic: (2000, 2, 1, 0),
+        _OptionLevel.Improved: (10000, 1, 2, 1),
+        _OptionLevel.Enhanced: (20000, 1, 4, 2),
+        _OptionLevel.Advanced: (50000, 1, 8, 3)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Robotic Drone Controller',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_RoboticDroneControllerSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._biologicalOption = construction.BooleanOption(
+            id='BiologicallyControlled',
+            name='Biologically-Controlled',
+            value=False,
+            description='Specify if the \'biologically-controlled\' variant')
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def instanceString(self) -> str:
+        value: enum.Enum = self._enumOption.value()
+        info = value.value
+
+        if self._biologicalOption.value():
+            info += ', Biologically-Controlled'
+
+        return f'{self.componentString()} ({info})'
+    
+    def isCompatible(self, sequence: str, context: robots.RobotContext) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+
+        if context.findFirstComponent(
+            componentType=TransceiverDefaultSuiteOption,
+            sequence=sequence):
+            return True
+        
+        if context.findFirstComponent(
+            componentType=TransceiverSlotOption,
+            sequence=sequence):
+            return True        
+
+        return False # No transceiver
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._biologicalOption)
+        return options
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, maxDrones, maxSkill = _RoboticDroneControllerSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        if self._biologicalOption.value():
+            maxDrones = 1
+            maxSkill = None
+
+        step.addNote(f'Interface can control at a maximum of {maxDrones} drones')
+        if maxSkill != None:
+            step.addNote(f'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the interface')
+
+class _SatelliteUplinkSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 6
+    - Cost: Cr1000
+    - Slots: 2
+    - Requirement: Requires a Transceiver with at least 500km range
+    """
+    _MinTransceiverRange = 500
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Satellite Uplink',
+            minTL=6,
+            constantCost=1000,
+            constantSlots=2,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False 
+
+    def isCompatible(self, sequence: str, context: robots.RobotContext) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+    
+        transceivers = []
+        transceivers.extend(context.findComponents(
+            componentType=TransceiverDefaultSuiteOption,
+            sequence=sequence))
+        transceivers.extend(context.findComponents(
+            componentType=TransceiverSlotOption,
+            sequence=sequence))
+        hasRequiredRange = False
+        for transceiver in transceivers:
+            assert(isinstance(transceiver, TransceiverDefaultSuiteOption) or isinstance(transceiver, TransceiverSlotOption))
+            if transceiver.range() >= _SatelliteUplinkSlotOptionImpl._MinTransceiverRange:
+                hasRequiredRange = True
+                break
+
+        return hasRequiredRange
+
+class _SwarmControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Requirement: The robot must have a Wireless Data Link
+        - Requirement: The controlling robot must have a Electronics
+        (remote ops) skill
+            - Best way I can think to handle this is a finalisation step that
+            adds a warning if the robot doesn't have the skill
+    - Basic
+        - Min TL: 8
+        - Cost: Cr10000
+        - Slots: 3
+        - Note: Swarms are limited to 1 task with a maximum complexity of Average (8+)
+        - Note: Electronics (remote ops) skill is limited to 0 when using Swarm Controller
+    - Improved
+        - Min TL: 10
+        - Cost: Cr20000
+        - Slots: 2
+        - Note: Swarms are limited to 2 tasks with a maximum complexity of Difficult (10+)
+        - Note: Electronics (remote ops) skill is limited to 1 when using Swarm Controller  
+    - Enhanced
+        - Min TL: 12
+        - Cost: Cr50000
+        - Slots: 1
+        - Note: Swarms are limited to 3 tasks with a maximum complexity of Very Difficult (12+)
+        - Note: Electronics (remote ops) skill is limited to 2 when using Swarm Controller  
+    - Advanced
+        - Min TL: 14
+        - Cost: Cr100000
+        - Slots: 1
+        - Note: Swarms are limited to 4 tasks with a maximum complexity of Formidable (14+)
+        - Note: Electronics (remote ops) skill is limited to 3 when using Swarm Controller 
+    """
+    # TODO: Handle skill requirements
+    # - Best way I can think to handle this is a finalisation step that adds a
+    # warning if the robot doesn't have the skill
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 8,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Enhanced: 12,
+        _OptionLevel.Advanced: 14
+    }
+
+    # Data Structure: Cost, Slots, Max Tasks, Max Complexity, Max Skill
+    _DataMap = {
+        _OptionLevel.Basic: (10000, 3, 1, 'Average (8+)', 0),
+        _OptionLevel.Improved: (20000, 2, 2, 'Difficult (10+)', 1),
+        _OptionLevel.Enhanced: (50000, 1, 3, 'Difficult (12+)', 2),
+        _OptionLevel.Advanced: (100000, 1, 4, 'Formidable (14+)', 3)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Swarm Controller',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_SwarmControllerSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def isCompatible(self, sequence: str, context: robots.RobotContext) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+
+        if context.findFirstComponent(
+            componentType=WirelessDataLinkDefaultSuiteOption,
+            sequence=sequence):
+            return True
+        
+        if context.findFirstComponent(
+            componentType=WirelessDataLinkSlotOption,
+            sequence=sequence):
+            return True        
+
+        return False # No wireless data link
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, maxTasks, maxComplexity, maxSkill = _SwarmControllerSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(f'Swarms are limited to {maxTasks} tasks with a maximum complexity of {maxComplexity}')
+        step.addNote(f'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the controller')
+
+
+class _TightbeamCommunicatorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 8
+    - Cost: Cr2000
+    - Slots: 1
+    - Note: Range is 5,000km, when combined with a Satellite Uplink range is 500,000km
+    """
+    # TODO: Handle complex note (or don't have any range notes)
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Tightbeam Communicator',
+            minTL=8,
+            constantCost=2000,
+            constantSlots=1,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False 
+
+# NOTE: The Medical Chamber component has multiple steps so it inherits directly
+# from _SlotOptionImpl rather than  _SingleStepSlotOptionImpl
+class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
+    """
+    - Min TL: 8
+    - Cost: Cr200 per slot allocated to the chamber
+    - Slots: The number of slots allocated to the chamber
+    - Option: Spin box to select the number of slots to allocate to chamber
+    (range: 1 to Base Slots)
+    - Option: Combo box to _optionally_ select Berth option
+        - Cryoberth (basic)
+            - Min TL: 10
+            - Cost: Cr20000
+            - Slots: 8
+        - Cryoberth (improved)
+            - Min TL: 12
+            - Cost: Cr20000
+            - Slots 8
+            - Note: DM+1 to freezing and revival checks
+        - Low berth (basic)
+            - Min TL: 10
+            - Cost: Cr20000
+            - Slots: 8
+        - Low berth (improved)
+            - Min TL: 12
+            - Cost: Cr20000
+            - Slots: 8
+            - Note: DM+1 to freezing and revival checks
+    - Option: Combo box to _optionally_ select Nanobot option
+        - Applicator
+            - Min TL: 13
+            - Cost: Cr100000
+            - Slots: 4
+        - Applicator & Generator
+            - Min TL: 13
+            - Cost: Cr200000
+            - Slots: 8
+    - Option: Check box for Reanimation
+        - Min TL: 14
+        - Cost: Cr900000
+        - Slots: 8
+    - Option: Spin box to select number of species specific addons (min: 0)
+        - Min TL: 10
+        - Cost: Cr10000 per addon
+        - Slots: 4 per addon
+        - IMPORTANT: Whatever the count is set to that number of string options
+    should be created so the user can enter the name of the species it's for
+    - Requirement: A robot should have at least one manipulator of Size 3 or
+    greater
+    - Requirement: A Medical Chamber adds +1 to the Maximum Skill level supported
+    by a Medkit option
+    """
+    # NOTE: The requirement regarding the Medikit Maximum Skill  is handled by
+    # the Medikit implementation    
+    # TODO: Handle Requirement on manipulator size
+    # TODO: It might be helpful if it was possible to have a list of common
+    # species that the user could select from when populating the various
+    # species options. This would need an update to the StringOptions to take
+    # an optional list of defaults and an update to the UI code as it would
+    # need to be an editable combo box rather than a free form string
+
+
+    class _NanobotType(enum.Enum):
+        Applicator = 'Applicator'
+        ApplicatorGenerator = 'Applicator & Generator'
+
+    _CostPerSlot = common.ScalarCalculation(
+        value=200,
+        name='Medical Chamber Cost Per Slot')
+
+    _BerthMinTLMap = {
+        _OptionLevel.Basic: 10,
+        _OptionLevel.Improved: 12
+    }
+
+    _CryoberthCost = common.ScalarCalculation(
+        value=20000,
+        name='Medical Chamber Cryoberth Addon Cost')
+    _CryoberthSlots = common.ScalarCalculation(
+        value=8,
+        name='Medical Chamber Cryoberth Addon Required Slots')
+    _LowBerthCost = common.ScalarCalculation(
+        value=20000,
+        name='Medical Chamber Low-berth Addon Cost')
+    _LowBerthSlots = common.ScalarCalculation(
+        value=8,
+        name='Medical Chamber Low-berth Addon Required Slots') 
+    _ImprovedBerthNote = 'DM+1 to freezing and revival checks'   
+
+    _NanobotMinTL = 13
+    # Data Structure: Cost, Slots
+    _NanobotDataMap = {
+        _NanobotType.Applicator: (100000, 4),
+        _NanobotType.ApplicatorGenerator: (200000, 8),
+    }
+
+    _ReanimationMinTL = 14
+    _ReanimationCost = common.ScalarCalculation(
+        value=900000,
+        name='Medical Chamber Reanimation Addon Cost')
+    _ReanimationSlots = common.ScalarCalculation(
+        value=8,
+        name='Medical Chamber Reanimation Addon Required Slots')    
+
+    _SpeciesAddonMinTL = 10
+    _SpeciesAddonCost = common.ScalarCalculation(
+        value=10000,
+        name='Medical Chamber Species Addon Cost')
+    _SpeciesAddonSlots = common.ScalarCalculation(
+        value=4,
+        name='Medical Chamber Species Addon Required Slots')    
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Medical Chamber',
+            minTL=8,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._slotsOption = construction.IntegerOption(
+            id='Slots',
+            name='Slots',
+            value=1,
+            maxValue=1, # Set in updateOptions
+            minValue=1,
+            description='Specify the number of slots to allocate to the Medical Chamber.')
+        
+        self._primarySpeciesOption = construction.StringOption(
+            id='PrimarySpecies',
+            name='Species',
+            value='',
+            description='Specify the species the Medical Chamber is designed for.')
+        
+        self._cryoBerthOption = construction.EnumOption(
+            id='CryoBerth',
+            name='Cryo Berth',
+            type=_OptionLevel,
+            value=None,
+            isOptional=True,
+            description='Add a Cryo Berth to the Medical Chamber')
+        
+        self._lowBerthOption = construction.EnumOption(
+            id='LowBerth',
+            name='Low-berth',
+            type=_OptionLevel,
+            value=None,
+            isOptional=True,
+            description='Add a Low-berth to the Medical Chamber')
+        
+        self._nanobotsOption = construction.EnumOption(
+            id='Nanobots',
+            name='Nanobots',
+            type=_MedicalChamberSlotOptionImpl._NanobotType,
+            value=None,
+            isOptional=True,
+            description='Add a Nanobots to the Medical Chamber')        
+
+        self._reanimationOption = construction.BooleanOption(
+            id='Reanimation',
+            name='Reanimation',
+            value=False,
+            description='Add a Reanimation to the Medical Chamber')
+        
+        self._speciesAddonCountOption = construction.IntegerOption(
+            id='SpeciesAddons',
+            name='Species-specific addons',
+            value=0,
+            maxValue=10,
+            minValue=0,
+            description='Specify the number of species-specific addons to add to the Medical Chamber.')
+        self._speciesNameOptionList: typing.List[construction.StringOption] = []
+
+    def instanceString(self) -> str:
+        primarySpecies = self._primarySpeciesOption.value()
+        if primarySpecies:
+            return f'{super().instanceString()} ({primarySpecies})'
+        return super().instanceString()
+    
+    def options(self) -> List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._slotsOption)
+        options.append(self._primarySpeciesOption)
+
+        if self._cryoBerthOption.isEnabled():
+            options.append(self._cryoBerthOption)
+        
+        if self._lowBerthOption.isEnabled():
+            options.append(self._lowBerthOption)
+
+        if self._nanobotsOption.isEnabled():
+            options.append(self._nanobotsOption)
+
+        if self._reanimationOption.isEnabled():
+            options.append(self._reanimationOption)
+
+        if self._speciesAddonCountOption.isEnabled():
+            options.append(self._speciesAddonCountOption)
+
+        options.extend(self._speciesNameOptionList)
+
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        robotTL = context.techLevel()
+
+        baseSlots = context.baseSlots(sequence=sequence)
+        self._slotsOption.setMax(value=baseSlots.value())
+        
+        berthOptions = []
+        for berthType, minTL in _MedicalChamberSlotOptionImpl._BerthMinTLMap.items():
+            if robotTL >= minTL:
+                berthOptions.append(berthType)
+
+        self._cryoBerthOption.setEnabled(not not berthOptions)
+        self._cryoBerthOption.setOptions(options=berthOptions)
+
+        self._lowBerthOption.setEnabled(not not berthOptions)
+        self._lowBerthOption.setOptions(options=berthOptions)
+
+        self._nanobotsOption.setEnabled(
+            enabled=robotTL >= _MedicalChamberSlotOptionImpl._NanobotMinTL)        
+
+        self._reanimationOption.setEnabled(
+            enabled=robotTL >= _MedicalChamberSlotOptionImpl._ReanimationMinTL)
+        
+        if robotTL >= _MedicalChamberSlotOptionImpl._SpeciesAddonMinTL:
+            self._speciesAddonCountOption.setEnabled(True)
+            
+            addonCount = self._speciesAddonCountOption.value()
+            while len(self._speciesNameOptionList) > addonCount:
+                self._speciesNameOptionList.pop()
+            while len(self._speciesNameOptionList) < addonCount:
+                addonIndex = len(self._speciesNameOptionList) + 1 # 1 based for user
+                self._speciesNameOptionList.append(
+                    construction.StringOption(
+                        id=f'SpeciesAddon{addonIndex}',
+                        name=f'Species {addonIndex}',
+                        value='',
+                        description='Specify the species that addon {addonIndex} gives support for.'))                    
+        else:
+            self._speciesAddonCountOption.setEnabled(False)
+            self._speciesNameOptionList = []
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        self._createPrimaryStep(
+            sequence=sequence,
+            context=context,
+            typeString=typeString)
+        
+        if self._cryoBerthOption.isEnabled() and \
+                self._cryoBerthOption.value() != None:
+            self._createCryoberthStep(
+                sequence=sequence,
+                context=context,
+                typeString=typeString)
+            
+        if self._lowBerthOption.isEnabled() and \
+                self._lowBerthOption.value() != None:
+            self._createLowBerthStep(
+                sequence=sequence,
+                context=context,
+                typeString=typeString)
+            
+        if self._nanobotsOption.isEnabled() and \
+                self._nanobotsOption.value():
+            self._createNanobotStep(
+                sequence=sequence,
+                context=context,
+                typeString=typeString)
+            
+        if self._reanimationOption.isEnabled() and \
+                self._reanimationOption.value():
+            self._createReanimationStep(
+                sequence=sequence,
+                context=context,
+                typeString=typeString)
+
+        if self._speciesAddonCountOption.isEnabled() and \
+                self._speciesAddonCountOption.value():
+            self._createSpeciesSteps(
+                sequence=sequence,
+                context=context,
+                typeString=typeString)
+
+    def _createPrimaryStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=typeString)
+        
+        slots = common.ScalarCalculation(
+            value=self._slotsOption.value(),
+            name='Requested Chamber Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+       
+        cost = common.Calculator.multiply(
+            lhs=slots,
+            rhs=_MedicalChamberSlotOptionImpl._CostPerSlot,
+            name=f'{self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+                            
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+
+    def _createCryoberthStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        optionType = self._cryoBerthOption.value()
+        assert(isinstance(optionType, _OptionLevel))
+
+        step = robots.RobotStep(
+            name=f'{self.componentString()} {optionType.value} Cryoberth',
+            type=typeString)
+        step.setCredits(credits=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._CryoberthCost))        
+        step.setSlots(slots=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._CryoberthSlots))
+        
+        if optionType == _OptionLevel.Improved:
+            step.addNote(_MedicalChamberSlotOptionImpl._ImprovedBerthNote)
+                            
+        context.applyStep(
+            sequence=sequence,
+            step=step)    
+
+    def _createLowBerthStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        optionType = self._lowBerthOption.value()
+        assert(isinstance(optionType, _OptionLevel))
+
+        step = robots.RobotStep(
+            name=f'{self.componentString()} {optionType.value} Low-berth',
+            type=typeString)
+        step.setCredits(credits=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._LowBerthCost))        
+        step.setSlots(slots=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._LowBerthSlots))
+        
+        if optionType == _OptionLevel.Improved:
+            step.addNote(_MedicalChamberSlotOptionImpl._ImprovedBerthNote)
+                            
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+    def _createNanobotStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        optionType = self._nanobotsOption.value()
+        assert(isinstance(optionType, _MedicalChamberSlotOptionImpl._NanobotType))
+
+        componentString = f'{self.componentString()} Nanobot {optionType.value}'
+
+        step = robots.RobotStep(
+            name=componentString,
+            type=typeString)
+        
+        cost, slots = _MedicalChamberSlotOptionImpl._NanobotDataMap[optionType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{componentString} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{componentString} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+                            
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+    def _createReanimationStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        step = robots.RobotStep(
+            name=f'{self.componentString()} Reanimation',
+            type=typeString)
+        step.setCredits(credits=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._ReanimationCost))        
+        step.setSlots(slots=construction.ConstantModifier(
+            value=_MedicalChamberSlotOptionImpl._ReanimationSlots))
+        
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+    def _createSpeciesSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            typeString: str
+            ) -> None:
+        for index, speciesOption in enumerate(self._speciesNameOptionList):
+            componentString = f'{self.componentString()} Species Addon {index + 1}'
+            if speciesOption.value():
+                componentString += f' ({speciesOption.value()})'
+            step = robots.RobotStep(
+                name=componentString,
+                type=typeString)
+
+            step.setCredits(credits=construction.ConstantModifier(
+                value=_MedicalChamberSlotOptionImpl._SpeciesAddonCost))        
+            step.setSlots(slots=construction.ConstantModifier(
+                value=_MedicalChamberSlotOptionImpl._SpeciesAddonSlots))
+            
+            context.applyStep(
+                sequence=sequence,
+                step=step)
+
+class _MedkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <All>
+        - Requirement: The Max Skill level is increased by 1 if the robot has a
+    - Medical Chamber slot cost option
+        - Note: Replenishing Medikit costs Cr500
+    - Medikit (basic)
+        - Min TL: 8
+        - Cost: Cr1000
+        - Slots: 1
+        - Note: Medic skill is limited to 0 when using Medikit
+    - Medikit (improved)
+        - Min TL: 10
+        - Cost: Cr1500
+        - Slots: 1
+        - Note: Medic skill is limited to 1 when using Medikit            
+    - Medikit (enhanced)
+        - Min TL: 12
+        - Cost: Cr5000
+        - Slots: 1
+        - Note: Medic skill is limited to 2 when using Medikit
+    - Medikit (advanced)
+        - Min TL: 14
+        - Cost: Cr10000
+        - Slots: 1
+        - Note: Medic skill is limited to 3 when using Medikit
+    """
+    # NOTE: The way the Max Skill increase due to also having a Medical Changer
+    # is handled is worth noting. It works by checking for a component that is
+    # in the same stage as it is. This is generally a bad idea as construction
+    # ordering could lead to non-deterministic behaviour, and it's an incredibly
+    # bad idea to base comparability of that kind of check. The only reason it's
+    # ok in this situation is it's only concerned with the existence of the
+    # component and that only affecting a note. In this situation it means the
+    # note may be inaccurate while the robot is being loaded but will be correct
+    # at the point it's fully loaded.
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 8,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Enhanced: 12,
+        _OptionLevel.Advanced: 14
+    }
+
+    # Data Structure: Cost, Slots, Max Skill
+    _DataMap = {
+        _OptionLevel.Basic: (1000, 1, 0),
+        _OptionLevel.Improved: (1500, 1, 1),
+        _OptionLevel.Enhanced: (5000, 1, 2),
+        _OptionLevel.Advanced: (10000, 1, 3)
+    }
+
+    _ReplenishmentNote = 'Replenishing the Medikit costs Cr500'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Medkit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_MedkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, maxSkill = _MedkitSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        # NOTE: See note at top of class about why checking a component in the
+        # same stage is safe in this instance but may not be in others. This
+        # approach shouldn't be replicated without thought
+        medicalChamber = context.findFirstComponent(
+            componentType=MedicalChamberSlotOption,
+            sequence=sequence)
+        if medicalChamber:
+            maxSkill += 1
+        step.addNote(f'Medic skill is limited to {maxSkill} when using Medikit')
+        
+        step.addNote(_MedkitSlotOptionImpl._ReplenishmentNote)      
+
+class _AgriculturalEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Min TL: 5
+    - Small
+        - Cost: Cr100
+        - Slots: 1
+        - Note: Can process 20 square meters per hour
+    - Medium
+        - Cost: Cr1000 * levels
+        - Slots: 4 * levels
+        - Note: Can process 100 square meters per hour
+    - Large
+        - Cost: Cr10000 * levels
+        - Slots: 16 * levels
+        - Note: Can process 500 square meters per hour
+    """
+    # NOTE: The rules say multiple agricultural options can be added to cover a
+    # greater area. This is handled by the component rather than the impl, it
+    # does this by allowing multiple instances of this component type be added.
+    # This has the added benefit that the player could add different sized
+    # agricultural options.
+
+    # Data Structure: Cost, Slots, Square Meters per Hour
+    _DataMap = {
+        _OptionSize.Small: (100, 1, 20),
+        _OptionSize.Medium: (1000, 4, 100),
+        _OptionSize.Large: (10000, 16, 500)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Agricultural Equipment',
+            minTL=5,
+            enumType=_OptionSize,
+            optionId='Size',
+            optionName='Size',
+            optionDescription='Specify the equipment size.',            
+            optionDefault=_OptionSize.Small,                      
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        systemType = self._enumOption.value()
+        assert(isinstance(systemType, _OptionSize))
+
+        cost, slots, speed = _AgriculturalEquipmentSlotOptionImpl._DataMap[systemType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{systemType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{systemType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(f'Can process {speed} square meters per hour')
+        
+class _AutobarSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - Basic
+        - Min TL: 8
+        - Cost: Cr500
+        - Slots: 2
+        - Note: Steward and Profession (bartender) skills is limited to 0 when using Autobar
+        - Note: Replenishing the Autobar costs Cr250
+    - Improved
+        - Min TL: 9
+        - Cost: Cr1000
+        - Slots: 2
+        - Note: Steward and Profession (bartender) skills are limited to 1 when using Autobar
+        - Note: Replenishing the Autobar costs Cr500
+    - Enhanced
+        - Min TL: 10
+        - Cost: Cr2000
+        - Slots: 2
+        - Note: Steward and Profession (bartender) skills are limited to 2 when using Autobar
+        - Note: Replenishing the Autobar costs Cr1000
+    - Advanced
+        - Min TL: 11
+        - Cost: Cr5000
+        - Slots: 2
+        - Note: Steward and Profession (bartender) skills are limited to 3 when using Autobar
+        - Note: Replenishing the Autobar costs Cr2500
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 8,
+        _OptionLevel.Improved: 9,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 11
+    }
+
+    # Data Structure: Cost, Slots, Max Skill, Replenishment Cost
+    _DataMap = {
+        _OptionLevel.Basic: (500, 2, 0, 250),
+        _OptionLevel.Improved: (1000, 2, 1, 500),
+        _OptionLevel.Enhanced: (2000, 2, 2, 1000),
+        _OptionLevel.Advanced: (5000, 2, 3, 2500)
+    }
+    
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Autobar',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_AutobarSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, maxSkill, replenishmentCost = _AutobarSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(f'Steward and Profession (bartender) skills are limited to {maxSkill} when using Autobar')      
+        step.addNote(f'Replenishing the Autobar costs Cr{replenishmentCost}') 
+
+class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - Basic
+        - Min TL: 9
+        - Cost: Cr500
+        - Slots: 3
+        - Note: Steward and Profession (chef) skills are limited to 0 when using Autochef
+    - Improved
+        - Min TL: 10
+        - Cost: Cr2000
+        - Slots: 3
+        - Note: Steward and Profession (chef) skills are limited to 1 when using Autochef
+    - Enhanced
+        - Min TL: 11
+        - Cost: Cr5000
+        - Slots: 3
+        - Note: Steward and Profession (chef) skills are limited to 2 when using Autochef
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr10000
+        - Slots: 3
+        - Note: Steward and Profession (chef) skills are limited to 3 when using Autochef 
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 9,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Enhanced: 11,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost, Slots, Max Skill
+    _DataMap = {
+        _OptionLevel.Basic: (500, 3, 0),
+        _OptionLevel.Improved: (2000, 3, 1),
+        _OptionLevel.Enhanced: (5000, 3, 2),
+        _OptionLevel.Advanced: (10000, 3, 3)
+    }
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Autochef',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_AutochefSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, maxSkill = _AutochefSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(f'Steward and Profession (chef) skills are limited to {maxSkill} when using Autochef')
+
+class _AutopilotSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Requirement: Requires Speed Movement locomotion modification
+        - Requirement: Autopilot and skill level packages do not stack; the
+        higher of autopilot or vehicle operating skill applies.
+    - Improved
+        - Min TL: 7
+        - Cost: Cr7500
+        - Slots: 1
+        - Trait: Autopilot = 1
+    - Enhanced
+        - Min TL: 9
+        - Cost: Cr10000
+        - Slots: 1
+        - Trait: Autopilot = 2
+    - Advanced
+        - Min TL: 11
+        - Cost: Cr15000
+        - Slots: 1
+        - Trait: Autopilot = 3
+    """
+    # TODO: Handle the requirement that Autopilot and skill level packages don't
+    # stack. This could be a note that is added all the time by this component or
+    # it could be added later by the skill or finalisation if it's applicable
+
+    _MinTLMap = {
+        _OptionLevel.Improved: 7,
+        _OptionLevel.Enhanced: 9,
+        _OptionLevel.Advanced: 11
+    }
+
+    # Data Structure: Cost, Slots, Autopilot Rating
+    _DataMap = {
+        _OptionLevel.Improved: (7500, 1, 1),
+        _OptionLevel.Enhanced: (10000, 1, 2),
+        _OptionLevel.Advanced: (15000, 1, 3)
+    } 
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Autopilot',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Improved,                      
+            minTLMap=_AutopilotSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+        
+        return context.findFirstComponent(
+            componentType=robots.VehicleSpeedMovement,
+            sequence=sequence) != None
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        controllerType = self._enumOption.value()
+        assert(isinstance(controllerType, _OptionLevel))
+
+        cost, slots, autopilot = _AutopilotSlotOptionImpl._DataMap[controllerType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{controllerType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{controllerType.value} {self.componentString()} Required Slots')        
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        autopilot = common.ScalarCalculation(
+            value=autopilot,
+            name=f'{controllerType.value} {self.componentString()} Rating')
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Autopilot,
+            value=autopilot))
+        
+
+
+
+
+#  ██████████               ██████                       ████   █████        █████████              ███   █████            
+# ░░███░░░░███             ███░░███                     ░░███  ░░███        ███░░░░░███            ░░░   ░░███             
+#  ░███   ░░███  ██████   ░███ ░░░   ██████   █████ ████ ░███  ███████     ░███    ░░░  █████ ████ ████  ███████    ██████ 
+#  ░███    ░███ ███░░███ ███████    ░░░░░███ ░░███ ░███  ░███ ░░░███░      ░░█████████ ░░███ ░███ ░░███ ░░░███░    ███░░███
+#  ░███    ░███░███████ ░░░███░      ███████  ░███ ░███  ░███   ░███        ░░░░░░░░███ ░███ ░███  ░███   ░███    ░███████ 
+#  ░███    ███ ░███░░░    ░███      ███░░███  ░███ ░███  ░███   ░███ ███    ███    ░███ ░███ ░███  ░███   ░███ ███░███░░░  
+#  ██████████  ░░██████   █████    ░░████████ ░░████████ █████  ░░█████    ░░█████████  ░░████████ █████  ░░█████ ░░██████ 
+# ░░░░░░░░░░    ░░░░░░   ░░░░░      ░░░░░░░░   ░░░░░░░░ ░░░░░    ░░░░░      ░░░░░░░░░    ░░░░░░░░ ░░░░░    ░░░░░   ░░░░░░  
+
+class DefaultSuiteOption(robots.DefaultSuiteOptionInterface):
+    def __init__(
+            self,
+            impl: _SlotOptionImpl
+            ) -> None:
+        super().__init__()
+        self._impl = impl
+
+    def instanceString(self) -> str:
+        return self._impl.instanceString()
+
+    def componentString(self) -> str:
+        return self._impl.componentString()
+    
+    def typeString(self) -> str:
+        return 'Default Suite'
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not self._impl.isCompatible(
+            sequence=sequence,
+            context=context):
+            return False
+        
+        # Don't allow multiple options of the same type
+        return not context.hasComponent(
+            componentType=type(self),
+            sequence=sequence)        
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return self._impl.options()
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        return self._impl.updateOptions(
+            sequence=sequence,
+            context=context)
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:        
+        self._impl.createSteps(
+            sequence=sequence,
+            context=context,
+            typeString=self.typeString())
+        
+# NOTE: The order of these components (at least the first 5) is important as
+# they are the canonical default suite options (p29). They need to be defined
+# first so contraction logic will select them as the defaults for the stage
+class VisualSpectrumSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VisualSpectrumSensorSlotOptionImpl(isDefaultSuite=True))         
+
+class VoderSpeakerDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VoderSpeakerSlotOptionImpl(isDefaultSuite=True))
+
+class AuditorySensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_AuditorySensorSlotOptionImpl(isDefaultSuite=True))  
+
+class WirelessDataLinkDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_WirelessDataLinkSlotOptionImpl(isDefaultSuite=True))
+
+class TransceiverDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_TransceiverSlotOptionImpl(isDefaultSuite=True))
+
+    def range(self) -> int:
+        assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
+        return self._impl.range()
+
+class VisualConcealmentDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VisualConcealmentSlotOptionImpl())
+
+class AudibleConcealmentDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_AudibleConcealmentSlotOptionImpl())
+
+class OlfactoryConcealmentDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_OlfactoryConcealmentSlotOptionImpl())
+
+class HostileEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_HostileEnvironmentProtectionSlotOptionImpl())  
+
+class ReflectArmourDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ReflectArmourSlotOptionImpl())
+
+class SolarCoatingDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_SolarCoatingSlotOptionImpl()) 
+
+class VacuumEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VacuumEnvironmentProtectionSlotOptionImpl()) 
+
+class DroneInterfaceDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_DroneInterfaceSlotOptionImpl(isDefaultSuite=True)) 
+
+class EncryptionModuleDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_EncryptionModuleSlotOptionImpl())
+
+class VideoScreenDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VideoScreenSlotOptionImpl(isDefaultSuite=True))
+
+class GeckoGrippersDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_GeckoGrippersSlotOptionImpl())
+
+class InjectorNeedleDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_InjectorNeedleSlotOptionImpl())
+
+class LaserDesignatorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_LaserDesignatorSlotOptionImpl())
+
+class MagneticGrippersDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_MagneticGrippersSlotOptionImpl())
+
+class ParasiticLinkDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ParasiticLinkSlotOptionImpl())
+
+class SelfMaintenanceEnhancementDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_SelfMaintenanceEnhancementSlotOptionImpl(isDefaultSuite=True))
+
+class StingerDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_StingerSlotOptionImpl())
+
+class AtmosphericSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_AtmosphericSensorSlotOptionImpl())
+
+class EnvironmentalProcessorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_EnvironmentalProcessorSlotOptionImpl())
+        
+class GeigerCounterDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_GeigerCounterSlotOptionImpl())
+
+class LightIntensifierSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_LightIntensifierSensorSlotOptionImpl())     
+
+class OlfactorySensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_OlfactorySensorSlotOptionImpl())
+
+class PRISSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_PRISSensorSlotOptionImpl())       
+
+class ThermalSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ThermalSensorSlotOptionImpl())  
+
+
+
+
+#   █████████  ████            █████          ███████               █████     ███                             
+#  ███░░░░░███░░███           ░░███         ███░░░░░███            ░░███     ░░░                              
+# ░███    ░░░  ░███   ██████  ███████      ███     ░░███ ████████  ███████   ████   ██████  ████████    █████ 
+# ░░█████████  ░███  ███░░███░░░███░      ░███      ░███░░███░░███░░░███░   ░░███  ███░░███░░███░░███  ███░░  
+#  ░░░░░░░░███ ░███ ░███ ░███  ░███       ░███      ░███ ░███ ░███  ░███     ░███ ░███ ░███ ░███ ░███ ░░█████ 
+#  ███    ░███ ░███ ░███ ░███  ░███ ███   ░░███     ███  ░███ ░███  ░███ ███ ░███ ░███ ░███ ░███ ░███  ░░░░███
+# ░░█████████  █████░░██████   ░░█████     ░░░███████░   ░███████   ░░█████  █████░░██████  ████ █████ ██████ 
+#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░        ░░░░░░░     ░███░░░     ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ ░░░░░░  
+#                                                        ░███                                                 
+#                                                        █████                                                
+#                                                       ░░░░░    
+        
+class SlotOption(robots.SlotOptionInterface):
+    """
+    Zero-Slot
+    - Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
+    additional zero-slot options cost 1 slot    
+    - Requirement: Zero slot options should be incompatible with their default
+    suite counterpart
+    """
+    # TODO: Handle component being incompatible with default suite counterpart
+    # - IMPORTANT: If I end up adding slot cost variants of zero slot options to
+    #   handle the 1 slot cost for options over the 'free' limit, then those
+    #   components will need to be incompatible with the default suite _and_
+    #   zero slot equivalents 
+
+    _ZeroSlotCountIncrement = common.ScalarCalculation(
+        value=1,
+        name='Zero-Slot Count Increment')
+
+    def __init__(
+            self,
+            impl: _SlotOptionImpl,
+            singular: bool = True
+            ) -> None:
+        super().__init__()
+        self._impl = impl
+        self._singular = singular
+
+    def instanceString(self) -> str:
+        return self._impl.instanceString()
+
+    def componentString(self) -> str:
+        return self._impl.componentString()
+    
+    def typeString(self) -> str:
+        return 'Slot Option'
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not self._impl.isCompatible(
+            sequence=sequence,
+            context=context):
+            return False
+        
+        # If the component is singular make it incompatible with it's self
+        if self._singular and context.hasComponent(
+            componentType=type(self),
+            sequence=sequence):
+            return False
+
+        return True        
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return self._impl.options()
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        return self._impl.updateOptions(
+            sequence=sequence,
+            context=context)
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        self._impl.createSteps(
+            sequence=sequence,
+            context=context,
+            typeString=self.typeString())
+
+# TODO: This list needs split into groups like the spreadsheet (chassis,
+# medical etc). Each one should be it's own own stage. The individual
+# groups should be ordered alphabetically
+   
+class ActiveCamouflageSlotSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ActiveCamouflageSlotOptionImpl())
+
+class VisualConcealmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VisualConcealmentSlotOptionImpl(
+                incompatibleTypes=[VisualConcealmentDefaultSuiteOption]))
+
+class AudibleConcealmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AudibleConcealmentSlotOptionImpl(
+                incompatibleTypes=[AudibleConcealmentDefaultSuiteOption]))
+
+class OlfactoryConcealmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_OlfactoryConcealmentSlotOptionImpl(
+                incompatibleTypes=[OlfactoryConcealmentDefaultSuiteOption]))
+
+class CorrosiveEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_CorrosiveEnvironmentProtectionSlotOptionImpl())
+
+class HostileEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_HostileEnvironmentProtectionSlotOptionImpl(
+                incompatibleTypes=[HostileEnvironmentProtectionDefaultSuiteOption]))
+
+class InsidiousEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_InsidiousEnvironmentProtectionSlotOptionImpl())
+        
+class RadiationEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_RadiationEnvironmentProtectionSlotOptionImpl())
+
+class ReflectArmourSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ReflectArmourSlotOptionImpl(
+                incompatibleTypes=[ReflectArmourDefaultSuiteOption]))
+        
+class SelfRepairingChassisSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SelfRepairingChassisSlotOptionImpl())        
+
+class SolarCoatingSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SolarCoatingSlotOptionImpl(
+                incompatibleTypes=[SolarCoatingDefaultSuiteOption]))
+        
+class SubmersibleEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SubmersibleEnvironmentProtectionSlotOptionImpl())      
+
+class VacuumEnvironmentProtectionSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VacuumEnvironmentProtectionSlotOptionImpl(
+                incompatibleTypes=[VacuumEnvironmentProtectionDefaultSuiteOption]))
+        
+class DomesticCleaningEquipmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_DomesticCleaningEquipmentSlotOptionImpl())
+        
+class IndustrialCleaningEquipmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_IndustrialCleaningEquipmentSlotOptionImpl())        
+
+class DroneInterfaceSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_DroneInterfaceSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[DroneInterfaceDefaultSuiteOption]))
+
+class EncryptionModuleSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_EncryptionModuleSlotOptionImpl(
+                incompatibleTypes=[EncryptionModuleDefaultSuiteOption]))
+        
+class HighFidelitySoundSystemSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_HighFidelitySoundSystemSlotOptionImpl())
+        
+class RoboticDroneControllerSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_RoboticDroneControllerSlotOptionImpl())
+        
+class SatelliteUplinkSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SatelliteUplinkSlotOptionImpl())
+        
+class SwarmControllerSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SwarmControllerSlotOptionImpl())
+        
+class TightbeamCommunicatorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_TightbeamCommunicatorSlotOptionImpl())        
+
+class TransceiverSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_TransceiverSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[TransceiverDefaultSuiteOption]))
+        
+    def range(self) -> int:
+        assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
+        return self._impl.range()        
+
+class VideoScreenSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VideoScreenSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[VideoScreenDefaultSuiteOption]))
+
+class VoderSpeakerSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VoderSpeakerSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[VoderSpeakerDefaultSuiteOption]))
+
+class WirelessDataLinkSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_WirelessDataLinkSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[WirelessDataLinkDefaultSuiteOption]))
+
+class GeckoGrippersSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_GeckoGrippersSlotOptionImpl(
+                incompatibleTypes=[GeckoGrippersDefaultSuiteOption]))
+
+class InjectorNeedleSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_InjectorNeedleSlotOptionImpl(
+                incompatibleTypes=[InjectorNeedleDefaultSuiteOption]))
+
+class LaserDesignatorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_LaserDesignatorSlotOptionImpl(
+                incompatibleTypes=[LaserDesignatorDefaultSuiteOption]))
+
+class MagneticGrippersSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_MagneticGrippersSlotOptionImpl(
+                incompatibleTypes=[MagneticGrippersDefaultSuiteOption]))
+
+class ParasiticLinkSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ParasiticLinkSlotOptionImpl(
+                incompatibleTypes=[ParasiticLinkDefaultSuiteOption]))
+
+class SelfMaintenanceEnhancementSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SelfMaintenanceEnhancementSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuiteOption]))
+
+class StingerSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_StingerSlotOptionImpl(
+                incompatibleTypes=[StingerDefaultSuiteOption]))
+
+class AtmosphericSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AtmosphericSensorSlotOptionImpl(
+                incompatibleTypes=[AtmosphericSensorDefaultSuiteOption]))
+
+class AuditorySensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AuditorySensorSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[AuditorySensorDefaultSuiteOption]))
+
+class EnvironmentalProcessorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_EnvironmentalProcessorSlotOptionImpl(
+                incompatibleTypes=[EnvironmentalProcessorDefaultSuiteOption]))
+        
+class GeigerCounterSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_GeigerCounterSlotOptionImpl(
+                incompatibleTypes=[GeigerCounterDefaultSuiteOption]))
+
+class LightIntensifierSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_LightIntensifierSensorSlotOptionImpl(
+                incompatibleTypes=[LightIntensifierSensorDefaultSuiteOption]))
+
+class OlfactorySensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_OlfactorySensorSlotOptionImpl(
+                incompatibleTypes=[OlfactorySensorDefaultSuiteOption]))
+
+class PRISSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_PRISSensorSlotOptionImpl(
+                incompatibleTypes=[PRISSensorDefaultSuiteOption]))
+
+class ThermalSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ThermalSensorSlotOptionImpl(
+                incompatibleTypes=[ThermalSensorDefaultSuiteOption]))
+
+class VisualSpectrumSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VisualSpectrumSensorSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[VisualSpectrumSensorDefaultSuiteOption]))
+
+class MedicalChamberSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_MedicalChamberSlotOptionImpl())
+        
+class MedkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_MedkitSlotOptionImpl())
+
+# NOTE This component is different from most other slot options as multiple
+# instances can be added
+class AgriculturalEquipmentSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AgriculturalEquipmentSlotOptionImpl(),
+            singular=False)
+        
+class AutobarSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AutobarSlotOptionImpl())
+        
+class AutochefSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AutochefSlotOptionImpl())
+        
+class AutopilotSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AutopilotSlotOptionImpl())

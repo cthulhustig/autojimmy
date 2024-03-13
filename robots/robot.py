@@ -384,6 +384,9 @@ class Robot(object):
             minComponents=None,
             maxComponents=None)) 
 
+        # TODO: Default suite needs to allow None to be specified for some (or
+        # all) of the 5 slots. If the TL gets to low there aren't enough
+        # available options to fill all the slots.
         stages.append(construction.ConstructionStage(
             name='Default Suite',
             sequence=self._sequence,
@@ -394,10 +397,10 @@ class Robot(object):
             maxComponents=5))
         
         stages.append(construction.ConstructionStage(
-            name='Zero-Slot',
+            name='Slot Options',
             sequence=self._sequence,
             phase=robots.RobotPhase.SlotOptions,
-            baseType=robots.ZeroSlotOptionInterface,
+            baseType=robots.SlotOptionInterface,
             # Optional multi component
             minComponents=None,
             maxComponents=None)) 

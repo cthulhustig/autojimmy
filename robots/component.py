@@ -48,8 +48,5 @@ class SlotOptionsInterface(RobotComponentInterface):
 class DefaultSuiteOptionInterface(SlotOptionsInterface):
     pass
 
-class ZeroSlotOptionInterface(SlotOptionsInterface):
-    pass
-
-class SlotCostOptionInterface(SlotOptionsInterface):
+class SlotOptionInterface(SlotOptionsInterface):
     pass

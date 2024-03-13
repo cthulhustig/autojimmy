@@ -40,6 +40,10 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # This attribute shouldn't be included in the manifest
     ZeroSlotCount = 'Zero Slot Count'
 
+    # TODO: I think this should actually be a skill but this is good enough until
+    # I implement skills
+    Autopilot = 'Autopilot'
+
     # Robot Numeric Traits (p7)
     # TODO: The Large & Small traits should be mutually exclusive
     Large = 'Large'
@@ -50,6 +54,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     HeightenedSenses = 'Heightened Senses'
     IrVision = 'IR Vision'
     IrUvVision = 'IR/UV Vision'
+    Invisible = 'Invisible'
 
     # Locomotion Flag Traits (p17)
     ATV = 'ATV'

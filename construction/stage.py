@@ -125,9 +125,11 @@ class ConstructionStage(object):
             self,
             component: construction.ComponentInterface,
             ) -> int:
-        index = self._components.index(component)
-        if index >= 0:
-            self._components.pop(index)
+        try:
+            index = self._components.index(component)
+        except ValueError:
+            return -1
+        self._components.pop(index)
         return index
     
     def removeComponentAt(
@@ -140,3 +142,9 @@ class ConstructionStage(object):
 
     def clearComponents(self) -> None:
         self._components.clear()
+
+    def containsComponent(
+            self,
+            component: construction.ComponentInterface
+            ) -> bool:
+        return component in self._components

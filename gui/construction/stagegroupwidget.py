@@ -407,6 +407,15 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()
 
+# TODO: There are 2 REALLY annoying behaviours when dealing with stages
+# where you can add/remove multiple components
+# - If you're adding components and they start to go off the bottom of
+# the current view, you have to manually scroll down to see the add
+# button
+# - If you've added a lot of components and you remove the last one, the
+# view jumps back to the top of the list of widgets. This can be really
+# annoying if you're removing multiple components from the end of the
+# list
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
@@ -588,6 +597,9 @@ class _StageWidget(QtWidgets.QWidget):
             widget: _ComponentConfigWidget
             ) -> None:
         currentComponent = widget.currentComponent()
+        # Generate the list of components to allow the user to select from. This
+        # is the list of all components that would be compatible if the currently
+        # selected component was to be removed.
         compatibleComponents = self._context.findCompatibleComponents(
             stage=self._stage,
             replaceComponent=currentComponent)
@@ -599,9 +611,34 @@ class _StageWidget(QtWidgets.QWidget):
             self,
             skipWidget: typing.Optional[_ComponentConfigWidget] = None
             ) -> None:
-        for widget in self._currentComponents.keys():
+        # NOTE: It's important to make a copy of the list of keys as entries
+        # may be removed from the map as we iterate
+        for widget in list(self._currentComponents.keys()):
             if widget == skipWidget:
                 continue
+            
+            # If the component for this widget was dynamically added and is no
+            # longer part of the stage, then the widget should be removed rather
+            # than updated. Updating would cause a component the user didn't
+            # select to be chosen which most likely won't be what they want.
+            # Components being removed like this can happen if they become
+            # incompatible due to a change in another component in the same
+            # stage. It only happens with components in the same stage as
+            # changes to components a previous stage cause synchronise to be
+            # called which handles removal of components that are no longer part
+            # of the stage.
+            # An example would be a robot Satellite Uplink which requires a
+            # Transceiver with a specific range. If the Transceiver is removed
+            # _or_ has it's range reduced below the required value, it will
+            # cause the uplink component to be removed.
+            if self._dynamic:
+                component = self._currentComponents[widget]
+                if not component or not self._stage.containsComponent(component=component):
+                    self._removeComponentWidget(widget=widget)
+                    continue
+
+            # Update the widget. If the component is no longer part of the stage
+            # a new compatible component will be selected.
             self._updateComponentWidget(widget=widget)
 
     def _updateConstruction(

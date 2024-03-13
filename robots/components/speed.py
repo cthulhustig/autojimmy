@@ -410,8 +410,6 @@ class VehicleSpeedMovement(SpeedModification):
     # TODO: Need to decide if Medium is the correct Speed Band for Aeroplane
     # (see note above)
     # TODO: Need to figure out if there is a Speed Band for thrusters
-    # TODO: Handle Autopilot. I'm not sure if Autopilot in this context will be
-    # a skill or a trait
     # TODO: I think, if a robot has the Flyer Trait, it should be updated with
     # the new Speed Band. I assume that's how some of the example robots have
     # a Flyer trait other than Idle (e.g. p216, p258). I'm not sure if that that
@@ -424,6 +422,9 @@ class VehicleSpeedMovement(SpeedModification):
     _AdditionalSlotPercent = common.ScalarCalculation(
         value=10,
         name='Vehicle Speed Movement Additional Increase Slot Requirement Percentage')
+    _AutopilotRating = common.ScalarCalculation(
+        value=0,
+        name='Vehicle Speed Movement Base Autopilot Rating')
 
     _WheelsBaseSpeedBand = robots.SpeedBand.Slow
     _TracksBaseSpeedBand = robots.SpeedBand.VerySlow
@@ -540,11 +541,15 @@ class VehicleSpeedMovement(SpeedModification):
             attributeId=robots.RobotAttributeId.VehicleSpeed,
             value=speedBand))
         
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Autopilot,
+            value=VehicleSpeedMovement._AutopilotRating))        
+        
         isGrav = context.findFirstComponent(
             componentType=robots.GravPrimaryLocomotion,
             sequence=sequence) != None
         if isGrav:
-            step.addNote(VehicleSpeedMovement._GravLocomotionNote)        
+            step.addNote(VehicleSpeedMovement._GravLocomotionNote)
 
         context.applyStep(
             sequence=sequence,
