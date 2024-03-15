@@ -1508,7 +1508,7 @@ class PdfExporter(object):
                                 stage=stage,
                                 component=ammo,
                                 regenerate=False) # No need to regenerate to check for compatibility
-                        except gunsmith.CompatibilityException:
+                        except construction.CompatibilityException:
                             continue
 
                         weapon.removeComponent(

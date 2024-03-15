@@ -56,6 +56,11 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     IrUvVision = 'IR/UV Vision'
     Invisible = 'Invisible'
 
+    # Robot Numeric Traits (p7)
+    # TODO: There is a complexity here as there is also a Stealth Skill and
+    # they're not the same thing (p7)
+    Stealth = 'Stealth'
+
     # Locomotion Flag Traits (p17)
     ATV = 'ATV'
     Seafarer = 'Seafarer'

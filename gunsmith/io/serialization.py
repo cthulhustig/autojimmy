@@ -258,7 +258,7 @@ def deserialiseComponents(
                         stage=stage,
                         component=component,
                         regenerate=True)
-                except gunsmith.CompatibilityException:
+                except construction.CompatibilityException:
                     logging.warning(f'Ignoring incompatible component type \'{type(component).__name__}\' when loading weapon \'{weapon.weaponName()}\'')
                     continue
 

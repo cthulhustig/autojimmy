@@ -94,6 +94,9 @@ class Chassis(robots.ChassisInterface):
         self._attackDM = attackDM
         self._basicCost = basicCost
 
+    def size(self) -> int:
+        return self._size.value()
+
     def componentString(self) -> str:
         return self._componentString
 

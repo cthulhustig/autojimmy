@@ -182,9 +182,8 @@ class _LocomotionImpl(object):
                 slots=construction.ConstantModifier(value=requiredSlots))
 
         if self._flagTrait:
-            for trait in self._flagTrait:
-                step.addFactor(factor=construction.SetAttributeFactor(
-                    attributeId=trait))
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=self._flagTrait))
 
         if self._notes:
             for note in self._notes:
