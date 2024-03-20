@@ -1,6 +1,4 @@
 import construction
-import gunsmith
-import typing
 
 class WeaponComponentInterface(construction.ComponentInterface):
     pass
@@ -50,8 +48,7 @@ class WeaponFeatureInterface(WeaponComponentInterface):
     pass
 
 class SecondaryMountInterface(WeaponComponentInterface):
-    def weapon(self) -> typing.Optional['gunsmith.Weapon']:
-        raise RuntimeError('The weapon method must be implemented by classes derived from SecondaryMountInterface')
+    pass
 
 class AccessoryInterface(WeaponComponentInterface):
     def isDetachable(self) -> bool:

@@ -40,6 +40,7 @@ class ConstructionStage(object):
     def name(self) -> str:
         return self._name
 
+    # Common stages will have a sequence of None
     def sequence(self) -> typing.Optional[str]:
         return self._sequence
 
@@ -66,19 +67,6 @@ class ConstructionStage(object):
         else:
             return ConstructionStage.RequirementLevel.Optional
     
-    def isValid(self) -> bool:
-        componentCount = self.componentCount()
-        
-        if self._minComponents != None and \
-            componentCount < self._minComponents:
-            return False
-        
-        if self._maxComponents != None and \
-            componentCount > self._maxComponents:
-            return False
-        
-        return True
-
     def matchesComponent(
             self,
             component: typing.Type[construction.ComponentInterface]
@@ -99,8 +87,66 @@ class ConstructionStage(object):
             return True # No max capacity
         return (len(self._components) + requiredCapacity) <= self._maxComponents
 
-    def components(self) -> typing.Collection[construction.ComponentInterface]:
-        return self._components
+    def components(
+            self,
+            dependencyOrder: bool = False
+            ) -> typing.Collection[construction.ComponentInterface]:
+        if not dependencyOrder:
+            return self._components
+    
+        dependencyMap = {}
+        for component in self._components:
+            dependencies = component.orderAfter()
+            if not dependencies:
+                continue
+
+            # Find all the components this one is dependant on
+            for other in reversed(self._components):
+                if type(other) not in dependencies:
+                    continue
+
+                dependantComponents = dependencyMap.get(component)
+                if dependantComponents == None:
+                    dependantComponents = set()
+                    dependencyMap[component] = dependantComponents
+                dependantComponents.add(other)
+        if not dependencyMap:
+            # No dependencies so just return standard component list
+            return self._components
+
+        components = []
+
+        # Add components that have no dependencies
+        for component in self._components:
+            if component not in dependencyMap:
+                components.append(component)
+
+        # NOTE: Add components that have dependencies directly after the last
+        # component they are dependant on. The map is processed in reverse
+        # order so that components that are dependant on the same component
+        # will be added to the final list of components in the same relative
+        # order they had before they were moved position (unless there is also
+        # an ordering dependency between the two components).
+        # Due to the fact entries are added to the map in the order the appear
+        # in the source list of components it means, if the iteration order
+        # wasn't reversed, the logically first component would be added directly
+        # after the component it's dependant on. However, when the logically
+        # second component is added it will also be added directly after the
+        # component it's dependant on but _before_ the logically first
+        # component. The end result is the construction order between the two
+        # components would be the reverse of their logical order.
+        # This level of construction order _shouldn't_ be an issue as it would
+        # only occur if the components that changed order weren't related.
+        # However it seems desirable to avoid the potential for odd bugs by
+        # just reversing the order when it's so cheap to do.
+        for component, dependencies in reversed(dependencyMap.items()):
+            for index in range(len(components) - 1, -1, -1):
+                if components[index] in dependencies:
+                    components.insert(index + 1, component)
+                    break
+
+        assert(len(components) == len(self._components))
+        return components
 
     def setComponents(
             self,

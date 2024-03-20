@@ -1,4 +1,3 @@
-import common
 import construction
 import enum
 import gunsmith
@@ -40,70 +39,17 @@ def serialiseOptions(
     return options
 
 def deserialiseOptions(
-        weapon: gunsmith.Weapon,
-        component: gunsmith.WeaponComponentInterface,
+        componentType: str,
         dataList: typing.Iterable[typing.Mapping[str, typing.Any]]
-        ) -> None:
-    # Note that this code is more complicated than you might expect as it has to cope with the fact
-    # setting one option may change what options are available. Rather than require that the options
-    # are specified in the correct logical order in the file, the code makes multiple passes at
-    # setting the options. It maintains a list of options specified in the file that still haven't been
-    # set. Each pass it retrieves the current list of options from the component (based on the weapon
-    # and any any options that have previously been set) and sets any that are still on the list of
-    # options that need set. After an option has been set it's removed from the list. This process
-    # repeats until there are no more options needing set _OR_ we have a pass where no options were
-    # removed from the list of options waiting to be set (the later avoids an infinite loop if there
-    # is an invalid option)
-    pendingOptions: typing.Mapping[str, typing.Any] = {}
+        ) -> typing.Dict[str, typing.Any]:
+    options: typing.Mapping[str, typing.Any] = {}
     for optionData in dataList:
         optionId = optionData.get('id')
         if optionId == None:
-            raise RuntimeError(f'Option for component type {type(component).__name__} is missing the ID element')
+            raise RuntimeError(f'Option for component type {componentType} is missing the ID element')
         optionValue = optionData.get('value') # No checking of value as it can be None
-        pendingOptions[optionId] = optionValue
-
-    while pendingOptions:
-        componentOptions = {}
-        for option in component.options():
-            componentOptions[option.id()] = option
-
-        optionFound = False
-        for optionId in list(pendingOptions.keys()): # Copy keys so found entries can be removed while iterating
-            option = componentOptions.get(optionId)
-            if not option:
-                continue
-            optionValue = pendingOptions[optionId]
-
-            if isinstance(option, construction.BooleanOption):
-                option.setValue(value=optionValue)
-            elif isinstance(option, construction.IntegerOption):
-                option.setValue(value=optionValue)
-            elif isinstance(option, construction.FloatOption):
-                option.setValue(value=optionValue)
-            elif isinstance(option, construction.EnumOption):
-                enumValue = None
-                if optionValue != None:
-                    enumType = option.type()
-                    enumValue = enumType.__members__.get(optionValue)
-                    if not enumValue:
-                        raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} has unknown value "{optionValue}"')
-                elif not option.isOptional():
-                    raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} must have a value')
-
-                option.setValue(value=enumValue)
-
-            # The option has been set so remove it from the pending options and record
-            # the fact we've found at least one option this time round the loop
-            del pendingOptions[optionId]
-            optionFound = True
-
-        if not optionFound:
-            break # No pending options are found so no reason to think another iteration will help
-
-    for optionId in pendingOptions:
-        logging.warning(f'Ignoring unknown option {optionId} for component type {type(component).__name__} when loading \'{weapon.weaponName()}\'')
-
-    weapon.regenerate()
+        options[optionId] = optionValue
+    return options
 
 def serialiseComponentList(
         components: typing.Iterable[gunsmith.WeaponComponentInterface]
@@ -150,16 +96,11 @@ def serialiseComponents(
         'common': serialiseComponentList(components=commonComponents)
     }
 
-# Note that this function doesn't deserialise options as that can't be done until the component has
-# been added to the weapon. It returns a list of component instances and their (still serialised)
-# option data
 def deserialiseComponentList(
-    weapon: gunsmith.Weapon,
-    components: typing.Iterable[typing.Mapping[str, typing.Any]],
-    componentTypeMap: typing.Mapping[str, typing.Type[gunsmith.WeaponComponentInterface]]
+    components: typing.Iterable[typing.Mapping[str, typing.Any]]
     ) -> typing.List[typing.Tuple[
-        gunsmith.WeaponComponentInterface,
-        typing.Optional[typing.Iterable[typing.Mapping[str, typing.Any]]] # This is still serialised
+        str,
+        typing.Optional[typing.Mapping[str, typing.Any]]
         ]]:
     deserialised = []
     for componentData in components:
@@ -167,23 +108,23 @@ def deserialiseComponentList(
         if componentType == None:
             raise RuntimeError('Component list entry is missing the type element')
 
-        componentClass = componentTypeMap.get(componentType)
-        if not componentClass:
-            logging.warning(f'Ignoring unknown component type \'{componentType}\' when loading weapon \'{weapon.weaponName()}\'')
-            continue
+        optionList: typing.Iterable[typing.Mapping[str, typing.Any]] = \
+            componentData.get('options')
+        options = None
+        if optionList:
+            options = deserialiseOptions(
+                componentType=componentType,
+                dataList=optionList)
 
-        component = componentClass()
-
-        optionData = componentData.get('options') # Treat options as optional
-
-        deserialised.append((component, optionData))
+        deserialised.append((componentType, options))
     return deserialised
 
 def deserialiseComponents(
         weapon: gunsmith.Weapon,
         componentData: typing.Mapping[str, typing.Any]
         ) -> typing.Mapping[str, typing.Any]:
-    sequenceDataList: typing.Iterable[typing.Mapping[str, typing.Any]] = componentData.get('sequences')
+    sequenceDataList: typing.Iterable[typing.Mapping[str, typing.Any]] = \
+        componentData.get('sequences')
     if sequenceDataList == None:
         raise RuntimeError('Component data is missing the sequences element')
 
@@ -191,21 +132,10 @@ def deserialiseComponents(
     if commonDataList == None:
         raise RuntimeError('Component data is missing the common element')
 
-    componentClasses = common.getSubclasses(
-        classType=gunsmith.WeaponComponentInterface,
-        topLevelOnly=True)
-    componentTypeMap = {}
-    for componentClass in componentClasses:
-        componentTypeMap[componentClass.__name__] = componentClass
-
-    # Create each of the sequences and generate a per sequence lists of components and their options.
-    # Options aren't applied to the component until after its been added to the weapon
-    sequenceComponentMap: typing.Dict[
-        str,
-        typing.List[typing.Tuple[
-            gunsmith.WeaponComponentInterface,
-            typing.Optional[typing.Iterable[typing.Mapping[str, typing.Any]]]
-            ]]] = {}
+    # Create each of the sequences and generate a per sequence lists of
+    # components and their options. Options aren't applied to the component
+    # until after its been added to the weapon
+    sequenceComponentMap = {}
     for sequenceData in sequenceDataList:
         weaponType = sequenceData.get('type')
         if weaponType == None:
@@ -218,62 +148,20 @@ def deserialiseComponents(
 
         sequence = weapon.addSequence(
             weaponType=weaponType,
-            regenerate=False) # Hold off regenerating until we start adding components
+            regenerate=False) # Loading components will regenerate
 
         sequenceComponentMap[sequence] = deserialiseComponentList(
-            weapon=weapon,
-            components=componentDataList,
-            componentTypeMap=componentTypeMap)
+            components=componentDataList)
 
     # Create a list of common components and their options.
     commonComponents = deserialiseComponentList(
-        weapon=weapon,
-        components=commonDataList,
-        componentTypeMap=componentTypeMap)
-
-    # Iterate over all the weapon stages in construction order adding the components
-    # for that stage, applying options to the component as we go. This works on the
-    # assumption the weapon always returns stages in construction order
-    for stage in weapon.stages():
-        sequence = stage.sequence()
-        if sequence:
-            # This is a sequence specific stage so check the components for that sequence
-            componentList = sequenceComponentMap.get(sequence)
-        else:
-            # This is a common stage so check the common components
-            componentList = commonComponents
-        assert(componentList != None)
-
-        # Iterate over the relevant components to see if they match this stage. A copy of the list
-        # is used so that component that match can be removed to avoid them being re-checked in the
-        # future
-        for component, optionData in list(componentList):
-            if stage.matchesComponent(component=component):
-                # Add the component to the weapon, regenerating the weapon as each component
-                # is added so compatibility can be checked when further components are added
-                componentList.remove((component, optionData))
-
-                try:
-                    weapon.addComponent(
-                        stage=stage,
-                        component=component,
-                        regenerate=True)
-                except construction.CompatibilityException:
-                    logging.warning(f'Ignoring incompatible component type \'{type(component).__name__}\' when loading weapon \'{weapon.weaponName()}\'')
-                    continue
-
-                if optionData:
-                    deserialiseOptions(
-                        weapon=weapon,
-                        component=component,
-                        dataList=optionData)
-
-    for sequence, components in sequenceComponentMap.items():
-        for component, _ in components:
-            logging.warning(f'Ignoring unmatched component type \'{type(component).__name__}\' when loading weapon \'{weapon.weaponName()}\' sequence {sequence}')
-
-    for component, _ in commonComponents:
-        logging.warning(f'Ignoring unmatched component type \'{type(component).__name__}\' when loading weapon \'{weapon.weaponName()}\' common components')
+        components=commonDataList)
+    
+    # TODO: I need to log something for components or component options that
+    # can't be added
+    weapon.loadComponents(
+        sequenceComponents=sequenceComponentMap,
+        commonComponents=commonComponents)
 
 def serialiseRules(
         weapon: gunsmith.Weapon

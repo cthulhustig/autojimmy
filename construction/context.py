@@ -153,7 +153,7 @@ class SequenceState(object):
             step: typing.Optional[construction.ConstructionStep] = None
             ) -> typing.Collection[construction.ComponentInterface]:
         if step:
-            component = self._stepComponents.get(step, [])
+            component = self._stepComponents.get(step)
             return [component] if component else []
 
         # When returning components for multiple phases, return them in
@@ -400,6 +400,106 @@ class ConstructionContext(object):
                         matched.append(stage)
         return matched
 
+    # TODO: This new loading code isn't working, I'm getting different
+    # values when loading Jimmy's rifle (and probably other weapons)
+
+    def loadComponents(
+            self,
+            sequenceComponentData: typing.Mapping[str, typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]],
+            commonComponentData: typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]
+            ) -> None:
+        self.clearComponents(regenerate=False)
+
+        componentClasses = common.getSubclasses(
+            classType=self._componentsType,
+            topLevelOnly=True)
+        componentTypeMap = {}
+        for componentClass in componentClasses:
+            componentTypeMap[componentClass.__name__] = componentClass
+
+        stages = self.stages()
+        componentOptionData = {}
+
+        # Add sequence components to stages
+        for sequence, componentDataList in sequenceComponentData.items():
+            for componentType, optionData in componentDataList:
+                componentClass = componentTypeMap.get(componentType)
+                if not componentClass:
+                    # TODO: Log something?????
+                    continue
+                component = componentClass()
+
+                for stage in stages:
+                    stageSequence = stage.sequence()
+                    if stageSequence and stageSequence != sequence:
+                        # The stage is for a sequence but not this one
+                        continue
+
+                    if stage.matchesComponent(component=componentClass):
+                        stage.addComponent(component=component)
+                        break
+
+                componentOptionData[component] = optionData
+
+        # Add common components to stages
+        for componentType, optionData in commonComponentData:
+            componentClass = componentTypeMap.get(componentType)
+            if not componentClass:
+                # TODO: Log something?????
+                continue
+            component = componentClass()
+
+            for stage in stages:
+                stageSequence = stage.sequence()
+                if stageSequence and stageSequence != sequence:
+                    # The stage is for a sequence but not this one
+                    continue
+
+                if stage.matchesComponent(component=componentClass):
+                    stage.addComponent(component=component)
+                    break
+
+            componentOptionData[component] = optionData                
+
+        if not componentOptionData:
+            # If there are no component options then we can bail early.
+            # Regenerate the weapon so it's in a consistent state
+            # compared to if there had been options
+            self.regenerate()
+            return
+        
+        self._resetConstruction()
+
+        # Regenerate the weapon, loading component options as we go
+        # NOTE: This doesn't use the stages method to get a list of stages in
+        # construction order as it only includes common stages once and actual
+        # construction needs to generate common component steps for each each
+        # stage. It's simpler to just iterate over stages as we need than adding
+        # some complex logic. This also avoids the overhead of creating a list
+        # of the stages.
+        # NOTE: It's important that the order components are processed is kept
+        # the same as in regenerate method
+        for phase in self._phasesType:
+            for sequence, sequenceState in self._sequenceStates.items():
+                stages = sequenceState.stages(phase=phase)
+                for stage in stages:
+                    for component in stage.components(dependencyOrder=True):
+                        optionData: typing.Dict[str, typing.Any] = \
+                            componentOptionData.get(component)
+                        if not optionData:
+                            continue
+
+                        # NOTE: Options that are successfully set will be
+                        # removed from optionData
+                        self._loadComponentOptions(
+                            stage=stage,
+                            component=component,
+                            optionData=optionData)
+
+                    self._regenerateStage(
+                        sequence=sequence,
+                        stage=stage)
+
     def addComponent(
             self,
             stage: construction.ConstructionStage,
@@ -455,34 +555,31 @@ class ConstructionContext(object):
 
         return modified
 
-    def createSteps(
-            self,
-            sequence: str,
-            stage: construction.ConstructionStage
-            ) -> None:
-        components = stage.components()           
-        try:
-            self._activeStage = stage
-            for self._activeComponent in components:
-                self._activeComponent.createSteps(sequence=sequence, context=self)
-        finally:
-            self._activeStage = None
-            self._activeComponent = None
-
     def regenerate(
             self,
             stopStage: typing.Optional[construction.ConstructionStage] = None
             ) -> None:
-        # TODO: This whole block should probably be wrapped in a try catch
-        # that sets the _isIncomplete flag. It should then rethrow the error
-        # so higher layers can handle the failure
-        self._resetConstruction()
+        try:
+            self._resetConstruction()
 
-        for phase in self._phasesType:
-            if self._regeneratePhase(
-                    phase=phase,
-                    stopStage=stopStage):
-                break
+            # NOTE: This doesn't use the stages method to get a list of stages
+            # in construction order as it only includes common stages once and
+            # actual construction needs to generate common component steps for
+            # each each stage. It's simpler to just iterate over stages as we
+            # need than adding some complex logic. This also avoids the overhead
+            # of creating a list of the stages.
+            # NOTE: It's important that the order components are processed is kept
+            # the same as in loadComponents method
+            for phase in self._phasesType:
+                for sequence, sequenceState in self._sequenceStates.items():
+                    stages = sequenceState.stages(phase=phase)
+                    for stage in stages:
+                        if stage == stopStage:
+                            return True
+                        self._regenerateStage(stage=stage, sequence=sequence)
+        except:
+            self._isIncomplete = True
+            raise
 
     def phaseCost(
             self,
@@ -706,66 +803,67 @@ class ConstructionContext(object):
         for state in self._sequenceStates.values():
             state.resetConstruction()
 
-    def _regeneratePhase(
+    def _loadComponentOptions(
             self,
-            phase: construction.ConstructionPhase,
-            stopStage: typing.Optional[construction.ConstructionStage] = None
-            ) -> bool:  # True if stop stage was hit
-        for sequence, sequenceState in self._sequenceStates.items():
-            for stage in sequenceState.stages(phase=phase):
-                if stage == stopStage:
-                    return True
+            stage: construction.ConstructionStage,
+            component: construction.ComponentInterface,
+            # NOTE: Options that are successfully set will be removed from
+            # optionData
+            optionData: typing.Dict[str, typing.Any]
+            ) -> None:
+        # This code is more complicated than you might expect as it has to cope
+        # with the fact setting one option may change what other options are
+        # available. It makes multiple passes at setting the options. At each
+        # pass it retrieves the current list of options from the component and
+        # sets any that still need to be set. This process repeats until there
+        # are no more options needing set _OR_ we have a pass where none of the
+        # remaining options were set (the later avoids an infinite loop if there
+        # is an invalid option)        
+        while optionData:
+            component.updateOptions(
+                sequence=stage.sequence(),
+                context=self)
 
-                # Remove incompatible components from the stage. This may cause
-                # the context to have no component selected
-                self._removeIncompatibleComponents(stage=stage)
+            componentOptions = {}
+            for option in component.options():
+                componentOptions[option.id()] = option
 
-                if self._isIncomplete:
-                    # The context is incomplete so don't continue applying
-                    # components, however we do want to continue removing 
-                    # incompatible components from stages
+            optionFound = False
+            # NOTE: Copy keys so found entries can be removed while iterating
+            for optionId in list(optionData.keys()):
+                option = componentOptions.get(optionId)
+                if not option:
                     continue
+                optionValue = optionData[optionId]
 
-                if not stage.isValid():
-                    while stage.componentCount() < stage.minComponents():
-                        defaultComponent = stage.defaultComponent()
-                        if defaultComponent \
-                            and not defaultComponent.isCompatible(
-                                sequence=sequence,
-                                context=self):
-                            # The default component for this stage isn't compatible
-                            # with the the current context setup so it can't be used
-                            defaultComponent = None
+                if isinstance(option, construction.BooleanOption):
+                    option.setValue(value=optionValue)
+                elif isinstance(option, construction.IntegerOption):
+                    option.setValue(value=optionValue)
+                elif isinstance(option, construction.FloatOption):
+                    option.setValue(value=optionValue)
+                elif isinstance(option, construction.EnumOption):
+                    enumValue = None
+                    if optionValue != None:
+                        enumType = option.type()
+                        enumValue = enumType.__members__.get(optionValue)
+                        if not enumValue:
+                            raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} has unknown value "{optionValue}"')
+                    elif not option.isOptional():
+                        raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} must have a value')
 
-                        if not defaultComponent:
-                            # Try to find any compatible components
-                            compatible = self.findCompatibleComponents(stage=stage)
-                            if not compatible:
-                                # There were no compatible components found. If the
-                                # stage is mandatory then it means the context is
-                                # incomplete. If the stage is was only desirable
-                                # then no selection is ok if there is nothing to
-                                # select from.
-                                if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
-                                    self._isIncomplete = True
-                                break
-                            # Select the first compatible component
-                            defaultComponent = compatible[0]
+                    option.setValue(value=enumValue)
 
-                        self.addComponent(
-                            stage=stage,
-                            component=defaultComponent,
-                            regenerate=False)
-                        
-                    while stage.componentCount() > stage.maxComponents():
-                        stage.removeComponentAt(index=-1)
+                # The option has been set so remove it from the pending options
+                # and record the fact we've found at least one option this time
+                # round the loop
+                del optionData[optionId]
+                optionFound = True
 
-                # Create steps for the stage
-                self.createSteps(
-                    sequence=sequence,
-                    stage=stage)
-
-        return False # Stop stage wasn't hit
+            if not optionFound:
+                # No pending options are found so no reason to think another
+                # iteration will help
+                break 
 
     def _modifyStage(
             self,
@@ -797,10 +895,12 @@ class ConstructionContext(object):
             removedIndex = components.index(removeComponent)
             stage.removeComponent(component=removeComponent)
 
+        # TODO: Adding should probably be wrapped in a try/except to 
+        # re-add the removed component if adding the replacement fails
         if addComponent and addComponent not in components:
             if not stage.matchesComponent(component=addComponent):
                 raise construction.CompatibilityException()
-
+            
             # Check that the component to be added is compatible with the
             # context. This needs to be done after the component to be
             # removed has been removed in order to to allow for the case where
@@ -833,16 +933,32 @@ class ConstructionContext(object):
         if regenerate:
             self.regenerate()
 
+    def _regenerateStage(
+            self,
+            sequence: str,
+            stage: construction.ConstructionStage,
+            ) -> None:
+        # Remove incompatible components from the stage. This may cause the
+        # context to have no component selected
+        self._removeIncompatibleComponents(
+            sequence=sequence,
+            stage=stage)
+
+        if self._isIncomplete:
+            # The context is incomplete so don't create steps
+            return
+
+        # Add/remove components if the stage requires it
+        self._enforceStageLimits(sequence=sequence, stage=stage)
+
+        # Create steps for the stage
+        self._createSteps(sequence=sequence, stage=stage)            
+
     def _removeIncompatibleComponents(
             self,
+            sequence: str,
             stage: construction.ConstructionStage
             ) -> None:
-        sequenceState = None
-        if stage.sequence():
-            sequenceState = self._sequenceStates.get(stage.sequence())
-            if not sequenceState:
-                raise RuntimeError(f'Unknown sequence {stage.sequence()}')
-
         originalComponents = list(stage.components())
 
         try:
@@ -859,22 +975,97 @@ class ConstructionContext(object):
                 # current state. Note that the sequence will be None for common
                 # components. The fact they're common means their compatibility
                 # shouldn't be determined by the state of a specific sequence
-                if component.isCompatible(
-                        sequence=stage.sequence(),
+                if not component.isCompatible(
+                        sequence=sequence,
                         context=self):
-                    # The basic component is compatible but the options might
-                    # not be, update them to reset any that are incompatible.
-                    # Note that the sequence will be None for common components.
-                    # The fact they're common means their options shouldn't be
-                    # dependant on the state of a specific sequence
-                    component.updateOptions(
-                        sequence=stage.sequence(),
-                        context=self)
+                    # The component isn't compatible so remove it, or more
+                    # accurately, don't add it back to the stage
+                    continue
 
-                    # Add the component back onto the stage. No need to check
-                    # the stage max size as we know it has the capacity
-                    stage.addComponent(component=component)
+                # The basic component is compatible but the options might
+                # not be, update them to reset any that are incompatible.
+                # Note that the sequence will be None for common components.
+                # The fact they're common means their options shouldn't be
+                # dependant on the state of a specific sequence
+                component.updateOptions(
+                    sequence=sequence,
+                    context=self)
+
+                # Add the component back onto the stage. No need to check
+                # the stage max size as we know it has the capacity
+                stage.addComponent(component=component)
         except:
             # Something went wrong so just restore previous state
             stage.setComponents(components=originalComponents)
             raise
+
+    def _enforceStageLimits(
+            self,
+            sequence: str,
+            stage: construction.ConstructionStage,
+            ) -> None:
+        # Create default components if current stage component count is to low
+        minComponents = stage.minComponents()
+        if stage.requirement() == construction.ConstructionStage.RequirementLevel.Desirable:
+            # If the stage is desirable then it should contain the max number of
+            # components if there are any compatible
+            if self.findCompatibleComponents(stage=stage):
+                minComponents = stage.maxComponents()
+
+        if minComponents != None:
+            while stage.componentCount() < minComponents:
+                defaultComponent = stage.defaultComponent()
+                if defaultComponent and not defaultComponent.isCompatible(
+                        sequence=sequence,
+                        context=self):
+                    # The default component for this stage isn't compatible
+                    # with the the current context setup so it can't be used
+                    defaultComponent = None
+
+                if not defaultComponent:
+                    # Try to find any compatible components. This MUST be called each
+                    # time we try to add a component as adding previous components may
+                    # have changed the compatible components
+                    compatible = self.findCompatibleComponents(stage=stage)
+                    if not compatible:
+                        # There were no compatible components found. If the
+                        # stage is mandatory then it means the context is
+                        # incomplete. If the stage is was only desirable
+                        # then no selection is ok if there is nothing to
+                        # select from.
+                        if stage.requirement() == construction.ConstructionStage.RequirementLevel.Mandatory:
+                            self._isIncomplete = True
+                        return
+                    # Select the first compatible component
+                    defaultComponent = compatible[0]
+
+                self.addComponent(
+                    stage=stage,
+                    component=defaultComponent,
+                    regenerate=False)
+            
+        # Remove components if current stage component count is to high
+        maxComponents = stage.maxComponents()
+        if maxComponents != None:
+            while stage.componentCount() > maxComponents:
+                stage.removeComponentAt(index=-1)
+
+    def _createSteps(
+            self,
+            sequence: str,
+            stage: construction.ConstructionStage,
+            component: typing.Optional[construction.ComponentInterface] = None
+            ) -> None:
+        try:
+            self._activeStage = stage
+
+            if component:
+                self._activeComponent = component
+                self._activeComponent.createSteps(sequence=sequence, context=self)
+            else:
+                components = stage.components(dependencyOrder=True)
+                for self._activeComponent in components:
+                    self._activeComponent.createSteps(sequence=sequence, context=self)
+        finally:
+            self._activeStage = None
+            self._activeComponent = None

@@ -1093,21 +1093,6 @@ class _DroneInterfaceSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Requirement: A drone interface requires a separate transceiver to be
     installed (p34)
     """
-    # TODO: The way this is checking for a transceiver in compatibility is
-    # probably flawed. It's possible to add a random component then a
-    # transceiver, then go back and swap the random component to this
-    # component. It will work fine until you save then load, this component
-    # will be loaded first but the transceiver won't yet have been added so
-    # this component will fail comparability and be removed (at least it will
-    # if I follow what the gunsmith deserialization does).
-    #
-    # The only fix I can see is a dependency relationship so one is always
-    # processed before the other.
-    # - IMPORTANT: This will need a LOT of testing, best option would be to
-    # load all test weapons, save them somewhere else then diff the files. 
-    # - IMPORTANT: Deserialization code will need updated so that components
-    # are added in the right order (or something else is done) so they aren't
-    # removed due to compatibility
 
     def __init__(
             self,
@@ -2895,8 +2880,6 @@ class _RoboticDroneControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle skill requirements
     # - Best way I can think to handle this is a finalisation step that adds a
     # warning if the robot doesn't have the skill
-    # TODO: The compatibility check here is flawed, see
-    # _DroneInterfaceSlotOptionImpl
 
     _MinTLMap = {
         _OptionLevel.Basic: 7,
@@ -3009,8 +2992,15 @@ class _SatelliteUplinkSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Slots: 2
     - Requirement: Requires a Transceiver with at least 500km range
     """
-    # TODO: The compatibility check here is flawed, see
-    # _DroneInterfaceSlotOptionImpl  
+    # NOTE: The way this compatibility check works is worthy of note. It is
+    # checking for the existence of default suite or slot option transmitter
+    # with a range over a certain value. This only works because it's only
+    # possible to get a Satellite Uplink as a slot cost option and not a
+    # default slot option. The problem with doing it as a default slot option
+    # would be that it would be possible for the transmitter to be a slot cost
+    # option and, when compatibility of this component is checked when loading,
+    # the transmitter component would exist but wouldn't have had it's range
+    # option set yet so this component would be found to be incompatible.
 
     _MinTransceiverRange = 500
 
@@ -3084,8 +3074,6 @@ class _SwarmControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle skill requirements
     # - Best way I can think to handle this is a finalisation step that adds a
     # warning if the robot doesn't have the skill
-    # TODO: The compatibility check here is flawed, see
-    # _DroneInterfaceSlotOptionImpl    
 
     _MinTLMap = {
         _OptionLevel.Basic: 8,
@@ -5189,7 +5177,7 @@ class DefaultSuiteOption(robots.DefaultSuiteOptionInterface):
             sequence=sequence):
             return False
 
-        return True      
+        return True
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
@@ -5270,7 +5258,15 @@ class VacuumEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
 
 class DroneInterfaceDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(impl=_DroneInterfaceSlotOptionImpl(isDefaultSuite=True)) 
+        super().__init__(
+            impl=_DroneInterfaceSlotOptionImpl(isDefaultSuite=True))
+
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverDefaultSuiteOption)
+        return dependencies        
 
 class EncryptionModuleDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
@@ -5411,7 +5407,7 @@ class SlotOption(robots.SlotOptionInterface):
             sequence=sequence):
             return False
 
-        return True        
+        return True
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
@@ -5527,6 +5523,13 @@ class DroneInterfaceSlotOption(SlotOption):
             impl=_DroneInterfaceSlotOptionImpl(
                 isDefaultSuite=False,
                 incompatibleTypes=[DroneInterfaceDefaultSuiteOption]))
+        
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverSlotOption)
+        return dependencies
 
 class EncryptionModuleSlotOption(SlotOption):
     def __init__(self) -> None:
@@ -5544,15 +5547,36 @@ class RoboticDroneControllerSlotOption(SlotOption):
         super().__init__(
             impl=_RoboticDroneControllerSlotOptionImpl())
         
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverSlotOption)
+        return dependencies        
+        
 class SatelliteUplinkSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_SatelliteUplinkSlotOptionImpl())
         
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverSlotOption)
+        return dependencies
+        
 class SwarmControllerSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_SwarmControllerSlotOptionImpl())
+        
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverSlotOption)
+        return dependencies        
         
 class TightbeamCommunicatorSlotOption(SlotOption):
     def __init__(self) -> None:
@@ -5705,6 +5729,13 @@ class MedkitSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_MedkitSlotOptionImpl())
+        
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(MedicalChamberSlotOption)
+        return dependencies        
 
 # NOTE This component is different from most other slot options as multiple
 # instances can be added

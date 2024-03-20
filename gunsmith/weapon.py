@@ -502,6 +502,15 @@ class Weapon(object):
             stage=stage,
             replaceComponent=replaceComponent)
 
+    def loadComponents(
+            self,
+            sequenceComponents: typing.Mapping[str, typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]],
+            commonComponents: typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]
+            ) -> None:
+        self._constructionContext.loadComponents(
+            sequenceComponentData=sequenceComponents,
+            commonComponentData=commonComponents)        
+
     def addComponent(
             self,
             stage: construction.ConstructionStage,

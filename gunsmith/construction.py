@@ -10,7 +10,7 @@ class WeaponType(enum.Enum):
     EnergyCartridgeWeapon = 'Energy Cartridge'
     ProjectorWeapon = 'Projector'
 
-# The order of this enum determines construction order
+# The order of this enum determines basic construction order
 class WeaponPhase(construction.ConstructionPhase):
     Initialisation = 'Initialisation'
     Receiver = 'Receiver'
