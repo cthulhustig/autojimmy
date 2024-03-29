@@ -19,6 +19,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Robots (Numeric unless otherwise stated)
     Size = 'Size'
     BaseSlots = 'Base Slots'
+    BaseProtection = 'Base Protection' # NOTE: This is an internal attribute
     AvailableSlots = 'Available Slots'
     AttackRollDM = 'Attack Roll DM'
     Hits = 'Hits'
@@ -73,5 +74,6 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Flyer = 'Flyer' # SpeedBand
 
 InternalAttributeIds = [
+    RobotAttributeId.BaseProtection,
     RobotAttributeId.ZeroSlotCount
 ]

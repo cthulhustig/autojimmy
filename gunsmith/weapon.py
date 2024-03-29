@@ -640,17 +640,6 @@ class Weapon(object):
             return None
         return attribute.value()
 
-    def constructionNotes(
-            self,
-            sequence: str,
-            component: gunsmith.WeaponComponentInterface = None,
-            phase: gunsmith.WeaponPhase = None
-            ) -> typing.Iterable[str]:
-        return self._constructionContext.constructionNotes(
-            sequence=sequence,
-            component=component,
-            phase=phase)
-
     def steps(
             self,
             sequence: str,

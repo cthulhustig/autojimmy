@@ -211,17 +211,7 @@ class Robot(object):
         return self._constructionContext.attributeValue(
             sequence=self._sequence,
             attributeId=attributeId)
-
-    def constructionNotes(
-            self,
-            component: robots.RobotComponentInterface = None,
-            phase: robots.RobotPhase = None
-            ) -> typing.Iterable[str]:
-        return self._constructionContext.constructionNotes(
-            sequence=self._sequence,
-            component=component,
-            phase=phase)
-
+    
     def steps(
             self,
             component: typing.Optional[robots.RobotComponentInterface] = None,

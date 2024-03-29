@@ -278,9 +278,13 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             hidden=self._basicFormLayout.isEmpty() and self._reliabilityFormLayout.isEmpty() and self._traitFormLayout.isEmpty())
 
         self._notesTextEdit.clear()
+        seenNotes = set()
         for step in self._weapon.steps(sequence=self._sequence):
             for note in step.notes():
-                self._notesTextEdit.append(f'{step.type()}: {step.name()} - {note}')
+                note = f'{step.type()}: {step.name()} - {note}'
+                if note not in seenNotes:
+                    self._notesTextEdit.append(note)
+                    seenNotes.add(note)
 
         self._expanderWidget.setContentHidden(
             content=self._notesTextEdit,

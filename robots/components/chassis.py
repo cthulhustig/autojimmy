@@ -179,6 +179,9 @@ class Chassis(robots.ChassisInterface):
                     value=protection,
                     name=f'TL{range} Base Protection')
                 step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=robots.RobotAttributeId.BaseProtection,
+                    value=protection))                
+                step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.Protection,
                     value=protection))
                 break

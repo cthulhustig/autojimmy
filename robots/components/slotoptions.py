@@ -18,271 +18,83 @@ class _OptionSize(enum.Enum):
     Medium = 'Medium'
     Large = 'Large'
 
+_PredefinedSpecies = [
+    'Aslan',
+    'Droyne',
+    'Hiver',
+    'Human',
+    'K\'Kree',
+    'Vargr',
+]
 
-"""
-Slot Cost Options
-- Power Options
-    - RTG Long Duration
-        - <ALL>
-            - Complex: There is wording around modifiers for robots that rely on RTG on p55. I __think__  they're talking about robots that only have RTG
-        - Basic
-            - Min TL: 7
-            - Cost: Cr20000 * Base Slots
-            - Slots: 20% of Base Slots
-            - Trait: Endurance = 25 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-        - Improved
-            - Min TL: 9
-            - Cost: Cr50000 * Base Slots
-            - Slots: 15% of Base Slots
-            - Trait: Endurance = 50 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-        - Advanced
-            - Min TL: 11
-            - Cost: Cr100000 * Base Slots
-            - Slots: 10% of Base Slots
-            - Trait: Endurance = 100 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-    - RTG Short Duration
-        - <ALL>
-            - Complex: There is wording around modifiers for robots that rely on RTG on p55. I __think__  they're talking about robots that only have RTG
-        - Basic
-            - Min TL: 8
-            - Cost: Cr50000 * Base Slots
-            - Slots: 15% of Base Slots
-            - Trait: Endurance = 3 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-        - Improved
-            - Min TL: 10
-            - Cost: Cr100000 * Base Slots
-            - Slots: 10% of Base Slots
-            - Trait: Endurance = 4 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr200000 * Base Slots
-            - Slots: 5% of Base Slots
-            - Trait: Endurance = 5 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-    - Solar Power Unit
-        - <ALL>
-            - Complex: There is wording around modifiers for robots that rely on solar on p55. I __think__  they're talking about robots that only have solar
-            - Note: There is a load of complex stuff on p56
-        - Basic
-            - Min TL: 6
-            - Cost: Cr2000 * Base Slots
-            - Slots: 20% of Base Slots
-            - Endurance: 10 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-        - Improved
-            - Min TL: 8
-            - Cost: Cr5000 * Base Slots
-            - Slots: 15% of Base Slots
-            - Endurance: 25 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source 
-        - Enhanced
-            - Min TL: 10
-            - Cost: Cr10000 * Base Slots
-            - Slots: 10% of Base Slots
-            - Endurance: 50 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source      
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr20000 * Base Slots
-            - Slots: 5% of Base Slots
-            - Endurance: 100 years
-                - NOTE: This might need to be a comment as it's more the lifetime of the power source
-    - Quick Charger
-        - Min TL: 8
-        - Cost: Cr200
-        - Slots: 1
-        - Comments: Can fully recharge a robot not running on external power in 1 hour
-            - NOTE: I could vary this comment depending on if the robot has External Power but it would require a dependsOn relationship
-- Sensor Options
-    - Bioscanner Sensor
-        - Min TL: 15
-        - Cost: Cr350000
-        - Slots: 2
-        - Complex: Requires at least Electronics (sensors) to operator
-    - Bioscanner Sensor
-        - Min TL: 14
-        - Cost: Cr20000
-        - Slots: 3
-        - Note: Target must be within 100m to be scanned
-        - Complex: Requires at least Electronics (sensors) to operator   
-    - Neural Activity Sensor
-        - Min TL: 15
-        - Cost: Cr35000
-        - Slots: 5
-        - Note: Detects Neural Activity within 500m
-        - Complex: Requires at least Electronics (sensors) to operator   
-    - Planetology Sensor Suite
-        - Min TL: 12
-        - Cost: Cr25000
-        - Slots: 5
-        - Note: Detects Neural Activity within 500m
-        - Note: Adds DM+1 to any checks conducted in conjunction with data provided by the suite
-        - Complex: Requires at least Electronics (sensors) to operator
-        - Complex: Added +1 to the Maximum Skill level allowed by the Science (planetology) Toolkit
-            - NOTE: This will need to be handled like the Medical Chamber/Medikit dependency
-    - Recon Sensor
-        - <ALL>
-            - Complex: Recon skill levels provided by this sensor are not modified by a robot’s INT.
-        - Basic
-            - Min TL: 7
-            - Cost: Cr1000
-            - Slots: 2
-            - Skill: Recon 1
-        - Improved
-            - Min TL: 8
-            - Cost: Cr100
-            - Slots: 1
-            - Skill: Recon 1  
-        - Enhanced
-            - Min TL: 10
-            - Cost: Cr10000
-            - Slots: 1
-            - Skill: Recon 2 
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr20000
-            - Slots: 1
-            - Skill: Recon 3
-- Toolkit Options
-    - Cutting Torch
-        - <ALL>
-            - Note: Can be used as an improvised weapon doing 3D damage with AP 4
-        - Basic    
-            - Min TL: 5
-            - Cost: Cr500
-            - Slots: 2
-        - Improved
-            - Min TL: 9
-            - Cost: Cr5000
-            - Slots: 2
-        - Advanced
-            - Min TL: 13
-            - Cost: Cr5000
-            - Slots: 1
-    - Electronics Toolkit
-        - <ALL>
-            - Note: In general a the toolkit only allows a positive DM to repair attempts on equipment with a TL less than or to it
-                - IMPORTANT: For this to make sense the manifest will need to show the TL of the toolkit somehow
-        - Basic
-            - Min TL: 6
-            - Cost: Cr2000            
-            - Slots: 1
-            - Note: Electronics skills are limited to 0 when using the toolkit
-        - Improved
-            - Min TL: 8
-            - Cost: Cr4000            
-            - Slots: 1
-            - Note: Electronics skills are limited to 1 when using the toolkit
-        - Enhanced
-            - Min TL: 10
-            - Cost: Cr6000            
-            - Slots: 1
-            - Note: Electronics skills are limited to 2 when using the toolkit
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr8000            
-            - Slots: 1
-            - Note: Electronics skills are limited to 3 when using the toolkit
-    - Fire Extinguisher
-        - Min TL: 6
-        - Cost: Cr100
-        - Slots: 1
-    - Forensic Toolkit
-        - Basic
-            - Min TL: 8
-            - Cost: Cr2000
-            - Slots: 5
-            - Note: Science skills are limited to 0 when using the toolkit
-        - Improved
-            - Min TL: 10
-            - Cost: Cr4000
-            - Slots: 4
-            - Note: Science skills are limited to 1 when using the toolkit
-        - Enhanced
-            - Min TL: 12
-            - Cost: Cr8000
-            - Slots: 4
-            - Note: Science skills are limited to 2 when using the toolkit
-        - Advanced
-            - Min TL: 14
-            - Cost: Cr10000
-            - Slots: 3
-            - Note: Science skills are limited to 3 when using the toolkit
-    - Mechanical Toolkit
-        - <ALL>
-            - Note: Repair attempts suffer a DM-2 if the equipment being repaired is more than 2 TLs higher than the toolkit and robot
-        - Basic
-            - Min TL: 4
-            - Cost: Cr1000
-            - Slots: 6
-        - Improved
-            - Min TL: 8
-            - Cost: Cr2000
-            - Slots: 4
-        - Advanced
-            - Min TL: 12
-            - Cost: Cr4000
-            - Slots: 2
-    - Scientific Toolkit
-        - <ALL>
-            - Complex: You need to specify which science the toolkit is for when constructed
-                - This means I need to support adding multiple toolkits for different sciences
-                - The problem is there is no definitive list of all sciences so it kind of needs to allow the user to enter a string
-                - Really it needs to allow for toolkits fo different TLs for different sciences (i.e. a basic chemistry toolkit and improved physics toolkit)
-                - I think I'm going to need to have a single component that lets you select the number of toolkits then select the TL and enter the science
-                - This might benefit from a new type of string construction option where you can specify some predefined strings fro the user to select from or allow them to type (basically an editable combo box). This would mean I could pre-populate a list with "popular" sciences
-        - Basic
-            - Min TL: 5
-            - Cost: Cr2000
-            - Slots: 4
-            - Note: Whatever Science skill the toolkit is for is limited to 0 when using it
-        - Improved
-            - Min TL: 8
-            - Cost: Cr4000
-            - Slots: 3
-            - Note: Whatever Science skill the toolkit is for is limited to 1 when using it
-        - Enhanced
-            - Min TL: 11
-            - Cost: Cr6000
-            - Slots: 3
-            - Note: Whatever Science skill the toolkit is for is limited to 2 when using it
-        - Advanced
-            - Min TL: 14
-            - Cost: Cr8000
-            - Slots: 3
-            - Note: Whatever Science skill the toolkit is for is limited to 3 when using it
-    - Starship Engineering Toolkit
-        - Basic
-            - Min TL: 8
-            - Cost: Cr1000
-            - Slots: 6
-            - Note: Electronics, Engineering and Mechanic skills are limited to 0 when using the toolkit
-        - Improved
-            - Min TL: 10
-            - Cost: Cr2000
-            - Slots: 5
-            - Note: Electronics, Engineering and Mechanic skills are limited to 1 when using the toolkit
-        - Enhanced
-            - Min TL: 12
-            - Cost: Cr4000
-            - Slots: 5
-            - Note: Electronics, Engineering and Mechanic skills are limited to 2 when using the toolkit
-        - Advanced
-            - Min TL: 14
-            - Cost: Cr10000
-            - Slots: 4
-            - Note: Electronics, Engineering and Mechanic skills are limited to 3 when using the toolkit
-    - Stylist Toolkit
-        - Note: Replenishing the toolkit costs Cr500
-        - Complex: Stylist Toolkits are species specific so I need to support more than 1
-            - This could probably just be a spin box to select the number and dynamically created text entries
-            - Each one needs to be added as it's own row to the manifest
-"""
+# List of sciences taken from https://wiki.travellerrpg.com/Science with
+# some extras added by me
+# TODO: Not sure if these should be lower case or camel case
+_PredefinedSciences = [
+    'archaeology',
+    'architecture',
+    'artificial intelligence',
+    'astrography',
+    'astronomy',
+    'astrophysics',
+    'biochemistry', # Added by me
+    'biology',
+    'biophysics', # Added by me
+    'biotechnology',
+    'botany', # Added by me
+    'chemistry',
+    'cloning',
+    'cognitive science',
+    'computer technology',
+    'cosmology',
+    'cosmology',
+    'cybertechnology',
+    'ecology',
+    'economics',
+    'engineering',
+    'epidemiology',
+    'ethology',
+    'ethnography',
+    'ethnology',
+    'eugenics',
+    'exobiochemistry',
+    'genetic engineering',
+    'geology', # Added by me
+    'gravitics',
+    'information technology',
+    'life sciences',
+    'linguistics',
+    'materials technology',
+    'mathematics',
+    'metempsychology',
+    'microbiology', # Added by me
+    'meteorology', # Added by me
+    'nano science',
+    'nanotechnology',
+    'neurotechnology',
+    'oceanography', # Added by me
+    'physics',
+    'physiology',
+    'planetology', # Added by me (there is an example of this in the robot rules)
+    'pocket universes',
+    'psionicology',
+    'psychohistory',
+    'psychology',
+    'robotics',
+    'sociology',
+    'sophontology',
+    'taxonomy',
+    'technology',
+    'taxonomy',
+    'trophics',
+    'uplift',
+    'vulcanology',
+    'xenoarchaeology',
+    'xenobiology',
+    'xenolinguistics',
+    'xenology',
+    'zoology', # Added by me
+]
 
 
 #   █████████  ████            █████          ███████               █████     ███                         █████                           ████ 
@@ -3256,7 +3068,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         - Cost: Cr10000 per addon
         - Slots: 4 per addon
         - IMPORTANT: Whatever the count is set to that number of string options
-    should be created so the user can enter the name of the species it's for
+        should be created so the user can enter the name of the species it's for
     - Requirement: A robot should have at least one manipulator of Size 3 or
     greater
     - Requirement: A Medical Chamber adds +1 to the Maximum Skill level supported
@@ -3264,13 +3076,14 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
     """
     # NOTE: The requirement regarding the Medikit Maximum Skill  is handled by
     # the Medikit implementation    
+    # NOTE: Regarding a medical chamber the rules say "It can form the basis of
+    # an ambulance robot or custom autodoc" (p46) and "Cryoberths, low berths
+    # and autodocs are designed with the physiology of a specific species in
+    # mind" (p47). This means when used an an ambulance robot the species
+    # doesn't need to be specified. The most straight forward away I can see to
+    # handle this is to always display the primary species option but have a
+    # tooltip that explains in what cases it should be filled in.
     # TODO: Handle Requirement on manipulator size
-    # TODO: It might be helpful if it was possible to have a list of common
-    # species that the user could select from when populating the various
-    # species options. This would need an update to the StringOptions to take
-    # an optional list of defaults and an update to the UI code as it would
-    # need to be an editable combo box rather than a free form string
-
 
     class _NanobotType(enum.Enum):
         Applicator = 'Applicator'
@@ -3320,7 +3133,23 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         name='Medical Chamber Species Addon Cost')
     _SpeciesAddonSlots = common.ScalarCalculation(
         value=4,
-        name='Medical Chamber Species Addon Required Slots')    
+        name='Medical Chamber Species Addon Required Slots')
+    
+    _PrimarySpeciesOptionDesc = \
+    """
+    <p>Specify the primary species the Medical Chamber is designed for</p>
+    <p>The rules are aren't completely clear if a Medical Chamber needs the
+    primary species it's designed for specified in all cases. They say<br>
+    <br>
+    "It can form the basis of an ambulance robot or custom autodoc" (p46)<br>
+    and<br>
+    "Cryoberths, low berths and autodocs are designed with the physiology of
+    a specific species in mind" (p47)<br>
+    <br>
+    This would suggest that in some cases such as ambulance robot you don't
+    need to specify the primary species the Medical Chamber is designed for.
+    </p>
+    """
 
     def __init__(
             self,
@@ -3343,7 +3172,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             id='PrimarySpecies',
             name='Species',
             value='',
-            description='Specify the species the Medical Chamber is designed for.')
+            options=_PredefinedSpecies,
+            description=_MedicalChamberSlotOptionImpl._PrimarySpeciesOptionDesc)
         
         self._cryoBerthOption = construction.EnumOption(
             id='CryoBerth',
@@ -3385,9 +3215,10 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         self._speciesNameOptionList: typing.List[construction.StringOption] = []
 
     def instanceString(self) -> str:
-        primarySpecies = self._primarySpeciesOption.value()
-        if primarySpecies:
-            return f'{super().instanceString()} ({primarySpecies})'
+        if self._primarySpeciesOption.isEnabled():
+            primarySpecies = self._primarySpeciesOption.value()
+            if primarySpecies:
+                return f'{super().instanceString()} ({primarySpecies})'
         return super().instanceString()
     
     def options(self) -> typing.List[construction.ComponentOption]:
@@ -3456,6 +3287,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
                         id=f'SpeciesAddon{addonIndex}',
                         name=f'Species {addonIndex}',
                         value='',
+                        options=_PredefinedSpecies,
                         description='Specify the species that addon {addonIndex} gives support for.'))                    
         else:
             self._speciesAddonCountOption.setEnabled(False)
@@ -5098,6 +4930,9 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Trait: I assume this should set the robots Endurance to 0
     """
     # TODO: I'm not sure about setting the robots endurance
+    # TODO: This component feels like it's more of an endurance
+    # modification (i.e. chassis option) rather than a slot
+    # option
 
     _Endurance = common.ScalarCalculation(
         value=0,
@@ -5130,7 +4965,1328 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
         
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Endurance,
-            value=_NoInternalPowerSlotOptionImpl._Endurance))      
+            value=_NoInternalPowerSlotOptionImpl._Endurance))
+        
+class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: When using the RTG as the only power source the robots movement
+        rate and STR are halved (rounded down), it suffers an Agility -2 modifier
+        and it cannot use the Vehicle Speed Movement modification or Athletics
+        (endurance) skill.
+        - Note: The RTG can recharge the robots power pack in 3 * <Robot
+        Endurance> hours if the robot remains stationary or performs minimal
+        activity
+        - Note: After the <Half Life> years the RTG continues to provide
+        power but it takes twice as long to recharge power packs and, when 
+        using the RTG as the only power source, the robots movement rate and STR
+        are halved (rounded down) again.
+        - Note: The RTG stops providing power after <Half Life> * 2 years
+        - Requirement: If a robot installs two RTG or solar power sources, in
+        any combination, it is not subject to these performance degradations,
+        provided both power sources are operating at full capability; in such
+        cases the robot could support vehicle speed movement modifications
+    - Long Duration
+        - Basic
+            - Min TL: 7
+            - Cost: Cr20000 * Slots
+            - Slots: 20% of Base Slots
+            - Trait: Half Life = 25 years
+        - Improved
+            - Min TL: 9
+            - Cost: Cr50000 * Slots
+            - Slots: 15% of Base Slots
+            - Trait: Half Life = 50 years
+        - Advanced
+            - Min TL: 11
+            - Cost: Cr100000 * Slots
+            - Slots: 10% of Base Slots
+            - Trait: Half Life = 100 years
+    - Short Duration
+        - Basic
+            - Min TL: 8
+            - Cost: Cr50000 * Slots
+            - Slots: 15% of Base Slots
+            - Trait: Half Life = 3 years
+        - Improved
+            - Min TL: 10
+            - Cost: Cr100000 * Slots
+            - Slots: 10% of Base Slots
+            - Trait: Half Life = 4 years
+        - Advanced
+            - Min TL: 12
+            - Cost: Cr200000 * Slots
+            - Slots: 5% of Base Slots
+            - Trait: Half Life = 5 years
+    """
+    # TODO: Something seems off with the logic of how power packs are recharged.
+    # The rules have it as 'three times a power pack’s endurance to fully
+    # recharge it'. As a lot of robots have an Endurance the 100s of hours, this
+    # can mean fully recharging their power packs can take a crazy length of time
+    # (1000s of hours). It's these values I'm currently displaying to the user
+    # but I they're so big it's pretty meaningless.
+    # I suspect it's not really intended for how long it will take to charge the
+    # robots battery from flat but how long to top it back up to full after doing
+    # X hours of work. This is probably a much more meaningful piece of info for
+    # the player. It would also mean there wouldn't be any values to calculate.    
+    # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
+    # I suspect this will need to be handled in finalisation, if that's the case
+    # then a few of the notes for this component will need handled there
+
+    class _Duration(enum.Enum):
+        LongBasic = 'Basic Long Duration'
+        LongImproved = 'Improved Long Duration'
+        LongAdvanced = 'Advanced)Long Duration'
+        ShortBasic = 'Basic Short Duration'
+        ShortImproved = 'Improved Short Duration'
+        ShortAdvanced = 'Advanced Short Duration'           
+
+    _MinTLMap = {
+        _Duration.LongBasic: 7,
+        _Duration.LongImproved: 9,
+        _Duration.LongAdvanced: 11,
+        _Duration.ShortBasic: 8,
+        _Duration.ShortImproved: 10,
+        _Duration.ShortAdvanced: 12
+    }
+
+    # Data Structure: Cost Per Slot, Base Slot Percentage, Half Life (years)
+    _DataMap = {
+        _Duration.LongBasic: (20000, 20, 25),
+        _Duration.LongImproved: (50000, 15, 50),
+        _Duration.LongAdvanced: (100000, 10, 100),
+        _Duration.ShortBasic: (50000, 15, 3),
+        _Duration.ShortImproved: (100000, 10, 4),
+        _Duration.ShortAdvanced: (200000, 5, 5)
+    }
+
+    _PowerPackRechargeEnduranceMultiplier = common.ScalarCalculation(
+        value=3,
+        name='RTG Power Pack Recharge Endurance Multiplier')
+    _FailureEnduranceMultiplier = common.ScalarCalculation(
+        value=2,
+        name='RTG Failure Multiplier')
+
+    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill.'
+    _PowerPackRechargeNote = 'The robots power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity'
+    _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robots movement rate and STR are halved again (rounded down).'
+    _FailureNote = 'After {failure} years the RTG is no longer able to provide power to the robot'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='RTG',
+            enumType=_RTGSlotOptionImpl._Duration,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_RTGSlotOptionImpl._Duration.LongBasic,                      
+            minTLMap=_RTGSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        duration = self._enumOption.value()
+        assert(isinstance(duration, _RTGSlotOptionImpl._Duration))
+
+        costPerSlot, slotsPercentage, halfLife = \
+            _RTGSlotOptionImpl._DataMap[duration]
+        componentString = f'{duration.value} {self.componentString()}'        
+
+        slotsPercentage = common.ScalarCalculation(
+            value=slotsPercentage,
+            name=f'{componentString} Base Slot Percentage Required')
+        slots = common.Calculator.takePercentage(
+            value=context.baseSlots(sequence=sequence),
+            percentage=slotsPercentage,
+            name=f'{componentString} Slots Required')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))        
+        
+        costPerSlot = common.ScalarCalculation(
+            value=costPerSlot,
+            name=f'{componentString} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=slots,
+            rhs=costPerSlot,
+            name=f'{componentString} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        step.addNote(_RTGSlotOptionImpl._OnlyPowerSourceNote)        
+        
+        hasInternalPower = not context.hasComponent(
+            componentType=NoInternalPowerSlotOption,
+            sequence=sequence)
+        if hasInternalPower:
+            robotEndurance = context.attributeValue(
+                attributeId=robots.RobotAttributeId.Endurance,
+                sequence=sequence)
+            assert(isinstance(robotEndurance, common.ScalarCalculation))
+
+            rechargeHours = common.Calculator.multiply(
+                lhs=robotEndurance,
+                rhs=_RTGSlotOptionImpl._PowerPackRechargeEnduranceMultiplier,
+                name=f'Power Pack Recharge Time')
+
+            step.addNote(_RTGSlotOptionImpl._PowerPackRechargeNote.format(
+                recharge=rechargeHours.value()))
+            
+        halfLife = common.ScalarCalculation(
+            value=halfLife,
+            name=f'{componentString} Half Life')
+        usableLife = common.Calculator.multiply(
+            lhs=halfLife,
+            rhs=_RTGSlotOptionImpl._FailureEnduranceMultiplier,
+            name=f'{componentString} Usable Lifetime')
+        step.addNote(_RTGSlotOptionImpl._HalfLifeNote.format(endurance=halfLife.value()))
+        step.addNote(_RTGSlotOptionImpl._FailureNote.format(failure=usableLife.value()))
+
+class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: When using the Solar Power as the only power source the robots
+        movement rate and STR are halved (rounded down), it suffers an Agility -2
+        modifier and it cannot use the Vehicle Speed Movement modification or the
+        Athletics (endurance) skill.
+        - Note: The robot can maintain a normal activity level for half the
+        length of time it spends in sunlight. If the robot halves its movement
+        rate and STR again and applies a further Agility -2 modifier, it can
+        operation for the length of time it spent in sunlight. If the robot is
+        stationary or performs minimal activity it can operate for twice as long
+        as it spends in sunlight.
+        - Note: If maintaining a normal activity level, the robot can recharge
+        its power packs in <Robot Endurance> * 8 hours. If the robot applies the
+        further reductions to movement rate and STR and Agility modifier, it can
+        recharge its power packs in <Robot Endurance> * 4 hours. If the robot is
+        stationary or performing minimal activity, it can recharge its power
+        pack in <Robot Endurance> * 2 hours
+        - Note: The solar panels stops providing power after <Lifespan> years        
+        - Note: When solar panels are deployed the robots size is +1, it suffers
+        a DM-2 to Stealth checks or provides a DM+2 to the oppositions
+        Electronics (sensors) or Recon checks.
+        - Note: Solar panels have an armour rating of the base armour rating for
+        the robot and 10% the Hits of the robot.
+        - Note: When attacks are made against a robot with deployed solar panels,
+        half the successful attacks hit the panels unless they were specifically
+        targetted at other components.
+        - Requirement: If a robot installs two RTG or solar power sources, in
+        any combination, it is not subject to these performance degradations,
+        provided both power sources are operating at full capability; in such
+        cases the robot could support vehicle speed movement modifications        
+    - Basic
+        - Min TL: 6
+        - Cost: Cr2000 * Base Slots
+        - Slots: 20% of Base Slots
+        - Trait: Lifespan = 10 years
+    - Improved
+        - Min TL: 8
+        - Cost: Cr5000 * Base Slots
+        - Slots: 15% of Base Slots
+        - Trait: Lifespan = 25 years
+    - Enhanced
+        - Min TL: 10
+        - Cost: Cr10000 * Base Slots
+        - Slots: 10% of Base Slots
+        - Trait: Lifespan = 50 years 
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr20000 * Base Slots
+        - Slots: 5% of Base Slots
+        - Trait: Lifespan = 100 years
+    """
+    # TODO: Something seems off with the logic of how power packs are recharged.
+    # The rules have it as a multiple of 'the hours as the power pack supplies',
+    # with the lost multiple being 2 for minimal activity. The max number of
+    # hours a robots power pack(s) can supply is its Endurance (i.e. how long
+    # it can operate for continuously). As a lot of robots have an Endurance the
+    # 100s of hours, this can mean fully recharging their power packs can take a
+    # crazy length of time (1000s of hours). It's these values I'm currently
+    # displaying to the user but I they're so big it's pretty meaningless.
+    # I suspect it's not really intended for how long it will take to charge the
+    # robots battery from flat but how long to top it back up to full after doing
+    # X hours of work. This is probably a much more meaningful piece of info for
+    # the player. It would also mean there wouldn't be any values to calculate.
+    # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
+    # I suspect this will need to be handled in finalisation, if that's the case
+    # then a few of the notes for this component will need handled there 
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 6,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost Per Slot, Base Slot Percentage, Lifespan (years)
+    _DataMap = {
+        _OptionLevel.Basic: (2000, 20, 10),
+        _OptionLevel.Improved: (5000, 15, 25),
+        _OptionLevel.Enhanced: (10000, 10, 50),
+        _OptionLevel.Advanced: (20000, 5, 100)
+    }
+
+    _NormalPowerPackRechargeEnduranceMultiplier = common.ScalarCalculation(
+        value=8,
+        name='Solar Power Normal Activity Power Pack Recharge Endurance Multiplier')
+    _QuarterPowerPackRechargeEnduranceMultiplier = common.ScalarCalculation(
+        value=4,
+        name='Solar Power Quarter Activity Power Pack Recharge Endurance Multiplier')
+    _MinimalPowerPackRechargeEnduranceMultiplier = common.ScalarCalculation(
+        value=2,
+        name='Solar Power Minimal Activity Power Pack Recharge Endurance Multiplier')
+    
+    _DeployedSizeModifier = common.ScalarCalculation(
+        value=1,
+        name='Solar Power Deployed Size Modifier')
+    
+    _PanelsHitPercentage = common.ScalarCalculation(
+        value=10,
+        name='Solar Power Panel Hit Percentage')
+
+    _OnlyPowerSourceNote = 'When relying on the solar panels as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill.'
+    _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight.'
+    _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours'
+    _LifespanNote = 'The solar panels stops providing power after {lifespan} years'
+    _DeployedNote = 'When the solar panels are deployed the robots Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks.'
+    _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}.'
+    _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components.'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Solar Power Unit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_SolarPowerUnitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        panelType = self._enumOption.value()
+        assert(isinstance(panelType, _OptionLevel))
+
+        costPerSlot, slotsPercentage, lifespan = \
+            _SolarPowerUnitSlotOptionImpl._DataMap[panelType]
+        componentString = f'{panelType.value} {self.componentString()}'        
+
+        slotsPercentage = common.ScalarCalculation(
+            value=slotsPercentage,
+            name=f'{componentString} Base Slot Percentage Required')
+        slots = common.Calculator.takePercentage(
+            value=context.baseSlots(sequence=sequence),
+            percentage=slotsPercentage,
+            name=f'{componentString} Slots Required')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))        
+        
+        costPerSlot = common.ScalarCalculation(
+            value=costPerSlot,
+            name=f'{componentString} Cost Per Slot')
+        cost = common.Calculator.multiply(
+            lhs=slots,
+            rhs=costPerSlot,
+            name=f'{componentString} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        step.addNote(_SolarPowerUnitSlotOptionImpl._OnlyPowerSourceNote)
+        step.addNote(_SolarPowerUnitSlotOptionImpl._SunlightNote)
+        
+        hasInternalPower = not context.hasComponent(
+            componentType=NoInternalPowerSlotOption,
+            sequence=sequence)
+        if hasInternalPower:
+            robotEndurance = context.attributeValue(
+                attributeId=robots.RobotAttributeId.Endurance,
+                sequence=sequence)
+            assert(isinstance(robotEndurance, common.ScalarCalculation))
+
+            normalRechargeHours = common.Calculator.multiply(
+                lhs=robotEndurance,
+                rhs=_SolarPowerUnitSlotOptionImpl._NormalPowerPackRechargeEnduranceMultiplier,
+                name='Normal Activity Power Pack Recharge Time')
+            
+            quarterRechargeHours = common.Calculator.multiply(
+                lhs=robotEndurance,
+                rhs=_SolarPowerUnitSlotOptionImpl._QuarterPowerPackRechargeEnduranceMultiplier,
+                name='Quarter Activity Power Pack Recharge Time')
+            
+            minimalRechargeHours = common.Calculator.multiply(
+                lhs=robotEndurance,
+                rhs=_SolarPowerUnitSlotOptionImpl._MinimalPowerPackRechargeEnduranceMultiplier,
+                name='Quarter Minimal Power Pack Recharge Time')
+
+            step.addNote(_SolarPowerUnitSlotOptionImpl._RechargeNote.format(
+                normal=normalRechargeHours.value(),
+                quarter=quarterRechargeHours.value(),
+                minimal=minimalRechargeHours.value()))
+            
+            step.addNote(_SolarPowerUnitSlotOptionImpl._LifespanNote.format(
+                lifespan=lifespan))
+            
+        robotSize = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Size,
+            sequence=sequence)
+        assert(isinstance(robotSize, common.ScalarCalculation))
+        deployedSize = common.Calculator.add(
+            lhs=robotSize,
+            rhs=_SolarPowerUnitSlotOptionImpl._DeployedSizeModifier,
+            name='Deployed Size')
+        step.addNote(_SolarPowerUnitSlotOptionImpl._DeployedNote.format(
+            size=deployedSize.value()))  
+
+        panelArmour = context.attributeValue(
+            attributeId=robots.RobotAttributeId.BaseProtection,
+            sequence=sequence)
+        robotHits = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Hits,
+            sequence=sequence)
+        assert(isinstance(robotHits, common.ScalarCalculation))
+        panelHits = common.Calculator.takePercentage(
+            value=robotHits,
+            percentage=_SolarPowerUnitSlotOptionImpl._PanelsHitPercentage,
+            name='Solar Panel Hits')
+        
+        step.addNote(_SolarPowerUnitSlotOptionImpl._DurabilityNote.format(
+            armour=panelArmour.value(),
+            hits=panelHits.value()))
+        
+        step.addNote(_SolarPowerUnitSlotOptionImpl._AttacksNote)
+
+class _QuickChargerSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 8
+    - Cost: Cr200
+    - Slots: 1
+    - Note: Can fully recharge a robot not running on external power in 1 hour
+    """
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Quick Charger',
+            minTL=8,
+            constantCost=200,
+            constantSlots=1,
+            notes=['Can fully recharge a robot not running on external power in 1 hour'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _BioscannerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 15
+    - Cost: Cr350000
+    - Slots: 2
+    - Requirement: Requires at least Electronics (sensors) level 0 to operator
+    """
+    # TODO: Not sure how to handle requirement. Could just be a note
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Bioscanner Sensor',
+            minTL=15,
+            constantCost=350000,
+            constantSlots=2,
+            notes=['Requires at least Electronics (sensors) level 0 to operator'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _DensitometerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 14
+    - Cost: Cr20000
+    - Slots: 3
+    - Note: Target must be within 100m to be scanned
+    - Requirement: Requires at least Electronics (sensors) level 0 to operator
+    """
+    # TODO: Not sure how to handle requirement. Could just be a note
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Densitometer Sensor',
+            minTL=14,
+            constantCost=20000,
+            constantSlots=3,
+            notes=[
+                'Target must be within 100m to be scanned',
+                'Requires at least Electronics (sensors) level 0 to operator'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _NeuralActivitySensorSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 15
+    - Cost: Cr35000
+    - Slots: 5
+    - Note: Detects Neural Activity within 500m
+    - Requirement: Requires at least Electronics (sensors) level 0 to operator
+    """
+    # TODO: Not sure how to handle requirement. Could just be a note
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Neural Activity Sensor',
+            minTL=15,
+            constantCost=35000,
+            constantSlots=5,
+            notes=[
+                'Detects Neural Activity within 500m',
+                'Requires at least Electronics (sensors) level 0 to operator'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _PlanetologySensorSuiteSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 12
+    - Cost: Cr25000
+    - Slots: 5
+    - Note: Adds DM+1 to any checks conducted in conjunction with data provided by the suite
+    - Requirement: Requires at least Electronics (sensors) level 0 to operator
+    - Requirement: Added +1 to the Maximum Skill level allowed by the Science (planetology) Toolkit
+    """
+    # TODO: Not sure how to handle requirement. Could just be a note
+    # TODO: Handle +1 to Science (planetology) Toolkit
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Planetology Sensor Suite',
+            minTL=12,
+            constantCost=25000,
+            constantSlots=5,
+            notes=['Adds DM+1 to any checks conducted in conjunction with data provided by the suite'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: Recon skill levels provided by this sensor are not modified by a robot’s INT.
+    - Basic
+        - Min TL: 7
+        - Cost: Cr1000
+        - Slots: 2
+        - Skill: Recon 1
+    - Improved
+        - Min TL: 8
+        - Cost: Cr100
+        - Slots: 1
+        - Skill: Recon 1  
+    - Enhanced
+        - Min TL: 10
+        - Cost: Cr10000
+        - Slots: 1
+        - Skill: Recon 2 
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr20000
+        - Slots: 1
+        - Skill: Recon 3
+    """
+    # TODO: Handle Recon skill. This is complicated by the fact it's not
+    # modified by the robots INT (see note) where as the normal Recon skill
+    # would be
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost, Slots, Recon Skill
+    _DataMap = {
+        _OptionLevel.Basic: (1000, 2, 1),
+        _OptionLevel.Improved: (100, 1, 1),
+        _OptionLevel.Enhanced: (10000, 1, 2),
+        _OptionLevel.Advanced: (20000, 1, 3)
+    } 
+
+    _ReconNote = 'Recon skill levels provided by this sensor are not modified by a robot’s INT.'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Recon Sensor',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_ReconSensorSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)   
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        sensorType = self._enumOption.value()
+        assert(isinstance(sensorType, _OptionLevel))
+
+        cost, slots, recon = _ReconSensorSlotOptionImpl._DataMap[sensorType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{sensorType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{sensorType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
+
+class _CuttingTorchSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: Can be used as an improvised weapon doing 3D damage with AP 4
+    - Basic    
+        - Min TL: 5
+        - Cost: Cr500
+        - Slots: 2
+        - Note: Can cut through metal but not crystaliron or superdense alloys.
+    - Improved
+        - Min TL: 9
+        - Cost: Cr5000
+        - Slots: 2
+        - Note: Can cut through nearly all materials, but can take a long time to breach hull armour.
+    - Advanced
+        - Min TL: 13
+        - Cost: Cr5000
+        - Slots: 1
+        - Note: Can cut through nearly all materials, but can take a long time to breach hull armour.
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 5,
+        _OptionLevel.Improved: 9,
+        _OptionLevel.Enhanced: 13
+    }
+
+    # Data Structure: Cost, Slots
+    _DataMap = {
+        _OptionLevel.Basic: (500, 2),
+        _OptionLevel.Improved: (5000, 2),
+        _OptionLevel.Enhanced: (5000, 1)
+    } 
+
+    _BasicNote = 'Can cut through metal but not crystaliron or superdense alloys.'
+    _BetterNote = 'Can cut through nearly all materials, but can take a long time to breach hull armour.'
+    _WeaponNote = 'Can be used as a weapon doing 3D damage with AP 4.'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Cutting Torch',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_CuttingTorchSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)   
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        sensorType = self._enumOption.value()
+        assert(isinstance(sensorType, _OptionLevel))
+
+        cost, slots = _CuttingTorchSlotOptionImpl._DataMap[sensorType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{sensorType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{sensorType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        if sensorType == _OptionLevel.Basic:
+            step.addNote(_CuttingTorchSlotOptionImpl._BasicNote)
+        else:
+            step.addNote(_CuttingTorchSlotOptionImpl._BetterNote)
+
+        step.addNote(_CuttingTorchSlotOptionImpl._WeaponNote)
+
+class _ElectronicsToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: In general the toolkit only allows a positive DM to repair
+        attempts on equipment with a TL less than or equal to it
+    - Basic
+        - Min TL: 6
+        - Cost: Cr2000            
+        - Slots: 1
+        - Note: Electronics skills are limited to 0 when using the toolkit
+    - Improved
+        - Min TL: 8
+        - Cost: Cr4000            
+        - Slots: 1
+        - Note: Electronics skills are limited to 1 when using the toolkit
+    - Enhanced
+        - Min TL: 10
+        - Cost: Cr6000            
+        - Slots: 1
+        - Note: Electronics skills are limited to 2 when using the toolkit
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr8000            
+        - Slots: 1
+        - Note: Electronics skills are limited to 3 when using the toolkit
+    """
+    # NOTE: The rules say the toolkit only allows a positive DM when working on
+    # equipment less than or equal to its TL. However, I'm not sure what
+    # positive DM it's talking about. It could be the word 'allows' is important
+    # and it means the robots Electronics skill is limited to 0  if the
+    # equipments TL is higher than the toolkits
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 6,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 10,
+        _OptionLevel.Advanced: 12
+    }
+
+    # Data Structure: Cost, Max Electronics Skill
+    _DataMap = {
+        _OptionLevel.Basic: (2000, 0),
+        _OptionLevel.Improved: (4000, 1),
+        _OptionLevel.Enhanced: (6000, 2),
+        _OptionLevel.Advanced: (8000, 3)
+    } 
+
+    _RequiredSlots = common.ScalarCalculation(
+        value=1,
+        name='Electronics Toolkit Required Slots')
+
+    _MaxSkillNote = 'Electronics skills are limited to {max} when using the toolkit'
+    _MaxTLNote = 'In general the toolkit only allows a positive DM to repair attempts on equipment with a TL less than or equal to {techlevel}.'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Electronics Toolkit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_ElectronicsToolkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)   
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        minTL = _ElectronicsToolkitSlotOptionImpl._MinTLMap[toolkitType]
+        cost, maxSkill = _ElectronicsToolkitSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{toolkitType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        step.setSlots(slots=construction.ConstantModifier(
+            value=_ElectronicsToolkitSlotOptionImpl._RequiredSlots))
+
+        step.addNote(_ElectronicsToolkitSlotOptionImpl._MaxSkillNote.format(
+            max=maxSkill))
+        step.addNote(_ElectronicsToolkitSlotOptionImpl._MaxTLNote.format(
+            techlevel=minTL))
+
+class _FireExtinguisherSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 6
+    - Cost: Cr100
+    - Slots: 1
+    - Note: Can extinguish most chemical and electrical fires.
+    - Note: If used to assist a Traveller or NPC who has been set on fire,
+    damage is reduced by half in the first round and all damage in subsequent
+    rounds
+    """
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Fire Extinguisher',
+            minTL=6,
+            constantCost=100,
+            constantSlots=1,
+            notes=[
+                'Can extinguish most chemical and electrical fires.',
+                'If used to assist a Traveller or NPC who has been set on fire, damage is reduced by half in the first round and all damage in subsequent rounds'],
+            incompatibleTypes=incompatibleTypes)
+        
+    def isZeroSlot(self) -> bool:
+        return False
+
+class _ForensicToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - Basic
+        - Min TL: 8
+        - Cost: Cr2000
+        - Slots: 5
+        - Note: Science skills are limited to 0 when using the toolkit
+    - Improved
+        - Min TL: 10
+        - Cost: Cr4000
+        - Slots: 4
+        - Note: Science skills are limited to 1 when using the toolkit
+    - Enhanced
+        - Min TL: 12
+        - Cost: Cr8000
+        - Slots: 4
+        - Note: Science skills are limited to 2 when using the toolkit
+    - Advanced
+        - Min TL: 14
+        - Cost: Cr10000
+        - Slots: 3
+        - Note: Science skills are limited to 3 when using the toolkit
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 9,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Enhanced: 12,
+        _OptionLevel.Advanced: 14
+    }
+
+    # Data Structure: Cost, Slots, Max Science Skill
+    _DataMap = {
+        _OptionLevel.Basic: (2000, 5, 0),
+        _OptionLevel.Improved: (4000, 4, 1),
+        _OptionLevel.Enhanced: (8000, 4, 2),
+        _OptionLevel.Advanced: (10000, 3, 3)
+    }
+
+    _MaxSkillNote = 'Science skills are limited to {max} when using the toolkit'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Forensic Toolkit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_ForensicToolkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)   
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        cost, slots, maxSkill = _ForensicToolkitSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{toolkitType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{toolkitType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+
+        step.addNote(_ForensicToolkitSlotOptionImpl._MaxSkillNote.format(
+            max=maxSkill))
+
+class _MechanicalToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Note: Repair attempts suffer a DM-2 if the equipment being repaired is
+        more than 2 TLs higher than the toolkit and robot
+    - Basic
+        - Min TL: 4
+        - Cost: Cr1000
+        - Slots: 6
+    - Improved
+        - Min TL: 8
+        - Cost: Cr2000
+        - Slots: 4
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr4000
+        - Slots: 2
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 4,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 12
+    }
+
+    # Data Structure: Cost, Slots
+    _DataMap = {
+        _OptionLevel.Basic: (1000, 6),
+        _OptionLevel.Improved: (2000, 4),
+        _OptionLevel.Enhanced: (4000, 2)
+    }
+
+    _AdditionalTL = 2
+
+    _MaxTLNote = 'Repair attempts suffer a DM-2 if the equipment being repaired is TL {techlevel} or higher.'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Mechanical Toolkit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_MechanicalToolkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)   
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        robotTL = context.techLevel()
+        minTL = _MechanicalToolkitSlotOptionImpl._MinTLMap[toolkitType]
+        cost, slots = _MechanicalToolkitSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{toolkitType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{toolkitType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+
+        maxTL = min(robotTL, minTL) + 2
+        step.addNote(_MechanicalToolkitSlotOptionImpl._MaxTLNote.format(
+            techlevel=maxTL))
+        
+class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Option: String specifying science the toolkit is for
+    - Basic
+        - Min TL: 5
+        - Cost: Cr2000
+        - Slots: 4
+        - Note: Whatever Science skill the toolkit is for is limited to 0 when using it
+    - Improved
+        - Min TL: 8
+        - Cost: Cr4000
+        - Slots: 3
+        - Note: Whatever Science skill the toolkit is for is limited to 1 when using it
+    - Enhanced
+        - Min TL: 11
+        - Cost: Cr6000
+        - Slots: 3
+        - Note: Whatever Science skill the toolkit is for is limited to 2 when using it
+    - Advanced
+        - Min TL: 14
+        - Cost: Cr8000
+        - Slots: 3
+        - Note: Whatever Science skill the toolkit is for is limited to 3 when using it
+    """
+    # TODO: Need to be able to select from a list of predefined sciences or specify a
+    # custom string
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 5,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Enhanced: 11,
+        _OptionLevel.Advanced: 14
+    }
+
+    # Data Structure: Cost, Slots, Max Science Skill
+    _DataMap = {
+        _OptionLevel.Basic: (2000, 4, 0),
+        _OptionLevel.Improved: (4000, 3, 1),
+        _OptionLevel.Enhanced: (6000, 3, 2),
+        _OptionLevel.Advanced: (8000, 3, 3)
+    }
+
+    _MaxSkillNote = 'Science ({science}) skill is limited to {max} when using the toolkit'
+    _NoScienceSpecifiedNote = 'WARNING: The science the toolkit is designed for has not been specified'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Scientific Toolkit',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_ScientificToolkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes) 
+
+        self._scienceOption = construction.StringOption(
+            id='Science',
+            name='Science',
+            value='',
+            options=_PredefinedSciences,
+            description='Specify the science the toolkit is for.')          
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def instanceString(self) -> str:
+        science: str = self._scienceOption.value()
+        if not science:
+            return super().instanceString()
+
+        toolkitType: enum.Enum = self._enumOption.value()
+        return f'{self.componentString()} ({toolkitType.value} {science})'
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._scienceOption)
+        return options 
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        science = self._scienceOption.value()
+        assert(isinstance(science, str))
+        if not science:
+            step.addNote(_ScientificToolkitSlotOptionImpl._NoScienceSpecifiedNote)
+            science = 'unspecified'
+
+        cost, slots, maxSkill = _ScientificToolkitSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{toolkitType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{toolkitType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+        
+        step.addNote(_ScientificToolkitSlotOptionImpl._MaxSkillNote.format(
+            science=science,
+            max=maxSkill))
+
+class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - Basic
+        - Min TL: 8
+        - Cost: Cr1000
+        - Slots: 6
+        - Note: Electronics, Engineering and Mechanic skills are limited to 0 when using the toolkit
+    - Improved
+        - Min TL: 10
+        - Cost: Cr2000
+        - Slots: 5
+        - Note: Electronics, Engineering and Mechanic skills are limited to 1 when using the toolkit
+    - Enhanced
+        - Min TL: 12
+        - Cost: Cr4000
+        - Slots: 5
+        - Note: Electronics, Engineering and Mechanic skills are limited to 2 when using the toolkit
+    - Advanced
+        - Min TL: 14
+        - Cost: Cr10000
+        - Slots: 4
+        - Note: Electronics, Engineering and Mechanic skills are limited to 3 when using the toolkit
+    """
+    # TODO: Need to be able to select from a list of predefined sciences or specify a
+    # custom string
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 8,
+        _OptionLevel.Improved: 10,
+        _OptionLevel.Enhanced: 12,
+        _OptionLevel.Advanced: 14
+    }
+
+    # Data Structure: Cost, Slots, Max Science Skill
+    _DataMap = {
+        _OptionLevel.Basic: (1000, 6, 0),
+        _OptionLevel.Improved: (2000, 5, 1),
+        _OptionLevel.Enhanced: (4000, 5, 2),
+        _OptionLevel.Advanced: (10000, 4, 3)
+    }
+
+    _MaxSkillNote = 'Electronics, Engineering and Mechanic skills are limited to {max} when using the toolkit'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Starship Engineering',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',            
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_StarshipEngineeringToolkitSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)     
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)     
+        
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        cost, slots, maxSkill = _StarshipEngineeringToolkitSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{toolkitType.value} {self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+        
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{toolkitType.value} {self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+
+        step.addNote(_StarshipEngineeringToolkitSlotOptionImpl._MaxSkillNote.format(
+            max=maxSkill))
+
+class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 6
+    - Cost: 2000
+    - Slots: 3
+    - Option: String to option to specified species the toolkit is designed for
+    - Note: Replenishing the toolkit with product has a base cost of Cr500 but
+    this doubles for every point past SOC 8 the product is intended for.
+    - Note: A positive Effect of a Profession (stylist) check can increase the
+    effective SOC of the product by the Effect.
+    - Note: Using the toolkit on a species other than the one it was designed
+    for gives a DM-3 or more modifier.
+    - Requirement: Need to be able to add multiple instances to allow for
+    multiple species
+    """
+
+    _ReplenishingNote = 'Replenishing the toolkit with product has a base cost of Cr500 but this doubles for every point past SOC 8 the product is intended for.'
+    _ProfessionNote = 'A positive Effect of a Profession (stylist) check can increase the effective SOC of the product by the Effect.'
+    _SpeciesNote = 'Using the toolkit on a species other than {species} gives a DM-3 or more modifier.'
+    _NoSpeciesSpecifiedNote = 'WARNING: The species the toolkit is designed for has not been specified'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Stylist Toolkit',
+            minTL=6,
+            constantCost=2000,
+            constantSlots=3,
+            incompatibleTypes=incompatibleTypes)
+        
+        self._speciesOption = construction.StringOption(
+            id='Species',
+            name='Species',
+            value='',
+            options=_PredefinedSpecies,
+            description='Specify the species the Styling Toolkit is designed for.')    
+        
+    def isZeroSlot(self) -> bool:
+        return False
+    
+    def instanceString(self) -> str:
+        species: str = self._speciesOption.value()
+        if not species:
+            return super().instanceString()
+        return f'{self.componentString()} ({species})'    
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._speciesOption)
+        return options 
+    
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        species = self._speciesOption.value()
+        assert(isinstance(species, str))
+        if not species:
+            step.addNote(_StylistToolkitSlotOptionImpl._NoSpeciesSpecifiedNote)
+            species = 'the one it was designed for'
+
+        step.addNote(_StylistToolkitSlotOptionImpl._ReplenishingNote)
+        step.addNote(_StylistToolkitSlotOptionImpl._ProfessionNote)
+        step.addNote(_StylistToolkitSlotOptionImpl._SpeciesNote.format(
+            species=species))
 
 
 #  ██████████               ██████                       ████   █████        █████████              ███   █████            
@@ -5621,8 +6777,7 @@ class GeckoGrippersSlotOption(SlotOption):
             impl=_GeckoGrippersSlotOptionImpl(
                 incompatibleTypes=[GeckoGrippersDefaultSuiteOption]))
 
-# NOTE This component is different from most other slot options as multiple
-# instances can be added. This also means it's not incompatible with its
+# NOTE: As this is not a singular component it's NOT incompatible with its
 # default suite counterpart
 class InjectorNeedleSlotOption(SlotOption):
     def __init__(self) -> None:
@@ -5655,8 +6810,7 @@ class SelfMaintenanceEnhancementSlotOption(SlotOption):
                 isDefaultSuite=False,
                 incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuiteOption]))
 
-# NOTE This component is different from most other slot options as multiple
-# instances can be added. This also means it's not incompatible with its
+# NOTE: As this is not a singular component it's NOT incompatible with its
 # default suite counterpart
 class StingerSlotOption(SlotOption):
     def __init__(self) -> None:
@@ -5737,8 +6891,6 @@ class MedkitSlotOption(SlotOption):
         dependencies.append(MedicalChamberSlotOption)
         return dependencies        
 
-# NOTE This component is different from most other slot options as multiple
-# instances can be added
 class AgriculturalEquipmentSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
@@ -5765,8 +6917,6 @@ class BioreactionChamberSlotOption(SlotOption):
         super().__init__(
             impl=_BioreactionChamberSlotOptionImpl())
         
-# NOTE This component is different from most other slot options as multiple
-# instances can be added
 class ConstructionEquipmentSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
@@ -5788,8 +6938,6 @@ class HolographicProjectorSlotOption(SlotOption):
         super().__init__(
             impl=_HolographicProjectorSlotOptionImpl())
         
-# NOTE This component is different from most other slot options as multiple
-# instances can be added
 class MiningEquipmentSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
@@ -5811,28 +6959,98 @@ class StealthSlotOption(SlotOption):
         super().__init__(
             impl=_StealthSlotOptionImpl())        
         
-# NOTE This component is different from most other slot options as multiple
-# instances can be added
 class StorageCompartmentSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_StorageCompartmentSlotOptionImpl(),
             singular=False)                
         
-# NOTE This component is different from most other slot options as multiple
-# instances can be added
 class VideoProjectorSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_VideoProjectorSlotOptionImpl(),
             singular=False)   
         
-class ExternalPowerOption(SlotOption):
+class ExternalPowerSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ExternalPowerSlotOptionImpl())      
         
-class NoInternalPowerOption(SlotOption):
+class NoInternalPowerSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_NoInternalPowerSlotOptionImpl())     
+        
+class RTGSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_RTGSlotOptionImpl(),
+            singular=False)
+        
+class SolarPowerUnitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SolarPowerUnitSlotOptionImpl(),
+            singular=False)
+        
+class QuickChargerSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_QuickChargerSlotOptionImpl())            
+        
+class BioscannerSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_BioscannerSensorSlotOptionImpl())
+
+class DensitometerSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_DensitometerSensorSlotOptionImpl())   
+
+class NeuralActivitySensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_NeuralActivitySensorSlotOptionImpl())           
+
+class PlanetologySensorSuiteSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_PlanetologySensorSuiteSlotOptionImpl())     
+
+class CuttingTorchSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_CuttingTorchSlotOptionImpl(),
+            singular=False)        
+
+class ElectronicsToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ElectronicsToolkitSlotOptionImpl())
+        
+class FireExtinguisherSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_FireExtinguisherSlotOptionImpl())  
+
+class ForensicToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ForensicToolkitSlotOptionImpl())  
+
+class MechanicalToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_MechanicalToolkitSlotOptionImpl())
+
+# NOTE: The Scientific Toolkit is not singular as a robot could have multiple
+# for different sciences
+class ScientificToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ScientificToolkitSlotOptionImpl(),
+            singular=False)  
+        
+class StarshipEngineeringToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_StarshipEngineeringToolkitSlotOptionImpl())
+
+# NOTE: The Stylist Toolkit is not singular as a robot could have multiple
+# for different species
+class StylistToolkitSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_StylistToolkitSlotOptionImpl(),
+            singular=False)          

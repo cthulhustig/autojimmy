@@ -211,30 +211,6 @@ class SequenceState(object):
             ) -> bool:
         return self._attributes.hasAttribute(attributeId=attributeId)
 
-    def constructionNotes(
-            self,
-            component: construction.ComponentInterface = None,
-            phase: construction.ConstructionPhase = None
-            ) -> typing.Iterable[str]:
-        notes = []
-
-        if component:
-            steps = self._componentSteps.get(component)
-            if steps:
-                for step in steps:
-                    notes.extend(step.notes())
-        else:
-            # Return notes in construction order if a specific phase isn't
-            # specified
-            phases = self._phasesType if not phase else [phase]
-            for phase in phases:
-                steps = self._phaseSteps.get(phase)
-                if steps:
-                    for step in steps:
-                        notes.extend(step.notes())
-
-        return notes
-
     def phaseCost(
             self,
             costId: construction.ConstructionCost,
@@ -593,17 +569,6 @@ class ConstructionContext(object):
         return sequenceState.phaseCost(
             costId=costId,
             phase=phase)
-
-    def constructionNotes(
-            self,
-            sequence: str,
-            component: construction.ComponentInterface = None,
-            phase: construction.ConstructionPhase = None
-            ) -> typing.Iterable[str]:
-        sequenceState = self._sequenceStates.get(sequence)
-        if not sequenceState:
-            raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.constructionNotes(component=component, phase=phase)
 
     def steps(
             self,

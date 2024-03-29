@@ -618,7 +618,18 @@ class PdfExporter(object):
 
             notes = step.notes()
             if notes:
-                results[f'{step.type()}: {step.name()}'] = list(notes)
+                rule = f'{step.type()}: {step.name()}'
+                cumulative = results.get(rule)
+                if not cumulative:
+                    cumulative = list(notes)
+                    results[rule] = cumulative
+                else:
+                    # NOTE: Duplicate notes are removed if there are multiple
+                    # instances of a component
+                    assert(isinstance(cumulative, list))
+                    for note in notes:
+                        if note not in cumulative:
+                            cumulative.append(note)
         return results
 
     def _diffConstructionNotes(
@@ -656,12 +667,21 @@ class PdfExporter(object):
             if not hasChanged:
                 continue # Nothing more to do for this stage
 
-            # Create a copy of the list of notes that can be added to the results
-            current = list(current)
             if not current:
                 # There are no current notes but there were previously
-                current.append('Notes listed for this rule in the Base Configuration section no longer apply.')
-            results[rule] = current
+                current = ['Notes listed for this rule in the Base Configuration section no longer apply.']
+
+            cumulative = results.get(rule)
+            if not cumulative:
+                cumulative = list(current)
+                results[rule] = cumulative
+            else:
+                # NOTE: Duplicates are removed if there are multiple instances
+                # of a component
+                assert(isinstance(cumulative, list))
+                for note in current:
+                    if note not in cumulative:
+                        cumulative.append(note)
 
         # Check for rules that are no-longer present
         for rule in originalNotes.keys():
@@ -1215,20 +1235,17 @@ class PdfExporter(object):
                 text='Notes',
                 style=_TableHeaderNormalStyle),
             ]]
-
-        for step in weapon.steps(sequence=sequence):
-            assert(isinstance(step, gunsmith.WeaponStep))
-
-            notes = step.notes()
-            if not notes:
-                continue
-
+        
+        notes = self._collectConstructionNotes(
+            weapon=weapon,
+            sequence=sequence)
+        for rule, notes in notes.items():
             tableData.append([
                 self._createParagraph(
-                    text=f'{step.type()}: {step.name()}',
+                    text=rule,
                     style=_TableDataNormalStyle),
                 self._createNotesList(notes=notes)
-            ])
+            ])        
 
         if len(tableData) <= 1:
             return None # No notes added (only header) so no point creating a table

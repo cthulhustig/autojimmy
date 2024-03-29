@@ -78,6 +78,7 @@ class StringOption(ComponentOption):
             id: str,
             name: str,
             value: str,
+            options: typing.Optional[typing.Iterable[str]] = None,
             description: str = '',
             enabled: bool = True
             ) -> None:
@@ -88,12 +89,22 @@ class StringOption(ComponentOption):
             description=description,
             enabled=enabled)
         self._default = value
+        self._options = list(options) if options else []
 
     def setValue(
             self,
             value: str,
             ) -> None:
         self._value = value
+
+    def options(self) -> typing.Iterable[str]:
+        return self._options
+
+    def setOptions(
+            self,
+            options: typing.Iterable[str] = None
+            ) -> None:
+        self._options = list(options) if options else []
 
     def setDefault(
             self,

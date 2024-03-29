@@ -161,12 +161,26 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
-            widget = gui.LineEditEx()
-            widget.setText(option.value())
-            widget.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
-                QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
+            stringOptions = option.options()
+            if not stringOptions:
+                # There are no pre-defined strings the user can select from so just use a line edit
+                widget = gui.LineEditEx()
+                widget.setText(option.value())
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
+                    QtWidgets.QSizePolicy.Policy.Fixed)
+                connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))                
+            else:
+                # There are pre-defined strings the user can select from so use an editable combo box
+                widget = gui.ComboBoxEx()
+                widget.setEditable(True)
+                widget.setCurrentText(option.value())
+                widget.setSizePolicy(
+                    QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
+                    QtWidgets.QSizePolicy.Policy.Fixed)
+                for stringOption in stringOptions:
+                    widget.addItem(stringOption)
+                connection = widget.editTextChanged.connect(lambda: self._textComboChanged(widget, option))
         elif isinstance(option, construction.IntegerOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
@@ -217,7 +231,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.currentIndexChanged.connect(lambda: self._comboBoxChanged(widget, option))
+            connection = widget.currentIndexChanged.connect(lambda: self._enumComboChanged(widget, option))
             alignment = QtCore.Qt.AlignmentFlag.AlignLeft
 
         if widget:
@@ -252,8 +266,10 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         if connection:
             if isinstance(widget, gui.CheckBoxEx):
                 widget.stateChanged.disconnect(connection)
-            if isinstance(widget, gui.LineEditEx):
+            elif isinstance(widget, gui.LineEditEx):
                 widget.textChanged.disconnect(connection)
+            elif isinstance(widget, gui.ComboBoxEx):
+                widget.editTextChanged.disconnect(connection)
             elif isinstance(widget, gui.SpinBoxEx):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.OptionalSpinBox):
@@ -291,8 +307,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 assert(isinstance(widget, gui.CheckBoxEx))
                 widget.setChecked(option.value())
             if isinstance(option, construction.StringOption):
-                assert(isinstance(widget, gui.LineEditEx))
-                widget.setText(option.value())
+                assert(isinstance(widget, gui.LineEditEx) or \
+                       isinstance(widget, gui.ComboBoxEx))
+                if isinstance(widget, gui.LineEditEx):
+                    widget.setText(option.value())
+                else:
+                    widget.setCurrentText(option.value())
             elif isinstance(option, construction.IntegerOption):
                 assert(isinstance(widget, gui.SpinBoxEx))
                 if option.min() != None:
@@ -349,14 +369,31 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-
+            
     def _textEditChanged(
             self,
-            widget: QtWidgets.QLineEdit,
+            widget: gui.LineEditEx,
             option: construction.StringOption
             ) -> None:
         try:
             option.setValue(value=widget.text())
+            self.componentChanged.emit()
+            self._updateOptionControls()
+        except Exception as ex:
+            message = f'Failed to update {option.name()}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _textComboChanged(
+            self,
+            widget: gui.ComboBoxEx,
+            option: construction.StringOption
+            ) -> None:
+        try:
+            option.setValue(value=widget.currentText())
             self.componentChanged.emit()
             self._updateOptionControls()
         except Exception as ex:
@@ -384,7 +421,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
-    def _comboBoxChanged(
+    def _enumComboChanged(
             self,
             widget: QtWidgets.QComboBox,
             option: construction.EnumOption
