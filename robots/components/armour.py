@@ -6,6 +6,15 @@ import typing
 class ArmourModification(robots.ArmourModificationInterface):
     def typeString(self) -> str:
         return 'Armour Modification'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
 
 class IncreaseArmour(ArmourModification):
     """
@@ -78,6 +87,8 @@ class IncreaseArmour(ArmourModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
         return context.techLevel() >= IncreaseArmour._MinTechLevel
     
     def options(self) -> typing.List[construction.ComponentOption]:
@@ -209,9 +220,9 @@ class DecreaseArmour(ArmourModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        if context.techLevel() < IncreaseArmour._MinTechLevel:
+        if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         # Not compatible with robots with no base armour
         protection = context.attributeValue(
             attributeId=robots.RobotAttributeId.Protection,

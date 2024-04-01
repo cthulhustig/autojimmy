@@ -12,3 +12,4 @@ from .components.agility import *
 from .components.speed import *
 from .components.manipulators import *
 from .components.slotoptions import *
+from .components.weapons import *

@@ -31,7 +31,14 @@ class SpeedModificationInterface(RobotComponentInterface):
     pass
 
 class ManipulatorInterface(RobotComponentInterface):
-    pass
+    def size(self) -> int:
+        raise RuntimeError(f'{type(self)} is derived from ManipulatorInterface so must implement size')
+
+    def strength(self) -> int:
+        raise RuntimeError(f'{type(self)} is derived from ManipulatorInterface so must implement strength')
+
+    def dexterity(self) -> int:
+        raise RuntimeError(f'{type(self)} is derived from ManipulatorInterface so must implement dexterity')
 
 class BaseManipulatorInterface(ManipulatorInterface):
     pass
@@ -49,4 +56,7 @@ class DefaultSuiteOptionInterface(SlotOptionsInterface):
     pass
 
 class SlotOptionInterface(SlotOptionsInterface):
+    pass
+
+class WeaponMountInterface(RobotComponentInterface):
     pass

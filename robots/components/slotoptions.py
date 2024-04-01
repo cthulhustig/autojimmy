@@ -142,6 +142,11 @@ class _SlotOptionImpl(object):
                 context.techLevel() < self._minTL.value():
             return False
         
+        if not context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence):
+            return False
+        
         if self._incompatibleTypes:
             for componentType in self._incompatibleTypes:
                 if context.hasComponent(

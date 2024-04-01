@@ -6,6 +6,15 @@ import typing
 class EnduranceModification(robots.EnduranceModificationInterface):
     def typeString(self) -> str:
         return 'Endurance Modification'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)  
 
 class IncreaseEndurance(EnduranceModification):
     """
@@ -71,8 +80,11 @@ class IncreaseEndurance(EnduranceModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+
         return context.techLevel() >= IncreaseEndurance._ImprovedComponentMinTechLevel or \
-            context.techLevel() >= IncreaseEndurance._PowerPackMinTechLevel
+            context.techLevel() >= IncreaseEndurance._PowerPackMinTechLevel  
     
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []

@@ -108,7 +108,9 @@ class _LocomotionImpl(object):
         if context.techLevel() < self._minTechLevel.value():
             return False
 
-        return True
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return []

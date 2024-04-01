@@ -37,9 +37,6 @@ class ComponentOption(object):
             ) -> None:
         self._enabled = enabled
 
-    def reset(self) -> None:
-        raise RuntimeError('The reset method must be implemented by classes derived from ComponentOption')
-
 class BooleanOption(ComponentOption):
     def __init__(
             self,
@@ -55,7 +52,6 @@ class BooleanOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._default = value
 
     def setValue(
             self,
@@ -63,39 +59,40 @@ class BooleanOption(ComponentOption):
             ) -> None:
         self._value = value
 
-    def setDefault(
-            self,
-            default: bool
-            ) -> None:
-        self._default = default
-
-    def reset(self) -> None:
-        self._value = self._default
-
 class StringOption(ComponentOption):
     def __init__(
             self,
             id: str,
             name: str,
-            value: str,
+            value: typing.Optional[str] = None,
             options: typing.Optional[typing.Iterable[str]] = None,
+            isEditable: bool = True,
+            isOptional: bool = False,
             description: str = '',
             enabled: bool = True
             ) -> None:
+        if value == None and not isOptional:
+            if isEditable:
+                value = ''
+            elif options:
+                value = options[0]
+
         super().__init__(
             id=id,
             name=name,
             value=value,
             description=description,
             enabled=enabled)
-        self._default = value
-        self._options = list(options) if options else []
+        self._options = list(options) if options != None else []
+        self._isEditable = isEditable
+        self._isOptional = isOptional
+        self._checkAndUpdateValue(value=self._value)        
 
     def setValue(
             self,
-            value: str,
+            value: typing.Optional[str]
             ) -> None:
-        self._value = value
+        self._checkAndUpdateValue(value=value)   
 
     def options(self) -> typing.Iterable[str]:
         return self._options
@@ -104,16 +101,37 @@ class StringOption(ComponentOption):
             self,
             options: typing.Iterable[str] = None
             ) -> None:
-        self._options = list(options) if options else []
+        self._options = list(options) if options != None else []
+        if self._isEditable:
+            return # Nothing more to check
+        
+        if self._isOptional:
+            if (self._value != None) and (self._value not in options):
+                self._value = None
+        else:
+            if self._value not in options:
+                self._value = options[0] if len(options) > 0 else None
 
-    def setDefault(
+    def isEditable(self) -> bool:
+        return self._isEditable
+    
+    def setIsEditable(self) -> None:
+        self._isEditable = False
+
+    def isOptional(self) -> bool:
+        return self._isOptional
+
+    def _checkAndUpdateValue(
             self,
-            default: str
+            value: typing.Optional[str]
             ) -> None:
-        self._default = default
+        if value == None and not self._isOptional:
+            raise ValueError(f'The value can\'t be None')
 
-    def reset(self) -> None:
-        self._value = self._default
+        if value != None and not self._isEditable and value not in self._options:
+            raise ValueError(f'The value {value} is not a valid option')
+
+        self._value = value
 
 class IntegerOption(ComponentOption):
     def __init__(
@@ -133,7 +151,6 @@ class IntegerOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._default = value
         self._minValue = minValue
         self._maxValue = maxValue
         self._isOptional = isOptional
@@ -172,27 +189,21 @@ class IntegerOption(ComponentOption):
     def isOptional(self) -> bool:
         return self._isOptional
 
-    def setDefault(
-            self,
-            default: typing.Optional[int]
-            ) -> None:
-        self._default = default
-
-    def reset(self) -> None:
-        self._value = self._default
-
     def _checkAndUpdateValue(
             self,
             value: typing.Optional[int]
             ) -> None:
         if value == None and not self._isOptional:
-            raise ValueError(f'The specified value can\'t be None')
+            raise ValueError(f'The value can\'t be None')
 
-        if self._minValue != None and value < self._minValue:
-            raise ValueError(f'The specified value must be greater than or equal to {self._minValue}')
+        if value != None:
+            if self._minValue != None and value < self._minValue:
+                raise ValueError(
+                    f'The value {value} is not greater than or equal to {self._minValue}')
 
-        if self._maxValue != None and value > self._maxValue:
-            raise ValueError(f'The specified value must be less than or equal to {self._maxValue}')
+            if self._maxValue != None and value > self._maxValue:
+                raise ValueError(
+                    f'The value {value} is not less than or equal to {self._maxValue}')
 
         self._value = value
 
@@ -214,7 +225,6 @@ class FloatOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._default = value
         self._minValue = minValue
         self._maxValue = maxValue
         self._isOptional = isOptional
@@ -253,15 +263,6 @@ class FloatOption(ComponentOption):
     def isOptional(self) -> bool:
         return self._isOptional
 
-    def setDefault(
-            self,
-            default: typing.Optional[float]
-            ) -> None:
-        self._default = default
-
-    def reset(self) -> None:
-        self._value = self._default
-
     def _checkAndUpdateValue(
             self,
             value: typing.Optional[float]
@@ -269,11 +270,14 @@ class FloatOption(ComponentOption):
         if value == None and not self._isOptional:
             raise ValueError(f'The specified value can\'t be None')
 
-        if self._minValue != None and value < self._minValue:
-            raise ValueError(f'The specified value must be less than or equal to {self._minValue}')
+        if value != None:
+            if self._minValue != None and value < self._minValue:
+                raise ValueError(
+                    f'The value {value} is not less than or equal to {self._minValue}')
 
-        if self._maxValue != None and value > self._maxValue:
-            raise ValueError(f'The specified value must be greater than or equal to {self._maxValue}')
+            if self._maxValue != None and value > self._maxValue:
+                raise ValueError(
+                    f'The value {value} is not greater than or equal to {self._maxValue}')
 
         self._value = value
 
@@ -283,21 +287,24 @@ class EnumOption(ComponentOption):
             id: str,
             name: str,
             type: typing.Type[enum.Enum],
-            value: enum.Enum,
+            value: typing.Optional[enum.Enum] = None,
             options: typing.Iterable[enum.Enum] = None,
             isOptional: bool = False,
             description: str = '',
             enabled: bool = True
             ) -> None:
+        options = list(options) if options != None else [e for e in type]
+        if value == None and not isOptional and options:
+            value = options[0]
+
         super().__init__(
             id=id,
             name=name,
             value=value,
             description=description,
             enabled=enabled)
-        self._default = value
         self._type = type
-        self._options = list(options) if options != None else [e for e in self._type]
+        self._options = options
         self._isOptional = isOptional
         self._checkAndUpdateValue(value=self._value)
 
@@ -328,23 +335,14 @@ class EnumOption(ComponentOption):
     def isOptional(self) -> bool:
         return self._isOptional
 
-    def setDefault(
-            self,
-            default: typing.Type[enum.Enum]
-            ) -> None:
-        self._default = default
-
-    def reset(self) -> None:
-        self._value = self._default
-
     def _checkAndUpdateValue(
             self,
-            value: typing.Type[enum.Enum]
+            value: typing.Optional[enum.Enum]
             ) -> None:
         if value == None and not self._isOptional:
-            raise ValueError(f'The specified value can\'t be None')
+            raise ValueError(f'The value can\'t be None')
 
         if value != None and value not in self._options:
-            raise ValueError(f'The specified value is not a valid option')
+            raise ValueError(f'The value {value} is not a valid option')
 
         self._value = value

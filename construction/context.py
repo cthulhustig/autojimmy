@@ -678,14 +678,6 @@ class ConstructionContext(object):
                     component = componentType()
                     assert(isinstance(component, construction.ComponentInterface))
 
-                    # Initialise options to default values for this context.
-                    # Note that the sequence will be None for common components.
-                    # The fact they're common means their options shouldn't be
-                    # dependant on the state of a specific sequence
-                    component.updateOptions(
-                        sequence=stage.sequence(),
-                        context=self)
-
                 # Check if the component is compatible with the context in its
                 # current state. Note that the sequence will be None for common
                 # components. The fact they're common means their compatibility
@@ -693,6 +685,18 @@ class ConstructionContext(object):
                 if component.isCompatible(
                         sequence=stage.sequence(),
                         context=self):
+                    if component != replaceComponent:
+                        # Initialise options to default values for this context
+                        # so that the components returned by the function are
+                        # ready to use.
+                        # Note that this MUST be done AFTER compatibility is
+                        # checked as updateOption implementations are allowed to
+                        # make assumptions that they will only be called if the
+                        # component is compatible.
+                        component.updateOptions(
+                            sequence=stage.sequence(),
+                            context=self)
+
                     compatible.append(component)
         finally:
             if restoreIndex >= 0:

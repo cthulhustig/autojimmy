@@ -393,6 +393,15 @@ class Robot(object):
             baseType=robots.SlotOptionInterface,
             # Optional multi component
             minComponents=None,
-            maxComponents=None)) 
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Weapons',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.WeaponMountInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))         
         
         return stages

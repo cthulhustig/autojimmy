@@ -283,6 +283,7 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
         self._spinBox.valueChanged.connect(self._spinBoxChanged)
 
         layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._checkBox)
         layout.addWidget(self._spinBox)
 

@@ -6,6 +6,15 @@ import typing
 class ResiliencyModification(robots.ResiliencyModificationInterface):
     def typeString(self) -> str:
         return 'Resiliency Modification'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
 
 class IncreaseResiliency(ResiliencyModification):
     """
@@ -50,6 +59,9 @@ class IncreaseResiliency(ResiliencyModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+
         # Not compatible with robots that only have one slot
         baseSlots = context.baseSlots(sequence=sequence)
         return baseSlots.value() > 1
@@ -140,6 +152,9 @@ class DecreaseResiliency(ResiliencyModification):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+                
         # Not compatible with robots that only have one hit
         hits = context.attributeValue(
             attributeId=robots.RobotAttributeId.Hits,

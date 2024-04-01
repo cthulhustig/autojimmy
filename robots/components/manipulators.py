@@ -177,6 +177,15 @@ class _ManipulatorImpl(object):
             maxValue=0,
             description='Specify the the dexterity of the manipulator.')
 
+    def size(self) -> int:
+        return self._sizeOption.value()
+
+    def strength(self) -> int:
+        return self._strengthOption.value()
+
+    def dexterity(self) -> int:
+        return self._dexterityOption.value()
+
     def instanceString(self) -> str:
         return 'Size {size} (STR: {strength}, DEX: {dexterity})'.format(
             size=self._sizeOption.value(),
@@ -188,7 +197,9 @@ class _ManipulatorImpl(object):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:       
-        return True
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
@@ -424,6 +435,15 @@ class BaseManipulator(robots.BaseManipulatorInterface):
         super().__init__()
         self._impl = _ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Base)
+        
+    def size(self) -> int:
+        return self._impl.size()
+
+    def strength(self) -> int:
+        return self._impl.strength()
+
+    def dexterity(self) -> int:
+        return self._impl.dexterity()
 
     def instanceString(self) -> str:
         return self._impl.instanceString()
@@ -567,6 +587,15 @@ class AdditionalManipulator(robots.AdditionalManipulatorInterface):
         self._impl = _ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Additional)
 
+    def size(self) -> int:
+        return self._impl.size()     
+
+    def strength(self) -> int:
+        return self._impl.strength()
+
+    def dexterity(self) -> int:
+        return self._impl.dexterity()
+
     def instanceString(self) -> str:
         return self._impl.instanceString()
 
@@ -624,6 +653,15 @@ class LegManipulator(robots.LegManipulatorInterface):
         super().__init__()
         self._impl = _ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Leg)
+        
+    def size(self) -> int:
+        return self._impl.size()        
+
+    def strength(self) -> int:
+        return self._impl.strength()
+
+    def dexterity(self) -> int:
+        return self._impl.dexterity()        
 
     def instanceString(self) -> str:
         return self._impl.instanceString()
@@ -656,7 +694,6 @@ class LegManipulator(robots.LegManipulatorInterface):
             componentType=robots.LegManipulatorInterface,
             sequence=sequence)
         return len(legManipulators) < legCount
-        
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()

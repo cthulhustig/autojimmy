@@ -10,6 +10,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     _OptionsLayoutIndent = 10
 
+    _NonePlaceholder = '<None>'
+
     def __init__(
             self,
             components: typing.Optional[typing.Iterable[construction.ComponentInterface]] = None,
@@ -109,7 +111,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 includeNone = not components
 
             if includeNone:
-                self._comboBox.addItem('<None>', None)
+                self._comboBox.addItem(_ComponentConfigWidget._NonePlaceholder, None)
             if components:
                 for component in components:
                     self._comboBox.addItem(component.componentString(), component)
@@ -173,14 +175,19 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             else:
                 # There are pre-defined strings the user can select from so use an editable combo box
                 widget = gui.ComboBoxEx()
-                widget.setEditable(True)
+                widget.setEditable(option.isEditable())
                 widget.setCurrentText(option.value())
                 widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
+                    # If the option is editable give the user as much space as possible
+                    QtWidgets.QSizePolicy.Policy.Expanding if option.isEditable() else QtWidgets.QSizePolicy.Policy.Fixed,
                     QtWidgets.QSizePolicy.Policy.Fixed)
+                if option.isOptional():
+                    widget.addItem(_ComponentConfigWidget._NonePlaceholder)
                 for stringOption in stringOptions:
                     widget.addItem(stringOption)
-                connection = widget.editTextChanged.connect(lambda: self._textComboChanged(widget, option))
+                connection = widget.currentTextChanged.connect(lambda: self._textComboChanged(widget, option))
+                if not option.isEditable():
+                    alignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.IntegerOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
@@ -269,7 +276,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             elif isinstance(widget, gui.LineEditEx):
                 widget.textChanged.disconnect(connection)
             elif isinstance(widget, gui.ComboBoxEx):
-                widget.editTextChanged.disconnect(connection)
+                widget.currentTextChanged.disconnect(connection)
             elif isinstance(widget, gui.SpinBoxEx):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.OptionalSpinBox):
@@ -312,9 +319,16 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 if isinstance(widget, gui.LineEditEx):
                     widget.setText(option.value())
                 else:
+                    stringOptions = option.options()
+                    widget.clear()
+                    if option.isOptional():
+                        widget.addItem(_ComponentConfigWidget._NonePlaceholder)
+                    for stringOption in stringOptions:
+                        widget.addItem(stringOption)                    
                     widget.setCurrentText(option.value())
             elif isinstance(option, construction.IntegerOption):
-                assert(isinstance(widget, gui.SpinBoxEx))
+                assert(isinstance(widget, gui.SpinBoxEx) or \
+                       isinstance(widget, gui.OptionalSpinBox))
                 if option.min() != None:
                     widget.setMinimum(option.min())
                 else:
@@ -327,7 +341,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
                 widget.setValue(option.value())
             elif isinstance(option, construction.FloatOption):
-                assert(isinstance(widget, gui.DoubleSpinBoxEx))
+                assert(isinstance(widget, gui.DoubleSpinBoxEx) or \
+                       isinstance(widget, gui.OptionalDoubleSpinBox))
                 if option.min() != None:
                     widget.setDecimalsForValue(option.min())
                     widget.setMinimum(option.min())
@@ -393,7 +408,10 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.StringOption
             ) -> None:
         try:
-            option.setValue(value=widget.currentText())
+            value = widget.currentText()
+            if option.isOptional() and value == _ComponentConfigWidget._NonePlaceholder:
+                value = None
+            option.setValue(value=value)
             self.componentChanged.emit()
             self._updateOptionControls()
         except Exception as ex:
