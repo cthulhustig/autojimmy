@@ -640,7 +640,7 @@ class WeaponMount(robots.WeaponMountInterface):
         traits = weaponData.traits()
         note = f'The weapon uses the {skill} skill'
         if damage and traits:
-            note += f', does {damage} damage and has the {traits} traits'
+            note += f', does {damage} damage and has the {traits} trait(s)'
         elif damage:
             note += f' and does {damage} damage'
         elif traits:
@@ -842,6 +842,11 @@ class _ManipulatorMountBase(WeaponMount):
             - Requirement: Not compatible with manipulator mounts
     - Option: Autoloader
         - Requirement: The minimum manipulator size is increased by 1 
+    - Option: Multi-Link
+        - Requirement: The number of manipulators that can be multi-linked
+        should be limited to the number of manipulators that are a large
+        enough size for the selected mount size and the have DEX and STR
+        of at least the same level.
     - Option: Fire Control System
         - <All>
             - Note: If the Weapon Skill DM for the Fire Control System is
@@ -862,6 +867,17 @@ class _ManipulatorMountBase(WeaponMount):
     # the ability to add an autoloader if the selected manipulator wouldn't
     # allow it. I've gone with the later as I think it's easier to understand
     # when you select the manipulator first.
+    # NOTE: As far as I can see the rules don't give any guidance as to what
+    # manipulators can be linked together. I've gone with the principle that
+    # they all need to have a size large enough to allow the selected mount size
+    # and DEX and STR values that are at least as high as the selected
+    # manipulator. The reason for the DEX/STR requirement is those
+    # characteristics affect the single attack and damage rolls made when linked
+    # weapons are fired. Although the rules don't explicitly state it, it would
+    # seem logical that the manipulators being linked would need to be capable
+    # of the same level of attack/damage. The implication being manipulators
+    # with a higher DEX and/or STR could be linked but their attack/damage
+    # levels would be limited to the selected manipulator.
     # TODO: Handle some kind of note to cover how attack modifiers are
     # calculated for manipulator mounted weapons.
 
@@ -960,7 +976,7 @@ class _ManipulatorMountBase(WeaponMount):
             if manipulator.size() < self._MinManipulatorSize.value():
                 continue
 
-            name = 'Base Manipulator #{index} - Size: {size}, DEX: {dex}, STR: {str}'.format(
+            name = 'Base Manipulator #{index} - Size: {size}, STR: {str}, DEX: {dex}'.format(
                 index=index + 1,
                 size=manipulator.size(),
                 dex=manipulator.dexterity(),
@@ -975,7 +991,7 @@ class _ManipulatorMountBase(WeaponMount):
             if manipulator.size() < self._MinManipulatorSize.value():
                 continue
 
-            name = 'Additional Manipulator #{index} - Size: {size}, DEX: {dex}, STR: {str}'.format(
+            name = 'Additional Manipulator #{index} - Size: {size}, STR: {str}, DEX: {dex}'.format(
                 index=index + 1,
                 size=manipulator.size(),
                 dex=manipulator.dexterity(),
@@ -990,7 +1006,7 @@ class _ManipulatorMountBase(WeaponMount):
             if manipulator.size() < self._MinManipulatorSize.value():
                 continue
 
-            name = 'Leg Manipulator #{index} - Size: {size}, DEX: {dex}, STR: {str}'.format(
+            name = 'Leg Manipulator #{index} - Size: {size}, STR: {str}, DEX: {dex}'.format(
                 index=index + 1,
                 size=manipulator.size(),
                 dex=manipulator.dexterity(),
@@ -1008,12 +1024,18 @@ class _ManipulatorMountBase(WeaponMount):
             sequence=sequence,
             context=context)
         manipulator = manipulators.get(self._manipulatorOption.value())
+
+        mountSize = self._mountSizeOption.value()
+        minSize = ManipulatorMount._ManipulatorSizeData[mountSize]
+        if self._autoloaderMagazineCount():
+            minSize += ManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
+
         filtered = {}
         if manipulator:
             for name, other in manipulators.items():
                 if other == manipulator:
                     continue
-                if other.size() >= manipulator.size() and \
+                if other.size() >= minSize and \
                     other.dexterity() >= manipulator.dexterity() and \
                     other.strength() >= manipulator.strength():
                     filtered[name] = other
@@ -1065,8 +1087,11 @@ class HandHeldMount(_ManipulatorMountBase):
         - Requirement: Not compatible with hand held weapons
     """
     # NOTE: The fact that Autoloaders aren't compatible with hand held weapons
-    # is a bit leap of logic on my part. If it's just a standard weapon that the
-    # robot is holding then it won't be some autoloading.
+    # is a bit leap of logic on my part. It seems reasonably logical autoloading
+    # needs the weapon to be connected to the robot in some way so ammo can be
+    # transferred. This wouldn't really make sense for a weapon the robot can
+    # pick up and put down freely. If the robots manipulator was sufficiently
+    # human like it could even use unmodified human weapons.
 
     def __init__(self) -> None:
         super().__init__(componentString='Hand Held')
@@ -1081,12 +1106,15 @@ class HandHeldMount(_ManipulatorMountBase):
             sequence: str,
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
-        linkedMountCount = self._linkedMountCount()
-
-        stepName = self.instanceString()
-        if linkedMountCount:
-            stepName += f' x{linkedMountCount.value()}'
+        baseStep = super()._createBasicMountStep(
+            sequence=sequence,
+            context=context)
+        
+        # Hand held weapons don't use a mount so there is not cost or slot
+        # requirement so copy the base step without those values.
         return robots.RobotStep(
-            name=stepName,
-            type=self.typeString())
+            name=baseStep.name(),
+            type=baseStep.type(),
+            factors=baseStep.factors(),
+            notes=baseStep.notes())
     
