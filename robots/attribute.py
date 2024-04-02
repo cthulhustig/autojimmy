@@ -20,7 +20,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Size = 'Size'
     BaseSlots = 'Base Slots'
     BaseProtection = 'Base Protection' # NOTE: This is an internal attribute
-    AvailableSlots = 'Available Slots'
+    MaxSlots = 'Max Slots'
     # NOTE: The AttackRollDM is the modifier attackers get when attacking the
     # robot (due to its size)
     AttackRollDM = 'Attack Roll DM'
@@ -46,6 +46,11 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # TODO: I think this should actually be a skill but this is good enough until
     # I implement skills
     Autopilot = 'Autopilot'
+
+    # Brain Attributes
+    Intelligence = 'INT'
+    InherentBandwidth = 'Inherent Bandwidth'
+    MaxSkills = 'Max Skills'
 
     # Robot Numeric Traits (p7)
     # TODO: The Large & Small traits should be mutually exclusive

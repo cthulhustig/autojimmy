@@ -60,3 +60,6 @@ class SlotOptionInterface(SlotOptionsInterface):
 
 class WeaponMountInterface(RobotComponentInterface):
     pass
+
+class BrainInterface(RobotComponentInterface):
+    pass

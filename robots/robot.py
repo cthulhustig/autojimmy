@@ -402,6 +402,15 @@ class Robot(object):
             baseType=robots.WeaponMountInterface,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))         
+            maxComponents=None))
+
+        stages.append(construction.ConstructionStage(
+            name='Brain',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Brain,
+            baseType=robots.BrainInterface,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))      
         
         return stages

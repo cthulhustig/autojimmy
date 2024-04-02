@@ -230,7 +230,7 @@ class _NoLocomotionImpl(_LocomotionImpl):
             step=step)
        
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.AvailableSlots,
+            attributeId=robots.RobotAttributeId.MaxSlots,
             modifier=construction.PercentageModifier(
                 value=_NoLocomotionImpl._SlotGainPercent)))
         

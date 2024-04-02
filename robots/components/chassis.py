@@ -160,7 +160,7 @@ class Chassis(robots.ChassisInterface):
         
         # Init Available Slots to the base slots
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.AvailableSlots,
+            attributeId=robots.RobotAttributeId.MaxSlots,
             value=self._baseSlots))
         
         step.addFactor(factor=construction.SetAttributeFactor(
