@@ -5183,7 +5183,10 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Note: The solar panels stops providing power after <Lifespan> years        
         - Note: When solar panels are deployed the robots size is +1, it suffers
         a DM-2 to Stealth checks or provides a DM+2 to the oppositions
-        Electronics (sensors) or Recon checks.
+        Electronics (sensors) or Recon checks. Although the rules covering this
+        increase in size (p57) don't explicitly state it, one of the
+        implications of this increase of size is it will increase the Attack
+        Roll DM that attackers get when attacking the robot (p13).
         - Note: Solar panels have an armour rating of the base armour rating for
         the robot and 10% the Hits of the robot.
         - Note: When attacks are made against a robot with deployed solar panels,
@@ -5214,6 +5217,9 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 5% of Base Slots
         - Trait: Lifespan = 100 years
     """
+    # NOTE: The Solar Power Unit rules (p57) say the effective size of the robot
+    # is increased by 1 when the it's deployed. They don't explicitly say it but
+    # one of the implications of this the Attack Roll DM 
     # TODO: Something seems off with the logic of how power packs are recharged.
     # The rules have it as a multiple of 'the hours as the power pack supplies',
     # with the lost multiple being 2 for minimal activity. The max number of
@@ -5245,6 +5251,19 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (20000, 5, 100)
     }
 
+    # This contains the Attack Roll DM values from Robots Handbook p13
+    _AttackRollDMMap = {
+        1: -4,
+        2: -3,
+        3: -2,
+        4: -1,
+        5: +0,
+        6: +1,
+        7: +2,
+        8: +3
+    }
+    _MaxAttackRollDM = +3
+
     _NormalPowerPackRechargeEnduranceMultiplier = common.ScalarCalculation(
         value=8,
         name='Solar Power Normal Activity Power Pack Recharge Endurance Multiplier')
@@ -5267,7 +5286,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight.'
     _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours'
     _LifespanNote = 'The solar panels stops providing power after {lifespan} years'
-    _DeployedNote = 'When the solar panels are deployed the robots Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks.'
+    _DeployedNote = 'When the solar panels are deployed the robots Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM} (p13).'
     _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}.'
     _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components.'
 
@@ -5369,8 +5388,15 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             lhs=robotSize,
             rhs=_SolarPowerUnitSlotOptionImpl._DeployedSizeModifier,
             name='Deployed Size')
+        attackRollDM = _SolarPowerUnitSlotOptionImpl._AttackRollDMMap.get(
+            deployedSize.value(),
+            _SolarPowerUnitSlotOptionImpl._MaxAttackRollDM)
+        
         step.addNote(_SolarPowerUnitSlotOptionImpl._DeployedNote.format(
-            size=deployedSize.value()))  
+            size=deployedSize.value(),
+            attackDM=common.formatNumber(
+                number=attackRollDM,
+                alwaysIncludeSign=True)))
 
         panelArmour = context.attributeValue(
             attributeId=robots.RobotAttributeId.BaseProtection,

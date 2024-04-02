@@ -13,7 +13,11 @@ class Chassis(robots.ChassisInterface):
         - TL12-14: Base Protection: 4
         - TL15-17: Base Protection: 4
         - TL18+: Base Protection: 5
+    - Note: Due to the size of the robot, attackers get the Attack Roll DM as
+    a modifier when attacking it.
     """
+    # NOTE: The note for the Attack Roll DM is to help players not mistake it for
+    # a modifier that the robot gets
 
     # List of tuples structured as follows
     # Min TL, Max TL, Base Protection
@@ -24,6 +28,8 @@ class Chassis(robots.ChassisInterface):
         (15, 17, 4),
         (18, None, 5)
     ]
+
+    _AttackRollDMNote = 'Due to the size of the robot, attackers get the Attack Roll DM ({modifier}) as a modifier when attacking it (p13)'
 
     # TODO: Androids and biological robots have no default protection (p18) and
     # it sounds like they have different max values specified in their rules
@@ -44,7 +50,10 @@ class Chassis(robots.ChassisInterface):
 
     # TODO: This is just a temporary value I hacked in. There must be an
     # absolute min somewhere in the rules
-    # - You can't get a Locomotion < TL5
+    # - You can't get a Locomotion < TL5, even no locomotion has a Min TL of 5
+    # in the table on p16
+    # - Weapon mounts don't seem to have a minimum TL, just the min TL of the
+    # weapons which is 0 for very primitive weapons.
     _MinTechLevel = 5
 
     # TODO: It might be worth a note to explain that the attack roll DM is a
@@ -161,6 +170,13 @@ class Chassis(robots.ChassisInterface):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.AttackRollDM,
             value=self._attackDM))
+        if self._attackDM.value():
+            # Attackers get a non-zero attack modifier to add a note to remind
+            # the player
+            step.addNote(Chassis._AttackRollDMNote.format(
+                modifier=common.formatNumber(
+                    number=self._attackDM.value(),
+                    alwaysIncludeSign=True)))
 
         if self._attackDM.value() < 0:
             step.addFactor(factor=construction.SetAttributeFactor(

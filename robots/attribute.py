@@ -21,6 +21,8 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     BaseSlots = 'Base Slots'
     BaseProtection = 'Base Protection' # NOTE: This is an internal attribute
     AvailableSlots = 'Available Slots'
+    # NOTE: The AttackRollDM is the modifier attackers get when attacking the
+    # robot (due to its size)
     AttackRollDM = 'Attack Roll DM'
     Hits = 'Hits'
     # TODO: I think Endurance can be a float. I'm not sure if it's important

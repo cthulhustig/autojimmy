@@ -94,6 +94,9 @@ class _LocomotionImpl(object):
         self._flagTrait = flagTrait
         self._notes = notes
 
+    def instanceString(self) -> str:
+        return self._componentString
+
     def componentString(self) -> str:
         return self._componentString
     
@@ -259,10 +262,16 @@ class _AxelLocomotionImpl(_LocomotionImpl):
             name='Axle Count',
             value=2,
             minValue=1,
-            description='Specify the number of axles the robot has.')        
+            description='Specify the number of axles the robot has.')     
         
     def axleCount(self) -> int:
         return self._axleCountOption.value()
+    
+    def instanceString(self) -> str:
+        axelCount = self.axleCount()
+        if axelCount:
+            return f'{self._componentString} (Axles: {axelCount})'
+        return super().instanceString()
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._axleCountOption]               
@@ -337,6 +346,12 @@ class _TracksLocomotionImpl(_LocomotionImpl):
         
     def trackCount(self) -> int:
         return self._trackCountOption.value()
+    
+    def instanceString(self) -> str:
+        trackCount = self.trackCount()
+        if trackCount:
+            return f'{self._componentString} (Tracks: {trackCount})'
+        return super().instanceString()    
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._trackCountOption]   
@@ -542,6 +557,12 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
     def legCount(self) -> int:
         return self._legCountOption.value()
     
+    def instanceString(self) -> str:
+        legCount = self.legCount()
+        if legCount:
+            return f'{self._componentString} (Legs: {legCount})'
+        return super().instanceString()      
+    
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._legCountOption]    
         
@@ -635,6 +656,9 @@ class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
             ) -> None:
         super().__init__()
         self._impl = impl
+
+    def instanceString(self) -> str:
+        return self._impl.instanceString()
 
     def componentString(self) -> str:
         return self._impl.componentString()
@@ -755,6 +779,9 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
             ) -> None:
         super().__init__()
         self._impl = impl
+
+    def instanceString(self) -> str:
+        return self._impl.instanceString()        
 
     def componentString(self) -> str:
         return self._impl.componentString()
