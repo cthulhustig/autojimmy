@@ -10,6 +10,10 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     _OptionsLayoutIndent = 10
 
+    # TODO: This use of <None> isn't as consistent as I had though. For example
+    # EnumComboBox is using 'None'. I need to do something about it, either all
+    # '<None>' or all 'None'. I just need to be careful I'm not going to break
+    # any backwards compatibility.
     _NonePlaceholder = '<None>'
 
     def __init__(

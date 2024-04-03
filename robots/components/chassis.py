@@ -54,6 +54,8 @@ class Chassis(robots.ChassisInterface):
     # in the table on p16
     # - Weapon mounts don't seem to have a minimum TL, just the min TL of the
     # weapons which is 0 for very primitive weapons.
+    # - You can't get a Brain < TL7. This seems like a pretty good limiting factor
+    # for a robot
     _MinTechLevel = 5
 
     # TODO: It might be worth a note to explain that the attack roll DM is a

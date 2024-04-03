@@ -49,7 +49,11 @@ class RobotAttributeId(construction.ConstructionAttributeId):
 
     # Brain Attributes
     Intelligence = 'INT'
+    # TODO: The bandwidth usage of an individual skill package can't exceed the
+    # inherent bandwidth (p67).
     InherentBandwidth = 'Inherent Bandwidth'
+    # The Max Bandwidth defines the total number of skills a robot can have
+    MaxBandwidth = 'Max Bandwidth'
     MaxSkills = 'Max Skills'
 
     # Robot Numeric Traits (p7)
