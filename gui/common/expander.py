@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import typing
@@ -8,6 +9,11 @@ from PyQt5 import QtWidgets, QtCore
 
 class ExpanderWidget(QtWidgets.QWidget):
     expansionChanged = QtCore.pyqtSignal([bool, bool])
+
+    _LeftContentMargin = 20
+    _RightContentMargin = 5
+    _TopContentMargin = 5
+    _BottomContentMargin = 5
 
     def __init__(
             self,
@@ -85,6 +91,12 @@ class ExpanderWidget(QtWidgets.QWidget):
         if isinstance(content, QtWidgets.QWidget):
             # This layout intentionally keeps the default padding to indent the widget a little
             layout = QtWidgets.QVBoxLayout()
+            interfaceScale = app.Config.instance().interfaceScale()
+            layout.setContentsMargins(
+                int(ExpanderWidget._LeftContentMargin * interfaceScale),
+                int(ExpanderWidget._TopContentMargin * interfaceScale),
+                int(ExpanderWidget._RightContentMargin * interfaceScale),
+                int(ExpanderWidget._BottomContentMargin * interfaceScale))
             layout.addWidget(content)
         elif isinstance(content, QtWidgets.QLayout):
             layout = content

@@ -411,6 +411,26 @@ class Robot(object):
             baseType=robots.BrainInterface,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1))      
+            maxComponents=1))
+        
+        stages.append(construction.ConstructionStage(
+            name='Skill Package',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Brain,
+            baseType=robots.SkillPackageInterface,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1,
+            # Force a component to be selected if there is one
+            forceComponent=True))          
+
+        stages.append(construction.ConstructionStage(
+            name='Skills',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Brain,
+            baseType=robots.SkillInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
         
         return stages

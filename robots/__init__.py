@@ -14,3 +14,4 @@ from .components.manipulators import *
 from .components.slotoptions import *
 from .components.weapons import *
 from .components.brain import *
+from .components.skills import *

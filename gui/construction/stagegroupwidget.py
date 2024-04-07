@@ -1,3 +1,4 @@
+import app
 import construction
 import gui
 import logging
@@ -478,7 +479,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
-    _RowSpacing = 20
+    _RowSpacing = 10
 
     def __init__(
             self,
@@ -507,7 +508,8 @@ class _StageWidget(QtWidgets.QWidget):
             self._addButton.clicked.connect(self._addClicked)
 
         self._layout = QtWidgets.QVBoxLayout()
-        self._layout.setSpacing(_StageWidget._RowSpacing)
+        self._layout.setSpacing(
+            int(_StageWidget._RowSpacing * app.Config.instance().interfaceScale()))
         self._layout.setContentsMargins(0, 0, 0, 0)
         if self._addButton:
             self._layout.addWidget(self._addButton)

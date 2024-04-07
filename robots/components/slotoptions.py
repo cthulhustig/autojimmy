@@ -3,6 +3,7 @@ import construction
 import enum
 import math
 import robots
+import traveller
 import typing
 
 class _OptionLevel(enum.Enum):
@@ -26,76 +27,6 @@ _PredefinedSpecies = [
     'K\'Kree',
     'Vargr',
 ]
-
-# List of sciences taken from https://wiki.travellerrpg.com/Science with
-# some extras added by me
-# TODO: Not sure if these should be lower case or camel case
-_PredefinedSciences = [
-    'archaeology',
-    'architecture',
-    'artificial intelligence',
-    'astrography',
-    'astronomy',
-    'astrophysics',
-    'biochemistry', # Added by me
-    'biology',
-    'biophysics', # Added by me
-    'biotechnology',
-    'botany', # Added by me
-    'chemistry',
-    'cloning',
-    'cognitive science',
-    'computer technology',
-    'cosmology',
-    'cosmology',
-    'cybertechnology',
-    'ecology',
-    'economics',
-    'engineering',
-    'epidemiology',
-    'ethology',
-    'ethnography',
-    'ethnology',
-    'eugenics',
-    'exobiochemistry',
-    'genetic engineering',
-    'geology', # Added by me
-    'gravitics',
-    'information technology',
-    'life sciences',
-    'linguistics',
-    'materials technology',
-    'mathematics',
-    'metempsychology',
-    'microbiology', # Added by me
-    'meteorology', # Added by me
-    'nano science',
-    'nanotechnology',
-    'neurotechnology',
-    'oceanography', # Added by me
-    'physics',
-    'physiology',
-    'planetology', # Added by me (there is an example of this in the robot rules)
-    'pocket universes',
-    'psionicology',
-    'psychohistory',
-    'psychology',
-    'robotics',
-    'sociology',
-    'sophontology',
-    'taxonomy',
-    'technology',
-    'taxonomy',
-    'trophics',
-    'uplift',
-    'vulcanology',
-    'xenoarchaeology',
-    'xenobiology',
-    'xenolinguistics',
-    'xenology',
-    'zoology', # Added by me
-]
-
 
 #   █████████  ████            █████          ███████               █████     ███                         █████                           ████ 
 #  ███░░░░░███░░███           ░░███         ███░░░░░███            ░░███     ░░░                         ░░███                           ░░███ 
@@ -3132,6 +3063,10 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         value=8,
         name='Medical Chamber Reanimation Addon Required Slots')    
 
+    # This max count needs to be large enough to cover any legitimate user
+    # requirement but also prevent the user for causing problems by specifying
+    # a silly number and causing a large number of UI widgets to be created
+    _SpeciesAddonMaxCount = 20
     _SpeciesAddonMinTL = 10
     _SpeciesAddonCost = common.ScalarCalculation(
         value=10000,
@@ -6096,7 +6031,7 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             id='Science',
             name='Science',
             value='',
-            options=_PredefinedSciences,
+            options=traveller.ScienceSkillSpecialities,
             description='Specify the science the toolkit is for.')          
         
     def isZeroSlot(self) -> bool:

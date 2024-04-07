@@ -55,6 +55,10 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # The Max Bandwidth defines the total number of skills a robot can have
     MaxBandwidth = 'Max Bandwidth'
     MaxSkills = 'Max Skills'
+    # The zero bandwidth skill count is a hack similar to ZeroSlotCost. This
+    # attribute is used to count the number of zero bandwidth skills added to
+    # to the robot
+    ZeroBandwidthSkillCount = 'Zero Bandwidth Skill Count'
 
     # Robot Numeric Traits (p7)
     # TODO: The Large & Small traits should be mutually exclusive
@@ -86,5 +90,6 @@ class RobotAttributeId(construction.ConstructionAttributeId):
 
 InternalAttributeIds = [
     RobotAttributeId.BaseProtection,
-    RobotAttributeId.ZeroSlotCount
+    RobotAttributeId.ZeroSlotCount,
+    RobotAttributeId.ZeroBandwidthSkillCount
 ]

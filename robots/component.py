@@ -63,3 +63,9 @@ class WeaponMountInterface(RobotComponentInterface):
 
 class BrainInterface(RobotComponentInterface):
     pass
+
+class SkillPackageInterface(RobotComponentInterface):
+    pass
+
+class SkillInterface(RobotComponentInterface):
+    pass
