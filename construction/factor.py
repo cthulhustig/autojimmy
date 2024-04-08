@@ -1,14 +1,15 @@
 import common
 import enum
 import construction
+import traveller
 import typing
 
 class FactorInterface(object):
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        raise RuntimeError('The calculations method must be implemented by the class derived from FactorInterface')
+        raise RuntimeError(f'{type(self)} is derived from FactorInterface so must implement calculations')
 
     def displayString(self) -> str:
-        raise RuntimeError('The displayString method must be implemented by the class derived from FactorInterface')
+        raise RuntimeError(f'{type(self)} is derived from FactorInterface so must implement displayString')
 
 class StringFactor(FactorInterface):
     def __init__(
@@ -47,13 +48,13 @@ class NonModifyingFactor(FactorInterface):
 
 class AttributeFactor(FactorInterface):
     def attributeId(self) -> construction.ConstructionAttributeId:
-        raise RuntimeError('The attributeId method must be implemented by the class derived from AttributeFactor') 
+        raise RuntimeError(f'{type(self)} is derived from AttributeFactor so must implement attributeId') 
 
     def applyTo(
             self,
             attributeGroup: construction.AttributesGroup
             ) -> None:
-        raise RuntimeError('The applyTo method must be implemented by the class derived from AttributeFactor')
+        raise RuntimeError(f'{type(self)} is derived from AttributeFactor so must implement applyTo')
 
 class SetAttributeFactor(AttributeFactor):
     def __init__(
@@ -151,3 +152,50 @@ class DeleteAttributeFactor(AttributeFactor):
             attributeGroup: construction.AttributesGroup
             ) -> None:
         attributeGroup.deleteAttribute(attributeId=self._attributeId)
+
+class SkillFactor(FactorInterface):
+    def skillDef(self) -> traveller.SkillDefinition:
+        raise RuntimeError(f'{type(self)} is derived from SkillFactor so must implement skillDef') 
+
+    def applyTo(
+            self,
+            skillGroup: construction.SkillGroup
+            ) -> None:
+        raise RuntimeError(f'{type(self)} is derived from SkillFactor so must implement applyTo')
+    
+class SetSkillFactor(SkillFactor):
+    def __init__(
+            self,
+            skillDef: traveller.SkillDefinition,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]],
+            level: common.ScalarCalculation,
+            ) -> None:
+        super().__init__()
+        assert(isinstance(skillDef, traveller.SkillDefinition))
+        self._skillDef = skillDef
+        self._speciality = speciality
+        self._level = level
+
+    def skillDef(self) -> construction.ConstructionAttributeId:
+        return self._skillDef
+
+    def calculations(self) -> typing.Collection[common.ScalarCalculation]:
+        return [self._level]
+
+    def displayString(self) -> str:
+        string = self._skillDef.name()
+        if isinstance(self._speciality, enum.Enum):
+            string += f' ({self._speciality.value})'
+        elif isinstance(self._speciality, str):
+            string += f' ({self._speciality})'
+        string += f' {self._level.value()}'
+        return string
+
+    def applyTo(
+            self,
+            skillGroup: construction.SkillGroup
+            ) -> None:
+        skillGroup.setLevel(
+            skillDef=self._skillDef,
+            level=self._level,
+            speciality=self._speciality)

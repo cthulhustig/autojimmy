@@ -163,9 +163,9 @@ class Skill(robots.SkillInterface):
     # a silly number and causing a large number of UI widgets to be created
     _CustomSpecialityMaxCount = 20
 
-    _SpecialisedSkillMaxBaseLevel = common.ScalarCalculation(
+    _SpecialitySkillMaxBaseLevel = common.ScalarCalculation(
         value=0,
-        name='Specialised Skill Max Base Level')
+        name='Speciality Skill Max Base Level')
 
     _ZeroBandwidthSkillOverride = common.ScalarCalculation(
         value=1,
@@ -309,7 +309,7 @@ class Skill(robots.SkillInterface):
             inherentBandwidth=inherentBandwidth)
         self._levelOption.setMax(maxLevel.value() \
                                  if self._skillDef.isSimple() else \
-                                 Skill._SpecialisedSkillMaxBaseLevel.value())
+                                 Skill._SpecialitySkillMaxBaseLevel.value())
         self._levelOption.setEnabled(self._levelOption.max() > 0)
 
         if self._skillDef.isFixedSpeciality():
@@ -359,14 +359,9 @@ class Skill(robots.SkillInterface):
                     break
 
         if not hasSpeciality:
-            skillName = self._skillDef.name()
-            level = common.ScalarCalculation(
-                value=self._levelOption.value() if self._levelOption.isEnabled() else 0,
-                name=f'Specified {skillName} Level')
             self._createSkillSteps(
-                skillName=skillName,
-                level=level,
-                isSpecialised=False,
+                level=self._levelOption.value() if self._levelOption.isEnabled() else 0,
+                speciality=None,
                 sequence=sequence,
                 context=context)
         else:
@@ -376,44 +371,48 @@ class Skill(robots.SkillInterface):
                         # Only create steps for specialities where the level
                         # control is enabled and the level is over 0
                         continue
-
-                    skillName = f'{self._skillDef.name()} ({speciality.value})'
-                    level = common.ScalarCalculation(
-                        value=levelOption.value(),
-                        name=f'Specified {skillName} Level')
                     self._createSkillSteps(
-                        skillName=skillName,
-                        level=level,
-                        isSpecialised=True,
+                        level=levelOption.value(),
+                        speciality=speciality,
                         sequence=sequence,
                         context=context)
                     
             if self._customSpecialityOptions:
                 for nameOption, levelOption in self._customSpecialityOptions:
+                    if  not nameOption.isEnabled() or not nameOption.value():
+                        # Only create steps for specialities where the name is
+                        # option is enabled and has value
+                        continue
                     if not levelOption.isEnabled() or levelOption.value() <= 0:
                         # Only create steps for specialities where the level
-                        # control is enabled and the level is over 0
+                        # option is enabled and the level is over 0
                         continue
 
-                    skillName = f'{self._skillDef.name()} ({nameOption.value()})'
-                    level = common.ScalarCalculation(
-                        value=levelOption.value(),
-                        name=f'Specified {skillName} Level')
                     self._createSkillSteps(
-                        skillName=skillName,
-                        level=level,
-                        isSpecialised=True,
+                        level=levelOption.value(),
+                        speciality=nameOption.value(),
                         sequence=sequence,
                         context=context)
         
     def _createSkillSteps(
         self,
-        skillName: str,
-        level: common.ScalarCalculation,
-        isSpecialised: bool,
+        level: int,
+        speciality: typing.Optional[typing.Union[enum.Enum, str]],
         sequence: str,
-        context: robots.RobotContext
+        context: robots.RobotContext,
         ) -> None:
+        skillName = self._skillDef.name()
+        if isinstance(speciality, enum.Enum):
+            skillName += f' ({speciality.value})'
+        elif isinstance(speciality, str):
+            skillName += f' ({speciality})'
+
+        level = common.ScalarCalculation(
+            value=level,
+            name=f'Specified {skillName} Level')
+        # This is a hack to fix syntax highlighting
+        assert(isinstance(level, common.ScalarCalculation))
+
         step = robots.RobotStep(
             name=f'{skillName} {level.value()}',
             type=self.typeString())
@@ -433,7 +432,7 @@ class Skill(robots.SkillInterface):
         # increased for additional levels as skills that have had their level
         # increased shouldn't count towards the number of zero bandwidth skills
         # (see comment in class header)
-        if not isSpecialised and bandwidth.value() == 0:
+        if not speciality and bandwidth.value() == 0:
             inherentBandwidth = context.attributeValue(
                 attributeId=robots.RobotAttributeId.InherentBandwidth,
                 sequence=sequence)
@@ -465,7 +464,12 @@ class Skill(robots.SkillInterface):
             levelZeroCost=self._levelZeroCost,
             skillLevel=level)
         step.setCredits(
-            credits=construction.ConstantModifier(value=cost))  
+            credits=construction.ConstantModifier(value=cost))
+        
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=self._skillDef,
+            speciality=speciality,
+            level=level))
 
         context.applyStep(
             sequence=sequence,

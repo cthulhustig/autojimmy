@@ -2,6 +2,7 @@ import common
 import construction
 import enum
 import robots
+import traveller
 import typing
 import uuid
 
@@ -211,6 +212,36 @@ class Robot(object):
         return self._constructionContext.attributeValue(
             sequence=self._sequence,
             attributeId=attributeId)
+    
+    # NOTE: A skill is only classed as having a speciality if it has the
+    # speciality at level 1 or higher    
+    def hasSkill(
+            self,
+            skillDef: traveller.SkillDefinition,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> bool:
+        return self._constructionContext.hasSkill(
+            sequence=self._sequence,
+            skillDef=skillDef,
+            speciality=speciality)
+    
+    def skill(
+            self,
+            skillDef: traveller.SkillDefinition
+            ) -> typing.Optional[construction.TrainedSkill]:
+        return self._constructionContext.skill(
+            sequence=self._sequence,
+            skillDef=skillDef)  
+    
+    def skillLevel(
+            self,
+            skillDef: traveller.SkillDefinition,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> bool:
+        return self._constructionContext.skillLevel(
+            sequence=self._sequence,
+            skillDef=skillDef,
+            speciality=speciality)  
     
     def steps(
             self,

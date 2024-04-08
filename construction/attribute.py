@@ -206,7 +206,7 @@ class AttributesGroup(object):
     def attribute(
             self,
             attributeId: ConstructionAttributeId
-            ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
+            ) -> typing.Optional[AttributeInterface]:
         assert(isinstance(attributeId, ConstructionAttributeId))
         return self._attributes.get(attributeId)
 

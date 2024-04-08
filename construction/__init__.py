@@ -1,5 +1,6 @@
 from .modifier import *
 from .attribute import *
+from .skill import *
 from .option import *
 from .phase import *
 from .factor import *

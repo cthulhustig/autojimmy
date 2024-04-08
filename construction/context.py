@@ -1,6 +1,7 @@
 import common
 import enum
 import construction
+import traveller
 import typing
 
 class CompatibilityException(Exception):
@@ -20,6 +21,7 @@ class SequenceState(object):
         self._phaseStages: typing.Dict[construction.ConstructionPhase, typing.List[construction.ConstructionStage]] = {}
         self._componentTypeStages: typing.Dict[typing.Type[construction.ComponentInterface], typing.List[construction.ConstructionStage]] = {}
         self._attributes = construction.AttributesGroup()
+        self._skills = construction.SkillGroup()
         self._phaseSteps: typing.Dict[construction.ConstructionPhase, typing.List[construction.ConstructionStep]] = {}
         self._stepComponents: typing.Dict[construction.ConstructionStep, construction.ComponentInterface] = {}
         self._componentSteps: typing.Dict[construction.ComponentInterface, typing.List[construction.ConstructionStep]] = {}
@@ -124,11 +126,13 @@ class SequenceState(object):
         else:
             self._componentSteps[component] = [step]
 
-        # Apply attribute factors to attribute group
         for factor in step.factors():
-            if not isinstance(factor, construction.AttributeFactor):
-                continue
-            factor.applyTo(attributeGroup=self._attributes)
+            if isinstance(factor, construction.AttributeFactor):
+                # Apply attribute factors to attribute group
+                factor.applyTo(attributeGroup=self._attributes)
+            elif isinstance(factor, construction.SkillFactor):
+                # Apply skill factors to skill group
+                factor.applyTo(skillGroup=self._skills)
 
     def steps(
             self,
@@ -193,10 +197,16 @@ class SequenceState(object):
             ) -> bool:
         return self.findFirstComponent(componentType=componentType) != None
 
+    def hasAttribute(
+            self,
+            attributeId: construction.ConstructionAttributeId
+            ) -> bool:
+        return self._attributes.hasAttribute(attributeId=attributeId)
+
     def attribute(
             self,
             attributeId: construction.ConstructionAttributeId
-            ) -> construction.AttributeInterface:
+            ) -> typing.Optional[construction.AttributeInterface]:
         return self._attributes.attribute(attributeId=attributeId)
 
     def attributeValue(
@@ -204,12 +214,32 @@ class SequenceState(object):
             attributeId: construction.ConstructionAttributeId
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         return self._attributes.attributeValue(attributeId=attributeId)
-
-    def hasAttribute(
+    
+    # NOTE: A skill is only classed as having a speciality if it has the
+    # speciality at level 1 or higher
+    def hasSkill(
             self,
-            attributeId: construction.ConstructionAttributeId
+            skillDef: traveller.SkillDefinition,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> bool:
-        return self._attributes.hasAttribute(attributeId=attributeId)
+        return self._skills.hasSkill(
+            skillDef=skillDef,
+            speciality=speciality)
+
+    def skill(
+            self,
+            skillDef: traveller.SkillDefinition
+            ) -> typing.Optional[construction.TrainedSkill]:
+        return self._skills.skill(skillDef)
+    
+    def skillLevel(
+            self,
+            skillDef: traveller.SkillDefinition,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> common.ScalarCalculation:
+        return self._skills.level(
+            skillDef=skillDef,
+            speciality=speciality)
 
     def phaseCost(
             self,
@@ -234,6 +264,7 @@ class SequenceState(object):
 
     def resetConstruction(self) -> None:
         self._attributes.clear()
+        self._skills.clear()
         self._phaseSteps.clear()
         self._stepComponents.clear()
         self._componentSteps.clear()
@@ -375,9 +406,6 @@ class ConstructionContext(object):
                     if stage not in matched: # Avoid duplicates for common stages
                         matched.append(stage)
         return matched
-
-    # TODO: This new loading code isn't working, I'm getting different
-    # values when loading Jimmy's rifle (and probably other weapons)
 
     def loadComponents(
             self,
@@ -724,6 +752,16 @@ class ConstructionContext(object):
                 return True
         return False
     
+    def hasAttribute(
+            self,
+            attributeId: construction.ConstructionAttributeId,
+            sequence: str
+            ) -> bool:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.hasAttribute(attributeId=attributeId)    
+    
     def attribute(
             self,
             attributeId: construction.ConstructionAttributeId,
@@ -743,16 +781,44 @@ class ConstructionContext(object):
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
         return sequenceState.attributeValue(attributeId=attributeId)
-
-    def hasAttribute(
+    
+    # NOTE: A skill is only classed as having a speciality if it has the
+    # speciality at level 1 or higher    
+    def hasSkill(
             self,
-            attributeId: construction.ConstructionAttributeId,
-            sequence: str
+            skillDef: traveller.SkillDefinition,
+            sequence: str,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> bool:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.hasAttribute(attributeId=attributeId)
+        return sequenceState.hasSkill(
+            skillDef=skillDef,
+            speciality=speciality)
+    
+    def skill(
+            self,
+            skillDef: traveller.SkillDefinition,
+            sequence: str
+            ) -> typing.Optional[construction.TrainedSkill]:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.skill(skillDef=skillDef)
+    
+    def skillLevel(
+            self,
+            skillDef: traveller.SkillDefinition,
+            sequence: str,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> common.ScalarCalculation:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.hasAttribute(
+            skillDef=skillDef,
+            speciality=speciality)
 
     def applyStep(
             self,

@@ -10,8 +10,8 @@ from .components.endurance import *
 from .components.resiliency import *
 from .components.agility import *
 from .components.speed import *
-from .components.manipulators import *
-from .components.slotoptions import *
-from .components.weapons import *
+from .components.manipulator import *
+from .components.slotoption import *
+from .components.weapon import *
 from .components.brain import *
-from .components.skills import *
+from .components.skill import *

@@ -6977,7 +6977,11 @@ class NeuralActivitySensorSlotOption(SlotOption):
 
 class PlanetologySensorSuiteSlotOption(SlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_PlanetologySensorSuiteSlotOptionImpl())     
+        super().__init__(impl=_PlanetologySensorSuiteSlotOptionImpl())
+
+class ReconSensorSlotOption(SlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_ReconSensorSlotOptionImpl())
 
 class CuttingTorchSlotOption(SlotOption):
     def __init__(self) -> None:
