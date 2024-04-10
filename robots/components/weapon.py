@@ -390,13 +390,17 @@ class WeaponMount(robots.WeaponMountInterface):
     # a little convoluted. I __think__ it works like this
     #
     # For Internal/Servo mounts the Weapon Skill DM for the Fire Control
-    # System is used as instead of the robots Weapon Skill. This is based on
+    # System is used instead of the robots Weapon Skill. This is based on
     # "For finalisation purposes, Weapon Skill DM is treated as the weapon skill
     # of the robot with the integrated weapon".
     #
     # For Manipulator mounts (or weapons held by the robot) which ever is higher
     # of the manipulators DEX modifier _OR_ the mounts Weapon Skill DM is added
     # to the robots weapon skill.
+    # Update: I've got confirmation from the guy who wrote the book (Geir) that
+    # his intention was that robots only get a DEX modifier for weapons held in or
+    # mounted to a manipulator.
+    # https://forum.mongoosepublishing.com/threads/robot-tl-8-sentry-gun.124598/#post-973844
 
     # Data Structure: Cost, Slots
     _MountSizeData = {
@@ -432,7 +436,8 @@ class WeaponMount(robots.WeaponMountInterface):
 
     def __init__(
             self,
-            componentString: str
+            componentString: str,
+            notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__()
 
@@ -477,6 +482,7 @@ class WeaponMount(robots.WeaponMountInterface):
             description='Specify if the mount or multi-linked group of mounts is controlled by a Fire Control System.')
         
         self._componentString = componentString
+        self._notes = notes
         
     def instanceString(self) -> str:
         mountSize: _MountSize = self._mountSizeOption.value()
@@ -598,8 +604,12 @@ class WeaponMount(robots.WeaponMountInterface):
         step.setCredits(credits=construction.ConstantModifier(value=mountCost))
         step.setSlots(slots=construction.ConstantModifier(value=mountSlots))
 
+        if self._notes:
+            for note in self._notes:
+                step.addNote(note=note)
+
         if linkedMountCount:
-            step.addNote(WeaponMount._MultiLinkAttackNote.format(
+            step.addNote(note=WeaponMount._MultiLinkAttackNote.format(
                 count=linkedMountCount.value(),
                 modifier=linkedMountCount.value() - 1))
             
@@ -640,7 +650,7 @@ class WeaponMount(robots.WeaponMountInterface):
         traits = weaponData.traits()
         note = f'The weapon uses the {skill} skill'
         if damage and traits:
-            note += f', does {damage} damage and has the {traits} trait(s)'
+            note += f', does a base {damage} damage and has the {traits} trait(s)'
         elif damage:
             note += f' and does {damage} damage'
         elif traits:
@@ -801,6 +811,8 @@ class WeaponMount(robots.WeaponMountInterface):
     
 class InternalMount(WeaponMount):
     """
+    - Note: Attacks made with weapons mounted internally do not get a DEX modifier
+    unless the weapon is mounted in a manipulator
     - Option: Fire Control System
         - <All>
             - Note: The Fire Control Systems Weapon Skill DM is used instead of
@@ -810,10 +822,14 @@ class InternalMount(WeaponMount):
     # calculated for manipulator mounted weapons.
     
     def __init__(self) -> None:
-        super().__init__(componentString='Internal Mount')
+        super().__init__(
+            componentString='Internal Mount',
+            notes=['Attacks made with weapons mounted internally don\'t get a DEX modifier'])
         
 class ServoMount(WeaponMount):
     """
+    - Note: Attacks made with weapons mounted internally do not get a DEX modifier
+    unless the weapon is mounted in a manipulator    
     - Option: Fire Control System
         - <All>
             - Note: The Fire Control Systems Weapon Skill DM is used instead of
@@ -823,9 +839,11 @@ class ServoMount(WeaponMount):
     # calculated for manipulator mounted weapons.
     
     def __init__(self) -> None:
-        super().__init__(componentString='Servo Mount')
+        super().__init__(
+            componentString='Servo Mount',
+            notes=['Attacks made with weapons mounted on a servo don\'t get a DEX modifier'])
 
-class _ManipulatorMountBase(WeaponMount):
+class ManipulatorMount(WeaponMount):
     """
     - Requirement: Only compatible with robots that have manipulators
     - Option: Manipulator
@@ -942,8 +960,8 @@ class _ManipulatorMountBase(WeaponMount):
             supportsAutoloader = False
             if manipulator:
                 mountSize = self._mountSizeOption.value()
-                minSize = ManipulatorMount._ManipulatorSizeData[mountSize] + \
-                    ManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
+                minSize = AttachedManipulatorMount._ManipulatorSizeData[mountSize] + \
+                    AttachedManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
                 supportsAutoloader = manipulator.size() >= minSize
             self._autoLoaderOption.setEnabled(supportsAutoloader)
 
@@ -1026,9 +1044,9 @@ class _ManipulatorMountBase(WeaponMount):
         manipulator = manipulators.get(self._manipulatorOption.value())
 
         mountSize = self._mountSizeOption.value()
-        minSize = ManipulatorMount._ManipulatorSizeData[mountSize]
+        minSize = AttachedManipulatorMount._ManipulatorSizeData[mountSize]
         if self._autoloaderMagazineCount():
-            minSize += ManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
+            minSize += AttachedManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
 
         filtered = {}
         if manipulator:
@@ -1066,22 +1084,25 @@ class _ManipulatorMountBase(WeaponMount):
             context=context)
         filtered = []
         for mountSize in allowed:
-            minSize = ManipulatorMount._ManipulatorSizeData[mountSize]
+            minSize = AttachedManipulatorMount._ManipulatorSizeData[mountSize]
             if not minSize:
                 continue # Not compatible with manipulators
             if autoLoaderCount:
-                minSize += ManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
+                minSize += AttachedManipulatorMount._AutoloaderMinManipulatorSizeModifier.value()
             if manipulator.size() >= minSize:
                 filtered.append(mountSize)
         return filtered
     
-class ManipulatorMount(_ManipulatorMountBase):
+# NOTE: It's intentional that the component name doesn't mention that this is
+# 'Attached'. The attached part is implied and is only needed to differentiate
+# from the base class
+class AttachedManipulatorMount(ManipulatorMount):
     def __init__(self) -> None:
         super().__init__(componentString='Manipulator Mount')
 
 # NOTE: This class is a bit of a hack to allow for Fire Control Systems to be
 # added for hand held weapons
-class HandHeldMount(_ManipulatorMountBase):
+class HandHeldManipulatorMount(ManipulatorMount):
     """
     - Option: Autoloader
         - Requirement: Not compatible with hand held weapons

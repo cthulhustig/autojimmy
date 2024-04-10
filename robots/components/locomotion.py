@@ -32,7 +32,10 @@ class _LocomotionImpl(object):
     # The best idea I've had so far is to add them as notes but that would only
     # work if all modifiers that can affect them have been applied (e.g.
     # additional power packs for endurance).
-    # Could possibly have them as separate sequences but that's a lot of work.
+    # UPDATE: I could possible split it into 2 attributes (PrimaryAgility and
+    # SecondaryAgility). It could complicate component code that deals with
+    # agility but importantly the rules say the locomotion modifications (and
+    # therefore agility modifications) only apply to the primary locomotion
 
     _TL12EnduranceIncreasePercent = common.ScalarCalculation(
         value=50,
@@ -155,7 +158,7 @@ class _LocomotionImpl(object):
             if self._baseAgility:
                 step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.Agility,
-                    value=endurance))
+                    value=self._baseAgility))
                 
                 speed = common.Calculator.add(
                     lhs=_LocomotionImpl._BaseSpeed,

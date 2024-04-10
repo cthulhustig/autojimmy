@@ -42,6 +42,9 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
         self._agilityModifier = agilityModifier
         self._costPercent = costPercent
 
+    def agilityModifier(self) -> int:
+        return self._agilityModifier.value()
+
     def componentString(self) -> str:
         return self._componentString
 
@@ -84,6 +87,10 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
             name=f'{self._componentString} Cost')
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
+        
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Agility,
+            modifier=construction.ConstantModifier(self._agilityModifier)))        
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
@@ -95,6 +102,7 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
 
 class Plus1Agility(AgilityEnhancement):
     """
+    - Agility: +1
     - Speed: +1
     - Skill: Athletics (dexterity) 1
     - Cost: 100% of Base Chassis Cost   
@@ -107,6 +115,7 @@ class Plus1Agility(AgilityEnhancement):
         
 class Plus2Agility(AgilityEnhancement):
     """
+    - Agility: +2
     - Speed: +2
     - Skill Athletics (dexterity) 2
     - Cost: 200% of Base Chassis Cost  
@@ -119,6 +128,7 @@ class Plus2Agility(AgilityEnhancement):
 
 class Plus3Agility(AgilityEnhancement):
     """
+    - Agility: +3
     - Speed: +3
     - Skill Athletics (dexterity) 3
     - Cost: 400% of Base Chassis Cost 
@@ -131,6 +141,7 @@ class Plus3Agility(AgilityEnhancement):
         
 class Plus4Agility(AgilityEnhancement):
     """
+    - Agility: +4
     - Speed: +4
     - Skill Athletics (dexterity) 4
     - Cost: 800% of Base Chassis Cost       

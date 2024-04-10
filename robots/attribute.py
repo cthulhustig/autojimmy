@@ -37,6 +37,9 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # TODO: Need to work out if this should be Protection or Armour, I think
     # it's the same thing and the rules use them interchangeably
     Protection = 'Protection'
+    # Some options give the robot cumulative protection from radiation. How
+    # radiation affects a robot can be found on page (p106)
+    Rads = 'Rads'
 
     # This attribute is a hack to allow zero slot options to track how many zero
     # slot options have been added to know if they should start consuming a slot.
@@ -44,7 +47,8 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     ZeroSlotCount = 'Zero Slot Count'
 
     # TODO: I think this should actually be a skill but this is good enough until
-    # I implement skills
+    # I implement skills.
+    # Update: I can't remember why I thought this would be a skill
     Autopilot = 'Autopilot'
 
     # Brain Attributes
@@ -60,33 +64,35 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # to the robot
     ZeroBandwidthSkillCount = 'Zero Bandwidth Skill Count'
 
-    # Robot Numeric Traits (p7)
+    # Robot Flag Traits
+    ACV = 'ACV' # (p17)    
+    Alarm = 'Alarm' # (p7)
+    Amphibious = 'Amphibious' # (p7)
+    ATV = 'ATV' # (p8 & 17)
+    # TODO: I suspect the intention is hardened brains get this but i'm not sure
+    # it explicitly says it in the section that covers brain hardening
+    Hardened = 'Hardened' # (p8)
+    HeightenedSenses = 'Heightened Senses' # (p8)
+    Invisible = 'Invisible' # (p8)
+    # TODO: Not sure where this is used
+    IrVision = 'IR Vision' # (p8)
+    IrUvVision = 'IR/UV Vision' # (p8)
+    Seafarer = 'Seafarer' # (p17)
+
+    # Robot Numeric Traits
+    # TODO: There is an armour trait, not sure how this relates to the
+    # attribute Protection. It's currently commented out to avoid any confusion
+    # Armour = 'Armour' # (p7)
     # TODO: The Large & Small traits should be mutually exclusive
-    Large = 'Large'
-    Small = 'Small'
-    Rads = 'Rads'
-
-    # Robot Flag Traits (p7)
-    HeightenedSenses = 'Heightened Senses'
-    IrVision = 'IR Vision'
-    IrUvVision = 'IR/UV Vision'
-    Invisible = 'Invisible'
-
-    # Robot Numeric Traits (p7)
+    Large = 'Large' # (p8)
+    Small = 'Small' # (p8)
     # TODO: There is a complexity here as there is also a Stealth Skill and
     # they're not the same thing (p7)
-    Stealth = 'Stealth'
+    Stealth = 'Stealth' # (p7)
+    Thruster = 'Thruster' # In G (p17)    
 
-    # Locomotion Flag Traits (p17)
-    ATV = 'ATV'
-    Seafarer = 'Seafarer'
-    ACV = 'ACV'
-
-    # Locomotion Numeric Traits (p17)
-    Thruster = 'Thruster' # In G
-
-    # Locomotion Enum Traits (p17)
-    Flyer = 'Flyer' # SpeedBand
+    # Locomotion Enum Traits
+    Flyer = 'Flyer' # SpeedBand (p8 & p17)
 
 InternalAttributeIds = [
     RobotAttributeId.BaseProtection,

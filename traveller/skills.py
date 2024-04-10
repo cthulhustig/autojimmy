@@ -397,7 +397,11 @@ TacticsSkillDefinition = SkillDefinition(
     skillType=SkillDefinition.SkillType.FixedSpeciality,
     fixedSpecialities=TacticsSkillSpecialities)
 
-AllSkills = [
+# NOTE: This list should be used with care as it won't include any custom skills
+# defined by things like construction
+# TODO: Possibly a better idea would be to have a skill manager/registrar that
+# handles keeping track of all skill definitions known to the system
+AllStandardSkills = [
     AdminSkillDefinition,
     AdvocateSkillDefinition,
     AnimalsSkillDefinition,

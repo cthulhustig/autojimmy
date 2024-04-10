@@ -167,8 +167,8 @@ class SetSkillFactor(SkillFactor):
     def __init__(
             self,
             skillDef: traveller.SkillDefinition,
-            speciality: typing.Optional[typing.Union[enum.Enum, str]],
             level: common.ScalarCalculation,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
             ) -> None:
         super().__init__()
         assert(isinstance(skillDef, traveller.SkillDefinition))

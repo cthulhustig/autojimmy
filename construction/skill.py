@@ -42,7 +42,7 @@ class TrainedSkill(object):
                 raise AttributeError(
                     f'Unable to set speciality level on simple skill {self._skillDef.name()}')
         elif self._skillDef.isFixedSpeciality():
-            if speciality != None and not isinstance(speciality, self._skillDef.type()):
+            if speciality != None and not isinstance(speciality, self._skillDef.fixedSpecialities()):
                 raise AttributeError(
                     f'Unable to use speciality type {type(speciality)} to set fixed speciality skill {self._skillDef.name()}')
         elif self._skillDef.isCustomSpeciality():
@@ -123,6 +123,9 @@ class SkillGroup(object):
 
         return untrainedSkill
 
+    # TODO: Need to handle what happens if a component sets skill/specialisation
+    # that the robot already has. It probably makes sense that it would only use
+    # the new value if it was higher
     def setLevel(
             self,
             skillDef: traveller.SkillDefinition,

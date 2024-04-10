@@ -5,80 +5,573 @@ import robots
 import traveller
 import typing
 
-"""
-Skill Packages
-- Primitive Brain Packages
-    - <ALL>
-        - Min TL: 7
-        - Bandwidth: 0
-        - Note: Primitive brain package counteracts any negative DMs associated with the computer's DEX or INT characteristics.
-            - This should probably only be added if the robots INT or DEX would give a negative modifier
-        - Requirement: I'm working on the assumption you can only install basic primitive skill packages in a primitive brain
-        - Requirement: I think Primitive brains are limited to 1 skill package
-            - IMPORTANT: If that is the case I'm not sure why you'd ever want to increase the bandwidth of one
-    - Primitive (alert)
-        - Trait: Alarm
-        - Skill: Recon 0
-    - Primitive (clean)
-        - Skill: Profession (domestic cleaner) 2
-    - Primitive (evade)
-        - Skill: Athletics (dexterity) 1
-        - Skill: Stealth 2
-- Basic Brain Packages
-    - <ALL>
-        - Min TL: 8
-        - Bandwidth: 1
-        - Note: The skills provided by a Basic package are not subject to the INT limitations of the robot's brain (e.g. negative DMs)
-        - Requirement: I'm working on the assumption you can only install basic brain skill packages in a basic brain
-        - Requirement: I __think__ basic brains can only have 1 skill package by default but a bandwidth upgrade can allow them to have 2. This is at least true for robots with the Basic (none) skill package as it's description says as much (p71)
-    - Basic (laboureur)
-        - Skill: Profession (laboureur) 2
-    - Basic (locomotion)
-        - Skill: Vehicle (<TYPE>) equal to the robots Agility Enhancement Level (or 0 if no enhancement)
-        - Option: Combo box to select vehicle type for Vehicle skill, should use standard list of specialities from character sheet
-        - Note: Athletics (dexterity) equal to the robots Agility Enhancement Level for purposes of hazardous manoeuvring and reactions such as dodging
-    - Basic (none)
-        - Note: Skill packages installed in the brain are subject to limitations and negative modifiers
-    - Basic (recon)
-        - Skill: Recon 2
-    - Basic (security)
-        - Skill: Weapon 1
-        - Skill: Tactics (military) 1
-    - Basic (servant)
-        - Skill: Profession (domestic servant or domestic cleaner) 2
-        - Option: A boolean to select if it's a servant or cleaner
-            - IMPORTANT: This might be better handled by having separate Basic (servant) and Basic (cleaner) skill packages so both can be added to a robot by taking a bandwidth upgrade
-    - Basic (service)
-        - Skill: Mechanic 0
-        - Skill: Steward 0
-        - Note: Can support up to 8 Middle or 100 Basic passengers
-    - Basic (target)
-        - Skill: Explosives 1 or Weapon 1
-        - Complex: A robot with melee or ranged weapons may substitute an appropriate skill for Explosives 1 but retains Explosives 0 if designed to self-destruct.
-        - Option: some way to select what type it is
-            - IMPORTANT: This may be best done as separate components like the Basic (servant)
-- Hunter/Killer Brain Packages
-    - <ALL>
-        - Min TL: ??????
-            - Rules don't say, I assume the same as the brain
-        - Skill: Recon 0
-        - Bandwidth: ??????????
-            - I've not found anything that says what the bandwidth cost is
-            - IMPORTANT: If I can't find an answer I could handle this with a spin box that lets the user choose (possibly defaulting to 0 as the skills the package provides have 0 bandwidth on p74)
-        - Requirement: I'm working on the assumption you can only install hunter/killer brain skill packages in a hunter/killer brain        
-        - Requirement: As there is only 2 options, and one is just an upgrade of the other, I think it makes sense to make them mutually exclusive
-        - Requirement: I'm not sure how many skill packages a hunter/killer brain can have. If it's limited to only hunter/killer packages then it would seem like it only makes sense to have 1, but then, what's the point in upgrading its bandwidth
-            - Answer: You can spend bandwidth to increase the robots INT (useful for tactics)
-    - Hunter/Killer (standard)
-        - Skill: Gun Combat 0
-        - Skill: Melee 0
-    - Hunter/Killer (tactical)
-        - Cost: Cr10000
-        - Skill: Gun Combat 0
-        - Skill: Melee 0
-        - Skill: Tactics (military) 2
-        - Note: The Tactics (military) skill is not subject to the INT limitations of the robot's brain (e.g. e.g. negative DMs)
-"""
+
+#  ███████████                     █████                                         
+# ░░███░░░░░███                   ░░███                                          
+#  ░███    ░███  ██████    ██████  ░███ █████  ██████    ███████  ██████   █████ 
+#  ░██████████  ░░░░░███  ███░░███ ░███░░███  ░░░░░███  ███░░███ ███░░███ ███░░  
+#  ░███░░░░░░    ███████ ░███ ░░░  ░██████░    ███████ ░███ ░███░███████ ░░█████ 
+#  ░███         ███░░███ ░███  ███ ░███░░███  ███░░███ ░███ ░███░███░░░   ░░░░███
+#  █████       ░░████████░░██████  ████ █████░░████████░░███████░░██████  ██████ 
+# ░░░░░         ░░░░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░███ ░░░░░░  ░░░░░░  
+#                                                      ███ ░███                 
+#                                                     ░░██████                  
+#                                                      ░░░░░░    
+
+# Define custom skills for the Vehicle and Weapon skills used by some packages
+RobotVehicleSkillDefinition = traveller.SkillDefinition(
+    skillName='Vehicle',
+    skillType=traveller.SkillDefinition.SkillType.Simple)
+
+RobotWeaponSkillDefinition = traveller.SkillDefinition(
+    skillName='Weapon',
+    skillType=traveller.SkillDefinition.SkillType.Simple) 
+
+class SkillPackage(robots.SkillPackageInterface):
+    def __init__(
+            self,
+            componentName: str,
+            minTL: int,
+            brainType: typing.Type[robots.Brain],
+            bandwidth: int,
+            skills: typing.Optional[typing.Iterable[typing.Tuple[
+                traveller.SkillDefinition, # Skill
+                typing.Optional[typing.Union[enum.Enum, str]], # Speciality
+                int # Level
+            ]]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__()
+
+        self._componentName = componentName
+        self._minTL = common.ScalarCalculation(
+            value=minTL,
+            name=f'{self._componentName} {self.typeString()} Minimum TL')
+        self._brainType = brainType 
+        self._bandwidth = common.ScalarCalculation(
+            value=bandwidth,
+            name=f'{self._componentName} {self.typeString()} Required Bandwidth')
+        self._notes = notes        
+        
+        self._skills: typing.List[typing.Tuple[
+            traveller.SkillDefinition,
+            typing.Optional[typing.Union[enum.Enum, str]],
+            common.ScalarCalculation]] = []
+        if skills:
+            for skillDef, speciality, level in skills:
+                assert(isinstance(skillDef, traveller.SkillDefinition))
+                skillName = skillDef.name()
+                if isinstance(speciality, enum.Enum):
+                    skillName += f' {speciality.value}'
+                elif isinstance(speciality, str):
+                    skillName += f' {speciality}'
+                level = common.ScalarCalculation(
+                    value=level,
+                    name=f'{self._componentName} {self.typeString()} {skillName} Skill Level')
+                self._skills.append((skillDef, speciality, level))
+
+    def componentString(self) -> str:
+        return self._componentName
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        if context.techLevel() < self._minTL.value():
+            return False
+        
+        return context.hasComponent(
+            componentType=self._brainType,
+            sequence=sequence)
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return []
+    
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        pass
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        context.applyStep(
+            sequence=sequence,
+            step=self._createStep(sequence=sequence, context=context))
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())
+        
+        if self._bandwidth.value() > 0:
+            step.setBandwidth(
+                bandwidth=construction.ConstantModifier(value=self._bandwidth))
+            
+        for skillDef, speciality, level in self._skills:
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=skillDef,
+                speciality=speciality,
+                level=level))
+            
+        if self._notes:
+            for note in self._notes:
+                step.addNote(note)
+        
+        return step
+    
+class PrimitiveSkillPackage(SkillPackage):
+    """
+    - Min TL: 7
+    - Bandwidth: 0
+    - Note: Primitive brain package counteracts any negative DMs associated with
+      the computer's DEX or INT characteristics.
+    - Requirement: Only compatible with primitive brain
+    """
+
+    _PrimitiveNote = 'The package counteracts any potential negative DMs associated with the computer\'s DEX or INT characteristics'
+
+    def __init__(
+            self,
+            componentName: str,
+            skills: typing.Optional[typing.Iterable[typing.Tuple[
+                traveller.SkillDefinition, # Skill
+                typing.Optional[typing.Union[enum.Enum, str]], # Speciality
+                int # Level
+            ]]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            componentName=componentName,
+            minTL=7,
+            brainType=robots.PrimitiveBrain,
+            bandwidth=0,
+            skills=skills,
+            notes=notes + [PrimitiveSkillPackage._PrimitiveNote] if notes else [PrimitiveSkillPackage._PrimitiveNote])
+        
+    def typeString(self) -> str:
+        return 'Primitive Skill Package'
+
+class AlertPrimitiveSkillPackage(PrimitiveSkillPackage):
+    """
+    - Trait: Alarm
+    - Skill: Recon 0
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Alert',
+            skills=[(traveller.ReconSkillDefinition, None, 0)])
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Alarm))
+        
+        return step
+
+class CleanPrimitiveSkillPackage(PrimitiveSkillPackage):
+    """
+    - Skill: Profession (domestic cleaner) 2
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Clean',
+            skills=[(traveller.ProfessionSkillDefinition, 'Domestic Cleaner', 2)])
+
+class EvadePrimitiveSkillPackage(PrimitiveSkillPackage):
+    """
+    - Skill: Athletics (dexterity) 1
+    - Skill: Stealth 2       
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Evade',
+            skills=[(traveller.AthleticsSkillDefinition, traveller.AthleticsSkillSpecialities.Dexterity, 1),
+                    (traveller.StealthSkillDefinition, None, 2)])
+
+class HomingPrimitiveSkillPackage(PrimitiveSkillPackage):
+    """
+    - Skill: Weapon 1
+    - Option: Need something to select which Weapon skill this gives
+    """
+    _WeaponSkillLevel = common.ScalarCalculation(
+        value=1,
+        name='Primitive Homing Package Weapon Skill Level')
+
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Homing',
+            skills=[(RobotWeaponSkillDefinition, None, 1)])
+
+class BasicSkillPackage(SkillPackage):
+    """
+    - Min TL: 8
+    - Bandwidth: 1
+    - Note: The skills provided by a Basic package are not subject to the INT
+    limitations of the robot's brain (e.g. negative DMs)
+    - Requirement: Only compatible with basic brain   
+    """
+    _BasicNote = 'The package counteracts any potential negative DMs associated with the robots\'s INT characteristics'
+
+    def __init__(
+            self,
+            componentName: str,
+            skills: typing.Optional[typing.Iterable[typing.Tuple[
+                traveller.SkillDefinition, # Skill
+                typing.Optional[typing.Union[enum.Enum, str]], # Speciality
+                int # Level
+            ]]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            componentName=componentName,
+            minTL=8,
+            brainType=robots.BasicBrain,
+            bandwidth=1,
+            skills=skills,
+            notes=notes + [BasicSkillPackage._BasicNote] if notes else [BasicSkillPackage._BasicNote])
+        
+    def typeString(self) -> str:
+        return 'Basic Skill Package'
+    
+# NOTE: None is the first basic skill package listed as it should appear
+# before other 'real' options when listed by enumeration
+class NoneBasicSkillPackage(BasicSkillPackage):
+    """
+    - Note: Skill packages installed in the brain are subject to limitations and negative modifiers
+    """
+    # TODO: Not sure how this is meant to work
+
+    def __init__(self) -> None:
+        super().__init__(componentName='None')    
+
+class LaboureurBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Profession (laboureur) 2
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Laboureur',
+            skills=[(traveller.ProfessionSkillDefinition, 'Laboureur', 2)])
+        
+class LocomotionBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Vehicle skill equal to the robots Agility Enhancement Level (or
+      0 if no enhancement)
+    - Note: Athletics (dexterity) equal to the robots Agility Enhancement Level
+    for purposes of hazardous manoeuvring and reactions such as dodging
+    - Requirement: Requires some form of locomotion
+    """
+
+    _DefaultAgilityModifier = common.ScalarCalculation(
+        value=0,
+        name='Default Agility Enhancement')
+
+    _AthleticsNote = 'The robot has Athletics (dexterity) {agility} for purposes of hazardous manoeuvring and reactions such as dodging.'
+
+    def __init__(self) -> None:
+        super().__init__(componentName='Locomotion')
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+        
+        locomotions = context.findComponents(
+            componentType=robots.LocomotionInterface,
+            sequence=sequence)
+        hasCompatibleLocomotion = False
+        for locomotion in locomotions:
+            if not isinstance(locomotion, robots.NoPrimaryLocomotion):
+                hasCompatibleLocomotion = True
+                break
+        return hasCompatibleLocomotion
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        agilityEnhancement = context.findFirstComponent(
+            componentType=robots.AgilityEnhancement,
+            sequence=sequence)
+        if agilityEnhancement:
+            assert(isinstance(agilityEnhancement, robots.AgilityEnhancement))
+            agilityModifier = common.ScalarCalculation(
+                value=agilityEnhancement.agilityModifier(),
+                name='Agility Enhancement Modifier')
+        else:
+            agilityModifier = LocomotionBasicSkillPackage._DefaultAgilityModifier
+
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=RobotVehicleSkillDefinition,
+            level=agilityModifier))
+
+        if agilityModifier.value() != 0:
+            step.addNote(note=LocomotionBasicSkillPackage._AthleticsNote.format(
+                agility=agilityModifier.value()))
+
+        return step
+
+class ReconBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Recon 2
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Recon',
+            skills=[(traveller.ReconSkillDefinition, None, 2)])
+        
+class SecurityBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Weapon 1
+    - Skill: Tactics (military) 1
+    - Option: Need something to select which Weapon skill this gives
+    """
+    _WeaponSkillLevel = common.ScalarCalculation(
+        value=1,
+        name='Primitive Homing Package Weapon Skill Level')
+    _TacticsSkillLevel = common.ScalarCalculation(
+        value=1,
+        name='Primitive Homing Package Tactics (Military) Skill Level')    
+
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Security',
+            skills=[(RobotWeaponSkillDefinition, None, 1),
+                    (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
+
+class ServantBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Profession (domestic servant or domestic cleaner) 2
+    - Option: Need an option to select which Profession speciality this gives
+    """
+    class _Professions(enum.Enum):
+        DomesticServant = 'Domestic Servant'
+        DomesticCleaner = 'Domestic Cleaner'
+
+    def __init__(self) -> None:
+        super().__init__(componentName='Servant',
+            skills=[(traveller.ReconSkillDefinition, None, 2)])
+
+        self._professionSkillOption = construction.EnumOption(
+            id='Profession',
+            name='Profession',
+            type=ServantBasicSkillPackage._Professions,
+            description='Specify the Profession speciality given by the skill package')
+        
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._professionSkillOption)
+        return options
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        profession = self._professionSkillOption.value()
+        assert(isinstance(profession, ServantBasicSkillPackage._Professions))
+
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=traveller.ProfessionSkillDefinition,
+            speciality=profession.value,
+            level=SecurityBasicSkillPackage._WeaponSkillLevel))  
+
+        return step
+
+class ServiceBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Mechanic 0
+    - Skill: Steward 0
+    - Note: Can support up to 8 Middle or 100 Basic passengers
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Service',
+            skills=[(traveller.MechanicSkillDefinition, None, 0),
+                    (traveller.StewardSkillDefinition, None, 0)],
+            notes=['Can support up to 8 Middle or 100 Basic passengers'])
+
+class TargetBasicSkillPackage(BasicSkillPackage):
+    """
+    - Skill: Explosives 1 or Weapon 1
+    - Skill: Explosives 0 if Weapon is taken as the primary skill and the robot
+    has a Self Destruct System Slot Option
+    """
+    class _CombatSkills(enum.Enum):
+        Explosives = 'Explosives',
+        Weapon = 'Weapon'
+
+    _CombatSkillLevel = common.ScalarCalculation(
+        value=1,
+        name='Target Basic Skill Package Combat Skill Level')
+    
+    _SelfDestructExplosivesSkillLevel = common.ScalarCalculation(
+        value=0,
+        name='Target Basic Skill Package Self Destruct Explosives Skill')
+
+    def __init__(self) -> None:
+        super().__init__(componentName='Target')
+
+        self._combatSkillOption = construction.EnumOption(
+            id='CombatSkill',
+            name='Combat Skill',
+            type=TargetBasicSkillPackage._CombatSkills,
+            description='Specify the combat skill granted by the Target Basic Skill Package')
+        
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._combatSkillOption)
+        return options
+    
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        combatSkill = self._combatSkillOption.value()
+        assert(isinstance(combatSkill, TargetBasicSkillPackage._CombatSkills))
+
+        if combatSkill == TargetBasicSkillPackage._CombatSkills.Explosives:
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=traveller.ExplosivesSkillDefinition,
+                level=TargetBasicSkillPackage._CombatSkillLevel))
+        elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=RobotWeaponSkillDefinition,
+                level=TargetBasicSkillPackage._CombatSkillLevel))
+            
+            if context.hasComponent(
+                componentType=robots.SelfDestructSystemSlotOption,
+                sequence=sequence):
+                step.addFactor(factor=construction.SetSkillFactor(
+                    skillDef=traveller.ExplosivesSkillDefinition,
+                    level=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel))
+
+        return step
+
+class HunterKillerSkillPackage(SkillPackage):
+    """
+    - Min TL: 8
+    - Bandwidth: 1
+    """
+    # NOTE: The rules don't explicitly state the minimum TL for a hunter/killer
+    # brain. I've gone with 8 as that is the min TL for the associated brain.
+    # This seems logical as there is no point in having the brain without the
+    # skill package and vice versa. It's also consistent with the other skill
+    # packages where the stated min TL matches the min TL for the brain it goes
+    # with
+    # NOTE: The rules don't state the bandwidth used by a hunter/killer package.
+    # I've gone with 1 as it's the same as the basic brain packages, the brain
+    # only has 1 bandwidth so it can't be more than that without forcing a
+    # bandwidth upgrade but that would be weird to be forced to upgrade the base
+    # brain to use a skill package, it also doesn't really make sense that it
+    # would be less than the bandwidth of the basic brain package
+
+    def __init__(
+            self,
+            componentName: str,
+            skills: typing.Optional[typing.Iterable[typing.Tuple[
+                traveller.SkillDefinition, # Skill
+                typing.Optional[typing.Union[enum.Enum, str]], # Speciality
+                int # Level
+            ]]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            componentName=componentName,
+            minTL=8,
+            brainType=robots.HunterKillerBrain,
+            bandwidth=1,
+            skills=skills,
+            notes=notes)
+        
+    def typeString(self) -> str:
+        return 'Hunter/Killer Skill Package'
+    
+class StandardHunterKillerSkillPackage(HunterKillerSkillPackage):
+    """
+    - Skill: Gun Combat 0
+    - Skill: Melee 0
+    - Skill: Recon 0    
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Standard',
+            skills=[(traveller.GunCombatSkillDefinition, None, 0),
+                    (traveller.MeleeSkillDefinition, None, 0),
+                    (traveller.ReconSkillDefinition, None, 0)])
+        
+class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
+    """
+    - Cost: Cr10000
+    - Skill: Gun Combat 0
+    - Skill: Melee 0
+    - Skill: Recon 0        
+    - Skill: Tactics (military) 2
+    - Note: The Tactics (military) skill is not subject to the INT limitations
+    of the robot's brain (e.g. negative DMs)    
+    """
+    _TacticsCost = common.ScalarCalculation(
+        value=10000,
+        name='Tactics Hunter/Killer Skill Package Cost')
+    _TacticsNote = 'The rules say "This tactical skill is not subject to the INT limitations of the robot’s brain" (p73), this most likely means it doesn\'t suffer the DM-1 it normally would when using the skill due to the Hunter/Killer Brain having an INT of 3/4'
+
+    def __init__(self) -> None:
+        super().__init__(
+            componentName='Tactical',
+            skills=[(traveller.GunCombatSkillDefinition, None, 0),
+                    (traveller.MeleeSkillDefinition, None, 0),
+                    (traveller.ReconSkillDefinition, None, 0),
+                    (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 2)],
+            notes=[TacticalHunterKillerSkillPackage._TacticsNote])
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        step.setCredits(credits=construction.ConstantModifier(
+            value=TacticalHunterKillerSkillPackage._TacticsCost))
+
+        return step
+
+
+
+#   █████████  █████       ███  ████  ████         
+#  ███░░░░░███░░███       ░░░  ░░███ ░░███         
+# ░███    ░░░  ░███ █████ ████  ░███  ░███   █████ 
+# ░░█████████  ░███░░███ ░░███  ░███  ░███  ███░░  
+#  ░░░░░░░░███ ░██████░   ░███  ░███  ░███ ░░█████ 
+#  ███    ░███ ░███░░███  ░███  ░███  ░███  ░░░░███
+# ░░█████████  ████ █████ █████ █████ █████ ██████ 
+#  ░░░░░░░░░  ░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░░  
 
 _PerLevelCostMultiplier = common.ScalarCalculation(
     value=10,
