@@ -342,19 +342,13 @@ class WeaponMount(robots.WeaponMountInterface):
     # can be installed and the DEX level used when calculating the attack
     # modifier. The slot usage and cost for the mount come from the table on
     # p61. The table also specifies the minimum manipulator size required for
-    #that size mount.
+    # that size mount.
     #
     # Servo mounts are a bit confusing. The slots and cost for the mount come
     # from the table on p61 but the minimum manipulator size doesn't apply. The
     # only limit on how big a mount (and therefore weapon) you can install is
-    # the available slots. What's not clear (if any) DEX level is used when
-    # calculating the attack modifier. It's also a little odd that there is no
-    # min TL for a servo mount.
-    # When it comes to the DEX level it's not clear. There are combat drones on
-    # p132 that don't have manipulators and don't have a DEX skill. In relation
-    # to robots as characters it says the robots DEX is that of the manipulator
-    # with the highest DEX score, but it's not obvious that this would apply to
-    # robots in general.
+    # the available slots. After clarifications from Geir (see below) the only
+    # thing that's not clear is why there is no min TL for servo mounts.
     #
     # Torso mounts are the most confusing. The rules specifically say "A weapon
     # mounted in the robot’s torso may use any available Slots.". The fact that is
@@ -384,23 +378,82 @@ class WeaponMount(robots.WeaponMountInterface):
     # it. If it was the other interpretation you would think they would make it
     # a little clearer rather than expecting you to join the dots between this
     # wording and some paragraph 50 pages back.
-    # As with the servo mount it's not also not clear what DEX level is used for
-    # calculating the attack modifier for a torso mount.
-    # NOTE: The rules around how the Fire Control System affects attack rolls is
-    # a little convoluted. I __think__ it works like this
-    #
-    # For Internal/Servo mounts the Weapon Skill DM for the Fire Control
-    # System is used instead of the robots Weapon Skill. This is based on
-    # "For finalisation purposes, Weapon Skill DM is treated as the weapon skill
-    # of the robot with the integrated weapon".
-    #
-    # For Manipulator mounts (or weapons held by the robot) which ever is higher
-    # of the manipulators DEX modifier _OR_ the mounts Weapon Skill DM is added
-    # to the robots weapon skill.
-    # Update: I've got confirmation from the guy who wrote the book (Geir) that
-    # his intention was that robots only get a DEX modifier for weapons held in or
-    # mounted to a manipulator.
+    # NOTE: The rules around how the Fire Control System affects attack rolls are
+    # confusing. I got a change to put some questions to Geir Lanesskog and he
+    # clarified some stuff.
     # https://forum.mongoosepublishing.com/threads/robot-tl-8-sentry-gun.124598/#post-973844
+    #
+    # Clarification 1: His intention was that only weapons held by or mounted
+    # to a manipulators should get a DEX modifier for attack rolls and this
+    # could be a negative modifier. He specifically said that you just don't
+    # include it, you shouldn't count it a DEX of zero (i.e. it gives no DM
+    # rather than a DM-3)
+    # Although he doesn't explicitly state it this would imply a robot with no
+    # manipulators has no DEX score.
+    #
+    # Clarification 2: "For finalisation purposes, Weapon Skill DM is treated as
+    # the weapon skill of the robot with the integrated weapon" means the robot
+    # robot effectively gets the combat skill appropriate for the mounted weapon
+    # at a level equal to the Weapon Skill DM for the Fire Control System. The
+    # important piece of logic that is missing is that, if the robot also takes
+    # the actual skill at a higher level, that level is used instead.
+    #
+    # Clarification 3: The section covering the attack modifier for weapons held
+    # by or mounted to a manipulator is worded incorrectly. Rather than you
+    # taking the larger of the DEX modifier for the manipulator and the Weapon
+    # Skill DM of the Fire Control system and and using it in addition to the
+    # weapon skill for the weapon. It should have said to take the larger of the
+    # weapon skill for the weapon and the Fire Control System and use it in
+    # addition to the DEX modifier for the manipulator. His intention was it
+    # should be treated in the same way the attack modifier for a player, they
+    # get the modifier from a combat skill (which could be an actual skill or
+    # provided by the Fire Control System) and they also get a modifier for the
+    # DEX (of the manipulator)
+
+    # TODO: Need to update stuff to handle new interpretation based on talk
+    # with Geir. I can see a couple of possible ways to handle this (but I
+    # think Option 1 is the way forward)
+    #
+    # Option 1: Have the Fire Control System add a note that says when using
+    # it you can use the larger of the Weapon Skill DM or relevant combat
+    # skill.
+    # - PRO: It's clear that it only applies when using that Fire Control
+    # System
+    # - PRO: I can say what the Weapon Skill DM is so the player doesn't
+    # need to look it up and the weapon definition has a string for the
+    # skill it uses (including speciality) so I should be able to just
+    # print that out.
+    # - CON: It's another note the user needs to remember to apply. This
+    # is especially painful for robots with a single Fire Control System
+    # (especially if it covers all manipulators) as the user will probably
+    # need to apply it the majority of times.
+    #
+    # Option 2: Have the Fire Control System add a skill factor that is then
+    # possibly overridden by the robot adding a skill or skill package.
+    # - PRO: It doesn't need a note the user needs to remember to apply
+    # - CON: I think this may be conceptually wrong as it's not obvious that
+    # the Fire Control System would have any bearing on the robots combat
+    # skill level outside of combat (e.g. it wouldn't help them maintain
+    # the weapon or given them any knowledge about other weapons that fall
+    # under the same speciality)
+    # - CON: If the Fire Control System modifier is higher than the combat
+    # skill the explicitly add, it won't be obvious that the higher value
+    # only applies when using the Fire Control System. This would be an
+    # issue for robots with multiple Fire Control Systems at different
+    # levels or some manipulators that don't have a Fire Control System
+    #
+    # I think no mater what option I go with I may need some changes around
+    # the hand held mount. 
+    # - You would still need to select the manipulator the "mount" is for,
+    # if it's multi-link and if it has a Fire Control System.
+    # - There would be no need to select a size or weapon. Instead a note
+    # should be added that helps the user work out what size weapon the
+    # manipulator allows them to use.
+    # - If a Fire Control System was added, the user would need to select
+    # which skill and speciality it was for. It would be this selection
+    # that would be either used to generate a note or added as a skill
+    # factor depending on which of the above options I go with.
+
 
     # Data Structure: Cost, Slots
     _MountSizeData = {
