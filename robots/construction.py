@@ -12,3 +12,4 @@ class RobotPhase(construction.ConstructionPhase):
     Manipulators = 'Manipulators'
     SlotOptions = 'Slot Options'
     Brain = 'Brain'
+    Finalisation = 'Finalisation'

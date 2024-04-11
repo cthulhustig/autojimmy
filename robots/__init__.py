@@ -15,3 +15,4 @@ from .components.slotoption import *
 from .components.weapon import *
 from .components.brain import *
 from .components.skill import *
+from .components.finalisation import *

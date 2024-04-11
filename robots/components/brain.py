@@ -95,6 +95,13 @@ class Brain(robots.BrainInterface):
     # the are to hack (p106)
     # NOTE: The Expert/X trait that some brains have determines what level of
     # skill the robot can attempt (Difficult (10+), Very Difficult (12+) etc)
+    # TODO: The table in the rules that gives the brain stats (p66) has a Skills
+    # column. I __think__ this is just giving the INT modifier for the brain.
+    # The numbers match up with those used when doing the same for player
+    # characteristics (e.g. an INT of 1 gives a -2 modifier). If this is not
+    # what the column is showing then I don't know what it is as there doesn't
+    # seem to be anything that explains it.
+    # This could be a good question for Geir
     # TODO: Do something with Computer/X rating. Could be a note, could be
     # an attribute. Note I don't __think__ this is a skill
 
@@ -239,7 +246,6 @@ class Brain(robots.BrainInterface):
             cost: int,
             intelligence: int,
             inherentBandwidth: int,
-            skillCount: int,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__()
@@ -262,10 +268,6 @@ class Brain(robots.BrainInterface):
         self._inherentBandwidth = common.ScalarCalculation(
             value=inherentBandwidth,
             name=f'{self._componentString} Brain Inherent Bandwidth')
-            
-        self._skillCount = common.ScalarCalculation(
-            value=skillCount,
-            name=f'{self._componentString} Brain Base Skill Count')      
 
         self._notes = list(notes)
 
@@ -484,10 +486,6 @@ class Brain(robots.BrainInterface):
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             value=self._inherentBandwidth))
         
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.MaxSkills,
-            value=self._skillCount))
-        
         return step
     
     def _createBandwidthUpgradeStep(
@@ -617,7 +615,6 @@ class PrimitiveBrain(Brain):
     """
     - Trait: INT 1
     - Trait: Computer/0
-    - Trait: Skill Count -2
     - Trait: Inherent Bandwidth 0    
     - Note: Programmable
     - Requirement: I don't think this is compatible with additional skills  
@@ -637,7 +634,6 @@ class PrimitiveBrain(Brain):
             cost=cost,
             intelligence=1,
             inherentBandwidth=0,
-            skillCount=-2,
             notes=['Programmable']) # TODO: This is a crap note, needs more context#
         
 class PrimitiveTL7Brain(PrimitiveBrain):
@@ -646,7 +642,6 @@ class PrimitiveTL7Brain(PrimitiveBrain):
     - Cost: Cr10000
     - Trait: INT 1
     - Trait: Computer/0
-    - Trait: Skill Count -2
     - Trait: Inherent Bandwidth 0
     - Note: Programmable
     """
@@ -662,7 +657,6 @@ class PrimitiveTL8Brain(PrimitiveBrain):
     - Cost: Cr100
     - Trait: INT 1
     - Trait: Computer/0
-    - Trait: Skill Count -2
     - Trait: Inherent Bandwidth 0
     - Note: Programmable
     """
@@ -675,7 +669,6 @@ class PrimitiveTL8Brain(PrimitiveBrain):
 class BasicBrain(Brain):
     """
     - Trait: Computer/1
-    - Trait: Skill Count -1
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     - Requirement: I don't think this is compatible with additional skills  
@@ -696,7 +689,6 @@ class BasicBrain(Brain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            skillCount=-1,
             notes=['Limited Language, Security/0']) # TODO: This is a crap note
                 
 class BasicTL8Brain(BasicBrain):
@@ -705,7 +697,6 @@ class BasicTL8Brain(BasicBrain):
     - Cost: Cr20000
     - Trait: INT 3
     - Trait: Computer/1
-    - Trait: Skill Count -1
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     """
@@ -721,7 +712,6 @@ class BasicTL10Brain(BasicBrain):
     - Cost: Cr4000
     - Trait: Computer/1
     - Trait: INT 4
-    - Trait: Skill Count -1
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     """
@@ -734,7 +724,6 @@ class BasicTL10Brain(BasicBrain):
 class HunterKillerBrain(Brain):
     """
     - Trait: Computer/1
-    - Trait: Skill Count -1    
     - Skill: Recon 0
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1    
@@ -756,7 +745,6 @@ class HunterKillerBrain(Brain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            skillCount=-1,
             notes=['Limited Fried or Foe, Security/1']) # TODO: This is a crap note
                 
 class HunterKillerTL8Brain(HunterKillerBrain):
@@ -765,7 +753,6 @@ class HunterKillerTL8Brain(HunterKillerBrain):
     - Cost: Cr30000
     - Trait: INT 3
     - Trait: Computer/1
-    - Trait: Skill Count -1    
     - Skill: Recon 0
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1
@@ -782,7 +769,6 @@ class HunterKillerTL10Brain(HunterKillerBrain):
     - Cost: Cr6000
     - Trait: INT 4
     - Trait: Computer/1
-    - Trait: Skill Count -1    
     - Skill: Recon 0
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1
@@ -807,7 +793,6 @@ class SkilledBrain(Brain):
             cost: typing.Union[int, common.ScalarCalculation],
             intelligence: typing.Union[int, common.ScalarCalculation],
             inherentBandwidth: typing.Union[int, common.ScalarCalculation],
-            skillCount: typing.Union[int, common.ScalarCalculation],
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__(
@@ -816,13 +801,11 @@ class SkilledBrain(Brain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            skillCount=skillCount,
             notes=notes)     
         
 class AdvancedBrain(SkilledBrain):
     """
     - Trait: Computer/2
-    - Trait: Skill Count 0  
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)
@@ -841,7 +824,6 @@ class AdvancedBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=2,
-            skillCount=0,
             notes=['Limited Fried or Foe, Security/1', # TODO: This is a crap note
                    'Can only attempt tasks up to Difficult (10+)'])
                 
@@ -851,7 +833,6 @@ class AdvancedTL10Brain(AdvancedBrain):
     - Cost: Cr100000
     - Trait: INT 6
     - Trait: Computer/2
-    - Trait: Skill Count 0  
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)  
@@ -868,7 +849,6 @@ class AdvancedTL11Brain(AdvancedBrain):
     - Cost: Cr50000
     - Trait: INT 7
     - Trait: Computer/2
-    - Trait: Skill Count 0  
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+) 
@@ -885,7 +865,6 @@ class AdvancedTL12Brain(AdvancedBrain):
     - Cost: Cr10000
     - Trait: INT 8
     - Trait: Computer/2
-    - Trait: Skill Count 0  
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)
@@ -898,7 +877,6 @@ class AdvancedTL12Brain(AdvancedBrain):
 
 class VeryAdvancedBrain(SkilledBrain):
     """
-    - Trait: Skill Count +1 
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
@@ -917,7 +895,6 @@ class VeryAdvancedBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            skillCount=+1,
             notes=['Intellect Interface, Expert/2, Security/2', # TODO: This is a crap note
                    'Can only attempt tasks up to Very Difficult (12+)'])
                 
@@ -927,7 +904,6 @@ class VeryAdvancedTL12Brain(VeryAdvancedBrain):
     - Cost: Cr500000
     - Trait: INT 9
     - Trait: Computer/3
-    - Trait: Skill Count +1 
     - Trait: Inherent Bandwidth 3
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
@@ -945,7 +921,6 @@ class VeryAdvancedTL13Brain(VeryAdvancedBrain):
     - Cost: Cr500000
     - Trait: INT 10
     - Trait: Computer/4
-    - Trait: Skill Count +1 
     - Trait: Inherent Bandwidth 4
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+) 
@@ -963,7 +938,6 @@ class VeryAdvancedTL14Brain(VeryAdvancedBrain):
     - Cost: Cr500000
     - Trait: INT 11
     - Trait: Computer/5
-    - Trait: Skill Count +1 
     - Trait: Inherent Bandwidth 5
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
@@ -977,7 +951,6 @@ class VeryAdvancedTL14Brain(VeryAdvancedBrain):
 
 class SelfAwareBrain(SkilledBrain):
     """
-    - Trait: Skill Count +2
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
     """
@@ -996,7 +969,6 @@ class SelfAwareBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            skillCount=+2,
             notes=['Near sentient, Expert/3, Security/3', # TODO: This is a crap note
                    'Can only attempt tasks up to Formidable (14+)'])
                 
@@ -1006,7 +978,6 @@ class SelfAwareTL15Brain(SelfAwareBrain):
     - Cost: Cr1000000
     - Trait: INT 12
     - Trait: Computer/10
-    - Trait: Skill Count +2
     - Trait: Inherent Bandwidth 10
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
@@ -1024,7 +995,6 @@ class SelfAwareTL16Brain(SelfAwareBrain):
     - Cost: Cr1000000
     - Trait: INT 13
     - Trait: Computer/15
-    - Trait: Skill Count +2
     - Trait: Inherent Bandwidth 15
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
@@ -1038,7 +1008,6 @@ class SelfAwareTL16Brain(SelfAwareBrain):
 
 class ConsciousBrain(SkilledBrain):
     """
-    - Trait: Skill Count +3
     - Note: Conscious Intelligence, Security/3   
     """
     # TODO: Handle additional zero level skills
@@ -1056,7 +1025,6 @@ class ConsciousBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            skillCount=+3,
             notes=['Conscious Intelligence, Security/3']) # TODO: This is a crap note
                 
 class ConsciousTL17Brain(ConsciousBrain):
@@ -1065,7 +1033,6 @@ class ConsciousTL17Brain(ConsciousBrain):
     - Cost: Cr5000000
     - Trait: INT 15
     - Trait: Computer/20
-    - Trait: Skill Count +3
     - Trait: Inherent Bandwidth 20
     - Note: Conscious Intelligence, Security/3
     """
@@ -1082,7 +1049,6 @@ class ConsciousTL18Brain(ConsciousBrain):
     - Cost: Cr1000000
     - Trait: INT 15
     - Trait: Computer/30
-    - Trait: Skill Count +3
     - Trait: Inherent Bandwidth 30
     - Note: Conscious Intelligence, Security/3
     """

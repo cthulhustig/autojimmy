@@ -58,13 +58,14 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     InherentBandwidth = 'Inherent Bandwidth'
     # The Max Bandwidth defines the total number of skills a robot can have
     MaxBandwidth = 'Max Bandwidth'
-    MaxSkills = 'Max Skills'
     # The zero bandwidth skill count is a hack similar to ZeroSlotCost. This
     # attribute is used to count the number of zero bandwidth skills added to
     # to the robot
     ZeroBandwidthSkillCount = 'Zero Bandwidth Skill Count'
 
+    #
     # Robot Flag Traits
+    #
     ACV = 'ACV' # (p17)    
     Alarm = 'Alarm' # (p7)
     Amphibious = 'Amphibious' # (p7)
@@ -79,7 +80,9 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     IrUvVision = 'IR/UV Vision' # (p8)
     Seafarer = 'Seafarer' # (p17)
 
+    #
     # Robot Numeric Traits
+    #
     # TODO: There is an armour trait, not sure how this relates to the
     # attribute Protection. It's currently commented out to avoid any confusion
     # Armour = 'Armour' # (p7)
@@ -91,11 +94,31 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Stealth = 'Stealth' # (p7)
     Thruster = 'Thruster' # In G (p17)    
 
+    #
     # Locomotion Enum Traits
+    #
     Flyer = 'Flyer' # SpeedBand (p8 & p17)
 
 InternalAttributeIds = [
     RobotAttributeId.BaseProtection,
     RobotAttributeId.ZeroSlotCount,
     RobotAttributeId.ZeroBandwidthSkillCount
+]
+
+TraitAttributesIds = [
+    RobotAttributeId.ACV,
+    RobotAttributeId.Alarm,
+    RobotAttributeId.Amphibious,
+    RobotAttributeId.ATV,
+    RobotAttributeId.Hardened,
+    RobotAttributeId.HeightenedSenses,
+    RobotAttributeId.Invisible,
+    RobotAttributeId.IrVision,
+    RobotAttributeId.IrUvVision,
+    RobotAttributeId.Seafarer,
+    RobotAttributeId.Large,
+    RobotAttributeId.Small,
+    RobotAttributeId.Stealth,
+    RobotAttributeId.Thruster,
+    RobotAttributeId.Flyer
 ]

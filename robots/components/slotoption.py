@@ -5050,9 +5050,10 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         slotsPercentage = common.ScalarCalculation(
             value=slotsPercentage,
             name=f'{componentString} Base Slot Percentage Required')
-        slots = common.Calculator.takePercentage(
-            value=context.baseSlots(sequence=sequence),
-            percentage=slotsPercentage,
+        slots = common.Calculator.ceil(
+            value=common.Calculator.takePercentage(
+                value=context.baseSlots(sequence=sequence),
+                percentage=slotsPercentage),
             name=f'{componentString} Slots Required')
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))        
@@ -5263,9 +5264,10 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         slotsPercentage = common.ScalarCalculation(
             value=slotsPercentage,
             name=f'{componentString} Base Slot Percentage Required')
-        slots = common.Calculator.takePercentage(
-            value=context.baseSlots(sequence=sequence),
-            percentage=slotsPercentage,
+        slots = common.Calculator.ceil(
+            value=common.Calculator.takePercentage(
+                value=context.baseSlots(sequence=sequence),
+                percentage=slotsPercentage),
             name=f'{componentString} Slots Required')
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))        
@@ -5340,9 +5342,10 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             attributeId=robots.RobotAttributeId.Hits,
             sequence=sequence)
         assert(isinstance(robotHits, common.ScalarCalculation))
-        panelHits = common.Calculator.takePercentage(
-            value=robotHits,
-            percentage=_SolarPowerUnitSlotOptionImpl._PanelsHitPercentage,
+        panelHits = common.Calculator.floor(
+            value=common.Calculator.takePercentage(
+                value=robotHits,
+                percentage=_SolarPowerUnitSlotOptionImpl._PanelsHitPercentage),
             name='Solar Panel Hits')
         
         step.addNote(_SolarPowerUnitSlotOptionImpl._DurabilityNote.format(

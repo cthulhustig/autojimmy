@@ -29,7 +29,7 @@ class Chassis(robots.ChassisInterface):
         (18, None, 5)
     ]
 
-    _AttackRollDMNote = 'Due to the size of the robot, attackers get the Attack Roll DM ({modifier}) as a modifier when attacking it (p13)'
+    _AttackRollDMNote = 'Due to the size of the robot, attackers get the Attack Roll DM{modifier} as a modifier when attacking it (p13)'
 
     # TODO: Androids and biological robots have no default protection (p18) and
     # it sounds like they have different max values specified in their rules

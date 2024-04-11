@@ -47,8 +47,51 @@ class RobotContext(construction.ConstructionContext):
         return self.phaseCost(
             sequence=sequence,
             phase=robots.RobotPhase.BaseChassis,
-            costId=robots.RobotCost.Credits)        
+            costId=robots.RobotCost.Credits)     
+    
+    def usedSlots(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        slotsUsed = self.multiPhaseCost(
+            sequence=sequence,
+            costId=robots.RobotCost.Slots)
+        return common.Calculator.equals(
+            value=slotsUsed,
+            name='Total Slots Used')
 
+    def usedBandwidth(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        slotsUsed = self.multiPhaseCost(
+            sequence=sequence,
+            costId=robots.RobotCost.Bandwidth)
+        return common.Calculator.equals(
+            value=slotsUsed,
+            name='Total Bandwidth Used')
+
+    def multiPhaseCost(
+            self,
+            sequence: str,
+            costId: robots.RobotCost,
+            phases: typing.Optional[typing.Iterable[robots.RobotPhase]] = None,
+            ) -> None:
+        if not phases:
+            phases = robots.RobotPhase
+
+        phaseCosts = []
+        for phase in phases:
+            phaseCost = self.phaseCost(
+                sequence=sequence,
+                phase=phase,
+                costId=costId)
+            phaseCosts.append(phaseCost)
+
+        return common.Calculator.sum(
+            values=phaseCosts,
+            name=f'Total')
+    
 class Robot(object):
     def __init__(
             self,
@@ -463,5 +506,15 @@ class Robot(object):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Finalisation',
+            sequence=None, # Not tided to a specific sequence
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.FinalisationComponent,
+            defaultType=robots.FinalisationComponent,
+            # Mandatory single component
+            minComponents=1,
+            maxComponents=1))     
         
         return stages
