@@ -52,9 +52,11 @@ class IncreaseArmour(ArmourModification):
     # same page as it has each armour point costing a percentage of the base
     # slots (which matches the wording) but a fixed credits cost per slot
     # (which doesn't match the wording)
+    # NOTE: Although this is an armour component it deals with the the
+    # Protection value rather than the Armour trait. See the relevant
+    # attributes for more details
 
-    # List of tuples in the following order:
-    # Min TL, Max TL, Max Addition Armour, Slot Cost Percentage, Max Armour Per Slot, Cost Per Slot
+    # Data Structure: Min TL, Max TL, Max Addition Armour, Slot Cost Percentage, Max Armour Per Slot, Cost Per Slot
     _ArmourTypeDetails = [
         (6, 8, 20, 1, 1, 250),
         (9, 11, 30, 0.5, 2, 1000),
@@ -123,10 +125,7 @@ class IncreaseArmour(ArmourModification):
             if currentTL >= minTL and ((maxTL == None) or (currentTL <= maxTL)):
                 foundDetails = True
                 break
-        if not foundDetails:
-            # TODO: Not sure what to do here (what does gunsmith do in these
-            # situations?)
-            return
+        assert(foundDetails)
         tlRangeString = f'TL{minTL}-{maxTL}' if maxTL != None else f'TL{minTL}+'
 
         baseSlots = context.baseSlots(sequence=sequence)
@@ -183,15 +182,19 @@ class IncreaseArmour(ArmourModification):
 class DecreaseArmour(ArmourModification):
     """
     - Cost: -10% of Base Chassis Cost per point removed
-    - Requirement: Removing armour prevents the addition of environmental protection
-    - Requirement: This is possibly incompatible with androids etc, p19 says it's not available on robots that lack base
-    armour but I don't know if that's the same as androids not having default protection.
+    - Requirement: Removing armour prevents the addition of environmental
+    protection
+    - Requirement: This is possibly incompatible with androids etc, p19 says
+    it's not available on robots that lack base armour but I don't know if
+    that's the same as androids not having default protection.
     """
-    # TODO: Handle complex requirements
-
-    # TODO: Need to confirm exactly how the terms armour and protection relate,
-    # the rules seem to use them interchangeably (p19). This could mean updating
-    # terminology
+    # NOTE: Although this is an armour component it deals with the the
+    # Protection value rather than the Armour trait. See the relevant
+    # attributes for more details
+    # NOTE: The requirement that removing armour prevents adding environmental
+    # protection is handled by the environmental protection components as
+    # they're added later
+    # TODO: Handle the additional requirement when I add android support
 
     _CostReductionPercent = common.ScalarCalculation(
         value=-10,

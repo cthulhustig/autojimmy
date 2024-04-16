@@ -2,10 +2,11 @@ import common
 import construction
 import math
 import robots
+import traveller
 import typing
 
 class FinalisationComponent(robots.RobotComponentInterface):
-    # TODO: Need to hand removing unused slots. I don't like the idea of using
+    # TODO: Need to handle removing unused slots. I don't like the idea of using
     # options on the finalisation component as it means I need to make the phase
     # visible in the config widget so you'll have a combo box with Finalisation
     # selected and no options to change it.
@@ -42,8 +43,15 @@ class FinalisationComponent(robots.RobotComponentInterface):
         robots.SelfMaintenanceEnhancementDefaultSuiteOption,
         robots.SelfMaintenanceEnhancementSlotOption
     ]
+    _AutopilotVehicleSkills = [
+        traveller.DriveSkillDefinition,
+        traveller.FlyerSkillDefinition,
+        robots.RobotVehicleSkillDefinition
+    ]
 
+    _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
+    _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
     
     def componentString(self) -> str:
         return 'Finalisation'
@@ -73,12 +81,43 @@ class FinalisationComponent(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        self._createTraitNotes(sequence=sequence, context=context)
-        self._maintenanceNote(sequence=sequence, context=context)
-        self._slotUsageNote(sequence=sequence, context=context)
-        self._bandwidthUsageNote(sequence=sequence, context=context)
+        self._createProtectionStep(sequence=sequence, context=context)
+        self._createTraitNoteSteps(sequence=sequence, context=context)
+        self._createInoperableStep(sequence=sequence, context=context)
+        self._createMaintenanceStep(sequence=sequence, context=context)
+        self._createAutopilotStep(sequence=sequence, context=context)
 
-    def _createTraitNotes(
+        # These are intentionally left to last to hopefully make them more
+        # obvious.
+        self._slotUsageStep(sequence=sequence, context=context)
+        self._bandwidthUsageStep(sequence=sequence, context=context)
+
+    def _createProtectionStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        protection = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Protection,
+            sequence=sequence)
+        if not protection:
+            return # Nothing to do
+        
+        armour = common.Calculator.equals(
+            value=protection,
+            name='Armour Trait Value')
+        
+        step = robots.RobotStep(
+            name=f'Protection ({protection.value()})',
+            type='Trait')
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Armour,
+            value=armour))
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+
+    def _createTraitNoteSteps(
             self,
             sequence: str,
             context: robots.RobotContext
@@ -92,7 +131,6 @@ class FinalisationComponent(robots.RobotComponentInterface):
             name = trait.value
             notes = []
             if trait == robots.RobotAttributeId.ACV:
-                # TODO: Check if these notes are already handled in locomotion
                 notes.append('The robot can travel over solid and liquid surfaces.')
                 notes.append('The robot only hover up to a few meters over above the surface and requires at least at thin atmosphere to operate.')
             elif trait == robots.RobotAttributeId.Alarm:
@@ -115,7 +153,7 @@ class FinalisationComponent(robots.RobotComponentInterface):
             elif trait == robots.RobotAttributeId.HeightenedSenses:
                 notes.append('DM+1 to Recon and Survival Checks.')
             elif trait == robots.RobotAttributeId.Invisible:
-                notes.append('DM-4 to checks to spot the robot. This applies across the electromagnetic spectrum.')
+                notes.append('DM-4 to checks to see the robot. This applies across the electromagnetic spectrum.')
             elif trait == robots.RobotAttributeId.IrVision:
                 notes.append('The robot can sense its environment in the visual and infrared spectrum, allowing it to see heat sources without visible light.')
             elif trait == robots.RobotAttributeId.IrUvVision:
@@ -183,9 +221,30 @@ class FinalisationComponent(robots.RobotComponentInterface):
                     notes=notes)
                 context.applyStep(
                     sequence=sequence,
-                    step=step)            
-                
-    def _maintenanceNote(
+                    step=step)
+
+    def _createInoperableStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        hits = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Hits,
+            sequence=sequence)
+        if not hits:
+            return # Nothing to do
+        assert(isinstance(hits, common.ScalarCalculation))
+
+        step = robots.RobotStep(
+            name='Damage',
+            type='Resilience')
+        step.addNote(note=FinalisationComponent._InoperableNote.format(
+            doubleHits=hits.value() * 2))
+        context.applyStep(
+            sequence=sequence,
+            step=step)                      
+
+    def _createMaintenanceStep(
             self,
             sequence: str,
             context: robots.RobotContext
@@ -199,14 +258,42 @@ class FinalisationComponent(robots.RobotComponentInterface):
                 return
 
         step = robots.RobotStep(
-            name='Standard',
-            type='Maintenance',
+            name='Maintenance',
+            type='Resilience',
             notes=[FinalisationComponent._DefaultMaintenanceNote])
         context.applyStep(
             sequence=sequence,
             step=step)
         
-    def _slotUsageNote(
+    def _createAutopilotStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        autopilot = context.hasAttribute(
+            attributeId=robots.RobotAttributeId.Autopilot,
+            sequence=sequence)
+        if not autopilot:
+            return
+        
+        hasVehicleSkill = False
+        for skill in FinalisationComponent._AutopilotVehicleSkills:
+            if context.hasSkill(skillDef=skill, sequence=sequence):
+                hasVehicleSkill = True
+                break
+
+        if not hasVehicleSkill:
+            return
+            
+        step = robots.RobotStep(
+            name='Autopilot',
+            type='Skills',
+            notes=[FinalisationComponent._AutopilotNote])
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+    def _slotUsageStep(
             self,
             sequence: str,
             context: robots.RobotContext
@@ -232,7 +319,7 @@ class FinalisationComponent(robots.RobotComponentInterface):
             sequence=sequence,
             step=step)
         
-    def _bandwidthUsageNote(
+    def _bandwidthUsageStep(
             self,
             sequence: str,
             context: robots.RobotContext

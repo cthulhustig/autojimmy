@@ -69,9 +69,15 @@ class _WeaponData(object):
 # List of weapons taken from the MGT2 Robot Worksheet v1.50.01 spreadsheet
 # IMPORTANT: These weapon names MUST remain constant between versions otherwise
 # it will break weapons saved by older versions
-# TODO: The multilink flag comes from the spreadsheet but I'm not currently
-# using it. It's not clear where it's come from and why some weapons are
-# multi-linkable and some aren't
+# NOTE: The multilink flag that some weapons have come from the spreadsheet.
+# I've not found anything that would indicate it's official but it does seem to
+# have some logic behind it. As far as I can tell it's generally weapons that
+# are fired rather than wielded or thrown, although there are a few exceptions
+# (notably launchers).
+# I've kept the value here for completeness but I don't plan to use it. I don't
+# see why you couldn't have a multi-linked melee weapon for example. I think
+# it's best to allow any weapon to be multi-linked and leave it up to referees
+# to say if it's allowed.
 _WeaponDataList = [
     _WeaponData(name='Aerosol Grenade', techLevel=9, cost=15, size=_MountSize.Small, skill='Athletics (Dexterity)', traits='Blast 9'),
     _WeaponData(name='Chemical Grenade', techLevel=5, cost=50, size=_MountSize.Small, skill='Athletics (Dexterity)', damage='Special', traits='Blast 9'),

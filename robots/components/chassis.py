@@ -18,6 +18,23 @@ class Chassis(robots.ChassisInterface):
     """
     # NOTE: The note for the Attack Roll DM is to help players not mistake it for
     # a modifier that the robot gets
+    # TODO: Androids and biological robots have no default protection (p18) and
+    # it sounds like they have different max values specified in their rules
+    # TODO: I'm really not sure about my my interpretation of the value of
+    # the Large/Small traits. The only difference between the Trait and the
+    # Attack Roll DM attribute I can see so far is the wording fro the trait
+    # says it for ranged attacks (p8). It's probably worth having a look at
+    # some of the example robots to see if they give any clues
+    # Update: I've found out that the Large/Small traits are actually core rule
+    # traits for dealing with Beasts (p81). I suspect they've been incorporated
+    # here to give some consistency. The wording that the traits only apply to
+    # ranged attacks also comes from the core rules. My current best guess is
+    # they are effectively the same modifier, with the extra wording on p13
+    # just meaning the modifier applies to all attacks not just ranged ones.
+    # However, I'm not sure how best to handle this as, if I add 2 independent,
+    # notes there is a chance the user may think it's two separate modifiers
+    # that could be applied twice.
+
 
     # List of tuples structured as follows
     # Min TL, Max TL, Base Protection
@@ -31,79 +48,49 @@ class Chassis(robots.ChassisInterface):
 
     _AttackRollDMNote = 'Due to the size of the robot, attackers get the Attack Roll DM{modifier} as a modifier when attacking it (p13)'
 
-    # TODO: Androids and biological robots have no default protection (p18) and
-    # it sounds like they have different max values specified in their rules
-
-    # TODO: I'm really not sure about my my interpretation of the value of
-    # the Large/Small traits. The only difference between the Trait and the
-    # Attack Roll DM attribute I can see so far is the wording fro the trait
-    # says it for ranged attacks (p8). It's probably worth having a look at
-    # some of the example robots to see if they give any clues
-
-    # TODO: The chassis description (p13) has the following. It might make a
-    # good note. It may need to be added in finalisation if there are any
-    # modifiers that can increase the robots hits
-    #
-    # When a robot’s Hits reach 0, it is inoperable and considered wrecked, or
-    # at least cannot be easily repaired; at cumulative damage equal to twice
-    # its Hits the robot is irreparably destroyed.
-
-    # TODO: This is just a temporary value I hacked in. There must be an
-    # absolute min somewhere in the rules
-    # - You can't get a Locomotion < TL5, even no locomotion has a Min TL of 5
-    # in the table on p16
-    # - Weapon mounts don't seem to have a minimum TL, just the min TL of the
-    # weapons which is 0 for very primitive weapons.
-    # - You can't get a Brain < TL7. This seems like a pretty good limiting factor
-    # for a robot
-    _MinTechLevel = 5
-
-    # TODO: It might be worth a note to explain that the attack roll DM is a
-    # modifier on the attackers roll
+    # NOTE: It only seems logical that there must be a min TL for a robot
+    # chassis but the rules don't give one. Fair enough, you could probably
+    # construct a chassis with only basic metal working skills but for it to
+    # be a robot chassis it needs to be part of a robot. As some of the
+    # mandatory components for building a robot have a min TL then it implies
+    # it can't be robot chassis before the highest of those TL's (earlier than
+    # that and it's just a chassis not a robot chassis).
+    # From a usability point of view it's desirable to not have the min TL of
+    # the chassis lower than the min TL of any of the mandatory components as
+    # it would means the user could get part way through creating creating a
+    # low TL robot, only to find they can't complete it because a mandatory
+    # component is incompatible.
+    # - You can't get a Locomotion < TL5, even the 'None' locomotion has a Min
+    # TL of 5 in the table on p16
+    # - You can't get a Brain < TL7
+    _MinTechLevel = 7
 
     def __init__(
             self,
-            size: typing.Union[int, common.ScalarCalculation],
-            baseSlots: typing.Union[int, common.ScalarCalculation],
-            baseHits: typing.Union[int, common.ScalarCalculation],
-            attackDM: typing.Union[int, common.ScalarCalculation],
-            basicCost: typing.Union[int, common.ScalarCalculation],
+            size: int,
+            baseSlots: int,
+            baseHits: int,
+            attackDM: int,
+            basicCost: int,
             ) -> None:
         super().__init__()
 
-        if not isinstance(size, common.ScalarCalculation):
-            size = common.ScalarCalculation(
-                value=size,
-                name=f'Chassis Size')        
-
-        componentString = f'Size {size.value()}'
-
-        if not isinstance(baseSlots, common.ScalarCalculation):
-            baseSlots = common.ScalarCalculation(
-                value=baseSlots,
-                name=f'{componentString} Chassis Base Slots')
-            
-        if not isinstance(baseHits, common.ScalarCalculation):
-            baseHits = common.ScalarCalculation(
-                value=baseHits,
-                name=f'{componentString} Chassis Base Hits')
-            
-        if not isinstance(attackDM, common.ScalarCalculation):
-            attackDM = common.ScalarCalculation(
-                value=attackDM,
-                name=f'{componentString} Chassis Attack Roll DM')
-
-        if not isinstance(basicCost, common.ScalarCalculation):
-            basicCost = common.ScalarCalculation(
-                value=basicCost,
-                name=f'{componentString} Chassis Basic Cost')        
-
-        self._componentString = componentString
-        self._size = size
-        self._baseSlots = baseSlots
-        self._baseHits = baseHits
-        self._attackDM = attackDM
-        self._basicCost = basicCost
+        self._componentString = f'Size {size}'
+        self._size = common.ScalarCalculation(
+            value=size,
+            name=f'Chassis Size')        
+        self._baseSlots = common.ScalarCalculation(
+            value=baseSlots,
+            name=f'{self._componentString} Chassis Base Slots')
+        self._baseHits = common.ScalarCalculation(
+            value=baseHits,
+            name=f'{self._componentString} Chassis Base Hits')
+        self._attackDM = common.ScalarCalculation(
+            value=attackDM,
+            name=f'{self._componentString} Chassis Attack Roll DM')
+        self._basicCost = common.ScalarCalculation(
+            value=basicCost,
+            name=f'{self._componentString} Chassis Basic Cost')
 
     def size(self) -> int:
         return self._size.value()
@@ -192,10 +179,10 @@ class Chassis(robots.ChassisInterface):
         currentTL = context.techLevel()
         for minTL, maxTL, protection in Chassis._BaseProtectionDetails:
             if currentTL >= minTL and ((maxTL == None) or (currentTL <= maxTL)):
-                range = '{minTL}-{maxTL}' if maxTL != None else '{minTL}+'
+                range = f'{minTL}-{maxTL}' if maxTL != None else f'{minTL}+'
                 protection = common.ScalarCalculation(
                     value=protection,
-                    name=f'TL{range} Base Protection')
+                    name=f'TL{range} Chassis Base Protection')
                 step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.BaseProtection,
                     value=protection))                

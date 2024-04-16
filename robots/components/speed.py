@@ -40,10 +40,8 @@ class NoSpeedModification(SpeedModification):
     def __init__(self) -> None:
         super().__init__()
 
-    # NOTE: The reason this is '<None>' rather than just 'None' is so it looks
-    # like the entry added to selectors for optional selection stages
     def componentString(self) -> str:
-        return '<None>'
+        return 'None'
 
     def isCompatible(
             self,
@@ -369,7 +367,7 @@ class VehicleSpeedMovement(SpeedModification):
         - Walker: Very Slow
         - Hovercraft: Medium
         - Thrusters: ??????
-    - Skill: Autopilot 0
+    - Trait: Autopilot 0
     - Option: Additional Speed Increase
         - Range: 0-3
         - Trait: Speed Band +1 per level taken

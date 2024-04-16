@@ -274,8 +274,12 @@ class LocomotionBasicSkillPackage(BasicSkillPackage):
       0 if no enhancement)
     - Note: Athletics (dexterity) equal to the robots Agility Enhancement Level
     for purposes of hazardous manoeuvring and reactions such as dodging
+    - Note: If the robot also has an Autopilot score, the modifiers for the
+    Autopilot and Vehicle Skill don't stack (p49)
     - Requirement: Requires some form of locomotion
     """
+    # NOTE: The note about Autopilot and vehicle skills not stacking is handled
+    # by a note added in finalisation
 
     _DefaultAgilityModifier = common.ScalarCalculation(
         value=0,
@@ -1114,7 +1118,12 @@ class DriveSkill(Skill):
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr100  
+    - Note: If the robot also has an Autopilot score, the modifiers for the
+    Autopilot and Vehicle Skill don't stack (p49)
     """    
+    # NOTE: The note about Autopilot and vehicle skills not stacking is handled
+    # by a note added in finalisation
+
     def __init__(self) -> None:
         super().__init__(
             skillDef=traveller.DriveSkillDefinition,
@@ -1170,7 +1179,12 @@ class FlyerSkill(Skill):
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr100   
+    - Note: If the robot also has an Autopilot score, the modifiers for the
+    Autopilot and Vehicle Skill don't stack (p49)
     """    
+    # NOTE: The note about Autopilot and vehicle skills not stacking is handled
+    # by a note added in finalisation
+    
     def __init__(self) -> None:
         super().__init__(
             skillDef=traveller.FlyerSkillDefinition,

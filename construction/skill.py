@@ -35,7 +35,8 @@ class TrainedSkill(object):
     def setLevel(
             self,
             level: common.ScalarCalculation,
-            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
+            keepGreatest: bool = True
             ) -> None:
         if self._skillDef.isSimple():
             if speciality != None:
@@ -50,9 +51,14 @@ class TrainedSkill(object):
                 raise AttributeError(
                     f'Unable to use speciality type {type(speciality)} to set custom speciality skill {self._skillDef.name()}')
 
+        if keepGreatest:
+            currentLevel = self.level(speciality=speciality)
+            if currentLevel.value() > level.value():
+                return # New value is less than current value
+
         if speciality:
             if level.value() >= 1:
-                # Speciality skills have to have a value of 1 or higher
+                # Speciality skills have to have a value of 1 or higher               
                 self._specialityLevels[speciality] = level
             elif speciality in self._specialityLevels:
                 # The speciality skill is 0 (or less) so delete the speciality
@@ -123,21 +129,22 @@ class SkillGroup(object):
 
         return untrainedSkill
 
-    # TODO: Need to handle what happens if a component sets skill/specialisation
-    # that the robot already has. It probably makes sense that it would only use
-    # the new value if it was higher
     def setLevel(
             self,
             skillDef: traveller.SkillDefinition,
             level: common.ScalarCalculation,
-            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
+            keepGreatest: bool = True
             ) -> None:
         skill = self._skills.get(skillDef)
         if skill:
             skill.setLevel(level=level, speciality=speciality)
         else:
             skill = TrainedSkill(skillDef=skillDef)
-            skill.setLevel(level=level, speciality=speciality)
+            skill.setLevel(
+                level=level,
+                speciality=speciality,
+                keepGreatest=keepGreatest)
             # Only add if setting the skill succeeded
             self._skills[skillDef] = skill
 

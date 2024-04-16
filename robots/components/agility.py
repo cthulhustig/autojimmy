@@ -1,6 +1,7 @@
 import common
 import construction
 import robots
+import traveller
 import typing
 
 class AgilityEnhancement(robots.AgilityEnhancementInterface):
@@ -18,29 +19,21 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
     # The logical side effect of this is you won't be able to apply it if you
     # use the rule that Thruster locomotion can be applied as a secondary
     # locomotion with the primary locomotion set to None (p17)
-    # TODO: Handle Athletics skill
 
     def __init__(
             self,
-            componentString: str,
-            agilityModifier: typing.Union[int, common.ScalarCalculation],
-            costPercent: typing.Union[int, common.ScalarCalculation]
+            agilityModifier: int,
+            costPercent: int
             ) -> None:
         super().__init__()
 
-        if not isinstance(agilityModifier, common.ScalarCalculation):
-            agilityModifier = common.ScalarCalculation(
-                value=agilityModifier,
-                name=f'{componentString} Agility Modifier')
-            
-        if not isinstance(costPercent, common.ScalarCalculation):
-            costPercent = common.ScalarCalculation(
-                value=costPercent,
-                name=f'{componentString} Cost Percentage')
-
-        self._componentString = componentString
-        self._agilityModifier = agilityModifier
-        self._costPercent = costPercent
+        self._componentString = f'Agility +{agilityModifier}'
+        self._agilityModifier = common.ScalarCalculation(
+            value=agilityModifier,
+            name=f'{self._componentString} Agility Modifier')  
+        self._costPercent = common.ScalarCalculation(
+            value=costPercent,
+            name=f'{self._componentString} Cost Percentage')
 
     def agilityModifier(self) -> int:
         return self._agilityModifier.value()
@@ -95,6 +88,11 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(self._agilityModifier)))
+        
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=traveller.AthleticsSkillDefinition,
+            speciality=traveller.AthleticsSkillSpecialities.Dexterity,
+            level=self._agilityModifier))
 
         context.applyStep(
             sequence=sequence,
@@ -109,7 +107,6 @@ class Plus1Agility(AgilityEnhancement):
     """
     def __init__(self) -> None:
         super().__init__(
-            componentString='Agility +1',
             agilityModifier=1,
             costPercent=100)
         
@@ -122,7 +119,6 @@ class Plus2Agility(AgilityEnhancement):
     """    
     def __init__(self) -> None:
         super().__init__(
-            componentString='Agility +2',
             agilityModifier=2,
             costPercent=200)
 
@@ -135,7 +131,6 @@ class Plus3Agility(AgilityEnhancement):
     """
     def __init__(self) -> None:
         super().__init__(
-            componentString='Agility +3',
             agilityModifier=3,
             costPercent=400)
         
@@ -148,6 +143,5 @@ class Plus4Agility(AgilityEnhancement):
     """
     def __init__(self) -> None:
         super().__init__(
-            componentString='Agility +4',
             agilityModifier=4,
             costPercent=800)

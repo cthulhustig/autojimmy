@@ -1,6 +1,7 @@
 import common
 import construction
 import robots
+import traveller
 import typing
 
 class EnduranceModification(robots.EnduranceModificationInterface):
@@ -31,8 +32,6 @@ class IncreaseEndurance(EnduranceModification):
     # NOTE: The free Endurance increases at TL12/15 are handled by Locomotion
     # NOTE: Order is important, the rules say Improved Components is applied
     # first and then Power Packs
-    # TODO: Handle Athletics skill from Power Packs (but not Improved
-    # Components)
 
     _ImprovedComponentsIncreasePercent = common.ScalarCalculation(
         value=100,
@@ -66,7 +65,7 @@ class IncreaseEndurance(EnduranceModification):
         
         self._powerPacksOption = construction.IntegerOption(
             id='PowerPacks',
-            name='Power Packs',
+            name='Additional Power Packs',
             value=0,
             minValue=0,
             maxValue=3,
@@ -138,7 +137,7 @@ class IncreaseEndurance(EnduranceModification):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Endurance,
             modifier=construction.PercentageModifier(
-                value=IncreaseEndurance._ImprovedComponentsIncreasePercent)))       
+                value=IncreaseEndurance._ImprovedComponentsIncreasePercent)))
                         
         context.applyStep(
             sequence=sequence,
@@ -181,7 +180,15 @@ class IncreaseEndurance(EnduranceModification):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Endurance,
             modifier=construction.PercentageModifier(
-                value=totalIncreasePercent)))       
+                value=totalIncreasePercent)))
+        
+        enduranceSkill = common.Calculator.equals(
+            value=packCount,
+            name='Power Pack Athletics (Endurance) Skill Level')
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=traveller.AthleticsSkillDefinition,
+            speciality=traveller.AthleticsSkillSpecialities.Endurance,
+            level=enduranceSkill))
                         
         context.applyStep(
             sequence=sequence,

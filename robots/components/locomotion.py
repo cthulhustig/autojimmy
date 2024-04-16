@@ -59,41 +59,31 @@ class _LocomotionImpl(object):
             self,
             isPrimary: bool,
             componentString: str,
-            minTechLevel: typing.Union[int, common.ScalarCalculation],
-            baseEndurance: typing.Union[int, common.ScalarCalculation],
-            costMultiplier: typing.Union[int, common.ScalarCalculation],
-            baseAgility: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+            minTechLevel: int,
+            baseEndurance: int,
+            costMultiplier: int,
+            baseAgility: typing.Optional[int] = None,
             flagTrait: typing.Optional[robots.RobotAttributeId] = None,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__()
 
-        if not isinstance(minTechLevel, common.ScalarCalculation):
-            minTechLevel = common.ScalarCalculation(
-                value=minTechLevel,
-                name=f'{componentString} Locomotion Minimum Tech Level')        
-
-        if not isinstance(baseEndurance, common.ScalarCalculation):
-            baseEndurance = common.ScalarCalculation(
-                value=baseEndurance,
-                name=f'{componentString} Locomotion Base Endurance')
-            
-        if not isinstance(costMultiplier, common.ScalarCalculation):
-            costMultiplier = common.ScalarCalculation(
-                value=costMultiplier,
-                name=f'{componentString} Locomotion Cost Multiplier')
-            
-        if baseAgility != None and not isinstance(baseAgility, common.ScalarCalculation):
-            baseAgility = common.ScalarCalculation(
-                value=baseAgility,
-                name=f'{componentString} Locomotion Agility')            
-
         self._isPrimary = isPrimary
         self._componentString = componentString
-        self._minTechLevel = minTechLevel
-        self._baseEndurance = baseEndurance
-        self._costMultiplier = costMultiplier
-        self._baseAgility = baseAgility
+        self._minTechLevel = common.ScalarCalculation(
+            value=minTechLevel,
+            name=f'{componentString} Locomotion Minimum Tech Level')        
+        self._baseEndurance = common.ScalarCalculation(
+            value=baseEndurance,
+            name=f'{componentString} Locomotion Base Endurance')
+        self._costMultiplier = common.ScalarCalculation(
+            value=costMultiplier,
+                name=f'{componentString} Locomotion Cost Multiplier')
+        self._baseAgility = None
+        if baseAgility != None:
+            self._baseAgility = common.ScalarCalculation(
+                value=baseAgility,
+                name=f'{componentString} Locomotion Agility')
         self._flagTrait = flagTrait
         self._notes = notes
 
@@ -236,50 +226,8 @@ class _NoLocomotionImpl(_LocomotionImpl):
             attributeId=robots.RobotAttributeId.MaxSlots,
             modifier=construction.PercentageModifier(
                 value=_NoLocomotionImpl._SlotGainPercent)))
-        
-class _AxelLocomotionImpl(_LocomotionImpl):
-    # TODO: Handle large numbers of axles optionally having a cost/slot count
-    def __init__(
-            self,
-            isPrimary: bool,
-            componentString: str,
-            minTechLevel: typing.Union[int, common.ScalarCalculation],
-            baseAgility: typing.Union[int, common.ScalarCalculation],
-            baseEndurance: typing.Union[int, common.ScalarCalculation],
-            costMultiplier: typing.Union[int, common.ScalarCalculation],
-            flagTrait: typing.Optional[robots.RobotAttributeId] = None,
-            notes: typing.Optional[typing.Iterable[str]] = None
-            ) -> None:
-        super().__init__(
-            isPrimary=isPrimary,
-            componentString=componentString,
-            minTechLevel=minTechLevel,
-            baseAgility=baseAgility,
-            baseEndurance=baseEndurance,
-            costMultiplier=costMultiplier,
-            flagTrait=flagTrait,
-            notes=notes)
-
-        self._axleCountOption = construction.IntegerOption(
-            id='AxleCount',
-            name='Axle Count',
-            value=2,
-            minValue=1,
-            description='Specify the number of axles the robot has.')     
-        
-    def axleCount(self) -> int:
-        return self._axleCountOption.value()
-    
-    def instanceString(self) -> str:
-        axelCount = self.axleCount()
-        if axelCount:
-            return f'{self._componentString} (Axles: {axelCount})'
-        return super().instanceString()
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return [self._axleCountOption]               
-        
-class _WheelsLocomotionImpl(_AxelLocomotionImpl):
+ 
+class _WheelsLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
     - Agility: +0
@@ -297,7 +245,7 @@ class _WheelsLocomotionImpl(_AxelLocomotionImpl):
             baseEndurance=72,
             costMultiplier=2)  
 
-class _WheelsATVLocomotionImpl(_AxelLocomotionImpl):
+class _WheelsATVLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
     - Agility: +0
@@ -306,10 +254,6 @@ class _WheelsATVLocomotionImpl(_AxelLocomotionImpl):
     - Cost Multiplier: x3
     - Options: Number of axles
     """
-    # TODO: It might make sense for ATV to be a check box option under Wheels
-    # rather than its own component as it makes it easier for checking for
-    #wheeled robots
-    # TODO: Add option for number of axles
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -329,7 +273,6 @@ class _TracksLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x2
     - Options: Number of tracks
     """
-    # TODO: Add option for number of tracks
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -367,10 +310,10 @@ class _FlyerLocomotionImpl(_LocomotionImpl):
             self,
             isPrimary: bool,
             componentString: str,
-            minTechLevel: typing.Union[int, common.ScalarCalculation],
-            baseAgility: typing.Union[int, common.ScalarCalculation],
-            baseEndurance: typing.Union[int, common.ScalarCalculation],
-            costMultiplier: typing.Union[int, common.ScalarCalculation],
+            minTechLevel: int,
+            baseAgility: int,
+            baseEndurance: int,
+            costMultiplier: int,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__(
@@ -405,7 +348,6 @@ class _GravLocomotionImpl(_FlyerLocomotionImpl):
     - Base Endurance: 24 hours
     - Cost Multiplier: x20
     """
-    # TODO: Does this need an equivalent of axle count????
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -446,7 +388,6 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     #   - IMPORTANT: This approach won't work with the way I'm currently
     #     calculating Base Chassis Cost. If I add this extra step it will be
     #     included in the Base Chassis Cost when it shouldn't be
-    # TODO: Not sure what the equivalent of axle count would be, engines maybe
 
     _SmallAeroplaneNote = 'Can be launched by hand (p17)'
     _LargeAeroplaneNote = 'Require a runway of at least 50m for takeoff (p17)'
@@ -495,7 +436,6 @@ class _AquaticLocomotionImpl(_LocomotionImpl):
     - Base Endurance: 72 hours
     - Cost Multiplier: x4
     """
-    # TODO: No idea what the equivalent of axle count would be
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -516,7 +456,6 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
     - Note: Requires a secondary locomotion type to move across the ground (p17)
     - Note: Agility -1 in thin atmosphere (p17)
     """
-    # TODO: Not sure what the equivalent of axle count would be, engines maybe
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -538,8 +477,10 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x10
     - Option: User specified number of legs (min 2)
     """
-    # TODO: Need to handle legs being manipulators, not sure if it will be here but
-    # this will need to let the user specify the number of legs 
+    # NOTE: This needs to prompt the user for the number of legs to allow
+    # handling of leg manipulators later in construction. It makes logical
+    # sense for it to specified here and it also makes the later implementation
+    # simpler as the number of legs is known up front.
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -578,8 +519,6 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x10
     - Note: Agility -1 in thin atmosphere (p17)       
     """
-    # TODO: No idea what the equivalent of axle count would be
-
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
             isPrimary=isPrimary,
@@ -610,7 +549,6 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
     # NOTE: On p17 the rules say that Thrusters are generally only available
     # as secondary locomotion types however it doesn't say it's never available
     # as a primary type so I allow it.
-    # TODO: Handle number of thrusters
     _BaseThrust = common.ScalarCalculation(
         value=0.1,
         name='Basic Thruster G-Force')

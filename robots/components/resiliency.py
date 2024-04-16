@@ -27,9 +27,9 @@ class IncreaseResiliency(ResiliencyModification):
     # resiliency _and_ we deal in whole slots imply that robots with only one
     # slot can't have a resiliency increase (as that would require 100% of
     # their slots)
-    # TODO: The rules on p20 just say at most 50% of the robots Slots can be
-    # used. I've made the assumption that it means Base Slots but I could be
-    # wrong, need to check
+    # NOTE: The rules on p20 just say at most 50% of the robots Slots can be
+    # used. I've made the assumption that it means Base Slots as that's what
+    # everything generally seems to be based on
 
     _PerSlotCostPercent = common.ScalarCalculation(
         value=5,

@@ -25,18 +25,12 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # robot (due to its size)
     AttackRollDM = 'Attack Roll DM'
     Hits = 'Hits'
-    # TODO: I think Endurance can be a float. I'm not sure if it's important
-    # but I should probably figure it out
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
-    # TODO: Need to work out if Movement (p16) is the same as Speed (p22). I
-    # think it's Speed as that's what it appears to be on the example robots
-    # from the book
-    Speed = 'Speed' # In meters
+    Speed = 'Speed' # In meters per minor action
     VehicleSpeed = 'Vehicle Speed' # SpeedBand
-    # TODO: Need to work out if this should be Protection or Armour, I think
-    # it's the same thing and the rules use them interchangeably
-    Protection = 'Protection'
+    # See the Armour trait below for details of how it relates to Protection
+    Protection = 'Protection' # Base Protection + Protection from Armour
     # Some options give the robot cumulative protection from radiation. How
     # radiation affects a robot can be found on page (p106)
     Rads = 'Rads'
@@ -46,17 +40,20 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # This attribute shouldn't be included in the manifest
     ZeroSlotCount = 'Zero Slot Count'
 
-    # TODO: I think this should actually be a skill but this is good enough until
-    # I implement skills.
-    # Update: I can't remember why I thought this would be a skill
+    # This covers the base autopilot given by the Vehicle Speed Movement
+    # locomotion modifier (p23) and Autopilot slot option (p49). It works the
+    # same as the relevant vehicle skill for the robot piloting the form of
+    # locomotion it has, but the two don't stack.
     Autopilot = 'Autopilot'
 
     # Brain Attributes
     Intelligence = 'INT'
-    # TODO: The bandwidth usage of an individual skill package can't exceed the
-    # inherent bandwidth (p67).
+    # The Inherent Bandwidth is the base bandwidth of the brain. This is a hard
+    # limit on the max bandwidth usage of individual skills. Modifications to
+    # increase bandwidth don't increase the robot's inherent bandwidth
     InherentBandwidth = 'Inherent Bandwidth'
-    # The Max Bandwidth defines the total number of skills a robot can have
+    # The Max Bandwidth limits the total number of skills a robot can have as
+    # the total bandwidth can't exceed this value.
     MaxBandwidth = 'Max Bandwidth'
     # The zero bandwidth skill count is a hack similar to ZeroSlotCost. This
     # attribute is used to count the number of zero bandwidth skills added to
@@ -70,12 +67,9 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Alarm = 'Alarm' # (p7)
     Amphibious = 'Amphibious' # (p7)
     ATV = 'ATV' # (p8 & 17)
-    # TODO: I suspect the intention is hardened brains get this but i'm not sure
-    # it explicitly says it in the section that covers brain hardening
     Hardened = 'Hardened' # (p8)
     HeightenedSenses = 'Heightened Senses' # (p8)
     Invisible = 'Invisible' # (p8)
-    # TODO: Not sure where this is used
     IrVision = 'IR Vision' # (p8)
     IrUvVision = 'IR/UV Vision' # (p8)
     Seafarer = 'Seafarer' # (p17)
@@ -83,19 +77,28 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     #
     # Robot Numeric Traits
     #
-    # TODO: There is an armour trait, not sure how this relates to the
-    # attribute Protection. It's currently commented out to avoid any confusion
-    # Armour = 'Armour' # (p7)
-    # TODO: The Large & Small traits should be mutually exclusive
+    # NOTE: Based on the description of the Armour trait (p7) and what I can see
+    # in the rest of the rules. The trait is equal to the robots final
+    # Protection value (i.e. Base Protection from the chassis and Protection
+    # from any armour added _or_ removed).
+    Armour = 'Armour' # (p7)
+    # NOTE: I believe the Large/Small traits are from the traits for Beasts in
+    # the core rules (p81)
+    # The Large/Small traits should be mutually exclusive but that that comes
+    # for free because only the chassis sets them and it will only set one or
+    # the other
     Large = 'Large' # (p8)
     Small = 'Small' # (p8)
-    # TODO: There is a complexity here as there is also a Stealth Skill and
-    # they're not the same thing (p7)
+    # NOTE: The Stealth trait is how well the robot can hide from being detected
+    # by electronic means. Generally this is through the use of shielding and
+    # advanced materials so is 'always on' rather than being something that is
+    # activated. It's only given by the Active Camouflage and Stealth component
+    # option and is not the same thing as the Stealth skill.
     Stealth = 'Stealth' # (p7)
-    Thruster = 'Thruster' # In G (p17)    
+    Thruster = 'Thruster' # In G (p17)
 
     #
-    # Locomotion Enum Traits
+    # Robot Enum Traits
     #
     Flyer = 'Flyer' # SpeedBand (p8 & p17)
 

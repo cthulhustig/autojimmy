@@ -89,12 +89,14 @@ class Brain(robots.BrainInterface):
         - Min TL: 8
         - Cost: +50% Brain Cost, if a Bandwidth Upgrade is installed its cost is
         also increased by 50%
-        - Note: Protects brain from ion and radiation weapons            
+        - Trait: Hardened
     """
     # NOTE: The Security/X trait that some brains have determine how difficult
     # the are to hack (p106)
     # NOTE: The Expert/X trait that some brains have determines what level of
     # skill the robot can attempt (Difficult (10+), Very Difficult (12+) etc)
+    # NOTE: The rules don't explicitly say Brain Hardening gives the Hardened
+    # trait but I think it's obvious implied.
     # TODO: The table in the rules that gives the brain stats (p66) has a Skills
     # column. I __think__ this is just giving the INT modifier for the brain.
     # The numbers match up with those used when doing the same for player
@@ -470,7 +472,9 @@ class Brain(robots.BrainInterface):
             cost = common.Calculator.applyPercentage(
                 value=cost,
                 percentage=Brain._HardenedCostPercent,
-                name=f'Hardened {cost.name()}')            
+                name=f'Hardened {cost.name()}')
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.Hardened))         
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
