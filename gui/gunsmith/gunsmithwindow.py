@@ -238,7 +238,7 @@ class GunsmithWindow(gui.WindowWidget):
     _JSONFilter = 'JSON (*.json)'
     _CSVFilter = 'CSV (*.csv)'
 
-    _ConfigurationBottomSpacing = 100
+    _ConfigurationBottomSpacing = 300
 
     def __init__(self) -> None:
         super().__init__(

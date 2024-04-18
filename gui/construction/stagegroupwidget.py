@@ -308,8 +308,6 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         # of a spin box can cause a value changed event which causes which ever
         # value the control has clamped it's value to being pushed back to the
         # option when the option has already been clamped to a different value.
-        # TODO: This change will probably need a decent amount of regression
-        # testing
         with gui.SignalBlocker(widget=widget):
             if isinstance(option, construction.BooleanOption):
                 assert(isinstance(widget, gui.CheckBoxEx))
@@ -463,15 +461,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()
 
-# TODO: There are 2 REALLY annoying behaviours when dealing with stages
-# where you can add/remove multiple components
-# - If you're adding components and they start to go off the bottom of
-# the current view, you have to manually scroll down to see the add
-# button
-# - If you've added a lot of components and you remove the last one, the
-# view jumps back to the top of the list of widgets. This can be really
-# annoying if you're removing multiple components from the end of the
-# list
+# TODO: If you've added a lot of components and you remove the last one,
+# the view jumps back to the top of the list of widgets. This can be
+# really annoying if you're removing multiple components from the end of
+# the list
+# Update: This doesn't seem to happen in the gunsmith so I'm going to
+# leave it for now to see if it just goes away when I flesh out the UI
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
@@ -641,14 +636,6 @@ class _StageWidget(QtWidgets.QWidget):
         widget.setHidden(True)
         widget.deleteLater()
 
-    # TODO: I think it would probably make sense if this function blocked
-    # signals in a similar way to _ComponentConfigWidget._updateOptionWidget.
-    # This function is called in two places
-    # - synchronise: This wraps the call to this function with a signal blocker
-    # - _updateAllComponentWidgets: This doesn't use a signal blocker but I can't
-    # think why signals would be needed
-    #
-    # Any change to this will need a lot of regression testing
     def _updateComponentWidget(
             self,
             widget: _ComponentConfigWidget

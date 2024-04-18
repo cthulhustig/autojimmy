@@ -5,31 +5,141 @@ import robots
 import traveller
 import typing
 
-class FinalisationComponent(robots.RobotComponentInterface):
-    # TODO: Need to handle removing unused slots. I don't like the idea of using
-    # options on the finalisation component as it means I need to make the phase
-    # visible in the config widget so you'll have a combo box with Finalisation
-    # selected and no options to change it.
-    #
-    # Option 1: Use options but update the config widget so it doesn't show the
-    # combo box but does show the options if the combo box only has a single
-    # entry to select from.
-    #
-    # Option 2: Move unused slot removal into it's own phase and/or stage. The
-    # last stage that uses slots is the brain so it needs to be processed after
-    # that, it wouldn't make sense to do it between the brain and skills so
-    # would make sense to be at the end (just before finalisation).
-    # This would be a little ugly as it would just be sitting there on it's own.
-    # One possibility would be add a stage after the slot options (it makes some
-    # logical sense) and to have it set an attribute that finalisation checks for
-    # and does the actual removal. This would also be a little ugly as the
-    # removal would appear as a component but the slots/cost saving would appear
-    # in finalisation.
-    #
-    # No mater what I do I think I need to make it a little more user friendly
-    # than the spreadsheet. It needs to be very simple to turn on/off and when
-    # you turn it on it should always default to removing all remaining slots
+# NOTE: Having this be derived from something (currently the interface) is
+# important as construction doesn't really support specifying a top level
+# component type as the type used for a stage. The reason it doesn't work is
+# ConstructionContext.findCompatibleComponents uses passes the stage type to
+# getSubclasses and sets top level to true meaning it will only find
+# components that are DERIVED FROM this specified type.
+class RemoveSlots(robots.SlotRemovalInterface):
+    """
+    - Cost Saving: Cr100 per slot removed
+    - Requirement: The option to remove unused slots should only be compatible
+    if there are slots to be removed
+    """
+    _PerSlotCostSaving = common.ScalarCalculation(
+        value=-100,
+        name='Slot Removal Per Slot Cost Saving')
 
+    def __init__(self) -> None:
+        super().__init__()
+
+        self._removeAllOption = construction.BooleanOption(
+            id='RemoveAll',
+            name='All Unused',
+            value=True,
+            description=f'Specify if all unremoved slots should be removed')
+
+        self._slotCountOption = construction.IntegerOption(
+            id='SlotCount',
+            name='Slot Count',
+            value=1,
+            minValue=1,
+            description='Specify the number of slots to remove')
+        
+    def instanceString(self) -> str:
+        if self._removeAllOption.value():
+            return f'{self.componentString()} (All)'
+        slots = self._specifiedSlotCount()
+        if slots:      
+            return f'{self.componentString()} (x{slots.value()})'      
+        return super().instanceString()
+        
+    def componentString(self) -> str:
+        return 'Remove'
+
+    def typeString(self) -> str:
+        return 'Slot Removal'
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        removableSlots = self._calculateUnusedSlots(
+            sequence=sequence,
+            context=context)
+        return removableSlots.value() > 0
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        slots = [self._removeAllOption]
+        if self._slotCountOption.isEnabled():
+            slots.append(self._slotCountOption)
+        return slots
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        removableSlots = self._calculateUnusedSlots(
+            sequence=sequence,
+            context=context)
+        self._slotCountOption.setMax(value=removableSlots.value())
+        self._slotCountOption.setEnabled(
+            enabled=not self._removeAllOption.value())
+        
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())        
+
+        if self._removeAllOption.value():
+            slots = self._calculateUnusedSlots(
+                sequence=sequence,
+                context=context)
+        else:
+            slots = self._specifiedSlotCount()
+
+        # NOTE: This assumes that the saving is a negative value
+        cost = common.Calculator.multiply(
+            lhs=RemoveSlots._PerSlotCostSaving,
+            rhs=slots,
+            name=f'{self.componentString()} Total Cost Saving')
+        step.setCredits(credits=construction.ConstantModifier(value=cost))
+
+        # NOTE: The slots count is negated as this is a reduction in the max slots
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.MaxSlots,
+            modifier=construction.ConstantModifier(
+                value=common.Calculator.negate(
+                    value=slots,
+                    name=f'{self.componentString()} Max Slot Reduction'))))
+
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+
+    def _specifiedSlotCount(self) -> common.ScalarCalculation:
+        return common.ScalarCalculation(
+            value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
+            name='Specified Slot Count')
+    
+    def _calculateUnusedSlots(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> common.ScalarCalculation:
+        maxSlots = context.attributeValue(
+            attributeId=robots.RobotAttributeId.MaxSlots,
+            sequence=sequence)
+        assert(isinstance(maxSlots, common.ScalarCalculation))
+        usedSlots = context.usedSlots(sequence=sequence)
+
+        # NOTE: Construction intentionally allows more than the max slots to be
+        # allocated so the unused slots needs to be clamped to a min of 0
+        return common.Calculator.max(
+            lhs=common.Calculator.subtract(
+                lhs=maxSlots,
+                rhs=usedSlots),
+            rhs=common.ScalarCalculation(value=0),
+            name='Unused Slots')
+
+class FinalisationComponent(robots.FinalisationInterface):
     _AtmosphereFlyerLocomotions = [
         robots.AeroplanePrimaryLocomotion,
         robots.VTOLPrimaryLocomotion,
@@ -52,7 +162,7 @@ class FinalisationComponent(robots.RobotComponentInterface):
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
-    
+
     def componentString(self) -> str:
         return 'Finalisation'
 
@@ -308,9 +418,7 @@ class FinalisationComponent(robots.RobotComponentInterface):
             # than the max slots
             return
         
-        # NOTE: The max slots can be a float as some components add/remove a
-        # percentage of the slots (e.g. None locomotion adds 25%)
-        note = f'WARNING: {usedSlots.value()} slots have been used but the max allowed is only {math.floor(maxSlots.value())}'
+        note = f'WARNING: {usedSlots.value()} slots have been used but the max allowed is only {maxSlots.value()}'
         step = robots.RobotStep(
             name='Slots',
             type='Usage',

@@ -97,15 +97,11 @@ class Brain(robots.BrainInterface):
     # skill the robot can attempt (Difficult (10+), Very Difficult (12+) etc)
     # NOTE: The rules don't explicitly say Brain Hardening gives the Hardened
     # trait but I think it's obvious implied.
-    # TODO: The table in the rules that gives the brain stats (p66) has a Skills
-    # column. I __think__ this is just giving the INT modifier for the brain.
-    # The numbers match up with those used when doing the same for player
-    # characteristics (e.g. an INT of 1 gives a -2 modifier). If this is not
-    # what the column is showing then I don't know what it is as there doesn't
-    # seem to be anything that explains it.
-    # This could be a good question for Geir
-    # TODO: Do something with Computer/X rating. Could be a note, could be
-    # an attribute. Note I don't __think__ this is a skill
+    # NOTE: The table in the rules that gives the brain stats (p66) has a Skills
+    # column. It's not explicitly stated but as far as I can see it's just
+    # giving the INT modifier for the brain. The numbers match up with those
+    # used when doing the same for player characteristics (e.g. an INT of 1
+    # gives a -2 modifier). If this is not
 
     class _BrainType(enum.Enum):
         Primitive = 'Primitive'

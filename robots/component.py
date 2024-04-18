@@ -69,3 +69,9 @@ class SkillPackageInterface(RobotComponentInterface):
 
 class SkillInterface(RobotComponentInterface):
     pass
+
+class SlotRemovalInterface(RobotComponentInterface):
+    pass
+
+class FinalisationInterface(RobotComponentInterface):
+    pass

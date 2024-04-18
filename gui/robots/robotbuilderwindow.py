@@ -12,7 +12,7 @@ TODO
 class RobotBuilderWindow(gui.WindowWidget):
     _DefaultTechLevel = 12
 
-    _ConfigurationBottomSpacing = 100
+    _ConfigurationBottomSpacing = 300
 
     def __init__(self) -> None:
         super().__init__(

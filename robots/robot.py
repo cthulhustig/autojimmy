@@ -504,12 +504,29 @@ class Robot(object):
             minComponents=None,
             maxComponents=None))
         
+        # TODO: I REALLY don't like the way this stage works. It's optional so
+        # that the user can select None to not remove any slots. However it means
+        # it defaults to None when really most people will want it to default to
+        # removing all. The fact the component is also incompatible if there are
+        # no slots to remove means it will default to None again if you
+        # temporarily add some components then remove them again
+        stages.append(construction.ConstructionStage(
+            name='Slot Removal',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.SlotRemovalInterface,
+            defaultType=robots.RemoveSlots,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))
+
+        # NOTE: This is the final stage of construction it MUST be last,
+        # including after other stages in the finalisation phase
         stages.append(construction.ConstructionStage(
             name='Finalisation',
-            sequence=None, # Not tided to a specific sequence
+            sequence=self._sequence,
             phase=robots.RobotPhase.Finalisation,
-            baseType=robots.FinalisationComponent,
-            defaultType=robots.FinalisationComponent,
+            baseType=robots.FinalisationInterface,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))     

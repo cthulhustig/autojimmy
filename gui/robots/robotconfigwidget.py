@@ -132,9 +132,6 @@ class RobotConfigWidget(QtWidgets.QWidget):
             return # No more to do
 
         for phase in robots.RobotPhase:
-            if phase == robots.RobotPhase.Finalisation:
-                continue # Don't create widgets for finalisation
-
             phaseWidget = gui.SinglePhaseStageWidget(
                 context=self._robot.context(),
                 phase=phase)

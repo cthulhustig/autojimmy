@@ -1,6 +1,7 @@
 import common
 import enum
 import construction
+import logging
 import traveller
 import typing
 
@@ -429,7 +430,7 @@ class ConstructionContext(object):
             for componentType, optionData in componentDataList:
                 componentClass = componentTypeMap.get(componentType)
                 if not componentClass:
-                    # TODO: Log something?????
+                    logging.warning(f'Ignoring unknown component type {componentType} when loading sequence {sequence} components')
                     continue
                 component = componentClass()
 
@@ -449,7 +450,7 @@ class ConstructionContext(object):
         for componentType, optionData in commonComponentData:
             componentClass = componentTypeMap.get(componentType)
             if not componentClass:
-                # TODO: Log something?????
+                logging.warning(f'Ignoring unknown component type {componentType} when loading common components')
                 continue
             component = componentClass()
 
@@ -689,17 +690,15 @@ class ConstructionContext(object):
                     # This is the same type of component as the component being
                     # replaced so use that component rather than creating a new
                     # component
-                    # TODO: I really wish I had written down _why_ this is done
-                    # or if it's even important. It could have been an
-                    # optimisation to save creating a new component but that
-                    # seems unlikely as it will make effectively no difference.
+                    # I really wish I had written down _why_ this is done or if
+                    # it's even important. It could have been an optimisation to
+                    # save creating a new component but that seems unlikely as
+                    # it will make effectively no difference.
                     # One thing that this behaviour means is the component that
                     # is checked for compatibility will have the options of the
                     # replaceComponent rather than default options for the
                     # component. However I can't think why that would be
                     # required.
-                    # Could possibly check old svn repo to see what other
-                    # changes were made when this code was added
                     component = replaceComponent
                 else:
                     # Create a new component for the compatibility check
@@ -930,40 +929,62 @@ class ConstructionContext(object):
             removedIndex = components.index(removeComponent)
             stage.removeComponent(component=removeComponent)
 
-        # TODO: Adding should probably be wrapped in a try/except to 
-        # re-add the removed component if adding the replacement fails
-        if addComponent and addComponent not in components:
-            if not stage.matchesComponent(component=addComponent):
-                raise construction.CompatibilityException()
-            
-            # Check that the component to be added is compatible with the
-            # context. This needs to be done after the component to be
-            # removed has been removed in order to to allow for the case where
-            # one component is replacing a different version of the same
-            # component (e.g stealth replacing extreme stealth). Note that the
-            # sequence will be None for common components. The fact they're
-            # common means their compatibility shouldn't be determined by the
-            # state of a specific sequence
-            if not addComponent.isCompatible(
-                    sequence=stage.sequence(),
-                    context=self):
-                raise construction.CompatibilityException()
+        try:
+            if addComponent and addComponent not in components:
+                if not stage.matchesComponent(component=addComponent):
+                    raise construction.CompatibilityException()
+                
+                # Check that the component to be added is compatible with the
+                # context. This needs to be done after the component to be
+                # removed has been removed in order to to allow for the case where
+                # one component is replacing a different version of the same
+                # component (e.g stealth replacing extreme stealth). Note that the
+                # sequence will be None for common components. The fact they're
+                # common means their compatibility shouldn't be determined by the
+                # state of a specific sequence
+                if not addComponent.isCompatible(
+                        sequence=stage.sequence(),
+                        context=self):
+                    raise construction.CompatibilityException()
 
-            if removedIndex == None:
-                # Remove the most recently added component if there isn't
-                # enough free space. There is no obviously correct option
-                # between removing the oldest or newest. I've gone with
-                # removing the newest as removing the oldest would have may make
-                # more of a change to component compatibility of there is ever
-                # one component where its compatibility requires the another
-                # component to have already been added to the same stage
-                # TODO: This code is ugly, do something nicer
-                if not stage.hasFreeCapacity(requiredCapacity=1):
-                    stage.removeComponentAt(index=-1)
+                if removedIndex == None:
+                    if not stage.hasFreeCapacity(requiredCapacity=1):
+                        # The stage doesn't have enough space for the new
+                        # component. I don't think this isn't a case I'd
+                        # really expect to see as it would require a stage that
+                        # has a max number of components _and_ allowed the user
+                        # to dynamically add the components. Even if such a
+                        # component did exist the expectation is the UI would
+                        # prevent the user adding more components than the stage
+                        # allowed. Apart from a bug the only time I could see it
+                        # happening is if the user has been monkeying with the
+                        # data file on disk _or_ there has been a change in
+                        # implementation between versions and the max number of
+                        # components for a stage has been lowered.
+                        # There is no nice answer to what to do in this case.
+                        # For such a corner case I don't really want to have to
+                        # go to the effort of handling it as an error. The other
+                        # options are, don't add the new component or remove an
+                        # existing component and add the new one. I've gone with
+                        # the later as it seems slightly nicer if in the case
+                        # there is a UI bug, it's somewhat consistent with the
+                        # way changing one component can cause other components
+                        # to be automatically removed due to compatibility. It's
+                        # not obvious which component to remove, I went with
+                        # the most recently added as it is probably less likely
+                        # to affect compatibility of other components.
+                        stage.removeComponentAt(
+                            index=stage.componentCount() - 1)
 
-                stage.addComponent(addComponent)
-            else:
-                stage.insertComponent(removedIndex, addComponent)
+                    stage.addComponent(addComponent)
+                else:
+                    # This assumes that because we've removed a component there
+                    # must be free space
+                    stage.insertComponent(removedIndex, addComponent)
+        except:
+            if removeComponent:
+                stage.insertComponent(removedIndex, removeComponent)
+            raise
 
         if regenerate:
             self.regenerate()
