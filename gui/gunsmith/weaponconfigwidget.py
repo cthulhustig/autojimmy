@@ -431,11 +431,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             sequenceWidget = self._sequenceWidgets.get(sequence)
             if sequenceWidget:
                 sequenceWidget.synchronise()
-        # TODO: Shouldn't there be an else here so it only synchronises all sequences if
-        # a specific sequence isn't specified. Care would need to be taken making any
-        # changes
-        for sequenceWidget in self._sequenceWidgets.values():
-            sequenceWidget.synchronise()
+        else:
+            for sequenceWidget in self._sequenceWidgets.values():
+                sequenceWidget.synchronise()
 
         if self._commonWidget:
             self._commonWidget.synchronise()
