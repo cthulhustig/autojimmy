@@ -188,12 +188,9 @@ def _snapshotUpdateCheck(
     # run at startup. If the user requested the check then it implies they want
     # it installed
     if isStartup:
-        # TODO: At some point in the future I can remove the note about it being
-        #  faster
         answer = gui.AutoSelectMessageBox.question(
             text='<html>New universe data is available. Do you want to update?<br>' \
-            'Custom sectors will not be affected<br><br>' \
-            'Don\'t worry, updating is a LOT faster than it used to be.</html>',
+                'Custom sectors will not be affected<br></html>',
             stateKey='DownloadUniverseAtStartup')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             # User chose not to install update so just continue loading the app with the

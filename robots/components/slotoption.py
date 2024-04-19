@@ -356,76 +356,32 @@ class _EnumSelectSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL = self._minTLMap.get(possibleEnum, None)
             if minTL != None and robotTL >= minTL:
                 validEnums.append(possibleEnum)
-        return validEnums    
+        return validEnums  
 
-class _VisualConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
-    """
-    - <ALL>
-        - Requirement: Not compatible with Reflect Armour
-        - Requirement: Not compatible with Solar Coating
-    - Primitive
-        - Min TL: 1
-        - Cost: Cr1 * Base Slots
-        - Note: Detection DM -1 at >= 500m
-    - Basic
-        - Min TL: 4
-        - Cost: Cr4 * Base Slots
-        - Note: Detection DM -2 at >= 250m
-    - Improved
-        - Min TL: 7
-        - Cost: Cr40 * Base Slots
-        - Note: Detection DM -2 at >= 100m
-    - Enhanced
-        - Min TL: 11
-        - Cost: Cr100 * Base Slots
-        - Note: Detection DM -3 at >= 50m
-    - Advanced
-        - Min TL: 12
-        - Cost: Cr500 * Base Slots
-        - Note: Detection DM -4 at >= 10m
-    - Superior
-        - Min TL: 13
-        - Cost: Cr2500 * Base Slots
-        - Note: Detection DM -4 at >= 1m or over      
-    """
-    # NOTE: The compatibility requirements are handled by the component rather
-    # than the impl
-    # TODO: I'm not sure if I should include the comments as the values are only
-    # values for size 5 robots
-    # Update: Add a single note that explains that the rules are complex and
-    # points the user to the correct page
-
-    _MinTLMap = {
-        _OptionLevel.Primitive: 1,
-        _OptionLevel.Basic: 4,
-        _OptionLevel.Improved: 7,
-        _OptionLevel.Enhanced: 11,
-        _OptionLevel.Advanced: 12,
-        _OptionLevel.Superior: 13,
-    }
-
-    _CostPerSlotMap = {
-        _OptionLevel.Primitive: 1,
-        _OptionLevel.Basic: 4,
-        _OptionLevel.Improved: 40,
-        _OptionLevel.Enhanced: 100,
-        _OptionLevel.Advanced: 500,
-        _OptionLevel.Superior: 2500,
-    }
-
+class _ConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
     def __init__(
             self,
-            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            componentString: str,
+            minTLMap: typing.Mapping[_OptionLevel, int],
+            dataMap: typing.Mapping[
+                _OptionLevel,
+                typing.Tuple[int, int, int]], # Cost Per Slot, Recon Modifier, Effective Range
+            reconNote: str, # "....{modifier} .... {range} ...."
+            incompatibleTypes: typing.Optional[
+                typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Visual Concealment',
+            componentString=componentString,
             enumType=_OptionLevel,
             optionId='Level',
             optionName='Level',
             optionDescription='Specify the concealment level.',
             optionDefault=_OptionLevel.Basic,
-            minTLMap=_VisualConcealmentSlotOptionImpl._MinTLMap,
+            minTLMap=minTLMap,
             incompatibleTypes=incompatibleTypes)
+        
+        self._dataMap = dataMap
+        self._reconNote = reconNote
         
     def isZeroSlot(self) -> bool:
         return True
@@ -444,34 +400,112 @@ class _VisualConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         level = self._enumOption.value()
         assert(isinstance(level, _OptionLevel))
 
+        costPerSlot, reconModifier, effectiveRange = self._dataMap[level]
+
         costPerSlot = common.ScalarCalculation(
-            value=_VisualConcealmentSlotOptionImpl._CostPerSlotMap[level],
-            name=f'{level.value} Visual Concealment Cost Per Slot')
+            value=costPerSlot,
+            name=f'{level.value} {self.componentString()} Cost Per Slot')
         cost = common.Calculator.multiply(
             lhs=costPerSlot,
             rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
+            name=f'{level.value} {self.componentString()} Cost')
 
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
         
-class _AudibleConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+        step.addNote(note=self._reconNote.format(
+            modifier=reconModifier,
+            range=effectiveRange))  
+
+class _VisualConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
     """
+    - <ALL>
+        - Requirement: Not compatible with Reflect Armour
+        - Requirement: Not compatible with Solar Coating
+    - Primitive
+        - Min TL: 1
+        - Cost: Cr1 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-1 at >= 500m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).
+    - Basic
+        - Min TL: 4
+        - Cost: Cr4 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-2 at >= 250m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).
+    - Improved
+        - Min TL: 7
+        - Cost: Cr40 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-2 at >= 100m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).
+    - Enhanced
+        - Min TL: 11
+        - Cost: Cr100 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-3 at >= 50m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).
+    - Advanced
+        - Min TL: 12
+        - Cost: Cr500 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-4 at >= 10m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).        
+    - Superior
+        - Min TL: 13
+        - Cost: Cr2500 * Base Slots
+        - Note: Recon checks to see the robot receive a DM-4 at >= 1m. This is
+        based on a Size 5 robot and may vary at the Referee's discretion (p31).
+    """
+    # NOTE: The compatibility requirements are handled by the component rather
+    # than the impl
+
+    _MinTLMap = {
+        _OptionLevel.Primitive: 1,
+        _OptionLevel.Basic: 4,
+        _OptionLevel.Improved: 7,
+        _OptionLevel.Enhanced: 11,
+        _OptionLevel.Advanced: 12,
+        _OptionLevel.Superior: 13,
+    }
+
+    # Data Structure: Cost Per Slot, Recon Modifier, Effective Range
+    _DataMap = {
+        _OptionLevel.Primitive: (1, -1, 500),
+        _OptionLevel.Basic: (4, -2, 250),
+        _OptionLevel.Improved: (40, -2, 100),
+        _OptionLevel.Enhanced: (100, -3, 50),
+        _OptionLevel.Advanced: (500, -4, 10),
+        _OptionLevel.Superior: (2500, -4, 1),
+    }
+
+    _ReconNote = 'Recon checks to detect the robot visually receive a DM{modifier} at >= {range}m. This is based on a Size 5 robot and may vary at the Referee\'s discretion (p31).'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Visual Concealment',
+            minTLMap=_VisualConcealmentSlotOptionImpl._MinTLMap,
+            dataMap=_VisualConcealmentSlotOptionImpl._DataMap,
+            reconNote=_VisualConcealmentSlotOptionImpl._ReconNote,
+            incompatibleTypes=incompatibleTypes)
+        
+class _AudibleConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
+    """
+    - <All>
+        - Note: Negates any Heighten Senses Trait of the entity trying to detect
+        the robot audibly (p32).
     - Basic
         - Min TL: 5
         - Cost: Cr5 * Base Slots
-        - Note: Detection DM -1 at >= 50m
+        - Note: Detection DM -1 at >= 50m (p32)
     - Improved
         - Min TL: 8
         - Cost: Cr10 * Base Slots
-        - Note: Detection DM -2 at >= 10m
+        - Note: Detection DM -2 at >= 10m (p32)
     - Advanced
         - Min TL: 10
         - Cost: Cr50 * Base Slots
-        - Note: Detection DM -3 at >= 50m    
+        - Note: Detection DM -3 at >= 50m (p32)
     """
-    # TODO: I'm not sure if I should include the comments (see Visual
-    # Concealment impl)
 
     _MinTLMap = {
         _OptionLevel.Basic: 5,
@@ -479,11 +513,15 @@ class _AudibleConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 10,
     }
 
-    _CostPerSlotMap = {
-        _OptionLevel.Basic: 5,
-        _OptionLevel.Improved: 10,
-        _OptionLevel.Advanced: 50,
+    # Data Structure: Cost Per Slot, Recon Modifier, Effective Range
+    _DataMap = {
+        _OptionLevel.Basic: (5, -1, 50),
+        _OptionLevel.Improved: (10, -2, 10),
+        _OptionLevel.Advanced: (50, -3, 50),
     }
+
+    _ReconNote = 'Recon checks to detect the robot audibly receive a DM{modifier} at >= {range}m (p32)'
+    _HeightenSensesTrait = 'An entity trying to detect the robot audibly does not get to include any bonus from the Heighten Senses Trait (p32)'
 
     def __init__(
             self,
@@ -491,16 +529,10 @@ class _AudibleConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
             ) -> None:
         super().__init__(
             componentString='Audible Concealment',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the concealment level.',            
-            optionDefault=_OptionLevel.Basic,
             minTLMap=_AudibleConcealmentSlotOptionImpl._MinTLMap,
+            dataMap=_AudibleConcealmentSlotOptionImpl._DataMap,
+            reconNote=_AudibleConcealmentSlotOptionImpl._ReconNote,
             incompatibleTypes=incompatibleTypes)
-        
-    def isZeroSlot(self) -> bool:
-        return True        
 
     def updateStep(
             self,
@@ -512,38 +544,26 @@ class _AudibleConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
             sequence=sequence,
             context=context,
             step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_AudibleConcealmentSlotOptionImpl._CostPerSlotMap[level],
-            name=f'{level.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
+        step.addNote(note=_AudibleConcealmentSlotOptionImpl._HeightenSensesTrait)
         
-class _OlfactoryConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
+class _OlfactoryConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
     """
+    - <All>
+        - Note: Negates any Heighten Senses Trait of the entity trying to detect
+        the robot olfactorily (p32).    
     - Basic
         - Min TL: 7
         - Cost: Cr10 * Base Slots
-        - Note: Detection DM -1 at >= 100m
+        - Note: Detection DM -1 at >= 100m (p32)
     - Improved
         - Min TL: 9
         - Cost: Cr20 * Base Slots
-        - Note: Detection DM -2 at >= 20m
+        - Note: Detection DM -2 at >= 20m (p32)
     - Advanced
         - Min TL: 12
         - Cost: Cr100 * Base Slots
-        - Note: Detection DM -3 at >= 10m
+        - Note: Detection DM -3 at >= 10m (p32)
     """
-    # TODO: I'm not sure if I should include the comments (see Visual
-    # Concealment impl)
 
     _MinTLMap = {
         _OptionLevel.Basic: 7,
@@ -551,11 +571,15 @@ class _OlfactoryConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12,
     }
 
-    _CostPerSlotMap = {
+    # Data Structure: Cost Per Slot, Recon Modifier, Effective Range
+    _DataMap = {
         _OptionLevel.Basic: 10,
         _OptionLevel.Improved: 20,
         _OptionLevel.Advanced: 100,
     }
+
+    _ReconNote = 'Recon checks to detect the robot olfactorily receive a DM{modifier} at >= {range}m (p32)'
+    _HeightenSensesTrait = 'An entity trying to detect the robot olfactorily does not get to include any bonus from the Heighten Senses Trait (p32)'
 
     def __init__(
             self,
@@ -563,17 +587,11 @@ class _OlfactoryConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
             ) -> None:
         super().__init__(
             componentString='Olfactory Concealment',
-            enumType=_OptionLevel,
-            optionId='Level',
-            optionName='Level',
-            optionDescription='Specify the concealment level.', 
-            optionDefault=_OptionLevel.Basic,           
             minTLMap=_OlfactoryConcealmentSlotOptionImpl._MinTLMap,
+            dataMap=_OlfactoryConcealmentSlotOptionImpl._DataMap,
+            reconNote=_OlfactoryConcealmentSlotOptionImpl._ReconNote,
             incompatibleTypes=incompatibleTypes)  
         
-    def isZeroSlot(self) -> bool:
-        return True        
-
     def updateStep(
             self,
             sequence: str,
@@ -584,20 +602,7 @@ class _OlfactoryConcealmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
             sequence=sequence,
             context=context,
             step=step)
-
-        level = self._enumOption.value()
-        assert(isinstance(level, _OptionLevel))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_OlfactoryConcealmentSlotOptionImpl._CostPerSlotMap[level],
-            name=f'{level.value} {self.componentString()} Cost Per Slot')
-        cost = common.Calculator.multiply(
-            lhs=costPerSlot,
-            rhs=context.baseSlots(sequence=sequence),
-            name=f'{self.componentString()} Cost')
-
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
+        step.addNote(note=_OlfactoryConcealmentSlotOptionImpl._HeightenSensesTrait)
         
 class _HostileEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -784,7 +789,7 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Cost: Cr50000 * Base Slots 
         - Requirement: Only compatible with biological robots
     """
-    # TODO: Handle only compatible with biological robots after I
+    # TODO: Handle not compatible with biological robots after I
     # add support for biological
 
     class _ProtectionType(enum.Enum):
@@ -1406,9 +1411,10 @@ class _LaserDesignatorSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - Min TL: 7
     - Cost: Cr500
+    - Note: Fire Control Systems get a DM+2 to attacks when targets have been
+    illuminated using a Laser Designator
     """
-    # TODO: Fire Control System needs to add a note that it receives a DM+2 to
-    # attack designated targets
+    # NOTE: The note is handled by the Fire Control System
 
     def __init__(
             self,
@@ -4981,12 +4987,39 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - Min TL: 6
     - Slot Gain: +10% Base Slots gained rounded up
-    - Trait: I assume this should set the robots Endurance to 0
+    - Trait: Endurance 0
+    - Requirement: Incompatible with Endurance modifications
+    - Requirement: Incompatible with RTG and Solar Power Unit slot options
     """
-    # TODO: I'm not sure about setting the robots endurance
-    # TODO: This component feels like it's more of an endurance
-    # modification (i.e. chassis option) rather than a slot
-    # option
+    # NOTE: The rules around a robot with no internal power (p56) are a little
+    # unclear. It says that "A robot without a conventional power system may
+    # still use power packs to achieve endurance similar to its base endurance".
+    # It's not clear if this is talking about the additional power packs that
+    # can be added to increase Endurance or if it's talking about external power
+    # packs. My take is the latter as the this is the 'No Internal Power' slot
+    # option and the power packs used to increase Endurance Endurance are still
+    # internal.
+    # NOTE: The rules don't explicitly state it but it seems logical that the
+    # Endurance of the robot is 0 with this option installed as the length of
+    # time it can run for is determined by the external source of power. This
+    # line of thinking seems to be backed up by the description of Base
+    # Endurance (p16) which describes it as how long the robot can go without
+    # recharging. As there is no internal power source there is nothing to
+    # recharge so no Endurance.
+    # NOTE: I've added the requirements that the component is incompatible with
+    # Endurance modifications and RTG & Solar Power slot options.
+    # As the component sets the Endurance to 0 it doesn't make sense for a user
+    # to have spent credits on increasing it Endurance only to have it reduced
+    # to zero. It also doesn't seem sensible that they should be able to get a
+    # cost saving from reducing Endurance if the power source that gives the
+    # endurance is being removed.
+    # The RTG & Solar Power slot options are incompatible as I'm classing them
+    # as an internal power source similar to the power pack logic covered above.
+    # The incompatibility with these power sources is handled by the component
+    # rather than the impl.
+    # NOTE: This component would probably make more logical sense to be handled
+    # at the same point as endurance modifiers. I've left it hear to keep it
+    # the same as how it appears in the rules.
 
     _Endurance = common.ScalarCalculation(
         value=0,
@@ -4998,13 +5031,24 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
             ) -> None:
         super().__init__(
             componentString='No Internal Power',
-            minTL=9,
-            perBaseSlotCost=100,
-            percentBaseSlots=-10, # Negative as it's a slot gain
+            minTL=6,
+            percentBaseSlots=10,
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
-        return False 
+        return False
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+        
+        return not context.hasComponent(
+            componentType=robots.EnduranceModification,
+            sequence=sequence)
     
     def updateStep(
             self,
@@ -5040,6 +5084,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         any combination, it is not subject to these performance degradations,
         provided both power sources are operating at full capability; in such
         cases the robot could support vehicle speed movement modifications
+        - Requirement: Not compatible with No Internal Power slot option
     - Long Duration
         - Basic
             - Min TL: 7
@@ -5073,12 +5118,15 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
             - Slots: 5% of Base Slots
             - Trait: Half Life = 5 years
     """
+    # NOTE: Details of the incompatibility with No Internal Power can be found on
+    # the No Internal Power impl. The incomparability its self is handled by the
+    # RTG component.
     # TODO: Something seems off with the logic of how power packs are recharged.
     # The rules have it as 'three times a power pack’s endurance to fully
     # recharge it'. As a lot of robots have an Endurance the 100s of hours, this
     # can mean fully recharging their power packs can take a crazy length of time
     # (1000s of hours). It's these values I'm currently displaying to the user
-    # but I they're so big it's pretty meaningless.
+    # but as they're so big it's pretty meaningless.
     # I suspect it's not really intended for how long it will take to charge the
     # robots battery from flat but how long to top it back up to full after doing
     # X hours of work. This is probably a much more meaningful piece of info for
@@ -5245,7 +5293,8 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Requirement: If a robot installs two RTG or solar power sources, in
         any combination, it is not subject to these performance degradations,
         provided both power sources are operating at full capability; in such
-        cases the robot could support vehicle speed movement modifications        
+        cases the robot could support vehicle speed movement modifications  
+        - Requirement: Not compatible with No Internal Power slot option      
     - Basic
         - Min TL: 6
         - Cost: Cr2000 * Base Slots
@@ -5270,6 +5319,9 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # NOTE: The Solar Power Unit rules (p57) say the effective size of the robot
     # is increased by 1 when the it's deployed. They don't explicitly say it but
     # one of the implications of this the Attack Roll DM 
+    # NOTE: Details of the incompatibility with No Internal Power can be found on
+    # the No Internal Power impl. The incomparability its self is handled by the
+    # Solar Power Unit component.    
     # TODO: Something seems off with the logic of how power packs are recharged.
     # The rules have it as a multiple of 'the hours as the power pack supplies',
     # with the lost multiple being 2 for minimal activity. The max number of
@@ -5497,7 +5549,7 @@ class _BioscannerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Slots: 2
     - Requirement: Requires at least Electronics (sensors) level 0 to operator
     """
-    # TODO: Not sure how to handle requirement. Could just be a note
+    # NOTE: The Electronics (sensors) requirement is handled in finalisation
 
     def __init__(
             self,
@@ -5522,7 +5574,7 @@ class _DensitometerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Note: Target must be within 100m to be scanned
     - Requirement: Requires at least Electronics (sensors) level 0 to operator
     """
-    # TODO: Not sure how to handle requirement. Could just be a note
+    # NOTE: The Electronics (sensors) requirement is handled in finalisation
 
     def __init__(
             self,
@@ -5549,7 +5601,7 @@ class _NeuralActivitySensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Note: Detects Neural Activity within 500m
     - Requirement: Requires at least Electronics (sensors) level 0 to operator
     """
-    # TODO: Not sure how to handle requirement. Could just be a note
+    # NOTE: The Electronics (sensors) requirement is handled in finalisation
 
     def __init__(
             self,
@@ -5573,12 +5625,15 @@ class _PlanetologySensorSuiteSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Min TL: 12
     - Cost: Cr25000
     - Slots: 5
-    - Note: Adds DM+1 to any checks conducted in conjunction with data provided by the suite
+    - Note: Adds DM+1 to any checks conducted in conjunction with data provided
+    by the suite
     - Requirement: Requires at least Electronics (sensors) level 0 to operator
-    - Requirement: Added +1 to the Maximum Skill level allowed by the Science (planetology) Toolkit
+    - Requirement: Added +1 to the Maximum Skill level allowed by the
+    Science (planetology) Toolkit
     """
-    # TODO: Not sure how to handle requirement. Could just be a note
-    # TODO: Handle +1 to Science (planetology) Toolkit
+    # NOTE: The note relating to the Science (planetology) Toolkit is handled
+    # by the toolkit slot option
+    # NOTE: The Electronics (sensors) requirement is handled in finalisation
 
     def __init__(
             self,
@@ -6093,26 +6148,32 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     - <ALL>
         - Option: String specifying science the toolkit is for
+        - Note: If the robot has a Planetology Sensor the Maximum Skill level
+        allowed is increased by 1
     - Basic
         - Min TL: 5
         - Cost: Cr2000
         - Slots: 4
-        - Note: Whatever Science skill the toolkit is for is limited to 0 when using it
+        - Note: Whatever Science skill the toolkit is for is limited to 0 when
+        using it
     - Improved
         - Min TL: 8
         - Cost: Cr4000
         - Slots: 3
-        - Note: Whatever Science skill the toolkit is for is limited to 1 when using it
+        - Note: Whatever Science skill the toolkit is for is limited to 1 when
+        using it
     - Enhanced
         - Min TL: 11
         - Cost: Cr6000
         - Slots: 3
-        - Note: Whatever Science skill the toolkit is for is limited to 2 when using it
+        - Note: Whatever Science skill the toolkit is for is limited to 2 when
+        using it
     - Advanced
         - Min TL: 14
         - Cost: Cr8000
         - Slots: 3
-        - Note: Whatever Science skill the toolkit is for is limited to 3 when using it
+        - Note: Whatever Science skill the toolkit is for is limited to 3 when
+        using it
     """
 
     _MinTLMap = {
@@ -6132,6 +6193,10 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
 
     _MaxSkillNote = 'Science ({science}) skill is limited to {max} when using the toolkit'
     _NoScienceSpecifiedNote = 'WARNING: The science the toolkit is designed for has not been specified'
+
+    _PlanetologyMaxSkillIncrease = common.ScalarCalculation(
+        value=1,
+        name='Planetology Sensor Max Skill Increase')
 
     def __init__(
             self,
@@ -6204,9 +6269,24 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
+        if self._hasPlanetologyBonus(sequence=sequence, context=context):
+            maxSkill += _ScientificToolkitSlotOptionImpl._PlanetologyMaxSkillIncrease.value()
+
         step.addNote(_ScientificToolkitSlotOptionImpl._MaxSkillNote.format(
             science=science,
             max=maxSkill))
+        
+    def _hasPlanetologyBonus(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        science = self._scienceOption.value()
+        if science.lower().strip() != 'planetology':
+            return False 
+        return context.hasComponent(
+            componentType=PlanetologySensorSuiteSlotOption,
+            sequence=sequence)
 
 class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -7207,26 +7287,35 @@ class ExternalPowerSlotOption(SlotOption):
             impl=_ExternalPowerSlotOptionImpl())      
         
 class NoInternalPowerSlotOption(SlotOption):
+    """
+    - Requirement: Incompatible with RTG and Solar Power Unit slot options    
+    """
     def __init__(self) -> None:
         super().__init__(
-            impl=_NoInternalPowerSlotOptionImpl())     
+            impl=_NoInternalPowerSlotOptionImpl(
+                incompatibleTypes=[RTGSlotOption,
+                                   SolarPowerUnitSlotOption]))     
         
 class RTGSlotOption(SlotOption):
     """
     - Requirement: Multiple instances of the component can be added
-    """    
+    - Requirement: Not compatible with No Internal Power slot option
+    """
     def __init__(self) -> None:
         super().__init__(
-            impl=_RTGSlotOptionImpl(),
+            impl=_RTGSlotOptionImpl(
+                incompatibleTypes=[NoInternalPowerSlotOption]),
             singular=False)
         
 class SolarPowerUnitSlotOption(SlotOption):
     """
     - Requirement: Multiple instances of the component can be added
+    - Requirement: Not compatible with No Internal Power slot option
     """    
     def __init__(self) -> None:
         super().__init__(
-            impl=_SolarPowerUnitSlotOptionImpl(),
+            impl=_SolarPowerUnitSlotOptionImpl(
+                incompatibleTypes=[NoInternalPowerSlotOption]),
             singular=False)
         
 class QuickChargerSlotOption(SlotOption):

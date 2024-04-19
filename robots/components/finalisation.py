@@ -159,9 +159,18 @@ class FinalisationComponent(robots.FinalisationInterface):
         robots.RobotVehicleSkillDefinition
     ]
 
+    # These are the sensor components that require an Electronics skill
+    _SkilledSensorSlotOptions = [
+        robots.BioscannerSensorSlotOption,
+        robots.DensitometerSensorSlotOption,
+        robots.NeuralActivitySensorSlotOption,
+        robots.PlanetologySensorSuiteSlotOption
+    ]
+
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
+    _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
 
     def componentString(self) -> str:
         return 'Finalisation'
@@ -199,6 +208,7 @@ class FinalisationComponent(robots.FinalisationInterface):
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
+        self._skilledSensorsSteps(sequence=sequence, context=context)
         self._slotUsageStep(sequence=sequence, context=context)
         self._bandwidthUsageStep(sequence=sequence, context=context)
 
@@ -246,7 +256,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             elif trait == robots.RobotAttributeId.Alarm:
                 pass
             elif trait == robots.RobotAttributeId.Amphibious:
-                # TODO: I've not added anything for this as can't find anything
+                # NOTE: I've not added anything for this as can't find anything
                 # that adds it. If I do add something it's not straight forward
                 # as the exact wording of the note should probably vary depending
                 # on if the robot can operate while submerged or if it's just
@@ -285,7 +295,7 @@ class FinalisationComponent(robots.FinalisationInterface):
                 notes.append(f'Ranged attacks made against to robot receive DM+{value.value()}')
                 """
             elif trait == robots.RobotAttributeId.Small:
-                # See above for reason this is commented out
+                # TODO: See above for reason this is commented out
                 """
                 value = context.attributeValue(
                     attributeId=trait,
@@ -403,6 +413,35 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence=sequence,
             step=step)
         
+    def _skilledSensorsSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        # NOTE: The rules say that Electronics (sensors) 0 is required to use these
+        # sensors. This is just base Electronics so no need to check speciality
+        if context.hasSkill(
+            skillDef=traveller.ElectronicsSkillDefinition,
+            sequence=sequence):
+            return
+
+        for componentType in FinalisationComponent._SkilledSensorSlotOptions:
+            component = context.findFirstComponent(
+                componentType=componentType,
+                sequence=sequence)
+            if not component:
+                continue
+
+            note = FinalisationComponent._SkilledSensorNote.format(
+                component=component.componentString())
+            step = robots.RobotStep(
+                name=f'{component.componentString()}',
+                type='Skills',
+                notes=[note])
+            context.applyStep(
+                sequence=sequence,
+                step=step)
+        
     def _slotUsageStep(
             self,
             sequence: str,
@@ -418,7 +457,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             # than the max slots
             return
         
-        note = f'WARNING: {usedSlots.value()} slots have been used but the max allowed is only {maxSlots.value()}'
+        note = f'WARNING: {usedSlots.value()} slots have been used but the max allowed is {maxSlots.value()}'
         step = robots.RobotStep(
             name='Slots',
             type='Usage',
@@ -444,7 +483,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         
         # NOTE: The max slots can be a float as some components add/remove a
         # percentage of the slots (e.g. None locomotion adds 25%)        
-        note = f'WARNING: {usedBandwidth.value()} bandwidth has been used but the max allowed is only {math.floor(maxBandwidth.value())}'
+        note = f'WARNING: {usedBandwidth.value()} bandwidth has been used but the max allowed is {math.floor(maxBandwidth.value())}'
         step = robots.RobotStep(
             name='Bandwidth',
             type='Usage',

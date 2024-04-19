@@ -423,7 +423,9 @@ class ConstructionContext(object):
             componentTypeMap[componentClass.__name__] = componentClass
 
         stages = self.stages()
-        componentOptionData = {}
+        componentOptionData: typing.Dict[
+            construction.ComponentInterface,
+            typing.Dict[str, typing.Any]] = {}
 
         # Add sequence components to stages
         for sequence, componentDataList in sequenceComponentData.items():
@@ -489,8 +491,7 @@ class ConstructionContext(object):
                 stages = sequenceState.stages(phase=phase)
                 for stage in stages:
                     for component in stage.components(dependencyOrder=True):
-                        optionData: typing.Dict[str, typing.Any] = \
-                            componentOptionData.get(component)
+                        optionData = componentOptionData.get(component)
                         if not optionData:
                             continue
 
@@ -504,6 +505,12 @@ class ConstructionContext(object):
                     self._regenerateStage(
                         sequence=sequence,
                         stage=stage)
+                    
+        for component, optionData in componentOptionData.items():
+            if not optionData:
+                continue # All options were applied
+            for option in optionData.keys():
+                logging.warning(f'Ignoring unknown option {option} for component {component}')
 
     def addComponent(
             self,
@@ -870,7 +877,11 @@ class ConstructionContext(object):
                     continue
                 optionValue = optionData[optionId]
 
+                # NOTE: The option setValue functions will throw if the value is
+                # invalid
                 if isinstance(option, construction.BooleanOption):
+                    option.setValue(value=optionValue)
+                elif isinstance(option, construction.StringOption):
                     option.setValue(value=optionValue)
                 elif isinstance(option, construction.IntegerOption):
                     option.setValue(value=optionValue)
@@ -896,7 +907,7 @@ class ConstructionContext(object):
 
             if not optionFound:
                 # No pending options are found so no reason to think another
-                # iteration will help
+                # iteration will cause any more to be applied
                 break 
 
     def _modifyStage(

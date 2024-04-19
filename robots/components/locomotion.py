@@ -20,12 +20,12 @@ class _LocomotionImpl(object):
         are a special case and can be be used even if the primary has a lower
         multiplier.
     """
-    # TODO: On p16 the rules say "Agility is a factor in determining a robot’s
-    # movement rate, modifying a robot’s base movement rate of five metres per
-    # Minor Action" but I've not found anything that says _how_ it modifies it.
-    # Could be as simple as it's just 5+Agility but it would be nice to find
-    # something that explicitly says that. Could possibly see what the
-    # spreadsheet does.
+    # NOTE: The rules say "Agility is a factor in determining a robot’s movement
+    # rate, modifying a robot’s base movement rate of five metres per Minor
+    # Action" (p16) but I've not found anything that explicitly says _how_ it
+    # modifies it. I expect it just means the Agility gets added to the base
+    # Speed of 5m per minor action. This appears to be what the spreadsheet
+    # does
     # TODO: I'm not sure how to handle things like endurance, agility etc for
     # secondary locomotion. The aren't cumulative so should be applied on top
     # of the primary locomotion values. Should see what the spreadsheet does.

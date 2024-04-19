@@ -164,8 +164,6 @@ class Brain(robots.BrainInterface):
         _BandwidthUpgrade.ConsciousPlus50: (18, 5000000, +50),
     }
 
-    # TODO: This is ugly as hell but I can't see a better way that isn't just
-    # ugly in a different way
     _BandwidthUpgradeCompat = {
         _BrainType.Basic: [
             _BandwidthUpgrade.BasicHunterKillerPlus1
@@ -267,7 +265,7 @@ class Brain(robots.BrainInterface):
             value=inherentBandwidth,
             name=f'{self._componentString} Brain Inherent Bandwidth')
 
-        self._notes = list(notes)
+        self._notes = notes
 
         self._hardenedOption = construction.BooleanOption(
             id='Hardened',
@@ -486,6 +484,10 @@ class Brain(robots.BrainInterface):
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             value=self._inherentBandwidth))
         
+        if self._notes:
+            for note in self._notes:
+                step.addNote(note=note)
+        
         return step
     
     def _createBandwidthUpgradeStep(
@@ -619,9 +621,6 @@ class PrimitiveBrain(Brain):
     - Note: Programmable
     - Requirement: I don't think this is compatible with additional skills  
     """
-    # TODO: Handle incompatible with additional skills if that is how it
-    # actually works. It seems odd that it would have a skill count (even
-    # if it is a negative one, if it isn't compatible with additional skills)
       
     def __init__(
             self,
@@ -634,7 +633,7 @@ class PrimitiveBrain(Brain):
             cost=cost,
             intelligence=1,
             inherentBandwidth=0,
-            notes=['Programmable']) # TODO: This is a crap note, needs more context#
+            notes=['Programmable'])
         
 class PrimitiveTL7Brain(PrimitiveBrain):
     """
@@ -673,9 +672,6 @@ class BasicBrain(Brain):
     - Note: Limited Language, Security/0
     - Requirement: I don't think this is compatible with additional skills  
     """
-    # TODO: Handle incompatible with additional skills if that is how it
-    # actually works. It seems odd that it would have a skill count (even
-    # if it is a negative one, if it isn't compatible with additional skills)
       
     def __init__(
             self,
@@ -689,7 +685,7 @@ class BasicBrain(Brain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Language, Security/0']) # TODO: This is a crap note
+            notes=['Limited Language, Computer/1, Security/0'])
                 
 class BasicTL8Brain(BasicBrain):
     """
@@ -728,10 +724,9 @@ class HunterKillerBrain(Brain):
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1    
     """
-    # TODO: Handle incompatible with additional skills if that is how it
-    # actually works. It seems odd that it would have a skill count (even
-    # if it is a negative one, if it isn't compatible with additional skills)
-    # TODO: Handle Recon skill
+    # NOTE: The Recon 0 mentioned in the description of the brain (p65) is
+    # handled by the Hunter/Killer Skill Package. As far as I can tell you
+    # have to take a skill package and both variants give Recon 0.
       
     def __init__(
             self,
@@ -745,7 +740,7 @@ class HunterKillerBrain(Brain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Fried or Foe, Security/1']) # TODO: This is a crap note
+            notes=['Limited Fried or Foe, Computer/1, Security/1'])
                 
 class HunterKillerTL8Brain(HunterKillerBrain):
     """
@@ -778,14 +773,10 @@ class HunterKillerTL10Brain(HunterKillerBrain):
             minTL=10,
             cost=6000,
             intelligence=4)
-        
-class SkilledBrain(Brain):
-    """
-    - Skill Count: The robot can have an additional number of zero-level skills
-    equal to the Computer/X inherent Bandwidth of the brain
-    """
-    # TODO: Handle additional skills
 
+# This class only exists so other components can easily check if a robot has
+# a brain that can skills (rather than a skill package) 
+class SkilledBrain(Brain):
     def __init__(
             self,
             brainType: Brain._BrainType,
@@ -810,7 +801,6 @@ class AdvancedBrain(SkilledBrain):
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)
     """
-    # TODO: Handle additional zero level skills
       
     def __init__(
             self,
@@ -824,7 +814,7 @@ class AdvancedBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=2,
-            notes=['Limited Fried or Foe, Security/1', # TODO: This is a crap note
+            notes=['Intelligent Interface, Computer/2, Expert/1, Security/1',
                    'Can only attempt tasks up to Difficult (10+)'])
                 
 class AdvancedTL10Brain(AdvancedBrain):
@@ -880,7 +870,6 @@ class VeryAdvancedBrain(SkilledBrain):
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
-    # TODO: Handle additional zero level skills
       
     def __init__(
             self,
@@ -895,7 +884,7 @@ class VeryAdvancedBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=['Intellect Interface, Expert/2, Security/2', # TODO: This is a crap note
+            notes=[f'Intellect Interface, Computer/{inherentBandwidth}, Expert/2, Security/2',
                    'Can only attempt tasks up to Very Difficult (12+)'])
                 
 class VeryAdvancedTL12Brain(VeryAdvancedBrain):
@@ -954,7 +943,6 @@ class SelfAwareBrain(SkilledBrain):
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
     """
-    # TODO: Handle additional zero level skills
       
     def __init__(
             self,
@@ -969,7 +957,7 @@ class SelfAwareBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=['Near sentient, Expert/3, Security/3', # TODO: This is a crap note
+            notes=[f'Near sentient, Computer/{inherentBandwidth}, Expert/3, Security/3',
                    'Can only attempt tasks up to Formidable (14+)'])
                 
 class SelfAwareTL15Brain(SelfAwareBrain):
@@ -1010,7 +998,6 @@ class ConsciousBrain(SkilledBrain):
     """
     - Note: Conscious Intelligence, Security/3   
     """
-    # TODO: Handle additional zero level skills
       
     def __init__(
             self,
@@ -1025,7 +1012,7 @@ class ConsciousBrain(SkilledBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=['Conscious Intelligence, Security/3']) # TODO: This is a crap note
+            notes=[f'Conscious Intelligence, Computer/{inherentBandwidth}, Security/3'])
                 
 class ConsciousTL17Brain(ConsciousBrain):
     """

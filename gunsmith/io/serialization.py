@@ -157,8 +157,6 @@ def deserialiseComponents(
     commonComponents = deserialiseComponentList(
         components=commonDataList)
     
-    # TODO: I need to log something for components or component options that
-    # can't be added
     weapon.loadComponents(
         sequenceComponents=sequenceComponentMap,
         commonComponents=commonComponents)

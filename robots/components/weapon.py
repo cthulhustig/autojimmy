@@ -322,6 +322,8 @@ class WeaponMount(robots.WeaponMountInterface):
         - <All>
             - Slots: 1
             - Trait: Scope
+            - Note: If the robot has a Laser Designator attacks get a DM+2 to
+            attack targets that have been successfully illuminated (p37)
         - Basic
             - Min TL: 6
             - Cost: 10000
@@ -492,6 +494,10 @@ class WeaponMount(robots.WeaponMountInterface):
         value=1,
         name='Fore Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait'
+    _FireControlLaserDesignatorComponents = [
+        robots.LaserDesignatorDefaultSuiteOption,
+        robots.LaserDesignatorSlotOption]
+    _FireControlLaserDesignatorNote = 'DM+2 to attacks against targets that have been illuminated with the Laser Designator'
 
     def __init__(
             self,
@@ -807,6 +813,16 @@ class WeaponMount(robots.WeaponMountInterface):
             value=WeaponMount._FireControlSlots))
         
         step.addNote(note=WeaponMount._FireControlScopeNote)
+
+        hasLaserDesignator = False
+        for componentType in WeaponMount._FireControlLaserDesignatorComponents:
+            if context.hasComponent(
+                componentType=componentType,
+                sequence=sequence):
+                hasLaserDesignator = True
+                break
+        if hasLaserDesignator:
+            step.addNote(note=WeaponMount._FireControlLaserDesignatorNote)
         
         return step
 
