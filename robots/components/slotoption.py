@@ -3196,6 +3196,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
     need to specify the primary species the Medical Chamber is designed for.
     </p>
     """
+    # NOTE: The use of this list means the hacky component used to remove
+    # base manipulators is automatically skipped
     _ManipulatorTypes = [
         robots.BaseManipulator,
         robots.AdditionalManipulator,

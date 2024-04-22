@@ -120,6 +120,14 @@ class StringOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
+    
+    def setOptional(self, isOptional: bool) -> None:
+        self._isOptional = isOptional
+        if not self._isOptional and self._value == None:
+            if self._isEditable:
+                self._value = ''
+            elif self._options:
+                self._value = self._options[0]    
 
     def _checkAndUpdateValue(
             self,
@@ -151,8 +159,8 @@ class IntegerOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._minValue = minValue
-        self._maxValue = maxValue
+        self._minValue = min(minValue, maxValue) if minValue != None and maxValue != None else minValue
+        self._maxValue = max(maxValue, minValue) if minValue != None and maxValue != None else maxValue
         self._isOptional = isOptional
         self._checkAndUpdateValue(value=self._value)
 
@@ -188,6 +196,15 @@ class IntegerOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
+    
+    def setOptional(self, isOptional: bool) -> None:
+        self._isOptional = isOptional
+        if not self._isOptional and self._value == None:
+            self._value = 0
+            if self._minValue != None and self._value < self._minValue:
+                self._value = self._minValue
+            if self._maxValue != None and self._value > self._maxValue:
+                self._value = self._maxValue
 
     def _checkAndUpdateValue(
             self,
@@ -225,8 +242,8 @@ class FloatOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._minValue = minValue
-        self._maxValue = maxValue
+        self._minValue = min(minValue, maxValue) if minValue != None and maxValue != None else minValue
+        self._maxValue = max(maxValue, minValue) if minValue != None and maxValue != None else maxValue
         self._isOptional = isOptional
         self._checkAndUpdateValue(value=self._value)
 
@@ -262,6 +279,15 @@ class FloatOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
+    
+    def setOptional(self, isOptional: bool) -> None:
+        self._isOptional = isOptional
+        if not self._isOptional and self._value == None:
+            self._value = 0
+            if self._minValue != None and self._value < self._minValue:
+                self._value = self._minValue
+            if self._maxValue != None and self._value > self._maxValue:
+                self._value = self._maxValue
 
     def _checkAndUpdateValue(
             self,
@@ -334,6 +360,13 @@ class EnumOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
+    
+    def setOptional(self, isOptional: bool) -> None:
+        self._isOptional = isOptional
+        if not self._isOptional and self._value == None:
+            options = self._options if self._options != None else [e for e in self._type]
+            if options:
+                self._value = options[0]
 
     def _checkAndUpdateValue(
             self,

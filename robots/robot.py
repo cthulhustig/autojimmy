@@ -470,7 +470,7 @@ class Robot(object):
             name='Weapons',
             sequence=self._sequence,
             phase=robots.RobotPhase.SlotOptions,
-            baseType=robots.WeaponMountInterface,
+            baseType=robots.WeaponInterface,
             # Optional multi component
             minComponents=None,
             maxComponents=None))

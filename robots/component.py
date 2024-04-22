@@ -58,7 +58,7 @@ class DefaultSuiteOptionInterface(SlotOptionsInterface):
 class SlotOptionInterface(SlotOptionsInterface):
     pass
 
-class WeaponMountInterface(RobotComponentInterface):
+class WeaponInterface(RobotComponentInterface):
     pass
 
 class BrainInterface(RobotComponentInterface):

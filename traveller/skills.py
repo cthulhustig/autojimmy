@@ -176,10 +176,9 @@ GunnerSkillDefinition = SkillDefinition(
     fixedSpecialities=GunnerSkillSpecialities) 
 
 class HeavyWeaponsSkillSpecialities(enum.Enum):
-    Capitol = 'Capitol'
-    Ortillery = 'Ortillery'
-    Screen = 'Screen'
-    Turret = 'Turret'
+    Artillery = 'Artillery'
+    Portable = 'Portable' # aka Man-Port
+    Vehicle = 'Vehicle'
 HeavyWeaponsSkillDefinition = SkillDefinition(
     skillName='Heavy Weapons',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
@@ -245,6 +244,10 @@ class MeleeSkillSpecialities(enum.Enum):
     Bludgeon = 'Bludgeon'
     Natural = 'Natural'
     Unarmed = 'Unarmed'
+    # Whip isn't on the character sheet (at least the one I have) but is used by
+    # some of the weapons from the robot construction spreadsheet (which seem to
+    # have come from the Central Supply Catalogue)
+    Whip = 'Whip'
 MeleeSkillDefinition = SkillDefinition(
     skillName='Melee',
     skillType=SkillDefinition.SkillType.FixedSpeciality,

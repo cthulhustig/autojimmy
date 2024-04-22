@@ -5,6 +5,16 @@ import robots
 import traveller
 import typing
 
+# This is based on the min manipulator size for different mounts (p61)
+def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[traveller.WeaponSize]:
+    if manipulatorSize >= 7:
+        return traveller.WeaponSize.Heavy
+    if manipulatorSize >= 5:
+        return traveller.WeaponSize.Medium
+    if manipulatorSize >= 3:
+        return traveller.WeaponSize.Small
+    return None
+
 # NOTE: Having this be derived from something (currently the interface) is
 # important as construction doesn't really support specifying a top level
 # component type as the type used for a stage. The reason it doesn't work is
@@ -169,7 +179,19 @@ class FinalisationComponent(robots.FinalisationInterface):
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
+    
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
+
+    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted on or held by a manipulator receive the DEX modifier for the manipulator in the same way as players receive a DEX characteristic modifier (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted on or held by a manipulator do not receive a DEX modifier (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are to small to use weapons effectively. Attacks rolls do not get the manipulators STR or DEX bonus (p61)'
+    _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
+    _CombatWeaponSizeExamples = {
+        traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
+        traveller.WeaponSize.Medium: 'any larger weapon usable by Melee or Gun Combat skills or an explosive of up to six kilograms',
+        traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
+    }   
+ 
     _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
 
     def componentString(self) -> str:
@@ -205,6 +227,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         self._createInoperableStep(sequence=sequence, context=context)
         self._createMaintenanceStep(sequence=sequence, context=context)
         self._createAutopilotStep(sequence=sequence, context=context)
+        self._createCombatStep(sequence=sequence, context=context)
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
@@ -412,7 +435,81 @@ class FinalisationComponent(robots.FinalisationInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
+    def _createCombatStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        manipulators = context.findComponents(
+            componentType=robots.ManipulatorInterface,
+            sequence=sequence)
+        usableManipulatorSizes: typing.List[int] = []
+        for manipulator in manipulators:
+            assert(isinstance(manipulator, robots.ManipulatorInterface))
+            if isinstance(manipulator, robots.RemoveBaseManipulator):
+                continue
+            hasManipulator = True
+
+            size = manipulator.size()
+            if not _manipulatorSizeToWeaponSize(manipulatorSize=size):
+                # Ignore manipulators that are to small to hold a weapon
+                continue
+
+            if size not in usableManipulatorSizes:
+                usableManipulatorSizes.append(size)
+        usableManipulatorSizes.sort()
+
+        weaponMounts = context.findComponents(
+            componentType=robots.Weapon,
+            sequence=sequence)
+        hasNonManipulatorWeapon = False
+        for mount in weaponMounts:
+            assert(isinstance(mount, robots.Weapon))
+            isManipulatorBased = isinstance(mount, robots.ManipulatorMountedWeapon) or \
+                isinstance(mount, robots.HandHeldWeapon)
+            if not isManipulatorBased:
+                hasNonManipulatorWeapon = True
+
+        # Cover how DEX is used in attack rolls
+        if hasManipulator or hasNonManipulatorWeapon:
+            step = robots.RobotStep(
+                name='Dexterity',
+                type='Combat')
+            if hasManipulator:
+                step.addNote(note=FinalisationComponent._CombatManipulatorDexterityNote)
+            if hasNonManipulatorWeapon:
+                step.addNote(note=FinalisationComponent._CombatNonManipulatorDexterityNote)
+            context.applyStep(
+                sequence=sequence,
+                step=step)
+            
+        # Cover what happens if a manipulator holds a weapon that would require
+        # a larger mount that the manipulator can handle
+        if hasManipulator:
+            step = robots.RobotStep(
+                name='Weapon Size',
+                type='Combat')            
+            sizingMap: typing.Dict[traveller.WeaponSize, typing.Iterable[str]] = {}
+            for manipulatorSize in usableManipulatorSizes:
+                weaponSize = _manipulatorSizeToWeaponSize(manipulatorSize=size)
+                manipulatorSizes = sizingMap.get(weaponSize)
+                if not manipulatorSizes:
+                    manipulatorSizes = []
+                    sizingMap[weaponSize] = manipulatorSizes
+                manipulatorSizes.append(str(manipulatorSize))
+            for weaponSize, manipulatorSizes in sizingMap.items():
+                if weaponSize:
+                    step.addNote(note=FinalisationComponent._CombatManipulatorWeaponSizeNote.format(
+                        sizes=common.humanFriendlyListString(manipulatorSizes),
+                        examples=FinalisationComponent._CombatWeaponSizeExamples[weaponSize]))
+                else:
+                    step.addNote(note=FinalisationComponent._CombatManipulatorUndersizedNote.format(
+                        sizes=common.humanFriendlyListString(manipulatorSizes)))
+            context.applyStep(
+                sequence=sequence,
+                step=step)                
+
     def _skilledSensorsSteps(
             self,
             sequence: str,
