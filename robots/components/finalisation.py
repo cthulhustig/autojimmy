@@ -15,99 +15,80 @@ def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[travel
         return traveller.WeaponSize.Small
     return None
 
-# NOTE: Having this be derived from something (currently the interface) is
-# important as construction doesn't really support specifying a top level
-# component type as the type used for a stage. The reason it doesn't work is
-# ConstructionContext.findCompatibleComponents uses passes the stage type to
-# getSubclasses and sets top level to true meaning it will only find
-# components that are DERIVED FROM this specified type.
-class RemoveSlots(robots.SlotRemovalInterface):
-    """
-    - Cost Saving: Cr100 per slot removed
-    - Requirement: The option to remove unused slots should only be compatible
-    if there are slots to be removed
-    """
-    _PerSlotCostSaving = common.ScalarCalculation(
-        value=-100,
-        name='Slot Removal Per Slot Cost Saving')
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        self._removeAllOption = construction.BooleanOption(
-            id='RemoveAll',
-            name='All Unused',
-            value=True,
-            description=f'Specify if all unremoved slots should be removed')
-
-        self._slotCountOption = construction.IntegerOption(
-            id='SlotCount',
-            name='Slot Count',
-            value=1,
-            minValue=1,
-            description='Specify the number of slots to remove')
-        
-    def instanceString(self) -> str:
-        if self._removeAllOption.value():
-            return f'{self.componentString()} (All)'
-        slots = self._specifiedSlotCount()
-        if slots:      
-            return f'{self.componentString()} (x{slots.value()})'      
-        return super().instanceString()
-        
-    def componentString(self) -> str:
-        return 'Remove'
-
+class SlotRemoval(robots.SlotRemovalInterface):
     def typeString(self) -> str:
         return 'Slot Removal'
-
+    
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        removableSlots = self._calculateUnusedSlots(
-            sequence=sequence,
-            context=context)
-        return removableSlots.value() > 0
-
+        return True    
+    
     def options(self) -> typing.List[construction.ComponentOption]:
-        slots = [self._removeAllOption]
-        if self._slotCountOption.isEnabled():
-            slots.append(self._slotCountOption)
-        return slots
+        return []
 
     def updateOptions(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        removableSlots = self._calculateUnusedSlots(
-            sequence=sequence,
-            context=context)
-        self._slotCountOption.setMax(value=removableSlots.value())
-        self._slotCountOption.setEnabled(
-            enabled=not self._removeAllOption.value())
-        
+        pass    
+
+# NOTE: This component is hack to allow the stage to default to
+# CustomSlotRemoval but still allow the user to select None as
+# an option
+class NoSlotRemoval(SlotRemoval):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def componentString(self) -> str:
+        return 'None'
+
     def createSteps(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())        
+        pass
 
-        if self._removeAllOption.value():
+class ActualSlotRemoval(SlotRemoval):
+    """
+    - Cost Saving: Cr100 per slot removed
+    """    
+    # NOTE: The fact this component doesn't check if there are any slots to
+    # remove is important as we don't want the component to be removed if
+    # the user temporarily adds a new component that takes the robot over
+    # the slot limit. The problem with having it removed is the None option
+    # will be selected (as it would be compatible) and then when the
+    # temporary component is removed it it will remain as None as the
+    # default component logic won't get applied (as there is a component)
+    
+    _PerSlotCostSaving = common.ScalarCalculation(
+        value=-100,
+        name='Slot Removal Per Slot Cost Saving')
+    
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:   
+        slots = self._slotCount()
+        if not slots: # None indicates remove all slots
             slots = self._calculateUnusedSlots(
                 sequence=sequence,
                 context=context)
-        else:
-            slots = self._specifiedSlotCount()
+        if slots.value() <= 0:
+            return # No slots to remove so no step to create
+            
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())               
 
         # NOTE: This assumes that the saving is a negative value
         cost = common.Calculator.multiply(
-            lhs=RemoveSlots._PerSlotCostSaving,
+            lhs=CustomSlotRemoval._PerSlotCostSaving,
             rhs=slots,
             name=f'{self.componentString()} Total Cost Saving')
         step.setCredits(credits=construction.ConstantModifier(value=cost))
@@ -122,12 +103,7 @@ class RemoveSlots(robots.SlotRemovalInterface):
 
         context.applyStep(
             sequence=sequence,
-            step=step)
-
-    def _specifiedSlotCount(self) -> common.ScalarCalculation:
-        return common.ScalarCalculation(
-            value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
-            name='Specified Slot Count')
+            step=step)    
     
     def _calculateUnusedSlots(
             self,
@@ -148,7 +124,63 @@ class RemoveSlots(robots.SlotRemovalInterface):
                 rhs=usedSlots),
             rhs=common.ScalarCalculation(value=0),
             name='Unused Slots')
+    
+    def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
+        raise RuntimeError(f'{type(self)} is derived from ActualSlotRemoval so must implement _slotCount')    
 
+class AllSlotRemoval(ActualSlotRemoval):
+    def __init__(self) -> None:
+        super().__init__()
+        
+    def componentString(self) -> str:
+        return 'Remove All'
+        
+    def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
+        return None # Remove all
+
+class CustomSlotRemoval(ActualSlotRemoval):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self._slotCountOption = construction.IntegerOption(
+            id='SlotCount',
+            name='Slot Count',
+            value=1,
+            minValue=1,
+            description='Specify the number of slots to remove')
+        
+    def instanceString(self) -> str:
+        slots = self._slotCount()
+        if slots:      
+            return f'{self.componentString()} (x{slots.value()})'      
+        return super().instanceString()
+        
+    def componentString(self) -> str:
+        return 'Remove Custom'
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._slotCountOption)
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        removableSlots = self._calculateUnusedSlots(
+            sequence=sequence,
+            context=context)
+        hasSlotsToRemove = removableSlots.value() > 0
+        if hasSlotsToRemove:
+            self._slotCountOption.setMax(value=removableSlots.value())
+        self._slotCountOption.setEnabled(hasSlotsToRemove)
+
+    def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
+        return common.ScalarCalculation(
+            value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
+            name='Specified Custom Slot Count')
+    
 class FinalisationComponent(robots.FinalisationInterface):
     _AtmosphereFlyerLocomotions = [
         robots.AeroplanePrimaryLocomotion,
