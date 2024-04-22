@@ -284,25 +284,6 @@ class _TracksLocomotionImpl(_LocomotionImpl):
             baseEndurance=72,
             costMultiplier=2)
         
-        self._trackCountOption = construction.IntegerOption(
-            id='TrackCount',
-            name='Track Count',
-            value=2,
-            minValue=1,
-            description='Specify the number of tracks the robot has.')        
-        
-    def trackCount(self) -> int:
-        return self._trackCountOption.value()
-    
-    def instanceString(self) -> str:
-        trackCount = self.trackCount()
-        if trackCount:
-            return f'{self._componentString} (Tracks: {trackCount})'
-        return super().instanceString()    
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return [self._trackCountOption]   
-        
 class _FlyerLocomotionImpl(_LocomotionImpl):
     """
     - Trait: Flyer (Idle) (p17)
@@ -368,27 +349,22 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     - Requirement: Must include the Vehicle Speed Movement modification (p17)
     - Requirement: Can only be primary locomotion type
     - Note: Requires a runway of at least 50m for landing (p17)
-    - Note: Size 1-3 aeroplanes can be launched by hand, larger require a runway of at least 50m (p16)
+    - Note: Size 1-3 aeroplanes can be launched by hand, larger require a runway
+      of at least 50m (p16)
     - Note: Cannot move slower than Slow
-    - Note: Requires a secondary locomotion type to do more than taxi to the runway
+    - Note: Requires a secondary locomotion type to do more than taxi to the
+      runway
     """
     # NOTE: The requirement that Aeroplane can only be a primary locomotion is
     # implied from the fact the p17 of the robot rules say the Aeroplane
     # locomotion requires the Vehicle Speed Movement Locomotion Modification and
     # p22 says Locomotion Modifications alter the performance characteristics of
     # a robots primary form of locomotion
-    # TODO: Handle complex requirement where this Vehicle Speed Movement is a
-    # requirement
-    # - Could add a warning note in finalisation if the user hasn't added it
-    # - Could have this add an additional step that includes the details of
-    # the Vehicle Speed Movement locomotion modification, I think I did
-    # something similar in the gunsmith (possibly for rocket propelled stuff).
-    # That way it would show up in the  manifest as it's own step at least but
-    # still feels hacky. I would have to make sure the real Vehicle Speed
-    # Movement was incompatible
-    #   - IMPORTANT: This approach won't work with the way I'm currently
-    #     calculating Base Chassis Cost. If I add this extra step it will be
-    #     included in the Base Chassis Cost when it shouldn't be
+    # NOTE: The requirement that Aeroplane locomotion requires Vehicle Speed
+    # Movement is handled by the way I've set up the Speed Modification stage.
+    # The stage is mandatory and added a hacky None component. All components
+    # other than Vehicle Speed Movement are incompatible with Aeroplane
+    # locomotion so it forces it to be selected.
 
     _SmallAeroplaneNote = 'Can be launched by hand (p17)'
     _LargeAeroplaneNote = 'Require a runway of at least 50m for takeoff (p17)'
@@ -653,26 +629,14 @@ class NoPrimaryLocomotion(PrimaryLocomotion):
 class WheelsPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsLocomotionImpl(isPrimary=True))
-        
-    def axleCount(self) -> int:
-        assert(isinstance(self._impl, _WheelsLocomotionImpl))
-        return self._impl.axleCount()
 
 class WheelsATVPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WheelsATVLocomotionImpl(isPrimary=True))
-
-    def axleCount(self) -> int:
-        assert(isinstance(self._impl, _WheelsATVLocomotionImpl))
-        return self._impl.axleCount()         
+        super().__init__(impl=_WheelsATVLocomotionImpl(isPrimary=True))  
 
 class TracksPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_TracksLocomotionImpl(isPrimary=True))
-
-    def trackCount(self) -> int:
-        assert(isinstance(self._impl, _TracksLocomotionImpl))
-        return self._impl.trackCount()          
+        super().__init__(impl=_TracksLocomotionImpl(isPrimary=True))     
 
 class GravPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
@@ -703,6 +667,16 @@ class HovercraftPrimaryLocomotion(PrimaryLocomotion):
         super().__init__(impl=_HovercraftLocomotionImpl(isPrimary=True))
 
 class ThrusterPrimaryLocomotion(PrimaryLocomotion):
+    # NOTE: The rules say that Thrusters are generally only available as a
+    # secondary locomotion but the word 'generally' would imply it is
+    # possible for them to be a primary locomotion. There is actually an
+    # example of it being a primary but it's for a missile robot (p101)
+    # that has thrusters as primary and secondary locomotion. There is
+    # also some example robots that only have thruster locomotion
+    # (e.g. p183 and p209). Conceivably the could have no primary
+    # locomotion and thrusters as a secondary but the fact it has a
+    # second endurance value in brackets would suggest it has Vehicle
+    # Speed Movement which is primary locomotion only.
     def __init__(self) -> None:
         super().__init__(impl=_ThrusterLocomotionImpl(isPrimary=True))
 
@@ -787,25 +761,13 @@ class WheelsSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsLocomotionImpl(isPrimary=False)) 
 
-    def axleCount(self) -> int:
-        assert(isinstance(self._impl, _WheelsLocomotionImpl))
-        return self._impl.axleCount()        
-
 class WheelsATVSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsATVLocomotionImpl(isPrimary=False))
 
-    def axleCount(self) -> int:
-        assert(isinstance(self._impl, _WheelsATVLocomotionImpl))
-        return self._impl.axleCount()
-
 class TracksSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_TracksLocomotionImpl(isPrimary=False))
-
-    def trackCount(self) -> int:
-        assert(isinstance(self._impl, _TracksLocomotionImpl))
-        return self._impl.trackCount()        
+        super().__init__(impl=_TracksLocomotionImpl(isPrimary=False))     
 
 class GravSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:

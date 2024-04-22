@@ -368,6 +368,7 @@ class VehicleSpeedMovement(SpeedModification):
         - Hovercraft: Medium
         - Thrusters: ??????
     - Trait: Autopilot 0
+    - Trait: Flyer <SpeedBand> (only if Flyer was granted by Primary locomotion)
     - Option: Additional Speed Increase
         - Range: 0-3
         - Trait: Speed Band +1 per level taken
@@ -375,6 +376,9 @@ class VehicleSpeedMovement(SpeedModification):
         - Cost: Each increase doubles the cost of the modification
     - Requirement: Robots with Aeroplane locomotion must have Vehicle Speed
     Movement
+    - Requirement: Vehicle speed movement reduces a robot's endurance by a
+    factor of four when in use. Each further movement enhancement halves
+    the robot remaining endurance.
     - Note: Grav locomotion systems equipped with vehicle speed movement are
     capable of propelling a robot to orbit 
     """
@@ -401,18 +405,35 @@ class VehicleSpeedMovement(SpeedModification):
     # which is acceleration not speed. The spreadsheet doesn't allow you to
     # select a Speed Band for Thruster equipped robots. Until I find a better
     # option I'll do the same.
-    # TODO It component sounds like this is something that can be turned on or
-    # of. On p23 it says "Vehicle speed movement reduces a robot’s endurance by
-    # a factor of four when in use. Each further movement enhancement halves the
-    # robot remaining endurance". Note the "when in use" bit
-    # TODO: Need to decide if Medium is the correct Speed Band for Aeroplane
-    # (see note above)
-    # TODO: Need to figure out if there is a Speed Band for thrusters
-    # TODO: I think, if a robot has the Flyer Trait, it should be updated with
-    # the new Speed Band. I assume that's how some of the example robots have
-    # a Flyer trait other than Idle (e.g. p216, p258). I'm not sure if that that
-    # should be instead of as well as whatever trait I'm using to store the
-    # SpeedBand for non-Flyer robots.
+    # NOTE: This component sounds like this is something that can be turned on
+    # or off. On p23 it says "Vehicle speed movement reduces a robot’s endurance
+    # by a factor of four when in use. Each further movement enhancement halves
+    # the robot remaining endurance". Note the "when in use" bit.
+    # I don't think this means anything from an implementation point of view
+    # - This component sets the VehicleSpeed attribute but it's the only
+    #   component that sets it so it can be taken to only apply when using
+    #   Vehicle Speed Movement
+    # - This component sets the AutoPilot trait but this isn't an issue as the
+    #   only other place it's set is in the AutoPilot slot option and this
+    #   requires Vehicle Speed Movement for compatibility so AutoPilot can be
+    #   taken to only apply when using Vehicle Speed Movement
+    # NOTE: Setting the VehicleEndurance attribute only works here as it's
+    # after the last place the Endurance attribute is set. The Endurance
+    # attribute is set in Locomotion and Endurance which occur before this
+    # component in construction. It can also be set by the other Tactical
+    # Speed Increase and Reduction components but they're incompatible with
+    # Vehicle Speed Movement.
+    # NOTE: I didn't see anything in the rules that explicitly say the Vehicle
+    # Speed Movement sets the Flyer trait but it's implied by the fact there
+    # are example robots (e.g. p133 & p134) that have a Flyer trait higher
+    # than Idle but I can't find anything that explicitly says it gives that.
+    # I think it comes from Vehicle Speed Moment as, although the robots don't
+    # state they have it, all the examples I can see have the extra Endurance
+    # in brackets that the Final Endurance section suggests (p23)
+    # NOTE: The rules don't give a base Speed Band for Thruster locomotion
+    # (p23). My suspicion is that Vehicle Speed Movement shouldn't be applied
+    # to them as they use the Thrust trait to give their thrust in G rather
+    # than using the slow, fast, very fast etc.
 
     _BaseSlotPercent = common.ScalarCalculation(
         value=25,
@@ -423,15 +444,32 @@ class VehicleSpeedMovement(SpeedModification):
     _AutopilotRating = common.ScalarCalculation(
         value=0,
         name='Vehicle Speed Movement Base Autopilot Rating')
+    _InitialEnduranceScale = common.ScalarCalculation(
+        value=0.25,
+        name='Vehicle Speed Movement Initial Endurance Scale')
+    _IncreaseLevelEnduranceScale = common.ScalarCalculation(
+        value=0.5,
+        name='Vehicle Speed Movement Additional Increase Endurance Scale')
 
-    _WheelsBaseSpeedBand = robots.SpeedBand.Slow
-    _TracksBaseSpeedBand = robots.SpeedBand.VerySlow
-    _GravBaseSpeedBand = robots.SpeedBand.High
-    _AeroplaneBaseSpeedBand = robots.SpeedBand.Medium
-    _AquaticBaseSpeedBand = robots.SpeedBand.VerySlow
-    _VTOLBaseSpeedBand = robots.SpeedBand.Medium
-    _WalkerBaseSpeedBand = robots.SpeedBand.VerySlow
-    _HovercraftBaseSpeedBand = robots.SpeedBand.Medium
+    _SpeedBandTypeMap = {
+        robots.WheelsPrimaryLocomotion: robots.SpeedBand.Slow,
+        robots.WheelsATVPrimaryLocomotion: robots.SpeedBand.Slow,
+        robots.TracksPrimaryLocomotion: robots.SpeedBand.VerySlow,
+        robots.GravPrimaryLocomotion: robots.SpeedBand.High,
+        robots.AeroplanePrimaryLocomotion: robots.SpeedBand.Medium,
+        robots.AquaticPrimaryLocomotion: robots.SpeedBand.VerySlow,
+        robots.VTOLPrimaryLocomotion: robots.SpeedBand.Medium,
+        robots.WalkerPrimaryLocomotion: robots.SpeedBand.VerySlow,
+        robots.HovercraftPrimaryLocomotion: robots.SpeedBand.Medium,
+    }
+
+    # NOTE: ThrusterPrimaryLocomotion is intentionally not included on this list
+    # as the rules don't give it the Flyer trait (p16).
+    _FlyerPrimaryLocomotions = [
+        robots.GravPrimaryLocomotion,
+        robots.AeroplanePrimaryLocomotion,
+        robots.VTOLPrimaryLocomotion
+    ]
 
     _GravLocomotionNote = 'Grav locomotion systems equipped with vehicle speed movement are capable of propelling a robot to orbit (p23)'
 
@@ -464,13 +502,10 @@ class VehicleSpeedMovement(SpeedModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-
-        # TODO: This is temp behaviour until I figure out what the base
-        # speed band for Thrusters is
-        locomotion = context.findFirstComponent(
-            componentType=robots.ThrusterPrimaryLocomotion,
-            sequence=sequence)
-        return locomotion == None
+        
+        return self._calcBaseSpeedBand(
+            sequence=sequence,
+            context=context) != None
 
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
@@ -528,9 +563,7 @@ class VehicleSpeedMovement(SpeedModification):
         speedBand = self._calcBaseSpeedBand(
             sequence=sequence,
             context=context)
-        if not speedBand:
-            # TODO: Handle error
-            return
+        assert(speedBand != None) # Compatibility should enforce this
         if additionalIncrease.value() > 0:
             speedBand = common.incrementEnum(
                 value=speedBand,
@@ -539,9 +572,43 @@ class VehicleSpeedMovement(SpeedModification):
             attributeId=robots.RobotAttributeId.VehicleSpeed,
             value=speedBand))
         
+        # If the primary locomotion gives the robot the Flyer trait then set it
+        # to the speed band. This doesn't just check for the existence of the
+        # Flyer trait as it should only apply if the primary locomotion gave the
+        # trait as Vehicle Speed Motion only applies to the primary locomotion.
+        hasFlyerPrimary = False
+        for locomotionType in VehicleSpeedMovement._FlyerPrimaryLocomotions:
+            if context.hasComponent(
+                componentType=locomotionType,
+                sequence=sequence):
+                hasFlyerPrimary = True
+                break
+        if hasFlyerPrimary:
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.Flyer,
+                value=speedBand))
+        
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Autopilot,
-            value=VehicleSpeedMovement._AutopilotRating))        
+            value=VehicleSpeedMovement._AutopilotRating))
+
+        endurance = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Endurance,
+            sequence=sequence)
+        if endurance:
+            vehicleEndurance = common.Calculator.multiply(
+                lhs=endurance,
+                rhs=VehicleSpeedMovement._InitialEnduranceScale)
+            for _ in range(additionalIncrease.value()):
+                vehicleEndurance = common.Calculator.multiply(
+                    lhs=vehicleEndurance,
+                    rhs=VehicleSpeedMovement._IncreaseLevelEnduranceScale)
+            vehicleEndurance = common.Calculator.rename(
+                value=vehicleEndurance,
+                name='Vehicle Speed Movement Endurance')
+            step.addFactor(construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.VehicleEndurance,
+                value=vehicleEndurance))
         
         isGrav = context.findFirstComponent(
             componentType=robots.GravPrimaryLocomotion,
@@ -563,26 +630,7 @@ class VehicleSpeedMovement(SpeedModification):
             sequence=sequence)
         if not locomotion:
             return None
-
-        if isinstance(locomotion, robots.WheelsPrimaryLocomotion) or \
-            isinstance(locomotion, robots.WheelsATVPrimaryLocomotion):
-            return VehicleSpeedMovement._WheelsBaseSpeedBand
-        elif isinstance(locomotion, robots.TracksPrimaryLocomotion):
-            return  VehicleSpeedMovement._TracksBaseSpeedBand
-        elif isinstance(locomotion, robots.GravPrimaryLocomotion):
-            return  VehicleSpeedMovement._GravBaseSpeedBand
-        elif isinstance(locomotion, robots.AeroplanePrimaryLocomotion):
-            return  VehicleSpeedMovement._AeroplaneBaseSpeedBand
-        elif isinstance(locomotion, robots.AquaticPrimaryLocomotion):
-            return  VehicleSpeedMovement._AquaticBaseSpeedBand
-        elif isinstance(locomotion, robots.VTOLPrimaryLocomotion):
-            return  VehicleSpeedMovement._VTOLBaseSpeedBand
-        elif isinstance(locomotion, robots.WalkerPrimaryLocomotion):
-            return  VehicleSpeedMovement._WalkerBaseSpeedBand  
-        elif isinstance(locomotion, robots.HovercraftPrimaryLocomotion):
-            return  VehicleSpeedMovement._HovercraftBaseSpeedBand
-
-        return None   
+        return VehicleSpeedMovement._SpeedBandTypeMap.get(type(locomotion))
 
     def _calcMaxIncrease(
             self,

@@ -3928,7 +3928,7 @@ class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
 class _AutopilotSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     - <ALL>
-        - Requirement: Requires Speed Movement locomotion modification
+        - Requirement: Requires Vehicle Speed Movement locomotion modification
         - Note: Autopilot and skill level packages do not stack; the
         higher of autopilot or vehicle operating skill applies.
     - Improved
@@ -5063,9 +5063,19 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
             context=context,
             step=step)
         
-        step.addFactor(factor=construction.SetAttributeFactor(
+        if context.hasAttribute(
             attributeId=robots.RobotAttributeId.Endurance,
-            value=_NoInternalPowerSlotOptionImpl._Endurance))
+            sequence=sequence):
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.Endurance,
+                value=_NoInternalPowerSlotOptionImpl._Endurance))
+        
+        if context.hasAttribute(
+            attributeId=robots.RobotAttributeId.VehicleEndurance,
+            sequence=sequence):        
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.VehicleEndurance,
+                value=_NoInternalPowerSlotOptionImpl._Endurance))
         
 class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """

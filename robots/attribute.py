@@ -28,23 +28,39 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
     Speed = 'Speed' # In meters per minor action
-    VehicleSpeed = 'Vehicle Speed' # SpeedBand
     # See the Armour trait below for details of how it relates to Protection
     Protection = 'Protection' # Base Protection + Protection from Armour
     # Some options give the robot cumulative protection from radiation. How
     # radiation affects a robot can be found on page (p106)
     Rads = 'Rads'
 
-    # This attribute is a hack to allow zero slot options to track how many zero
-    # slot options have been added to know if they should start consuming a slot.
-    # This attribute shouldn't be included in the manifest
-    ZeroSlotCount = 'Zero Slot Count'
+    # This is the speed of the vehicle when using Vehicle Speed Movement (p23).
+    # When not using Vehicle Speed Movement my assumption is the Speed attribute
+    # applies. As far as I can tell the only thing that sets this is the Vehicle
+    # Speed Movement locomotion modifier
+    VehicleSpeed = 'Vehicle Speed' # SpeedBand
+
+    # This is added by me to hold the endurance while using Vehicle Speed
+    # Movement (p23). It's done so the value can be displayed along with the
+    # standard Endurance. In the Finale Endurance section (p23) the rules suggest
+    # having the vehicle speed endurance in brackets after the standard endurance.
+    VehicleEndurance = 'Vehicle Endurance'
 
     # This covers the base autopilot given by the Vehicle Speed Movement
     # locomotion modifier (p23) and Autopilot slot option (p49). It works the
     # same as the relevant vehicle skill for the robot piloting the form of
     # locomotion it has, but the two don't stack.
+    # As far as I can tell the AutoPilot rating only applies when using Vehicle
+    # Speed Movement this is based on the way the description of the AutoPilot
+    # slot option is worded (p49). It talks about Vehicle Speed Movement a LOT
+    # and doesn't have any mention of having AutoPilot in a robot not equipped
+    # with Vehicle Speed Movement
     Autopilot = 'Autopilot'
+
+    # This attribute is a hack to allow zero slot options to track how many zero
+    # slot options have been added to know if they should start consuming a slot.
+    # This attribute shouldn't be included in the manifest
+    ZeroSlotCount = 'Zero Slot Count'    
 
     # Brain Attributes
     Intelligence = 'INT'

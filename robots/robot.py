@@ -412,6 +412,10 @@ class Robot(object):
             minComponents=1,
             maxComponents=1))        
         
+        # NOTE: I've not seen anything anything in the rules that explicitly
+        # says you can only have one secondary locomotion, although it could be
+        # the expectation is it's implied by the name. As it doesn't explicitly
+        # say, i've chosen to allow it.
         stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',
             sequence=self._sequence,
