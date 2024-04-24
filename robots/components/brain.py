@@ -5,6 +5,49 @@ import robots
 import typing
 
 class Brain(robots.BrainInterface):
+    class _BrainType(enum.Enum):
+        Primitive = 'Primitive'
+        Basic = 'Basic'
+        HunterKiller = 'Hunter/Killer'
+        Advanced = 'Advanced'
+        VeryAdvanced = 'Very Advanced'
+        SelfAware = 'Self-Aware'
+        Conscious = 'Conscious'
+        BrainInAJar = 'Brain in a Jar'
+
+    def __init__(
+            self,
+            brainType: _BrainType,
+            minTL: int
+            ) -> None:
+        super().__init__()
+
+        self._componentString = f'{brainType.value} TL {minTL}'
+        self._brainType = brainType
+
+        self._minTL = common.ScalarCalculation(
+            value=minTL,
+            name=f'{self._componentString} Brain Minimum TL') 
+        
+    def componentString(self) -> str:
+        return self._componentString
+    
+    def typeString(self) -> str:
+        return 'Brain'        
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        if context.techLevel() < self._minTL.value():
+            return False
+
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)        
+
+class RobotBrain(Brain):
     """
     - Slots: The number of slots taken up by a brain works like this (p66)
         - The brain has no slot requirement If the robots Size is greater than
@@ -103,15 +146,6 @@ class Brain(robots.BrainInterface):
     # used when doing the same for player characteristics (e.g. an INT of 1
     # gives a -2 modifier). If this is not
 
-    class _BrainType(enum.Enum):
-        Primitive = 'Primitive'
-        Basic = 'Basic'
-        HunterKiller = 'Hunter/Killer'
-        Advanced = 'Advanced'
-        VeryAdvanced = 'Very Advanced'
-        SelfAware = 'Self-Aware'
-        Conscious = 'Conscious'
-
     class _BandwidthUpgrade(enum.Enum):
         BasicHunterKillerPlus1 = 'Basic or Hunter/Killer +1'
         AdvancedPlus2 = 'Advanced +2'
@@ -165,19 +199,19 @@ class Brain(robots.BrainInterface):
     }
 
     _BandwidthUpgradeCompat = {
-        _BrainType.Basic: [
+        Brain._BrainType.Basic: [
             _BandwidthUpgrade.BasicHunterKillerPlus1
         ],
-        _BrainType.HunterKiller: [
+        Brain._BrainType.HunterKiller: [
             _BandwidthUpgrade.BasicHunterKillerPlus1
         ], 
-        _BrainType.Advanced: [
+        Brain._BrainType.Advanced: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
             _BandwidthUpgrade.AdvancedPlus4
         ],                
-        _BrainType.VeryAdvanced: [
+        Brain._BrainType.VeryAdvanced: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
@@ -185,7 +219,7 @@ class Brain(robots.BrainInterface):
             _BandwidthUpgrade.VeryAdvancedPlus6,
             _BandwidthUpgrade.VeryAdvancedPlus8
         ], 
-        _BrainType.SelfAware: [
+        Brain._BrainType.SelfAware: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
@@ -197,7 +231,7 @@ class Brain(robots.BrainInterface):
             _BandwidthUpgrade.SelfAwarePlus20,
             _BandwidthUpgrade.SelfAwarePlus25
         ],       
-        _BrainType.Conscious: [
+        Brain._BrainType.Conscious: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
@@ -237,21 +271,14 @@ class Brain(robots.BrainInterface):
 
     def __init__(
             self,
-            brainType: _BrainType,
+            brainType: Brain._BrainType,
             minTL: int,
             cost: int,
             intelligence: int,
             inherentBandwidth: int,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
-        super().__init__()
-
-        self._brainType = brainType
-        self._componentString = f'{brainType.value} TL {minTL}'
-
-        self._minTL = common.ScalarCalculation(
-            value=minTL,
-            name=f'{self._componentString} Brain Minimum TL') 
+        super().__init__(brainType=brainType, minTL=minTL)
             
         self._cost = common.ScalarCalculation(
             value=cost,
@@ -276,14 +303,14 @@ class Brain(robots.BrainInterface):
         self._bandwidthUpgradeOption = construction.EnumOption(
             id='BandwidthUpgrade',
             name='Bandwidth Upgrade',
-            type=Brain._BandwidthUpgrade,
+            type=RobotBrain._BandwidthUpgrade,
             isOptional=True,
             description='Optionally upgrade the Bandwidth of the Brain.')
         
         self._intellectUpgradeOption = construction.EnumOption(
             id='IntellectUpgrade',
             name='Intellect Upgrade',
-            type=Brain._IntellectUpgrade,
+            type=RobotBrain._IntellectUpgrade,
             isOptional=True,
             description='Optionally upgrade the Brains INT characteristic.')        
 
@@ -291,24 +318,6 @@ class Brain(robots.BrainInterface):
         if self._isHardened():
             return 'Hardened ' + self._componentString
         return self._componentString
-
-    def componentString(self) -> str:
-        return self._componentString
-    
-    def typeString(self) -> str:
-        return 'Brain'        
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: construction.ConstructionContext
-            ) -> bool:
-        if context.techLevel() < self._minTL.value():
-            return False
-
-        return context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence)
     
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
@@ -326,7 +335,7 @@ class Brain(robots.BrainInterface):
             context: robots.RobotContext
             ) -> None:
         self._hardenedOption.setEnabled(
-            enabled=context.techLevel() >= Brain._HardenedMinTL.value())
+            enabled=context.techLevel() >= RobotBrain._HardenedMinTL.value())
 
         bandwidthUpgrades = self._allowedBandwidthUpgrades(
             sequence=sequence,
@@ -379,14 +388,14 @@ class Brain(robots.BrainInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> typing.List[_BandwidthUpgrade]:
-        possible = Brain._BandwidthUpgradeCompat.get(self._brainType)
+        possible = RobotBrain._BandwidthUpgradeCompat.get(self._brainType)
         if not possible:
             return []
 
         robotTL = context.techLevel()
         allowed = []
         for upgrade in possible:
-            minTL, _, _ = Brain._BandwidthUpgradeData[upgrade]
+            minTL, _, _ = RobotBrain._BandwidthUpgradeData[upgrade]
             if robotTL >= minTL:
                 allowed.append(upgrade)
         return allowed
@@ -404,12 +413,12 @@ class Brain(robots.BrainInterface):
         maxBandwidth = self._inherentBandwidth.value()
         bandwidthUpgrade = self._selectedBandwidthUpgrade()
         if bandwidthUpgrade:
-            _, _, bandwidthUsed = Brain._BandwidthUpgradeData[bandwidthUpgrade]
+            _, _, bandwidthUsed = RobotBrain._BandwidthUpgradeData[bandwidthUpgrade]
             maxBandwidth += bandwidthUsed
             
         allowed = []
-        for upgrade in Brain._IntellectUpgrade:
-            _, bandwidthUsed = Brain._IntellectUpgradeBandwidthUsage[upgrade]
+        for upgrade in RobotBrain._IntellectUpgrade:
+            _, bandwidthUsed = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
             if bandwidthUsed <= maxBandwidth:
                 allowed.append(upgrade)
         return allowed
@@ -452,7 +461,7 @@ class Brain(robots.BrainInterface):
             name='Brain Size Threshold')
         if robotSize.value() < brainSizeThreshold.value():
             step.setSlots(slots=construction.ConstantModifier(
-                value=Brain._HighRelativeBrainSizeSlotCost))
+                value=RobotBrain._HighRelativeBrainSizeSlotCost))
         
         # A brains cost drops by 50% for every TL after it was introduced
         cost = self._cost
@@ -460,12 +469,12 @@ class Brain(robots.BrainInterface):
             iterTL = self._minTL.value() + index + 1
             cost = common.Calculator.multiply(
                 lhs=cost,
-                rhs=Brain._RetrotechPerTLCostScale,
+                rhs=RobotBrain._RetrotechPerTLCostScale,
                 name=f'{self.componentString()} Cost For TL{iterTL} Robot')
         if self._isHardened():
             cost = common.Calculator.applyPercentage(
                 value=cost,
-                percentage=Brain._HardenedCostPercent,
+                percentage=RobotBrain._HardenedCostPercent,
                 name=f'Hardened {cost.name()}')
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Hardened))         
@@ -498,9 +507,9 @@ class Brain(robots.BrainInterface):
         upgrade = self._selectedBandwidthUpgrade()
         if not upgrade:
             return None# Nothing to do
-        assert(isinstance(upgrade, Brain._BandwidthUpgrade))
+        assert(isinstance(upgrade, RobotBrain._BandwidthUpgrade))
         
-        _, cost, bandwidth = Brain._BandwidthUpgradeData[upgrade]
+        _, cost, bandwidth = RobotBrain._BandwidthUpgradeData[upgrade]
         cost = common.ScalarCalculation(
             value=cost,
             name=f'{upgrade.value} Bandwidth Upgrade Cost')
@@ -513,7 +522,7 @@ class Brain(robots.BrainInterface):
             stepName = 'Hardened ' + stepName
             cost = common.Calculator.applyPercentage(
                 value=cost,
-                percentage=Brain._HardenedCostPercent,
+                percentage=RobotBrain._HardenedCostPercent,
                 name=f'Hardened {cost.name()}')
 
         step = robots.RobotStep(
@@ -522,7 +531,7 @@ class Brain(robots.BrainInterface):
         
         step.setCredits(credits=construction.ConstantModifier(value=cost))
         step.setSlots(slots=construction.ConstantModifier(
-            value=Brain._BandwidthUpgradeSlots))
+            value=RobotBrain._BandwidthUpgradeSlots))
 
         # NOTE: Update max bandwidth NOT inherent bandwidth
         step.addFactor(factor=construction.ModifyAttributeFactor(
@@ -539,13 +548,13 @@ class Brain(robots.BrainInterface):
         upgrade = self._selectedIntellectUpgrade()
         if not upgrade:
             return None# Nothing to do
-        assert(isinstance(upgrade, Brain._IntellectUpgrade))
+        assert(isinstance(upgrade, RobotBrain._IntellectUpgrade))
 
         step = robots.RobotStep(
             name=f'Intellect Upgrade ({upgrade.value})',
             type=self.typeString())        
 
-        intelligenceIncrease, bandwidthUsed = Brain._IntellectUpgradeBandwidthUsage[upgrade]
+        intelligenceIncrease, bandwidthUsed = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
         intelligenceIncrease = common.ScalarCalculation(
             value=intelligenceIncrease,
             name=f'{upgrade.value} Intellect Upgrade INT Increase')
@@ -561,13 +570,13 @@ class Brain(robots.BrainInterface):
         multiplier = common.Calculator.add(
             lhs=oldIntelligence,
             rhs=common.ScalarCalculation(value=1))
-        if upgrade != Brain._IntellectUpgrade.IntelligencePlus1:
+        if upgrade != RobotBrain._IntellectUpgrade.IntelligencePlus1:
             multiplier = common.Calculator.multiply(
                 lhs=multiplier,
                 rhs=common.Calculator.add(
                     lhs=oldIntelligence,
                     rhs=common.ScalarCalculation(value=2)))
-            if upgrade != Brain._IntellectUpgrade.IntelligencePlus2:
+            if upgrade != RobotBrain._IntellectUpgrade.IntelligencePlus2:
                 multiplier = common.Calculator.multiply(
                     lhs=multiplier,
                     rhs=common.Calculator.add(
@@ -578,17 +587,17 @@ class Brain(robots.BrainInterface):
             lhs=oldIntelligence,
             rhs=intelligenceIncrease,
             name='New INT Characteristic')
-        if newIntelligence.value() >= Brain._IntellectUpgradeHighIntThreshold.value():
+        if newIntelligence.value() >= RobotBrain._IntellectUpgradeHighIntThreshold.value():
             multiplier = common.Calculator.multiply(
                 lhs=multiplier,
-                rhs=Brain._IntellectUpgradeHighIntMultiplier)
+                rhs=RobotBrain._IntellectUpgradeHighIntMultiplier)
             
         multiplier = common.Calculator.rename(
             value=multiplier,
             name=f'{upgrade.value} Intellect Upgrade Cost Multiplier')
 
         cost = common.Calculator.multiply(
-            lhs=Brain._IntellectUpgradeBaseCost,
+            lhs=RobotBrain._IntellectUpgradeBaseCost,
             rhs=multiplier,
             name=f'{upgrade.value} Intellect Upgrade Cost')
         step.setCredits(credits=construction.ConstantModifier(value=cost))
@@ -613,7 +622,7 @@ class Brain(robots.BrainInterface):
 
         return step      
     
-class PrimitiveBrain(Brain):
+class PrimitiveBrain(RobotBrain):
     """
     - Trait: INT 1
     - Trait: Computer/0
@@ -665,7 +674,7 @@ class PrimitiveTL8Brain(PrimitiveBrain):
             minTL=8,
             cost=100)
  
-class BasicBrain(Brain):
+class BasicBrain(RobotBrain):
     """
     - Trait: Computer/1
     - Trait: Inherent Bandwidth 1
@@ -717,7 +726,7 @@ class BasicTL10Brain(BasicBrain):
             cost=4000,
             intelligence=4) 
         
-class HunterKillerBrain(Brain):
+class HunterKillerBrain(RobotBrain):
     """
     - Trait: Computer/1
     - Skill: Recon 0
@@ -776,7 +785,7 @@ class HunterKillerTL10Brain(HunterKillerBrain):
 
 # This class only exists so other components can easily check if a robot has
 # a brain that can skills (rather than a skill package) 
-class SkilledBrain(Brain):
+class SkilledRobotBrain(RobotBrain):
     def __init__(
             self,
             brainType: Brain._BrainType,
@@ -794,7 +803,7 @@ class SkilledBrain(Brain):
             inherentBandwidth=inherentBandwidth,
             notes=notes)     
         
-class AdvancedBrain(SkilledBrain):
+class AdvancedBrain(SkilledRobotBrain):
     """
     - Trait: Computer/2
     - Trait: Inherent Bandwidth 2
@@ -865,7 +874,7 @@ class AdvancedTL12Brain(AdvancedBrain):
             cost=10000,
             intelligence=8) 
 
-class VeryAdvancedBrain(SkilledBrain):
+class VeryAdvancedBrain(SkilledRobotBrain):
     """
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
@@ -938,7 +947,7 @@ class VeryAdvancedTL14Brain(VeryAdvancedBrain):
             intelligence=11,
             inherentBandwidth=5)
 
-class SelfAwareBrain(SkilledBrain):
+class SelfAwareBrain(SkilledRobotBrain):
     """
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
@@ -994,7 +1003,7 @@ class SelfAwareTL16Brain(SelfAwareBrain):
             intelligence=13,
             inherentBandwidth=15)
 
-class ConsciousBrain(SkilledBrain):
+class ConsciousBrain(SkilledRobotBrain):
     """
     - Note: Conscious Intelligence, Security/3   
     """
@@ -1045,3 +1054,166 @@ class ConsciousTL18Brain(ConsciousBrain):
             cost=1000000,
             intelligence=15,
             inherentBandwidth=30)
+        
+# NOTE: This is inherits from Brain not RobotBrain
+class BrainInAJarBrain(Brain):
+    """
+    - Requirement: Must be size 2 or greater
+    - Requirement: Skills have no cost or bandwidth requirement there is also no limitation on the number of skills
+    - Option: Optionally specify INT, EDU, SOC, PSI, LCK, WLT (Wealth), MRL (Morale), STY (Sanity)
+   """
+    # NOTE: This is based on the 'Brain in a Jar' concept from the Full-body
+    # Cybernetics rules (p92)
+    # NOTE: The fact that there is no costs or number cap on skills is based on
+    # my logic that the skills come from the living brain that is being installed
+    # NOTE: Adding a note for the Degradation check is handled by the derived
+    # classes as some have a check every month and some annually
+
+    _OptionalCharacteristics = [
+        "INT",
+        "EDU",
+        "SOC",
+        "PSI",
+        "LCK",
+        "WLT",
+        "MRL",
+        "STY"
+    ]
+    _CoreOptionalCharacteristics = [
+        "INT",
+        "EDU",
+        "SOC"
+    ]
+
+    _MinChassisSize = 2
+
+    def __init__(
+            self,
+            minTL: int,
+            cost: int,
+            slots: int,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            brainType=Brain._BrainType.BrainInAJar,
+            minTL=minTL)
+        
+        self._cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{self._componentString} Cost')
+        
+        self._slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{self._componentString} Required Slots')
+        
+        self._notes = notes
+
+        self._specifyCharacteristicsOption = construction.BooleanOption(
+            id='SpecifyCharacteristics',
+            name='Specify Brain Characteristics',
+            value=False,
+            description='Specify the non-physical characteristics of the brain.')
+        self._characteristicOptions: typing.List[construction.BooleanOption] = []
+        for characteristic in BrainInAJarBrain._OptionalCharacteristics:
+            option = construction.IntegerOption(
+                id=characteristic,
+                name=characteristic,
+                isOptional=True,
+                minValue=0,
+                maxValue=99, # This is pretty arbitrary but having a max makes the UI scale the control better
+                value=0 if characteristic in BrainInAJarBrain._CoreOptionalCharacteristics else None,
+                description=f'Specify the {characteristic} characteristics of the brain.')
+            self._characteristicOptions.append(option)
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+        
+        chassisSize = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Size,
+            sequence=sequence)
+        return chassisSize and chassisSize.value() >= BrainInAJarBrain._MinChassisSize
+        
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = [self._specifyCharacteristicsOption]
+        for option in self._characteristicOptions:
+            if option.isEnabled():
+                options.append(option)
+        return options
+    
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        specifyOptions = self._specifyCharacteristicsOption.value()
+        for option in self._characteristicOptions:
+            option.setEnabled(enabled=specifyOptions)
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())
+        
+        step.setCredits(
+            credits=construction.ConstantModifier(value=self._cost))
+        step.setSlots(
+            slots=construction.ConstantModifier(value=self._slots))
+
+        if self._notes:
+            for note in self._notes:
+                step.addNote(note=note)
+
+        context.applyStep(
+            sequence=sequence,
+            step=step) 
+        
+class BrainInAJarTL12Brain(BrainInAJarBrain):
+    """
+    - Min TL: 12
+    - Slots: 3
+    - Cost: 1000000
+    - Note: Monthly INT 4+ Degradation Checks (p93)    
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            minTL=12,
+            cost=1000000,
+            slots=3,
+            notes=['INT 4+ Degradation Checks must be made monthly (p93)'])
+        
+class BrainInAJarTL14Brain(BrainInAJarBrain):
+    """
+    - Min TL: 14
+    - Slots: 2
+    - Cost: 2000000
+    - Note: Annual INT 5+ Degradation Checks (p93)
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            minTL=14,
+            cost=2000000,
+            slots=2,
+            notes=['INT 5+ Degradation Checks must be made annual (p93)'])     
+
+class BrainInAJarTL16Brain(BrainInAJarBrain):
+    """
+    - Min TL: 16
+    - Slots: 2
+    - Cost: 5000000
+    - Note: Annual INT 3+ Degradation Checks (p93)
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            minTL=16,
+            cost=5000000,
+            slots=2,
+            notes=['INT 3+ Degradation Checks must be made annual (p93)'])               

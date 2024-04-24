@@ -6,6 +6,99 @@ import traveller
 import typing
 import uuid
 
+# TODO: Androids
+# - <ALL>
+#   - Slots: 50% of Base Slots
+#   - Requirement: The min brain is only the min to successfully emulate the desired species, if a lower brain is used the robot receives an additional DM-2 to social skills
+# - Basic
+#   - Min TL: 8
+#   - Cost: Cr1000 Per Slot
+#   - Minimum Brain: Basic (X) or Hunter/Killer
+#   - Note: Barely emulating. DM-2 on all social interactions from uncanny valley effect.
+# - Improved
+#   - Min TL: 10
+#   - Cost: Cr2000 Per Slot
+#   - Minimum Brain: Advanced
+#   - Note: Natural-looking. Passes at a distance but uncanny valley DM-2 within 5 metres.
+# - Enhanced
+#   - Min TL: 12
+#   - Cost: Cr5000 Per Slot
+#   - Minimum Brain: Very Advanced
+#   - Note: Natural-looking; Invisitech. Passes in close interaction, but on a roll of a natural 2 the uncanny valley sets in.
+# - Advanced
+#   - Min TL: 14
+#   - Cost: Cr10000 Per Slot
+#   - Minimum Brain: Very Advanced
+#   - Note: Natural-looking; Invisitech; Self-repairing. Can pass as a biological being unless scanned.
+#   - Requirement: The self-repairing property provides the same effect as the self-repairing chassis option and ‘heals wounds’ at a rate similar to natural healing.
+# - Superior 
+#   - Min TL: 16
+#   - Cost: Cr1000 Per Slot
+#   - Minimum Brain: Self-Aware
+#   - Note: Natural-looking; Invisitech; Self-repairing. Can pass even after most scans.
+#   - Requirement: The self-repairing property provides the same effect as the self-repairing chassis option and ‘heals wounds’ at a rate similar to natural healing.
+#
+# - I think this might make sense as a chassis option
+#   - This is how the spreadsheet does it
+# - No default armour, can only add up to 2 slots of armour
+# - The size of an android is limited to the size of the species it's trying to mimic
+#   - I think this effectively means I don't have any restriction as I'm not having the species specified
+# - The locomotion of an android is limited to the locomotion of the species it's trying to mimic
+#   - Not sure what to do about this one. Some probably don't make sense (e.g. Wheels)
+# - In addition to the per slot cost of the android modification there is also a x3 cost multiplier for every part of the robot apart from skills
+#   - This multiplier is also applied o the per slot cost of the modification, I assume this is just to make the math easier
+#   - This could be complex
+#       - Adding the multiplier to every component seems like a pain in the ass
+#       - Could add a finalisation step (in addition to the android modification component) that gets the multi-phase cost for everything apart from the skills phase
+#
+# TODO: Biological Robot
+# - <ALL>
+#   - Slots: 75% of Base Slots
+#   - Requirement: All biological robots have 'Natural-looking' and 'Selfrepairing' properties
+#   - Requirement: The min brain is only the min to successfully emulate the desired species, if a lower brain is used the robot receives an additional DM-2 to social skills
+#   - Requirement: Locomotion is limited to natural forms of locomotion
+#   - Requirement: Standard Endurance doesn't apply to Biological Robots, they have to eat, drink & breath
+#   - Requirement: A Biological Robot can use any of the body augments from the Central Supply Catalogue or Robot Handbook
+# - Basic
+#   - Min TL: 11
+#   - Cost: Cr2000
+#   - Minimum Brain: Basic (x) or Hunter/Killer
+#   - Note: DM-2 on all healing checks. Emissions from the electronic brain or interfaces are detectable by attuned scanners and by any psionic life detection.
+# - Improved
+#   - Min TL: 13
+#   - Cost: Cr5000
+#   - Minimum Brain: Advanced
+#   - Note: Treat detection of an artificial brain as DM-2 on any scanner check, including psionic life detection.
+# - Enhanced
+#   - Min TL: 15
+#   - Cost: Cr10000
+#   - Minimum Brain: Very Advanced
+#   - Note: DM+2 on all healing checks. DM-4 on any scanner check, including psionic life detection.
+# - Advanced
+#   - Min TL: 17
+#   - Cost: Cr20000
+#   - Minimum Brain: Self-Aware
+#   - Note: DM+4 on all healing checks. Undisguisable from a fully biological being, even psionically
+#
+# - The stuff about 'Selfrepairing' property means the robot heals in the same way as some of the higher TL androids
+# - I'm not sure what to do about biological robots being able to use body modifications
+#   - It feels like a load of components that are specific to biological robots
+#   - I think the robot handbook mods it's talking about might be the cybernetics stuff
+#   - What does the spreadsheet do?
+# - When it comes to what locomotions are available it's probably just the same list as the spreadsheet
+#   - None, Aeroplane, Aquatic, VTOL, Walker, Lighter Than Air
+# - Not sure what to do about the Endurance requirement
+#   - Could wrap all calls to set/modify the Endurance
+#       - This would avoid having meaningless Endurance factors being shown in the manifest
+#       - Would need to make sure things that use the Endurance trait handle it not being there
+#       - The Vehicle Endurance attribute should probably be handled in the same way
+#           - Can you have Vehicle Speed Movement on a biological????
+#       - I suspect this means biological robots can't have endurance modifications
+
+
+
+
+
 class _RobotSequenceState(construction.SequenceState):
     def __init__(
             self,

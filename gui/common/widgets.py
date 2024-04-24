@@ -289,27 +289,29 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def value(self) -> typing.Optional[typing.Union[int, float]]:
-        return self._spinBox.value() if self._checkBox.isChecked() else None
-
-    def setValue(self, value: typing.Optional[typing.Union[int, float]]) -> None:
-        if value != None:
-            # Order is important here to prevent double notifications without disabling signals.
-            # The spin box is updated first, this will only trigger this classes valueChanged event
-            # if the check box is currently ticked and the value has changed. The check box is then
-            # checked if it's not already, this will cause this classes valueChanged event to be
-            # triggered if the spin widget is going from disabled to enabled (regardless of if the
-            # value stored in the spin box has actually changed)
-            self._spinBox.setValue(value)
-
-            if not self._checkBox.isChecked():
-                self._checkBox.setChecked(False)
-        else:
-            if self._checkBox.isChecked():
-                self._checkBox.setChecked(False)
-
     def isEnabled(self) -> bool:
         return self._checkBox.isChecked()
+    
+    def setEnabled(self, enabled: bool) -> None:
+        self._checkBox.setChecked(enabled)        
+
+    def value(self) -> typing.Optional[typing.Union[int, float]]:
+        return self._spinBox.value() if self._checkBox.isChecked() else None
+    
+    def setValue(self, value: typing.Optional[typing.Union[int, float]]) -> None:
+        currentValue = self.value()
+        if value == currentValue:
+            return # Nothing to do
+        
+        with gui.SignalBlocker(widget=self._checkBox):
+            self._checkBox.setChecked(value != None)
+
+        with gui.SignalBlocker(widget=self._spinBox):
+            if value != None:
+                self._spinBox.setValue(value)
+            self._spinBox.setEnabled(value != None)            
+
+        self._emitValueChanged()
 
     def setRange(self, min: typing.Union[int, float], max: typing.Union[int, float]) -> None:
         self._spinBox.setRange(min, max)

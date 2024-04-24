@@ -3,6 +3,9 @@ import construction
 import robots
 import typing
 
+# TODO: The spreadsheet has a Lighter Than Air locomotion but I don't
+# know where it's from
+
 class _LocomotionImpl(object):
     """
     All Locomotion Types:

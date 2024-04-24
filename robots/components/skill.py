@@ -580,9 +580,9 @@ class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
 _PerLevelCostMultiplier = common.ScalarCalculation(
     value=10,
     name='Per Additional Level Cost Multiplier')
-_MaxPossibleLevel = common.ScalarCalculation(
+_RobotBrainMaxPossibleLevel = common.ScalarCalculation(
     value=3,
-    name='Max Possible Skill Level')
+    name='Robot Brain Max Possible Skill Level')
 
 def _calculateSkillCost(
         levelZeroCost: common.ScalarCalculation,
@@ -625,7 +625,7 @@ def _calculateMaxSkillLevel(
         lhs=common.Calculator.min(
             lhs=maxByTL,
             rhs=maxByBandwidth),
-        rhs=_MaxPossibleLevel,
+        rhs=_RobotBrainMaxPossibleLevel,
         name='Max Skill Level')
 
 class Skill(robots.SkillInterface):
@@ -697,7 +697,7 @@ class Skill(robots.SkillInterface):
             name='Level',
             value=0,
             minValue=0,
-            maxValue=_MaxPossibleLevel.value(),
+            maxValue=_RobotBrainMaxPossibleLevel.value(),
             description='Specify the level of the skill')
         
         self._fixedSpecialityOptions = None
@@ -712,7 +712,7 @@ class Skill(robots.SkillInterface):
                     name=f'{speciality.value} Level',
                     value=0,
                     minValue=0,
-                    maxValue=_MaxPossibleLevel.value(),
+                    maxValue=_RobotBrainMaxPossibleLevel.value(),
                     description=f'Specify the level of the {speciality.value} speciality')
                 self._fixedSpecialityOptions.append((speciality, levelOption))
 
@@ -742,17 +742,24 @@ class Skill(robots.SkillInterface):
             sequence: str,
             context: construction.ConstructionContext
             ) -> bool:
-        if context.techLevel() < self._minTL.value():
-            return False
-        
         # Can only have a single instance of each skill
         if context.hasComponent(
             componentType=type(self),
             sequence=sequence):
             return False
+                
+        hasBrainInAJar = context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence)
+        if hasBrainInAJar:
+            # There is no TL or bandwidth restriction for Brain in a Jar
+            return True        
+
+        if context.techLevel() < self._minTL.value():
+            return False
 
         if not context.hasComponent(
-            componentType=robots.SkilledBrain,
+            componentType=robots.SkilledRobotBrain,
             sequence=sequence):
             return False
         
@@ -762,7 +769,9 @@ class Skill(robots.SkillInterface):
             attributeId=robots.RobotAttributeId.InherentBandwidth,
             sequence=sequence)
         if not inherentBandwidth:
-            return False
+            # NOTE: This assumes that if there is no inherent bandwidth it must
+            # be a brain in a jar so the skill is compatible
+            return True
         assert(isinstance(inherentBandwidth, common.ScalarCalculation))
         return self._levelZeroBandwidth.value() <= inherentBandwidth.value()
     
@@ -794,25 +803,35 @@ class Skill(robots.SkillInterface):
             value=context.techLevel(),
             name='Robot TL')
         
-        inherentBandwidth = context.attributeValue(
-            attributeId=robots.RobotAttributeId.InherentBandwidth,
+        hasBrainInAJar = context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
             sequence=sequence)
-        assert(isinstance(inherentBandwidth, common.ScalarCalculation))
+        
+        if hasBrainInAJar:
+            maxLevel = None
+            self._levelOption.setMax(maxLevel)
+            self._levelOption.setEnabled(self._skillDef.isSimple())            
+        else:
+            inherentBandwidth = context.attributeValue(
+                attributeId=robots.RobotAttributeId.InherentBandwidth,
+                sequence=sequence)
+            assert(isinstance(inherentBandwidth, common.ScalarCalculation))
 
-        maxLevel = _calculateMaxSkillLevel(
-            introTL=self._minTL,
-            robotTL=robotTL,
-            levelZeroBandwidth=self._levelZeroBandwidth,
-            inherentBandwidth=inherentBandwidth)
-        self._levelOption.setMax(maxLevel.value() \
-                                 if self._skillDef.isSimple() else \
-                                 Skill._SpecialitySkillMaxBaseLevel.value())
-        self._levelOption.setEnabled(self._levelOption.max() > 0)
+            maxLevel = _calculateMaxSkillLevel(
+                introTL=self._minTL,
+                robotTL=robotTL,
+                levelZeroBandwidth=self._levelZeroBandwidth,
+                inherentBandwidth=inherentBandwidth)
+            self._levelOption.setMax(maxLevel.value() \
+                                    if self._skillDef.isSimple() else \
+                                    Skill._SpecialitySkillMaxBaseLevel.value())
+            self._levelOption.setEnabled(self._levelOption.max() > 0)
 
         if self._skillDef.isFixedSpeciality():
             for _, levelOption in self._fixedSpecialityOptions:
-                levelOption.setMax(maxLevel.value())
-                levelOption.setEnabled(levelOption.max() > 0)
+                levelOption.setMin(1)
+                levelOption.setMax(maxLevel.value() if maxLevel != None else None)
+                levelOption.setEnabled(maxLevel == None or maxLevel.value() > 0)
         elif self._skillDef.isCustomSpeciality():
             specialityCount = self._customSpecialityCountOption.value()
             while len(self._customSpecialityOptions) > specialityCount:
@@ -828,13 +847,13 @@ class Skill(robots.SkillInterface):
                     id=f'Speciality{specialityIndex}Level',
                     name=f'Speciality Level',
                     value=1,
-                    minValue=1,
-                    maxValue=_MaxPossibleLevel.value(),
                     description=f'Specify the level of the speciality')
                 self._customSpecialityOptions.append((nameOption, levelOption))
 
             # Level options are only enabled if the name is enabled and not empty
             for nameOption, levelOption in self._customSpecialityOptions:
+                levelOption.setMin(1)
+                levelOption.setMax(maxLevel.value() if maxLevel != None else None)
                 levelOption.setEnabled(
                     enabled=nameOption.isEnabled() and nameOption.value())
             
@@ -910,63 +929,68 @@ class Skill(robots.SkillInterface):
         # This is a hack to fix syntax highlighting
         assert(isinstance(level, common.ScalarCalculation))
 
+        hasBrainInAJar = context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence)        
+
         step = robots.RobotStep(
             name=f'{skillName} {level.value()}',
             type=self.typeString())
-
-        bandwidth = self._levelZeroBandwidth
-                
-        if level.value() > 0:
-            bandwidth = common.Calculator.add(
-                lhs=bandwidth,
-                rhs=level,
-                name=f'{skillName} Level {level.value()} Required Bandwidth') 
-
-        # Robot can only have a number of level 0 bandwidth skills equal to
-        # their Inerrant Bandwidth. After that they require 1 bandwidth for
-        # level 0.
-        # NOTE: It's important that this check occurs AFTER the bandwidth is
-        # increased for additional levels as skills that have had their level
-        # increased shouldn't count towards the number of zero bandwidth skills
-        # (see comment in class header)
-        if not speciality and bandwidth.value() == 0:
-            inherentBandwidth = context.attributeValue(
-                attributeId=robots.RobotAttributeId.InherentBandwidth,
-                sequence=sequence)
-            assert(isinstance(inherentBandwidth, common.ScalarCalculation))
-
-            currentCount = context.attributeValue(
-                attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
-                sequence=sequence)
-            assert(not currentCount or isinstance(currentCount, common.ScalarCalculation))
-            
-            if currentCount and currentCount.value() >= inherentBandwidth.value():
-                # The robot already has the max number of zero bandwidth skills
-                # so this one requires bandwidth
-                assert(currentCount.value() == inherentBandwidth.value())
-                bandwidth = Skill._ZeroBandwidthSkillOverride
-            else:
-                # Increment the zero bandwidth skill count, if this is the first
-                # the option is being set it will be set to 1
-                step.addFactor(factor=construction.ModifyAttributeFactor(
-                    attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
-                    modifier=construction.ConstantModifier(
-                        value=Skill._ZeroBandwidthSkillCountIncrement)))                           
-
-        if bandwidth.value() > 0:
-            step.setBandwidth(
-                bandwidth=construction.ConstantModifier(value=bandwidth))  
-        
-        cost = _calculateSkillCost(
-            levelZeroCost=self._levelZeroCost,
-            skillLevel=level)
-        step.setCredits(
-            credits=construction.ConstantModifier(value=cost))
         
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=self._skillDef,
             speciality=speciality,
-            level=level))
+            level=level))        
+
+        if not hasBrainInAJar:
+            bandwidth = self._levelZeroBandwidth
+                    
+            if level.value() > 0:
+                bandwidth = common.Calculator.add(
+                    lhs=bandwidth,
+                    rhs=level,
+                    name=f'{skillName} Level {level.value()} Required Bandwidth') 
+
+            # Robot can only have a number of level 0 bandwidth skills equal to
+            # their Inerrant Bandwidth. After that they require 1 bandwidth for
+            # level 0.
+            # NOTE: It's important that this check occurs AFTER the bandwidth is
+            # increased for additional levels as skills that have had their level
+            # increased shouldn't count towards the number of zero bandwidth skills
+            # (see comment in class header)
+            if not speciality and bandwidth.value() == 0:
+                inherentBandwidth = context.attributeValue(
+                    attributeId=robots.RobotAttributeId.InherentBandwidth,
+                    sequence=sequence)
+                assert(isinstance(inherentBandwidth, common.ScalarCalculation))
+
+                currentCount = context.attributeValue(
+                    attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
+                    sequence=sequence)
+                assert(not currentCount or isinstance(currentCount, common.ScalarCalculation))
+                
+                if currentCount and currentCount.value() >= inherentBandwidth.value():
+                    # The robot already has the max number of zero bandwidth skills
+                    # so this one requires bandwidth
+                    assert(currentCount.value() == inherentBandwidth.value())
+                    bandwidth = Skill._ZeroBandwidthSkillOverride
+                else:
+                    # Increment the zero bandwidth skill count, if this is the first
+                    # the option is being set it will be set to 1
+                    step.addFactor(factor=construction.ModifyAttributeFactor(
+                        attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
+                        modifier=construction.ConstantModifier(
+                            value=Skill._ZeroBandwidthSkillCountIncrement)))                           
+
+            if bandwidth.value() > 0:
+                step.setBandwidth(
+                    bandwidth=construction.ConstantModifier(value=bandwidth))  
+            
+            cost = _calculateSkillCost(
+                levelZeroCost=self._levelZeroCost,
+                skillLevel=level)
+            step.setCredits(
+                credits=construction.ConstantModifier(value=cost))
 
         context.applyStep(
             sequence=sequence,
@@ -1498,4 +1522,35 @@ class TacticsSkill(Skill):
             skillDef=traveller.TacticsSkillDefinition,
             minTL=8,
             levelZeroBandwidth=0,
-            levelZeroCost=100)  
+            levelZeroCost=100)
+        
+class JackOfAllTradesSkill(Skill):
+    """
+    - Requirement: Only compatible with Brain In A Jar
+    - Requirement: Max level of 3
+    """
+    _MaxJackSkillLevel = 3
+
+    def __init__(self) -> None:
+        super().__init__(
+            skillDef=traveller.JackOfAllTradesSkillDefinition,
+            minTL=0,
+            levelZeroBandwidth=0,
+            levelZeroCost=0)
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> bool:
+        if not super().isCompatible(sequence=sequence, context=context):
+            return False
+        
+        return context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence)
+
+    def updateOptions(self, sequence: str, context: robots.RobotContext) -> None:
+        super().updateOptions(sequence=sequence, context=context)    
+        if self._levelOption.isEnabled():
+            self._levelOption.setMax(JackOfAllTradesSkill._MaxJackSkillLevel)

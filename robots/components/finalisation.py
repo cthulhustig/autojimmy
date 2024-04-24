@@ -600,6 +600,12 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
+        if context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence):
+            # There is no bandwidth limitation when using a brain in a jar
+            return None
+
         maxBandwidth = context.attributeValue(
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             sequence=sequence)
