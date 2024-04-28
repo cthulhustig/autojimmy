@@ -827,6 +827,11 @@ class Weapon(object):
                     assert(isinstance(step, gunsmith.WeaponStep))
 
                     if not step.credits() and not step.weight() and not step.factors():
+                        # Don't include finalisation steps that have no costs
+                        # or factors as they clutter up the manifest. This
+                        # doesn't apply to steps from other stages as they
+                        # (generally) related to something the user has
+                        # specifically selected so should always be included                        
                         continue
 
                     if not manifestSection:

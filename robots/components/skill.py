@@ -1524,6 +1524,26 @@ class TacticsSkill(Skill):
             levelZeroBandwidth=0,
             levelZeroCost=100)
         
+class VaccSuitSkill(Skill):
+    """
+    - Min TL: 8
+    - Bandwidth: 0
+    - Characteristics: DEX
+    - Cost Cr100
+    """
+    # NOTE: Vacc Suit is the only core rule skill that isn't given skill
+    # requirement data (p74). This appears to have been an oversight given
+    # Geir's post here
+    # https://forum.mongoosepublishing.com/threads/google-sheets-robot-designer.123626/
+    # I've given it the same stat block as other skills that I feel would
+    # be most similar (Drive, Flyer, Pilot)
+    def __init__(self) -> None:
+        super().__init__(
+            skillDef=traveller.VaccSuitSkillDefinition,
+            minTL=8,
+            levelZeroBandwidth=0,
+            levelZeroCost=100)
+        
 class JackOfAllTradesSkill(Skill):
     """
     - Requirement: Only compatible with Brain In A Jar

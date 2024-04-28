@@ -5,6 +5,14 @@ import traveller
 import typing
 
 class EnduranceModification(robots.EnduranceModificationInterface):
+    """
+    - Requirement: Not compatible with BioRobots
+    """
+    # NOTE: I added the requirement that Endurance modifications are not
+    # compatible with BioRobots. The rules say standard robot Endurance
+    # doesn't apply for BioRobots (p88), so it would seem logical that
+    # Endurance modifications would also not apply.
+
     def typeString(self) -> str:
         return 'Endurance Modification'
     
@@ -13,9 +21,14 @@ class EnduranceModification(robots.EnduranceModificationInterface):
             sequence: str,
             context: construction.ConstructionContext
             ) -> bool:
-        return context.hasComponent(
+        if not context.hasComponent(
             componentType=robots.Chassis,
-            sequence=sequence)  
+            sequence=sequence):
+            return False
+        
+        return not context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence)
 
 class IncreaseEndurance(EnduranceModification):
     """

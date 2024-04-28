@@ -18,8 +18,6 @@ class Chassis(robots.ChassisInterface):
     """
     # NOTE: The note for the Attack Roll DM is to help players not mistake it for
     # a modifier that the robot gets
-    # TODO: Androids and biological robots have no default protection (p18) and
-    # it sounds like they have different max values specified in their rules
     # TODO: I'm really not sure about my my interpretation of the value of
     # the Large/Small traits. The only difference between the Trait and the
     # Attack Roll DM attribute I can see so far is the wording fro the trait

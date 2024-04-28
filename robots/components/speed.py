@@ -14,6 +14,16 @@ class SpeedModification(robots.SpeedModificationInterface):
     # The logical side effect of this is you won't be able to apply it if you
     # use the rule that Thruster locomotion can be applied as a secondary
     # locomotion with the primary locomotion set to None (p17)
+    # NOTE: I've intentionally not made Speed modifications incompatible with
+    # BioRobots as there isn't anything that makes them obviously incompatible.
+    # Normally the modifications would have an effect on endurance and the rules
+    # do say standard robot Endurance doesn't apply for BioRobots (p88).
+    # However, I don't think this makes it incompatible, just that the normal
+    # Endurance costs/gains don't apply as it more like the natural ability
+    # of the species the BioRobot is mimicking. This would be similar to how
+    # the rules say a BioBot can have coatings but only if they're part of the
+    # robots genome.
+
         
     def typeString(self) -> str:
         return 'Speed Modification'
@@ -193,14 +203,17 @@ class TacticalSpeedEnhancement(SpeedModification):
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(speedModifier)))
         
-        totalEndurancePercent = common.Calculator.multiply(
-            lhs=TacticalSpeedEnhancement._PerMeterEndurancePercent,
-            rhs=levelsTaken,
-            name=f'Total Tactical Speed Enhancement Endurance Reduction Percentage')
-        step.addFactor(factor=construction.ModifyAttributeFactor(
+        if context.hasAttribute(
             attributeId=robots.RobotAttributeId.Endurance,
-            modifier=construction.PercentageModifier(
-                value=totalEndurancePercent)))
+            sequence=sequence):
+            totalEndurancePercent = common.Calculator.multiply(
+                lhs=TacticalSpeedEnhancement._PerMeterEndurancePercent,
+                rhs=levelsTaken,
+                name=f'Total Tactical Speed Enhancement Endurance Reduction Percentage')
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=robots.RobotAttributeId.Endurance,
+                modifier=construction.PercentageModifier(
+                    value=totalEndurancePercent)))
 
         context.applyStep(
             sequence=sequence,
@@ -328,14 +341,17 @@ class TacticalSpeedReduction(SpeedModification):
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(speedModifier)))
         
-        totalEndurancePercent = common.Calculator.multiply(
-            lhs=TacticalSpeedReduction._PerMeterEndurancePercent,
-            rhs=levelsTaken,
-            name=f'Total Tactical Speed Reduction Endurance Reduction Percentage')
-        step.addFactor(factor=construction.ModifyAttributeFactor(
+        if context.hasAttribute(
             attributeId=robots.RobotAttributeId.Endurance,
-            modifier=construction.PercentageModifier(
-                value=totalEndurancePercent)))
+            sequence=sequence):        
+            totalEndurancePercent = common.Calculator.multiply(
+                lhs=TacticalSpeedReduction._PerMeterEndurancePercent,
+                rhs=levelsTaken,
+                name=f'Total Tactical Speed Reduction Endurance Reduction Percentage')
+            step.addFactor(factor=construction.ModifyAttributeFactor(
+                attributeId=robots.RobotAttributeId.Endurance,
+                modifier=construction.PercentageModifier(
+                    value=totalEndurancePercent)))
 
         context.applyStep(
             sequence=sequence,

@@ -783,12 +783,15 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
     - Standard
         - Min TL: 7
         - Cost: Cr600 * Base Slots
-        - Requirement: Not compatible with biological robots
+        - Requirement: Not compatible with biological robots (p34)
     - Biological
         - Min TL: 10
         - Cost: Cr50000 * Base Slots 
-        - Requirement: Only compatible with biological robots
+        - Requirement: Only compatible with biological robots (p34)
     """
+    # TODO: This component shouldn't inherit from _EnumSelectSlotOptionImpl as
+    # the protection shouldn't be selectable, it should be dependant if on if
+    # the robot is a BioRobot or not
     # TODO: Handle not compatible with biological robots after I
     # add support for biological
 
@@ -1285,8 +1288,6 @@ class _VoderSpeakerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     - Min TL: 10
     - Cost: Cr500
     """
-    # TODO: Handle only compatible with biological robots after I
-    # add support for biological
 
     class _SpeakerType(enum.Enum):
         Standard = 'Standard'
@@ -4992,6 +4993,7 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Trait: Endurance 0
     - Requirement: Incompatible with Endurance modifications
     - Requirement: Incompatible with RTG and Solar Power Unit slot options
+    - Requirement: Not compatible with BioRobots
     """
     # NOTE: The rules around a robot with no internal power (p56) are a little
     # unclear. It says that "A robot without a conventional power system may
@@ -5022,6 +5024,11 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     # NOTE: This component would probably make more logical sense to be handled
     # at the same point as endurance modifiers. I've left it hear to keep it
     # the same as how it appears in the rules.
+    # NOTE: I added the requirement that No Internal Power is not compatible
+    # with BioRobots. The rules say standard robot Endurance doesn't apply
+    # for BioRobots and that they need to eat, drink, breath (p88). This would
+    # mean they don't have an internal power source so there is no internal
+    # power source to remove.
 
     _Endurance = common.ScalarCalculation(
         value=0,
@@ -5048,10 +5055,15 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
         if not super().isCompatible(sequence=sequence, context=context):
             return False
         
+        if context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence):
+            return False
+        
         return not context.hasComponent(
             componentType=robots.EnduranceModification,
             sequence=sequence)
-    
+
     def updateStep(
             self,
             sequence: str,
@@ -5097,6 +5109,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         provided both power sources are operating at full capability; in such
         cases the robot could support vehicle speed movement modifications
         - Requirement: Not compatible with No Internal Power slot option
+        - Requirement: Not compatible with BioRobots
     - Long Duration
         - Basic
             - Min TL: 7
@@ -5146,6 +5159,11 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
     # I suspect this will need to be handled in finalisation, if that's the case
     # then a few of the notes for this component will need handled there
+    # NOTE: I added the requirement that RTP is not compatible with BioRobots.
+    # The rules say standard robot Endurance doesn't apply for BioRobots (p88),
+    # so it would seem logical that something specifically for increasing
+    # Endurance wouldn't apply, also it seems like a bad plan to put a nuclear
+    # power source inside a biological creature.
 
     class _Duration(enum.Enum):
         LongBasic = 'Basic Long Duration'
@@ -5202,6 +5220,18 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         
     def isZeroSlot(self) -> bool:
         return False
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+        
+        return not context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence)
 
     def updateStep(
             self,
@@ -5306,7 +5336,8 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         any combination, it is not subject to these performance degradations,
         provided both power sources are operating at full capability; in such
         cases the robot could support vehicle speed movement modifications  
-        - Requirement: Not compatible with No Internal Power slot option      
+        - Requirement: Not compatible with No Internal Power slot option     
+        - Requirement: Not compatible with BioRobots 
     - Basic
         - Min TL: 6
         - Cost: Cr2000 * Base Slots
@@ -5349,6 +5380,13 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
     # I suspect this will need to be handled in finalisation, if that's the case
     # then a few of the notes for this component will need handled there 
+    # NOTE: I added the requirement that Solar Power is not compatible with
+    # BioRobots. The rules say standard robot Endurance doesn't apply for
+    # BioRobots (p88), so it would seem logical that something specifically for
+    # increasing Endurance wouldn't apply, also massive solar panels doesn't
+    # exactly scream biological robot. If the user was creating some kind of
+    # photosynthetic BioRobot then the Solar Coating slot option would be more
+    # appropriate (and it is compatible with BioRobots).
 
     _MinTLMap = {
         _OptionLevel.Basic: 6,
@@ -5417,6 +5455,18 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             optionDefault=_OptionLevel.Basic,                      
             minTLMap=_SolarPowerUnitSlotOptionImpl._MinTLMap,
             incompatibleTypes=incompatibleTypes)
+        
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+        
+        return not context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence)        
         
     def isZeroSlot(self) -> bool:
         return False

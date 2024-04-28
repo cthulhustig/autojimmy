@@ -7,12 +7,16 @@ class ChassisInterface(RobotComponentInterface):
     pass
 
 class LocomotionInterface(RobotComponentInterface):
-    pass
+    def isNatural(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from LocomotionInterface so must implement isNatural') 
 
 class PrimaryLocomotionInterface(LocomotionInterface):
     pass
 
 class SecondaryLocomotionInterface(LocomotionInterface):
+    pass
+
+class SyntheticInterface(RobotComponentInterface):
     pass
 
 class ArmourModificationInterface(RobotComponentInterface):

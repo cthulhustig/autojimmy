@@ -209,6 +209,50 @@ class FinalisationComponent(robots.FinalisationInterface):
         robots.PlanetologySensorSuiteSlotOption
     ]
 
+    # Mapping of Android and BioRobot components to lists of the brain types
+    # that allows the robot to be suitably life like that they don't fall into
+    # the uncanny valley. Lower tier brains can be used however robots suffer
+    # a DM-2 to social interactions (p86 & p88).
+    # This is done here so it can be added as a warning like some of the other
+    # construction level notes added during finalisation
+    _SyntheticMinBrainMap = {
+        robots.BasicAndroidSynthetic: (
+            "Basic (x) or Hunter/Killer",
+            [robots.BasicBrain, robots.HunterKillerBrain, robots.SkilledRobotBrain, robots.BrainInAJarBrain]),
+        robots.ImprovedAndroidSynthetic: (
+            "Advanced",
+            [robots.AdvancedBrain, robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.EnhancedAndroidSynthetic: (
+            "Very Advanced",
+            [robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.AdvancedAndroidSynthetic: (
+            "Very Advanced",
+            [robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.SuperiorAndroidSynthetic: (
+            "Self-Aware",
+            [robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.BasicBioRobotSynthetic: (
+            "Basic (x) or Hunter/Killer",
+            [robots.BasicBrain, robots.HunterKillerBrain, robots.SkilledRobotBrain, robots.BrainInAJarBrain]), 
+        robots.ImprovedBioRobotSynthetic: (
+            "Advanced",
+            [robots.AdvancedBrain,  robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.EnhancedBioRobotSynthetic: (
+            "Very Advanced",
+            [robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+        robots.AdvancedBioRobotSynthetic: (
+            "Self-Aware",
+            [robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
+    }
+    _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t fall into the uncanny valley. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
+
+    # NOTE: This multiplier is applied to all costs except the cost for skills.
+    # This includes the cost of the Synthetic component. (p86 & p88)
+    _SyntheticsAdditionalCostMultiplier = common.ScalarCalculation(
+        value=3,
+        name='Synthetic Robot Additional Cost Multiplier')
+    _SyntheticsAdditionalCostPhases = [phase for phase in robots.RobotPhase if phase != robots.RobotPhase.Skills]
+
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
     
@@ -254,6 +298,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
+        self._createSynthCostStep(sequence=sequence, context=context)
         self._createProtectionStep(sequence=sequence, context=context)
         self._createTraitNoteSteps(sequence=sequence, context=context)
         self._createInoperableStep(sequence=sequence, context=context)
@@ -263,9 +308,10 @@ class FinalisationComponent(robots.FinalisationInterface):
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
-        self._skilledSensorsSteps(sequence=sequence, context=context)
-        self._slotUsageStep(sequence=sequence, context=context)
-        self._bandwidthUsageStep(sequence=sequence, context=context)
+        self._createSynthBrainStep(sequence=sequence, context=context)
+        self._createSkilledSensorsSteps(sequence=sequence, context=context)
+        self._createSlotUsageStep(sequence=sequence, context=context)
+        self._createBandwidthUsageStep(sequence=sequence, context=context)
 
     def _createProtectionStep(
             self,
@@ -540,9 +586,89 @@ class FinalisationComponent(robots.FinalisationInterface):
                         sizes=common.humanFriendlyListString(manipulatorSizes)))
             context.applyStep(
                 sequence=sequence,
-                step=step)                
+                step=step)
 
-    def _skilledSensorsSteps(
+    # NOTE: This should happen AFTER unused slots are removed. I think the
+    # google spreadsheet might be incorrect and is doing it the other way
+    # round. I'm basing this on the fact the Mongoose excel spreadsheet
+    # removes the slots first (so the saving is effectively multiplied).
+    def _createSynthCostStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        synthetic = context.findFirstComponent(
+            componentType=robots.Synthetic,
+            sequence=sequence)
+        if not synthetic:
+            return
+        assert(isinstance(synthetic, robots.Synthetic))
+
+        standardCost = context.multiPhaseCost(
+            sequence=sequence,
+            costId=robots.RobotCost.Credits,
+            phases=FinalisationComponent._SyntheticsAdditionalCostPhases)
+        standardCost = common.Calculator.rename(
+            value=standardCost,
+            name='Robot Cost Without Skill Costs')
+
+        # NOTE: This subtracts 1 from the multiplier as we're calculating
+        # the additional cost not the total cost
+        additionalCost = common.Calculator.multiply(
+            lhs=standardCost,
+            rhs=common.Calculator.subtract(
+                lhs=self._SyntheticsAdditionalCostMultiplier,
+                rhs=common.ScalarCalculation(value=1)),
+            name='Synthetic Robot Additional Cost')
+        
+        step = robots.RobotStep(
+            name=f'Additional Cost',
+            type=synthetic.componentString())
+        step.setCredits(
+            credits=construction.ConstantModifier(value=additionalCost))
+        context.applyStep(
+            sequence=sequence,
+            step=step)                
+
+    def _createSynthBrainStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        synthetic = context.findFirstComponent(
+            componentType=robots.Synthetic,
+            sequence=sequence)
+        if not synthetic:
+            return
+        brain = context.findFirstComponent(
+            componentType=robots.Brain,
+            sequence=sequence)
+        if not brain:
+            return
+        
+        minBrain, supportedBrains = self._SyntheticMinBrainMap.get(
+            type(synthetic),
+            (None, None))
+        isBrainSupported = False
+        if supportedBrains:
+            for brainType in supportedBrains:
+                if isinstance(brain, brainType):
+                    isBrainSupported = True
+                    break
+        if isBrainSupported:
+            return
+        
+        step = robots.RobotStep(
+            name='Minimum Brain',
+            type=synthetic.componentString())
+        step.addNote(note=FinalisationComponent._SyntheticMinBrainNote.format(
+            brain=minBrain))
+        context.applyStep(
+            sequence=sequence,
+            step=step)         
+
+
+    def _createSkilledSensorsSteps(
             self,
             sequence: str,
             context: robots.RobotContext
@@ -571,7 +697,7 @@ class FinalisationComponent(robots.FinalisationInterface):
                 sequence=sequence,
                 step=step)
         
-    def _slotUsageStep(
+    def _createSlotUsageStep(
             self,
             sequence: str,
             context: robots.RobotContext
@@ -595,7 +721,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence=sequence,
             step=step)
         
-    def _bandwidthUsageStep(
+    def _createBandwidthUsageStep(
             self,
             sequence: str,
             context: robots.RobotContext

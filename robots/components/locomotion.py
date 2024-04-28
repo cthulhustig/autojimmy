@@ -36,7 +36,8 @@ class _LocomotionImpl(object):
     # work if all modifiers that can affect them have been applied (e.g.
     # additional power packs for endurance).
     # UPDATE: I could possible split it into 2 attributes (PrimaryAgility and
-    # SecondaryAgility). It could complicate component code that deals with
+    # SecondaryAgility) but this would mean limiting a robot to a single
+    # secondary locomotion. It could complicate component code that deals with
     # agility but importantly the rules say the locomotion modifications (and
     # therefore agility modifications) only apply to the primary locomotion
 
@@ -65,6 +66,7 @@ class _LocomotionImpl(object):
             minTechLevel: int,
             baseEndurance: int,
             costMultiplier: int,
+            isNatural: bool,
             baseAgility: typing.Optional[int] = None,
             flagTrait: typing.Optional[robots.RobotAttributeId] = None,
             notes: typing.Optional[typing.Iterable[str]] = None
@@ -82,6 +84,7 @@ class _LocomotionImpl(object):
         self._costMultiplier = common.ScalarCalculation(
             value=costMultiplier,
                 name=f'{componentString} Locomotion Cost Multiplier')
+        self._isNatural = isNatural
         self._baseAgility = None
         if baseAgility != None:
             self._baseAgility = common.ScalarCalculation(
@@ -89,6 +92,9 @@ class _LocomotionImpl(object):
                 name=f'{componentString} Locomotion Agility')
         self._flagTrait = flagTrait
         self._notes = notes
+
+    def isNatural(self) -> bool:
+        return self._isNatural
 
     def instanceString(self) -> str:
         return self._componentString
@@ -212,7 +218,8 @@ class _NoLocomotionImpl(_LocomotionImpl):
             componentString='None',
             minTechLevel=5,
             baseEndurance=216,
-            costMultiplier=1)
+            costMultiplier=1,
+            isNatural=True)
         
     def updateStep(
             self,
@@ -247,7 +254,8 @@ class _WheelsLocomotionImpl(_LocomotionImpl):
             minTechLevel=5,
             baseAgility=+0,
             baseEndurance=72,
-            costMultiplier=2)  
+            costMultiplier=2,
+            isNatural=False)  
 
 class _WheelsATVLocomotionImpl(_LocomotionImpl):
     """
@@ -266,7 +274,8 @@ class _WheelsATVLocomotionImpl(_LocomotionImpl):
             baseAgility=+0,
             flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
-            costMultiplier=3)
+            costMultiplier=3,
+            isNatural=False)
         
 class _TracksLocomotionImpl(_LocomotionImpl):
     """
@@ -285,7 +294,8 @@ class _TracksLocomotionImpl(_LocomotionImpl):
             baseAgility=-1,
             flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
-            costMultiplier=2)
+            costMultiplier=2,
+            isNatural=False)
         
 class _FlyerLocomotionImpl(_LocomotionImpl):
     """
@@ -299,6 +309,7 @@ class _FlyerLocomotionImpl(_LocomotionImpl):
             baseAgility: int,
             baseEndurance: int,
             costMultiplier: int,
+            isNatural: bool,
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__(
@@ -308,7 +319,8 @@ class _FlyerLocomotionImpl(_LocomotionImpl):
             baseAgility=baseAgility,
             baseEndurance=baseEndurance,
             costMultiplier=costMultiplier,
-            notes=notes)
+            notes=notes,
+            isNatural=isNatural)
         
     def updateStep(
             self,
@@ -340,7 +352,8 @@ class _GravLocomotionImpl(_FlyerLocomotionImpl):
             minTechLevel=9,
             baseAgility=+1,
             baseEndurance=24,
-            costMultiplier=20)
+            costMultiplier=20,
+            isNatural=False)
         
 class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     """
@@ -385,7 +398,8 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             baseAgility=+1,
             baseEndurance=12,
             costMultiplier=12,
-            notes=None) # Notes handled locally
+            notes=None, # Notes handled locally
+            isNatural=True)
         
     def updateStep(
             self,
@@ -424,7 +438,8 @@ class _AquaticLocomotionImpl(_LocomotionImpl):
             baseAgility=-2,
             flagTrait=robots.RobotAttributeId.Seafarer,
             baseEndurance=72,
-            costMultiplier=4)
+            costMultiplier=4,
+            isNatural=True)
         
 class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
     """
@@ -444,6 +459,7 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
             baseAgility=+0,
             baseEndurance=24,
             costMultiplier=14,
+            isNatural=True,
             notes=[
                 'Agility -1 in thin atmosphere (p17)',
                 'Requires a secondary locomotion type to move across the ground (p17)'])
@@ -469,7 +485,8 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
             baseAgility=+0,
             flagTrait=robots.RobotAttributeId.ATV,
             baseEndurance=72,
-            costMultiplier=10)
+            costMultiplier=10,
+            isNatural=True)
         
         self._legCountOption = construction.IntegerOption(
             id='LegCount',
@@ -508,6 +525,7 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             flagTrait=robots.RobotAttributeId.ACV,
             baseEndurance=24,
             costMultiplier=10,
+            isNatural=False,
             notes=['Agility -1 in thin atmosphere (p17)'])
         
 class _ThrusterLocomotionImpl(_LocomotionImpl):
@@ -546,7 +564,8 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
             minTechLevel=7,
             baseAgility=+1,
             baseEndurance=2,
-            costMultiplier=20)
+            costMultiplier=20,
+            isNatural=False)
         
     def updateStep(
             self,
@@ -577,6 +596,9 @@ class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
             ) -> None:
         super().__init__()
         self._impl = impl
+
+    def isNatural(self) -> bool:
+        return self._impl.isNatural()
 
     def instanceString(self) -> str:
         return self._impl.instanceString()
@@ -698,6 +720,9 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
             ) -> None:
         super().__init__()
         self._impl = impl
+
+    def isNatural(self) -> bool:
+        return self._impl.isNatural()
 
     def instanceString(self) -> str:
         return self._impl.instanceString()        

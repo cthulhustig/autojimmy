@@ -400,6 +400,10 @@ TacticsSkillDefinition = SkillDefinition(
     skillType=SkillDefinition.SkillType.FixedSpeciality,
     fixedSpecialities=TacticsSkillSpecialities)
 
+VaccSuitSkillDefinition = SkillDefinition(
+    skillName='Vacc Suit',
+    skillType=SkillDefinition.SkillType.Simple) 
+
 # NOTE: This list should be used with care as it won't include any custom skills
 # defined by things like construction
 AllStandardSkills = [

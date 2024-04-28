@@ -5,6 +5,7 @@ from .component import *
 from .robot import *
 from .components.chassis import *
 from .components.locomotion import *
+from .components.synthetics import *
 from .components.armour import *
 from .components.endurance import *
 from .components.resiliency import *
