@@ -85,14 +85,6 @@ class _ManipulatorImpl(object):
     # I could add the notes when the skill is being added but that would mean I'd
     # need to do the same thing in all the places that add the Athletics skill.
     # I would probably be better to add it to finalisation.
-    # TODO: I'm not sure what do about displaying the STR/DEX to the user, it
-    # can't be done using attributes as each manipulator would need it's own
-    # attributes
-    # Update: I suspect however I'm showing things like traits will need to have
-    # a manipulators section that lists all the manipulators and gives their
-    # size, STR, DEX (possibly also if they're multi-linked).
-    # Update 2: Depending on how the fix for the TODO above goes there may be notes
-    # that tell the user this info each manipulator
     class ManipulatorType(enum.Enum):
         Base = 'Base Manipulator'
         Additional = 'Additional Manipulator'

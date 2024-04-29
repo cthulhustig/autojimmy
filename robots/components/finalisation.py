@@ -382,27 +382,15 @@ class FinalisationComponent(robots.FinalisationInterface):
             elif trait == robots.RobotAttributeId.Seafarer:
                 pass
             elif trait == robots.RobotAttributeId.Large:
-                # TODO: I've commented this out as I __think__ it might be the
-                # same modifier that has a note added for the chassis rather
-                # than being in addition to it. It's a little unclear as the
-                # description for chassis (p13) makes it sound like it's for all
-                # attacks but the description for the trait (p8) says it's just
-                # ranged attacks
-                # This would be a good one for Geir
-                """
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
-                notes.append(f'Ranged attacks made against to robot receive DM+{value.value()}')
-                """
+                notes.append(f'Attackers receive DM+{value.value()} when making ranged attacks against the robot.')
             elif trait == robots.RobotAttributeId.Small:
-                # TODO: See above for reason this is commented out
-                """
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
-                notes.append(f'Ranged attacks made against to robot receive DM{value.value()}')
-                """
+                notes.append(f'Attackers receive DM{value.value()} when making ranged attacks against the robot.')
             elif trait == robots.RobotAttributeId.Stealth:
                 value = context.attributeValue(
                     attributeId=trait,

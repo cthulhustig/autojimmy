@@ -688,37 +688,43 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
     - Basic
         - Min TL: 6
         - Cost: Cr500 * Base Slots
-        - Note: Max ground speed of 1m per round when relying on solar coating for power
-        - Note: Unable to fly when relying on using solar coating for power
-        - Note: Can fully recharge in 4 * Endurance hours if robot is dormant
+        - Note: Max ground speed of 1m per round when relying on solar coating for power (p33)
+        - Note: Unable to fly when relying on using solar coating for power (p33)
+        - Note: Can fully recharge in 4 * Endurance hours if robot is dormant (p33)
     - Improved
         - Min TL: 8
         - Cost: Cr100 * Base Slots
-        - Note: Max ground speed of 2m per round when relying on solar coating for power
-        - Note: Unable to fly when relying on using solar coating for power
-        - Note: Can fully recharge in Endurance hours if robot is dormant
-        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging              
+        - Note: Max ground speed of 2m per round when relying on solar coating for power (p33)
+        - Note: Unable to fly when relying on using solar coating for power (p33)
+        - Note: Can fully recharge in Endurance hours if robot is dormant (p33)
+        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging (p33)  
     - Enhanced
         - Min TL: 10
         - Cost: Cr200 * Base Slots
-        - Note: Max ground speed of 4m per round when relying on solar coating for power
-        - Note: Max flying speed of 1m per round when relying on solar coating for power
-        - Note: Can fully recharge in Endurance hours if robot is dormant 
-        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging                         
+        - Note: Max ground speed of 4m per round when relying on solar coating for power (p33)
+        - Note: Max flying speed of 1m per round when relying on solar coating for power (p33)
+        - Note: Can fully recharge in Endurance hours if robot is dormant (p33)
+        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging (p33)                    
     - Advanced
         - Min TL: 12
         - Cost: Cr500 * Base Slots
-        - Note: Ground speed is not reduced when relying on solar coating for power
-        - Note: Max flying speed of 2m per round when relying on solar coating for power
-        - Note: Can fully recharge in Endurance hours if robot is dormant
-        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging    
+        - Note: Ground speed is not reduced when relying on solar coating for power (p33)
+        - Note: Max flying speed of 2m per round when relying on solar coating for power (p33)
+        - Note: Can fully recharge in Endurance hours if robot is dormant (p33)
+        - Note: Can fully recharge in 4 * Endurance hours if robot is operational while charging (p33)    
     """
     # NOTE: The compatibility requirements are handled by the component rather
     # than the impl
-    # TODO: Add notes
-    # TODO: Handle notes that use Endurance hours. Ideally they would be filled
-    # in to give actual hours rather than the formula. If they can be done here
-    # depends on if endurance has been fully calculated yet
+    # TODO: Ideally the recharge time note would be filled in with the robots
+    # Endurance but it's not calculated yet due to No Internal Power, RTG &
+    # Solar Power. It's also complicated by BioRobots that don't have Endurance
+    # but need to allow the component to allow them to mimic species that have
+    # some kind of natural solar coating. It might be something that works it's
+    # self out in when I get round to splitting the slot options into categories.
+    # Either this will be in a 'coatings' category or it will be in the 'power'
+    # category with the other relevant components. If it's the former then I can
+    # just make the 'coatings category after the 'power' category. If it's the
+    # latter than I can mark this component as needing processed after the others.
 
     _MinTLMap = {
         _OptionLevel.Basic: 6,
@@ -727,11 +733,35 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12,
     }
 
-    _CostPerSlotMap = {
-        _OptionLevel.Basic: 500,
-        _OptionLevel.Improved: 100,
-        _OptionLevel.Enhanced: 200,
-        _OptionLevel.Advanced: 500,
+    _BasicRechargeNote = 'Can fully recharge in 4 * Endurance hours if robot is dormant (p33)'
+    _BetterRechargeNote = 'Can fully recharge in Endurance hours if robot is fully dormant or 4 * Endurance hours if the robot is limited to minimal operation and speeds of 1m per round or less (p33)'
+
+    # Data Structure: Cost Per Base Slot, ground note, flyer note, recharge note
+    _DataMap = {
+        _OptionLevel.Basic: (
+            500,
+            'Max ground speed of 1m per round when relying on solar coating for power (p33)',
+            'Unable to fly when relying on using solar coating for power (p33)',
+            _BasicRechargeNote
+        ),
+        _OptionLevel.Improved: (
+            100,
+            'Max ground speed of 2m per round when relying on solar coating for power (p33)',
+            'Unable to fly when relying on using solar coating for power (p33)',
+            _BetterRechargeNote,
+        ),
+        _OptionLevel.Enhanced: (
+            200,
+            'Max ground speed of 4m per round when relying on solar coating for power (p33)',
+            'Max flying speed of 1m per round when relying on solar coating for power (p33)',
+            _BetterRechargeNote
+        ),
+        _OptionLevel.Advanced: (
+            500,
+            'Ground speed is not reduced when relying on solar coating for power (p33)',
+            'Max flying speed of 2m per round when relying on solar coating for power (p33)',
+            _BetterRechargeNote
+        )
     }
 
     def __init__(
@@ -765,18 +795,30 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
         level = self._enumOption.value()
         assert(isinstance(level, _OptionLevel))
 
-        costPerSlot = common.ScalarCalculation(
-            value=_SolarCoatingSlotOptionImpl._CostPerSlotMap[level],
+        costBasePerSlot, groundNote, flyerNote, rechargeNote = \
+            _SolarCoatingSlotOptionImpl._DataMap[level]
+
+        costBasePerSlot = common.ScalarCalculation(
+            value=costBasePerSlot,
             name=f'{level.value} {self.componentString()} Cost Per Slot')
         cost = common.Calculator.multiply(
-            lhs=costPerSlot,
+            lhs=costBasePerSlot,
             rhs=context.baseSlots(sequence=sequence),
             name=f'{self.componentString()} Cost')
-
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
+        
+        step.addNote(note=groundNote)
 
-class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
+        isFlyer = context.hasAttribute(
+            attributeId=robots.RobotAttributeId.Flyer,
+            sequence=sequence)
+        if isFlyer:
+            step.addNote(note=flyerNote)
+
+        step.addNote(note=rechargeNote)
+
+class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - <All>
         - Requirement: Incompatible with Armour Decrease chassis option (p19)
@@ -789,25 +831,19 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Cost: Cr50000 * Base Slots 
         - Requirement: Only compatible with biological robots (p34)
     """
-    # TODO: This component shouldn't inherit from _EnumSelectSlotOptionImpl as
-    # the protection shouldn't be selectable, it should be dependant if on if
-    # the robot is a BioRobot or not
-    # TODO: Handle not compatible with biological robots after I
-    # add support for biological
 
-    class _ProtectionType(enum.Enum):
-        Standard = 'Standard'
-        Biological = 'Biological'
-
-    _MinTLMap = {
-        _ProtectionType.Standard: 7,
-        _ProtectionType.Biological: 10
-    }
-
-    _CostPerSlotMap = {
-        _ProtectionType.Standard: 600,
-        _ProtectionType.Biological: 50000
-    }
+    _StandardMinTL = common.ScalarCalculation(
+        value=7,
+        name='Standard Vacuum Environment Protection Min TL')
+    _BiologicalMinTL = common.ScalarCalculation(
+        value=10,
+        name='BioRobot Vacuum Environment Protection Min TL')
+    _StandardCostPerSlot = common.ScalarCalculation(
+        value=600,
+        name='Standard Vacuum Environment Protection Cost Per Slot')
+    _BiologicalCostPerSlot = common.ScalarCalculation(
+        value=50000,
+        name='BioRobot Vacuum Environment Protection Cost Per Slot')
 
     def __init__(
             self,
@@ -815,13 +851,7 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
             ) -> None:
         super().__init__(
             componentString='Vacuum Environment Protection',
-            enumType=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the protection type.',
-            optionDefault=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType.Standard,      
-            minTLMap=_VacuumEnvironmentProtectionSlotOptionImpl._MinTLMap,
-            incompatibleTypes=incompatibleTypes)  
+            incompatibleTypes=incompatibleTypes)
 
     def isZeroSlot(self) -> bool:
         return True
@@ -832,6 +862,15 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
             context: robots.RobotContext
             ) -> bool:
         if not super().isCompatible(sequence, context):
+            return False
+        
+        isBioRobot = context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence)
+        minTL = _VacuumEnvironmentProtectionSlotOptionImpl._BiologicalMinTL \
+            if isBioRobot else \
+            _VacuumEnvironmentProtectionSlotOptionImpl._StandardMinTL
+        if context.techLevel() < minTL.value():
             return False
         
         return not context.hasComponent(
@@ -848,13 +887,13 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl):
             sequence=sequence,
             context=context,
             step=step)
-
-        protection = self._enumOption.value()
-        assert(isinstance(protection, _VacuumEnvironmentProtectionSlotOptionImpl._ProtectionType))
-
-        costPerSlot = common.ScalarCalculation(
-            value=_VacuumEnvironmentProtectionSlotOptionImpl._CostPerSlotMap[protection],
-            name=f'{protection.value} {self.componentString()} Cost Per Slot')
+        
+        isBioRobot = context.hasComponent(
+            componentType=robots.BioRobotSynthetic,
+            sequence=sequence)
+        costPerSlot = _VacuumEnvironmentProtectionSlotOptionImpl._BiologicalCostPerSlot \
+            if isBioRobot else \
+            _VacuumEnvironmentProtectionSlotOptionImpl._StandardCostPerSlot
         cost = common.Calculator.multiply(
             lhs=costPerSlot,
             rhs=context.baseSlots(sequence=sequence),
@@ -5146,6 +5185,11 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # NOTE: Details of the incompatibility with No Internal Power can be found on
     # the No Internal Power impl. The incomparability its self is handled by the
     # RTG component.
+    # NOTE: I added the requirement that RTP is not compatible with BioRobots.
+    # The rules say standard robot Endurance doesn't apply for BioRobots (p88),
+    # so it would seem logical that something specifically for increasing
+    # Endurance wouldn't apply, also it seems like a bad plan to put a nuclear
+    # power source inside a biological creature.    
     # TODO: Something seems off with the logic of how power packs are recharged.
     # The rules have it as 'three times a power pack’s endurance to fully
     # recharge it'. As a lot of robots have an Endurance the 100s of hours, this
@@ -5159,11 +5203,6 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
     # I suspect this will need to be handled in finalisation, if that's the case
     # then a few of the notes for this component will need handled there
-    # NOTE: I added the requirement that RTP is not compatible with BioRobots.
-    # The rules say standard robot Endurance doesn't apply for BioRobots (p88),
-    # so it would seem logical that something specifically for increasing
-    # Endurance wouldn't apply, also it seems like a bad plan to put a nuclear
-    # power source inside a biological creature.
 
     class _Duration(enum.Enum):
         LongBasic = 'Basic Long Duration'
@@ -5365,6 +5404,13 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # NOTE: Details of the incompatibility with No Internal Power can be found on
     # the No Internal Power impl. The incomparability its self is handled by the
     # Solar Power Unit component.    
+    # NOTE: I added the requirement that Solar Power is not compatible with
+    # BioRobots. The rules say standard robot Endurance doesn't apply for
+    # BioRobots (p88), so it would seem logical that something specifically for
+    # increasing Endurance wouldn't apply, also massive solar panels doesn't
+    # exactly scream biological robot. If the user was creating some kind of
+    # photosynthetic BioRobot then the Solar Coating slot option would be more
+    # appropriate (and it is compatible with BioRobots).    
     # TODO: Something seems off with the logic of how power packs are recharged.
     # The rules have it as a multiple of 'the hours as the power pack supplies',
     # with the lost multiple being 2 for minimal activity. The max number of
@@ -5380,13 +5426,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
     # I suspect this will need to be handled in finalisation, if that's the case
     # then a few of the notes for this component will need handled there 
-    # NOTE: I added the requirement that Solar Power is not compatible with
-    # BioRobots. The rules say standard robot Endurance doesn't apply for
-    # BioRobots (p88), so it would seem logical that something specifically for
-    # increasing Endurance wouldn't apply, also massive solar panels doesn't
-    # exactly scream biological robot. If the user was creating some kind of
-    # photosynthetic BioRobot then the Solar Coating slot option would be more
-    # appropriate (and it is compatible with BioRobots).
+
 
     _MinTLMap = {
         _OptionLevel.Basic: 6,

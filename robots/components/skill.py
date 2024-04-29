@@ -221,11 +221,8 @@ class BasicSkillPackage(SkillPackage):
     """
     - Min TL: 8
     - Bandwidth: 1
-    - Note: The skills provided by a Basic package are not subject to the INT
-    limitations of the robot's brain (e.g. negative DMs)
     - Requirement: Only compatible with basic brain   
     """
-    _BasicNote = 'The package counteracts any potential negative DMs associated with the robots\'s INT characteristics'
 
     def __init__(
             self,
@@ -243,7 +240,7 @@ class BasicSkillPackage(SkillPackage):
             brainType=robots.BasicBrain,
             bandwidth=1,
             skills=skills,
-            notes=notes + [BasicSkillPackage._BasicNote] if notes else [BasicSkillPackage._BasicNote])
+            notes=notes)
         
     def typeString(self) -> str:
         return 'Basic Skill Package'
@@ -254,12 +251,36 @@ class NoneBasicSkillPackage(BasicSkillPackage):
     """
     - Note: Skill packages installed in the brain are subject to limitations and negative modifiers
     """
-    # TODO: Not sure how this is meant to work
 
     def __init__(self) -> None:
-        super().__init__(componentName='None')    
+        super().__init__(
+            componentName='None',
+            notes=['When skill packages are installed in the brain they are subject to the robot\'s INT modifier'])    
+        
+class PreInstalledBasicSkillPackage(BasicSkillPackage):
+    """
+    - Note: Negative modifiers due to the robot\'s INT characteristic do no
+    apply when making checks using skills provided by the package. (p70)
+    """
 
-class LaboureurBasicSkillPackage(BasicSkillPackage):
+    _BasicNote = 'Negative modifiers due to the robot\'s INT characteristic do no apply when making checks using skills provided by the package. (p70)'    
+
+    def __init__(
+            self,
+            componentName: str,
+            skills: typing.Optional[typing.Iterable[typing.Tuple[
+                traveller.SkillDefinition, # Skill
+                typing.Optional[typing.Union[enum.Enum, str]], # Speciality
+                int # Level
+            ]]] = None,
+            notes: typing.Optional[typing.Iterable[str]] = None
+            ) -> None:
+        super().__init__(
+            componentName=componentName,
+            skills=skills,
+            notes=notes + [PreInstalledBasicSkillPackage._BasicNote] if notes else [PreInstalledBasicSkillPackage._BasicNote])  
+
+class LaboureurBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Profession (laboureur) 2
     """
@@ -268,7 +289,7 @@ class LaboureurBasicSkillPackage(BasicSkillPackage):
             componentName='Laboureur',
             skills=[(traveller.ProfessionSkillDefinition, 'Laboureur', 2)])
         
-class LocomotionBasicSkillPackage(BasicSkillPackage):
+class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Vehicle skill equal to the robots Agility Enhancement Level (or
       0 if no enhancement)
@@ -336,7 +357,7 @@ class LocomotionBasicSkillPackage(BasicSkillPackage):
 
         return step
 
-class ReconBasicSkillPackage(BasicSkillPackage):
+class ReconBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Recon 2
     """
@@ -345,7 +366,7 @@ class ReconBasicSkillPackage(BasicSkillPackage):
             componentName='Recon',
             skills=[(traveller.ReconSkillDefinition, None, 2)])
         
-class SecurityBasicSkillPackage(BasicSkillPackage):
+class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Weapon 1
     - Skill: Tactics (military) 1
@@ -364,7 +385,7 @@ class SecurityBasicSkillPackage(BasicSkillPackage):
             skills=[(RobotWeaponSkillDefinition, None, 1),
                     (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
 
-class ServantBasicSkillPackage(BasicSkillPackage):
+class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Profession (domestic servant or domestic cleaner) 2
     - Option: Need an option to select which Profession speciality this gives
@@ -405,7 +426,7 @@ class ServantBasicSkillPackage(BasicSkillPackage):
 
         return step
 
-class ServiceBasicSkillPackage(BasicSkillPackage):
+class ServiceBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Mechanic 0
     - Skill: Steward 0
@@ -418,7 +439,7 @@ class ServiceBasicSkillPackage(BasicSkillPackage):
                     (traveller.StewardSkillDefinition, None, 0)],
             notes=['Can support up to 8 Middle or 100 Basic passengers'])
 
-class TargetBasicSkillPackage(BasicSkillPackage):
+class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Explosives 1 or Weapon 1
     - Skill: Explosives 0 if Weapon is taken as the primary skill and the robot
@@ -647,13 +668,6 @@ class Skill(robots.SkillInterface):
     # skills with bandwidth 0 and it says there is 1 spare zero bandwidth skill.
     # This means the fact the robots Mechanic 1 skill has not been counted
     # towards the number of zero bandwidth skills the robot has.    
-    # TODO: Need to figure out how advanced Advanced Capabilities works (p66).
-    # It's not obvious if it's just a rewording of the rules about a robot only
-    # being allowed a number of zero bandwidth skills equal to it's Inerrant
-    # Bandwidth of if it's covering something else.
-    # TODO: Handle the characteristic used by the skill (possibly a string
-    # factor????).  This is complicated by Athletics which has a variable
-    # characteristic
 
     # This max count needs to be large enough to cover any legitimate user
     # requirement but also prevent the user for causing problems by specifying

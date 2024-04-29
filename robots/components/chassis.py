@@ -13,26 +13,9 @@ class Chassis(robots.ChassisInterface):
         - TL12-14: Base Protection: 4
         - TL15-17: Base Protection: 4
         - TL18+: Base Protection: 5
-    - Note: Due to the size of the robot, attackers get the Attack Roll DM as
-    a modifier when attacking it.
     """
     # NOTE: The note for the Attack Roll DM is to help players not mistake it for
     # a modifier that the robot gets
-    # TODO: I'm really not sure about my my interpretation of the value of
-    # the Large/Small traits. The only difference between the Trait and the
-    # Attack Roll DM attribute I can see so far is the wording fro the trait
-    # says it for ranged attacks (p8). It's probably worth having a look at
-    # some of the example robots to see if they give any clues
-    # Update: I've found out that the Large/Small traits are actually core rule
-    # traits for dealing with Beasts (p81). I suspect they've been incorporated
-    # here to give some consistency. The wording that the traits only apply to
-    # ranged attacks also comes from the core rules. My current best guess is
-    # they are effectively the same modifier, with the extra wording on p13
-    # just meaning the modifier applies to all attacks not just ranged ones.
-    # However, I'm not sure how best to handle this as, if I add 2 independent,
-    # notes there is a chance the user may think it's two separate modifiers
-    # that could be applied twice.
-
 
     # List of tuples structured as follows
     # Min TL, Max TL, Base Protection
@@ -43,8 +26,6 @@ class Chassis(robots.ChassisInterface):
         (15, 17, 4),
         (18, None, 5)
     ]
-
-    _AttackRollDMNote = 'Due to the size of the robot, attackers get the Attack Roll DM{modifier} as a modifier when attacking it (p13)'
 
     # NOTE: It only seems logical that there must be a min TL for a robot
     # chassis but the rules don't give one. Fair enough, you could probably
@@ -157,13 +138,6 @@ class Chassis(robots.ChassisInterface):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.AttackRollDM,
             value=self._attackDM))
-        if self._attackDM.value():
-            # Attackers get a non-zero attack modifier to add a note to remind
-            # the player
-            step.addNote(Chassis._AttackRollDMNote.format(
-                modifier=common.formatNumber(
-                    number=self._attackDM.value(),
-                    alwaysIncludeSign=True)))
 
         if self._attackDM.value() < 0:
             step.addFactor(factor=construction.SetAttributeFactor(
