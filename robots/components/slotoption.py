@@ -573,12 +573,12 @@ class _OlfactoryConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
 
     # Data Structure: Cost Per Slot, Recon Modifier, Effective Range
     _DataMap = {
-        _OptionLevel.Basic: 10,
-        _OptionLevel.Improved: 20,
-        _OptionLevel.Advanced: 100,
+        _OptionLevel.Basic: (10, -1, 100),
+        _OptionLevel.Improved: (20, -2, 20),
+        _OptionLevel.Advanced: (100, -3, 10),
     }
 
-    _ReconNote = 'Recon checks to detect the robot olfactorily receive a DM{modifier} at >= {range}m (p32)'
+    _ReconNote = 'Recon checks to detect the robot using specialised sensors or by creatures who use smell as a primary sense receive a DM{modifier} at >= {range}m (p32)'
     _HeightenSensesTrait = 'An entity trying to detect the robot olfactorily does not get to include any bonus from the Heighten Senses Trait (p32)'
 
     def __init__(
@@ -1206,8 +1206,54 @@ class _TransceiverSlotOptionImpl(_EnumSelectSlotOptionImpl):
 
             step.setSlots(
                 slots=construction.ConstantModifier(value=slots))
-            
+
 class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <ALL>
+        - Cost: The cost is multiplied by the Base Slot count for full surface
+          screens
+    - Basic
+        - Min TL: 7
+        - Cost: Cr200
+    - Improved
+        - Min TL: 8
+        - Cost: Cr500
+    - Advanced
+        - Min TL: 10
+        - Cost: Cr2000
+    """
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 7,
+        _OptionLevel.Improved: 8,
+        _OptionLevel.Advanced: 10
+    }
+
+    _CostMap = {
+        _OptionLevel.Basic: 200,
+        _OptionLevel.Improved: 500,
+        _OptionLevel.Advanced: 2000
+    }
+
+    def __init__(
+            self,
+            componentString: str,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString=componentString,
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the screen type.',
+            optionDefault=_OptionLevel.Basic,                      
+            minTLMap=_VideoScreenSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+
+    def isZeroSlot(self) -> bool:
+        return True
+
+class _PanelVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
     """
     Basic Panel
         - Min TL: 7
@@ -1218,49 +1264,8 @@ class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
     Advanced Panel
         - Min TL: 10
         - Cost: Cr2000
-    Basic Full Surface
-        - Min TL: 7
-        - Cost: Cr200 * Base Slots
-    Improved Full Surface
-        - Min TL: 8
-        - Cost: Cr500 * Base Slots
-    Advanced Full Surface
-        - Min TL: 10
-        - Cost: Cr2000 * Base Slots
     """
-    # TODO: It would make sense for panels to be a component that can have
-    # multiple instances installed but it doesn't make sense for full surface
-    # screens. The easiest thing to do would be to split it into 2 components
-
-    class _ScreenType(enum.Enum):
-        BasicPanel = 'Basic Panel'
-        ImprovedPanel = 'Improved Panel'
-        AdvancedPanel = 'Advanced Panel'
-        BasicFullSurface = 'Basic Full Surface'
-        ImprovedFullSurface = 'Improved Full Surface'
-        AdvancedFullSurface = 'Advanced Full Surface'
-
-    _MinTLMap = {
-        _ScreenType.BasicPanel: 7,
-        _ScreenType.ImprovedPanel: 8,
-        _ScreenType.AdvancedPanel: 10,
-        _ScreenType.BasicFullSurface: 7,
-        _ScreenType.ImprovedFullSurface: 8,
-        _ScreenType.AdvancedFullSurface: 10
-    }
-
-    _CostMap = {
-        # Constant costs
-        _ScreenType.BasicPanel: (200, True),
-        _ScreenType.ImprovedPanel: (500, True),
-        _ScreenType.AdvancedPanel: (2000, True),
-        # Per slot costs
-        _ScreenType.BasicFullSurface: (200, False),
-        _ScreenType.ImprovedFullSurface: (500, False),
-        _ScreenType.AdvancedFullSurface: (2000, False)
-    }
-
-    _FreeDefaultSuiteTypes = [_ScreenType.BasicPanel]
+    _FreeDefaultSuiteTypes = [_OptionLevel.Basic]
 
     def __init__(
             self,
@@ -1268,19 +1273,10 @@ class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Video Screen',
-            enumType=_VideoScreenSlotOptionImpl._ScreenType,
-            optionId='Type',
-            optionName='Type',
-            optionDescription='Specify the screen type.',
-            optionDefault=_VideoScreenSlotOptionImpl._ScreenType.BasicPanel,                      
-            minTLMap=_VideoScreenSlotOptionImpl._MinTLMap,
+            componentString='Video Screen Panel',
             incompatibleTypes=incompatibleTypes)
         
         self._isDefaultSuite = isDefaultSuite  
-
-    def isZeroSlot(self) -> bool:
-        return True         
 
     def updateStep(
             self,
@@ -1294,29 +1290,70 @@ class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
             step=step)
 
         screenType = self._enumOption.value()
-        assert(isinstance(screenType, _VideoScreenSlotOptionImpl._ScreenType))
+        assert(isinstance(screenType, _OptionLevel))
 
         if not self._isDefaultSuite or \
-            screenType not in _VideoScreenSlotOptionImpl._FreeDefaultSuiteTypes:
+            screenType not in _PanelVideoScreenSlotOptionImpl._FreeDefaultSuiteTypes:
 
-            cost, isConstantCost = _VideoScreenSlotOptionImpl._CostMap[screenType]
             cost = common.ScalarCalculation(
-                value=cost,
-                name='{type} {component} {wording}'.format(
+                value=_VideoScreenSlotOptionImpl._CostMap[screenType],
+                name='{type} {component} Cost'.format(
                     type=screenType.value,
-                    component=self.componentString(),
-                    wording='Cost' if isConstantCost else 'Cost Per Slot'))
-
-            if not isConstantCost:
-                cost = common.Calculator.multiply(
-                    lhs=cost,
-                    rhs=context.baseSlots(sequence=sequence),
-                    name='{type} {component} Cost'.format(
-                        type=screenType.value,
-                        component=self.componentString()))
+                    component=self.componentString()))
 
             step.setCredits(
                 credits=construction.ConstantModifier(value=cost))
+            
+class _SurfaceVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
+    """
+    - Basic Full Surface
+        - Min TL: 7
+        - Cost: Cr200 * Base Slots
+    - Improved Full Surface
+        - Min TL: 8
+        - Cost: Cr500 * Base Slots
+    - Advanced Full Surface
+        - Min TL: 10
+        - Cost: Cr2000 * Base Slots
+    """
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Video Screen Surface',
+            incompatibleTypes=incompatibleTypes)
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        screenType = self._enumOption.value()
+        assert(isinstance(screenType, _OptionLevel))
+
+        cost = common.ScalarCalculation(
+            value=_VideoScreenSlotOptionImpl._CostMap[screenType],
+            name='{type} {component} Cost Per Base Slot'.format(
+                type=screenType.value,
+                component=self.componentString()))
+
+        cost = common.Calculator.multiply(
+            lhs=cost,
+            rhs=context.baseSlots(sequence=sequence),
+            name='{type} {component} Cost'.format(
+                type=screenType.value,
+                component=self.componentString()))
+
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
         
 class _VoderSpeakerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -2023,9 +2060,6 @@ class _ThermalSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Cost: Cr500
     - Trait: IR Vision
     """
-    # TODO: According to p39 this is redundant if the robot has the TL 9 Light
-    # Intensifier Sensor or PRIS Sensor. I'm not sure if it's worth the hassle
-    # of adding that compatibility check
 
     def __init__(
             self,
@@ -4633,41 +4667,41 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Min TL: 8
         - Cost: Cr500 * Base Slots
         - Slots: 5% of Base Slots
-        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D Severity Brain Critical Hits
-        - Note: Anyone within 3 meters of the robot will take half the robots damage dice rounded down minis the robots armour
-            - I think half the robots damage dice rounded down is (Hits / 6) rounded down
-        - Note: The explosion has the Blast 3 trait
+        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D
+          Severity Brain Critical Hits (p53)
+        - Note: Anyone within 3 meters of the robot will take half the robots
+          damage dice rounded down minis the robots armour (p53)
+        - Note: The explosion has the Blast 3 trait (p53)
     - Offensive
         - Min TL: 6
         - Cost: Cr1000 * Base Slots
         - Slots: 10% of Base Slots
-        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D Severity Brain Critical Hits
-        - Note: Anyone within the blast radius will take half the robots damage dice rounded down
-            - NOTE: Unlike Defensive the robots armour doesn't reduce this
-        - Note: The explosion has the Blast <Robot Size> trait
+        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D
+          Severity Brain Critical Hits (p53)
+        - Note: Anyone within the blast radius will take half the robots damage
+          dice rounded down (p53)
+        - Note: The explosion has the Blast <Robot Size> trait (p53)
     - TDX
         - Min TL: 12
         - Cost: Cr1000 * Base Slots
         - Slots: 10% of Base Slots
-        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D Severity Brain Critical Hits
-        - Note: Anyone within the blast radius will take (Hits)D damage
-        - Note: The explosion has the Blast 15 trait
+        - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D
+          Severity Brain Critical Hits (p53)
+        - Note: Anyone within the blast radius will take (Hits)D damage (p53)
+        - Note: The explosion has the Blast 15 trait (p53)
     - Nuclear
         - Min TL: 12
         - Cost: Cr500000
         - Slots: 4
-        - Note: The robot is vaporised
-        - Note: Anyone within the blast radius will take 10DD damage
-        - Note: The explosion has the Blast 1000 and Radiation traits
+        - Note: The robot is vaporised (p53)
+        - Note: Anyone within the blast radius will take 10DD damage (p53)
+        - Note: The explosion has the Blast 1000 and Radiation traits (p53)
     """
     # NOTE: The costs for the self-destruct system (other than nuclear) is per
     # base slot rather than per slot used by the component. This is different
     # from most components but it is what the table heading on p53 has.
-    # TODO: Ideally the notes would calculate the value for things like Hits/3
-    # and fill it in the string but doing that is only possible if there are no
-    # other components that can increase the Hits value after this point
-    # TODO: Some of the notes talk about the robots damage dice, I'm not sure
-    # what that is referring to
+    # NOTE: THe final Hits and Armour (aka Protection) are known at this point
+    # so the notes can be filled in
 
     class _ExplosiveType(enum.Enum):
         Defensive = 'Defensive'
@@ -4682,16 +4716,24 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _ExplosiveType.Nuclear: 12
     }
 
-    # Data Structure: Cost Per Base Slot, Constant Cost, Base Slot Percentage, Constant Slots, Blast Trait (or None for Robot Size), Damage Note
+    # Data Structure: Cost Per Base Slot, Constant Cost, Base Slot Percentage, Constant Slots, Blast Trait (or None for Robot Size)
     _DataMap = {
-        _ExplosiveType.Defensive: ( 500,   None,    5, None,    3, 'Anyone within 3 meters of the robot will take half the robots damage dice rounded down minus the robots armour'),
-        _ExplosiveType.Offensive: (1000,   None,   10, None, None, 'Anyone within the blast radius will take half the robots damage dice rounded down'),
-        _ExplosiveType.TDX:       (1000,   None,   10, None,   15, 'Anyone within the blast radius will take (Hits)D damage'),
-        _ExplosiveType.Nuclear:   (None, 500000, None,    4, 1000, 'Anyone within the blast radius will take 10DD damage')
+        _ExplosiveType.Defensive: ( 500,   None,    5, None,    3),
+        _ExplosiveType.Offensive: (1000,   None,   10, None, None),
+        _ExplosiveType.TDX:       (1000,   None,   10, None,   15),
+        _ExplosiveType.Nuclear:   (None, 500000, None,    4, 1000)
     }
 
-    _StandardRobotDamageNote = 'The robot takes (Hits / 3) rounded up D damage plus 3 x 1D Severity Brain Critical Hits'
-    _NuclearRobotDamageNote = 'The robot is vaporised'
+    _ConventionalRobotDamageNote = 'The robot takes {damageDice}D damage plus 3 x 1D Severity Brain Critical Hits (p53)'
+    _NuclearRobotDamageNote = 'The robot is vaporised (p53)'
+
+    _DefensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {halfDamageDice}D-{robotArmour} damage (p53)'
+    _OffensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {twoThirdDamageDice}D damage (p53)'
+    _TDXExternalDamageNote = 'Anyone within {blastRadius}m will take {robotHits}D damage (p53)'
+    _NuclearExternalDamageNote = 'Anyone within {blastRadius}m will take 10DD damage (p53)'
+
+    _ConventionalBlastTraitNote = 'The blast has the Blast {blastTrait} trait (p53)'
+    _NuclearBlastTraitNote = 'The blast has the Blast {blastTrait} and Radiation traits (p53)'
 
     def __init__(
             self,
@@ -4724,7 +4766,7 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         explosiveType = self._enumOption.value()
         assert(isinstance(explosiveType, _SelfDestructSystemSlotOptionImpl._ExplosiveType))        
         
-        costPerBaseSlot, constantCost, slotsPercentage, constantSlots, blastTrait, damageNote = \
+        costPerBaseSlot, constantCost, slotsPercentage, constantSlots, blastTrait = \
             _SelfDestructSystemSlotOptionImpl._DataMap[explosiveType]
         
         componentName = f'{explosiveType.value} {self.componentString()}'
@@ -4770,13 +4812,46 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
             assert(isinstance(chassis, robots.Chassis))
             blastTrait = chassis.size()
 
+        hits = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Hits,
+            sequence=sequence)
+        hits = hits.value() if hits else 0
+        armour = context.attributeValue(
+            attributeId=robots.RobotAttributeId.Protection,
+            sequence=sequence)
+        armour = armour.value() if armour else 0
+
+        damageDice = math.ceil(hits / 3)
+
         if explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Nuclear:
             step.addNote(_SelfDestructSystemSlotOptionImpl._NuclearRobotDamageNote)
-            step.addNote(f'The blast has the Blast {blastTrait} and Radiation traits')
         else:
-            step.addNote(_SelfDestructSystemSlotOptionImpl._StandardRobotDamageNote)
-            step.addNote(f'The blast has the Blast {blastTrait} trait')
-        step.addNote(damageNote)
+            step.addNote(_SelfDestructSystemSlotOptionImpl._ConventionalRobotDamageNote.format(
+                damageDice=damageDice))
+
+        if explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Defensive:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._DefensiveExternalDamageNote.format(
+                blastRadius=blastTrait,
+                halfDamageDice=math.floor(damageDice / 2),
+                robotArmour=armour))
+        elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Offensive:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._OffensiveExternalDamageNote.format(
+                blastRadius=blastTrait,
+                twoThirdDamageDice=math.floor(damageDice * 2/3)))
+        elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.TDX:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._TDXExternalDamageNote.format(
+                blastRadius=blastTrait,
+                robotHits=hits))
+        elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Nuclear:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._NuclearExternalDamageNote.format(
+                blastRadius=blastTrait))
+
+        if explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Nuclear:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._NuclearBlastTraitNote.format(
+                blastTrait=blastTrait))
+        else:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._ConventionalBlastTraitNote.format(
+                blastTrait=blastTrait))
 
 class _StealthSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -5134,17 +5209,17 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Note: When using the RTG as the only power source the robots movement
         rate and STR are halved (rounded down), it suffers an Agility -2 modifier
         and it cannot use the Vehicle Speed Movement modification or Athletics
-        (endurance) skill.
+        (endurance) skill. (p55)
         - Note: The RTG can recharge the robots power pack in 3 * <Robot
         Endurance> hours if the robot remains stationary or performs minimal
-        activity
+        activity. (p56)
         - Note: After the <Half Life> years the RTG continues to provide
         power but it takes twice as long to recharge power packs and, when 
         using the RTG as the only power source, the robots movement rate and STR
-        are halved (rounded down) again.
-        - Note: The RTG stops providing power after <Half Life> * 2 years
+        are halved (rounded down) again. (p56)
+        - Note: The RTG stops providing power after <Half Life> * 2 years. (p56)
         - Requirement: If a robot installs two RTG or solar power sources, in
-        any combination, it is not subject to these performance degradations,
+        any combination, it is not subject to these STR and Agility degradations,
         provided both power sources are operating at full capability; in such
         cases the robot could support vehicle speed movement modifications
         - Requirement: Not compatible with No Internal Power slot option
@@ -5189,20 +5264,18 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # The rules say standard robot Endurance doesn't apply for BioRobots (p88),
     # so it would seem logical that something specifically for increasing
     # Endurance wouldn't apply, also it seems like a bad plan to put a nuclear
-    # power source inside a biological creature.    
-    # TODO: Something seems off with the logic of how power packs are recharged.
-    # The rules have it as 'three times a power pack’s endurance to fully
-    # recharge it'. As a lot of robots have an Endurance the 100s of hours, this
-    # can mean fully recharging their power packs can take a crazy length of time
-    # (1000s of hours). It's these values I'm currently displaying to the user
-    # but as they're so big it's pretty meaningless.
-    # I suspect it's not really intended for how long it will take to charge the
-    # robots battery from flat but how long to top it back up to full after doing
-    # X hours of work. This is probably a much more meaningful piece of info for
-    # the player. It would also mean there wouldn't be any values to calculate.    
-    # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
-    # I suspect this will need to be handled in finalisation, if that's the case
-    # then a few of the notes for this component will need handled there
+    # power source inside a biological creature.
+    # NOTE: As it takes 3 x the endurance of a power pack to fully recharge it,
+    # it means it can take a LONG time to fully recharge a robot (1000s of hours)
+    # especially if it has additional power packs. My assumption is the intention
+    # is this additional power source is more intended to keep the battery topped
+    # up rather than charge it from empty (i.e. it takes 3 times the length of
+    # time the robot is active for to recharge the power the activity drained).
+    # NOTE: I've handled the requirement about 2 RTG/Solar Power units negating
+    # the STR/Agility modifier by adding it to the note that covers the modifier.
+    # Ideally it would just be there if the robot had 2 required power units,
+    # but I don't think it's worth the faff to implement it when the note is good
+    # enough.
 
     class _Duration(enum.Enum):
         LongBasic = 'Basic Long Duration'
@@ -5238,10 +5311,10 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=2,
         name='RTG Failure Multiplier')
 
-    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill.'
-    _PowerPackRechargeNote = 'The robots power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity'
-    _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robots movement rate and STR are halved again (rounded down).'
-    _FailureNote = 'After {failure} years the RTG is no longer able to provide power to the robot'
+    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
+    _PowerPackRechargeNote = 'The robots power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity. (p56)'
+    _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robots movement rate and STR are halved again (rounded down). (p56)'
+    _FailureNote = 'After {failure} years the RTG is no longer able to provide power to the robot. (p56)'
 
     def __init__(
             self,
@@ -5372,9 +5445,9 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         half the successful attacks hit the panels unless they were specifically
         targetted at other components.
         - Requirement: If a robot installs two RTG or solar power sources, in
-        any combination, it is not subject to these performance degradations,
+        any combination, it is not subject to these STR and Agility degradations,
         provided both power sources are operating at full capability; in such
-        cases the robot could support vehicle speed movement modifications  
+        cases the robot could support vehicle speed movement modifications
         - Requirement: Not compatible with No Internal Power slot option     
         - Requirement: Not compatible with BioRobots 
     - Basic
@@ -5411,21 +5484,17 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # exactly scream biological robot. If the user was creating some kind of
     # photosynthetic BioRobot then the Solar Coating slot option would be more
     # appropriate (and it is compatible with BioRobots).    
-    # TODO: Something seems off with the logic of how power packs are recharged.
-    # The rules have it as a multiple of 'the hours as the power pack supplies',
-    # with the lost multiple being 2 for minimal activity. The max number of
-    # hours a robots power pack(s) can supply is its Endurance (i.e. how long
-    # it can operate for continuously). As a lot of robots have an Endurance the
-    # 100s of hours, this can mean fully recharging their power packs can take a
-    # crazy length of time (1000s of hours). It's these values I'm currently
-    # displaying to the user but I they're so big it's pretty meaningless.
-    # I suspect it's not really intended for how long it will take to charge the
-    # robots battery from flat but how long to top it back up to full after doing
-    # X hours of work. This is probably a much more meaningful piece of info for
-    # the player. It would also mean there wouldn't be any values to calculate.
-    # TODO: Handle requirement regarding multiple RTGs or RTG/Solar combination.
-    # I suspect this will need to be handled in finalisation, if that's the case
-    # then a few of the notes for this component will need handled there 
+    # NOTE: As it takes 3 x the endurance of a power pack to fully recharge it,
+    # it means it can take a LONG time to fully recharge a robot (1000s of hours)
+    # especially if it has additional power packs. My assumption is the intention
+    # is this additional power source is more intended to keep the battery topped
+    # up rather than charge it from empty (i.e. it takes 3 times the length of
+    # time the robot is active for to recharge the power the activity drained).
+    # NOTE: I've handled the requirement about 2 RTG/Solar Power units negating
+    # the STR/Agility modifier by adding it to the note that covers the modifier.
+    # Ideally it would just be there if the robot had 2 required power units,
+    # but I don't think it's worth the faff to implement it when the note is good
+    # enough.
 
 
     _MinTLMap = {
@@ -5474,13 +5543,13 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=10,
         name='Solar Power Panel Hit Percentage')
 
-    _OnlyPowerSourceNote = 'When relying on the solar panels as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill.'
-    _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight.'
-    _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours'
-    _LifespanNote = 'The solar panels stops providing power after {lifespan} years'
+    _OnlyPowerSourceNote = 'When relying on the Solar Power as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
+    _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
+    _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
+    _LifespanNote = 'The solar panels stops providing power after {lifespan} years. (p57)'
     _DeployedNote = 'When the solar panels are deployed the robots Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM} (p13).'
-    _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}.'
-    _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components.'
+    _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}. (p57)'
+    _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components. (p57)'
 
     def __init__(
             self,
@@ -6717,9 +6786,20 @@ class EncryptionModuleDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_EncryptionModuleSlotOptionImpl())
 
-class VideoScreenDefaultSuiteOption(DefaultSuiteOption):
+class PanelVideoScreenDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """    
     def __init__(self) -> None:
-        super().__init__(impl=_VideoScreenSlotOptionImpl(isDefaultSuite=True))
+        super().__init__(
+            impl=_PanelVideoScreenSlotOptionImpl(isDefaultSuite=True),
+            singular=False)
+        
+class SurfaceVideoScreenDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SurfaceVideoScreenSlotOptionImpl(),
+            singular=True)        
 
 class GeckoGrippersDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
@@ -7076,7 +7156,6 @@ class TightbeamCommunicatorSlotOption(SlotOption):
 
 class TransceiverSlotOption(SlotOption):
     """
-    - Requirement: Not compatible with default suite equivalent
     - Requirement: Multiple instances of the component can be added
     """    
     # NOTE: As this is not a singular component it's NOT incompatible with its
@@ -7090,15 +7169,24 @@ class TransceiverSlotOption(SlotOption):
         assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
         return self._impl.range()        
 
-class VideoScreenSlotOption(SlotOption):
+class PanelVideoScreenSlotOption(SlotOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """      
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_PanelVideoScreenSlotOptionImpl(isDefaultSuite=False),
+            singular=False)
+        
+class SurfaceVideoScreenSlotOption(SlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
     def __init__(self) -> None:
         super().__init__(
-            impl=_VideoScreenSlotOptionImpl(
-                isDefaultSuite=False,
-                incompatibleTypes=[VideoScreenDefaultSuiteOption]))
+            impl=_SurfaceVideoScreenSlotOptionImpl(
+                incompatibleTypes=[SurfaceVideoScreenDefaultSuiteOption]),
+            singular=True)        
 
 class VoderSpeakerSlotOption(SlotOption):
     """
