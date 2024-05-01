@@ -556,14 +556,30 @@ class ConstructionContext(object):
         stages = self.stages(sequence=sequence, phase=phase)
         modified = False
         for stage in stages:
-            if stage.components():
-                stage.clearComponents()
+            if self.clearStage(stage=stage, regenerate=False):
                 modified = True
 
         # If regenerate is specified always regenerate even if nothing was
         # modified
         if regenerate:
             self.regenerate()
+
+        return modified
+    
+    def clearStage(
+            self,
+            stage: construction.ConstructionStage,
+            regenerate: bool = True
+            ) -> bool: # True if modified, otherwise False
+        modified = False
+        if stage.components():
+            stage.clearComponents()
+            modified = True
+
+        # If regenerate is specified always regenerate even if nothing was
+        # modified
+        if regenerate:
+            self.regenerate()            
 
         return modified
 

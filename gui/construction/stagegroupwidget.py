@@ -1,9 +1,10 @@
 import app
 import construction
+import functools
 import gui
 import logging
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 class _ComponentConfigWidget(QtWidgets.QWidget):
     componentChanged = QtCore.pyqtSignal()
@@ -472,6 +473,14 @@ class _StageWidget(QtWidgets.QWidget):
 
     _RowSpacing = 10
 
+    # This is the count of static widgets/layouts that are always present and
+    # should be kept at the bottom of the main layout, below the the dynamic
+    # component widgets. Currently this is just the layout containing the
+    # add/remove all buttons which just takes up a single row
+    _DynamicModeStaticRowCount = 1
+
+    _RemoveAllConfirmationNoShowStateKey = 'RemoveAllComponentsConfirmation'
+
     def __init__(
             self,
             context: construction.ConstructionContext,
@@ -491,19 +500,36 @@ class _StageWidget(QtWidgets.QWidget):
         self._currentComponents: typing.Dict[_ComponentConfigWidget, construction.ComponentInterface] = {}
         
         self._addButton = None
+        self._addMenu = None
+        self._removeAllButton = None
         if self._dynamic:
-            self._addButton = QtWidgets.QPushButton('Add Component')
+            self._addMenu = QtWidgets.QMenu()
+            self._addMenu.aboutToShow.connect(self._addMenuSetup)
+
+            self._addButton = gui.ToolButtonEx(
+                text='Add',
+                isPushButton=True)
             self._addButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            self._addButton.clicked.connect(self._addClicked)
+            self._addButton.setPopupMode(
+                QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+            self._addButton.setMenu(self._addMenu)
+            self._addButton.clicked.connect(self._addButtonClicked)
+
+            self._removeAllButton = QtWidgets.QPushButton('Remove All')
+            self._removeAllButton.clicked.connect(self._removeAllButtonClicked)
 
         self._layout = QtWidgets.QVBoxLayout()
         self._layout.setSpacing(
             int(_StageWidget._RowSpacing * app.Config.instance().interfaceScale()))
         self._layout.setContentsMargins(0, 0, 0, 0)
-        if self._addButton:
-            self._layout.addWidget(self._addButton)
+        if self._dynamic:
+            buttonLayout = QtWidgets.QHBoxLayout()
+            buttonLayout.addWidget(self._addButton)
+            buttonLayout.addWidget(self._removeAllButton)
+            buttonLayout.addStretch()
+            self._layout.addLayout(buttonLayout)            
 
         self.setLayout(self._layout)
 
@@ -516,8 +542,11 @@ class _StageWidget(QtWidgets.QWidget):
         return self._stage
 
     def teardown(self) -> None:
+        if self._addMenu:
+            self._addMenu.aboutToShow.disconnect(self._addMenuSetup)
+            self._addMenu.aboutToHide.disconnect(self._addMenuTeardown)
         if self._addButton:
-            self._addButton.clicked.disconnect(self._addClicked)
+            self._addButton.clicked.disconnect(self._addButtonClicked)
         for widget in list(self._currentComponents.keys()):
             self._removeComponentWidget(widget)
 
@@ -551,6 +580,9 @@ class _StageWidget(QtWidgets.QWidget):
                         # infinite loop
                         break
 
+        if self._removeAllButton:
+            self._removeAllButton.setEnabled(len(self._currentComponents) > 0)
+
     def isPointless(self) -> bool:
         if self._dynamic:
             if len(self._currentComponents) > 0:
@@ -582,8 +614,12 @@ class _StageWidget(QtWidgets.QWidget):
             self,
             component: typing.Optional[construction.ComponentInterface] = None
             ) -> _ComponentConfigWidget:
+        row = self._layout.count()
+        if self._dynamic:
+            row -= _StageWidget._DynamicModeStaticRowCount
+
         return self._insertComponentWidget(
-            row=self._layout.count() - 1,
+            row=row,
             component=component)
 
     def _insertComponentWidget(
@@ -614,7 +650,7 @@ class _StageWidget(QtWidgets.QWidget):
             requirement=requirement,
             deletable=self._dynamic)
         componentWidget.componentChanged.connect(self._componentChanged)
-        componentWidget.deleteClicked.connect(self._deleteClicked)
+        componentWidget.deleteClicked.connect(self._deleteComponentClicked)
 
         self._layout.insertWidget(row, componentWidget)
         self._currentComponents[componentWidget] = component
@@ -629,7 +665,7 @@ class _StageWidget(QtWidgets.QWidget):
         del self._currentComponents[widget]
 
         widget.componentChanged.disconnect(self._componentChanged)
-        widget.deleteClicked.disconnect(self._deleteClicked)
+        widget.deleteClicked.disconnect(self._deleteComponentClicked)
 
         widget.teardown()
         widget.setParent(None)
@@ -706,8 +742,21 @@ class _StageWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+            
+    def _clearConstruction(self) -> None:
+        try:
+            self._context.clearStage(
+                stage=self._stage,
+                regenerate=True)
+        except Exception as ex:
+            message = 'Failed to remove all components'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)        
 
-    def _addClicked(self) -> None:
+    def _addButtonClicked(self) -> None:
         widget = self._addComponentWidget()
         if not widget:
             gui.MessageBoxEx.information(
@@ -718,7 +767,38 @@ class _StageWidget(QtWidgets.QWidget):
         self._updateAllComponentWidgets(skipWidget=widget)
         self.stageChanged.emit(self._stage)
 
-    def _deleteClicked(self) -> None:
+    def _addMenuSetup(self) -> None:
+        self._addMenu.clear()
+
+        components = self._context.findCompatibleComponents(stage=self._stage)
+        if components:
+            for component in components:
+                action = self._addMenu.addAction(component.componentString())
+                action.triggered.connect(functools.partial(self._addMenuClicked, component))
+        else:
+            action = self._addMenu.addAction(f'No Components')
+            action.setEnabled(False)
+
+    def _addMenuTeardown(self) -> None:
+        for action in self._addMenu.actions():
+            action.triggered.disconnect()
+        self._addMenu.clear()
+
+    def _addMenuClicked(
+            self,
+            component: construction.ComponentInterface
+            ) -> None:
+        widget = self._addComponentWidget(component=component)
+        if not widget:
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text='Unable to add component')
+            return
+        self._updateConstruction(addComponent=widget.currentComponent())
+        self._updateAllComponentWidgets(skipWidget=widget)
+        self.stageChanged.emit(self._stage)
+
+    def _deleteComponentClicked(self) -> None:
         widget = self.sender()
         assert(isinstance(widget, _ComponentConfigWidget))
         self._removeComponentWidget(widget=widget)
@@ -737,6 +817,23 @@ class _StageWidget(QtWidgets.QWidget):
         self._currentComponents[widget] = newComponent
 
         self._updateAllComponentWidgets(skipWidget=widget)
+        self.stageChanged.emit(self._stage)
+
+    def _removeAllButtonClicked(self) -> None:
+        if not self._currentComponents:
+            return # Nothing to do
+
+        answer = gui.AutoSelectMessageBox.question(
+            parent=self,
+            text=f'Are you sure you want to remove all {self._stage.name()} components?',
+            stateKey=_StageWidget._RemoveAllConfirmationNoShowStateKey)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return        
+
+        for widget in list(self._currentComponents):
+            self._removeComponentWidget(widget=widget)
+        self._clearConstruction()
+        self._removeAllButton.setEnabled(False)
         self.stageChanged.emit(self._stage)
 
 class StageGroupWidget(QtWidgets.QWidget):

@@ -168,6 +168,67 @@ class CheckBoxEx(QtWidgets.QCheckBox):
 
         self.setChecked(stream.readBool())
         return True
+    
+class ToolButtonEx(QtWidgets.QToolButton):
+    # When replicating the sizing of a QPushButton the calculated size returned
+    # by sizeFromContents is 1 pixel larger in height than the default QPushButton
+    # sizeHint implementation. This modifier is applied to account for it.
+    # Interestingly when I tried the same thing from a QPushButton derived class
+    # sizeFromContents also returned a size 1 pixel larger than height than its
+    # default sizeHint implementation generated so I'm not sure what is going on.
+    _SizeHintHeightModifier = -1
+
+    def __init__(
+            self,
+            text: typing.Optional[str] = None,
+            isPushButton: bool = False,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._isPushButton = isPushButton
+        if text != None:
+            self.setText(text)
+
+    # By default a QToolButton will appear significantly smaller than a
+    # QPushButton with the same text due to the two controls using different
+    # padding. This code modifies sizeHint to replicate the QPushButton sizing
+    # behaviour.
+    # https://forum.qt.io/topic/84657/qtoolbutton-as-big-as-qpushbutton/5
+    def sizeHint(self) -> QtCore.QSize:
+        baseHint = super().sizeHint()
+        if not self._isPushButton:
+            return baseHint
+
+        btnOpt = QtWidgets.QStyleOptionToolButton()
+        self.initStyleOption(btnOpt)
+        h = max(0, btnOpt.iconSize.height())
+        w = btnOpt.iconSize.width() + 4
+        fntSize = self.fontMetrics().size(
+            QtCore.Qt.TextFlag.TextShowMnemonic,
+            btnOpt.text)
+        w += fntSize.width()
+        h = max(h, fntSize.height())
+
+        opt = QtWidgets.QStyleOptionButton()
+        opt.direction = btnOpt.direction
+        opt.features = QtWidgets.QStyleOptionButton.ButtonFeature.None_
+        if btnOpt.features & QtWidgets.QStyleOptionToolButton.ToolButtonFeature.Menu:
+            opt.features |= QtWidgets.QStyleOptionButton.ButtonFeature.HasMenu
+        opt.fontMetrics = btnOpt.fontMetrics
+        opt.icon = btnOpt.icon
+        opt.iconSize = btnOpt.iconSize
+        opt.palette = btnOpt.palette
+        opt.rect = btnOpt.rect
+        opt.state = btnOpt.state
+        opt.styleObject = btnOpt.styleObject
+        opt.text = btnOpt.text
+        pushSize = self.style().sizeFromContents(
+            QtWidgets.QStyle.ContentsType.CT_PushButton,
+            opt,
+            QtCore.QSize(w, max(h + ToolButtonEx._SizeHintHeightModifier, 0)),
+            self)
+        return baseHint.expandedTo(pushSize); 
 
 class RadioButtonEx(QtWidgets.QRadioButton):
     _StateVersion = 'RadioButtonEx_v1'
