@@ -505,6 +505,7 @@ class _StageWidget(QtWidgets.QWidget):
         if self._dynamic:
             self._addMenu = QtWidgets.QMenu()
             self._addMenu.aboutToShow.connect(self._addMenuSetup)
+            self._addMenu.aboutToHide.connect(self._addMenuTeardown)
 
             self._addButton = gui.ToolButtonEx(
                 text='Add',
