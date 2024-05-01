@@ -505,7 +505,6 @@ class _StageWidget(QtWidgets.QWidget):
         if self._dynamic:
             self._addMenu = QtWidgets.QMenu()
             self._addMenu.aboutToShow.connect(self._addMenuSetup)
-            self._addMenu.aboutToHide.connect(self._addMenuTeardown)
 
             self._addButton = gui.ToolButtonEx(
                 text='Add',
@@ -544,8 +543,9 @@ class _StageWidget(QtWidgets.QWidget):
 
     def teardown(self) -> None:
         if self._addMenu:
+            for action in self._addMenu.actions():
+                action.triggered.disconnect()
             self._addMenu.aboutToShow.disconnect(self._addMenuSetup)
-            self._addMenu.aboutToHide.disconnect(self._addMenuTeardown)
         if self._addButton:
             self._addButton.clicked.disconnect(self._addButtonClicked)
         for widget in list(self._currentComponents.keys()):
@@ -769,6 +769,8 @@ class _StageWidget(QtWidgets.QWidget):
         self.stageChanged.emit(self._stage)
 
     def _addMenuSetup(self) -> None:
+        for action in self._addMenu.actions():
+            action.triggered.disconnect()        
         self._addMenu.clear()
 
         components = self._context.findCompatibleComponents(stage=self._stage)
@@ -779,11 +781,6 @@ class _StageWidget(QtWidgets.QWidget):
         else:
             action = self._addMenu.addAction(f'No Components')
             action.setEnabled(False)
-
-    def _addMenuTeardown(self) -> None:
-        for action in self._addMenu.actions():
-            action.triggered.disconnect()
-        self._addMenu.clear()
 
     def _addMenuClicked(
             self,
