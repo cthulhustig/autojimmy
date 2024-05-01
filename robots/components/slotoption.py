@@ -1253,7 +1253,7 @@ class _VideoScreenSlotOptionImpl(_EnumSelectSlotOptionImpl):
     def isZeroSlot(self) -> bool:
         return True
 
-class _PanelVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
+class _VideoScreenPanelSlotOptionImpl(_VideoScreenSlotOptionImpl):
     """
     Basic Panel
         - Min TL: 7
@@ -1273,7 +1273,7 @@ class _PanelVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Video Screen Panel',
+            componentString='Video Screen - Panel',
             incompatibleTypes=incompatibleTypes)
         
         self._isDefaultSuite = isDefaultSuite  
@@ -1293,7 +1293,7 @@ class _PanelVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
         assert(isinstance(screenType, _OptionLevel))
 
         if not self._isDefaultSuite or \
-            screenType not in _PanelVideoScreenSlotOptionImpl._FreeDefaultSuiteTypes:
+            screenType not in _VideoScreenPanelSlotOptionImpl._FreeDefaultSuiteTypes:
 
             cost = common.ScalarCalculation(
                 value=_VideoScreenSlotOptionImpl._CostMap[screenType],
@@ -1304,7 +1304,7 @@ class _PanelVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
             step.setCredits(
                 credits=construction.ConstantModifier(value=cost))
             
-class _SurfaceVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
+class _VideoScreenSurfaceSlotOptionImpl(_VideoScreenSlotOptionImpl):
     """
     - Basic Full Surface
         - Min TL: 7
@@ -1322,7 +1322,7 @@ class _SurfaceVideoScreenSlotOptionImpl(_VideoScreenSlotOptionImpl):
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Video Screen Surface',
+            componentString='Video Screen - Surface',
             incompatibleTypes=incompatibleTypes)
 
     def updateStep(
@@ -2604,7 +2604,7 @@ class _CleaningEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         
         step.addNote(f'Can clean {speed} square meters per hour')
 
-class _DomesticCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
+class _CleaningEquipmentDomesticSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
     """
     Small
     - Min TL: 5
@@ -2633,11 +2633,11 @@ class _DomesticCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImpl)
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Domestic Cleaning Equipment',
-            dataMap=_DomesticCleaningEquipmentSlotOptionImpl._DataMap,                  
+            componentString='Cleaning Equipment - Domestic',
+            dataMap=_CleaningEquipmentDomesticSlotOptionImpl._DataMap,                  
             incompatibleTypes=incompatibleTypes)
         
-class _IndustrialCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
+class _CleaningEquipmentIndustrialSlotOptionImpl(_CleaningEquipmentSlotOptionImpl):
     """
     Small
     - Min TL: 5
@@ -2666,8 +2666,8 @@ class _IndustrialCleaningEquipmentSlotOptionImpl(_CleaningEquipmentSlotOptionImp
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Industrial Cleaning Equipment',
-            dataMap=_IndustrialCleaningEquipmentSlotOptionImpl._DataMap,                  
+            componentString='Cleaning Equipment - Industrial',
+            dataMap=_CleaningEquipmentIndustrialSlotOptionImpl._DataMap,                  
             incompatibleTypes=incompatibleTypes)
         
 class _HighFidelitySoundSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
@@ -6691,84 +6691,18 @@ class DefaultSuiteOption(robots.DefaultSuiteOptionInterface):
             sequence=sequence,
             context=context,
             typeString=self.typeString())
-        
-# NOTE: The order of these components (at least the first 5) is important as
-# they are the canonical default suite options (p29). They need to be defined
-# first so contraction logic will select them as the defaults for the stage
-class VisualSpectrumSensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VisualSpectrumSensorSlotOptionImpl(isDefaultSuite=True))         
 
-class VoderSpeakerDefaultSuiteOption(DefaultSuiteOption):
+class AtmosphericSensorDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(impl=_VoderSpeakerSlotOptionImpl(isDefaultSuite=True))
-
-class AuditorySensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_AuditorySensorSlotOptionImpl(isDefaultSuite=True))  
-
-class WirelessDataLinkDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_WirelessDataLinkSlotOptionImpl(isDefaultSuite=True))
-
-class TransceiverDefaultSuiteOption(DefaultSuiteOption):
-    """
-    - Requirement: Multiple instances of the component can be added
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_TransceiverSlotOptionImpl(isDefaultSuite=True),
-            singular=False)
-
-    def range(self) -> int:
-        assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
-        return self._impl.range()
-
-class VisualConcealmentDefaultSuiteOption(DefaultSuiteOption):
-    """
-    - Requirement: Not compatible with Reflect Armour
-    - Requirement: Not compatible with Solar Coating
-    """
-    def __init__(self) -> None:
-        super().__init__(impl=_VisualConcealmentSlotOptionImpl(
-            incompatibleTypes=[ReflectArmourDefaultSuiteOption,
-                               SolarCoatingDefaultSuiteOption]))
+        super().__init__(impl=_AtmosphericSensorSlotOptionImpl())
 
 class AudibleConcealmentDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_AudibleConcealmentSlotOptionImpl())
 
-class OlfactoryConcealmentDefaultSuiteOption(DefaultSuiteOption):
+class AuditorySensorDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(impl=_OlfactoryConcealmentSlotOptionImpl())
-
-class HostileEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_HostileEnvironmentProtectionSlotOptionImpl())  
-
-class ReflectArmourDefaultSuiteOption(DefaultSuiteOption):
-    """
-    - Requirement: Not compatible with Visual Concealment
-    - Requirement: Not compatible with Solar Coating
-    """    
-    def __init__(self) -> None:
-        super().__init__(impl=_ReflectArmourSlotOptionImpl(
-            incompatibleTypes=[VisualConcealmentDefaultSuiteOption,
-                               SolarCoatingDefaultSuiteOption]))
-
-class SolarCoatingDefaultSuiteOption(DefaultSuiteOption):
-    """
-    - Requirement: Not compatible with Visual Concealment
-    - Requirement: Not compatible with Reflect Armour
-    """         
-    def __init__(self) -> None:
-        super().__init__(impl=_SolarCoatingSlotOptionImpl(
-            incompatibleTypes=[VisualConcealmentDefaultSuiteOption,
-                               ReflectArmourDefaultSuiteOption])) 
-
-class VacuumEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_VacuumEnvironmentProtectionSlotOptionImpl()) 
+        super().__init__(impl=_AuditorySensorSlotOptionImpl(isDefaultSuite=True))  
 
 class DroneInterfaceDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
@@ -6786,24 +6720,21 @@ class EncryptionModuleDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_EncryptionModuleSlotOptionImpl())
 
-class PanelVideoScreenDefaultSuiteOption(DefaultSuiteOption):
-    """
-    - Requirement: Multiple instances of the component can be added
-    """    
+class EnvironmentalProcessorDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(
-            impl=_PanelVideoScreenSlotOptionImpl(isDefaultSuite=True),
-            singular=False)
-        
-class SurfaceVideoScreenDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SurfaceVideoScreenSlotOptionImpl(),
-            singular=True)        
+        super().__init__(impl=_EnvironmentalProcessorSlotOptionImpl())
 
 class GeckoGrippersDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_GeckoGrippersSlotOptionImpl())
+        
+class GeigerCounterDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_GeigerCounterSlotOptionImpl())
+
+class HostileEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_HostileEnvironmentProtectionSlotOptionImpl())  
 
 class InjectorNeedleDefaultSuiteOption(DefaultSuiteOption):
     """
@@ -6820,17 +6751,53 @@ class LaserDesignatorDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_LaserDesignatorSlotOptionImpl())
 
+class LightIntensifierSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_LightIntensifierSensorSlotOptionImpl())     
+
 class MagneticGrippersDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_MagneticGrippersSlotOptionImpl())
+
+class OlfactoryConcealmentDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_OlfactoryConcealmentSlotOptionImpl())
+
+class OlfactorySensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_OlfactorySensorSlotOptionImpl())
 
 class ParasiticLinkDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_ParasiticLinkSlotOptionImpl())
 
+class PRISSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_PRISSensorSlotOptionImpl())       
+
+class ReflectArmourDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Not compatible with Visual Concealment
+    - Requirement: Not compatible with Solar Coating
+    """    
+    def __init__(self) -> None:
+        super().__init__(impl=_ReflectArmourSlotOptionImpl(
+            incompatibleTypes=[VisualConcealmentDefaultSuiteOption,
+                               SolarCoatingDefaultSuiteOption]))
+        
 class SelfMaintenanceEnhancementDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(impl=_SelfMaintenanceEnhancementSlotOptionImpl(isDefaultSuite=True))
+
+class SolarCoatingDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Not compatible with Visual Concealment
+    - Requirement: Not compatible with Reflect Armour
+    """         
+    def __init__(self) -> None:
+        super().__init__(impl=_SolarCoatingSlotOptionImpl(
+            incompatibleTypes=[VisualConcealmentDefaultSuiteOption,
+                               ReflectArmourDefaultSuiteOption])) 
 
 class StingerDefaultSuiteOption(DefaultSuiteOption):
     """
@@ -6841,37 +6808,66 @@ class StingerDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_StingerSlotOptionImpl(),
-            singular=False)
+            singular=False)        
 
-class AtmosphericSensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_AtmosphericSensorSlotOptionImpl())
-
-class EnvironmentalProcessorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_EnvironmentalProcessorSlotOptionImpl())
-        
-class GeigerCounterDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_GeigerCounterSlotOptionImpl())
-
-class LightIntensifierSensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_LightIntensifierSensorSlotOptionImpl())     
-
-class OlfactorySensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_OlfactorySensorSlotOptionImpl())
-
-class PRISSensorDefaultSuiteOption(DefaultSuiteOption):
-    def __init__(self) -> None:
-        super().__init__(impl=_PRISSensorSlotOptionImpl())       
 
 class ThermalSensorDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(impl=_ThermalSensorSlotOptionImpl())  
+        super().__init__(impl=_ThermalSensorSlotOptionImpl())
 
+class TransceiverDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_TransceiverSlotOptionImpl(isDefaultSuite=True),
+            singular=False)
 
+    def range(self) -> int:
+        assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
+        return self._impl.range()        
+
+class VacuumEnvironmentProtectionDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VacuumEnvironmentProtectionSlotOptionImpl()) 
+
+class VideoScreenPanelDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VideoScreenPanelSlotOptionImpl(isDefaultSuite=True),
+            singular=False)
+        
+class VideoScreenSurfaceDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VideoScreenSurfaceSlotOptionImpl(),
+            singular=True)
+        
+class VisualConcealmentDefaultSuiteOption(DefaultSuiteOption):
+    """
+    - Requirement: Not compatible with Reflect Armour
+    - Requirement: Not compatible with Solar Coating
+    """
+    def __init__(self) -> None:
+        super().__init__(impl=_VisualConcealmentSlotOptionImpl(
+            incompatibleTypes=[ReflectArmourDefaultSuiteOption,
+                               SolarCoatingDefaultSuiteOption])) 
+
+class VisualSpectrumSensorDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VisualSpectrumSensorSlotOptionImpl(isDefaultSuite=True))         
+
+class VoderSpeakerDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_VoderSpeakerSlotOptionImpl(isDefaultSuite=True))
+
+class WirelessDataLinkDefaultSuiteOption(DefaultSuiteOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_WirelessDataLinkSlotOptionImpl(isDefaultSuite=True))
 
 
 #   █████████  ████            █████          ███████               █████     ███                             
@@ -6957,16 +6953,116 @@ class SlotOption(robots.SlotOptionInterface):
             context=context,
             typeString=self.typeString())
 
-# TODO: This list needs split into groups like the spreadsheet (chassis,
-# medical etc). Each one should be it's own own stage. The individual
-# groups should be ordered alphabetically
+
+#    █████████  █████                                 ███         
+#   ███░░░░░███░░███                                 ░░░          
+#  ███     ░░░  ░███████    ██████    █████   █████  ████   █████ 
+# ░███          ░███░░███  ░░░░░███  ███░░   ███░░  ░░███  ███░░  
+# ░███          ░███ ░███   ███████ ░░█████ ░░█████  ░███ ░░█████ 
+# ░░███     ███ ░███ ░███  ███░░███  ░░░░███ ░░░░███ ░███  ░░░░███
+#  ░░█████████  ████ █████░░████████ ██████  ██████  █████ ██████ 
+#   ░░░░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░░  ░░░░░░  ░░░░░ ░░░░░░  
+
+class ChassisSlotOption(SlotOption):
+    pass
    
-class ActiveCamouflageSlotSlotOption(SlotOption):
+class ActiveCamouflageSlotSlotOption(ChassisSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ActiveCamouflageSlotOptionImpl())
+        
+class AudibleConcealmentSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AudibleConcealmentSlotOptionImpl(
+                incompatibleTypes=[AudibleConcealmentDefaultSuiteOption]))
+        
+class CorrosiveEnvironmentProtectionSlotOption(ChassisSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_CorrosiveEnvironmentProtectionSlotOptionImpl())   
 
-class VisualConcealmentSlotOption(SlotOption):
+class HostileEnvironmentProtectionSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_HostileEnvironmentProtectionSlotOptionImpl(
+                incompatibleTypes=[HostileEnvironmentProtectionDefaultSuiteOption]))
+        
+class InsidiousEnvironmentProtectionSlotOption(ChassisSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_InsidiousEnvironmentProtectionSlotOptionImpl())
+
+class OlfactoryConcealmentSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_OlfactoryConcealmentSlotOptionImpl(
+                incompatibleTypes=[OlfactoryConcealmentDefaultSuiteOption]))
+        
+class RadiationEnvironmentProtectionSlotOption(ChassisSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_RadiationEnvironmentProtectionSlotOptionImpl())
+
+class ReflectArmourSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    - Requirement: Not compatible with Visual Concealment
+    - Requirement: not compatible with Solar Coating
+    """     
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ReflectArmourSlotOptionImpl(
+                incompatibleTypes=[ReflectArmourDefaultSuiteOption,
+                                   VisualConcealmentDefaultSuiteOption,
+                                   SolarCoatingDefaultSuiteOption,
+                                   VisualConcealmentSlotOption,
+                                   SolarCoatingSlotOption]))
+
+class SelfRepairingChassisSlotOption(ChassisSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SelfRepairingChassisSlotOptionImpl())   
+
+class SolarCoatingSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    - Requirement: Not compatible with Visual Concealment
+    - Requirement: Not compatible with Reflect Armour
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SolarCoatingSlotOptionImpl(
+                incompatibleTypes=[SolarCoatingDefaultSuiteOption,
+                                   VisualConcealmentDefaultSuiteOption,
+                                   ReflectArmourDefaultSuiteOption,
+                                   VisualConcealmentSlotOption,
+                                   ReflectArmourSlotOption]))
+
+class SubmersibleEnvironmentProtectionSlotOption(ChassisSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_SubmersibleEnvironmentProtectionSlotOptionImpl())    
+
+class VacuumEnvironmentProtectionSlotOption(ChassisSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VacuumEnvironmentProtectionSlotOptionImpl(
+                incompatibleTypes=[VacuumEnvironmentProtectionDefaultSuiteOption]))
+
+class VisualConcealmentSlotOption(ChassisSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     - Requirement: Not compatible with Reflect Armour
@@ -6981,108 +7077,20 @@ class VisualConcealmentSlotOption(SlotOption):
                                    ReflectArmourSlotOption,
                                    SolarCoatingSlotOption]))
 
-class AudibleConcealmentSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AudibleConcealmentSlotOptionImpl(
-                incompatibleTypes=[AudibleConcealmentDefaultSuiteOption]))
 
-class OlfactoryConcealmentSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_OlfactoryConcealmentSlotOptionImpl(
-                incompatibleTypes=[OlfactoryConcealmentDefaultSuiteOption]))
+#    █████████                                                                  ███                      █████     ███                     
+#   ███░░░░░███                                                                ░░░                      ░░███     ░░░                      
+#  ███     ░░░   ██████  █████████████   █████████████   █████ ████ ████████   ████   ██████   ██████   ███████   ████   ██████  ████████  
+# ░███          ███░░███░░███░░███░░███ ░░███░░███░░███ ░░███ ░███ ░░███░░███ ░░███  ███░░███ ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███ 
+# ░███         ░███ ░███ ░███ ░███ ░███  ░███ ░███ ░███  ░███ ░███  ░███ ░███  ░███ ░███ ░░░   ███████   ░███     ░███ ░███ ░███ ░███ ░███ 
+# ░░███     ███░███ ░███ ░███ ░███ ░███  ░███ ░███ ░███  ░███ ░███  ░███ ░███  ░███ ░███  ███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███ 
+#  ░░█████████ ░░██████  █████░███ █████ █████░███ █████ ░░████████ ████ █████ █████░░██████ ░░████████  ░░█████  █████░░██████  ████ █████
+#   ░░░░░░░░░   ░░░░░░  ░░░░░ ░░░ ░░░░░ ░░░░░ ░░░ ░░░░░   ░░░░░░░░ ░░░░ ░░░░░ ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ 
 
-class CorrosiveEnvironmentProtectionSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_CorrosiveEnvironmentProtectionSlotOptionImpl())
+class CommunicationSlotOption(SlotOption):
+    pass
 
-class HostileEnvironmentProtectionSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_HostileEnvironmentProtectionSlotOptionImpl(
-                incompatibleTypes=[HostileEnvironmentProtectionDefaultSuiteOption]))
-
-class InsidiousEnvironmentProtectionSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_InsidiousEnvironmentProtectionSlotOptionImpl())
-        
-class RadiationEnvironmentProtectionSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_RadiationEnvironmentProtectionSlotOptionImpl())
-
-class ReflectArmourSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    - Requirement: Not compatible with Visual Concealment
-    - Requirement: not compatible with Solar Coating
-    """     
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ReflectArmourSlotOptionImpl(
-                incompatibleTypes=[ReflectArmourDefaultSuiteOption,
-                                   VisualConcealmentDefaultSuiteOption,
-                                   SolarCoatingDefaultSuiteOption,
-                                   VisualConcealmentSlotOption,
-                                   SolarCoatingSlotOption]))
-        
-class SelfRepairingChassisSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SelfRepairingChassisSlotOptionImpl())        
-
-class SolarCoatingSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    - Requirement: Not compatible with Visual Concealment
-    - Requirement: Not compatible with Reflect Armour
-    """
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SolarCoatingSlotOptionImpl(
-                incompatibleTypes=[SolarCoatingDefaultSuiteOption,
-                                   VisualConcealmentDefaultSuiteOption,
-                                   ReflectArmourDefaultSuiteOption,
-                                   VisualConcealmentSlotOption,
-                                   ReflectArmourSlotOption]))
-        
-class SubmersibleEnvironmentProtectionSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SubmersibleEnvironmentProtectionSlotOptionImpl())      
-
-class VacuumEnvironmentProtectionSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VacuumEnvironmentProtectionSlotOptionImpl(
-                incompatibleTypes=[VacuumEnvironmentProtectionDefaultSuiteOption]))
-        
-class DomesticCleaningEquipmentSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_DomesticCleaningEquipmentSlotOptionImpl())
-        
-class IndustrialCleaningEquipmentSlotOption(SlotOption):
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_IndustrialCleaningEquipmentSlotOptionImpl())        
-
-class DroneInterfaceSlotOption(SlotOption):
+class DroneInterfaceSlotOption(CommunicationSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """
@@ -7099,7 +7107,7 @@ class DroneInterfaceSlotOption(SlotOption):
         dependencies.append(TransceiverSlotOption)
         return dependencies
 
-class EncryptionModuleSlotOption(SlotOption):
+class EncryptionModuleSlotOption(CommunicationSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
@@ -7108,12 +7116,12 @@ class EncryptionModuleSlotOption(SlotOption):
             impl=_EncryptionModuleSlotOptionImpl(
                 incompatibleTypes=[EncryptionModuleDefaultSuiteOption]))
         
-class HighFidelitySoundSystemSlotOption(SlotOption):
+class HighFidelitySoundSystemSlotOption(CommunicationSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_HighFidelitySoundSystemSlotOptionImpl())
         
-class RoboticDroneControllerSlotOption(SlotOption):
+class RoboticDroneControllerSlotOption(CommunicationSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_RoboticDroneControllerSlotOptionImpl())
@@ -7123,9 +7131,9 @@ class RoboticDroneControllerSlotOption(SlotOption):
     def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
         dependencies = super().orderAfter()
         dependencies.append(TransceiverSlotOption)
-        return dependencies        
-        
-class SatelliteUplinkSlotOption(SlotOption):
+        return dependencies 
+
+class SatelliteUplinkSlotOption(CommunicationSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_SatelliteUplinkSlotOptionImpl())
@@ -7137,7 +7145,7 @@ class SatelliteUplinkSlotOption(SlotOption):
         dependencies.append(TransceiverSlotOption)
         return dependencies
         
-class SwarmControllerSlotOption(SlotOption):
+class SwarmControllerSlotOption(CommunicationSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_SwarmControllerSlotOptionImpl())
@@ -7149,12 +7157,12 @@ class SwarmControllerSlotOption(SlotOption):
         dependencies.append(TransceiverSlotOption)
         return dependencies        
         
-class TightbeamCommunicatorSlotOption(SlotOption):
+class TightbeamCommunicatorSlotOption(CommunicationSlotOption):
     def __init__(self) -> None:
         super().__init__(
-            impl=_TightbeamCommunicatorSlotOptionImpl())        
+            impl=_TightbeamCommunicatorSlotOptionImpl())
 
-class TransceiverSlotOption(SlotOption):
+class TransceiverSlotOption(CommunicationSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7169,26 +7177,26 @@ class TransceiverSlotOption(SlotOption):
         assert(isinstance(self._impl, _TransceiverSlotOptionImpl))
         return self._impl.range()        
 
-class PanelVideoScreenSlotOption(SlotOption):
+class VideoScreenPanelSlotOption(CommunicationSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """      
     def __init__(self) -> None:
         super().__init__(
-            impl=_PanelVideoScreenSlotOptionImpl(isDefaultSuite=False),
+            impl=_VideoScreenPanelSlotOptionImpl(isDefaultSuite=False),
             singular=False)
         
-class SurfaceVideoScreenSlotOption(SlotOption):
+class VideoScreenSurfaceSlotOption(CommunicationSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
     def __init__(self) -> None:
         super().__init__(
-            impl=_SurfaceVideoScreenSlotOptionImpl(
-                incompatibleTypes=[SurfaceVideoScreenDefaultSuiteOption]),
+            impl=_VideoScreenSurfaceSlotOptionImpl(
+                incompatibleTypes=[VideoScreenSurfaceDefaultSuiteOption]),
             singular=True)        
 
-class VoderSpeakerSlotOption(SlotOption):
+class VoderSpeakerSlotOption(CommunicationSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
@@ -7198,7 +7206,7 @@ class VoderSpeakerSlotOption(SlotOption):
                 isDefaultSuite=False,
                 incompatibleTypes=[VoderSpeakerDefaultSuiteOption]))
 
-class WirelessDataLinkSlotOption(SlotOption):
+class WirelessDataLinkSlotOption(CommunicationSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
@@ -7206,165 +7214,27 @@ class WirelessDataLinkSlotOption(SlotOption):
         super().__init__(
             impl=_WirelessDataLinkSlotOptionImpl(
                 isDefaultSuite=False,
-                incompatibleTypes=[WirelessDataLinkDefaultSuiteOption]))
+                incompatibleTypes=[WirelessDataLinkDefaultSuiteOption])) 
+     
 
-class GeckoGrippersSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_GeckoGrippersSlotOptionImpl(
-                incompatibleTypes=[GeckoGrippersDefaultSuiteOption]))
-        
-class InjectorNeedleSlotOption(SlotOption):
-    """
-    - Requirement: Multiple instances of the component can be added
-    """ 
-    # NOTE: As this is not a singular component it's NOT incompatible with its
-    # default suite counterpart       
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_InjectorNeedleSlotOptionImpl(),
-            singular=False)
+#  ██████   ██████              █████  ███                     ████ 
+# ░░██████ ██████              ░░███  ░░░                     ░░███ 
+#  ░███░█████░███   ██████   ███████  ████   ██████   ██████   ░███ 
+#  ░███░░███ ░███  ███░░███ ███░░███ ░░███  ███░░███ ░░░░░███  ░███ 
+#  ░███ ░░░  ░███ ░███████ ░███ ░███  ░███ ░███ ░░░   ███████  ░███ 
+#  ░███      ░███ ░███░░░  ░███ ░███  ░███ ░███  ███ ███░░███  ░███ 
+#  █████     █████░░██████ ░░████████ █████░░██████ ░░████████ █████
+# ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░ 
 
-class LaserDesignatorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_LaserDesignatorSlotOptionImpl(
-                incompatibleTypes=[LaserDesignatorDefaultSuiteOption]))
+class MedicalSlotOption(SlotOption):
+    pass
 
-class MagneticGrippersSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_MagneticGrippersSlotOptionImpl(
-                incompatibleTypes=[MagneticGrippersDefaultSuiteOption]))
-
-class ParasiticLinkSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ParasiticLinkSlotOptionImpl(
-                incompatibleTypes=[ParasiticLinkDefaultSuiteOption]))
-
-class SelfMaintenanceEnhancementSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_SelfMaintenanceEnhancementSlotOptionImpl(
-                isDefaultSuite=False,
-                incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuiteOption]))
-
-class StingerSlotOption(SlotOption):
-    """
-    - Requirement: Multiple instances of the component can be added
-    """    
-    # NOTE: As this is not a singular component it's NOT incompatible with its
-    # default suite counterpart
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_StingerSlotOptionImpl(),
-            singular=False)
-
-class AtmosphericSensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AtmosphericSensorSlotOptionImpl(
-                incompatibleTypes=[AtmosphericSensorDefaultSuiteOption]))
-
-class AuditorySensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_AuditorySensorSlotOptionImpl(
-                isDefaultSuite=False,
-                incompatibleTypes=[AuditorySensorDefaultSuiteOption]))
-
-class EnvironmentalProcessorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_EnvironmentalProcessorSlotOptionImpl(
-                incompatibleTypes=[EnvironmentalProcessorDefaultSuiteOption]))
-        
-class GeigerCounterSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_GeigerCounterSlotOptionImpl(
-                incompatibleTypes=[GeigerCounterDefaultSuiteOption]))
-
-class LightIntensifierSensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_LightIntensifierSensorSlotOptionImpl(
-                incompatibleTypes=[LightIntensifierSensorDefaultSuiteOption]))
-
-class OlfactorySensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_OlfactorySensorSlotOptionImpl(
-                incompatibleTypes=[OlfactorySensorDefaultSuiteOption]))
-
-class PRISSensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_PRISSensorSlotOptionImpl(
-                incompatibleTypes=[PRISSensorDefaultSuiteOption]))
-
-class ThermalSensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_ThermalSensorSlotOptionImpl(
-                incompatibleTypes=[ThermalSensorDefaultSuiteOption]))
-
-class VisualSpectrumSensorSlotOption(SlotOption):
-    """
-    - Requirement: Not compatible with default suite equivalent
-    """    
-    def __init__(self) -> None:
-        super().__init__(
-            impl=_VisualSpectrumSensorSlotOptionImpl(
-                isDefaultSuite=False,
-                incompatibleTypes=[VisualSpectrumSensorDefaultSuiteOption]))
-
-class MedicalChamberSlotOption(SlotOption):
+class MedicalChamberSlotOption(MedicalSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_MedicalChamberSlotOptionImpl())
         
-class MedkitSlotOption(SlotOption):
+class MedkitSlotOption(MedicalSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_MedkitSlotOptionImpl())
@@ -7376,7 +7246,20 @@ class MedkitSlotOption(SlotOption):
         dependencies.append(MedicalChamberSlotOption)
         return dependencies        
 
-class AgriculturalEquipmentSlotOption(SlotOption):
+        
+#  ██████   ██████  ███                  
+# ░░██████ ██████  ░░░                   
+#  ░███░█████░███  ████   █████   ██████ 
+#  ░███░░███ ░███ ░░███  ███░░   ███░░███
+#  ░███ ░░░  ░███  ░███ ░░█████ ░███ ░░░ 
+#  ░███      ░███  ░███  ░░░░███░███  ███
+#  █████     █████ █████ ██████ ░░██████ 
+# ░░░░░     ░░░░░ ░░░░░ ░░░░░░   ░░░░░░ 
+
+class MiscSlotOption(SlotOption):
+    pass
+
+class AgriculturalEquipmentSlotOption(MiscSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7385,27 +7268,27 @@ class AgriculturalEquipmentSlotOption(SlotOption):
             impl=_AgriculturalEquipmentSlotOptionImpl(),
             singular=False)
         
-class AutobarSlotOption(SlotOption):
+class AutobarSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_AutobarSlotOptionImpl())
         
-class AutochefSlotOption(SlotOption):
+class AutochefSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_AutochefSlotOptionImpl())
         
-class AutopilotSlotOption(SlotOption):
+class AutopilotSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_AutopilotSlotOptionImpl())
         
-class BioreactionChamberSlotOption(SlotOption):
+class BioreactionChamberSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_BioreactionChamberSlotOptionImpl())
         
-class ConstructionEquipmentSlotOption(SlotOption):
+class ConstructionEquipmentSlotOption(MiscSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7413,56 +7296,134 @@ class ConstructionEquipmentSlotOption(SlotOption):
         super().__init__(
             impl=_ConstructionEquipmentSlotOptionImpl(),
             singular=False)
+  
+class CleaningEquipmentDomesticSlotOption(MiscSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_CleaningEquipmentDomesticSlotOptionImpl())
         
-class FabricationChamberSlotOption(SlotOption):
+class CleaningEquipmentIndustrialSlotOption(MiscSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_CleaningEquipmentIndustrialSlotOptionImpl())        
+
+class FabricationChamberSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_FabricationChamberSlotOptionImpl())
         
-class ForkliftChamberSlotOption(SlotOption):
+class ForkliftChamberSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ForkliftSlotOptionImpl())
         
-class HolographicProjectorSlotOption(SlotOption):
+class GeckoGrippersSlotOption(MiscSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_GeckoGrippersSlotOptionImpl(
+                incompatibleTypes=[GeckoGrippersDefaultSuiteOption]))        
+        
+class HolographicProjectorSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_HolographicProjectorSlotOptionImpl())
+
+class InjectorNeedleSlotOption(MiscSlotOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """ 
+    # NOTE: As this is not a singular component it's NOT incompatible with its
+    # default suite counterpart       
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_InjectorNeedleSlotOptionImpl(),
+            singular=False)
+
+class LaserDesignatorSlotOption(MiscSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_LaserDesignatorSlotOptionImpl(
+                incompatibleTypes=[LaserDesignatorDefaultSuiteOption]))
+
+class MagneticGrippersSlotOption(MiscSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_MagneticGrippersSlotOptionImpl(
+                incompatibleTypes=[MagneticGrippersDefaultSuiteOption]))
         
-class MiningEquipmentSlotOption(SlotOption):
+class MiningEquipmentSlotOption(MiscSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
     def __init__(self) -> None:
         super().__init__(
             impl=_MiningEquipmentSlotOptionImpl(),
-            singular=False)        
+            singular=False)      
 
-class NavigationSystemSlotOption(SlotOption):
+class ParasiticLinkSlotOption(MiscSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ParasiticLinkSlotOptionImpl(
+                incompatibleTypes=[ParasiticLinkDefaultSuiteOption]))
+
+class NavigationSystemSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_NavigationSystemSlotOptionImpl())
         
-class SelfDestructSystemSlotOption(SlotOption):
+class SelfDestructSystemSlotOption(MiscSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_SelfDestructSystemSlotOptionImpl())
         
-class StealthSlotOption(SlotOption):
+class SelfMaintenanceEnhancementSlotOption(MiscSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
     def __init__(self) -> None:
         super().__init__(
-            impl=_StealthSlotOptionImpl())        
+            impl=_SelfMaintenanceEnhancementSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuiteOption]))
         
-class StorageCompartmentSlotOption(SlotOption):
+class StealthSlotOption(MiscSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_StealthSlotOptionImpl())  
+
+class StingerSlotOption(MiscSlotOption):
+    """
+    - Requirement: Multiple instances of the component can be added
+    """    
+    # NOTE: As this is not a singular component it's NOT incompatible with its
+    # default suite counterpart
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_StingerSlotOptionImpl(),
+            singular=False)
+
+class StorageCompartmentSlotOption(MiscSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
     def __init__(self) -> None:
         super().__init__(
             impl=_StorageCompartmentSlotOptionImpl(),
-            singular=False)                
-        
-class VideoProjectorSlotOption(SlotOption):
+            singular=False)   
+
+class VideoProjectorSlotOption(MiscSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7470,13 +7431,26 @@ class VideoProjectorSlotOption(SlotOption):
         super().__init__(
             impl=_VideoProjectorSlotOptionImpl(),
             singular=False)   
-        
-class ExternalPowerSlotOption(SlotOption):
+
+
+#  ███████████                                             
+# ░░███░░░░░███                                            
+#  ░███    ░███  ██████  █████ ███ █████  ██████  ████████ 
+#  ░██████████  ███░░███░░███ ░███░░███  ███░░███░░███░░███
+#  ░███░░░░░░  ░███ ░███ ░███ ░███ ░███ ░███████  ░███ ░░░ 
+#  ░███        ░███ ░███ ░░███████████  ░███░░░   ░███     
+#  █████       ░░██████   ░░████░████   ░░██████  █████    
+# ░░░░░         ░░░░░░     ░░░░ ░░░░     ░░░░░░  ░░░░░    
+
+class PowerSlotOption(SlotOption):
+    pass
+
+class ExternalPowerSlotOption(PowerSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ExternalPowerSlotOptionImpl())      
         
-class NoInternalPowerSlotOption(SlotOption):
+class NoInternalPowerSlotOption(PowerSlotOption):
     """
     - Requirement: Incompatible with RTG and Solar Power Unit slot options    
     """
@@ -7484,9 +7458,13 @@ class NoInternalPowerSlotOption(SlotOption):
         super().__init__(
             impl=_NoInternalPowerSlotOptionImpl(
                 incompatibleTypes=[RTGSlotOption,
-                                   SolarPowerUnitSlotOption]))     
+                                   SolarPowerUnitSlotOption]))    
+
+class QuickChargerSlotOption(PowerSlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_QuickChargerSlotOptionImpl())          
         
-class RTGSlotOption(SlotOption):
+class RTGSlotOption(PowerSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     - Requirement: Not compatible with No Internal Power slot option
@@ -7497,7 +7475,7 @@ class RTGSlotOption(SlotOption):
                 incompatibleTypes=[NoInternalPowerSlotOption]),
             singular=False)
         
-class SolarPowerUnitSlotOption(SlotOption):
+class SolarPowerUnitSlotOption(PowerSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     - Requirement: Not compatible with No Internal Power slot option
@@ -7508,31 +7486,136 @@ class SolarPowerUnitSlotOption(SlotOption):
                 incompatibleTypes=[NoInternalPowerSlotOption]),
             singular=False)
         
-class QuickChargerSlotOption(SlotOption):
+
+#   █████████                                                
+#  ███░░░░░███                                               
+# ░███    ░░░   ██████  ████████    █████   ██████  ████████ 
+# ░░█████████  ███░░███░░███░░███  ███░░   ███░░███░░███░░███
+#  ░░░░░░░░███░███████  ░███ ░███ ░░█████ ░███ ░███ ░███ ░░░ 
+#  ███    ░███░███░░░   ░███ ░███  ░░░░███░███ ░███ ░███     
+# ░░█████████ ░░██████  ████ █████ ██████ ░░██████  █████    
+#  ░░░░░░░░░   ░░░░░░  ░░░░ ░░░░░ ░░░░░░   ░░░░░░  ░░░░░         
+
+class SensorSlotOption(SlotOption):
+    pass
+
+class AtmosphericSensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
     def __init__(self) -> None:
-        super().__init__(impl=_QuickChargerSlotOptionImpl())            
+        super().__init__(
+            impl=_AtmosphericSensorSlotOptionImpl(
+                incompatibleTypes=[AtmosphericSensorDefaultSuiteOption]))
+
+class AuditorySensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AuditorySensorSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[AuditorySensorDefaultSuiteOption]))
         
-class BioscannerSensorSlotOption(SlotOption):
+class BioscannerSensorSlotOption(SensorSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_BioscannerSensorSlotOptionImpl())
+        super().__init__(impl=_BioscannerSensorSlotOptionImpl())  
 
-class DensitometerSensorSlotOption(SlotOption):
+class DensitometerSensorSlotOption(SensorSlotOption):
     def __init__(self) -> None:
-        super().__init__(impl=_DensitometerSensorSlotOptionImpl())   
+        super().__init__(impl=_DensitometerSensorSlotOptionImpl())            
 
-class NeuralActivitySensorSlotOption(SlotOption):
+class EnvironmentalProcessorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
     def __init__(self) -> None:
-        super().__init__(impl=_NeuralActivitySensorSlotOptionImpl())           
+        super().__init__(
+            impl=_EnvironmentalProcessorSlotOptionImpl(
+                incompatibleTypes=[EnvironmentalProcessorDefaultSuiteOption]))
+        
+class GeigerCounterSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_GeigerCounterSlotOptionImpl(
+                incompatibleTypes=[GeigerCounterDefaultSuiteOption]))
 
-class PlanetologySensorSuiteSlotOption(SlotOption):
+class LightIntensifierSensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_LightIntensifierSensorSlotOptionImpl(
+                incompatibleTypes=[LightIntensifierSensorDefaultSuiteOption]))
+
+class NeuralActivitySensorSlotOption(SensorSlotOption):
+    def __init__(self) -> None:
+        super().__init__(impl=_NeuralActivitySensorSlotOptionImpl())   
+
+class OlfactorySensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_OlfactorySensorSlotOptionImpl(
+                incompatibleTypes=[OlfactorySensorDefaultSuiteOption]))
+        
+class PlanetologySensorSuiteSlotOption(SensorSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_PlanetologySensorSuiteSlotOptionImpl())
 
-class ReconSensorSlotOption(SlotOption):
+class PRISSensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_PRISSensorSlotOptionImpl(
+                incompatibleTypes=[PRISSensorDefaultSuiteOption]))
+        
+class ReconSensorSlotOption(SensorSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_ReconSensorSlotOptionImpl())
 
-class CuttingTorchSlotOption(SlotOption):
+class ThermalSensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_ThermalSensorSlotOptionImpl(
+                incompatibleTypes=[ThermalSensorDefaultSuiteOption]))
+
+class VisualSpectrumSensorSlotOption(SensorSlotOption):
+    """
+    - Requirement: Not compatible with default suite equivalent
+    """    
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_VisualSpectrumSensorSlotOptionImpl(
+                isDefaultSuite=False,
+                incompatibleTypes=[VisualSpectrumSensorDefaultSuiteOption]))
+
+
+#  ███████████                   ████  █████       ███   █████   
+# ░█░░░███░░░█                  ░░███ ░░███       ░░░   ░░███    
+# ░   ░███  ░   ██████   ██████  ░███  ░███ █████ ████  ███████  
+#     ░███     ███░░███ ███░░███ ░███  ░███░░███ ░░███ ░░░███░   
+#     ░███    ░███ ░███░███ ░███ ░███  ░██████░   ░███   ░███    
+#     ░███    ░███ ░███░███ ░███ ░███  ░███░░███  ░███   ░███ ███
+#     █████   ░░██████ ░░██████  █████ ████ █████ █████  ░░█████ 
+#    ░░░░░     ░░░░░░   ░░░░░░  ░░░░░ ░░░░ ░░░░░ ░░░░░    ░░░░░  
+
+class ToolkitSlotOption(SlotOption):
+    pass
+
+class CuttingTorchSlotOption(ToolkitSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7541,23 +7624,23 @@ class CuttingTorchSlotOption(SlotOption):
             impl=_CuttingTorchSlotOptionImpl(),
             singular=False)        
 
-class ElectronicsToolkitSlotOption(SlotOption):
+class ElectronicsToolkitSlotOption(ToolkitSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_ElectronicsToolkitSlotOptionImpl())
         
-class FireExtinguisherSlotOption(SlotOption):
+class FireExtinguisherSlotOption(ToolkitSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_FireExtinguisherSlotOptionImpl())  
 
-class ForensicToolkitSlotOption(SlotOption):
+class ForensicToolkitSlotOption(ToolkitSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_ForensicToolkitSlotOptionImpl())  
 
-class MechanicalToolkitSlotOption(SlotOption):
+class MechanicalToolkitSlotOption(ToolkitSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_MechanicalToolkitSlotOptionImpl())
 
-class ScientificToolkitSlotOption(SlotOption):
+class ScientificToolkitSlotOption(ToolkitSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """
@@ -7568,11 +7651,11 @@ class ScientificToolkitSlotOption(SlotOption):
             impl=_ScientificToolkitSlotOptionImpl(),
             singular=False)  
         
-class StarshipEngineeringToolkitSlotOption(SlotOption):
+class StarshipEngineeringToolkitSlotOption(ToolkitSlotOption):
     def __init__(self) -> None:
         super().__init__(impl=_StarshipEngineeringToolkitSlotOptionImpl())
 
-class StylistToolkitSlotOption(SlotOption):
+class StylistToolkitSlotOption(ToolkitSlotOption):
     """
     - Requirement: Multiple instances of the component can be added
     """    
@@ -7581,4 +7664,4 @@ class StylistToolkitSlotOption(SlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_StylistToolkitSlotOptionImpl(),
-            singular=False)          
+            singular=False)

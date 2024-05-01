@@ -470,23 +470,84 @@ class Robot(object):
             minComponents=None,
             maxComponents=None)) 
 
-        stages.append(construction.ConstructionStage(
+        stage = construction.ConstructionStage(
             name='Default Suite',
             sequence=self._sequence,
             phase=robots.RobotPhase.SlotOptions,
             baseType=robots.DefaultSuiteOptionInterface,
             # Mandatory fixed size
             minComponents=5,
-            maxComponents=5))
+            maxComponents=5)
+        # Pre-add the standard default suite (p29)
+        stage.addComponent(component=robots.VisualSpectrumSensorDefaultSuiteOption())
+        stage.addComponent(component=robots.VoderSpeakerDefaultSuiteOption())
+        stage.addComponent(component=robots.AuditorySensorDefaultSuiteOption())
+        stage.addComponent(component=robots.WirelessDataLinkDefaultSuiteOption())
+        stage.addComponent(component=robots.TransceiverDefaultSuiteOption())
+        stages.append(stage)
         
         stages.append(construction.ConstructionStage(
-            name='Slot Options',
+            name='Chassis Options',
             sequence=self._sequence,
             phase=robots.RobotPhase.SlotOptions,
-            baseType=robots.SlotOptionInterface,
+            baseType=robots.ChassisSlotOption,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Communication Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.CommunicationSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Medical Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.MedicalSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Miscellaneous Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.MiscSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Power Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.PowerSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))  
+
+        stages.append(construction.ConstructionStage(
+            name='Sensor Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.SensorSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))  
+
+        stages.append(construction.ConstructionStage(
+            name='Toolkit Options',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.SlotOptions,
+            baseType=robots.ToolkitSlotOption,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))       
         
         stages.append(construction.ConstructionStage(
             name='Weapons',
