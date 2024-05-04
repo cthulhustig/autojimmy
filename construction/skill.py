@@ -21,7 +21,14 @@ class TrainedSkill(object):
     def skillDef(self) -> traveller.SkillDefinition:
         return self._skillDef
     
-    def name(self) -> str:
+    def name(
+            self,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> str:
+        if isinstance(speciality, enum.Enum):
+            return f'{self._skillDef.name()} ({speciality.value})'
+        if isinstance(speciality, str):
+            return f'{self._skillDef.name()} ({speciality})'
         return self._skillDef.name()
     
     def level(

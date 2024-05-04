@@ -2110,20 +2110,22 @@ class _VisualSpectrumSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
 
 class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
-    Min TL: 15
-    Cost: Cr10000 * Base Slots
-    Slots: 1
-    Trait: Stealth 4
-    Trait: Invisible
-    Note: DM-4 to Recon and Electronics (sensors) checks to detect the robot
+    - Min TL: 15
+    -  Cost: Cr10000 * Base Slots
+    - Slots: 1
+    - Trait: Stealth 4
+    - Trait: Invisible
+    - Note: DM-4 to Recon and Electronics (sensors) checks to detect the
+    robot (p41)
+    - Note: When Active Camouflage is enabled effectively gives the robot
+    Stealth 4 vs Recon checks. This stacks with any other Stealth skill the
+    robot has (clarified by Geir Lanesskog, Robot Handbook author).
     """
-    # NOTE: The rules don't explicitly say the if the Stealth 4 is the trait
-    # or the skill. My best guess is it's meant to be the trait as, although
-    # camouflage may give a bonus to making stealth checks, you wouldn't expect
-    # it to directly increases a robots skill at being stealthy. The Stealth
-    # trait only covers the ability to detect the robot by electronic means,
-    # however, the ability to detect it visually is covered by the Invisible
-    # trait.
+    # NOTE: Geir clarified that this does give the Stealth trait but, because
+    # it gives sensor and visual camouflage, it effectively gives the Stealth
+    # skill at level 4 vs Recon checks. Importantly, this Stealth skill stacks
+    # with any Stealth skill from skill packages.
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
     # NOTE: I think the DM-4 to Recon and Electronics (sensors) checks is just
     # a reiteration of the modifiers due to the Stealth and Invisible traits.
     # I don't think this is an additional DM-4 on top of the DM-4 they give.
@@ -2132,6 +2134,8 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
     _StealthTrait = common.ScalarCalculation(
         value=4,
         name='Active Camouflage Stealth Trait')
+    
+    _StealthSkillNote = 'When Active Camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has (clarified by Geir Lanesskog, Robot Handbook author)'
 
     def __init__(
             self,
@@ -2163,6 +2167,7 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
             modifier=construction.ConstantModifier(
                 value=_ActiveCamouflageSlotOptionImpl._StealthTrait)))
         
+        step.addNote(note=_ActiveCamouflageSlotOptionImpl._StealthSkillNote)
         
 class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """

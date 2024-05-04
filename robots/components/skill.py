@@ -394,6 +394,10 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
         DomesticServant = 'Domestic Servant'
         DomesticCleaner = 'Domestic Cleaner'
 
+    _ProfessionSkillLevel = common.ScalarCalculation(
+        value=2,
+        name='Servant Profession Skill Level')        
+
     def __init__(self) -> None:
         super().__init__(componentName='Servant',
             skills=[(traveller.ReconSkillDefinition, None, 2)])
@@ -422,7 +426,7 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ProfessionSkillDefinition,
             speciality=profession.value,
-            level=SecurityBasicSkillPackage._WeaponSkillLevel))  
+            level=ServantBasicSkillPackage._ProfessionSkillLevel))  
 
         return step
 
@@ -724,9 +728,10 @@ class Skill(robots.SkillInterface):
                 levelOption = construction.IntegerOption(
                     id=f'{speciality.name}Level',
                     name=f'{speciality.value} Level',
-                    value=0,
+                    value=None,
                     minValue=0,
                     maxValue=_RobotBrainMaxPossibleLevel.value(),
+                    isOptional=True,
                     description=f'Specify the level of the {speciality.value} speciality')
                 self._fixedSpecialityOptions.append((speciality, levelOption))
 
@@ -844,7 +849,9 @@ class Skill(robots.SkillInterface):
         if self._skillDef.isFixedSpeciality():
             for _, levelOption in self._fixedSpecialityOptions:
                 levelOption.setMin(1)
-                levelOption.setMax(maxLevel.value() if maxLevel != None else None)
+                levelOption.setMax(maxLevel.value() \
+                                   if maxLevel != None else \
+                                    _RobotBrainMaxPossibleLevel.value())
                 levelOption.setEnabled(maxLevel == None or maxLevel.value() > 0)
         elif self._skillDef.isCustomSpeciality():
             specialityCount = self._customSpecialityCountOption.value()
@@ -854,12 +861,12 @@ class Skill(robots.SkillInterface):
                 specialityIndex = len(self._customSpecialityOptions) + 1 # 1 based for user
                 nameOption = construction.StringOption(
                     id=f'Speciality{specialityIndex}Name',
-                    name=f'Speciality Name',
+                    name=f'Speciality {specialityIndex} Name',
                     options=self._skillDef.customSpecialities(),
                     description='Specify the name of the speciality')
                 levelOption = construction.IntegerOption(
                     id=f'Speciality{specialityIndex}Level',
-                    name=f'Speciality Level',
+                    name=f'Speciality {specialityIndex} Level',
                     value=1,
                     description=f'Specify the level of the speciality')
                 self._customSpecialityOptions.append((nameOption, levelOption))
@@ -867,7 +874,9 @@ class Skill(robots.SkillInterface):
             # Level options are only enabled if the name is enabled and not empty
             for nameOption, levelOption in self._customSpecialityOptions:
                 levelOption.setMin(1)
-                levelOption.setMax(maxLevel.value() if maxLevel != None else None)
+                levelOption.setMax(maxLevel.value() \
+                                   if maxLevel != None else \
+                                   _RobotBrainMaxPossibleLevel.value())
                 levelOption.setEnabled(
                     enabled=nameOption.isEnabled() and nameOption.value())
             
@@ -879,12 +888,18 @@ class Skill(robots.SkillInterface):
         hasSpeciality = False
         if self._fixedSpecialityOptions:
             for _, levelOption in self._fixedSpecialityOptions:
-                if levelOption.isEnabled() and levelOption.value() > 0:
+                if not levelOption.isEnabled():
+                    continue
+                value = levelOption.value()
+                if value != None and value > 0:
                     hasSpeciality = True
                     break
         elif self._customSpecialityOptions:
             for _, levelOption in self._customSpecialityOptions:
-                if levelOption.isEnabled() and levelOption.value() > 0:
+                if not levelOption.isEnabled():
+                    continue
+                value = levelOption.value()
+                if value != None and value > 0:
                     hasSpeciality = True
                     break
 
@@ -896,11 +911,13 @@ class Skill(robots.SkillInterface):
                 context=context)
         else:
             if self._fixedSpecialityOptions:
-                for speciality, levelOption in self._fixedSpecialityOptions:
-                    if not levelOption.isEnabled() or levelOption.value() <= 0:
-                        # Only create steps for specialities where the level
-                        # control is enabled and the level is over 0
+                for speciality, levelOption in self._fixedSpecialityOptions:                
+                    if not levelOption.isEnabled():
                         continue
+                    value = levelOption.value()
+                    if value == None or value <= 0:
+                        continue
+
                     self._createSkillSteps(
                         level=levelOption.value(),
                         speciality=speciality,
@@ -909,13 +926,12 @@ class Skill(robots.SkillInterface):
                     
             if self._customSpecialityOptions:
                 for nameOption, levelOption in self._customSpecialityOptions:
-                    if  not nameOption.isEnabled() or not nameOption.value():
-                        # Only create steps for specialities where the name is
-                        # option is enabled and has value
+                    if not nameOption.isEnabled() or not nameOption.value():
                         continue
-                    if not levelOption.isEnabled() or levelOption.value() <= 0:
-                        # Only create steps for specialities where the level
-                        # option is enabled and the level is over 0
+                    if not levelOption.isEnabled():
+                        continue
+                    value = levelOption.value()
+                    if value == None or value <= 0:
                         continue
 
                     self._createSkillSteps(

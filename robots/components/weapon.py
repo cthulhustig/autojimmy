@@ -48,7 +48,6 @@ class _WeaponMountImpl(object):
         - Requirement: Up to 4 weapons OF THE SAME TYPE can be linked to fire as
         a single attack. If the attack succeeds, only one damage roll is made
         and +1 is added for each additional weapon
-        - Requirement: Hand held weapons can't be multi-linked
     - Option: Fire Control System
         - <All>
             - Slots: 1
@@ -147,23 +146,12 @@ class _WeaponMountImpl(object):
     # get the modifier from a combat skill (which could be an actual skill or
     # provided by the Fire Control System) and they also get a modifier for the
     # DEX (of the manipulator)
-    # NOTE: The wording of the Fire Control System section (p60) is contradictory.
-    # It says "A fire control system provides targeting assistance to weapons that
-    # are integrally mounted on a robot". If it's for integrally mounted weapons
-    # that would mean it wouldn't apply to hand held weapons. However, later it
-    # says "A dedicated fire control system for a manipulator held weapon...."
-    # which seems to be explicitly saying you can use a fire control system with
-    # a hand held weapon.
-    # NOTE: I added the requirement that hand held weapons can't be multi-linked.
-    # Along with the fact nothing explicitly says you can multi-link hand held
-    # weapons there is also the the wording "A dedicated fire control system for
-    # a manipulator held weapon...." (p60) and "Linked mounts make only one
-    # attack roll and require only one fire control system" (p61). If you
-    # combine the fact that each hand held weapon needs a dedicated fire control
-    # system and muli-linked mounts only need one fire control system for the
-    # group, it would suggest that hand held weapons can't be multi-linked.
     # NOTE: The note about which weapons a mount of a given size can use is
-    # handled in finalisation    
+    # handled in finalisation
+    # NOTE: Geir clarified that a Fire Control System can be used with hand held
+    # weapons and that hand held weapons can be multi-linked (but only if they're
+    # used with a Fire Control System)
+    # TODO: Make changes for hand held weapon clarifications
 
     # Data Structure: Cost, Slots
     _MountSizeData = {

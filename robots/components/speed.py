@@ -377,12 +377,12 @@ class VehicleSpeedMovement(SpeedModification):
         - Wheels (including ATV): Slow
         - Tracks: Very Slow
         - Grav: High
-        - Aeroplane: Medium
+        - Aeroplane: Medium (clarified by Geir)
         - Aquatic: Very Slow
         - VTOL: Medium
         - Walker: Very Slow
         - Hovercraft: Medium
-        - Thrusters: ??????
+        - Thrusters: Hypersonic (clarified by Geir)
     - Trait: Autopilot 0
     - Trait: Flyer <SpeedBand> (only if Flyer was granted by Primary locomotion)
     - Option: Additional Speed Increase
@@ -396,31 +396,14 @@ class VehicleSpeedMovement(SpeedModification):
     factor of four when in use. Each further movement enhancement halves
     the robot remaining endurance.
     - Note: Grav locomotion systems equipped with vehicle speed movement are
-    capable of propelling a robot to orbit 
+    capable of propelling a robot to orbit. (p23)
+    - Note: Thruster locomotion can only achieve Hypersonic speeds in a vacuum.
+    (clarified by Geir Lanesskog, Robot Handbook author)
     """
     # NOTE: The requirement that robots with Aeroplane locomotion must have this
     # component is handled by the fact this component being used in a mandatory
     # single select stage and all other component derived from SpeedEnhancement
     # are incompatible with Aeroplane locomotion
-    # NOTE: The table on p23 doesn't have a Speed Band entry for Aeroplane. The
-    # rules are really unclear, p17 says aeroplane locomotion can't go slower
-    # than Slow (otherwise it stalls) and that any aeroplane locomotion robot
-    # can be launched from a vehicle moving at Medium speed. That would suggest
-    # the a default of either Slow or Medium, it depends on if it makes sense to
-    # have an aeroplane robot that can't take off without the use of a secondary
-    # or external form of locomotion.
-    # I've gone with Medium as it's the same as the Mongoose and fan created
-    # spreadsheets. However it seems odd to me that this means it's not possible
-    # to create an aeroplane robot that is capable of supersonic speeds without
-    # the use of a secondary form of locomotion. With the speed band increase
-    # being limited to 3 levels it means the base speed band would need to be
-    # VeryFast to allow it to be increased to Supersonic
-    # NOTE: The table on p23 doesn't have an entry for Thrusters. I've no idea
-    # what that is. It could be because Thruster locomotion gives the Thruster
-    # trait, but that doesn't really make sense as the Thruster trait is in G
-    # which is acceleration not speed. The spreadsheet doesn't allow you to
-    # select a Speed Band for Thruster equipped robots. Until I find a better
-    # option I'll do the same.
     # NOTE: This component sounds like this is something that can be turned on
     # or off. On p23 it says "Vehicle speed movement reduces a robot’s endurance
     # by a factor of four when in use. Each further movement enhancement halves
@@ -446,10 +429,10 @@ class VehicleSpeedMovement(SpeedModification):
     # I think it comes from Vehicle Speed Moment as, although the robots don't
     # state they have it, all the examples I can see have the extra Endurance
     # in brackets that the Final Endurance section suggests (p23)
-    # NOTE: The rules don't give a base Speed Band for Thruster locomotion
-    # (p23). My suspicion is that Vehicle Speed Movement shouldn't be applied
-    # to them as they use the Thrust trait to give their thrust in G rather
-    # than using the slow, fast, very fast etc.
+    # NOTE: The fact Aeroplane have a base Speed Band of Medium and Thrusters
+    # have a base Speed Band of Hypersonic was clarified by Geir in this thread.
+    # He also 
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
     _BaseSlotPercent = common.ScalarCalculation(
         value=25,
@@ -477,6 +460,7 @@ class VehicleSpeedMovement(SpeedModification):
         robots.VTOLPrimaryLocomotion: robots.SpeedBand.Medium,
         robots.WalkerPrimaryLocomotion: robots.SpeedBand.VerySlow,
         robots.HovercraftPrimaryLocomotion: robots.SpeedBand.Medium,
+        robots.ThrusterPrimaryLocomotion: robots.SpeedBand.Hypersonic
     }
 
     # NOTE: ThrusterPrimaryLocomotion is intentionally not included on this list
@@ -487,7 +471,8 @@ class VehicleSpeedMovement(SpeedModification):
         robots.VTOLPrimaryLocomotion
     ]
 
-    _GravLocomotionNote = 'Grav locomotion systems equipped with vehicle speed movement are capable of propelling a robot to orbit (p23)'
+    _GravLocomotionNote = 'Grav locomotion systems equipped with vehicle speed movement are capable of propelling a robot to orbit. (p23)'
+    _ThrusterLocomotionNote = 'Thruster locomotion can only achieve Hypersonic speeds in a vacuum. (clarified by Geir Lanesskog, Robot Handbook author) '
 
     def __init__(self) -> None:
         super().__init__()
@@ -631,6 +616,12 @@ class VehicleSpeedMovement(SpeedModification):
             sequence=sequence) != None
         if isGrav:
             step.addNote(VehicleSpeedMovement._GravLocomotionNote)
+
+        isThruster = context.findFirstComponent(
+            componentType=robots.ThrusterPrimaryLocomotion,
+            sequence=sequence) != None
+        if isThruster:
+            step.addNote(VehicleSpeedMovement._ThrusterLocomotionNote)
 
         context.applyStep(
             sequence=sequence,

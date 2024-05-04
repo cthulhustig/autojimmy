@@ -82,8 +82,16 @@ class IncreaseEndurance(EnduranceModification):
             value=0,
             minValue=0,
             maxValue=3,
-            description='Specify the number of additional power packs.')        
+            description='Specify the number of additional power packs.')
 
+    def improvedComponents(self) -> bool:
+        return self._improvedComponentsOption.value() if self._improvedComponentsOption.isEnabled() else False
+    
+    def powerPackCount(self) -> common.ScalarCalculation:
+        return common.ScalarCalculation(
+            value=self._powerPacksOption.value() if self._powerPacksOption.isEnabled() else 0,
+            name='Power Pack Count')
+        
     def componentString(self) -> str:
         return 'Endurance Increase'
 
@@ -121,12 +129,12 @@ class IncreaseEndurance(EnduranceModification):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        if self._improvedComponentsOption.value():
+        if self.improvedComponents():
             self.createImprovedComponentsStep(
                 sequence=sequence,
                 context=context)
             
-        if self._powerPacksOption.value() > 0:
+        if self.powerPackCount().value() > 0:
             self.createPowerPackStep(
                 sequence=sequence,
                 context=context)                
@@ -161,9 +169,7 @@ class IncreaseEndurance(EnduranceModification):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        packCount = common.ScalarCalculation(
-            value=self._powerPacksOption.value(),
-            name='Specified Power Pack Count')        
+        packCount = self.powerPackCount() 
 
         step = robots.RobotStep(
             name=f'Power Packs x {packCount.value()}',

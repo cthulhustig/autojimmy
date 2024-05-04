@@ -26,17 +26,17 @@ class _LocomotionImpl(object):
     # modifies it. I expect it just means the Agility gets added to the base
     # Speed of 5m per minor action. This appears to be what the spreadsheet
     # does
-    # TODO: I'm not sure how to handle things like endurance, agility etc for
-    # secondary locomotion. The aren't cumulative so should be applied on top
-    # of the primary locomotion values. Should see what the spreadsheet does.
-    # The best idea I've had so far is to add them as notes but that would only
-    # work if all modifiers that can affect them have been applied (e.g.
-    # additional power packs for endurance).
-    # UPDATE: I could possible split it into 2 attributes (PrimaryAgility and
-    # SecondaryAgility) but this would mean limiting a robot to a single
-    # secondary locomotion. It could complicate component code that deals with
-    # agility but importantly the rules say the locomotion modifications (and
-    # therefore agility modifications) only apply to the primary locomotion
+    # NOTE: Endurance and Agility of secondary locomotions is handled with a
+    # note. There are a couple of unpleasant things about the way this is done
+    # but it should be "good enough"
+    # 1. The way Endurance is calculated is a bit ugly due to the fact you need
+    # to take the EnduranceIncrease component. Technically checking for this
+    # component and querying its settings isn't an issue as Secondary Locomotion
+    # is applied after it is in construction order. It's just a bit horrible.
+    # 2. It doesn't take the NoInternalPower component into account. Technically
+    # it could because, although NoInternalPower is applied later in construction,
+    # we only need to check for its presence which is allowed. It's just a bit
+    # more horrible than I was willing to do so it is what it is.
 
     _TL12EnduranceIncreasePercent = common.ScalarCalculation(
         value=50,
@@ -55,6 +55,14 @@ class _LocomotionImpl(object):
     _SecondaryLocomotionBaseCost = common.ScalarCalculation(
         value=500,
         name='Secondary Locomotion Base Cost Per Slot')
+    
+    _ImprovedComponentsIncreasePercent = common.ScalarCalculation(
+        value=100,
+        name='Improved Components Endurance Increase Percentage')
+
+    _PowerPackIncreasePercent = common.ScalarCalculation(
+        value=100,
+        name='Power Pack Endurance Increase Percentage')        
 
     def __init__(
             self,
@@ -92,7 +100,7 @@ class _LocomotionImpl(object):
 
     def isNatural(self) -> bool:
         return self._isNatural
-
+    
     def instanceString(self) -> str:
         return self._componentString
 
@@ -130,22 +138,22 @@ class _LocomotionImpl(object):
             context: robots.RobotContext,
             step: robots.RobotStep
             ) -> None:
+        endurance = self._baseEndurance
+        if context.techLevel() >= 15:
+            endurance = common.Calculator.applyPercentage(
+                value=endurance,
+                percentage=_LocomotionImpl._TL15EnduranceIncreasePercent,
+                name='TL15 ' + endurance.name())
+        elif context.techLevel() >= 12:
+            endurance = common.Calculator.applyPercentage(
+                value=endurance,
+                percentage=_LocomotionImpl._TL12EnduranceIncreasePercent,
+                name='TL12 ' + endurance.name())
+                    
         if self._isPrimary:
             step.setCredits(
                 credits=construction.MultiplierModifier(
                     value=self._costMultiplier))
-        
-            endurance = self._baseEndurance
-            if context.techLevel() >= 15:
-                endurance = common.Calculator.applyPercentage(
-                    value=endurance,
-                    percentage=_LocomotionImpl._TL15EnduranceIncreasePercent,
-                    name='TL15 ' + endurance.name())
-            elif context.techLevel() >= 12:
-                endurance = common.Calculator.applyPercentage(
-                    value=endurance,
-                    percentage=_LocomotionImpl._TL12EnduranceIncreasePercent,
-                    name='TL12 ' + endurance.name())
 
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Endurance,
@@ -184,6 +192,30 @@ class _LocomotionImpl(object):
                 credits=construction.ConstantModifier(value=totalCost))
             step.setSlots(
                 slots=construction.ConstantModifier(value=requiredSlots))
+            
+            enduranceIncrease = context.findFirstComponent(
+                componentType=robots.IncreaseEndurance,
+                sequence=sequence)
+            if enduranceIncrease:
+                assert(isinstance(enduranceIncrease, robots.IncreaseEndurance))
+                if enduranceIncrease.improvedComponents():
+                    endurance = common.Calculator.applyPercentage(
+                        value=endurance,
+                        percentage=_LocomotionImpl._ImprovedComponentsIncreasePercent)
+                powerPackCount = enduranceIncrease.powerPackCount()
+                endurance = common.Calculator.applyPercentage(
+                    value=endurance,
+                    percentage=common.Calculator.multiply(
+                        lhs=_LocomotionImpl._PowerPackIncreasePercent,
+                        rhs=powerPackCount))
+                endurance = common.Calculator.rename(
+                    value=endurance,
+                    name='Improved Endurance')
+
+            stats = f'Endurance {endurance.value()}'
+            if self._baseAgility:
+                stats += f' and Agility {self._baseAgility.value()}'
+            step.addNote(note=f'When using {self._componentString} the robot has {stats}')            
 
         if self._flagTrait:
             step.addFactor(factor=construction.SetAttributeFactor(
@@ -711,6 +743,7 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
     # same type is to allow users to handle the rule on p23 where robots with
     # more than 8 legs/axles/etc may be considered to have a secondary
     # locomotion of the same type as the primary.
+
     def __init__(
             self,
             impl: _LocomotionImpl
@@ -777,14 +810,14 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
             sequence=sequence,
             context=context,
             step=step)
-
+        
         context.applyStep(
             sequence=sequence,
             step=step)
         
 class WheelsSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WheelsLocomotionImpl(isPrimary=False)) 
+        super().__init__(impl=_WheelsLocomotionImpl(isPrimary=False))
 
 class WheelsATVSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
@@ -792,7 +825,7 @@ class WheelsATVSecondaryLocomotion(SecondaryLocomotion):
 
 class TracksSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_TracksLocomotionImpl(isPrimary=False))     
+        super().__init__(impl=_TracksLocomotionImpl(isPrimary=False))
 
 class GravSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
@@ -808,7 +841,7 @@ class VTOLSecondaryLocomotion(SecondaryLocomotion):
 
 class WalkerSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WalkerLocomotionImpl(isPrimary=False)) 
+        super().__init__(impl=_WalkerLocomotionImpl(isPrimary=False))
 
     def legCount(self) -> int:
         assert(isinstance(self._impl, _WalkerLocomotionImpl))

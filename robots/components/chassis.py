@@ -14,8 +14,6 @@ class Chassis(robots.ChassisInterface):
         - TL15-17: Base Protection: 4
         - TL18+: Base Protection: 5
     """
-    # NOTE: The note for the Attack Roll DM is to help players not mistake it for
-    # a modifier that the robot gets
 
     # List of tuples structured as follows
     # Min TL, Max TL, Base Protection

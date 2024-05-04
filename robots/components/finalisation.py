@@ -266,7 +266,9 @@ class FinalisationComponent(robots.FinalisationInterface):
         traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
         traveller.WeaponSize.Medium: 'any larger weapon usable by Melee or Gun Combat skills or an explosive of up to six kilograms',
         traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
-    }   
+    }
+
+    _ManipulatorAthleticsNote = 'The manipulators {characteristics} characteristic(s) gives the robot {skills}, but you don\'t get a {characteristics} characteristic DM when making checks. (p26)'
  
     _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
 
@@ -301,10 +303,11 @@ class FinalisationComponent(robots.FinalisationInterface):
         self._createSynthCostStep(sequence=sequence, context=context)
         self._createProtectionStep(sequence=sequence, context=context)
         self._createTraitNoteSteps(sequence=sequence, context=context)
+        self._createCombatStep(sequence=sequence, context=context)
         self._createInoperableStep(sequence=sequence, context=context)
         self._createMaintenanceStep(sequence=sequence, context=context)
         self._createAutopilotStep(sequence=sequence, context=context)
-        self._createCombatStep(sequence=sequence, context=context)
+        self._createManipulatorAthleticsStep(sequence=sequence, context=context)
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
@@ -501,6 +504,76 @@ class FinalisationComponent(robots.FinalisationInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
+        
+    # TODO: The Athletics levels given by the manipulators stacks with software
+    # Athletics skills
+    def _createManipulatorAthleticsStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        athletics = context.skill(
+            skillDef=traveller.AthleticsSkillDefinition,
+            sequence=sequence)
+        if not athletics:
+            return
+        
+        athleticsDexterity = athletics.level(
+            speciality=traveller.AthleticsSkillSpecialities.Dexterity)
+        athleticsStrength = athletics.level(
+            speciality=traveller.AthleticsSkillSpecialities.Strength)        
+
+        manipulators = context.findComponents(
+            componentType=robots.ManipulatorInterface,
+            sequence=sequence)
+        seenConfigs = []
+        for manipulator in manipulators:
+            assert(isinstance(manipulator, robots.ManipulatorInterface))
+            if isinstance(manipulator, robots.RemoveBaseManipulator):
+                continue
+            
+            manipulatorSize = manipulator.size()
+            manipulatorDexterity = manipulator.dexterity()
+            manipulatorStrength = manipulator.strength()
+            seenCheck = (manipulatorSize, manipulatorDexterity, manipulatorStrength)
+            if seenCheck in seenConfigs:
+                continue
+            seenConfigs.append(seenCheck)
+
+            dexterityModifier = traveller.characteristicDM(
+                level=manipulatorDexterity)
+            strengthModifier = traveller.characteristicDM(
+                level=manipulatorStrength)
+            
+            characteristics = ''
+            skills = ''
+            if dexterityModifier > athleticsDexterity.value():
+                characteristics += 'DEX'
+                skills += '{skill} {level}'.format(
+                    skill=athletics.name(speciality=traveller.AthleticsSkillSpecialities.Dexterity),
+                    level=dexterityModifier)
+
+            if strengthModifier > athleticsStrength.value():
+                if characteristics:
+                    characteristics += '/'
+                if skills:
+                    skills += ' and '
+                characteristics += 'STR'
+                skills += '{skill} {level}'.format(
+                    skill=athletics.name(speciality=traveller.AthleticsSkillSpecialities.Strength),
+                    level=strengthModifier)
+                
+            if characteristics and skills:
+                step = robots.RobotStep(
+                    name=f'Manipulator Size {manipulatorSize}, STR {manipulatorStrength}, DEX {manipulatorDexterity}',
+                    type='Skills')
+                step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
+                    characteristics=characteristics,
+                    skills=skills))
+                context.applyStep(
+                    sequence=sequence,
+                    step=step)
+            
 
     def _createCombatStep(
             self,
@@ -654,7 +727,6 @@ class FinalisationComponent(robots.FinalisationInterface):
         context.applyStep(
             sequence=sequence,
             step=step)         
-
 
     def _createSkilledSensorsSteps(
             self,
