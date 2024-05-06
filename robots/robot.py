@@ -20,12 +20,26 @@ class _RobotSequenceState(construction.SequenceState):
 class RobotContext(construction.ConstructionContext):
     def __init__(
             self,
-            techLevel: int
+            techLevel: int,
+            weaponSet: traveller.StockWeaponSet
             ) -> None:
         super().__init__(
             phasesType=robots.RobotPhase,
             componentsType=robots.RobotComponentInterface,
             techLevel=techLevel)
+        self._weaponSet = weaponSet
+        
+    def weaponSet(self) -> traveller.StockWeaponSet:
+        return self._weaponSet
+
+    def setWeaponSet(
+            self,
+            weaponSet: traveller.StockWeaponSet,
+            regenerate: bool = True
+            ) -> None:
+        self._weaponSet = weaponSet
+        if regenerate:
+            self.regenerate()        
         
     def baseSlots(
             self,
@@ -97,6 +111,7 @@ class Robot(object):
             self,
             robotName: str,
             techLevel: int,
+            weaponSet: traveller.StockWeaponSet,
             userNotes: typing.Optional[str] = None
             ) -> None:
         self._robotName = robotName
@@ -107,8 +122,11 @@ class Robot(object):
         # may hold onto references to it.
         # NOTE: It's also important that this class doesn't cache any state as
         # the context may be modified without it knowing.
-        self._constructionContext = RobotContext(techLevel=techLevel)
+        self._constructionContext = RobotContext(
+            techLevel=techLevel,
+            weaponSet=weaponSet)
 
+        # Robots only have a single sequence
         self._sequence = str(uuid.uuid4())
         sequenceState = _RobotSequenceState(
             stages=self._createStages())
@@ -130,6 +148,18 @@ class Robot(object):
             ) -> None:
         self._constructionContext.setTechLevel(
             techLevel=techLevel,
+            regenerate=regenerate)
+        
+    def weaponSet(self) -> traveller.StockWeaponSet:
+        return self._constructionContext.weaponSet()
+        
+    def setWeaponSet(
+            self,
+            weaponSet: traveller.StockWeaponSet,
+            regenerate: bool = True
+            ) -> None:
+        self._constructionContext.setWeaponSet(
+            weaponSet=weaponSet,
             regenerate=regenerate)
 
     def context(self) -> RobotContext:
@@ -592,10 +622,10 @@ class Robot(object):
         # to the AllSlotRemoval component but still allow the user to specify
         # None to not have any slots removed
         stages.append(construction.ConstructionStage(
-            name='Slot Removal',
+            name='Unused Slot Removal',
             sequence=self._sequence,
             phase=robots.RobotPhase.Finalisation,
-            baseType=robots.SlotRemovalInterface,
+            baseType=robots.UnusedSlotRemovalInterface,
             defaultType=robots.AllSlotRemoval,
             # Mandatory single component
             minComponents=1,

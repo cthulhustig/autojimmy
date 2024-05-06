@@ -59,32 +59,7 @@ class _ManipulatorImpl(object):
     # to walker legs. The rules state they can't have their size increased (p26)
     # but don't mention STR/DEX. I've not disabled the controls, so it's left
     # up to the user
-    # TODO: The manipulator rules have this regarding the athletics skill (p26)
-    #
-    # Increased DEX and STR values do not directly grant a skill equivalence of
-    # Athletics (dexterity) or Athletics (strength) to the robot unless it has a
-    # skill package of Athletics installed in its brain. If such a package is
-    # installed, even at skill level zero, then DMs for high STR or DEX are
-    # applied to simulate that skill level, although in situations where
-    # different manipulators have different DMs, the Referee should determine
-    # whether a DM applies. Note that a robot with DEX 15 manipulators and
-    # Athletics 0 would be considered to have Athletics (dexterity) 3 for
-    # skill recording purposes but would not receive an additional DM+3 to that
-    # skill while attempting checks using Athletics (dexterity).
-    #
-    # I suspect this would need handled as some notes that give the athletics
-    # skills for different manipulators and states that you don't get an
-    # additional DM+X on top of the DEX modifier when making Athletics checks.
-    # It could also check if manipulators have different DMs to add a note about
-    # it being at the referees discretion if they apply.
-    # Ideally we don't want these notes added if the the robot skill is added as
-    # it talks about. I don't think it would be possible to do this check here
-    # as, to account for packages that give the skill, it would require checking
-    # for the skill rather than existence of a component and the skill won't have
-    # been added yet as skills come later in construction.
-    # I could add the notes when the skill is being added but that would mean I'd
-    # need to do the same thing in all the places that add the Athletics skill.
-    # I would probably be better to add it to finalisation.
+
     class ManipulatorType(enum.Enum):
         Base = 'Base Manipulator'
         Additional = 'Additional Manipulator'

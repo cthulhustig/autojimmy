@@ -2,6 +2,7 @@ import construction
 import gui
 import logging
 import robots
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -9,6 +10,9 @@ class RobotConfigWidget(QtWidgets.QWidget):
     robotChanged = QtCore.pyqtSignal(robots.Robot)
 
     _StateVersion = 'RobotConfigWidget_v1'
+
+    _WeaponSetTooltip = \
+        '<p>Select which weapons are available during construction.</p>'
 
     def __init__(
             self,
@@ -27,13 +31,27 @@ class RobotConfigWidget(QtWidgets.QWidget):
         self._techLevelSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
-        self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)
+        self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)  
+
+        self._weaponSetComboBox = gui.EnumComboBox(
+            type=traveller.StockWeaponSet,
+            value=traveller.StockWeaponSet.CSC2023)
+        self._weaponSetComboBox.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self._weaponSetComboBox.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._weaponSetComboBox.setToolTip(gui.createStringToolTip(RobotConfigWidget._WeaponSetTooltip))
+        self._weaponSetComboBox.currentIndexChanged.connect(self._weaponSetChanged)            
 
         globalLayout = gui.VBoxLayoutEx()
         globalLayout.addLabelledWidget(
             label='Tech Level:',
             widget=self._techLevelSpinBox,
             alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+        globalLayout.addLabelledWidget(
+            label='Weapon Set:',
+            widget=self._weaponSetComboBox,
+            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)        
 
         self._configurationWidget = gui.ExpanderGroupWidgetEx()
         self._configurationWidget.setPersistExpanderStates(True)
@@ -65,6 +83,9 @@ class RobotConfigWidget(QtWidgets.QWidget):
 
         with gui.SignalBlocker(widget=self._techLevelSpinBox):
             self._techLevelSpinBox.setValue(self._robot.techLevel())
+
+        with gui.SignalBlocker(widget=self._weaponSetComboBox):
+            self._weaponSetComboBox.setCurrentEnum(self._robot.weaponSet())
 
         self._configureDynamicWidgets()
 
@@ -125,6 +146,12 @@ class RobotConfigWidget(QtWidgets.QWidget):
         self._synchroniseStages()
         self.robotChanged.emit(self._robot)
 
+    def _weaponSetChanged(self) -> None:
+        self._robot.setWeaponSet(
+            weaponSet=self._weaponSetComboBox.currentEnum())
+        self._synchroniseStages()
+        self.robotChanged.emit(self._robot)        
+
     def _configureDynamicWidgets(self) -> None:
         self._removeWidgets()
 
@@ -178,3 +205,6 @@ class RobotConfigWidget(QtWidgets.QWidget):
             if not phaseWidget:
                 continue
             phaseWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=phaseWidget,
+                hidden=phaseWidget.isPointless())

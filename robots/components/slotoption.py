@@ -715,16 +715,6 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     # NOTE: The compatibility requirements are handled by the component rather
     # than the impl
-    # TODO: Ideally the recharge time note would be filled in with the robots
-    # Endurance but it's not calculated yet due to No Internal Power, RTG &
-    # Solar Power. It's also complicated by BioRobots that don't have Endurance
-    # but need to allow the component to allow them to mimic species that have
-    # some kind of natural solar coating. It might be something that works it's
-    # self out in when I get round to splitting the slot options into categories.
-    # Either this will be in a 'coatings' category or it will be in the 'power'
-    # category with the other relevant components. If it's the former then I can
-    # just make the 'coatings category after the 'power' category. If it's the
-    # latter than I can mark this component as needing processed after the others.
 
     _MinTLMap = {
         _OptionLevel.Basic: 6,
@@ -4594,6 +4584,8 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 1
         - Skill: Navigation 4
     """
+    # TODO: The Navigation Skill given by this component should NOT stack with
+    # Navigation skill packages    
 
     _MinTLMap = {
         _OptionLevel.Basic: 8,
@@ -5852,6 +5844,8 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 1
         - Skill: Recon 3
     """
+    # TODO: The Recon Skill given by this component should stack with Recon
+    # skill packages
 
     _MinTLMap = {
         _OptionLevel.Basic: 7,

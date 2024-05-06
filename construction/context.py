@@ -788,7 +788,7 @@ class ConstructionContext(object):
             self,
             attributeId: construction.ConstructionAttributeId,
             sequence: str
-            ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
+            ) -> typing.Optional[construction.AttributeInterface]:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')

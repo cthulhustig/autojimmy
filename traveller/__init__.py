@@ -22,4 +22,4 @@ from .fuel import *
 from .broker import *
 from .characteristics import *
 from .skills import *
-from .weapondata import *
+from .stockweapons import *

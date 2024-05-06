@@ -15,9 +15,9 @@ def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[travel
         return traveller.WeaponSize.Small
     return None
 
-class SlotRemoval(robots.SlotRemovalInterface):
+class UnusedSlotRemoval(robots.UnusedSlotRemovalInterface):
     def typeString(self) -> str:
-        return 'Slot Removal'
+        return 'Unused Slot Removal'
     
     def isCompatible(
             self,
@@ -39,7 +39,7 @@ class SlotRemoval(robots.SlotRemovalInterface):
 # NOTE: This component is hack to allow the stage to default to
 # CustomSlotRemoval but still allow the user to select None as
 # an option
-class NoSlotRemoval(SlotRemoval):
+class NoUnusedSlotRemoval(UnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
 
@@ -53,7 +53,7 @@ class NoSlotRemoval(SlotRemoval):
             ) -> None:
         pass
 
-class ActualSlotRemoval(SlotRemoval):
+class ActualUnusedSlotRemoval(UnusedSlotRemoval):
     """
     - Cost Saving: Cr100 per slot removed
     """    
@@ -67,7 +67,7 @@ class ActualSlotRemoval(SlotRemoval):
     
     _PerSlotCostSaving = common.ScalarCalculation(
         value=-100,
-        name='Slot Removal Per Slot Cost Saving')
+        name='Unused Slot Removal Per Slot Cost Saving')
     
     def createSteps(
             self,
@@ -113,6 +113,10 @@ class ActualSlotRemoval(SlotRemoval):
         maxSlots = context.attributeValue(
             attributeId=robots.RobotAttributeId.MaxSlots,
             sequence=sequence)
+        if not maxSlots:
+            return common.ScalarCalculation(
+                value=0,
+                name='Unused Slots When No Max Slots')
         assert(isinstance(maxSlots, common.ScalarCalculation))
         usedSlots = context.usedSlots(sequence=sequence)
 
@@ -128,7 +132,7 @@ class ActualSlotRemoval(SlotRemoval):
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
         raise RuntimeError(f'{type(self)} is derived from ActualSlotRemoval so must implement _slotCount')    
 
-class AllSlotRemoval(ActualSlotRemoval):
+class AllSlotRemoval(ActualUnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
         
@@ -138,7 +142,7 @@ class AllSlotRemoval(ActualSlotRemoval):
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
         return None # Remove all
 
-class CustomSlotRemoval(ActualSlotRemoval):
+class CustomSlotRemoval(ActualUnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
 
@@ -258,9 +262,9 @@ class FinalisationComponent(robots.FinalisationInterface):
     
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
 
-    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted on or held by a manipulator receive the DEX modifier for the manipulator in the same way as players receive a DEX characteristic modifier (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted on or held by a manipulator do not receive a DEX modifier (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are to small to use weapons effectively. Attacks rolls do not get the manipulators STR or DEX bonus (p61)'
+    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted on or held by a manipulator receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted on or held by a manipulator do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are to small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
     _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
     _CombatWeaponSizeExamples = {
         traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
@@ -765,6 +769,8 @@ class FinalisationComponent(robots.FinalisationInterface):
         maxSlots = context.attributeValue(
             attributeId=robots.RobotAttributeId.MaxSlots,
             sequence=sequence)
+        if not maxSlots:
+            return # No max so nothing to do
         assert(isinstance(maxSlots, common.ScalarCalculation))
         usedSlots = context.usedSlots(sequence=sequence)
         if usedSlots.value() <= maxSlots.value():
@@ -790,11 +796,13 @@ class FinalisationComponent(robots.FinalisationInterface):
             componentType=robots.BrainInAJarBrain,
             sequence=sequence):
             # There is no bandwidth limitation when using a brain in a jar
-            return None
+            return
 
         maxBandwidth = context.attributeValue(
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             sequence=sequence)
+        if not maxBandwidth:
+            return # No max so nothing to do
         assert(isinstance(maxBandwidth, common.ScalarCalculation))
         usedBandwidth = context.usedBandwidth(sequence=sequence)
         if usedBandwidth.value() <= maxBandwidth.value():

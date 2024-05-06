@@ -956,6 +956,12 @@ class StageGroupWidget(QtWidgets.QWidget):
                     expanded=expansionMap[expander.label()],
                     animated=animated)
                 
+    def isPointless(self) -> bool:
+        for widget in self._stageWidgets.values():
+            if not widget.isPointless():
+                return False
+        return True
+                
     def generateSequencePrefix(
             self,
             sequence: str,
@@ -977,7 +983,7 @@ class StageGroupWidget(QtWidgets.QWidget):
         elif len(sequences) == 2:
             return 'Secondary '
         else:
-            return f'Secondary {sequenceIndex} '                
+            return f'Secondary {sequenceIndex} '
 
     def _stageStateChanged(
             self,

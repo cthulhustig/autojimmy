@@ -332,6 +332,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
                 label=sectionName,
                 content=sequenceWidget,
                 expanded=True)
+            self._configurationWidget.setContentHidden(
+                content=sequenceWidget,
+                hidden=sequenceWidget.isPointless())
 
         self._commonWidget = gui.MultiPhaseStagesWidget(
             context=self._weapon.context(),
@@ -343,6 +346,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Furniture',
             content=self._commonWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._commonWidget,
+            hidden=self._commonWidget.isPointless())        
 
         self._loadingWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -354,6 +360,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Loading',
             content=self._loadingWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._loadingWidget,
+            hidden=self._loadingWidget.isPointless())          
 
         self._munitionsWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -365,6 +374,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Munitions',
             content=self._munitionsWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._munitionsWidget,
+            hidden=self._munitionsWidget.isPointless())          
 
     def _removeWidgets(self) -> None:
         for sequenceWidget in self._sequenceWidgets.values():
@@ -431,15 +443,30 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             sequenceWidget = self._sequenceWidgets.get(sequence)
             if sequenceWidget:
                 sequenceWidget.synchronise()
+                self._configurationWidget.setContentHidden(
+                    content=sequenceWidget,
+                    hidden=sequenceWidget.isPointless())
         else:
             for sequenceWidget in self._sequenceWidgets.values():
                 sequenceWidget.synchronise()
+                self._configurationWidget.setContentHidden(
+                    content=sequenceWidget,
+                    hidden=sequenceWidget.isPointless())
 
         if self._commonWidget:
             self._commonWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._commonWidget,
+                hidden=self._commonWidget.isPointless())            
 
         if self._loadingWidget:
             self._loadingWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._loadingWidget,
+                hidden=self._loadingWidget.isPointless())               
 
         if self._munitionsWidget:
             self._munitionsWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._munitionsWidget,
+                hidden=self._munitionsWidget.isPointless())             

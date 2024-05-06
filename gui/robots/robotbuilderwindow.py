@@ -1,6 +1,9 @@
 import app
+import common
+import enum
 import gui
 import robots
+import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -11,6 +14,7 @@ TODO
 
 class RobotBuilderWindow(gui.WindowWidget):
     _DefaultTechLevel = 12
+    _DefaultWeaponSet = traveller.StockWeaponSet.CSC2023
 
     _ConfigurationBottomSpacing = 300
 
@@ -22,7 +26,8 @@ class RobotBuilderWindow(gui.WindowWidget):
         # TODO: Hacky hard coded robot
         self._robot = robots.Robot(
             robotName='Test Robot',
-            techLevel=RobotBuilderWindow._DefaultTechLevel)
+            techLevel=RobotBuilderWindow._DefaultTechLevel,
+            weaponSet=RobotBuilderWindow._DefaultWeaponSet)
 
         self._setupCurrentRobotControls()
         self._setupResultsControls()

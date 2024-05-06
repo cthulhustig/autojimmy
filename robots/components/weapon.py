@@ -203,7 +203,7 @@ class _WeaponMountImpl(object):
             id='Weapon',
             name='Weapon',
             value=None,
-            options=list(traveller.TravellerCompanionWeaponDataMap.keys()),
+            options=['default'], # This will be replaced when updateOptions is called
             isEditable=False,
             description='Specify the weapon that is mounted.')    
         
@@ -238,11 +238,16 @@ class _WeaponMountImpl(object):
     def weaponName(self) -> typing.Optional[str]:
         return self._weaponOption.value() if self._weaponOption.isEnabled() else None
 
-    def weaponData(self) -> typing.Optional[traveller.WeaponData]:
+    def weaponData(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Optional[traveller.StockWeapon]:
         weaponName = self.weaponName()
         if not weaponName:
             return None
-        return traveller.TravellerCompanionWeaponDataMap.get(weaponName)
+        return traveller.lookupStockWeapon(
+            name=weaponName,
+            weaponSet=weaponSet)
         
     def autoloaderMagazineCount(self) -> typing.Optional[int]:
         return self._autoLoaderOption.value() if self._autoLoaderOption.isEnabled() else None
@@ -411,7 +416,7 @@ class _WeaponMountImpl(object):
             sequence: str,
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData:
             return None
         linkedMountCount = self.linkedMountCount()
@@ -428,15 +433,17 @@ class _WeaponMountImpl(object):
             name=stepName,
             type=stepType)
         
-        weaponCost = common.ScalarCalculation(
-            value=weaponData.cost(),
-            name=f'{weaponData.name()} Cost')
-        if linkedMountCount:
-            weaponCost = common.Calculator.multiply(
-                lhs=weaponCost,
-                rhs=linkedMountCount,
-                name=f'Multi-Link {weaponCost.name()}')            
-        step.setCredits(credits=construction.ConstantModifier(value=weaponCost))
+        weaponCost = weaponData.cost()
+        if weaponCost:
+            weaponCost = common.ScalarCalculation(
+                value=weaponCost,
+                name=f'{weaponData.name()} Cost')
+            if linkedMountCount:
+                weaponCost = common.Calculator.multiply(
+                    lhs=weaponCost,
+                    rhs=linkedMountCount,
+                    name=f'Multi-Link {weaponCost.name()}')            
+            step.setCredits(credits=construction.ConstantModifier(value=weaponCost))
         
         skill = weaponData.skill()
         specialty = weaponData.specialty()
@@ -445,11 +452,11 @@ class _WeaponMountImpl(object):
             skillName += f' ({specialty.value})'
 
         damage = weaponData.damage()
-        traits = weaponData.traits()
-
         if damage:
             step.addFactor(factor=construction.StringFactor(
                 string=f'Weapon Base Damage = {damage}'))
+
+        traits = weaponData.traits()
         if traits:
             step.addFactor(factor=construction.StringFactor(
                 string=f'Weapon Traits = {traits}'))
@@ -488,7 +495,7 @@ class _WeaponMountImpl(object):
             return None
         _, mountSlots = _WeaponMountImpl._MountSizeData[mountSize]        
         
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData:
             return None
         
@@ -569,7 +576,7 @@ class _WeaponMountImpl(object):
         step.setSlots(slots=construction.ConstantModifier(
             value=_WeaponMountImpl._FireControlSlots))
         
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if weaponData:
             skill = weaponData.skill()
             specialty = weaponData.specialty()
@@ -612,10 +619,12 @@ class _WeaponMountImpl(object):
         if not mountSize:
             return []
 
-        robotTL = context.techLevel()
+        weapons = traveller.findStockWeapons(
+            weaponSet=context.weaponSet(),
+            currentTL=context.techLevel())
         allowed = []
-        for weapon in traveller.TravellerCompanionWeapons:
-            if weapon.size() == mountSize and weapon.techLevel() <= robotTL:
+        for weapon in weapons:
+            if weapon.size() == mountSize:
                 allowed.append(weapon.name())
         return allowed
     
@@ -627,7 +636,7 @@ class _WeaponMountImpl(object):
         if context.techLevel() < _WeaponMountImpl._AutoloaderMinTL.value():
             return False
                 
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         return weaponData and weaponData.magazineCost() != None
     
     def _allowedMultiLinkCount(
@@ -635,7 +644,7 @@ class _WeaponMountImpl(object):
             sequence: str,
             context: robots.RobotContext
             ) -> int:
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData or not weaponData.multiLink():
             return 0
         return 4            
@@ -884,7 +893,7 @@ class _ManipulatorMountImpl(_WeaponMountImpl):
         if context.techLevel() < _WeaponMountImpl._AutoloaderMinTL.value():
             return False
                 
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData or weaponData.magazineCost() == None:
             return False
 
@@ -908,7 +917,7 @@ class _ManipulatorMountImpl(_WeaponMountImpl):
             context: robots.RobotContext
             ) -> int:
         # NOTE: Intentionally don't call base impl
-        weaponData = self.weaponData()
+        weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData or not weaponData.multiLink():
             return 0
                 
@@ -955,7 +964,7 @@ class _HandHeldMountImpl(_ManipulatorMountImpl):
     def weaponName(self) -> typing.Optional[str]:
         return None
     
-    def weaponData(self) -> typing.Optional[traveller.WeaponData]:
+    def weaponData(self) -> typing.Optional[traveller.StockWeapon]:
         return None
 
     def isCompatible(
@@ -1032,7 +1041,10 @@ class Weapon(robots.WeaponInterface):
     def weaponName(self) -> typing.Optional[str]:
         return self._impl.weaponName()
 
-    def weaponData(self) -> typing.Optional[traveller.WeaponData]:
+    def weaponData(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Optional[traveller.StockWeapon]:
         return self._impl.weaponData()
         
     def autoloaderMagazineCount(self) -> typing.Optional[int]:

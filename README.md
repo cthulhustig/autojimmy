@@ -25,7 +25,7 @@ Python and can be run on Windows, Linux and macOS.
 * Experimental player aids for Mongoose Speculative Trading & Smuggling rules
     * Options to see how each variable in the trading process would affect a trade
     * Estimation of profits for trading between worlds if the player was to make average, worst
-    and best case dice roles at each point in the trading process
+    and best case dice rolls at each point in the trading process
 * Import of custom sectors
     * Custom sector data integrated into all tools
     * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
