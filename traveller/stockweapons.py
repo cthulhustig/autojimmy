@@ -2121,7 +2121,7 @@ _WeaponDescriptions = [
         traits='AP 5',
         compatible=[StockWeaponSet.CSC2023]),        
     _StockWeaponDescription(
-        name='Medium Laser Cannon', # TODO: This is Laser Cannon in Core and CSC 2e rules
+        name='Medium Laser Cannon', # NOTE: This is Laser Cannon in Core and CSC 2e rules
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
