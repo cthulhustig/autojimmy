@@ -399,8 +399,7 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
         name='Servant Profession Skill Level')        
 
     def __init__(self) -> None:
-        super().__init__(componentName='Servant',
-            skills=[(traveller.ReconSkillDefinition, None, 2)])
+        super().__init__(componentName='Servant')
 
         self._professionSkillOption = construction.EnumOption(
             id='Profession',
