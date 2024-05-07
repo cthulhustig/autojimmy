@@ -351,7 +351,7 @@ _WeaponDescriptions = [
     # darts or javelin better. It doubles the range and allows you to add
     # your DEX _AND_ STR bonus to the damage.
     _StockWeaponDescription(
-        name='Atlatl, Dart',
+        name='Atlatl - Dart',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Archaic,
@@ -364,7 +364,7 @@ _WeaponDescriptions = [
         traits='One Use, Silent',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Atlatl, Javelin',
+        name='Atlatl - Javelin',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Archaic,
@@ -506,7 +506,7 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 'Silent'},
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Cartridge Laser Carbine, TL 10',
+        name='Cartridge Laser Carbine - TL 10',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -520,7 +520,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Cartridge Laser Carbine, TL 12',
+        name='Cartridge Laser Carbine - TL 12',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -534,7 +534,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Cartridge Laser Rifle, TL 10',
+        name='Cartridge Laser Rifle - TL 10',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -548,7 +548,7 @@ _WeaponDescriptions = [
         traits='Auto 3, Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Cartridge Laser Rifle, TL 12',
+        name='Cartridge Laser Rifle - TL 12',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -632,7 +632,7 @@ _WeaponDescriptions = [
         traits='Scope, Zero-G',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Ion Rifle, TL 14',
+        name='Ion Rifle - TL 14',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -646,7 +646,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Ion Rifle, TL 15',
+        name='Ion Rifle - TL 15',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -660,7 +660,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Laser Carbine, TL 9',
+        name='Laser Carbine - TL 9',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -674,7 +674,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),        
     _StockWeaponDescription(
-        name='Laser Carbine, TL 11',
+        name='Laser Carbine - TL 11',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -688,7 +688,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Laser Pistol, TL 9',
+        name='Laser Pistol - TL 9',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -702,7 +702,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),        
     _StockWeaponDescription(
-        name='Laser Pistol, TL 11',
+        name='Laser Pistol - TL 11',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -716,7 +716,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Laser Rifle, TL 9',
+        name='Laser Rifle - TL 9',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -730,7 +730,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),        
     _StockWeaponDescription(
-        name='Laser Rifle, TL 11',
+        name='Laser Rifle - TL 11',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -788,7 +788,7 @@ _WeaponDescriptions = [
         traits='AP 10, Zero-G',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Matter Disintegrator, TL 18',
+        name='Matter Disintegrator - TL 18',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -801,7 +801,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Matter Disintegrator, TL 19',
+        name='Matter Disintegrator - TL 19',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -868,7 +868,7 @@ _WeaponDescriptions = [
         traits='AP 20, Zero-G',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Stagger Laser Rifle, TL 12',
+        name='Stagger Laser Rifle - TL 12',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -882,7 +882,7 @@ _WeaponDescriptions = [
         traits='Auto 2, Zero-G',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Stagger Laser Rifle, TL 14',
+        name='Stagger Laser Rifle - TL 14',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -924,7 +924,7 @@ _WeaponDescriptions = [
         traits='Stun, Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Stunner, TL 8',
+        name='Stunner - TL 8',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -938,7 +938,7 @@ _WeaponDescriptions = [
         traits='Stun, Zero-G',
         compatible=_AllCompatible),        
     _StockWeaponDescription(
-        name='Stunner, TL 10',
+        name='Stunner - TL 10',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -952,7 +952,7 @@ _WeaponDescriptions = [
         traits='Stun, Zero-G',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Stunner, TL 12',
+        name='Stunner - TL 12',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Energy,
@@ -966,7 +966,7 @@ _WeaponDescriptions = [
         traits='Stun, Zero-G',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Accelerator Rifle, TL 9',
+        name='Accelerator Rifle - TL 9',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
@@ -982,7 +982,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=_AllCompatible),        
     _StockWeaponDescription(
-        name='Accelerator Rifle, TL 11',
+        name='Accelerator Rifle - TL 11',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
@@ -1010,7 +1010,7 @@ _WeaponDescriptions = [
         traits='Auto 3, Scope',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Air Rifle, TL 3',
+        name='Air Rifle - TL 3',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
@@ -1024,7 +1024,7 @@ _WeaponDescriptions = [
         traits='Silent',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Air Rifle, TL 4',
+        name='Air Rifle - TL 4',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
@@ -1603,7 +1603,7 @@ _WeaponDescriptions = [
         traits='AP 5, Scope, Very Bulky',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='ARL (PDW)',
+        name='ARL - PDW',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1617,7 +1617,7 @@ _WeaponDescriptions = [
         traits='Auto 4, Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='ARL (Standard)',
+        name='ARL - Standard',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1631,7 +1631,7 @@ _WeaponDescriptions = [
         traits='Zero-G',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='ARL (Support)',
+        name='ARL - Support',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1762,7 +1762,7 @@ _WeaponDescriptions = [
         traits='Radiation',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Flamethrower, TL 4',
+        name='Flamethrower - TL 4',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1776,7 +1776,7 @@ _WeaponDescriptions = [
         traits='Blast 5, Bulky, Fire',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Flamethrower, TL 6',
+        name='Flamethrower - TL 6',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1790,7 +1790,7 @@ _WeaponDescriptions = [
         traits='Blast 5, Bulky, Fire',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Flamethrower, TL 8',
+        name='Flamethrower - TL 8',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1905,7 +1905,7 @@ _WeaponDescriptions = [
         damage='1DD',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Plasma Jet, TL 12',
+        name='Plasma Jet - TL 12',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1917,7 +1917,7 @@ _WeaponDescriptions = [
         traits='Blast 5, Very Bulky',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Plasma Jet, TL 14',
+        name='Plasma Jet - TL 14',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1955,7 +1955,7 @@ _WeaponDescriptions = [
         traits='Auto 4 (8)',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Rocket Launcher, TL 6',
+        name='Rocket Launcher - TL 6',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1968,7 +1968,7 @@ _WeaponDescriptions = [
         traits='Blast 6',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Rocket Launcher, TL 7',
+        name='Rocket Launcher - TL 7',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1981,7 +1981,7 @@ _WeaponDescriptions = [
         traits='Blast 6, Smart',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Rocket Launcher, TL 8',
+        name='Rocket Launcher - TL 8',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1994,7 +1994,7 @@ _WeaponDescriptions = [
         traits='Blast 6, Scope, Smart',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Rocket Launcher, TL 9',
+        name='Rocket Launcher - TL 9',
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -2007,22 +2007,67 @@ _WeaponDescriptions = [
         traits='Blast 6, Scope, Smart',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Cannon',
+        name='Light Cannon',
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
-        techLevel=6,
+        techLevel=5,
+        cost=200000,
+        range=1.5,
+        magazineSize=50,
+        magazineCost=5000,
+        multiLink=True,
+        damage='6D',
+        traits='Blast 6',
+        compatible=[StockWeaponSet.CSC2023]),        
+    _StockWeaponDescription(
+        name='Medium Cannon', # NOTE: This is Cannon in Core rules and CSC 2
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=8,
         cost=400000,
         range=2,
         magazineSize=30,
         magazineCost=5000,
         multiLink=True,
-        damage='8D',
+        damage={
+            StockWeaponSet.Core2: '8D',
+            StockWeaponSet.Core2022: '8D',
+            StockWeaponSet.CSC2: '1DD',
+            StockWeaponSet.CSC2023: '1DD'},
         traits='Blast 10',
-        # TODO: Check if this in either CSC
-        compatible=_CoreCompatible),
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Fusion Cannon',
+        name='Heavy Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel={
+            StockWeaponSet.CSC2: 8,
+            StockWeaponSet.CSC2023: 7},
+        cost=600000,
+        range=3,
+        magazineSize=10,
+        magazineCost=5000,
+        multiLink=True,
+        damage='2DD',
+        traits='Blast 10',
+        compatible=_SupplyCatalogueCompatible),
+    _StockWeaponDescription(
+        name='Fusion Gun - TL 13',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=13,
+        cost=2000000,
+        range=3,
+        multiLink=True,
+        damage='3DD',
+        traits='AP 10, Blast 25, Radiation',
+        compatible=[StockWeaponSet.CSC2, StockWeaponSet.CSC2023]),
+    _StockWeaponDescription(
+        name='Fusion Gun - TL 14', # NOTE: This is Fusion Cannon in Core 2e rules
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
@@ -2032,8 +2077,19 @@ _WeaponDescriptions = [
         multiLink=True,
         damage='3DD',
         traits='AP 20, Blast 20, Radiation',
-        # TODO: Check if this in either CSC
-        compatible=[StockWeaponSet.Core2]),                 
+        compatible=[StockWeaponSet.Core2, StockWeaponSet.CSC2, StockWeaponSet.CSC2023]),
+    _StockWeaponDescription(
+        name='Fusion Gun - TL 15',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=13,
+        cost=8000000,
+        range=10,
+        multiLink=True,
+        damage='3DD',
+        traits='AP 30, Blast 30, Radiation',
+        compatible=[StockWeaponSet.CSC2, StockWeaponSet.CSC2023]),        
     _StockWeaponDescription(
         name='Heavy Machinegun',
         size=WeaponSize.Vehicle,
@@ -2053,7 +2109,19 @@ _WeaponDescriptions = [
         traits='Auto 3',
         compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='Laser Cannon',
+        name='Light Laser Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=9,
+        cost=60000,
+        range=2,
+        multiLink=True,
+        damage='8D',
+        traits='AP 5',
+        compatible=[StockWeaponSet.CSC2023]),        
+    _StockWeaponDescription(
+        name='Medium Laser Cannon', # TODO: This is Laser Cannon in Core and CSC 2e rules
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
@@ -2063,10 +2131,25 @@ _WeaponDescriptions = [
         multiLink=True,
         damage={
             StockWeaponSet.Core2: '4D',
-            StockWeaponSet.Core2022: '1DD'},
+            StockWeaponSet.Core2022: '1DD',
+            StockWeaponSet.CSC2: '1DD',
+            StockWeaponSet.CSC2023: '1DD'},
         traits='AP 10',
-        # TODO: Check if this in either CSC
-        compatible=_CoreCompatible),        
+        compatible=_AllCompatible),
+    _StockWeaponDescription(
+        name='Heavy Laser Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=9,
+        cost=250000,
+        range=25,
+        multiLink=True,
+        damage={
+            StockWeaponSet.CSC2: '2DD',
+            StockWeaponSet.CSC2023: '1DD'},
+        traits='AP 20',
+        compatible=_SupplyCatalogueCompatible),           
     _StockWeaponDescription(
         name='Light Anti-Air Missile',
         size=WeaponSize.Vehicle,
@@ -2109,7 +2192,7 @@ _WeaponDescriptions = [
         traits='Auto 3, Blast 5',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Tac Launcher, Anti-Aircraft',
+        name='Tac Launcher - Anti-Aircraft',
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
@@ -2124,7 +2207,7 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 'Scope, Smart'},
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Tac Launcher, Anti-Personnel',
+        name='Tac Launcher - Anti-Personnel',
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
@@ -2137,7 +2220,7 @@ _WeaponDescriptions = [
         traits='Blast 10, Scope, Smart',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Tac Launcher, Armour Piercing',
+        name='Tac Launcher - Armour Piercing',
         size=WeaponSize.Vehicle,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
@@ -2188,7 +2271,7 @@ _WeaponDescriptions = [
         traits='AP 30',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Assault Pike, TL 5',
+        name='Assault Pike - TL 5',
         techLevel=5,
         cost=200,
         size=WeaponSize.Heavy,
@@ -2198,7 +2281,7 @@ _WeaponDescriptions = [
         traits='AP 4, One Use',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Assault Pike, TL 8',
+        name='Assault Pike - TL 8',
         size=WeaponSize.Medium,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2327,7 +2410,7 @@ _WeaponDescriptions = [
         traits='AP 4',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Long Blade, TL 1',
+        name='Long Blade - TL 1',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2336,7 +2419,7 @@ _WeaponDescriptions = [
         damage='3D',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Long Blade, TL 2',
+        name='Long Blade - TL 2',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2345,7 +2428,7 @@ _WeaponDescriptions = [
         damage='3D',
         compatible=[StockWeaponSet.CSC2]),        
     _StockWeaponDescription(
-        name='Long Blade, TL 3',
+        name='Long Blade - TL 3',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2436,7 +2519,7 @@ _WeaponDescriptions = [
         damage='2D',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Static Axe, TL 11',
+        name='Static Axe - TL 11',
         size=WeaponSize.Heavy,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2446,7 +2529,7 @@ _WeaponDescriptions = [
         traits='AP 6, Smasher',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Static Axe, TL 12',
+        name='Static Axe - TL 12',
         size=WeaponSize.Medium,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2456,7 +2539,7 @@ _WeaponDescriptions = [
         traits='AP 8, Smasher',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Static Blade, TL 11',
+        name='Static Blade - TL 11',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2466,7 +2549,7 @@ _WeaponDescriptions = [
         traits='AP 5',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Static Blade, TL 12',
+        name='Static Blade - TL 12',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
@@ -2685,7 +2768,7 @@ _WeaponDescriptions = [
         damage='1D+2',
         compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
-        name='Claw, Arc-Field',
+        name='Claw - Arc-Field',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
@@ -2695,7 +2778,7 @@ _WeaponDescriptions = [
         traits='AP 30',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Claw, Edging',
+        name='Claw - Edging',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
@@ -2705,7 +2788,7 @@ _WeaponDescriptions = [
         traits='AP 4',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Claw, Hardened',
+        name='Claw - Hardened',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
@@ -2715,7 +2798,7 @@ _WeaponDescriptions = [
         traits='AP 2',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='Claw, Monofilament',
+        name='Claw - Monofilament',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
