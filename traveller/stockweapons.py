@@ -3,8 +3,14 @@ import traveller
 import typing
 
 class StockWeaponSet(enum.Enum):
+    Core2 = 'Core Rules 2e'
+    Core2022 = 'Core Rules 2022'
     CSC2 = 'Central Supply Catalogue 2e'
     CSC2023 = 'Central Supply Catalogue 2023'
+
+_CoreCompatible = [StockWeaponSet.Core2, StockWeaponSet.Core2022]
+_SupplyCatalogueCompatible = [StockWeaponSet.CSC2, StockWeaponSet.CSC2023]
+_AllCompatible = _CoreCompatible + _SupplyCatalogueCompatible
 
 class WeaponSize(enum.Enum):
     Small = 'Small'
@@ -163,7 +169,8 @@ _WeaponDescriptions = [
         techLevel=9,
         cost=15,
         range=20,
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Chemical Grenade', # NOTE: Not in original CSC
         size=WeaponSize.Small,
@@ -173,7 +180,8 @@ _WeaponDescriptions = [
         cost=50,
         range=20,
         damage='Special',
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='EMP Grenade',
         size=WeaponSize.Small,
@@ -182,7 +190,8 @@ _WeaponDescriptions = [
         techLevel=9,
         cost=100,
         range=20,
-        traits='Blast 6'),
+        traits='Blast 6',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Frag Grenade',
         size=WeaponSize.Small,
@@ -192,7 +201,8 @@ _WeaponDescriptions = [
         cost=30,
         range=20,
         damage='5D',
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Incendiary Grenade',
         size=WeaponSize.Small,
@@ -204,7 +214,8 @@ _WeaponDescriptions = [
         cost=75,
         range=20,
         damage='2D',
-        traits='Blast 3, Fire'),
+        traits='Blast 3, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Neurotoxin Grenade',
         size=WeaponSize.Small,
@@ -214,7 +225,8 @@ _WeaponDescriptions = [
         cost=250,
         range=20,
         damage='Special',
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Plasma Grenade',
         size=WeaponSize.Small,
@@ -224,7 +236,8 @@ _WeaponDescriptions = [
         cost=500,
         range=20,
         damage='8D',
-        traits='Blast 6'),
+        traits='Blast 6',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Smoke Grenade',
         size=WeaponSize.Small,
@@ -233,7 +246,8 @@ _WeaponDescriptions = [
         techLevel=6,
         cost=15,
         range=20,
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Stun Grenade',
         size=WeaponSize.Small,
@@ -243,7 +257,8 @@ _WeaponDescriptions = [
         cost=30,
         range=20,
         damage='3D',
-        traits='Blast 9, Stun'),
+        traits='Blast 9, Stun',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Thermal Smoke Grenade',
         size=WeaponSize.Small,
@@ -272,7 +287,8 @@ _WeaponDescriptions = [
         techLevel=8,
         cost=250,
         damage='4D',
-        traits='AP 6, Blast 1'),
+        traits='AP 6, Blast 1',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Complex Chemical Charge',
         size=WeaponSize.Small,
@@ -280,7 +296,8 @@ _WeaponDescriptions = [
         techLevel=10,
         cost=500,
         damage='4D',
-        traits='AP 15, Blast 9'),
+        traits='AP 15, Blast 9',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Fusion Block',
         size=WeaponSize.Small,
@@ -290,7 +307,8 @@ _WeaponDescriptions = [
         damage='1DD',
         traits={
             StockWeaponSet.CSC2: 'Blast 12, Radiation',
-            StockWeaponSet.CSC2023: 'AP 50, Blast 12, Radiation'}),
+            StockWeaponSet.CSC2023: 'AP 50, Blast 12, Radiation'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Neutrino Detonator',
         size=WeaponSize.Small,
@@ -300,7 +318,8 @@ _WeaponDescriptions = [
         damage='8D',
         traits={
             StockWeaponSet.CSC2: 'Blast 25',
-            StockWeaponSet.CSC2023: 'AP ∞, Blast 25'}),
+            StockWeaponSet.CSC2023: 'AP ∞, Blast 25'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Plastic Explosive',
         size=WeaponSize.Small,
@@ -308,7 +327,8 @@ _WeaponDescriptions = [
         techLevel=6,
         cost=200,
         damage='3D',
-        traits='Blast 9'),
+        traits='Blast 9',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Pocket Nuke',
         size=WeaponSize.Small,
@@ -316,7 +336,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=250000,
         damage='6DD',
-        traits='Blast 1,000, Radiation'),
+        traits='Blast 1,000, Radiation',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='TDX',
         size=WeaponSize.Small,
@@ -324,7 +345,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=1000,
         damage='4D',
-        traits='Blast 15'),
+        traits='Blast 15',
+        compatible=_AllCompatible),
     # NOTE: The Atlatl isn't a weapon it's a tool that allows you to throw
     # darts or javelin better. It doubles the range and allows you to add
     # your DEX _AND_ STR bonus to the damage.
@@ -358,7 +380,8 @@ _WeaponDescriptions = [
         damage='2D + STR & DEX bonus',
         traits={
             StockWeaponSet.CSC2: 'One Use',
-            StockWeaponSet.CSC2023: 'One Use, Silent'}),
+            StockWeaponSet.CSC2023: 'One Use, Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Compound Cam Bow',
         size=WeaponSize.Medium,
@@ -373,7 +396,8 @@ _WeaponDescriptions = [
         damage='3D-3',
         traits={
             StockWeaponSet.CSC2: 'AP 2',
-            StockWeaponSet.CSC2023: 'AP 2, Silent'}),
+            StockWeaponSet.CSC2023: 'AP 2, Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Crossbow',
         size=WeaponSize.Small,
@@ -391,7 +415,8 @@ _WeaponDescriptions = [
         damage='3D-3',
         traits={
             StockWeaponSet.CSC2: 'AP 2',
-            StockWeaponSet.CSC2023: 'AP 2, Silent'}),
+            StockWeaponSet.CSC2023: 'AP 2, Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Dart',
         size=WeaponSize.Small,
@@ -418,7 +443,8 @@ _WeaponDescriptions = [
         damage='2D',
         traits={
             StockWeaponSet.CSC2: 'One Use',
-            StockWeaponSet.CSC2023: 'One Use, Silent'}),
+            StockWeaponSet.CSC2023: 'One Use, Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Long Bow',
         size=WeaponSize.Medium,
@@ -437,7 +463,8 @@ _WeaponDescriptions = [
         damage='3D-3',
         traits={
             StockWeaponSet.CSC2: 'AP 2, Bulky, Silent',
-            StockWeaponSet.CSC2023: 'AP 2, Silent'}),
+            StockWeaponSet.CSC2023: 'AP 2, Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Repeating Crossbow',
         size=WeaponSize.Small,
@@ -456,7 +483,8 @@ _WeaponDescriptions = [
         damage='2D',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'Silent'}),
+            StockWeaponSet.CSC2023: 'Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Short Bow',
         size=WeaponSize.Small,
@@ -475,7 +503,8 @@ _WeaponDescriptions = [
         damage='2D-3',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'Silent'}),
+            StockWeaponSet.CSC2023: 'Silent'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Cartridge Laser Carbine, TL 10',
         size=WeaponSize.Medium,
@@ -544,7 +573,8 @@ _WeaponDescriptions = [
         magazineCost=150,
         multiLink=True,
         damage='4D',
-        traits='Blast 3'),
+        traits='Blast 3',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Flame Rifle',
         size=WeaponSize.Medium,
@@ -557,7 +587,8 @@ _WeaponDescriptions = [
         magazineCost=50,
         multiLink=True,
         damage='4D',
-        traits='Blast 3, Fire'),
+        traits='Blast 3, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Gauntlet Laser',
         size=WeaponSize.Small,
@@ -570,7 +601,8 @@ _WeaponDescriptions = [
         magazineCost=1100,
         multiLink=True,
         damage='3D',
-        traits='Zero-G'),
+        traits='Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Hand Flamer',
         size=WeaponSize.Small,
@@ -583,7 +615,8 @@ _WeaponDescriptions = [
         magazineCost=25,
         multiLink=True,
         damage='3D',
-        traits='Blast 2, Fire'),
+        traits='Blast 2, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Heavy Laser Rifle',
         size=WeaponSize.Heavy,
@@ -596,7 +629,8 @@ _WeaponDescriptions = [
         magazineCost=500,
         multiLink=True,
         damage='6D',
-        traits='Scope, Zero-G'),
+        traits='Scope, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Ion Rifle, TL 14',
         size=WeaponSize.Medium,
@@ -637,7 +671,8 @@ _WeaponDescriptions = [
         magazineCost=1000,
         multiLink=True,
         damage='4D',
-        traits='Zero-G'),        
+        traits='Zero-G',
+        compatible=_AllCompatible),        
     _StockWeaponDescription(
         name='Laser Carbine, TL 11',
         size=WeaponSize.Medium,
@@ -650,7 +685,8 @@ _WeaponDescriptions = [
         magazineCost=3000,
         multiLink=True,
         damage='4D+3',
-        traits='Zero-G'),
+        traits='Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Laser Pistol, TL 9',
         size=WeaponSize.Small,
@@ -663,7 +699,8 @@ _WeaponDescriptions = [
         magazineCost=1000,
         multiLink=True,
         damage='3D',
-        traits='Zero-G'),        
+        traits='Zero-G',
+        compatible=_AllCompatible),        
     _StockWeaponDescription(
         name='Laser Pistol, TL 11',
         size=WeaponSize.Small,
@@ -676,7 +713,8 @@ _WeaponDescriptions = [
         magazineCost=3000,
         multiLink=True,
         damage='3D+3',
-        traits='Zero-G'),
+        traits='Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Laser Rifle, TL 9',
         size=WeaponSize.Medium,
@@ -689,7 +727,8 @@ _WeaponDescriptions = [
         magazineCost=1500,
         multiLink=True,
         damage='5D',
-        traits='Zero-G'),        
+        traits='Zero-G',
+        compatible=_AllCompatible),        
     _StockWeaponDescription(
         name='Laser Rifle, TL 11',
         size=WeaponSize.Medium,
@@ -702,7 +741,8 @@ _WeaponDescriptions = [
         magazineCost=3500,
         multiLink=True,
         damage='5D+3',
-        traits='Zero-G'),
+        traits='Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Laser Sniper Rifle',
         size=WeaponSize.Medium,
@@ -715,9 +755,12 @@ _WeaponDescriptions = [
         magazineCost=250,
         multiLink=True,
         damage={
+            StockWeaponSet.Core2: '5D+3',
+            StockWeaponSet.Core2022: '5D+3',
             StockWeaponSet.CSC2: '6D+3',
             StockWeaponSet.CSC2023: '5D+3'},
-        traits='Scope, Zero-G'),
+        traits='Scope, Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Maser Pistol',
         size=WeaponSize.Small,
@@ -729,7 +772,8 @@ _WeaponDescriptions = [
         magazineSize=12,
         multiLink=True,
         damage='3D+3',
-        traits='AP 10, Zero-G'),
+        traits='AP 10, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Maser Rifle',
         size=WeaponSize.Heavy,
@@ -741,7 +785,8 @@ _WeaponDescriptions = [
         magazineSize=20,
         multiLink=True,
         damage='5D+3',
-        traits='AP 10, Zero-G'),
+        traits='AP 10, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Matter Disintegrator, TL 18',
         size=WeaponSize.Small,
@@ -792,7 +837,8 @@ _WeaponDescriptions = [
         magazineCost=100,
         multiLink=True,
         damage='3D+3',
-        traits='Auto 2, Zero-G'),
+        traits='Auto 2, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Plasma Rifle',
         size=WeaponSize.Medium,
@@ -803,8 +849,11 @@ _WeaponDescriptions = [
         range=300,
         multiLink=True,
         damage={
+            StockWeaponSet.Core2: '6D',
+            StockWeaponSet.Core2022: '6D',
             StockWeaponSet.CSC2: '1DD',
-            StockWeaponSet.CSC2023: '6D'}),
+            StockWeaponSet.CSC2023: '6D'},
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Solar Beam Rifle',
         size=WeaponSize.Medium,
@@ -816,7 +865,8 @@ _WeaponDescriptions = [
         magazineSize=20,
         multiLink=True,
         damage='1DD',
-        traits='AP 20, Zero-G'),
+        traits='AP 20, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stagger Laser Rifle, TL 12',
         size=WeaponSize.Medium,
@@ -829,7 +879,8 @@ _WeaponDescriptions = [
         magazineCost=5000,
         multiLink=True,
         damage='5D',
-        traits='Auto 2, Zero-G'),
+        traits='Auto 2, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stagger Laser Rifle, TL 14',
         size=WeaponSize.Medium,
@@ -842,7 +893,8 @@ _WeaponDescriptions = [
         magazineCost=6000,
         multiLink=True,
         damage='5D+3',
-        traits='Auto 3, Zero-G'),
+        traits='Auto 3, Zero-G',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stun Blaster',
         size=WeaponSize.Medium,
@@ -883,7 +935,8 @@ _WeaponDescriptions = [
         magazineCost=200,
         multiLink=True,
         damage='2D',
-        traits='Stun, Zero-G'),        
+        traits='Stun, Zero-G',
+        compatible=_AllCompatible),        
     _StockWeaponDescription(
         name='Stunner, TL 10',
         size=WeaponSize.Small,
@@ -896,7 +949,8 @@ _WeaponDescriptions = [
         magazineCost=200,
         multiLink=True,
         damage='2D+3',
-        traits='Stun, Zero-G'),
+        traits='Stun, Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Stunner, TL 12',
         size=WeaponSize.Small,
@@ -909,7 +963,8 @@ _WeaponDescriptions = [
         magazineCost=200,
         multiLink=True,
         damage='3D',
-        traits='Stun, Zero-G'),
+        traits='Stun, Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Accelerator Rifle, TL 9',
         size=WeaponSize.Medium,
@@ -917,12 +972,15 @@ _WeaponDescriptions = [
         specialty=traveller.GunCombatSkillSpecialities.Slug,
         techLevel=9,
         cost=900,
-        range=250, # NOTE: The original CSC has 25 but I suspect that is a misprint
+        # NOTE: The original CSC has 25 but I suspect that is a misprint
+        # as the Core 2e, Core 2022 & CSC 2023 all have it as 250
+        range=250,
         magazineSize=15,
         magazineCost=30,
         multiLink=True,
         damage='3D',
-        traits='Zero-G'),        
+        traits='Zero-G',
+        compatible=_AllCompatible),        
     _StockWeaponDescription(
         name='Accelerator Rifle, TL 11',
         size=WeaponSize.Medium,
@@ -949,7 +1007,8 @@ _WeaponDescriptions = [
         magazineCost=15,
         multiLink=True,
         damage='3D',
-        traits='Auto 3, Scope'),
+        traits='Auto 3, Scope',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Air Rifle, TL 3',
         size=WeaponSize.Medium,
@@ -962,7 +1021,8 @@ _WeaponDescriptions = [
         magazineCost=1,
         multiLink=True,
         damage='2D',
-        traits='Silent'),
+        traits='Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Air Rifle, TL 4',
         size=WeaponSize.Medium,
@@ -975,13 +1035,16 @@ _WeaponDescriptions = [
         magazineCost=1,
         multiLink=True,
         damage='3D-2',
-        traits='Silent'),
+        traits='Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Antique Pistol',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
         techLevel={
+            StockWeaponSet.Core2: 3,
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
             StockWeaponSet.CSC2023: 2},
         cost=100,
@@ -989,13 +1052,16 @@ _WeaponDescriptions = [
         magazineSize=1,
         magazineCost=5,
         multiLink=True,
-        damage='2D-3'),
+        damage='2D-3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Antique Rifle',
         size=WeaponSize.Medium,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
         techLevel={
+            StockWeaponSet.Core2: 3,
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
             StockWeaponSet.CSC2023: 2},
         cost=150,
@@ -1003,7 +1069,8 @@ _WeaponDescriptions = [
         magazineSize=1,
         magazineCost=10,
         multiLink=True,
-        damage='3D-3'),
+        damage='3D-3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Assault Pistol',
         size=WeaponSize.Small,
@@ -1016,7 +1083,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D-3',
-        traits='Auto 2'),
+        traits='Auto 2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Assault Rifle',
         size=WeaponSize.Medium,
@@ -1029,7 +1097,8 @@ _WeaponDescriptions = [
         magazineCost=15,
         multiLink=True,
         damage='3D',
-        traits='Auto 2'),
+        traits='Auto 2',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Assault Shotgun',
         size=WeaponSize.Medium,
@@ -1042,13 +1111,16 @@ _WeaponDescriptions = [
         magazineCost=40,
         multiLink=True,
         damage='4D',
-        traits='Auto 2, Bulky'),
+        traits='Auto 2, Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Autopistol',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
         techLevel={
+            StockWeaponSet.Core2: 6,
+            StockWeaponSet.Core2022: 5,
             StockWeaponSet.CSC2: 6,
             StockWeaponSet.CSC2023: 5},
         cost=200,
@@ -1056,7 +1128,8 @@ _WeaponDescriptions = [
         magazineSize=15,
         magazineCost=10,
         multiLink=True,
-        damage='3D-3'),
+        damage='3D-3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Autorifle',
         size=WeaponSize.Medium,
@@ -1069,7 +1142,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D',
-        traits='Auto 2'),
+        traits='Auto 2',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Big Game Rifle',
         size=WeaponSize.Heavy,
@@ -1082,7 +1156,8 @@ _WeaponDescriptions = [
         magazineCost=50,
         multiLink=True,
         damage='3D+3',
-        traits='Very Bulky'),
+        traits='Very Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Body Pistol',
         size=WeaponSize.Small,
@@ -1094,7 +1169,8 @@ _WeaponDescriptions = [
         magazineSize=6,
         magazineCost=10,
         multiLink=True,
-        damage='2D'),
+        damage='2D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Cartridge Pistol',
         size=WeaponSize.Medium,
@@ -1107,7 +1183,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='4D',
-        traits='Bulky'),
+        traits='Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Coach Pistol',
         size=WeaponSize.Small,
@@ -1120,7 +1197,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='4D-3',
-        traits='Dangerous'),
+        traits='Dangerous',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Duck\'s Foot Pistol',
         size=WeaponSize.Small,
@@ -1133,7 +1211,8 @@ _WeaponDescriptions = [
         magazineCost=25,
         multiLink=True,
         damage='3D-3',
-        traits='Auto 4, Dangerous'),
+        traits='Auto 4, Dangerous',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Flechette Pistol',
         size=WeaponSize.Small,
@@ -1146,7 +1225,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D-2',
-        traits='Silent'),
+        traits='Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Flechette Submachine Gun',
         size=WeaponSize.Medium,
@@ -1159,7 +1239,8 @@ _WeaponDescriptions = [
         magazineCost=20,
         multiLink=True,
         damage='3D-2',
-        traits='Auto 3, Silent'),
+        traits='Auto 3, Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Gauss Assault Gun',
         size=WeaponSize.Small,
@@ -1186,7 +1267,8 @@ _WeaponDescriptions = [
         magazineCost=20,
         multiLink=True,
         damage='3D',
-        traits='AP 3, Auto 2'),
+        traits='AP 3, Auto 2',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Gauss Rifle',
         size=WeaponSize.Medium,
@@ -1197,11 +1279,14 @@ _WeaponDescriptions = [
         range=600,
         magazineSize=80,
         magazineCost={
+            StockWeaponSet.Core2: 40,
+            StockWeaponSet.Core2022: 40,
             StockWeaponSet.CSC2: 40,
             StockWeaponSet.CSC2023: 80},
         multiLink=True,
         damage='4D',
-        traits='AP 5, Auto 3, Scope'),
+        traits='AP 5, Auto 3, Scope',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Gauss Sniper RIfle',
         size=WeaponSize.Medium,
@@ -1214,7 +1299,8 @@ _WeaponDescriptions = [
         magazineCost=20,
         multiLink=True,
         damage='5D',
-        traits='AP 6, Scope'),
+        traits='AP 6, Scope',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Gauss Submachine Gun',
         size=WeaponSize.Small,
@@ -1241,7 +1327,8 @@ _WeaponDescriptions = [
         magazineCost=20,
         multiLink=True,
         damage='4D',
-        traits='Auto 2, Bulky, Scope'),
+        traits='Auto 2, Bulky, Scope',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Heavy Revolver',
         size=WeaponSize.Medium,
@@ -1256,7 +1343,8 @@ _WeaponDescriptions = [
         magazineCost=15,
         multiLink=True,
         damage='4D-3',
-        traits='Bulky'),
+        traits='Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Light Shotgun',
         size=WeaponSize.Small,
@@ -1282,7 +1370,8 @@ _WeaponDescriptions = [
         magazineCost=60,
         multiLink=True,
         damage='3D+3',
-        traits='Auto 4'),
+        traits='Auto 4',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Magrail Rifle',
         size=WeaponSize.Medium,
@@ -1295,13 +1384,16 @@ _WeaponDescriptions = [
         magazineCost=100,
         multiLink=True,
         damage='4D+3',
-        traits='Auto 6'),
+        traits='Auto 6',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Revolver',
         size=WeaponSize.Small,
         skill=traveller.GunCombatSkillDefinition,
         specialty=traveller.GunCombatSkillSpecialities.Slug,
         techLevel={
+            StockWeaponSet.Core2: 5,
+            StockWeaponSet.Core2022: 4,
             StockWeaponSet.CSC2: 5,
             StockWeaponSet.CSC2023: 4},
         cost=150,
@@ -1309,7 +1401,8 @@ _WeaponDescriptions = [
         magazineSize=6,
         magazineCost=5,
         multiLink=True,
-        damage='3D-3'),
+        damage='3D-3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rifle',
         size=WeaponSize.Medium,
@@ -1321,7 +1414,8 @@ _WeaponDescriptions = [
         magazineSize=5,
         magazineCost=10,
         multiLink=True,
-        damage='3D'),
+        damage='3D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Sawed-Off Shotgun',
         size=WeaponSize.Small,
@@ -1338,7 +1432,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 10},
         multiLink=True,
         damage='4D',
-        traits='Bulky'),
+        traits='Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Shot Pistol',
         size=WeaponSize.Small,
@@ -1350,7 +1445,8 @@ _WeaponDescriptions = [
         magazineSize=1,
         magazineCost=5,
         multiLink=True,
-        damage='3D'),
+        damage='3D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Shotgun',
         size=WeaponSize.Medium,
@@ -1363,7 +1459,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='4D',
-        traits='Bulky'),
+        traits='Bulky',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Sniper Rifle',
         size=WeaponSize.Medium,
@@ -1376,7 +1473,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D',
-        traits='AP 5, Scope, Silent'),
+        traits='AP 5, Scope, Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Snub Carbine',
         size=WeaponSize.Medium,
@@ -1403,7 +1501,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D-3',
-        traits='Zero-G'),
+        traits='Zero-G',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Spear Gun',
         size=WeaponSize.Medium,
@@ -1416,7 +1515,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D',
-        traits='Silent'),
+        traits='Silent',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Submachine Gun',
         size=WeaponSize.Small,
@@ -1429,7 +1529,8 @@ _WeaponDescriptions = [
         magazineCost=10,
         multiLink=True,
         damage='3D',
-        traits='Auto 3'),
+        traits='Auto 3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Universal Autopistol',
         size=WeaponSize.Small,
@@ -1455,7 +1556,8 @@ _WeaponDescriptions = [
         magazineCost=5,
         multiLink=True,
         damage='2D-3',
-        traits='Dangerous'),
+        traits='Dangerous',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Infantry Mortar',
         size=WeaponSize.Heavy,
@@ -1468,7 +1570,8 @@ _WeaponDescriptions = [
         magazineCost=50,
         multiLink=True,
         damage='5D',
-        traits='Artillery, Blast 5'),
+        traits='Artillery, Blast 5',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Support Mortar',
         size=WeaponSize.Vehicle,
@@ -1481,7 +1584,8 @@ _WeaponDescriptions = [
         magazineCost=100,
         multiLink=True,
         damage='9D',
-        traits='Artillery, Blast 6'),
+        traits='Artillery, Blast 6',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Anti-Material Rifle',
         size=WeaponSize.Heavy,
@@ -1496,7 +1600,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 10},
         multiLink=True,
         damage='5D',
-        traits='AP 5, Scope, Very Bulky'),
+        traits='AP 5, Scope, Very Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='ARL (PDW)',
         size=WeaponSize.Heavy,
@@ -1565,7 +1670,8 @@ _WeaponDescriptions = [
         magazineCost=450,
         multiLink=True,
         damage='8D',
-        traits='AP 8, Blast 3, Bulky, Scope'),
+        traits='AP 8, Blast 3, Bulky, Scope',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='CPPG-13',
         size=WeaponSize.Heavy,
@@ -1578,7 +1684,8 @@ _WeaponDescriptions = [
         magazineCost=600,
         multiLink=True,
         damage='1DD',
-        traits='AP 10, Blast 3, Bulky, Scope'),
+        traits='AP 10, Blast 3, Bulky, Scope',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Cryojet',
         size=WeaponSize.Heavy,
@@ -1591,7 +1698,8 @@ _WeaponDescriptions = [
         magazineCost=200,
         multiLink=True,
         damage='4D',
-        traits='Blast 5, Bulky'),
+        traits='Blast 5, Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Disposable Plasma Launcher',
         size=WeaponSize.Heavy,
@@ -1601,7 +1709,8 @@ _WeaponDescriptions = [
         cost=8000,
         range=300,
         damage='2DD',
-        traits='One Use, Smart'),
+        traits='One Use, Smart',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Early Machinegun',
         size=WeaponSize.Heavy,
@@ -1617,7 +1726,7 @@ _WeaponDescriptions = [
         traits='Auto 3, Very Bulky',
         compatible=[StockWeaponSet.CSC2023]),
     _StockWeaponDescription(
-        name='FGHP-14',
+        name='FGHP-14', # NOTE: FGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1626,9 +1735,10 @@ _WeaponDescriptions = [
         range=450,
         multiLink=True,
         damage='2DD',
-        traits='Radiation, Very Bulky'),
+        traits='Radiation, Very Bulky',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='FGHP-15',
+        name='FGHP-15', # NOTE: FGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1637,9 +1747,10 @@ _WeaponDescriptions = [
         range=450,
         multiLink=True,
         damage='2DD',
-        traits='Bulky, Radiation'),
+        traits='Bulky, Radiation',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='FGHP-16',
+        name='FGHP-16', # NOTE: FGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1648,7 +1759,8 @@ _WeaponDescriptions = [
         range=450,
         multiLink=True,
         damage='2DD',
-        traits='Radiation'),
+        traits='Radiation',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Flamethrower, TL 4',
         size=WeaponSize.Heavy,
@@ -1661,7 +1773,8 @@ _WeaponDescriptions = [
         magazineCost=60,
         multiLink=True,
         damage='3D',
-        traits='Blast 5, Bulky, Fire'),
+        traits='Blast 5, Bulky, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Flamethrower, TL 6',
         size=WeaponSize.Heavy,
@@ -1674,7 +1787,8 @@ _WeaponDescriptions = [
         magazineCost=80,
         multiLink=True,
         damage='4D',
-        traits='Blast 5, Bulky, Fire'),
+        traits='Blast 5, Bulky, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Flamethrower, TL 8',
         size=WeaponSize.Heavy,
@@ -1687,7 +1801,8 @@ _WeaponDescriptions = [
         magazineCost=100,
         multiLink=True,
         damage='4D',
-        traits='Blast 5, Fire'),
+        traits='Blast 5, Fire',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Grenade Launcher',
         size=WeaponSize.Medium,
@@ -1699,8 +1814,11 @@ _WeaponDescriptions = [
         magazineSize=6,
         damage='As grenade',
         traits={
+            StockWeaponSet.Core2: 'Bulky',
+            StockWeaponSet.Core2022: 'Bulky',
             StockWeaponSet.CSC2: 'Bulky',
-            StockWeaponSet.CSC2023: ''}),
+            StockWeaponSet.CSC2023: ''},
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Light Assault Gun',
         size=WeaponSize.Heavy,
@@ -1735,6 +1853,8 @@ _WeaponDescriptions = [
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
         techLevel={
+            StockWeaponSet.Core2: 6,
+            StockWeaponSet.Core2022: 6,
             StockWeaponSet.CSC2: 6,
             StockWeaponSet.CSC2023: 5},
         cost=1500,
@@ -1744,10 +1864,13 @@ _WeaponDescriptions = [
         multiLink=True,
         damage='3D',
         traits={
+            StockWeaponSet.Core2: 'Auto 4',
+            StockWeaponSet.Core2022: 'Auto 4',
             StockWeaponSet.CSC2: 'Auto 4',
-            StockWeaponSet.CSC2023: 'Auto 4, Bulky'}),
+            StockWeaponSet.CSC2023: 'Auto 4, Bulky'},
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='PGHP-12',
+        name='PGHP-12', # NOTE: PGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1757,9 +1880,9 @@ _WeaponDescriptions = [
         multiLink=True,
         damage='1DD',
         traits='Very Bulky',
-        compatible=[StockWeaponSet.CSC2023]),
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='PGHP-13',
+        name='PGHP-13', # NOTE: PGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1769,9 +1892,9 @@ _WeaponDescriptions = [
         multiLink=True,
         damage='1DD',
         traits='Bulky',
-        compatible=[StockWeaponSet.CSC2023]),
+        compatible=_AllCompatible),
     _StockWeaponDescription(
-        name='PGHP-14',
+        name='PGHP-14', # NOTE: PGMP in Core 2e rules
         size=WeaponSize.Heavy,
         skill=traveller.HeavyWeaponsSkillDefinition,
         specialty=traveller.HeavyWeaponsSkillSpecialities.Portable,
@@ -1780,7 +1903,7 @@ _WeaponDescriptions = [
         range=450,
         multiLink=True,
         damage='1DD',
-        compatible=[StockWeaponSet.CSC2023]),
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Plasma Jet, TL 12',
         size=WeaponSize.Heavy,
@@ -1791,7 +1914,8 @@ _WeaponDescriptions = [
         range=25,
         multiLink=True,
         damage='1DD',
-        traits='Blast 5, Very Bulky'),
+        traits='Blast 5, Very Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Plasma Jet, TL 14',
         size=WeaponSize.Heavy,
@@ -1802,7 +1926,8 @@ _WeaponDescriptions = [
         range=50,
         multiLink=True,
         damage='1DD',
-        traits='Blast 10, Bulky'),
+        traits='Blast 10, Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='RAM Grenade Launcher',
         size=WeaponSize.Medium,
@@ -1813,7 +1938,8 @@ _WeaponDescriptions = [
         range=250,
         magazineSize=6,
         damage='As Grenade',
-        traits='Auto 3, Bulky'),
+        traits='Auto 3, Bulky',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rapid-Fire Machinegun',
         size=WeaponSize.Heavy,
@@ -1826,7 +1952,8 @@ _WeaponDescriptions = [
         magazineCost=100,
         multiLink=True,
         damage='3D',
-        traits='Auto 4 (8)'),
+        traits='Auto 4 (8)',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Rocket Launcher, TL 6',
         size=WeaponSize.Heavy,
@@ -1838,7 +1965,8 @@ _WeaponDescriptions = [
         magazineSize=1,
         magazineCost=300,
         damage='4D',
-        traits='Blast 6'),
+        traits='Blast 6',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rocket Launcher, TL 7',
         size=WeaponSize.Heavy,
@@ -1850,7 +1978,8 @@ _WeaponDescriptions = [
         magazineSize=1,
         magazineCost=400,
         damage='4D+3',
-        traits='Blast 6, Smart'),
+        traits='Blast 6, Smart',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rocket Launcher, TL 8',
         size=WeaponSize.Heavy,
@@ -1862,7 +1991,8 @@ _WeaponDescriptions = [
         magazineSize=2,
         magazineCost=600,
         damage='5D',
-        traits='Blast 6, Scope, Smart'),
+        traits='Blast 6, Scope, Smart',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rocket Launcher, TL 9',
         size=WeaponSize.Heavy,
@@ -1874,7 +2004,36 @@ _WeaponDescriptions = [
         magazineSize=2,
         magazineCost=800,
         damage='5D+6',
-        traits='Blast 6, Scope, Smart'),
+        traits='Blast 6, Scope, Smart',
+        compatible=_AllCompatible),
+    _StockWeaponDescription(
+        name='Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=6,
+        cost=400000,
+        range=2,
+        magazineSize=30,
+        magazineCost=5000,
+        multiLink=True,
+        damage='8D',
+        traits='Blast 10',
+        # TODO: Check if this in either CSC
+        compatible=_CoreCompatible),
+    _StockWeaponDescription(
+        name='Fusion Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=14,
+        cost=3000000,
+        range=5,
+        multiLink=True,
+        damage='3DD',
+        traits='AP 20, Blast 20, Radiation',
+        # TODO: Check if this in either CSC
+        compatible=[StockWeaponSet.Core2]),                 
     _StockWeaponDescription(
         name='Heavy Machinegun',
         size=WeaponSize.Vehicle,
@@ -1887,9 +2046,27 @@ _WeaponDescriptions = [
         magazineCost=400,
         multiLink=True,
         damage={
+            StockWeaponSet.Core2: '4D',
+            StockWeaponSet.Core2022: '4D',
             StockWeaponSet.CSC2: '4D',
             StockWeaponSet.CSC2023: '5D'},
-        traits='Auto 3'),
+        traits='Auto 3',
+        compatible=_AllCompatible),
+    _StockWeaponDescription(
+        name='Laser Cannon',
+        size=WeaponSize.Vehicle,
+        skill=traveller.HeavyWeaponsSkillDefinition,
+        specialty=traveller.HeavyWeaponsSkillSpecialities.Vehicle,
+        techLevel=9,
+        cost=100000,
+        range=2.5,
+        multiLink=True,
+        damage={
+            StockWeaponSet.Core2: '4D',
+            StockWeaponSet.Core2022: '1DD'},
+        traits='AP 10',
+        # TODO: Check if this in either CSC
+        compatible=_CoreCompatible),        
     _StockWeaponDescription(
         name='Light Anti-Air Missile',
         size=WeaponSize.Vehicle,
@@ -1913,8 +2090,11 @@ _WeaponDescriptions = [
         magazineSize=500,
         magazineCost=1000,
         multiLink=True,
+        # NOTE: The Core 2e rules have this as 1D (p136) but I think
+        # that must be a miss-print as all other books have it as 6D
         damage='6D',
-        traits='Auto 3'),
+        traits='Auto 3',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Rocket Pod',
         size=WeaponSize.Vehicle,
@@ -1926,7 +2106,8 @@ _WeaponDescriptions = [
         magazineSize=18,
         magazineCost=8000,
         damage='4D',
-        traits='Auto 3, Blast 5'),
+        traits='Auto 3, Blast 5',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Tac Launcher, Anti-Aircraft',
         size=WeaponSize.Vehicle,
@@ -1940,7 +2121,8 @@ _WeaponDescriptions = [
         damage='8D',
         traits={
             StockWeaponSet.CSC2: 'Scope, Smart, Track',
-            StockWeaponSet.CSC2023: 'Scope, Smart'}),
+            StockWeaponSet.CSC2023: 'Scope, Smart'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Tac Launcher, Anti-Personnel',
         size=WeaponSize.Vehicle,
@@ -1952,7 +2134,8 @@ _WeaponDescriptions = [
         magazineSize=4,
         magazineCost=4000,
         damage='4D',
-        traits='Blast 10, Scope, Smart'),
+        traits='Blast 10, Scope, Smart',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Tac Launcher, Armour Piercing',
         size=WeaponSize.Vehicle,
@@ -1964,7 +2147,8 @@ _WeaponDescriptions = [
         magazineSize=4,
         magazineCost=6000,
         damage='8D',
-        traits='AP 10, Scope, Smart'),
+        traits='AP 10, Scope, Smart',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='VRF Gauss Gun',
         size=WeaponSize.Vehicle,
@@ -2001,7 +2185,8 @@ _WeaponDescriptions = [
         techLevel=14,
         cost=25000,
         damage='5D+2',
-        traits='AP 30'),
+        traits='AP 30',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Assault Pike, TL 5',
         techLevel=5,
@@ -2010,7 +2195,8 @@ _WeaponDescriptions = [
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
         damage='4D',
-        traits='AP 4, One Use'),
+        traits='AP 4, One Use',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Assault Pike, TL 8',
         size=WeaponSize.Medium,
@@ -2019,7 +2205,8 @@ _WeaponDescriptions = [
         techLevel=8,
         cost=400,
         damage='4D',
-        traits='AP 4, One Use'),
+        traits='AP 4, One Use',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Battle Axe',
         size=WeaponSize.Medium,
@@ -2030,28 +2217,35 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 1},
         cost=225,
         damage='3D',
-        traits='AP 2, Bulky'),
+        traits='AP 2, Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Blade',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel={
+            StockWeaponSet.Core2: 2,
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 2,
             StockWeaponSet.CSC2023: 1},
         cost=100,
-        damage='2D'),
+        damage='2D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Broadsword',
         size=WeaponSize.Medium,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel={
+            StockWeaponSet.Core2: 2,
+            StockWeaponSet.Core2022: 2,            
             StockWeaponSet.CSC2: 2,
             StockWeaponSet.CSC2023: 1},
         cost=500,
         damage='4D',
-        traits='Bulky'),
+        traits='Bulky',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Chaindrive Axe',
         size=WeaponSize.Medium,
@@ -2060,7 +2254,8 @@ _WeaponDescriptions = [
         techLevel=10,
         cost=600,
         damage='4D',
-        traits='AP 4, Bulky'),
+        traits='AP 4, Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Chaindrive Sword',
         size=WeaponSize.Small,
@@ -2069,7 +2264,8 @@ _WeaponDescriptions = [
         techLevel=10,
         cost=500,
         damage='4D',
-        traits='AP 2'),
+        traits='AP 2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Cutlass',
         size=WeaponSize.Small,
@@ -2077,7 +2273,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel=2,
         cost=200,
-        damage='3D'),
+        damage='3D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Dagger',
         size=WeaponSize.Small,
@@ -2085,7 +2282,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel=1,
         cost=10,
-        damage='1D+2'),
+        damage='1D+2',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Great Axe',
         size=WeaponSize.Heavy,
@@ -2094,7 +2292,8 @@ _WeaponDescriptions = [
         techLevel=1,
         cost=750,
         damage='4D+2',
-        traits='Smasher, Very Bulky'),
+        traits='Smasher, Very Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Hatchet',
         size=WeaponSize.Small,
@@ -2104,7 +2303,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2: 3,
             StockWeaponSet.CSC2023: 1},
         cost=50,
-        damage='2D+2'),
+        damage='2D+2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Knife',
         size=WeaponSize.Small,
@@ -2124,7 +2324,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2: 75,
             StockWeaponSet.CSC2023: 250},
         damage='5D',
-        traits='AP 4'),
+        traits='AP 4',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Long Blade, TL 1',
         size=WeaponSize.Small,
@@ -2150,7 +2351,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel=3,
         cost=300,
-        damage='3D+2'),
+        damage='3D+2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Monoblade',
         size=WeaponSize.Small,
@@ -2159,7 +2361,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=2500,
         damage='3D',
-        traits='AP 10'),
+        traits='AP 10',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Monofilament Axe',
         size=WeaponSize.Medium,
@@ -2168,7 +2371,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=3000,
         damage='4D',
-        traits='AP 15, Bulky, Smasher'),
+        traits='AP 15, Bulky, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Piston Spear',
         size=WeaponSize.Small,
@@ -2179,7 +2383,8 @@ _WeaponDescriptions = [
         damage='3D+2',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'AP 2'}),
+            StockWeaponSet.CSC2023: 'AP 2'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Psi Blade',
         size=WeaponSize.Small,
@@ -2190,7 +2395,8 @@ _WeaponDescriptions = [
         damage='2D',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'Special (PSI)'}),
+            StockWeaponSet.CSC2023: 'Special (PSI)'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Psi Dagger',
         size=WeaponSize.Small,
@@ -2203,17 +2409,21 @@ _WeaponDescriptions = [
         damage='1D+2',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'Special (PSI)'}),
+            StockWeaponSet.CSC2023: 'Special (PSI)'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Rapier',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel={
+            StockWeaponSet.Core2: 3,
+            StockWeaponSet.Core2022: 3,
             StockWeaponSet.CSC2: 3,
             StockWeaponSet.CSC2023: 2},
         cost=200,
-        damage='2D'),
+        damage='2D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Spear',
         size=WeaponSize.Small,
@@ -2223,7 +2433,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
         cost=10,
-        damage='2D'),
+        damage='2D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Static Axe, TL 11',
         size=WeaponSize.Heavy,
@@ -2232,7 +2443,8 @@ _WeaponDescriptions = [
         techLevel=11,
         cost=750,
         damage='4D',
-        traits='AP 6, Smasher'),
+        traits='AP 6, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Static Axe, TL 12',
         size=WeaponSize.Medium,
@@ -2241,7 +2453,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=1000,
         damage='4D+2',
-        traits='AP 8, Smasher'),
+        traits='AP 8, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Static Blade, TL 11',
         size=WeaponSize.Small,
@@ -2250,7 +2463,8 @@ _WeaponDescriptions = [
         techLevel=11,
         cost=700,
         damage='3D',
-        traits='AP 5'),
+        traits='AP 5',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Static Blade, TL 12',
         size=WeaponSize.Small,
@@ -2259,7 +2473,8 @@ _WeaponDescriptions = [
         techLevel=12,
         cost=900,
         damage='3D+2',
-        traits='AP 6'),
+        traits='AP 6',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stealth Dagger',
         size=WeaponSize.Small,
@@ -2267,7 +2482,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Blade,
         techLevel=8,
         cost=175,
-        damage='1D+2'),
+        damage='1D+2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stone Axe',
         size=WeaponSize.Small,
@@ -2277,7 +2493,8 @@ _WeaponDescriptions = [
         cost=5,
         damage={
             StockWeaponSet.CSC2: '2D',
-            StockWeaponSet.CSC2023: '2D+1'}),
+            StockWeaponSet.CSC2023: '2D+1'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='War Pick',
         size=WeaponSize.Small,
@@ -2288,7 +2505,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 1},
         cost=275,
         damage='2D+2',
-        traits='AP 4'),
+        traits='AP 4',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Anti-Armour Flail',
         size=WeaponSize.Small,
@@ -2297,7 +2515,8 @@ _WeaponDescriptions = [
         techLevel=8,
         cost=250,
         damage='4D',
-        traits='AP 5, One Use'),
+        traits='AP 5, One Use',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Boarding Shield',
         size=WeaponSize.Medium,
@@ -2308,7 +2527,8 @@ _WeaponDescriptions = [
         damage='1D',
         traits={
             StockWeaponSet.CSC2: '',
-            StockWeaponSet.CSC2023: 'Bulky'}),
+            StockWeaponSet.CSC2023: 'Bulky'},
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Buckler',
         size=WeaponSize.Small,
@@ -2318,17 +2538,20 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2: 2,
             StockWeaponSet.CSC2023: 1},
         cost=10,
-        damage='1D'),
+        damage='1D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Club',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel={
+            StockWeaponSet.Core2: 1,
+            StockWeaponSet.Core2022: 1,            
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
-        cost=0,
-        damage='2D'),
+        damage='2D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Expandable Shield',
         size=WeaponSize.Small,
@@ -2345,7 +2568,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel=17,
         cost=2500,
-        damage='1D'),
+        damage='1D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Gravity Hammer',
         size=WeaponSize.Medium,
@@ -2354,14 +2578,16 @@ _WeaponDescriptions = [
         techLevel=13,
         cost=10000,
         damage='5D',
-        traits='AP 50, Bulky, Smasher'),
+        traits='AP 50, Bulky, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Large Shield',
         size=WeaponSize.Medium,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel=1,
-        cost=200),
+        cost=200,
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Mace',
         size=WeaponSize.Medium,
@@ -2370,7 +2596,8 @@ _WeaponDescriptions = [
         techLevel=1,
         cost=20,
         damage='2D+2',
-        traits='Bulky, Smasher'),
+        traits='Bulky, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Riot Shield',
         size=WeaponSize.Small,
@@ -2378,7 +2605,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel=6,
         cost=175,
-        damage='1D'),
+        damage='1D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Sap',
         size=WeaponSize.Small,
@@ -2389,17 +2617,21 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2023: 1},
         cost=30,
         damage='1D',
-        traits='Stun'),
+        traits='Stun',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Shield',
         size=WeaponSize.Small,
         skill=traveller.MeleeSkillDefinition,
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel={
+            StockWeaponSet.Core2: 1,
+            StockWeaponSet.Core2022: 1,            
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
         cost=150,
-        damage='1D'),
+        damage='1D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Sledgehammer',
         size=WeaponSize.Heavy,
@@ -2408,7 +2640,8 @@ _WeaponDescriptions = [
         techLevel=1,
         cost=30,
         damage='4D',
-        traits='Smasher, Very Bulky'),
+        traits='Smasher, Very Bulky',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Staff',
         size=WeaponSize.Small,
@@ -2416,9 +2649,12 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Bludgeon,
         techLevel=1,
         cost={
-            StockWeaponSet.CSC2: 0,
+            StockWeaponSet.Core2: None,
+            StockWeaponSet.Core2022: None,            
+            StockWeaponSet.CSC2: None,
             StockWeaponSet.CSC2023: 5},
-        damage='2D'),
+        damage='2D',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Static Maul',
         size=WeaponSize.Medium,
@@ -2427,7 +2663,8 @@ _WeaponDescriptions = [
         techLevel=11,
         cost=650,
         damage='3D',
-        traits='AP 4, Smasher'),
+        traits='AP 4, Smasher',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stunstick',
         size=WeaponSize.Small,
@@ -2436,7 +2673,8 @@ _WeaponDescriptions = [
         techLevel=8,
         cost=300,
         damage='2D',
-        traits='Stun'),
+        traits='Stun',
+        compatible=_AllCompatible),
     _StockWeaponDescription(
         name='Brass Knuckles',
         size=WeaponSize.Small,
@@ -2444,7 +2682,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
         techLevel=1,
         cost=10,
-        damage='1D+2'),
+        damage='1D+2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Claw, Arc-Field',
         size=WeaponSize.Small,
@@ -2494,7 +2733,8 @@ _WeaponDescriptions = [
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
         cost=10,
-        damage='2D'),
+        damage='2D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Handspikes',
         size=WeaponSize.Small,
@@ -2502,7 +2742,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
         techLevel=2,
         cost=100,
-        damage='2D'),
+        damage='2D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Knuckleblasters',
         size=WeaponSize.Small,
@@ -2510,7 +2751,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
         techLevel=8,
         cost=150,
-        damage='5D'),
+        damage='5D',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Monofilament Garotte',
         size=WeaponSize.Small,
@@ -2528,7 +2770,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Unarmed,
         techLevel=9,
         cost=150,
-        damage='3D+2'),
+        damage='3D+2',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Stunfist',
         size=WeaponSize.Small,
@@ -2537,7 +2780,8 @@ _WeaponDescriptions = [
         techLevel=8,
         cost=250,
         damage='1D+2',
-        traits='Stun'),
+        traits='Stun',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Shock Whip',
         size=WeaponSize.Small,
@@ -2546,7 +2790,8 @@ _WeaponDescriptions = [
         techLevel=9,
         cost=450,
         damage='2D',
-        traits='Stun'),
+        traits='Stun',
+        compatible=_SupplyCatalogueCompatible),
     _StockWeaponDescription(
         name='Whip',
         size=WeaponSize.Small,
@@ -2554,7 +2799,8 @@ _WeaponDescriptions = [
         specialty=traveller.MeleeSkillSpecialities.Whip,
         techLevel=1,
         cost=15,
-        damage='D3')
+        damage='D3',
+        compatible=_SupplyCatalogueCompatible)
 ]
 
 _WeaponDescriptionMap = {
