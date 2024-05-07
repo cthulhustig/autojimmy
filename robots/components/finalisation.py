@@ -511,6 +511,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         
     # TODO: The Athletics levels given by the manipulators stacks with software
     # Athletics skills
+    # TODO: The Athletics (Endurance) skill from adding power packs also stacks
     def _createManipulatorAthleticsStep(
             self,
             sequence: str,
