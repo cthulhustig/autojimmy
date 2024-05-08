@@ -5,6 +5,20 @@ import robots
 import traveller
 import typing
 
+# NOTE: This function determines if a software skill stacks with hardware. It's
+# a bit of a hack to deal with the fact the Navigation skill given by the
+# Navigation System slot option doesn't stack with software Navigation skill
+# where as skills given by hardware do stack with their software equivalent.
+# This was a clarification by Geir
+# https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
+# NOTE: This works on the assumption that (apart from software packages) the
+# only source of the Navigation skill is the Navigation System
+def _stacksWithHardware(
+        skillDef: traveller.SkillDefinition,
+        speciality: typing.Optional[str] = None
+        ) -> bool:
+    return  skillDef != traveller.NavigationSkillDefinition
+
 
 #  ███████████                     █████                                         
 # ░░███░░░░░███                   ░░███                                          
@@ -121,7 +135,10 @@ class SkillPackage(robots.SkillPackageInterface):
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=skillDef,
                 speciality=speciality,
-                level=level))
+                level=level,
+                stacks=_stacksWithHardware(
+                    skillDef=skillDef,
+                    speciality=speciality)))
             
         if self._notes:
             for note in self._notes:
@@ -349,7 +366,8 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
 
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=RobotVehicleSkillDefinition,
-            level=agilityModifier))
+            level=agilityModifier,
+            stacks=_stacksWithHardware(skillDef=RobotVehicleSkillDefinition)))
 
         if agilityModifier.value() != 0:
             step.addNote(note=LocomotionBasicSkillPackage._AthleticsNote.format(
@@ -425,7 +443,10 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ProfessionSkillDefinition,
             speciality=profession.value,
-            level=ServantBasicSkillPackage._ProfessionSkillLevel))  
+            level=ServantBasicSkillPackage._ProfessionSkillLevel,
+            stacks=_stacksWithHardware(
+                skillDef=traveller.ProfessionSkillDefinition,
+                speciality=profession.value)))  
 
         return step
 
@@ -487,18 +508,21 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
         if combatSkill == TargetBasicSkillPackage._CombatSkills.Explosives:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=traveller.ExplosivesSkillDefinition,
-                level=TargetBasicSkillPackage._CombatSkillLevel))
+                level=TargetBasicSkillPackage._CombatSkillLevel,
+                stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
         elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=RobotWeaponSkillDefinition,
-                level=TargetBasicSkillPackage._CombatSkillLevel))
+                level=TargetBasicSkillPackage._CombatSkillLevel,
+                stacks=_stacksWithHardware(skillDef=RobotWeaponSkillDefinition)))
             
             if context.hasComponent(
                 componentType=robots.SelfDestructSystemSlotOption,
                 sequence=sequence):
                 step.addFactor(factor=construction.SetSkillFactor(
                     skillDef=traveller.ExplosivesSkillDefinition,
-                    level=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel))
+                    level=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
+                    stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
 
         return step
 
@@ -969,7 +993,10 @@ class Skill(robots.SkillInterface):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=self._skillDef,
             speciality=speciality,
-            level=level))        
+            level=level,
+            stacks=_stacksWithHardware(
+                skillDef=self._skillDef,
+                speciality=speciality)))
 
         if not hasBrainInAJar:
             bandwidth = self._levelZeroBandwidth
@@ -1453,7 +1480,7 @@ class ReconSkill(Skill):
             skillDef=traveller.ReconSkillDefinition,
             minTL=10,
             levelZeroBandwidth=0,
-            levelZeroCost=500)  
+            levelZeroCost=500)
         
 class ScienceSkill(Skill):
     """

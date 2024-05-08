@@ -19,6 +19,10 @@ class AgilityEnhancement(robots.AgilityEnhancementInterface):
     # The logical side effect of this is you won't be able to apply it if you
     # use the rule that Thruster locomotion can be applied as a secondary
     # locomotion with the primary locomotion set to None (p17)
+    # NOTE: It wasn't one of the things that Geir clarified (I forgot to ask
+    # him) but I'm working on the assumption the Athletics (Dexterity) given
+    # by an Agility Enhancement stacks with any levels from software skill
+    # packages or from manipulators (p26)
 
     def __init__(
             self,

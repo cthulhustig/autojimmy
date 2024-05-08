@@ -4584,8 +4584,10 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 1
         - Skill: Navigation 4
     """
-    # TODO: The Navigation Skill given by this component should NOT stack with
-    # Navigation skill packages    
+    # NOTE: The Navigation Skill given by this component should NOT stack with
+    # Navigation skill packages. This was clarified by Geir. The implementation
+    # for this is in the skill packages.
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
     _MinTLMap = {
         _OptionLevel.Basic: 8,
@@ -5844,8 +5846,10 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 1
         - Skill: Recon 3
     """
-    # TODO: The Recon Skill given by this component should stack with Recon
-    # skill packages
+    # NOTE: The Recon Skill given by this component should stack with Recon
+    # skill packages. This was clarified by Geir. The implementation of this
+    # is handled by the skill packages
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
     _MinTLMap = {
         _OptionLevel.Basic: 7,

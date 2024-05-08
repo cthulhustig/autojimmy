@@ -169,14 +169,14 @@ class SetSkillFactor(SkillFactor):
             skillDef: traveller.SkillDefinition,
             level: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
-            keepGreatest: bool = True
+            stacks: bool = True
             ) -> None:
         super().__init__()
         assert(isinstance(skillDef, traveller.SkillDefinition))
         self._skillDef = skillDef
         self._speciality = speciality
         self._level = level
-        self._keepGreatest = keepGreatest
+        self._stacks = stacks
 
     def skillDef(self) -> construction.ConstructionAttributeId:
         return self._skillDef
@@ -197,8 +197,8 @@ class SetSkillFactor(SkillFactor):
             self,
             skillGroup: construction.SkillGroup
             ) -> None:
-        skillGroup.setLevel(
+        skillGroup.modifyLevel(
             skillDef=self._skillDef,
             level=self._level,
             speciality=self._speciality,
-            keepGreatest=self._keepGreatest)
+            stacks=self._stacks)

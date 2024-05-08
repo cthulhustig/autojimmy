@@ -272,7 +272,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
     }
 
-    _ManipulatorAthleticsNote = 'The manipulators {characteristics} characteristic(s) gives the robot {skills}, but you don\'t get a {characteristics} characteristic DM when making checks. (p26)'
+    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel} they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware (clarified by Geir Lanesskog, Robot Handbook author)'
  
     _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
 
@@ -509,9 +509,10 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence=sequence,
             step=step)
         
-    # TODO: The Athletics levels given by the manipulators stacks with software
-    # Athletics skills
-    # TODO: The Athletics (Endurance) skill from adding power packs also stacks
+    # NOTE: This covers the Manipulator Athletics Skill Requirements (p26)
+    # NOTE: The Athletics levels given by the manipulators stacks with software
+    # Athletics skills. This was clarified by Geir.
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
     def _createManipulatorAthleticsStep(
             self,
             sequence: str,
@@ -521,64 +522,57 @@ class FinalisationComponent(robots.FinalisationInterface):
             skillDef=traveller.AthleticsSkillDefinition,
             sequence=sequence)
         if not athletics:
+            # These rules only apply if the robot has the Athletics skill (the
+            # level doesn't mater)
             return
-        
-        athleticsDexterity = athletics.level(
-            speciality=traveller.AthleticsSkillSpecialities.Dexterity)
-        athleticsStrength = athletics.level(
-            speciality=traveller.AthleticsSkillSpecialities.Strength)        
 
         manipulators = context.findComponents(
             componentType=robots.ManipulatorInterface,
             sequence=sequence)
-        seenConfigs = []
+        dexterityModifierMap = {}
+        strengthModifierMap = {}
         for manipulator in manipulators:
             assert(isinstance(manipulator, robots.ManipulatorInterface))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
             
-            manipulatorSize = manipulator.size()
-            manipulatorDexterity = manipulator.dexterity()
-            manipulatorStrength = manipulator.strength()
-            seenCheck = (manipulatorSize, manipulatorDexterity, manipulatorStrength)
-            if seenCheck in seenConfigs:
-                continue
-            seenConfigs.append(seenCheck)
+            dexterity = manipulator.dexterity()
+            dexterityModifier = traveller.characteristicDM(level=dexterity)
+            if dexterityModifier > 0:
+                dexterityModifierMap[dexterity] = dexterityModifier
 
-            dexterityModifier = traveller.characteristicDM(
-                level=manipulatorDexterity)
-            strengthModifier = traveller.characteristicDM(
-                level=manipulatorStrength)
-            
-            characteristics = ''
-            skills = ''
-            if dexterityModifier > athleticsDexterity.value():
-                characteristics += 'DEX'
-                skills += '{skill} {level}'.format(
-                    skill=athletics.name(speciality=traveller.AthleticsSkillSpecialities.Dexterity),
-                    level=dexterityModifier)
+            strength = manipulator.strength()
+            strengthModifier = traveller.characteristicDM(level=strength)
+            if strengthModifier > 0:
+                strengthModifierMap[strength] = strengthModifier
 
-            if strengthModifier > athleticsStrength.value():
-                if characteristics:
-                    characteristics += '/'
-                if skills:
-                    skills += ' and '
-                characteristics += 'STR'
-                skills += '{skill} {level}'.format(
-                    skill=athletics.name(speciality=traveller.AthleticsSkillSpecialities.Strength),
-                    level=strengthModifier)
-                
-            if characteristics and skills:
-                step = robots.RobotStep(
-                    name=f'Manipulator Size {manipulatorSize}, STR {manipulatorStrength}, DEX {manipulatorDexterity}',
-                    type='Skills')
-                step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
-                    characteristics=characteristics,
-                    skills=skills))
-                context.applyStep(
-                    sequence=sequence,
-                    step=step)
+        for dexterity, modifier in dexterityModifierMap.items():
+            skill = f'{traveller.AthleticsSkillDefinition.name()} ({traveller.AthleticsSkillSpecialities.Dexterity.value})'
+            step = robots.RobotStep(
+                name=skill,
+                type='Skills')            
+            step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
+                characteristic='DEX',
+                characteristicLevel=dexterity,
+                skill=skill,
+                skillLevel=modifier))
+            context.applyStep(
+                sequence=sequence,
+                step=step)
             
+        for strength, modifier in strengthModifierMap.items():
+            skill = f'{traveller.AthleticsSkillDefinition.name()} ({traveller.AthleticsSkillSpecialities.Strength.value})'
+            step = robots.RobotStep(
+                name=skill,
+                type='Skills')
+            step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
+                characteristic='STR',
+                characteristicLevel=strength,
+                skill=skill,
+                skillLevel=modifier))
+            context.applyStep(
+                sequence=sequence,
+                step=step)
 
     def _createCombatStep(
             self,

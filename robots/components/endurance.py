@@ -45,6 +45,9 @@ class IncreaseEndurance(EnduranceModification):
     # NOTE: The free Endurance increases at TL12/15 are handled by Locomotion
     # NOTE: Order is important, the rules say Improved Components is applied
     # first and then Power Packs
+    # NOTE: The Athletics (Endurance) skill given by Increased Endurance stacks
+    # with any levels from software skill packages. This was clarified by Geir
+    # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
     _ImprovedComponentsIncreasePercent = common.ScalarCalculation(
         value=100,

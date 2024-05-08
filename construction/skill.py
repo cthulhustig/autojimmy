@@ -39,12 +39,12 @@ class TrainedSkill(object):
             if not speciality else \
             self._specialityLevels.get(speciality, TrainedSkill._BaseLevel)
 
-    def setLevel(
+    def modifyLevel(
             self,
             level: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
-            keepGreatest: bool = True
-            ) -> None:
+            stacks: bool = True
+            ) -> bool: # True if skill is still trained otherwise False
         if self._skillDef.isSimple():
             if speciality != None:
                 raise AttributeError(
@@ -58,14 +58,17 @@ class TrainedSkill(object):
                 raise AttributeError(
                     f'Unable to use speciality type {type(speciality)} to set custom speciality skill {self._skillDef.name()}')
 
-        if keepGreatest:
-            currentLevel = self.level(speciality=speciality)
-            if currentLevel.value() > level.value():
-                return # New value is less than current value
-
         if speciality:
+            if stacks:
+                current = self._specialityLevels.get(speciality)
+                if current:
+                    level = common.Calculator.add(
+                        lhs=current,
+                        rhs=level,
+                        name=f'Stacked {self.name(speciality=speciality)} Level')
+            
             if level.value() >= 1:
-                # Speciality skills have to have a value of 1 or higher               
+                # Speciality skills have to have a value of 1 or higher
                 self._specialityLevels[speciality] = level
             elif speciality in self._specialityLevels:
                 # The speciality skill is 0 (or less) so delete the speciality
@@ -74,8 +77,17 @@ class TrainedSkill(object):
         else:
             if not self._skillDef.isSimple() and level.value() != 0:
                 raise AttributeError(
-                    f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')            
+                    f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')  
+            
+            if stacks:
+                level = common.Calculator.add(
+                    lhs=self._baseLevel,
+                    rhs=level,
+                    name=f'Stacked {self.name(speciality=speciality)} Level')
+          
             self._baseLevel = level
+
+        return self._baseLevel.value() > 0
 
     def hasSpeciality(
             self,
@@ -136,22 +148,33 @@ class SkillGroup(object):
 
         return untrainedSkill
 
-    def setLevel(
+    def modifyLevel(
             self,
             skillDef: traveller.SkillDefinition,
             level: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
-            keepGreatest: bool = True
+            stacks: bool = True
             ) -> None:
         skill = self._skills.get(skillDef)
         if skill:
-            skill.setLevel(level=level, speciality=speciality)
-        else:
-            skill = TrainedSkill(skillDef=skillDef)
-            skill.setLevel(
+            isTrained = skill.modifyLevel(
                 level=level,
                 speciality=speciality,
-                keepGreatest=keepGreatest)
+                stacks=stacks)
+            if not isTrained:
+                # Skill is no longer trained so remove it
+                del self._skills[skillDef]
+        else:
+            skill = TrainedSkill(skillDef=skillDef)
+            isTrained = skill.modifyLevel(
+                level=level,
+                speciality=speciality,
+                stacks=stacks)
+            if not isTrained:
+                # Skill isn't trained so don't add it. Really this should never
+                # happen as the UI should prevent it
+                return 
+
             # Only add if setting the skill succeeded
             self._skills[skillDef] = skill
 
