@@ -964,7 +964,10 @@ class _HandHeldMountImpl(_ManipulatorMountImpl):
     def weaponName(self) -> typing.Optional[str]:
         return None
     
-    def weaponData(self) -> typing.Optional[traveller.StockWeapon]:
+    def weaponData(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Optional[traveller.StockWeapon]:
         return None
 
     def isCompatible(
