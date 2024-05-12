@@ -38,7 +38,8 @@ _WelcomeMessage = """
     images in tool tips (see Configuration dialog).<p>
     <p>{name} is not endorsed by the wonderful people at Traveller Map, Mongoose Publishing or Far
     Future Enterprises. However, a great deal of thanks goes to Joshua Bell from Traveller Map for
-    his help with the integration.</p>
+    his help with the integration and Geir Lanesskog for his clarification of rules from the
+    Mongoose Robots Handbook.</p>
     <p>{name} is released under the GPLv3. Further information can be found in the About dialog.</p>
     </html>
 """.format(name=app.AppName, version=app.AppVersion)

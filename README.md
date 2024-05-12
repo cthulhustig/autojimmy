@@ -150,5 +150,6 @@ files are the copyright of their creators.
 
 Auto-Jimmy is not endorsed by the wonderful people at Traveller Map, Mongoose Publishing or Far
 Future Enterprises. However, a great deal of thanks goes to Joshua Bell from Traveller Map for
-his help with the integration.
+his help with the integration and Geir Lanesskog for his clarification of rules from the
+Mongoose Robots Handbook.
 
