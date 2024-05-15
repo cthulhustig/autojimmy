@@ -577,16 +577,43 @@ class Robot(object):
             baseType=robots.ToolkitSlotOption,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))       
+            maxComponents=None))
         
         stages.append(construction.ConstructionStage(
-            name='Weapons',
+            name='Servo Mounts',
             sequence=self._sequence,
-            phase=robots.RobotPhase.SlotOptions,
-            baseType=robots.WeaponInterface,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.ServoWeaponMountInterface,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Manipulator Mounts',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.ManipulatorWeaponMountInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))        
+        
+        stages.append(construction.ConstructionStage(
+            name='Linked Weapons',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.MultiLinkInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Fire Control',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.FireControlInterface,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))          
 
         stages.append(construction.ConstructionStage(
             name='Brain',

@@ -47,11 +47,11 @@ class RobotConfigWidget(QtWidgets.QWidget):
         globalLayout.addLabelledWidget(
             label='Tech Level:',
             widget=self._techLevelSpinBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
         globalLayout.addLabelledWidget(
             label='Weapon Set:',
             widget=self._weaponSetComboBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)        
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)        
 
         self._configurationWidget = gui.ExpanderGroupWidgetEx()
         self._configurationWidget.setPersistExpanderStates(True)

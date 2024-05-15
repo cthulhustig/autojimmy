@@ -903,6 +903,8 @@ class ConstructionContext(object):
                     option.setValue(value=optionValue)
                 elif isinstance(option, construction.FloatOption):
                     option.setValue(value=optionValue)
+                elif isinstance(option, construction.MultiSelectOption):
+                    option.setValue(value=optionValue)
                 elif isinstance(option, construction.EnumOption):
                     enumValue = None
                     if optionValue != None:

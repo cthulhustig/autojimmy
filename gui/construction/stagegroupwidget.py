@@ -6,6 +6,72 @@ import logging
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+class _MultiSelectOptionWidget(gui.ListWidgetEx):
+    _MaxHeight = 500
+
+    def __init__(
+            self,
+            content: typing.Iterable[str],
+            selected: typing.Iterable[str],
+            unselectable: typing.Iterable[str],
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self.installEventFilter(self)
+
+        self.synchronise(
+            content=content,
+            selected=selected,
+            unselectable=unselectable)
+
+    def synchronise(
+            self,
+            content: typing.Iterable[str],
+            selected: typing.Iterable[str],
+            unselectable: typing.Iterable[str]
+            ) -> None:
+        for row, text in enumerate(content):
+            existingItem = self.item(row)
+            item = existingItem if existingItem else QtWidgets.QListWidgetItem()
+            item.setText(text)
+            item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(
+                QtCore.Qt.CheckState.Checked
+                if text in selected else
+                QtCore.Qt.CheckState.Unchecked)
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEnabled
+                          if text in unselectable else
+                          item.flags() | QtCore.Qt.ItemFlag.ItemIsEnabled)
+            if not existingItem:
+                self.addItem(item)
+
+        while self.count() > len(content):
+            self.removeRow(self.count() - 1)
+        
+        # NOTE: This call will fit the control to the content but can't take
+        # the horizontal scroll bar into account if its being used as it might
+        # not have been shown yet.
+        self._fitToContent()
+
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if object == self and event.type() == QtCore.QEvent.Type.LayoutRequest:
+            # NOTE: If the scroll bars are displayed this will re-fit the control
+            # to its content
+            self._fitToContent()
+        return super().eventFilter(object, event)
+    
+    def _fitToContent(self) -> None:
+        contentHeight = self.frameWidth() * 2
+        for row in range(self.count()):
+            contentHeight += self.sizeHintForRow(row)
+        
+        scrollbar = self.horizontalScrollBar()
+        if scrollbar and scrollbar.isVisible():
+            contentHeight += scrollbar.sizeHint().height()
+
+        self.setFixedHeight(min(contentHeight, _MultiSelectOptionWidget._MaxHeight))
+
 class _ComponentConfigWidget(QtWidgets.QWidget):
     componentChanged = QtCore.pyqtSignal()
     deleteClicked = QtCore.pyqtSignal()
@@ -155,7 +221,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         widget = None
         connection = None
         fullRow = False
-        alignment = QtCore.Qt.AlignmentFlag(0)
+        widgetAlignment = QtCore.Qt.AlignmentFlag(0)
+        labelAlignment = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
         if isinstance(option, construction.BooleanOption):
             widget = gui.CheckBoxEx()
             widget.setChecked(option.value())
@@ -163,7 +230,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
             stringOptions = option.options()
             if not stringOptions:
@@ -173,7 +240,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setSizePolicy(
                     QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
                     QtWidgets.QSizePolicy.Policy.Fixed)
-                connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))                
+                connection = widget.delayedTextEdited.connect(lambda: self._textEditChanged(widget, option))                
             else:
                 # There are pre-defined strings the user can select from so use an editable combo box
                 widget = gui.ComboBoxEx()
@@ -189,7 +256,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     widget.addItem(stringOption)
                 connection = widget.currentTextChanged.connect(lambda: self._textComboChanged(widget, option))
                 if not option.isEditable():
-                    alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+                    widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.IntegerOption):
             widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
 
@@ -208,7 +275,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.FloatOption):
             widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
 
@@ -229,7 +296,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.EnumOption):
             widget = gui.EnumComboBox(
                 type=option.type(),
@@ -241,7 +308,15 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
             connection = widget.currentIndexChanged.connect(lambda: self._enumComboChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
+        elif isinstance(option, construction.MultiSelectOption):
+            widget = _MultiSelectOptionWidget(
+                content=option.options(),
+                selected=option.value(),
+                unselectable=option.unselectable())
+            connection = widget.itemChanged.connect(lambda: self._multiSelectChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            labelAlignment = QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight
 
         if widget:
             description = option.description()
@@ -254,13 +329,14 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 self._optionsLayout.insertWidget(
                     index,
                     widget,
-                    alignment=alignment)
+                    alignment=widgetAlignment)
             else:
                 self._optionsLayout.insertLabelledWidget(
                     index,
                     option.name() + ':',
                     widget,
-                    alignment=alignment)
+                    widgetAlignment=widgetAlignment,
+                    labelAlignment=labelAlignment)
 
     def _removeOptionWidget(
             self,
@@ -276,7 +352,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             if isinstance(widget, gui.CheckBoxEx):
                 widget.stateChanged.disconnect(connection)
             elif isinstance(widget, gui.LineEditEx):
-                widget.textChanged.disconnect(connection)
+                widget.delayedTextEdited.disconnect(connection)
             elif isinstance(widget, gui.ComboBoxEx):
                 widget.currentTextChanged.disconnect(connection)
             elif isinstance(widget, gui.SpinBoxEx):
@@ -289,6 +365,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.EnumComboBox):
                 widget.currentIndexChanged.disconnect(connection)
+            elif isinstance(widget, _MultiSelectOptionWidget):
+                widget.itemChanged.disconnect(connection)
 
         widget.setParent(None)
         widget.setHidden(True)
@@ -363,6 +441,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     options=option.options(),
                     isOptional=option.isOptional())
                 widget.setCurrentEnum(value=option.value())
+            elif isinstance(option, construction.MultiSelectOption):
+                assert(isinstance(widget, _MultiSelectOptionWidget))
+                widget.synchronise(
+                    content=option.options(),
+                    selected=option.value(),
+                    unselectable=option.unselectable())
 
     def _selectionChanged(self) -> None:
         self._updateOptionControls()
@@ -458,6 +542,28 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+            
+    def _multiSelectChanged(
+            self,
+            widget: gui.ListWidgetEx,
+            option: construction.MultiSelectOption
+            ) -> None:
+        try:
+            selection = []
+            for row in range(widget.count()):
+                item = widget.item(row)
+                if item and item.checkState() == QtCore.Qt.CheckState.Checked:
+                    selection.append(item.text())
+            option.setValue(value=selection)
+            self.componentChanged.emit()
+            self._updateOptionControls()
+        except Exception as ex:
+            message = f'Failed to update {option.name()}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)                  
 
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()

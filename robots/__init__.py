@@ -13,7 +13,7 @@ from .components.agility import *
 from .components.speed import *
 from .components.manipulator import *
 from .components.slotoption import *
-from .components.weapon import *
+from .components.weapons import *
 from .components.brain import *
 from .components.skill import *
 from .components.finalisation import *

@@ -262,8 +262,8 @@ class FinalisationComponent(robots.FinalisationInterface):
     
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
 
-    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted on or held by a manipulator receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted on or held by a manipulator do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
     _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are to small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
     _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
     _CombatWeaponSizeExamples = {
@@ -587,29 +587,16 @@ class FinalisationComponent(robots.FinalisationInterface):
             assert(isinstance(manipulator, robots.ManipulatorInterface))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
-            hasManipulator = True
-
             size = manipulator.size()
-            if not _manipulatorSizeToWeaponSize(manipulatorSize=size):
-                # Ignore manipulators that are to small to hold a weapon
-                continue
-
             if size not in usableManipulatorSizes:
                 usableManipulatorSizes.append(size)
         usableManipulatorSizes.sort()
 
-        weaponMounts = context.findComponents(
-            componentType=robots.Weapon,
-            sequence=sequence)
-        hasNonManipulatorWeapon = False
-        for mount in weaponMounts:
-            assert(isinstance(mount, robots.Weapon))
-            isManipulatorBased = isinstance(mount, robots.ManipulatorMountedWeapon) or \
-                isinstance(mount, robots.HandHeldWeapon)
-            if not isManipulatorBased:
-                hasNonManipulatorWeapon = True
-
         # Cover how DEX is used in attack rolls
+        hasManipulator = len(usableManipulatorSizes) > 0
+        hasNonManipulatorWeapon = context.hasComponent(
+            componentType=robots.ServoWeaponMount,
+            sequence=sequence)        
         if hasManipulator or hasNonManipulatorWeapon:
             step = robots.RobotStep(
                 name='Dexterity',

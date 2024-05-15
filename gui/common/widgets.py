@@ -551,8 +551,10 @@ class TextEditEx(QtWidgets.QTextEdit):
 
 class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)
+    delayedTextEdited = QtCore.pyqtSignal(str)
 
-    _darkModeInvalidRegexHighlight = QtGui.QColor(100, 0, 0)
+    _DarkModeInvalidRegexHighlight = QtGui.QColor(100, 0, 0)
+    _DefaultDelayedEditSignalMilliseconds = 500
 
     _StateVersion = 'LineEditEx_v1'
 
@@ -567,12 +569,17 @@ class LineEditEx(QtWidgets.QLineEdit):
         self._regexCheckingEnabled = False
         self._regexPattern = None
         self._cachedBaseColour = None
+        self._delayedEditSignalTimer = QtCore.QTimer()
+        self._delayedEditSignalTimer.setInterval(LineEditEx._DefaultDelayedEditSignalMilliseconds)
+        self._delayedEditSignalTimer.setSingleShot(True)        
+        self._delayedEditSignalTimer.timeout.connect(self._delayedEditSignalFired)
 
         # Always connect the signal, even though regex checking might not be enabled. This
         # is VERY important as signals are executed in the order they're connected and we
         # want regex checking to be performed before any external consumers are notified of
         # the text being changed (as they may check the regex validity in response to it)
         self.textChanged.connect(self._textChanged)
+        self.textEdited.connect(self._textEdited)
 
     def isEmpty(self) -> bool:
         return len(self.text()) <= 0
@@ -595,6 +602,12 @@ class LineEditEx(QtWidgets.QLineEdit):
     # Return compiled regex if regex checking is enabled
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
+    
+    def setDelayedEditSignalTimeout(
+            self,
+            milliseconds: int
+            ):
+        self._delayedEditSignalTimer.setInterval(milliseconds)
 
     def setPalette(self, palette: QtGui.QPalette) -> None:
         if self._regexCheckingEnabled:
@@ -642,6 +655,12 @@ class LineEditEx(QtWidgets.QLineEdit):
         if self._regexCheckingEnabled:
             self._checkRegex()
 
+    def _textEdited(self, text: str) -> None:
+        self._delayedEditSignalTimer.start()
+
+    def _delayedEditSignalFired(self) -> None:
+        self.delayedTextEdited.emit(self.text())
+
     def _checkRegex(
             self,
             forceSignal: bool = False
@@ -658,7 +677,7 @@ class LineEditEx(QtWidgets.QLineEdit):
 
         colour = self._cachedBaseColour
         if not self._regexPattern:
-            colour = self._darkModeInvalidRegexHighlight if gui.isDarkModeEnabled() else QtCore.Qt.GlobalColor.red
+            colour = self._DarkModeInvalidRegexHighlight if gui.isDarkModeEnabled() else QtCore.Qt.GlobalColor.red
 
         palette = self.palette()
         palette.setColor(QtGui.QPalette.ColorRole.Base, colour)
@@ -959,40 +978,46 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             self,
             label: str,
             layout: QtWidgets.QLayout,
-            stretch: int = 0
+            stretch: int = 0,
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=self.count(),
             object=layout,
             label=label,
-            stretch=stretch)
+            stretch=stretch,
+            labelAlignment=labelAlignment)
 
     def addLabelledWidget(
             self,
             label: str,
             widget: QtWidgets.QWidget,
             stretch: int = 0,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            widgetAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=self.count(),
             object=widget,
             label=label,
             stretch=stretch,
-            alignment=alignment)
+            objectAlignment=widgetAlignment,
+            labelAlignment=labelAlignment)
 
     def insertLabelledLayout(
             self,
             index: int,
             label: str,
             layout: QtWidgets.QLayout,
-            stretch: int = 0
+            stretch: int = 0,
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=index,
             object=layout,
             label=label,
-            stretch=stretch)
+            stretch=stretch,
+            labelAlignment=labelAlignment)
 
     def insertLabelledWidget(
             self,
@@ -1000,14 +1025,16 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             label: str,
             widget: QtWidgets.QWidget,
             stretch: int = 0,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            widgetAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=index,
             object=widget,
             label=label,
             stretch=stretch,
-            alignment=alignment)
+            objectAlignment=widgetAlignment,
+            labelAlignment=labelAlignment)
 
     def removeWidget(self, widget: QtWidgets.QWidget) -> None:
         wrapper = self._labelledObjectLayoutMap.get(widget)
@@ -1027,14 +1054,17 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             object: typing.Union[QtWidgets.QWidget, QtWidgets.QLayout],
             label: str,
             stretch: int,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            objectAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         # When adding this wrapper layout a stretch isn't added. Instead the alignment should be
         # used. I've done this as I was finding the stretch meant line edits that were set to
         # expand to use as much space as is available weren't doing so.
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(QtWidgets.QLabel(label))
+        label = QtWidgets.QLabel(label)
+        label.setAlignment(labelAlignment)
+        layout.addWidget(label)
         if isinstance(object, QtWidgets.QWidget):
             layout.addWidget(object)
         elif isinstance(object, QtWidgets.QLayout):
@@ -1045,7 +1075,7 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
 
-        super().insertWidget(index, widget, stretch, alignment)
+        super().insertWidget(index, widget, stretch, objectAlignment)
         self._labelledObjectLayoutMap[object] = widget
 
 # Implementation of a TextEdit that automatically resizes to fit its contents

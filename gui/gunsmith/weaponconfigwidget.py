@@ -135,11 +135,11 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         globalLayout.addLabelledWidget(
             label='Tech Level:',
             widget=self._techLevelSpinBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
         globalLayout.addLabelledWidget(
             label='Secondary Weapon Count:',
             widget=self._secondaryCountSpinBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         for rule in gunsmith.RuleId:
             ruleCheckBox = gui.CheckBoxEx()
@@ -150,7 +150,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             globalLayout.addLabelledWidget(
                 label=rule.value + ':',
                 widget=ruleCheckBox,
-                alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+                widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
             self._ruleWidgets[rule] = ruleCheckBox
 
         self._configurationWidget = gui.ExpanderGroupWidgetEx()

@@ -14,6 +14,7 @@ class RobotPhase(construction.ConstructionPhase):
     LocomotiveMods = 'Locomotive Modifications'
     Manipulators = 'Manipulators'
     SlotOptions = 'Slot Options'
+    Weapons = 'Weapons'
     Brain = 'Brain'
     Skills = 'Skills'
     Finalisation = 'Finalisation'

@@ -109,8 +109,8 @@ class StringOption(ComponentOption):
             if (self._value != None) and (self._value not in options):
                 self._value = None
         else:
-            if self._value not in options:
-                self._value = options[0] if len(options) > 0 else None
+            if self._value not in self._options:
+                self._value = self._options[0] if len(self._options) > 0 else None
 
     def isEditable(self) -> bool:
         return self._isEditable
@@ -379,3 +379,69 @@ class EnumOption(ComponentOption):
             raise ValueError(f'The value {value} is not a valid option')
 
         self._value = value
+
+class MultiSelectOption(ComponentOption):
+    def __init__(
+            self,
+            id: str,
+            name: str,
+            options: typing.Iterable[str],
+            value: typing.Optional[typing.Iterable[str]] = None,
+            unselectable: typing.Optional[typing.Iterable[str]] = None,
+            description: str = '',
+            enabled: bool = True
+            ) -> None:
+        super().__init__(
+            id=id,
+            name=name,
+            value=list(value) if value else [],
+            description=description,
+            enabled=enabled)
+        self._options = list(options)
+        self._unselectable = list(unselectable) if unselectable else []
+        self._checkAndUpdateValue(value=self._value)        
+
+    def setValue(
+            self,
+            value: typing.Iterable[str]
+            ) -> None:
+        self._checkAndUpdateValue(value=value)   
+
+    def options(self) -> typing.Iterable[str]:
+        return self._options
+
+    def setOptions(
+            self,
+            options: typing.Iterable[str]
+            ) -> None:
+        self._options = list(options)
+
+        for item in list(self._value):
+            if item not in self._options:
+                self._value.remove(item)
+
+    def unselectable(self) -> typing.Iterable[str]:
+        return self._unselectable
+    
+    def setUnselectable(
+            self,
+            unselectable: typing.Optional[typing.Iterable[str]]
+            ) -> None:
+        if not unselectable:
+            self._unselectable.clear()
+            return
+        
+        self._unselectable = list(unselectable)
+        for selected in list(self._value):
+            if selected in self._unselectable:
+                self._value.remove(selected)
+
+    def _checkAndUpdateValue(
+            self,
+            value: typing.Iterable[str]
+            ) -> None:
+        for item in value:
+            if item not in self._options:
+                raise ValueError(f'The value {value} is not a valid selection for')
+
+        self._value = list(value)

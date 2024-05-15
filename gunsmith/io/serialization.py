@@ -17,6 +17,12 @@ def serialiseOptions(
                 'id': option.id(),
                 'value': value
             })
+        elif isinstance(option, construction.StringOption):
+            assert(isinstance(value, str))
+            options.append({
+                'id': option.id(),
+                'value': value
+            })            
         elif isinstance(option, construction.IntegerOption):
             assert(isinstance(value, int))
             options.append({
@@ -35,6 +41,13 @@ def serialiseOptions(
                 'id': option.id(),
                 'value': value.name if value else None
             })
+        elif isinstance(option, construction.MultiSelectOption):
+            # TODO: This hasn't been tested
+            assert(isinstance(value, list))
+            options.append({
+                'id': option.id(),
+                'value': value
+            })            
 
     return options
 
