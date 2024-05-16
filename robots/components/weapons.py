@@ -817,6 +817,8 @@ class MultiLink(robots.MultiLinkInterface):
     # TODO: Could fill in the number of damage dice, this would have to handle only held weapons where the weapon is unknown
     _MultiLinkAttackNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result of each damage dice. (p61)'
 
+    _MultiLinkManipulatorNote = 'Weapons held in a robots manipulator can only be used as part of a linked group of weapons when the weapon being held is of the same type as the other manipulators and mounts in the group. (p61)'
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -909,7 +911,6 @@ class MultiLink(robots.MultiLinkInterface):
 
         # Make manipulators that don't allow for the weapon size unselectable
         if mountSize:
-            # TODO: Implement me
             minManipulatorSize = _MinManipulatorSizeMap.get(mountSize)
             for weaponString, weapon in weapons.items():
                 if isinstance(weapon, robots.ManipulatorInterface) and \
@@ -939,7 +940,7 @@ class MultiLink(robots.MultiLinkInterface):
         if linkedWeaponCount < 2:
             # TODO: This should probably add the step with a warning note
             return
-
+        
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
@@ -947,6 +948,16 @@ class MultiLink(robots.MultiLinkInterface):
         step.addNote(note=MultiLink._MultiLinkAttackNote.format(
             count=linkedWeaponCount,
             modifier=linkedWeaponCount - 1))
+        
+        weapons = self._enumerateWeapons(sequence=sequence, context=context)
+        containsManipulator = False
+        for weaponString in linkedWeapons:
+            weapon = weapons.get(weaponString)
+            if isinstance(weapon, robots.ManipulatorInterface):
+                containsManipulator = True
+                break
+        if containsManipulator:
+            step.addNote(note=MultiLink._MultiLinkManipulatorNote)
         
         context.applyStep(
             sequence=sequence,

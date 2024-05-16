@@ -264,7 +264,7 @@ class FinalisationComponent(robots.FinalisationInterface):
 
     _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
     _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are to small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
+    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
     _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
     _CombatWeaponSizeExamples = {
         traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
