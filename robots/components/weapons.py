@@ -266,12 +266,6 @@ class _WeaponMountImpl(object):
             sequence=sequence):
             return False
         
-        mountSizeOptions = self._allowedMountSizes(
-            sequence=sequence,
-            context=context)
-        if not mountSizeOptions:
-            return False
-        
         weaponOptions = self._allowedWeapons(
             sequence=sequence,
             context=context)
@@ -526,7 +520,13 @@ class _ManipulatorMountImpl(_WeaponMountImpl):
         manipulators = _enumerateManipulators(
             sequence=sequence, 
             context=context)
-        return len(manipulators) > 0
+        minUsableSize = _MinManipulatorSizeMap[traveller.WeaponSize.Small]
+        meetsMinimum = False
+        for manipulator in manipulators.values():
+            if manipulator.size() >= minUsableSize:
+                meetsMinimum = True
+                break
+        return meetsMinimum
     
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
