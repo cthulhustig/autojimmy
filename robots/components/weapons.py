@@ -85,6 +85,19 @@ import typing
 #
 # Clarification 5: Hand held weapons can be multi-linked but only if they're
 # being controlled by a Fire Control System
+# TODO: If Geir comes back saying he likes the new proposal for multi-link
+# better then I think I'm pretty much reverting back to how weapons were
+# before all the recent changes. I'll keep support for multi-select options
+# but they won't be used. The old implementation might need some rejigging:
+# - Make FCS mandatory for multi-link
+# - Remove logic that allowed linking across manipulators and switch to
+# having a count in the same way as servo mounted weapons (limit 4 weapons
+# in a group)
+# - Remove hand held mounts. I think this might make sense as it's own
+# stage where you can just select weapons that the robot can pick up/put down.
+# It would consume slots and would just have the weapon cost.
+# - Probably need to update some notes
+# - Need to revert (and possibly update) finalisation
 
 # This is the mapping of weapon size to the min manipulator size required to
 # use the weapon and still get the robots DEX/STR modifier (p61). There is
