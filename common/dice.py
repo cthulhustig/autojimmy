@@ -1,6 +1,7 @@
 import common
 import enum
 import random
+import re
 import typing
 
 _Lowest1DRoll = common.ScalarCalculation(
@@ -306,10 +307,18 @@ class DiceRoller(object):
         return self._rolls
 
 class DieType(enum.Enum):
-    D6 = 0,
+    D6 = 0
     D3 = 1
+    DD = 2 # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
 
 class DiceRoll(object):
+    # This matches <OptionalDiceCount><DiceType><OptionalConstantModifier>
+    # NOTE: The OptionalConstantModifier may contain a space between the sign
+    # and numeric value which should be removed before converting to an int
+    # NOTE: Even though DiceRoll supports it, this pattern doesn't match
+    # 'dice rolls' that are just a constant value (i.e. no actual rolling).
+    _DiceRollPattern = re.compile(r'^\s*((?:[+-]?\d+)?)([Dd][36Dd]*)\s*((?:[+-]\s*\d+)?)\s*$')
+
     def __init__(
             self,
             count: common.ScalarCalculation = common.ScalarCalculation(value=0),
@@ -338,6 +347,8 @@ class DiceRoll(object):
             displayString = f'{count}D'
             if self._type == DieType.D3:
                 displayString += '3'
+            elif self._type == DieType.DD:
+                displayString += 'D'
 
         constant = self._constant.value() if self._constant else 0
         if constant > 0:
@@ -348,3 +359,37 @@ class DiceRoll(object):
             displayString += str(abs(constant))
 
         return displayString if displayString else '0'
+
+    @staticmethod
+    def fromString(string: str) -> typing.Optional['DiceRoll']:
+        match = DiceRoll._DiceRollPattern.match(string)
+        if not match:
+            return None
+        try:
+            count = match.group(1)
+            count = common.ScalarCalculation(
+                value=int(count) if count else 1, # If no value assume 1D
+                name='Parsed Dice Roll Dice Count')
+
+            type = match.group(2)
+            type = type.upper()
+            if type == 'D3':
+                type = DieType.D3
+            elif type == 'DD':
+                type = DieType.DD
+            else:
+                type = DieType.D6
+
+            constant = match.group(3)
+            if constant:
+                constant = ''.join(constant.split())
+            constant = common.ScalarCalculation(
+                value=int(constant) if constant else 0,
+                name='Parsed Dice Roll Constant Modifier')
+
+            return DiceRoll(
+                count=count,
+                type=type,
+                constant=constant)
+        except:
+            return None

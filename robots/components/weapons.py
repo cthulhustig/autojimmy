@@ -811,11 +811,13 @@ class MultiLink(robots.MultiLinkInterface):
     # TODO: Need something to handle the case where linked manipulators have
     # different DEX/STR values. This could be manipulators with mounts or 
     # manipulators holding weapons
+    # Update: I've sent a question to Geir about this
 
     _MaxMultiLinkWeaponCount = 4
 
-    # TODO: Could fill in the number of damage dice, this would have to handle only held weapons where the weapon is unknown
-    _MultiLinkAttackNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result of each damage dice. (p61)'
+    # TODO: Should the modifier in this note include the DEX/STR characteristic modifier? If not should it say explicitly what the modifier does include?
+    _MultiLinkAttackKnownDiceNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result. (p61)'
+    _MultiLinkAttackUnknownDiceNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result of each damage dice. (p61)'
 
     _MultiLinkManipulatorNote = 'Weapons held in a robots manipulator can only be used as part of a linked group of weapons when the weapon being held is of the same type as the other manipulators and mounts in the group. (p61)'
 
@@ -945,9 +947,29 @@ class MultiLink(robots.MultiLinkInterface):
             name=self.instanceString(),
             type=self.typeString())
         
-        step.addNote(note=MultiLink._MultiLinkAttackNote.format(
-            count=linkedWeaponCount,
-            modifier=linkedWeaponCount - 1))
+        weapons = self._enumerateWeapons(sequence=sequence, context=context)
+        weaponData: typing.Optional[traveller.StockWeapon] = None
+        for weaponString in linkedWeapons:
+            weapon = weapons.get(weaponString)
+            if isinstance(weapon, robots.WeaponMountInterface):
+                weaponData = weapon.weaponData(context.weaponSet())
+                if weaponData:
+                    break
+
+        damageDieCount = None
+        if weaponData:
+            damageRoll = common.DiceRoll.fromString(weaponData.damage())
+            if damageRoll:
+                damageDieCount = damageRoll.dieCount()
+
+        if damageDieCount:
+            step.addNote(note=MultiLink._MultiLinkAttackKnownDiceNote.format(
+                count=linkedWeaponCount,
+                modifier=(linkedWeaponCount - 1) * damageDieCount.value()))
+        else:
+            step.addNote(note=MultiLink._MultiLinkAttackUnknownDiceNote.format(
+                count=linkedWeaponCount,
+                modifier=linkedWeaponCount - 1))
         
         weapons = self._enumerateWeapons(sequence=sequence, context=context)
         containsManipulator = False
