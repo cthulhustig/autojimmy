@@ -970,12 +970,7 @@ class Skill(robots.SkillInterface):
         sequence: str,
         context: robots.RobotContext,
         ) -> None:
-        skillName = self._skillDef.name()
-        if isinstance(speciality, enum.Enum):
-            skillName += f' ({speciality.value})'
-        elif isinstance(speciality, str):
-            skillName += f' ({speciality})'
-
+        skillName = self._skillDef.name(speciality=speciality)
         level = common.ScalarCalculation(
             value=level,
             name=f'Specified {skillName} Level')

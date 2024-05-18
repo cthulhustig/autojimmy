@@ -64,7 +64,7 @@ class DefaultSuiteOptionInterface(SlotOptionsInterface):
 class SlotOptionInterface(SlotOptionsInterface):
     pass
 
-class WeaponMountInterface(RobotComponentInterface):
+class MountedWeaponInterface(RobotComponentInterface):
     def mountSize(self) -> traveller.WeaponSize:
         raise RuntimeError(f'{type(self)} is derived from WeaponMountInterface so must implement mountSize')
     
@@ -79,20 +79,6 @@ class WeaponMountInterface(RobotComponentInterface):
         
     def autoloaderMagazineCount(self) -> typing.Optional[int]:
         raise RuntimeError(f'{type(self)} is derived from WeaponMountInterface so must implement autoloaderMagazineCount')
-
-class ServoWeaponMountInterface(WeaponMountInterface):
-    pass
-
-class ManipulatorWeaponMountInterface(WeaponMountInterface):
-    pass
-
-class MultiLinkInterface(RobotComponentInterface):
-    def weaponStrings(self) -> typing.Optional[str]:
-        raise RuntimeError(f'{type(self)} is derived from MultiLinkInterface so must implement weaponStrings')
-
-
-class FireControlInterface(RobotComponentInterface):
-    pass
 
 class BrainInterface(RobotComponentInterface):
     pass

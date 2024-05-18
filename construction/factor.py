@@ -185,13 +185,9 @@ class SetSkillFactor(SkillFactor):
         return [self._level]
 
     def displayString(self) -> str:
-        string = self._skillDef.name()
-        if isinstance(self._speciality, enum.Enum):
-            string += f' ({self._speciality.value})'
-        elif isinstance(self._speciality, str):
-            string += f' ({self._speciality})'
-        string += f' {self._level.value()}'
-        return string
+        return '{skill} {level}'.format(
+            skill=self._skillDef.name(speciality=self._speciality),
+            level=self._level.value())
 
     def applyTo(
             self,

@@ -27,7 +27,14 @@ class SkillDefinition(object):
                 raise AttributeError('Custom speciality skills must have a list of example specialities specified')
             self._customSpecialities = customSpecialities
 
-    def name(self) -> str:
+    def name(
+            self,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> str:
+        if isinstance(speciality, enum.Enum):
+            return f'{self._skillName} ({speciality.value})'
+        if isinstance(speciality, str):
+            return f'{self._skillName} ({speciality})' 
         return self._skillName
     
     def type(self) -> SkillType:

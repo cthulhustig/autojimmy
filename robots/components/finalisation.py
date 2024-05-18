@@ -595,7 +595,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         # Cover how DEX is used in attack rolls
         hasManipulator = len(usableManipulatorSizes) > 0
         hasNonManipulatorWeapon = context.hasComponent(
-            componentType=robots.ServoWeaponMount,
+            componentType=robots.ServoMountedWeapon,
             sequence=sequence)        
         if hasManipulator or hasNonManipulatorWeapon:
             step = robots.RobotStep(

@@ -25,11 +25,7 @@ class TrainedSkill(object):
             self,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> str:
-        if isinstance(speciality, enum.Enum):
-            return f'{self._skillDef.name()} ({speciality.value})'
-        if isinstance(speciality, str):
-            return f'{self._skillDef.name()} ({speciality})'
-        return self._skillDef.name()
+        return self._skillDef.name(speciality=speciality)
     
     def level(
             self,
