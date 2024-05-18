@@ -45,7 +45,7 @@ ShipCurrentFuelToolTip = createStringToolTip(
     'this.</p>',
     escape=False)
 ShipFuelPerParsecToolTip = createStringToolTip(
-    '<p>Fuel consumed for each parsec jumped.</p>'
+    '<p>Tons of fuel consumed for each parsec jumped.</p>'
     '<p>Enabling this option allows the specified value to be used instead of the default of 10% '
     'of total ship tonnage.</p>',
     escape=False)

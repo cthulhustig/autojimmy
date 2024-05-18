@@ -5,51 +5,12 @@ import robots
 import traveller
 import typing
 
-# NOTE: The rule seem to describe 2 or 3 different types of weapon mount
-# servo and manipulator mounted and possibly torso mounted as a separate
-# class depending on how you interpret the wording.
-#
-# Manipulator mounts seem the easiest to understand but most complicated to
-# implement. The user specifies which manipulator the weapon is mounted on.
-# The chosen manipulator determines how big a mount (and therefore weapon)
-# can be installed and the DEX level used when calculating the attack
-# modifier. The slot usage and cost for the mount come from the table on
-# p61. The table also specifies the minimum manipulator size required for
-# that size mount.
-#
-# Servo mounts seem straight forward. The slots and cost for the mount come
-# from the table on p61 but the minimum manipulator size doesn't apply. The
-# only limit on how big a mount (and therefore weapon) you can install is
-# the available slots. After clarifications from Geir (see below) the only
-# thing that's not clear is why there is no min TL for servo mounts.
-#
-# Torso mounts are the most confusing. The rules specifically say "A weapon
-# mount is integrated into a robot, either as an attachment to a manipulator
-# or a separate weapon servo." (p61) and then later "A weapon mounted in the
-# robot’s torso may use any available Slots.". There are a couple of things
-# that are unclear, how a 'torso' mounted weapon relates to a servo or
-# manipulator weapon and why it's specifically calling out that a torso
-# mounted weapon can use "any available Slots".
-# The simplest interpretation is that 'torso mounted' is just a catch all
-# term for manipulators mounted in or on the robot (rather than held by it).
-# This would make some sense as the "any available Slots" would just be
-# saying that these types of weapons consume slots (where as held weapons
-# don't).
-# The other option is 'torso' mounted means mounted inside the robot rather
-# than to the exterior of the robot and it's trying to differentiate how
-# slots are consumed in those cases. With this interpretation the fact
-# its' explicitly saying these types of weapons can use "any available
-# Slots" could be taken to mean weapons mounted to the exterior of the robot
-# don't consume slots.
-#
-# My current best guess is the former option. If it was something as
-# fundamental as mounting to the exterior doesn't consume slots then you
-# would have thought it would be a lot clearer. You would also have thought
-# that mounting externally would be an option for other components.
-# NOTE: The rules around how the Fire Control System affects attack rolls are
+
+# NOTE: The rules around Fire Control Systems and linked weapons are
 # confusing. I got a chance to put some questions to Geir Lanesskog (the
 # author of the book) and he clarified some stuff.
 # https://forum.mongoosepublishing.com/threads/robot-tl-8-sentry-gun.124598/#post-973844
+# https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 #
 # Clarification 1: His intention was that only weapons held by or mounted
 # to a manipulators should get a DEX modifier for attack rolls and this
@@ -77,23 +38,21 @@ import typing
 # get the modifier from a combat skill (which could be an actual skill or
 # provided by the Fire Control System) and they also get a modifier for the
 # DEX (of the manipulator)
-# NOTE: I got another chance to pick Geir's brains and he clarified the
-# following
-# https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 #
 # Clarification 4: Fire Control System can be used with hand held weapons
 #
-# Clarification 5: Hand held weapons can be multi-linked but only if they're
-# being controlled by a Fire Control System
-# TODO: If Geir comes back saying he likes the new proposal for multi-link
-# better then I think I'm pretty much reverting back to how weapons were
-# before all the recent changes. I'll keep support for multi-select options
-# but they won't be used. The old implementation might need some rejigging:
-# - Remove hand held mounts. I think this might make sense as it's own
-# stage where you can just select weapons that the robot can pick up/put down.
-# It would consume slots and would just have the weapon cost.
-# - Probably need to update some notes
-# - Rewrite all the big comments above to match the new understanding
+# Clarification 5: The way linked weapons work was intended to be based on
+# the Vehicle Handbook mount rules where multiple weapons can be linked but
+# only if they're on the same mount. For robots the "same mount" is classed
+# as all mounted to a single servo mount or all mounted to the same
+# manipulator. This is slightly different to what the rules say as they say
+# each weapon requires its own mount (p61). The important part is you can't
+# link weapons on different manipulators or servo and manipulator mounted
+# weapons.
+#
+# Clarification 6: Weapons held by a manipulator (rather than mounted to a
+# manipulator) can't be linked. This is a logical side effect of Clarification
+# 5 as it wouldn't make sense for one manipulator to hold multiple weapons.
 
 # This is the mapping of weapon size to the min manipulator size required to
 # use the weapon and still get the robots DEX/STR modifier (p61). There is
@@ -243,10 +202,8 @@ class MountedWeapon(robots.MountedWeaponInterface):
     
     _MultiLinkMaxGroupSize = 4
 
-    _MultiLinkFireControlNote = 'Linked weapons require a Fire Control System to be fired as a group. (clarified by Geir Lanesskog, Robot Handbook author)'
-    # TODO: Should the modifier in this note include the DEX/STR characteristic modifier? If not should it say explicitly what the modifier does include?
-    _MultiLinkAttackKnownDiceNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result. (p61)'
-    _MultiLinkAttackUnknownDiceNote = 'Only a single attack is made when the {count} linked weapons are fired together. If a hit occurs a single damage roll is made and +{modifier} is added to the result of each damage dice. (p61)'
+    _MultiLinkAttackKnownDiceNote = 'When all {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and an additional +{modifier} damage is added to the result. (p61)'
+    _MultiLinkAttackUnknownDiceNote = 'When all {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and  an additional +{modifier} damage is added to the result of each damage dice. (p61)'
 
     class FireControlLevel(enum.Enum):
         Basic = 'Basic'
@@ -268,7 +225,7 @@ class MountedWeapon(robots.MountedWeaponInterface):
         value=1,
         name='Fire Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait (p60).'
-    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the Fire Control System\'s Weapon Skill DM of {modifier} instead of the robots {skill} skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
+    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the Fire Control System\'s Weapon Skill DM of {modifier} instead of the robots {skill} skill. Note that this just in place of the skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
     _FireControlLaserDesignatorComponents = [
         robots.LaserDesignatorDefaultSuiteOption,
         robots.LaserDesignatorSlotOption]
@@ -525,10 +482,6 @@ class MountedWeapon(robots.MountedWeaponInterface):
             step.addFactor(factor=construction.StringFactor(
                 string=f'Weapon Traits = {traits}'))
 
-        # TODO: This should be combined with the note about additional damage
-        # for multi-linked weapons. I think it's coming down to they always
-        # fire all weapons at the same time so they're effectively a single
-        # weapon that does more damage.
         skill = weaponData.skill()
         skillName = skill.name(speciality=weaponData.specialty())        
         note = f'The weapon uses the {skillName} skill'
@@ -540,6 +493,23 @@ class MountedWeapon(robots.MountedWeaponInterface):
             note += f' and has the {traits} traits'
         note += '.'
         step.addNote(note)
+
+        linkedGroupSize = self.linkedGroupSize()
+        if linkedGroupSize:
+            damageDieCount = None
+            if damage:
+                damageRoll = common.DiceRoll.fromString(damage)
+                if damageRoll:
+                    damageDieCount = damageRoll.dieCount()
+
+            if damageDieCount:
+                step.addNote(note=MountedWeapon._MultiLinkAttackKnownDiceNote.format(
+                    count=linkedGroupSize.value(),
+                    modifier=(linkedGroupSize.value() - 1) * damageDieCount.value()))
+            else:
+                step.addNote(note=MountedWeapon._MultiLinkAttackUnknownDiceNote.format(
+                    count=linkedGroupSize.value(),
+                    modifier=linkedGroupSize.value() - 1))  
 
         if weaponData.magazineCost():
             step.addNote(f'A magazine for the weapon costs Cr{weaponData.magazineCost()}')
@@ -696,26 +666,7 @@ class MountedWeapon(robots.MountedWeaponInterface):
             modifier=common.formatNumber(number=weaponSkillDM, alwaysIncludeSign=True),
             skill=skillName))
 
-        step.addNote(note=MountedWeapon._FireControlScopeNote)
-
-        linkedGroupSize = self.linkedGroupSize()
-        if linkedGroupSize:
-            step.addNote(note=MountedWeapon._MultiLinkFireControlNote)
-
-            damageDieCount = None
-            if weaponData:
-                damageRoll = common.DiceRoll.fromString(weaponData.damage())
-                if damageRoll:
-                    damageDieCount = damageRoll.dieCount()
-
-            if damageDieCount:
-                step.addNote(note=MountedWeapon._MultiLinkAttackKnownDiceNote.format(
-                    count=linkedGroupSize.value(),
-                    modifier=(linkedGroupSize.value() - 1) * damageDieCount.value()))
-            else:
-                step.addNote(note=MountedWeapon._MultiLinkAttackUnknownDiceNote.format(
-                    count=linkedGroupSize.value(),
-                    modifier=linkedGroupSize.value() - 1))        
+        step.addNote(note=MountedWeapon._FireControlScopeNote)      
 
         hasLaserDesignator = False
         for componentType in MountedWeapon._FireControlLaserDesignatorComponents:
