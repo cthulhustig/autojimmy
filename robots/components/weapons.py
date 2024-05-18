@@ -202,8 +202,8 @@ class MountedWeapon(robots.MountedWeaponInterface):
     
     _MultiLinkMaxGroupSize = 4
 
-    _MultiLinkAttackKnownDiceNote = 'When all {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and an additional +{modifier} damage is added to the result. (p61)'
-    _MultiLinkAttackUnknownDiceNote = 'When all {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and  an additional +{modifier} damage is added to the result of each damage dice. (p61)'
+    _MultiLinkAttackKnownDiceNote = 'When the {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and an additional +{modifier} damage is added to the result. (p61)'
+    _MultiLinkAttackUnknownDiceNote = 'When the {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and  an additional +{modifier} damage is added to the result of each damage dice. (p61)'
 
     class FireControlLevel(enum.Enum):
         Basic = 'Basic'
