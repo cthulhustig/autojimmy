@@ -79,6 +79,12 @@ class MountedWeaponInterface(RobotComponentInterface):
         
     def autoloaderMagazineCount(self) -> typing.Optional[int]:
         raise RuntimeError(f'{type(self)} is derived from WeaponMountInterface so must implement autoloaderMagazineCount')
+    
+class HandHeldFireControlInterface(RobotComponentInterface):
+    pass
+
+class HandHeldWeaponInterface(RobotComponentInterface):
+    pass
 
 class BrainInterface(RobotComponentInterface):
     pass
