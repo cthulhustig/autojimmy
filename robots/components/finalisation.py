@@ -582,21 +582,21 @@ class FinalisationComponent(robots.FinalisationInterface):
         manipulators = context.findComponents(
             componentType=robots.ManipulatorInterface,
             sequence=sequence)
-        usableManipulatorSizes: typing.List[int] = []
+        allManipulatorSizes: typing.List[int] = []
         for manipulator in manipulators:
             assert(isinstance(manipulator, robots.ManipulatorInterface))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
             size = manipulator.size()
-            if size not in usableManipulatorSizes:
-                usableManipulatorSizes.append(size)
-        usableManipulatorSizes.sort()
+            if size not in allManipulatorSizes:
+                allManipulatorSizes.append(size)
+        allManipulatorSizes.sort()
 
         # Cover how DEX is used in attack rolls
-        hasManipulator = len(usableManipulatorSizes) > 0
+        hasManipulator = len(allManipulatorSizes) > 0
         hasNonManipulatorWeapon = context.hasComponent(
             componentType=robots.ServoMountedWeapon,
-            sequence=sequence)        
+            sequence=sequence)
         if hasManipulator or hasNonManipulatorWeapon:
             step = robots.RobotStep(
                 name='Dexterity',
@@ -616,7 +616,7 @@ class FinalisationComponent(robots.FinalisationInterface):
                 name='Weapon Size',
                 type='Combat')            
             sizingMap: typing.Dict[traveller.WeaponSize, typing.Iterable[str]] = {}
-            for manipulatorSize in usableManipulatorSizes:
+            for manipulatorSize in allManipulatorSizes:
                 weaponSize = _manipulatorSizeToWeaponSize(manipulatorSize=size)
                 manipulatorSizes = sizingMap.get(weaponSize)
                 if not manipulatorSizes:

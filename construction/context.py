@@ -415,9 +415,12 @@ class ConstructionContext(object):
             ) -> None:
         self.clearComponents(regenerate=False)
 
+        # This get a list of ALL component classes under the base
+        # construction component type used by the contents
         componentClasses = common.getSubclasses(
             classType=self._componentsType,
             topLevelOnly=True)
+
         componentTypeMap = {}
         for componentClass in componentClasses:
             componentTypeMap[componentClass.__name__] = componentClass
@@ -706,6 +709,14 @@ class ConstructionContext(object):
             componentTypes = common.getSubclasses(
                 classType=stage.baseType(),
                 topLevelOnly=True)
+            # TODO: This change needs a lot of testing. I think it should be
+            # safe as it will only come into play if there was a stage where
+            # prior to the change there were never any compatible components.
+            if not componentTypes:
+                # The stage base type has no sub-classes. This is expected for
+                # stages that have only ever have one compatible component type
+                # (that being the base type its self)
+                componentTypes = [stage.baseType()]
 
             compatible = []
             for componentType in componentTypes:

@@ -3268,7 +3268,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
     # NOTE: The use of this list means the hacky component used to remove
     # base manipulators is automatically skipped
     _ManipulatorTypes = [
-        robots.BaseManipulator,
+        robots.InstalledBaseManipulator,
         robots.AdditionalManipulator,
         robots.LegManipulator
     ]

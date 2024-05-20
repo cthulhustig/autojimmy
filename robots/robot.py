@@ -477,7 +477,7 @@ class Robot(object):
             name='Base Manipulators',
             sequence=self._sequence,
             phase=robots.RobotPhase.Manipulators,
-            baseType=robots.BaseManipulatorInterface,
+            baseType=robots.BaseManipulator,
             # Mandatory fixed size
             minComponents=2,
             maxComponents=2))
@@ -486,7 +486,7 @@ class Robot(object):
             name='Additional Manipulators',
             sequence=self._sequence,
             phase=robots.RobotPhase.Manipulators,
-            baseType=robots.AdditionalManipulatorInterface,
+            baseType=robots.AdditionalManipulator,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
@@ -495,7 +495,7 @@ class Robot(object):
             name='Leg Manipulators',
             sequence=self._sequence,
             phase=robots.RobotPhase.Manipulators,
-            baseType=robots.LegManipulatorInterface,
+            baseType=robots.LegManipulator,
             # Optional multi component
             minComponents=None,
             maxComponents=None)) 
@@ -524,7 +524,7 @@ class Robot(object):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Communication Options',
             sequence=self._sequence,
@@ -580,16 +580,25 @@ class Robot(object):
             maxComponents=None))
         
         stages.append(construction.ConstructionStage(
-            name='Mounted Weapons',
+            name='Servo Mounted Weapons',
             sequence=self._sequence,
             phase=robots.RobotPhase.Weapons,
-            baseType=robots.MountedWeaponInterface,
+            baseType=robots.ServoMountedWeapon,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
         
         stages.append(construction.ConstructionStage(
-            name='Hand Held Weapons',
+            name='Manipulator Mounted Weapons',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.ManipulatorMountedWeapon,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))        
+
+        stages.append(construction.ConstructionStage(
+            name='Handheld Weapons',
             sequence=self._sequence,
             phase=robots.RobotPhase.Weapons,
             baseType=robots.HandHeldWeaponInterface,
@@ -598,7 +607,7 @@ class Robot(object):
             maxComponents=None))        
         
         stages.append(construction.ConstructionStage(
-            name='Hand Held Fire Control',
+            name='Handheld Weapon Fire Control',
             sequence=self._sequence,
             phase=robots.RobotPhase.Weapons,
             baseType=robots.HandHeldFireControlInterface,
@@ -658,6 +667,6 @@ class Robot(object):
             baseType=robots.FinalisationInterface,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1))     
+            maxComponents=1)) 
         
         return stages

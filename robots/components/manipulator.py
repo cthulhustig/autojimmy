@@ -424,12 +424,14 @@ class _ManipulatorImpl(object):
             lhs=techLevel,
             rhs=_ManipulatorImpl._MaxDexterityTechLevelModifier,
             name='Max DEX')
-
-class BaseManipulator(robots.BaseManipulatorInterface):
-    def __init__(self) -> None:
+    
+class Manipulator(robots.ManipulatorInterface):
+    def __init__(
+            self,
+            impl: typing.Optional[_ManipulatorImpl]
+            ) -> None:
         super().__init__()
-        self._impl = _ManipulatorImpl(
-            manipulatorType=_ManipulatorImpl.ManipulatorType.Base)
+        self._impl = impl
         
     def size(self) -> int:
         return self._impl.size()
@@ -439,15 +441,9 @@ class BaseManipulator(robots.BaseManipulatorInterface):
 
     def dexterity(self) -> int:
         return self._impl.dexterity()
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()
-
-    def componentString(self) -> str:
-        return 'Base Manipulator'
     
     def typeString(self) -> str:
-        return 'Base Manipulator'
+        return 'Manipulator'
 
     def isCompatible(
             self,
@@ -475,8 +471,24 @@ class BaseManipulator(robots.BaseManipulatorInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
+        manipulators = context.findComponents(
+            componentType=type(self),
+            sequence=sequence)
+        foundIndex = None
+        for index, manipulator in enumerate(manipulators):
+            if manipulator == self:
+                foundIndex = index + 1
+                break
+
+        stepName = '{component} #{index} (Size: {size}, STR: {strength}, DEX: {dexterity})'.format(
+            component=self.componentString(),
+            index=foundIndex if foundIndex != None else '??',
+            size=self.size(),
+            strength=self.strength(),
+            dexterity=self.dexterity())        
+
         step = robots.RobotStep(
-            name=self.instanceString(),
+            name=stepName,
             type=self.typeString())
         
         self._impl.updateStep(
@@ -487,8 +499,23 @@ class BaseManipulator(robots.BaseManipulatorInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
+        
+class BaseManipulator(Manipulator):
+    def __init__(
+            self,
+            impl: typing.Optional[_ManipulatorImpl]
+            ) -> None:
+        super().__init__(impl=impl)
 
-class RemoveBaseManipulator(robots.BaseManipulatorInterface):
+class InstalledBaseManipulator(BaseManipulator):
+    def __init__(self) -> None:
+        super().__init__(impl=_ManipulatorImpl(
+            manipulatorType=_ManipulatorImpl.ManipulatorType.Base))
+        
+    def componentString(self) -> str:
+        return 'Base Manipulator'        
+
+class RemoveBaseManipulator(BaseManipulator):
     """
     - Slot Gain: +10% of Base Slots per Base Manipulator Removed rounded up
     - Cost Saving: Cr100 * Manipulator Size limited to 20% of Base Chassis Cost    
@@ -504,19 +531,19 @@ class RemoveBaseManipulator(robots.BaseManipulatorInterface):
         name='Base Manipulator Removal Max Cost Saving Percentage')
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(impl=None)
 
     def size(self) -> int:
         return 0
+    
+    def strength(self) -> int:
+        return 0
 
-    def instanceString(self) -> str:
-        return "Removed"
+    def dexterity(self) -> int:
+        return 0
 
     def componentString(self) -> str:
         return 'Remove Manipulator'
-    
-    def typeString(self) -> str:
-        return 'Base Manipulator'
     
     def isCompatible(
             self,
@@ -541,7 +568,7 @@ class RemoveBaseManipulator(robots.BaseManipulatorInterface):
             context: robots.RobotContext
             ) -> None:
         step = robots.RobotStep(
-            name=self.instanceString(),
+            name='Removed',
             type=self.typeString())
         
         slotGain = common.Calculator.ceil(
@@ -579,95 +606,24 @@ class RemoveBaseManipulator(robots.BaseManipulatorInterface):
             sequence=sequence,
             step=step)
         
-class AdditionalManipulator(robots.AdditionalManipulatorInterface):
+class AdditionalManipulator(Manipulator):
     def __init__(self) -> None:
-        super().__init__()
-        self._impl = _ManipulatorImpl(
-            manipulatorType=_ManipulatorImpl.ManipulatorType.Additional)
-
-    def size(self) -> int:
-        return self._impl.size()     
-
-    def strength(self) -> int:
-        return self._impl.strength()
-
-    def dexterity(self) -> int:
-        return self._impl.dexterity()
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()
+        super().__init__(impl = _ManipulatorImpl(
+            manipulatorType=_ManipulatorImpl.ManipulatorType.Additional))
 
     def componentString(self) -> str:
         return 'Additional Manipulator'
-    
-    def typeString(self) -> str:
-        return 'Additional Manipulator'
-
-    def isCompatible(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> bool:
-        return self._impl.isCompatible(
-            sequence=sequence,
-            context=context)
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return self._impl.options()
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        return self._impl.updateOptions(
-            sequence=sequence,
-            context=context)
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())
         
-        self._impl.updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)        
-                        
-        context.applyStep(
-            sequence=sequence,
-            step=step)
-        
-class LegManipulator(robots.LegManipulatorInterface):
+class LegManipulator(Manipulator):
     """
     - Requirement: The number of leg manipulators should be limited by the number
     of legs
     """
     def __init__(self) -> None:
-        super().__init__()
-        self._impl = _ManipulatorImpl(
-            manipulatorType=_ManipulatorImpl.ManipulatorType.Leg)
+        super().__init__(impl = _ManipulatorImpl(
+            manipulatorType=_ManipulatorImpl.ManipulatorType.Leg))
         
-    def size(self) -> int:
-        return self._impl.size()        
-
-    def strength(self) -> int:
-        return self._impl.strength()
-
-    def dexterity(self) -> int:
-        return self._impl.dexterity()        
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()
-
     def componentString(self) -> str:
-        return 'Leg Manipulator'
-    
-    def typeString(self) -> str:
         return 'Leg Manipulator'
 
     def isCompatible(
@@ -675,7 +631,7 @@ class LegManipulator(robots.LegManipulatorInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        if not self._impl.isCompatible(
+        if not super().isCompatible(
             sequence=sequence,
             context=context):
             return False
@@ -689,39 +645,9 @@ class LegManipulator(robots.LegManipulatorInterface):
         # Further leg manipulators can't be added if there is already one for
         # every leg
         legManipulators = context.findComponents(
-            componentType=robots.LegManipulatorInterface,
+            componentType=robots.LegManipulator,
             sequence=sequence)
-        return len(legManipulators) < legCount
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return self._impl.options()
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        return self._impl.updateOptions(
-            sequence=sequence,
-            context=context)
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())
-        
-        self._impl.updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)        
-                        
-        context.applyStep(
-            sequence=sequence,
-            step=step)                
+        return len(legManipulators) < legCount              
             
     def _totalLegCount(
             self,

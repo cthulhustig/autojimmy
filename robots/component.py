@@ -46,15 +46,6 @@ class ManipulatorInterface(RobotComponentInterface):
     def dexterity(self) -> int:
         raise RuntimeError(f'{type(self)} is derived from ManipulatorInterface so must implement dexterity')
 
-class BaseManipulatorInterface(ManipulatorInterface):
-    pass
-
-class AdditionalManipulatorInterface(ManipulatorInterface):
-    pass
-
-class LegManipulatorInterface(ManipulatorInterface):
-    pass
-
 class SlotOptionsInterface(RobotComponentInterface):
     pass
 
