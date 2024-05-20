@@ -713,9 +713,9 @@ class ConstructionContext(object):
             # safe as it will only come into play if there was a stage where
             # prior to the change there were never any compatible components.
             if not componentTypes:
-                # The stage base type has no sub-classes. This is expected for
-                # stages that have only ever have one compatible component type
-                # (that being the base type its self)
+                # The stage base type has no subclasses. This is expected for
+                # stages that only ever have one compatible component type (that
+                # being the base type its self)
                 componentTypes = [stage.baseType()]
 
             compatible = []
