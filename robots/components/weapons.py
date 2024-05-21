@@ -170,6 +170,13 @@ class _WeaponImpl(object):
     # multiple weapons.    
     # NOTE: The note about which weapons a mount of a given size can use is
     # handled in finalisation
+    # TODO: I'm still not completely happy with the indexing when mounted
+    # weapons are split into multiple steps. I really don't like the fact the
+    # index number is in the type as it's inconsistent with how manipulators are
+    # indexed (they have it in the step name rather than the type).
+    # I could flatten it into a single step but then I can't think of a non-ugly
+    # way to handle the fact some parts of the step wouldn't apply for hand held
+    # weapons or fire control systems
 
     # Data Structure: Cost, Slots
     _MountSizeData = {
