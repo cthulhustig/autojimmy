@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class SpeedModification(robots.SpeedModificationInterface):
+class SpeedModification(robots.RobotComponentInterface):
     """
     - Requirement: Not compatible with no locomotion for primary locomotion
     type (p22)    
@@ -633,7 +633,7 @@ class VehicleSpeedMovement(SpeedModification):
             context: robots.RobotContext
             ) -> typing.Optional[robots.SpeedBand]:
         locomotion = context.findFirstComponent(
-            componentType=robots.PrimaryLocomotionInterface,
+            componentType=robots.PrimaryLocomotion,
             sequence=sequence)
         if not locomotion:
             return None

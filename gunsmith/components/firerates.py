@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class FireRate(gunsmith.FireRateInterface):
+class FireRate(gunsmith.WeaponComponentInterface):
     def typeString(self) -> str:
         return 'Fire Rate'
 
@@ -14,7 +14,7 @@ class FireRate(gunsmith.FireRateInterface):
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:

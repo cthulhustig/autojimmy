@@ -617,8 +617,8 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Thruster,
             value=thrust))
-
-class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
+        
+class Locomotion(robots.RobotComponentInterface):
     def __init__(
             self,
             impl: _LocomotionImpl
@@ -634,9 +634,6 @@ class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
 
     def componentString(self) -> str:
         return self._impl.componentString()
-
-    def typeString(self) -> str:
-        return 'Locomotion'
     
     def costMultiplier(self) -> common.ScalarCalculation:
         return self._impl.costMultiplier()
@@ -675,6 +672,16 @@ class PrimaryLocomotion(robots.PrimaryLocomotionInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
+
+class PrimaryLocomotion(Locomotion):
+    def __init__(
+            self,
+            impl: _LocomotionImpl
+            ) -> None:
+        super().__init__(impl=impl)
+
+    def typeString(self) -> str:
+        return 'Locomotion'
                 
 class NoPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
@@ -734,7 +741,7 @@ class ThrusterPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_ThrusterLocomotionImpl(isPrimary=True))
 
-class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
+class SecondaryLocomotion(Locomotion):
     """
     - Requirement: Secondary locomotion types must be compatible with the same
     primary locomotion type
@@ -748,17 +755,7 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
             self,
             impl: _LocomotionImpl
             ) -> None:
-        super().__init__()
-        self._impl = impl
-
-    def isNatural(self) -> bool:
-        return self._impl.isNatural()
-
-    def instanceString(self) -> str:
-        return self._impl.instanceString()        
-
-    def componentString(self) -> str:
-        return self._impl.componentString()
+        super().__init__(impl=impl)
 
     def typeString(self) -> str:
         return 'Secondary Locomotion'
@@ -768,7 +765,7 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        if not self._impl.isCompatible(
+        if not super().isCompatible(
             sequence=sequence,
             context=context):
             return False
@@ -786,34 +783,6 @@ class SecondaryLocomotion(robots.SecondaryLocomotionInterface):
         # cost multiplier of the secondary locomotion
         primaryMultiplier = primaryLocomotion.costMultiplier()
         return self._impl.costMultiplier().value() <= primaryMultiplier.value()
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return self._impl.options()
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        return self._impl.updateOptions(sequence=sequence, context=context)
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        step = robots.RobotStep(
-            name=self.instanceString(),
-            type=self.typeString())
-
-        self._impl.updateStep(
-            sequence=sequence,
-            context=context,
-            step=step)
-        
-        context.applyStep(
-            sequence=sequence,
-            step=step)
         
 class WheelsSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:

@@ -4,6 +4,13 @@ import enum
 import gunsmith
 import typing
 
+class MagazineLoaded(gunsmith.WeaponComponentInterface):
+    pass
+
+class MagazineQuantity(gunsmith.WeaponComponentInterface):
+    def createLoadedMagazine(self) -> MagazineLoaded:
+        raise RuntimeError(f'{type(self)} is derived from MagazineQuantity so must implement createLoadedMagazine') 
+
 
 # ███████████                          ███                     █████     ███  ████
 #░░███░░░░░███                        ░░░                     ░░███     ░░░  ░░███
@@ -93,7 +100,7 @@ class _ProjectileMagazineImpl(object):
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -520,7 +527,7 @@ _LoadedBeltWeightOptionDescription = \
     'calibre ammunition typically weighing 1.5kg. This allows you to specify a weight that you ' \
     'agree with your Referee.</p>'
 
-class ConventionalMagazineLoaded(gunsmith.MagazineLoadedInterface):
+class ConventionalMagazineLoaded(MagazineLoaded):
     """
     - Requirement: Only compatible with conventional weapons
     """
@@ -651,7 +658,7 @@ class BeltConventionalMagazineLoaded(ConventionalMagazineLoaded):
 
         return step
 
-class ConventionalMagazineQuantity(gunsmith.MagazineQuantityInterface):
+class ConventionalMagazineQuantity(MagazineQuantity):
     """
     - Requirement: Only compatible with conventional weapons
     """
@@ -790,7 +797,7 @@ class BeltConventionalMagazineQuantity(ConventionalMagazineQuantity):
 # ███████████░░████████ ░░████████ ████ █████░░██████  ████ █████░░██████  █████
 #░░░░░░░░░░░  ░░░░░░░░   ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░  ░░░░░
 
-class LauncherMagazineLoaded(gunsmith.MagazineLoadedInterface):
+class LauncherMagazineLoaded(MagazineLoaded):
     """
     - Weight: (Field Catalogue p45)
         - Standard Grenades: 0.5kg per grenade
@@ -886,7 +893,7 @@ class BeltLauncherMagazineLoaded(LauncherMagazineLoaded):
             capacity=capacity,
             unloadedCost=unloadedCost))
 
-class LauncherMagazineQuantity(gunsmith.MagazineQuantityInterface):
+class LauncherMagazineQuantity(MagazineQuantity):
     """
     - Requirement: Only compatible with Launcher Weapons
     """
@@ -1119,7 +1126,7 @@ class _EnergyCartridgeMagazineImpl(object):
 
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -1525,7 +1532,7 @@ class _BeltEnergyCartridgeMagazineImpl(_EnergyCartridgeMagazineImpl):
         if applyModifiers:
             step.addNote(note=self._Note)
 
-class EnergyCartridgeMagazineLoaded(gunsmith.MagazineLoadedInterface):
+class EnergyCartridgeMagazineLoaded(MagazineLoaded):
     def __init__(
             self,
             impl: _EnergyCartridgeMagazineImpl
@@ -1758,7 +1765,7 @@ class BeltHeavyEnergyCartridgeMagazineLoaded(EnergyCartridgeMagazineLoaded):
             unloadedCost=unloadedCost,
             isReusable=isReusable))
 
-class EnergyCartridgeMagazineQuantity(gunsmith.MagazineQuantityInterface):
+class EnergyCartridgeMagazineQuantity(MagazineQuantity):
     """
     - Requirement: Only compatible with energy weapons
     """

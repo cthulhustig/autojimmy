@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class Synthetic(robots.SyntheticInterface):
+class Synthetic(robots.RobotComponentInterface):
     """
     - Protection: 0 (p19 & p86)
     - Requirement: Can only add up to 2 slots of armour (p86)    
@@ -270,10 +270,10 @@ class BioRobotSynthetic(Synthetic):
             return False
         
         locomotions = context.findComponents(
-            componentType=robots.LocomotionInterface,
+            componentType=robots.Locomotion,
             sequence=sequence)
         for locomotion in locomotions:
-            assert(isinstance(locomotion, robots.LocomotionInterface))
+            assert(isinstance(locomotion, robots.Locomotion))
             if not locomotion.isNatural():
                 return False
         return True

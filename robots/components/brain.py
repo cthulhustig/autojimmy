@@ -4,7 +4,7 @@ import enum
 import robots
 import typing
 
-class Brain(robots.BrainInterface):
+class Brain(robots.RobotComponentInterface):
     class _BrainType(enum.Enum):
         Primitive = 'Primitive'
         Basic = 'Basic'

@@ -8,7 +8,7 @@ _FoldingStockModifierNote = 'At ranges > 25m, DM-1 to attack rolls when stock de
 
 # NOTE: I've separated stocks from other furniture as one always needs to be chosen (even if that
 # is stockless).
-class Stock(gunsmith.StockInterface):
+class Stock(gunsmith.WeaponComponentInterface):
     def typeString(self) -> str:
         return 'Stock'
 
@@ -20,7 +20,7 @@ class Stock(gunsmith.StockInterface):
         # Only compatible with weapons that have a receiver. A whole weapon search is used as
         # it can be any of the weapon sequences.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=None)
 
     def options(self) -> typing.List[construction.ComponentOption]:

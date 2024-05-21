@@ -41,7 +41,7 @@ RobotWeaponSkillDefinition = traveller.SkillDefinition(
     skillName='Weapon',
     skillType=traveller.SkillDefinition.SkillType.Simple) 
 
-class SkillPackage(robots.SkillPackageInterface):
+class SkillPackage(robots.RobotComponentInterface):
     def __init__(
             self,
             componentName: str,
@@ -337,7 +337,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
             return False
         
         locomotions = context.findComponents(
-            componentType=robots.LocomotionInterface,
+            componentType=robots.Locomotion,
             sequence=sequence)
         hasCompatibleLocomotion = False
         for locomotion in locomotions:
@@ -676,7 +676,7 @@ def _calculateMaxSkillLevel(
         rhs=_RobotBrainMaxPossibleLevel,
         name='Max Skill Level')
 
-class Skill(robots.SkillInterface):
+class Skill(robots.RobotComponentInterface):
     """
     - Cost: Level 0 cost is multiplied by 10 for each additional level after 0
     = Option: Level

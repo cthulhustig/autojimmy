@@ -425,7 +425,7 @@ class _ManipulatorImpl(object):
             rhs=_ManipulatorImpl._MaxDexterityTechLevelModifier,
             name='Max DEX')
     
-class Manipulator(robots.ManipulatorInterface):
+class Manipulator(robots.RobotComponentInterface):
     def __init__(
             self,
             impl: typing.Optional[_ManipulatorImpl]

@@ -707,8 +707,8 @@ class GunsmithWindow(gui.WindowWidget):
             if filter == GunsmithWindow._PDFFilter:
                 dlg = _PDFExportSettingsDialog(
                     parent=self,
-                    hasMagazineQuantities=weapon.hasComponent(componentType=gunsmith.MagazineQuantityInterface),
-                    hasAmmoQuantities=weapon.hasComponent(componentType=gunsmith.AmmoQuantityInterface))
+                    hasMagazineQuantities=weapon.hasComponent(componentType=gunsmith.MagazineQuantity),
+                    hasAmmoQuantities=weapon.hasComponent(componentType=gunsmith.AmmoQuantity))
                 if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
                     return # User cancelled
 

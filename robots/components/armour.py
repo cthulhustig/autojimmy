@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class ArmourModification(robots.ArmourModificationInterface):
+class ArmourModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Armour Modification'
     

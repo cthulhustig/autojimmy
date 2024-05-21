@@ -233,7 +233,7 @@ class _HeavyPowerPackImpl(_PowerPackImpl):
             costPerKg=2500,
             maxPower=8)
 
-class InternalPowerPackLoaded(gunsmith.InternalPowerPackLoadedInterface):
+class InternalPowerPackLoaded(gunsmith.AmmoLoaded):
     def __init__(
             self,
             impl: _PowerPackImpl
@@ -320,7 +320,7 @@ class HeavyInternalPowerPackLoaded(InternalPowerPackLoaded):
     def __init__(self) -> None:
         super().__init__(impl=_HeavyPowerPackImpl())
 
-class ExternalPowerPackLoaded(gunsmith.ExternalPowerPackLoadedInterface):
+class ExternalPowerPackLoaded(gunsmith.AmmoLoaded):
     def __init__(
             self,
             impl: _PowerPackImpl,
@@ -421,7 +421,7 @@ class HeavyExternalPowerPackLoaded(ExternalPowerPackLoaded):
             ) -> None:
         super().__init__(impl=_HeavyPowerPackImpl(), weight=weight)
 
-class PowerPackQuantity(gunsmith.AmmoQuantityInterface):
+class PowerPackQuantity(gunsmith.AmmoQuantity):
     def __init__(
             self,
             impl: _PowerPackImpl
@@ -518,28 +518,28 @@ class WeakInternalPowerPackQuantity(InternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_WeakPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return WeakInternalPowerPackLoaded()
 
 class LightInternalPowerPackQuantity(InternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_LightPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return LightInternalPowerPackLoaded()
 
 class StandardInternalPowerPackQuantity(InternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_StandardPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return StandardInternalPowerPackLoaded()
 
 class HeavyInternalPowerPackQuantity(InternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_HeavyPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return HeavyInternalPowerPackLoaded()
 
 class ExternalPowerPackQuantity(PowerPackQuantity):
@@ -597,26 +597,26 @@ class WeakExternalPowerPackQuantity(ExternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_WeakPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return WeakExternalPowerPackLoaded(weight=self._weightOption.value())
 
 class LightExternalPowerPackQuantity(ExternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_LightPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return LightExternalPowerPackLoaded(weight=self._weightOption.value())
 
 class StandardExternalPowerPackQuantity(ExternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_StandardPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return StandardExternalPowerPackLoaded(weight=self._weightOption.value())
 
 class HeavyExternalPowerPackQuantity(ExternalPowerPackQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_HeavyPowerPackImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return HeavyExternalPowerPackLoaded(weight=self._weightOption.value())

@@ -15,7 +15,7 @@ def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[travel
         return traveller.WeaponSize.Small
     return None
 
-class UnusedSlotRemoval(robots.UnusedSlotRemovalInterface):
+class UnusedSlotRemoval(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Unused Slot Removal'
     
@@ -130,7 +130,7 @@ class ActualUnusedSlotRemoval(UnusedSlotRemoval):
             name='Unused Slots')
     
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
-        raise RuntimeError(f'{type(self)} is derived from ActualSlotRemoval so must implement _slotCount')    
+        raise RuntimeError(f'{type(self)} is derived from ActualUnusedSlotRemoval so must implement _slotCount')    
 
 class AllSlotRemoval(ActualUnusedSlotRemoval):
     def __init__(self) -> None:
@@ -185,7 +185,7 @@ class CustomSlotRemoval(ActualUnusedSlotRemoval):
             value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
             name='Specified Custom Slot Count')
     
-class FinalisationComponent(robots.FinalisationInterface):
+class Finalisation(robots.RobotComponentInterface):
     _AtmosphereFlyerLocomotions = [
         robots.AeroplanePrimaryLocomotion,
         robots.VTOLPrimaryLocomotion,
@@ -411,7 +411,7 @@ class FinalisationComponent(robots.FinalisationInterface):
                 notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust.')
             elif trait == robots.RobotAttributeId.Flyer:
                 needsAtmosphere = False
-                for locomotion in FinalisationComponent._AtmosphereFlyerLocomotions:
+                for locomotion in Finalisation._AtmosphereFlyerLocomotions:
                     if context.hasComponent(
                         componentType=locomotion,
                         sequence=sequence):
@@ -421,7 +421,7 @@ class FinalisationComponent(robots.FinalisationInterface):
                     notes.append(f'Aeroplane or VTOL Flyer robots require at least a thin atmosphere to operate.')    
             
                 needsGrav = False
-                for locomotion in FinalisationComponent._GraveFlyerLocomotions:
+                for locomotion in Finalisation._GraveFlyerLocomotions:
                     if context.hasComponent(
                         componentType=locomotion,
                         sequence=sequence):
@@ -454,7 +454,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         step = robots.RobotStep(
             name='Damage',
             type='Resilience')
-        step.addNote(note=FinalisationComponent._InoperableNote.format(
+        step.addNote(note=Finalisation._InoperableNote.format(
             doubleHits=hits.value() * 2))
         context.applyStep(
             sequence=sequence,
@@ -465,7 +465,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        for component in FinalisationComponent._ImprovedMaintenanceOptions:
+        for component in Finalisation._ImprovedMaintenanceOptions:
             if context.hasComponent(
                 componentType=component,
                 sequence=sequence):
@@ -476,7 +476,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         step = robots.RobotStep(
             name='Maintenance',
             type='Resilience',
-            notes=[FinalisationComponent._DefaultMaintenanceNote])
+            notes=[Finalisation._DefaultMaintenanceNote])
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -493,7 +493,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             return
         
         hasVehicleSkill = False
-        for skill in FinalisationComponent._AutopilotVehicleSkills:
+        for skill in Finalisation._AutopilotVehicleSkills:
             if context.hasSkill(skillDef=skill, sequence=sequence):
                 hasVehicleSkill = True
                 break
@@ -504,7 +504,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         step = robots.RobotStep(
             name='Autopilot',
             type='Skills',
-            notes=[FinalisationComponent._AutopilotNote])
+            notes=[Finalisation._AutopilotNote])
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -527,12 +527,12 @@ class FinalisationComponent(robots.FinalisationInterface):
             return
 
         manipulators = context.findComponents(
-            componentType=robots.ManipulatorInterface,
+            componentType=robots.Manipulator,
             sequence=sequence)
         dexterityModifierMap = {}
         strengthModifierMap = {}
         for manipulator in manipulators:
-            assert(isinstance(manipulator, robots.ManipulatorInterface))
+            assert(isinstance(manipulator, robots.Manipulator))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
             
@@ -551,7 +551,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             step = robots.RobotStep(
                 name=skill,
                 type='Skills')            
-            step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
+            step.addNote(Finalisation._ManipulatorAthleticsNote.format(
                 characteristic='DEX',
                 characteristicLevel=dexterity,
                 skill=skill,
@@ -565,7 +565,7 @@ class FinalisationComponent(robots.FinalisationInterface):
             step = robots.RobotStep(
                 name=skill,
                 type='Skills')
-            step.addNote(FinalisationComponent._ManipulatorAthleticsNote.format(
+            step.addNote(Finalisation._ManipulatorAthleticsNote.format(
                 characteristic='STR',
                 characteristicLevel=strength,
                 skill=skill,
@@ -580,11 +580,11 @@ class FinalisationComponent(robots.FinalisationInterface):
             context: robots.RobotContext
             ) -> None:
         manipulators = context.findComponents(
-            componentType=robots.ManipulatorInterface,
+            componentType=robots.Manipulator,
             sequence=sequence)
         allManipulatorSizes: typing.List[int] = []
         for manipulator in manipulators:
-            assert(isinstance(manipulator, robots.ManipulatorInterface))
+            assert(isinstance(manipulator, robots.Manipulator))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
             size = manipulator.size()
@@ -602,9 +602,9 @@ class FinalisationComponent(robots.FinalisationInterface):
                 name='Dexterity',
                 type='Combat')
             if hasManipulator:
-                step.addNote(note=FinalisationComponent._CombatManipulatorDexterityNote)
+                step.addNote(note=Finalisation._CombatManipulatorDexterityNote)
             if hasNonManipulatorWeapon:
-                step.addNote(note=FinalisationComponent._CombatNonManipulatorDexterityNote)
+                step.addNote(note=Finalisation._CombatNonManipulatorDexterityNote)
             context.applyStep(
                 sequence=sequence,
                 step=step)
@@ -625,11 +625,11 @@ class FinalisationComponent(robots.FinalisationInterface):
                 manipulatorSizes.append(str(manipulatorSize))
             for weaponSize, manipulatorSizes in sizingMap.items():
                 if weaponSize:
-                    step.addNote(note=FinalisationComponent._CombatManipulatorWeaponSizeNote.format(
+                    step.addNote(note=Finalisation._CombatManipulatorWeaponSizeNote.format(
                         sizes=common.humanFriendlyListString(manipulatorSizes),
-                        examples=FinalisationComponent._CombatWeaponSizeExamples[weaponSize]))
+                        examples=Finalisation._CombatWeaponSizeExamples[weaponSize]))
                 else:
-                    step.addNote(note=FinalisationComponent._CombatManipulatorUndersizedNote.format(
+                    step.addNote(note=Finalisation._CombatManipulatorUndersizedNote.format(
                         sizes=common.humanFriendlyListString(manipulatorSizes)))
             context.applyStep(
                 sequence=sequence,
@@ -654,7 +654,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         standardCost = context.multiPhaseCost(
             sequence=sequence,
             costId=robots.RobotCost.Credits,
-            phases=FinalisationComponent._SyntheticsAdditionalCostPhases)
+            phases=Finalisation._SyntheticsAdditionalCostPhases)
         standardCost = common.Calculator.rename(
             value=standardCost,
             name='Robot Cost Without Skill Costs')
@@ -708,7 +708,7 @@ class FinalisationComponent(robots.FinalisationInterface):
         step = robots.RobotStep(
             name='Minimum Brain',
             type=synthetic.componentString())
-        step.addNote(note=FinalisationComponent._SyntheticMinBrainNote.format(
+        step.addNote(note=Finalisation._SyntheticMinBrainNote.format(
             brain=minBrain))
         context.applyStep(
             sequence=sequence,
@@ -726,14 +726,14 @@ class FinalisationComponent(robots.FinalisationInterface):
             sequence=sequence):
             return
 
-        for componentType in FinalisationComponent._SkilledSensorSlotOptions:
+        for componentType in Finalisation._SkilledSensorSlotOptions:
             component = context.findFirstComponent(
                 componentType=componentType,
                 sequence=sequence)
             if not component:
                 continue
 
-            note = FinalisationComponent._SkilledSensorNote.format(
+            note = Finalisation._SkilledSensorNote.format(
                 component=component.componentString())
             step = robots.RobotStep(
                 name=f'{component.componentString()}',

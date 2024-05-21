@@ -12,7 +12,7 @@ import typing
 def _enumerateManipulators(
         sequence: str,
         context: robots.RobotContext
-        ) -> typing.Mapping[str, robots.ManipulatorInterface]:
+        ) -> typing.Mapping[str, robots.Manipulator]:
     results = {}
 
     # NOTE: This works on the assumption BaseManipulator doesn't include
@@ -798,7 +798,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             self,
             sequence: str,
             context: robots.RobotContext
-            ) -> typing.Optional[robots.ManipulatorInterface]:
+            ) -> typing.Optional[robots.Manipulator]:
         manipulatorString = self.manipulatorString()
         if not manipulatorString:
             return None
@@ -1060,11 +1060,11 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             return False
         
         manipulators = context.findComponents(
-            componentType=robots.ManipulatorInterface,
+            componentType=robots.Manipulator,
             sequence=sequence)
         hasManipulator = False
         for manipulator in manipulators:
-            assert(isinstance(manipulator, robots.ManipulatorInterface))
+            assert(isinstance(manipulator, robots.Manipulator))
             if not isinstance(manipulator, robots.RemoveBaseManipulator):
                 hasManipulator = True
                 break
@@ -1115,7 +1115,7 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             ) -> typing.Optional[robots.RobotStep]:
         return None
     
-class MountedWeapon(robots.MountedWeaponInterface):
+class MountedWeapon(robots.RobotComponentInterface):
     def __init__(
             self,
             impl: _WeaponImpl
@@ -1201,7 +1201,7 @@ class ManipulatorMountedWeapon(MountedWeapon):
     def typeString(self) -> str:
         return 'Manipulator Mount'    
 
-class HandHeldFireControl(robots.HandHeldFireControlInterface):
+class HandHeldFireControl(robots.RobotComponentInterface):
     def __init__(self) -> None:
         super().__init__()
         self._impl = _HandHeldFireControlImpl()
@@ -1243,7 +1243,7 @@ class HandHeldFireControl(robots.HandHeldFireControlInterface):
             sequence=sequence,
             context=context)
         
-class HandHeldWeapons(robots.HandHeldWeaponInterface):
+class HandHeldWeapon(robots.RobotComponentInterface):
     def __init__(self) -> None:
         super().__init__()
         self._impl = _HandHeldWeaponImpl()

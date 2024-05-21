@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class SecondaryMount(gunsmith.SecondaryMountInterface):
+class SecondaryMount(gunsmith.WeaponComponentInterface):
     """
     - Cost: 10% of secondary weapon cost
     - Weight: 10% of secondary weapon weight

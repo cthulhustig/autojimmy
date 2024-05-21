@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class ResiliencyModification(robots.ResiliencyModificationInterface):
+class ResiliencyModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Resiliency Modification'
     

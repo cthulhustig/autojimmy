@@ -8,7 +8,7 @@ class FeedAssist(enum.Enum):
     Powered = 'Powered'
     VRF = 'VRF'
 
-class Feed(gunsmith.FeedInterface):
+class Feed(gunsmith.WeaponComponentInterface):
     """
     - Powered Feed Assist
         - Receiver Cost: x3

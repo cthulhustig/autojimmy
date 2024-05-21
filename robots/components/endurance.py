@@ -4,7 +4,7 @@ import robots
 import traveller
 import typing
 
-class EnduranceModification(robots.EnduranceModificationInterface):
+class EnduranceModification(robots.RobotComponentInterface):
     """
     - Requirement: Not compatible with BioRobots
     """

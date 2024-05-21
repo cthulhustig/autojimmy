@@ -575,11 +575,11 @@ class Weapon(object):
             ) -> bool: # True if modified, otherwise False
         accessories = self.findComponents(
             sequence=sequence,
-            componentType=gunsmith.AccessoryInterface)
+            componentType=gunsmith.Accessory)
 
         modified = False
         for accessory in accessories:
-            assert(isinstance(accessory, gunsmith.AccessoryInterface))
+            assert(isinstance(accessory, gunsmith.Accessory))
             if not accessory.isDetachable():
                 continue
 
@@ -941,7 +941,7 @@ class Weapon(object):
             name='Receiver',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            baseType=gunsmith.ReceiverInterface,
+            baseType=gunsmith.Receiver,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
@@ -951,7 +951,7 @@ class Weapon(object):
                 name='Calibre',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.CalibreInterface,
+                baseType=gunsmith.ConventionalCalibre,
                 # Mandatory single component
                 minComponents=1,
                 maxComponents=1))
@@ -961,7 +961,7 @@ class Weapon(object):
                 name='Multi-Barrel',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.MultiBarrelInterface,
+                baseType=gunsmith.MultiBarrel,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -970,7 +970,7 @@ class Weapon(object):
                 name='Mechanism',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.MechanismInterface,
+                baseType=gunsmith.Mechanism,
                 # Mandatory single component
                 minComponents=1,
                 maxComponents=1))
@@ -984,7 +984,7 @@ class Weapon(object):
                 name='Propellant',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.PropellantTypeInterface,
+                baseType=gunsmith.PropellantType,
                 # Mandatory single component
                 minComponents=1,
                 maxComponents=1))
@@ -993,7 +993,7 @@ class Weapon(object):
             name='Receiver Features',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            baseType=gunsmith.ReceiverFeatureInterface,
+            baseType=gunsmith.ReceiverFeature,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
@@ -1005,7 +1005,7 @@ class Weapon(object):
                 name='Capacity Modification',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.CapacityModificationInterface,
+                baseType=gunsmith.CapacityModification,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -1015,7 +1015,7 @@ class Weapon(object):
                 name='Feed',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Receiver,
-                baseType=gunsmith.FeedInterface,
+                baseType=gunsmith.Feed,
                 # Mandatory single component
                 minComponents=1,
                 maxComponents=1))
@@ -1026,7 +1026,7 @@ class Weapon(object):
             name='Fire Rate',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Receiver,
-            baseType=gunsmith.FireRateInterface,
+            baseType=gunsmith.FireRate,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
@@ -1045,7 +1045,7 @@ class Weapon(object):
                 name='Barrel',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Barrel,
-                baseType=gunsmith.BarrelInterface,
+                baseType=gunsmith.Barrel,
                 # Default to Handgun as Minimal is a terrible default. We don't want to re-order the list
                 # of barrels in code as the order they're defined determines the order they appear in lists
                 # so they should stay in length order
@@ -1058,7 +1058,7 @@ class Weapon(object):
                 name='Barrel Accessories',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.BarrelAccessories,
-                baseType=gunsmith.BarrelAccessoryInterface,
+                baseType=gunsmith.BarrelAccessory,
                 # Optional multi component
                 minComponents=None,
                 maxComponents=None))
@@ -1074,7 +1074,7 @@ class Weapon(object):
             name='Mounting',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Mounting,
-            baseType=gunsmith.SecondaryMountInterface,
+            baseType=gunsmith.SecondaryMount,
             # Optional single component 
             minComponents=0,
             maxComponents=1,
@@ -1086,7 +1086,7 @@ class Weapon(object):
             name='Stock',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.Stock,
-            baseType=gunsmith.StockInterface,
+            baseType=gunsmith.Stock,
             # Mandatory single component
             minComponents=1,
             maxComponents=1)]
@@ -1096,7 +1096,7 @@ class Weapon(object):
             name='Weapon Features',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.WeaponFeatures,
-            baseType=gunsmith.WeaponFeatureInterface,
+            baseType=gunsmith.WeaponFeature,
             # Optional multi component
             minComponents=None,
             maxComponents=None)]
@@ -1106,7 +1106,7 @@ class Weapon(object):
             name='Weapon Accessories',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.WeaponAccessories,
-            baseType=gunsmith.WeaponAccessoryInterface,
+            baseType=gunsmith.WeaponAccessory,
             # Optional multi component
             minComponents=None,
             maxComponents=None)]
@@ -1116,7 +1116,7 @@ class Weapon(object):
             name='Multi-Mount',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.MultiMount,
-            baseType=gunsmith.MultiMountInterface,
+            baseType=gunsmith.MultiMount,
             # Optional single component
             minComponents=0,
             maxComponents=1)]
@@ -1135,7 +1135,7 @@ class Weapon(object):
                 name='Loaded Magazine',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                baseType=gunsmith.MagazineLoadedInterface,
+                baseType=gunsmith.MagazineLoaded,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -1153,7 +1153,7 @@ class Weapon(object):
                 name=loadedAmmoStageName,
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                baseType=gunsmith.AmmoLoadedInterface,
+                baseType=gunsmith.AmmoLoaded,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -1162,7 +1162,7 @@ class Weapon(object):
                 name='Inserted Internal Power Pack',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                baseType=gunsmith.InternalPowerPackLoadedInterface,
+                baseType=gunsmith.InternalPowerPackLoaded,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -1171,7 +1171,7 @@ class Weapon(object):
                 name='Attached External Power Pack',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Loading,
-                baseType=gunsmith.ExternalPowerPackLoadedInterface,
+                baseType=gunsmith.ExternalPowerPackLoaded,
                 # Optional single component
                 minComponents=0,
                 maxComponents=1))
@@ -1184,7 +1184,7 @@ class Weapon(object):
             name='Multi-Mount Loading',
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Loading,
-            baseType=gunsmith.MultiMountLoadedInterface,
+            baseType=gunsmith.MultiMountLoaded,
             # Optional single component
             minComponents=0,
             maxComponents=1,
@@ -1209,7 +1209,7 @@ class Weapon(object):
                 name='Magazine Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                baseType=gunsmith.MagazineQuantityInterface,
+                baseType=gunsmith.MagazineQuantity,
                 # Optional multi component
                 minComponents=None,
                 maxComponents=None))
@@ -1219,7 +1219,7 @@ class Weapon(object):
                 name='Loader Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                baseType=gunsmith.LoaderQuantityInterface,
+                baseType=gunsmith.LoaderQuantity,
                 # Optional multi component
                 minComponents=None,
                 maxComponents=None))
@@ -1238,7 +1238,7 @@ class Weapon(object):
             name=ammoQuantityStageName,
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Munitions,
-            baseType=gunsmith.AmmoQuantityInterface,
+            baseType=gunsmith.AmmoQuantity,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
@@ -1248,7 +1248,7 @@ class Weapon(object):
                 name='Propellant Quantities',
                 sequence=sequence,
                 phase=gunsmith.WeaponPhase.Munitions,
-                baseType=gunsmith.ProjectorPropellantQuantityInterface,
+                baseType=gunsmith.PropellantQuantity,
                 # Optional multi component
                 minComponents=None,
                 maxComponents=None))
@@ -1260,8 +1260,7 @@ class Weapon(object):
             name='Finalisation',
             sequence=None, # Not tided to a specific sequence
             phase=gunsmith.WeaponPhase.Finalisation,
-            baseType=gunsmith.FinalisationComponent,
-            defaultType=gunsmith.FinalisationComponent,
+            baseType=gunsmith.Finalisation,
             # Mandatory single component
             minComponents=1,
             maxComponents=1)]

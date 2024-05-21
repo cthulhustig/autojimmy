@@ -6,7 +6,7 @@ import typing
 # The finalisation component is a hack to perform various modifications when the user specified
 # portion of the weapon has been generated. When displaying the manifest the finalisation stages
 # aren't shown so finalisation shouldn't do anything that affects the cost or weight of the weapon
-class FinalisationComponent(gunsmith.WeaponComponentInterface):
+class Finalisation(gunsmith.WeaponComponentInterface):
     _ProjectorMishapTechLevelDivisor = common.ScalarCalculation(
         value=2,
         name='Projector Weapon Mishap Threshold Tech Level Divisor')
@@ -197,7 +197,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
             attributeId=gunsmith.WeaponAttributeId.Scope)
 
         noScopeShort, noScopeLong, noScopeExtreme = \
-            FinalisationComponent._generateRangeNotes(
+            Finalisation._generateRangeNotes(
                 hasScope=False, # Generate ranges notes without a scope
                 baseRange=baseRange.value())
 
@@ -206,7 +206,7 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
         withScopeExtreme = None
         if hasScope:
             withScopeShort, withScopeLong, withScopeExtreme = \
-                FinalisationComponent._generateRangeNotes(
+                Finalisation._generateRangeNotes(
                     hasScope=True, # Generate ranges notes when using scope
                     baseRange=baseRange.value())
             if withScopeShort == noScopeShort:
@@ -867,21 +867,21 @@ class FinalisationComponent(gunsmith.WeaponComponentInterface):
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Signature))
                 name += f' ({value.value})'
-                modifier = FinalisationComponent._SignatureDetectionModifierMap[value]
+                modifier = Finalisation._SignatureDetectionModifierMap[value]
                 modifier = common.formatNumber(number=modifier.value(), alwaysIncludeSign=True)
                 notes.append(f'DM{modifier} modifier to checks to detect the firing of the weapon using sensors.')
             elif trait == gunsmith.WeaponAttributeId.PhysicalSignature:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Signature))
                 name += f' ({value.value})'
-                modifier = FinalisationComponent._SignatureDetectionModifierMap[value]
+                modifier = Finalisation._SignatureDetectionModifierMap[value]
                 modifier = common.formatNumber(number=modifier.value(), alwaysIncludeSign=True)
                 notes.append(f'DM{modifier} modifier to checks to detect the firing of the weapon using physical means (e.g. audibly or visually).')
             elif trait == gunsmith.WeaponAttributeId.Distraction:
                 value = context.attributeValue(sequence=sequence, attributeId=trait)
                 assert(isinstance(value, gunsmith.Distraction))
                 name += f' ({value.value})'
-                target = FinalisationComponent._DistractionTargetNumberMap[value]
+                target = Finalisation._DistractionTargetNumberMap[value]
                 notes.append(f'Targets must make an END({target.value()}+) check or be unable to take their next set of actions.')
 
             if notes:

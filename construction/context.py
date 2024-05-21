@@ -89,11 +89,11 @@ class SequenceState(object):
             # Update mapping of component types to stages with the stages that
             # handle components of those types or components derived from those
             # types. The later part is important as the mapping should contain
-            # entries for things like AccessoryInterface that map to all stages
-            # that deal with classes derived from AccessoryInterface even though
-            # those stages only match classes derived from that type. This is
-            # why the subclass check is performed in both directions rather than
-            # just checking that the stage matches the component type.
+            # entries for things like Accessory that map to all stages that deal
+            # with classes derived from Accessory even though those stages only
+            # match classes derived from that type. This is why the subclass
+            # check is performed in both directions rather than just checking
+            # that the stage matches the component type.
             for componentType in componentTypes:
                 if issubclass(stage.baseType(), componentType) or \
                         issubclass(componentType, stage.baseType()):

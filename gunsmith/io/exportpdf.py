@@ -1259,11 +1259,11 @@ class PdfExporter(object):
             weapon: gunsmith.Weapon,
             sequence: str,
             ) -> typing.Optional[Table]:
-        # Find all components derived from AccessoryInterface in order to find barrel and weapon
+        # Find all components derived from Accessory in order to find barrel and weapon
         # accessories
         accessories = weapon.findComponents(
             sequence=sequence,
-            componentType=gunsmith.AccessoryInterface)
+            componentType=gunsmith.Accessory)
 
         # Detach all accessories, they'll be re-attached one by one as the table is generated.
         weapon.setAccessorAttachment(sequence=sequence, attach=False, regenerate=True)
@@ -1289,7 +1289,7 @@ class PdfExporter(object):
         tableSpans = []
 
         for accessory in accessories:
-            assert(isinstance(accessory, gunsmith.AccessoryInterface))
+            assert(isinstance(accessory, gunsmith.Accessory))
             if not accessory.isDetachable():
                 continue # Not interested in fixed accessories
 
@@ -1338,7 +1338,7 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
-            accessory: gunsmith.AccessoryInterface,
+            accessory: gunsmith.Accessory,
             weight: common.ScalarCalculation,
             accessoryNotes: typing.Mapping[str, typing.Collection[str]],
             baseRowIndex: int
@@ -1453,7 +1453,7 @@ class PdfExporter(object):
         if removableFeeds:
             stages = weapon.stages(
                 sequence=sequence,
-                componentType=gunsmith.MagazineLoadedInterface)
+                componentType=gunsmith.MagazineLoaded)
             for stage in stages:
                 magazineLoadingStage = stage
                 break
@@ -1461,14 +1461,14 @@ class PdfExporter(object):
             # loading a magazine
             assert(magazineLoadingStage)
 
-            magazines: typing.List[gunsmith.MagazineLoadedInterface] = []
+            magazines: typing.List[gunsmith.MagazineLoaded] = []
             if usePurchasedMagazines:
                 # Create loaded magazines for each of the purchased magazines
                 purchasedMagazines = weapon.findComponents(
                     sequence=sequence,
-                    componentType=gunsmith.MagazineQuantityInterface)
+                    componentType=gunsmith.MagazineQuantity)
                 for purchasedMagazine in purchasedMagazines:
-                    assert(isinstance(purchasedMagazine, gunsmith.MagazineQuantityInterface))
+                    assert(isinstance(purchasedMagazine, gunsmith.MagazineQuantity))
                     magazines.append(purchasedMagazine.createLoadedMagazine())
             elif weapon.weaponType(sequence=sequence) == gunsmith.WeaponType.EnergyCartridgeWeapon:
                 # Treat cartridge energy weapons as a special case :(. The type of cartridge is
@@ -1493,14 +1493,14 @@ class PdfExporter(object):
         ammoLoadingStages = weapon.stages(
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Loading)
-        ammoLoadingStages = list(filter(lambda stage: issubclass(stage.baseType(), gunsmith.AmmoLoadedInterface), ammoLoadingStages))
+        ammoLoadingStages = list(filter(lambda stage: issubclass(stage.baseType(), gunsmith.AmmoLoaded), ammoLoadingStages))
         # All weapons should have at least one ammo loading stage, power pack energy weapons can have two
         assert(ammoLoadingStages)
 
         combinations: typing.List[typing.Tuple[
             construction.ConstructionStage,
-            gunsmith.AmmoLoadedInterface,
-            typing.Optional[gunsmith.MagazineLoadedInterface]]] = []
+            gunsmith.AmmoLoaded,
+            typing.Optional[gunsmith.MagazineLoaded]]] = []
 
         for magazine in magazines:
             # Load the magazine if there is one, fixed magazine weapons won't have one
@@ -1513,9 +1513,9 @@ class PdfExporter(object):
             if usePurchasedAmmo:
                 ammoQuantities = weapon.findComponents(
                     sequence=sequence,
-                    componentType=gunsmith.AmmoQuantityInterface)
+                    componentType=gunsmith.AmmoQuantity)
                 for quantity in ammoQuantities:
-                    assert(isinstance(quantity, gunsmith.AmmoQuantityInterface))
+                    assert(isinstance(quantity, gunsmith.AmmoQuantity))
                     ammo = quantity.createLoadedAmmo()
 
                     for stage in ammoLoadingStages:
@@ -1540,7 +1540,7 @@ class PdfExporter(object):
                 # external power pack of default weight for each of the types
                 ammoLoadingStages = weapon.stages(
                     sequence=sequence,
-                    componentType=gunsmith.ExternalPowerPackLoadedInterface)
+                    componentType=gunsmith.ExternalPowerPackLoaded)
                 for stage in ammoLoadingStages:
                     compatibleAmmo = weapon.findCompatibleComponents(stage=stage)
                     for ammo in compatibleAmmo:
@@ -1658,8 +1658,8 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
-            ammo: gunsmith.AmmoLoadedInterface,
-            magazine: typing.Optional[gunsmith.MagazineLoadedInterface],
+            ammo: gunsmith.AmmoLoaded,
+            magazine: typing.Optional[gunsmith.MagazineLoaded],
             ammoNotes: typing.Mapping[str, typing.Collection[str]],
             baseRowIndex: int
             ) -> typing.Tuple[

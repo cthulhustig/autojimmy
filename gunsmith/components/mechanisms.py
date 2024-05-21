@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class Mechanism(gunsmith.MechanismInterface):
+class Mechanism(gunsmith.WeaponComponentInterface):
     """
     - Requirement: Not compatible with projectors
     """
@@ -52,7 +52,7 @@ class Mechanism(gunsmith.MechanismInterface):
 
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:

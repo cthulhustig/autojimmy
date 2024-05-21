@@ -4,7 +4,7 @@ import robots
 import traveller
 import typing
 
-class AgilityEnhancement(robots.AgilityEnhancementInterface):
+class AgilityEnhancement(robots.RobotComponentInterface):
     """
     - Requirement: Not compatible with no locomotion for primary locomotion
     type (p22)

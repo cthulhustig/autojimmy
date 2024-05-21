@@ -3,7 +3,7 @@ import construction
 import robots
 import typing
 
-class Chassis(robots.ChassisInterface):
+class Chassis(robots.RobotComponentInterface):
     """
     - Trait: Large(Attack Roll DM) if Attack Roll DM > 0 (p13)
     - Trait: Small(Attack Roll DM) if Attack Roll DM < 0 (p13)

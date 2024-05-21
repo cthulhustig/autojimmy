@@ -313,7 +313,7 @@ class _CryogenicFuelImpl(_FuelImpl):
         if applyModifiers:
             step.addNote(note=self._CryogenicNote)
 
-class ProjectorFuelLoaded(gunsmith.AmmoLoadedInterface):
+class ProjectorFuelLoaded(gunsmith.AmmoLoaded):
     # NOTE: Weight of fuel isn't added to weapon weight if loaded is set as the Structure weight
     # is the fully loaded weight
     def __init__(
@@ -437,7 +437,7 @@ class CryogenicProjectorFuelLoaded(ProjectorFuelLoaded):
         super().__init__(impl=_CryogenicFuelImpl())
 
 
-class ProjectorFuelQuantity(gunsmith.AmmoQuantityInterface):
+class ProjectorFuelQuantity(gunsmith.AmmoQuantity):
     def __init__(
             self,
             impl: _FuelImpl
@@ -509,54 +509,54 @@ class LiquidProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_LiquidFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return LiquidProjectorFuelLoaded()
 
 class JelliedProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_JelliedFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return JelliedProjectorFuelLoaded()
 
 class IrritantProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_IrritantFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return IrritantProjectorFuelLoaded()
 
 class VolatileIrritantProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_VolatileIrritantFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return VolatileIrritantProjectorFuelLoaded()
 
 class SuppressantProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_SuppressantFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return SuppressantProjectorFuelLoaded()
 
 class BattlechemProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_BattlechemFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return BattlechemProjectorFuelLoaded()
 
 class AdvancedProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_AdvancedFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return AdvancedProjectorFuelLoaded()
 
 class CryogenicProjectorFuelQuantity(ProjectorFuelQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_CryogenicFuelImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return CryogenicProjectorFuelLoaded()

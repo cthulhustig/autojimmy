@@ -389,7 +389,7 @@ class Robot(object):
             name='Chassis',
             sequence=self._sequence,
             phase=robots.RobotPhase.BaseChassis,
-            baseType=robots.ChassisInterface,
+            baseType=robots.Chassis,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
@@ -398,7 +398,7 @@ class Robot(object):
             name='Primary Locomotion',
             sequence=self._sequence,
             phase=robots.RobotPhase.BaseChassis,
-            baseType=robots.PrimaryLocomotionInterface,
+            baseType=robots.PrimaryLocomotion,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
@@ -407,7 +407,7 @@ class Robot(object):
             name='Synthetics',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            baseType=robots.SyntheticInterface,
+            baseType=robots.Synthetic,
             # Optional single component
             minComponents=0,
             maxComponents=1))        
@@ -416,7 +416,7 @@ class Robot(object):
             name='Armour Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            baseType=robots.ArmourModificationInterface,
+            baseType=robots.ArmourModification,
             # Optional single component
             minComponents=0,
             maxComponents=1))
@@ -425,7 +425,7 @@ class Robot(object):
             name='Endurance Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            baseType=robots.EnduranceModificationInterface,
+            baseType=robots.EnduranceModification,
             # Optional single component
             minComponents=0,
             maxComponents=1))     
@@ -434,7 +434,7 @@ class Robot(object):
             name='Resiliency Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.ChassisOptions,
-            baseType=robots.ResiliencyModificationInterface,
+            baseType=robots.ResiliencyModification,
             # Optional single component
             minComponents=0,
             maxComponents=1))  
@@ -443,7 +443,7 @@ class Robot(object):
             name='Agility Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            baseType=robots.AgilityEnhancementInterface,
+            baseType=robots.AgilityEnhancement,
             # Optional single component
             minComponents=0,
             maxComponents=1))
@@ -455,7 +455,7 @@ class Robot(object):
             name='Speed Modification',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            baseType=robots.SpeedModificationInterface,
+            baseType=robots.SpeedModification,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))        
@@ -468,7 +468,7 @@ class Robot(object):
             name='Secondary Locomotion',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
-            baseType=robots.SecondaryLocomotionInterface,
+            baseType=robots.SecondaryLocomotion,
             # Optional multi component
             minComponents=None,
             maxComponents=None)) 
@@ -504,7 +504,7 @@ class Robot(object):
             name='Default Suite',
             sequence=self._sequence,
             phase=robots.RobotPhase.SlotOptions,
-            baseType=robots.DefaultSuiteOptionInterface,
+            baseType=robots.DefaultSuiteOption,
             # Mandatory fixed size
             minComponents=5,
             maxComponents=5)
@@ -601,7 +601,7 @@ class Robot(object):
             name='Handheld Weapons',
             sequence=self._sequence,
             phase=robots.RobotPhase.Weapons,
-            baseType=robots.HandHeldWeaponInterface,
+            baseType=robots.HandHeldWeapon,
             # Optional multi component
             minComponents=None,
             maxComponents=None))        
@@ -610,7 +610,7 @@ class Robot(object):
             name='Handheld Weapon Fire Control',
             sequence=self._sequence,
             phase=robots.RobotPhase.Weapons,
-            baseType=robots.HandHeldFireControlInterface,
+            baseType=robots.HandHeldFireControl,
             # Optional multi component
             minComponents=None,
             maxComponents=None))       
@@ -619,7 +619,7 @@ class Robot(object):
             name='Brain',
             sequence=self._sequence,
             phase=robots.RobotPhase.Brain,
-            baseType=robots.BrainInterface,
+            baseType=robots.Brain,
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
@@ -628,7 +628,7 @@ class Robot(object):
             name='Skill Package',
             sequence=self._sequence,
             phase=robots.RobotPhase.Skills,
-            baseType=robots.SkillPackageInterface,
+            baseType=robots.SkillPackage,
             # Optional single component
             minComponents=0,
             maxComponents=1,
@@ -639,7 +639,7 @@ class Robot(object):
             name='Skills',
             sequence=self._sequence,
             phase=robots.RobotPhase.Skills,
-            baseType=robots.SkillInterface,
+            baseType=robots.Skill,
             # Optional multi component
             minComponents=None,
             maxComponents=None))
@@ -652,7 +652,7 @@ class Robot(object):
             name='Unused Slot Removal',
             sequence=self._sequence,
             phase=robots.RobotPhase.Finalisation,
-            baseType=robots.UnusedSlotRemovalInterface,
+            baseType=robots.UnusedSlotRemoval,
             defaultType=robots.AllSlotRemoval,
             # Mandatory single component
             minComponents=1,
@@ -664,7 +664,7 @@ class Robot(object):
             name='Finalisation',
             sequence=self._sequence,
             phase=robots.RobotPhase.Finalisation,
-            baseType=robots.FinalisationInterface,
+            baseType=robots.Finalisation,
             # Mandatory single component
             minComponents=1,
             maxComponents=1)) 

@@ -45,6 +45,8 @@ _BaseDisasterHeatThresholdOptionDescription = \
     '<p>The table description on p13 and table on p14 don\'t specify a Base Disaster Heat Threshold for ' \
     'energy weapons and launchers. This allows you to specify values that you agree with your Referee.</p>'
 
+class Receiver(gunsmith.WeaponComponentInterface):
+    pass
 
 #   █████████                                                       █████     ███                                ████
 #  ███░░░░░███                                                     ░░███     ░░░                                ░░███
@@ -55,7 +57,7 @@ _BaseDisasterHeatThresholdOptionDescription = \
 # ░░█████████ ░░██████  ████ █████  ░░█████   ░░██████  ████ █████  ░░█████  █████░░██████  ████ █████░░████████ █████
 #  ░░░░░░░░░   ░░░░░░  ░░░░ ░░░░░    ░░░░░     ░░░░░░  ░░░░ ░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░
 
-class ConventionalReceiver(gunsmith.ReceiverInterface):
+class ConventionalReceiver(Receiver):
     """
     Min TL: 3
     Requirement: Base Quickdraw is not applied to Secondary Weapons
@@ -452,7 +454,7 @@ class HeavyWeaponReceiver(ConventionalReceiver):
 # ███████████░░████████ ░░████████ ████ █████░░██████  ████ █████░░██████  █████
 #░░░░░░░░░░░  ░░░░░░░░   ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░  ░░░░░
 
-class LauncherReceiver(gunsmith.ReceiverInterface):
+class LauncherReceiver(Receiver):
     """
     - Quickdraw: -8 (Primary weapon only)
     """
@@ -1422,7 +1424,7 @@ class _LargeDirectedEnergyReceiverImpl(_DirectedEnergyReceiverImpl):
             baseQuickdraw=-8,
             maxDamageDice=8)
 
-class PowerPackReceiver(gunsmith.ReceiverInterface):
+class PowerPackReceiver(Receiver):
     def __init__(
             self,
             impl: _DirectedEnergyReceiverImpl
@@ -1490,7 +1492,7 @@ class LargePowerPackReceiver(PowerPackReceiver):
     def __init__(self) -> None:
         super().__init__(impl=_LargeDirectedEnergyReceiverImpl())
 
-class EnergyCartridgeReceiver(gunsmith.ReceiverInterface):
+class EnergyCartridgeReceiver(Receiver):
     _BaseCapacityOptionDescription = \
         '<p>Specify the Base Ammunition Capacity for the weapon</p>' \
         '<p>The Field Catalogue doesn\'t specify the Base Ammunition Capacity for ' \
@@ -1593,7 +1595,7 @@ class LargeEnergyCartridgeReceiver(EnergyCartridgeReceiver):
 #                                ░░██████
 #                                 ░░░░░░
 
-class ProjectorReceiver(gunsmith.ReceiverInterface):
+class ProjectorReceiver(Receiver):
     """
     - Min TL: 4
     - Trait: Hazardous -6

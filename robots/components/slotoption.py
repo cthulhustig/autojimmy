@@ -163,7 +163,7 @@ class _SingleStepSlotOptionImpl(_SlotOptionImpl):
         self._notes = notes
 
     def isZeroSlot(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from _SlotOptionImpl so must implement isZeroSlot')
+        raise RuntimeError(f'{type(self)} is derived from _SingleStepSlotOptionImpl so must implement isZeroSlot')
 
     def createSteps(
             self,
@@ -2518,7 +2518,7 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
         step.addNote(note=f'Safe depth for the robot is {maxDepth}m')
 
         locomotions = context.findComponents(
-            componentType=robots.LocomotionInterface,
+            componentType=robots.Locomotion,
             sequence=sequence)
         unusableLocomotions = []
         modifiedLocomotions = []
@@ -3356,7 +3356,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
                 componentType=manipulatorType,
                 sequence=sequence)
             for manipulator in manipulators:
-                assert(isinstance(manipulator, robots.ManipulatorInterface))
+                assert(isinstance(manipulator, robots.Manipulator))
                 if manipulator.size() >= _MedicalChamberSlotOptionImpl._MinManipulatorSize.value():
                     return True
         
@@ -6636,7 +6636,7 @@ class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
 #  ██████████  ░░██████   █████    ░░████████ ░░████████ █████  ░░█████    ░░█████████  ░░████████ █████  ░░█████ ░░██████ 
 # ░░░░░░░░░░    ░░░░░░   ░░░░░      ░░░░░░░░   ░░░░░░░░ ░░░░░    ░░░░░      ░░░░░░░░░    ░░░░░░░░ ░░░░░    ░░░░░   ░░░░░░  
 
-class DefaultSuiteOption(robots.DefaultSuiteOptionInterface):
+class DefaultSuiteOption(robots.RobotComponentInterface):
     def __init__(
             self,
             impl: _SlotOptionImpl,
@@ -6885,7 +6885,7 @@ class WirelessDataLinkDefaultSuiteOption(DefaultSuiteOption):
 #                                                        █████                                                
 #                                                       ░░░░░    
         
-class SlotOption(robots.SlotOptionInterface):
+class SlotOption(robots.RobotComponentInterface):
     """
     Zero-Slot
     - Requirement: Up to Size + TL Zero-Slot options can be added at no slot cost,
