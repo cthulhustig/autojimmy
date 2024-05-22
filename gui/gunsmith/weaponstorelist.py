@@ -544,6 +544,7 @@ class WeaponStoreList(QtWidgets.QWidget):
             ) -> None:
         # Write the weapon first, if this fails an exception will be thrown and the list won't be
         # updated
+        gunsmith.WeaponStore.instance().addWeapon(weapon=weapon)
         gunsmith.WeaponStore.instance().saveWeapon(weapon=weapon)
 
         weaponData = _WeaponData(

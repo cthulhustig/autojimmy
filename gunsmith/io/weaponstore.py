@@ -160,6 +160,9 @@ class WeaponStore(object):
             ) -> None:
         with self._lock:
             metadata = self._weaponMap.get(weapon)
+            if not metadata:
+                raise RuntimeError(f'Unable to save "{weapon.weaponName()}" (Unknown Weapon)')
+            
             if metadata.readOnly():
                 raise RuntimeError(f'Unable to save "{weapon.weaponName()}" (weapon is read-only)')
 
