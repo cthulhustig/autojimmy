@@ -17,3 +17,5 @@ from .components.weapons import *
 from .components.brain import *
 from .components.skill import *
 from .components.finalisation import *
+from .io.serialization import *
+from .io.robotstore import *

@@ -306,7 +306,7 @@ class WeaponContext(construction.ConstructionContext):
             values=costs,
             name=calculationName)
 
-class Weapon(object):
+class Weapon(construction.ConstructableInterface):
     def __init__(
             self,
             weaponName: str,
@@ -332,6 +332,15 @@ class Weapon(object):
             self.addSequence(
                 weaponType=weaponType,
                 regenerate=True) # Regenerate the weapon to initialise default components
+            
+    def constructableName(self) -> typing.Optional[str]:
+        return self._weaponName
+    
+    def setConstructableName(
+            self,
+            name: typing.Optional[str]
+            ) -> None:
+        self._weaponName = name
 
     def weaponName(self) -> typing.Optional[str]:
         return self._weaponName
@@ -504,12 +513,26 @@ class Weapon(object):
 
     def loadComponents(
             self,
-            sequenceComponents: typing.Mapping[str, typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]],
-            commonComponents: typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]
+            sequenceComponents: typing.Mapping[
+                str, # Sequence
+                typing.Iterable[typing.Tuple[ # List of components in sequence
+                    str, # Component type
+                    typing.Optional[typing.Mapping[ # Options for this component
+                        str, # Option ID
+                        typing.Any # Option value
+                        ]]
+                    ]]],
+            commonComponents: typing.Iterable[typing.Tuple[ # List of common components
+                str, # Component type
+                typing.Optional[typing.Mapping[ # Options for this component
+                    str, # Option ID
+                    typing.Any # Option value
+                    ]]
+                ]]
             ) -> None:
         self._constructionContext.loadComponents(
-            sequenceComponentData=sequenceComponents,
-            commonComponentData=commonComponents)        
+            sequenceComponents=sequenceComponents,
+            commonComponents=commonComponents)        
 
     def addComponent(
             self,

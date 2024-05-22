@@ -11,6 +11,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     _JobProgressPrefixMap = {
         jobs.LoadSectorsJob: 'Loading: Sector - ',
         jobs.LoadWeaponsJob: 'Loading: Weapon - ',
+        jobs.LoadWeaponsJob: 'Loading: Robot - ',
         jobs.StartProxyJob: 'Proxy: '}
 
     def __init__(
@@ -51,6 +52,7 @@ class StartupProgressDialog(QtWidgets.QDialog):
     def exec(self) -> int:
         self._jobQueue.append(jobs.LoadSectorsJob)
         self._jobQueue.append(jobs.LoadWeaponsJob)
+        self._jobQueue.append(jobs.LoadRobotsJob)
         if self._startProxy:
             self._jobQueue.append(jobs.StartProxyJob)
 

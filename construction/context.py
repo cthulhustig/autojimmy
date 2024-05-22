@@ -410,8 +410,22 @@ class ConstructionContext(object):
 
     def loadComponents(
             self,
-            sequenceComponentData: typing.Mapping[str, typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]],
-            commonComponentData: typing.Iterable[typing.Tuple[str, typing.Optional[typing.Mapping[str, typing.Any]]]]
+            sequenceComponents: typing.Optional[typing.Mapping[
+                str, # Sequence
+                typing.Iterable[typing.Tuple[ # List of components in sequence
+                    str, # Component type
+                    typing.Optional[typing.Mapping[ # Options for this component
+                        str, # Option ID
+                        typing.Any # Option value
+                        ]]
+                    ]]]] = None,
+            commonComponents: typing.Optional[typing.Iterable[typing.Tuple[ # List of common components
+                str, # Component type
+                typing.Optional[typing.Mapping[ # Options for this component
+                    str, # Option ID
+                    typing.Any # Option value
+                    ]]
+                ]]] = None
             ) -> None:
         self.clearComponents(regenerate=False)
 
@@ -430,12 +444,34 @@ class ConstructionContext(object):
             construction.ComponentInterface,
             typing.Dict[str, typing.Any]] = {}
 
-        # Add sequence components to stages
-        for sequence, componentDataList in sequenceComponentData.items():
-            for componentType, optionData in componentDataList:
+        if sequenceComponents:
+            # Add sequence components to stages
+            for sequence, componentDataList in sequenceComponents.items():
+                for componentType, optionData in componentDataList:
+                    componentClass = componentTypeMap.get(componentType)
+                    if not componentClass:
+                        logging.warning(f'Ignoring unknown component type {componentType} when loading sequence {sequence} components')
+                        continue
+                    component = componentClass()
+
+                    for stage in stages:
+                        stageSequence = stage.sequence()
+                        if stageSequence and stageSequence != sequence:
+                            # The stage is for a sequence but not this one
+                            continue
+
+                        if stage.matchesComponent(component=componentClass):
+                            stage.addComponent(component=component)
+                            break
+
+                    componentOptionData[component] = optionData
+
+        if commonComponents:
+            # Add common components to stages
+            for componentType, optionData in commonComponents:
                 componentClass = componentTypeMap.get(componentType)
                 if not componentClass:
-                    logging.warning(f'Ignoring unknown component type {componentType} when loading sequence {sequence} components')
+                    logging.warning(f'Ignoring unknown component type {componentType} when loading common components')
                     continue
                 component = componentClass()
 
@@ -449,27 +485,7 @@ class ConstructionContext(object):
                         stage.addComponent(component=component)
                         break
 
-                componentOptionData[component] = optionData
-
-        # Add common components to stages
-        for componentType, optionData in commonComponentData:
-            componentClass = componentTypeMap.get(componentType)
-            if not componentClass:
-                logging.warning(f'Ignoring unknown component type {componentType} when loading common components')
-                continue
-            component = componentClass()
-
-            for stage in stages:
-                stageSequence = stage.sequence()
-                if stageSequence and stageSequence != sequence:
-                    # The stage is for a sequence but not this one
-                    continue
-
-                if stage.matchesComponent(component=componentClass):
-                    stage.addComponent(component=component)
-                    break
-
-            componentOptionData[component] = optionData                
+                componentOptionData[component] = optionData                
 
         if not componentOptionData:
             # If there are no component options then we can bail early.

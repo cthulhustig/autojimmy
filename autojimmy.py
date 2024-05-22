@@ -15,6 +15,7 @@ import os
 import pathlib
 import proxy
 import qasync
+import robots
 import socket
 import sys
 import traveller
@@ -502,8 +503,12 @@ def main() -> None:
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
-            userWeaponDir=os.path.join(appDir, 'weapons'),
-            exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
+            userDir=os.path.join(appDir, 'weapons'),
+            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
+        
+        robots.RobotStore.setRobotDirs(
+            userDir=os.path.join(appDir, 'robots'),
+            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))        
 
         gui.configureAppStyle(application)
 

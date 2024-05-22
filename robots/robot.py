@@ -106,7 +106,7 @@ class RobotContext(construction.ConstructionContext):
             values=phaseCosts,
             name=f'Total')
     
-class Robot(object):
+class Robot(construction.ConstructableInterface):
     def __init__(
             self,
             robotName: str,
@@ -134,9 +134,27 @@ class Robot(object):
             sequence=self._sequence,
             sequenceState=sequenceState,
             regenerate=True)
+        
+    # TODO: Having constructableName _and_ robotName is
+    # horrible. Rename constructableName to name and get rid of
+    # robotName (same for Weapon)
+    def constructableName(self) -> typing.Optional[str]:
+        return self._robotName
+    
+    def setConstructableName(
+            self,
+            name: typing.Optional[str]
+            ) -> None:
+        self._robotName = name    
 
     def robotName(self) -> typing.Optional[str]:
         return self._robotName
+    
+    def setRobotName(
+            self,
+            name: typing.Optional[str]
+            ) -> None:
+        self._robotName = name
 
     def techLevel(self) -> int:
         return self._constructionContext.techLevel()
@@ -209,6 +227,19 @@ class Robot(object):
         return self._constructionContext.findCompatibleComponents(
             stage=stage,
             replaceComponent=replaceComponent)
+    
+    def loadComponents(
+            self,
+            components: typing.Iterable[typing.Tuple[ # List of components
+                str, # Component type
+                typing.Optional[typing.Mapping[ # Options for this component
+                    str, # Option ID
+                    typing.Any # Option value
+                    ]]
+                ]]
+            ) -> None:
+        self._constructionContext.loadComponents(
+            commonComponents=components)     
 
     def addComponent(
             self,

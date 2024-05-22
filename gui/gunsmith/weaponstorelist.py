@@ -542,8 +542,7 @@ class WeaponStoreList(QtWidgets.QWidget):
             weapon: gunsmith.Weapon,
             makeCurrent: bool = True
             ) -> None:
-        # Write the weapon first, if this fails an exception will be thrown and the list won't be
-        # updated
+        gunsmith.WeaponStore.instance().addWeapon(weapon=weapon)
         gunsmith.WeaponStore.instance().saveWeapon(weapon=weapon)
 
         weaponData = _WeaponData(
@@ -718,7 +717,7 @@ class WeaponStoreList(QtWidgets.QWidget):
             QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect | QtCore.QItemSelectionModel.SelectionFlag.Current)
 
     def _synchronise(self) -> None:
-        newWeapons = gunsmith.WeaponStore.instance().weapons()
+        newWeapons = gunsmith.WeaponStore.instance().allWeapons()
         userWeapons = set()
         exampleWeapons = set()
         for weapon in newWeapons:
