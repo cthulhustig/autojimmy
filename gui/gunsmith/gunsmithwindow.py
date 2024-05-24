@@ -209,7 +209,7 @@ class _ExportProgressDialog(gui.DialogEx):
             ) -> None:
         super().__init__(parent=parent)
 
-        self._textLabel = QtWidgets.QLabel(f'Exporting {weapon.weaponName()}...')
+        self._textLabel = QtWidgets.QLabel(f'Exporting {weapon.name()}...')
         self._progressBar = QtWidgets.QProgressBar()
 
         windowLayout = QtWidgets.QVBoxLayout()
@@ -573,7 +573,7 @@ class GunsmithWindow(gui.WindowWidget):
                 text='No weapon to rename')
             return
 
-        oldWeaponName = None if self._weaponsListBox.isCurrentUnnamed() else weapon.constructableName()
+        oldWeaponName = None if self._weaponsListBox.isCurrentUnnamed() else weapon.name()
         newWeaponName = None
         while not newWeaponName:
             newWeaponName, result = gui.InputDialogEx.getText(
@@ -620,7 +620,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         if selectionCount == 1:
             weapon = self._weaponsListBox.current()
-            prompt = f'Are you sure you want to revert \'{weapon.constructableName()}\'?'
+            prompt = f'Are you sure you want to revert \'{weapon.name()}\'?'
         else:
             prompt = f'Are you sure you want to revert {selectionCount} weapons?'
 
@@ -671,7 +671,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         if selectionCount == 1:
             weapon = self._weaponsListBox.current()
-            prompt = f'Are you sure you want to delete \'{weapon.constructableName()}\'?'
+            prompt = f'Are you sure you want to delete \'{weapon.name()}\'?'
         else:
             prompt = f'Are you sure you want to delete {selectionCount} weapons?'
 
@@ -708,7 +708,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         defaultPath = os.path.join(
             self._importExportPath if self._importExportPath else QtCore.QDir.homePath(),
-            common.sanitiseFileName(fileName=weapon.weaponName()) + '.pdf')
+            common.sanitiseFileName(fileName=weapon.name()) + '.pdf')
 
         path, filter = QtWidgets.QFileDialog.getSaveFileName(
             parent=self,
@@ -799,7 +799,7 @@ class GunsmithWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        weaponName = weapon.weaponName()
+        weaponName = weapon.name()
         while self._weaponsListBox.isNameInUse(constructableName=weaponName):
             weaponName, result = gui.InputDialogEx.getText(
                 parent=self,
@@ -808,8 +808,8 @@ class GunsmithWindow(gui.WindowWidget):
                 text=weaponName)
             if not result:
                 return # User cancelled
-        if weaponName != weapon.weaponName():
-            weapon.setWeaponName(weaponName)
+        if weaponName != weapon.name():
+            weapon.setName(weaponName)
 
         try:
             # No need to update buttons or results as import will trigger a selection change
@@ -833,10 +833,10 @@ class GunsmithWindow(gui.WindowWidget):
         readOnly = self._weaponsListBox.isReadOnly(constructable=weapon)
         unnamed = self._weaponsListBox.isUnnamed(constructable=weapon)
 
-        oldWeaponName = weapon.weaponName()
+        oldWeaponName = weapon.name()
         newWeaponName = None
         if readOnly or unnamed:
-            prompt = f'The weapon \'{weapon.weaponName()}\' is {"read only" if readOnly else "unsaved"}, enter a name to save it as.'
+            prompt = f'The weapon \'{weapon.name()}\' is {"read only" if readOnly else "unsaved"}, enter a name to save it as.'
             while not newWeaponName:
                 newWeaponName, result = gui.InputDialogEx.getText(
                     parent=self,
@@ -866,7 +866,7 @@ class GunsmithWindow(gui.WindowWidget):
                 assert(newWeaponName)
                 originalWeapon = weapon
                 weapon = copy.deepcopy(weapon)
-                weapon.setWeaponName(name=newWeaponName)
+                weapon.setName(name=newWeaponName)
                 self._weaponsListBox.add(
                     constructable=weapon,
                     makeCurrent=True) # Select the copy
@@ -907,7 +907,7 @@ class GunsmithWindow(gui.WindowWidget):
             weapon = modifiedWeapons[0]
             answer = gui.MessageBoxEx.question(
                 parent=self,
-                text=f'The weapon \'{weapon.weaponName()}\' has been modified, do you want to save it?',
+                text=f'The weapon \'{weapon.name()}\' has been modified, do you want to save it?',
                 buttons=QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No | QtWidgets.QMessageBox.StandardButton.Cancel)
             if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
                 return False # User cancelled

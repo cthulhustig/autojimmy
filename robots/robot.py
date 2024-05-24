@@ -138,10 +138,10 @@ class Robot(construction.ConstructableInterface):
     # TODO: Having constructableName _and_ robotName is
     # horrible. Rename constructableName to name and get rid of
     # robotName (same for Weapon)
-    def constructableName(self) -> typing.Optional[str]:
+    def name(self) -> typing.Optional[str]:
         return self._robotName
     
-    def setConstructableName(
+    def setName(
             self,
             name: typing.Optional[str]
             ) -> None:

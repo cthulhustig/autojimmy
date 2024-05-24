@@ -25,7 +25,7 @@ class WeaponSelectDialog(gui.DialogEx):
         self._list = gui.ListWidgetEx()
         for weapon in weapons:
             item = gui.NaturalSortListWidgetItem()
-            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, weapon.weaponName())
+            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, weapon.name())
             item.setData(QtCore.Qt.ItemDataRole.UserRole, weapon)
             item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(defaultState)

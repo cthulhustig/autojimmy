@@ -97,7 +97,7 @@ def deserialiseRules(
         try:
             rule = gunsmith.RuleId[ruleString]
         except Exception:
-            logging.warning(f'Ignoring unknown rule \'{ruleString}\' when loading weapon \'{weapon.weaponName()}\'')
+            logging.warning(f'Ignoring unknown rule \'{ruleString}\' when loading weapon \'{weapon.name()}\'')
             continue
         rules.append(rule)
 
@@ -107,7 +107,7 @@ def serialiseWeapon(
         weapon: gunsmith.Weapon
         ) -> typing.Mapping[str, typing.Any]:
     return {
-        'name': weapon.weaponName(),
+        'name': weapon.name(),
         'techLevel': weapon.techLevel(),
         'rules': serialiseRules(weapon),
         'components': serialiseComponents(weapon=weapon),
@@ -130,7 +130,7 @@ def deserialiseWeapon(
     if inPlace:
         inPlace.clearRules()
         inPlace.clearSequences()
-        inPlace.setWeaponName(name=weaponName)
+        inPlace.setName(name=weaponName)
         inPlace.setTechLevel(techLevel=techLevel, regenerate=True) # Only regenerate on last step
         weapon = inPlace
     else:

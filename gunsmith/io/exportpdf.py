@@ -288,7 +288,7 @@ class PdfExporter(object):
             progressCallback: typing.Optional[typing.Callable[[], None]] = None,
             ) -> None:
         if layout != None:
-            layout.append(self._createParagraph(text=weapon.weaponName(), style=_TitleStyle))
+            layout.append(self._createParagraph(text=weapon.name(), style=_TitleStyle))
             layout.append(self._createVerticalSpacer(spacing=_TitleSpacing))
         if progressCallback:
             progressCallback()

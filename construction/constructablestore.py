@@ -124,7 +124,7 @@ class ConstructableStore(object):
             ) -> bool:
         with self._lock:
             for constructable in self._constructableMap.keys():
-                if name == constructable.constructableName():
+                if name == constructable.name():
                     return True
         return False
 
@@ -147,10 +147,10 @@ class ConstructableStore(object):
         with self._lock:
             metadata = self._constructableMap.get(constructable)
             if not metadata:
-                raise RuntimeError(f'{self._typeString} store unable to save "{constructable.constructableName()}" (Unknown {self._typeString})')
+                raise RuntimeError(f'{self._typeString} store unable to save "{constructable.name()}" (Unknown {self._typeString})')
 
             if metadata.readOnly():
-                raise RuntimeError(f'{self._typeString} store unable to save "{constructable.constructableName()}" ({self._typeString} is read-only)')
+                raise RuntimeError(f'{self._typeString} store unable to save "{constructable.name()}" ({self._typeString} is read-only)')
 
             filePath = None
             if metadata:
@@ -175,10 +175,10 @@ class ConstructableStore(object):
         with self._lock:
             metadata = self._constructableMap.get(constructable)
             if not metadata:
-                raise RuntimeError(f'{self._typeString} store unable to delete "{constructable.constructableName()}" (Unknown {self._typeString})')
+                raise RuntimeError(f'{self._typeString} store unable to delete "{constructable.name()}" (Unknown {self._typeString})')
 
             if metadata.readOnly():
-                raise RuntimeError(f'{self._typeString} store unable to delete "{constructable.constructableName()}" ({self._typeString} is read-only)')
+                raise RuntimeError(f'{self._typeString} store unable to delete "{constructable.name()}" ({self._typeString} is read-only)')
 
             if metadata.filePath():
                 os.remove(path=metadata.filePath())
@@ -191,7 +191,7 @@ class ConstructableStore(object):
         with self._lock:
             metadata = self._constructableMap.get(constructable)
             if not metadata:
-                raise RuntimeError(f'{self._typeString} store unable to revert "{constructable.constructableName()}" (Unknown {self._typeString})')
+                raise RuntimeError(f'{self._typeString} store unable to revert "{constructable.name()}" (Unknown {self._typeString})')
 
             filePath = metadata.filePath()
             if filePath:
@@ -205,10 +205,10 @@ class ConstructableStore(object):
         with self._lock:
             metadata = self._constructableMap.get(constructable)
             if not metadata:
-                raise RuntimeError(f'{self._typeString} store unable to copy "{constructable.constructableName()}" (Unknown {self._typeString})')
+                raise RuntimeError(f'{self._typeString} store unable to copy "{constructable.name()}" (Unknown {self._typeString})')
 
             newConstructable = copy.deepcopy(constructable)
-            newConstructable.setConstructableName(name=newConstructableName)
+            newConstructable.setName(name=newConstructableName)
             self._constructableMap[newConstructable] = _ConstructableMetadata(
                 filePath=None, # Copied constructables hasn't been saved yet
                 readOnly=False) # Copied constructables are writable even when copied from read only constructables

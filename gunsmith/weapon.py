@@ -332,20 +332,11 @@ class Weapon(construction.ConstructableInterface):
             self.addSequence(
                 weaponType=weaponType,
                 regenerate=True) # Regenerate the weapon to initialise default components
-            
-    def constructableName(self) -> typing.Optional[str]:
-        return self._weaponName
-    
-    def setConstructableName(
-            self,
-            name: typing.Optional[str]
-            ) -> None:
-        self._weaponName = name
 
-    def weaponName(self) -> typing.Optional[str]:
+    def name(self) -> typing.Optional[str]:
         return self._weaponName
 
-    def setWeaponName(
+    def setName(
             self,
             name: typing.Optional[str]
             ) -> None:

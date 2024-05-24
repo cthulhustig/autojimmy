@@ -179,7 +179,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
 
     def currentName(self) -> typing.Optional[str]:
         constructable = self.current()
-        return constructable.constructableName() if constructable else None
+        return constructable.name() if constructable else None
 
     def isCurrentUnnamed(self) -> bool:
         item = self._list.currentItem()
@@ -435,7 +435,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
         copyConstructable = self._constructableStore.copy(
             constructable=originalConstructable,
             newConstructableName=self._generateCopyName(
-                originalName=originalConstructable.constructableName()))
+                originalName=originalConstructable.name()))
 
         copyItemData = _ListItemData(
             constructable=copyConstructable,
@@ -492,7 +492,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
                 copyConstructable = self._constructableStore.copy(
                     constructable=originalConstructable,
                     newConstructableName=self._generateCopyName(
-                        originalName=originalConstructable.constructableName()))
+                        originalName=originalConstructable.name()))
                 constructablesMap[originalConstructable] = copyConstructable
 
                 copyItemData = _ListItemData(
@@ -647,7 +647,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
                 if not itemData:
                     continue
                 constructable = itemData.constructable()
-                if constructable.constructableName() == constructableName:
+                if constructable.name() == constructableName:
                     return (section, item)
         return (None, None)
 
@@ -742,7 +742,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
         if not constructable:
             item.setText(f'Invalid {self._constructableStore.typeString()}')
             return
-        text = constructable.constructableName()
+        text = constructable.name()
         if itemData.isModified():
             text += _UnsavedSuffix
         item.setText(text)
@@ -789,7 +789,7 @@ class ConstructableStoreList(QtWidgets.QWidget):
             return
 
         constructable = itemData.constructable()
-        constructable.setConstructableName(newName)
+        constructable.setName(newName)
 
         itemData.setUnnamed(False)
         itemData.setModified(True)
