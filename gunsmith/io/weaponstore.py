@@ -40,6 +40,9 @@ class WeaponStore(object):
         WeaponStore._userDir = userDir
         WeaponStore._exampleDir = exampleDir
 
+    def constructableStore(self) -> construction.ConstructableStore:
+        return WeaponStore._store
+
     def loadWeapons(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None

@@ -246,6 +246,7 @@ class GunsmithWindow(gui.WindowWidget):
             configSection='Gunsmith')
 
         self._weaponInfoWidgets: typing.Dict[str, gui.WeaponInfoWidget] = {}
+        self._unnamedWeaponIndex = 1        
         self._exportJob = None
         self._importExportPath = None
 
@@ -360,7 +361,8 @@ class GunsmithWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupWeaponListControls(self) -> None:
-        self._weaponsListBox = gui.WeaponStoreList()
+        self._weaponsListBox = gui.ConstructableStoreList(
+            constructableStore=gunsmith.WeaponStore.instance().constructableStore())
         self._weaponsListBox.currentChanged.connect(self._selectedWeaponChanged)
         self._weaponsListBox.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
@@ -420,9 +422,10 @@ class GunsmithWindow(gui.WindowWidget):
         self._weaponsGroupBox.setLayout(layout)
 
     def _setupCurrentWeaponControls(self) -> None:
-        weapon = self._weaponsListBox.currentWeapon()
+        weapon = self._weaponsListBox.current()
+        assert(isinstance(weapon, gunsmith.Weapon))
 
-        self._configurationWidget = gui.WeaponConfigWidget(weapon=self._weaponsListBox.currentWeapon())
+        self._configurationWidget = gui.WeaponConfigWidget(weapon=weapon)
         self._configurationWidget.weaponChanged.connect(self._weaponModified)
 
         # Wrap the configuration widget in a layout with a spacing at the bottom. This is an effort to avoid
@@ -476,25 +479,43 @@ class GunsmithWindow(gui.WindowWidget):
 
         self._updateResults()
 
+    def _addNewWeapon(self) -> None:
+        while True:
+            weaponName = f'<Unnamed Weapon {self._unnamedWeaponIndex}>'
+            self._unnamedWeaponIndex += 1
+            if not gunsmith.WeaponStore.instance().hasWeapon(weaponName=weaponName):
+                break
+
+        # NOTE: There is no need to update the buttons or results display as
+        # adding it will trigger a selection changed event which will cause
+        # them to update
+        weapon = gunsmith.WeaponStore.instance().newWeapon(
+            weaponName=weaponName,
+            weaponType=GunsmithWindow._DefaultWeaponType,
+            techLevel=GunsmithWindow._DefaultTechLevel)
+        self._weaponsListBox.add(
+            constructable=weapon,
+            makeCurrent=True,
+            unnamed=True)
+
     # Create a user weapon if there isn't one. This is done to make it more obvious to the user
     # what is going on. Without this, out the box, the configuration would show one of the example
     # weapons which the user might start editing.
     def _forceUserWeapon(self):
-        if self._weaponsListBox.isEmpty(section=gui.WeaponStoreList.Section.UserWeapons):
-            self._weaponsListBox.newWeapon(
-                weaponType=GunsmithWindow._DefaultWeaponType,
-                techLevel=GunsmithWindow._DefaultTechLevel,
-                makeCurrent=True)
+        if self._weaponsListBox.isEmpty(
+            section=gui.ConstructableStoreList.Section.UserSection):
+            self._addNewWeapon()
 
     def _weaponModified(self, value: int) -> None:
-        self._weaponsListBox.markCurrentWeaponModified()
+        self._weaponsListBox.markCurrentModified()
         self._updateButtons()
         self._updateResults()
 
     def _updateButtons(self) -> None:
-        isUserWeapon = self._weaponsListBox.currentSection() == gui.WeaponStoreList.Section.UserWeapons
-        isModified = self._weaponsListBox.isCurrentWeaponModified()
-        isStored = self._weaponsListBox.isCurrentWeaponStored()
+        isUserWeapon = self._weaponsListBox.currentSection() == \
+            gui.ConstructableStoreList.Section.UserSection
+        isModified = self._weaponsListBox.isCurrentModified()
+        isStored = self._weaponsListBox.isCurrentStored()
         self._saveWeaponAction.setEnabled(isModified)
         self._renameWeaponAction.setEnabled(isUserWeapon)
         self._revertWeaponAction.setEnabled(isModified and isStored)
@@ -506,8 +527,9 @@ class GunsmithWindow(gui.WindowWidget):
         self._weaponInfoWidget.setWeapon(weapon=weapon)
 
     def _selectedWeaponChanged(self) -> None:
-        weapon = self._weaponsListBox.currentWeapon()
-        isUserWeapon = self._weaponsListBox.currentSection() == gui.WeaponStoreList.Section.UserWeapons
+        weapon = self._weaponsListBox.current()
+        isUserWeapon = self._weaponsListBox.currentSection() == \
+            gui.ConstructableStoreList.Section.UserSection
         if weapon:
             # Block signals from configuration widget while weapon is set as we don't want to be
             # notified that the weapon has changed as that would cause the weapon to be marked as dirty.
@@ -517,29 +539,25 @@ class GunsmithWindow(gui.WindowWidget):
 
         with gui.SignalBlocker(widget=self._userNotesTextEdit):
             # Use setPLainText to reset undo/redo history
-            self._userNotesTextEdit.setPlainText(weapon.userNotes() if weapon else '')
+            self._userNotesTextEdit.setPlainText(weapon.userNotes() if isinstance(weapon, gunsmith.Weapon) else '')
             self._userNotesTextEdit.setReadOnly(not isUserWeapon)
 
         self._updateButtons()
         self._updateResults()
 
     def _weaponNotesChanged(self) -> None:
-        weapon = self._weaponsListBox.currentWeapon()
-        if not weapon:
+        weapon = self._weaponsListBox.current()
+        if not isinstance(weapon, gunsmith.Weapon):
             return
         weapon.setUserNotes(notes=self._userNotesTextEdit.toPlainText())
-        self._weaponsListBox.markCurrentWeaponModified()
+        self._weaponsListBox.markCurrentModified()
         self._updateButtons()
 
     def _newWeaponClicked(self) -> None:
-        # No need to update buttons or results as weapon creation will trigger a selection change
-        self._weaponsListBox.newWeapon(
-            weaponType=self._DefaultWeaponType,
-            techLevel=self._configurationWidget.techLevel(),
-            makeCurrent=True)
+        self._addNewWeapon()
 
     def _saveWeaponClicked(self) -> None:
-        weapon = self._weaponsListBox.currentWeapon()
+        weapon = self._weaponsListBox.current()
         if not  weapon:
             gui.MessageBoxEx.information(
                 parent=self,
@@ -548,14 +566,14 @@ class GunsmithWindow(gui.WindowWidget):
         self._promptSaveWeapon(weapon=weapon)
 
     def _renameWeaponClicked(self) -> None:
-        weapon = self._weaponsListBox.currentWeapon()
+        weapon = self._weaponsListBox.current()
         if not  weapon:
             gui.MessageBoxEx.information(
                 parent=self,
                 text='No weapon to rename')
             return
 
-        oldWeaponName = None if self._weaponsListBox.isCurrentWeaponUnnamed() else weapon.weaponName()
+        oldWeaponName = None if self._weaponsListBox.isCurrentUnnamed() else weapon.constructableName()
         newWeaponName = None
         while not newWeaponName:
             newWeaponName, result = gui.InputDialogEx.getText(
@@ -581,7 +599,7 @@ class GunsmithWindow(gui.WindowWidget):
                 newWeaponName = None
 
         try:
-            self._weaponsListBox.renameCurrentWeapon(newName=newWeaponName)
+            self._weaponsListBox.renameCurrent(newName=newWeaponName)
         except Exception as ex:
             message = 'Failed to rename weapon(s)'
             logging.error(message, exc_info=ex)
@@ -601,8 +619,8 @@ class GunsmithWindow(gui.WindowWidget):
             return
 
         if selectionCount == 1:
-            weapon = self._weaponsListBox.currentWeapon()
-            prompt = f'Are you sure you want to revert \'{weapon.weaponName()}\'?'
+            weapon = self._weaponsListBox.current()
+            prompt = f'Are you sure you want to revert \'{weapon.constructableName()}\'?'
         else:
             prompt = f'Are you sure you want to revert {selectionCount} weapons?'
 
@@ -611,7 +629,7 @@ class GunsmithWindow(gui.WindowWidget):
             return
 
         try:
-            self._weaponsListBox.revertSelectedWeapons()
+            self._weaponsListBox.revertSelected()
         except Exception as ex:
             message = 'Failed to revert weapon'
             logging.error(message, exc_info=ex)
@@ -631,7 +649,7 @@ class GunsmithWindow(gui.WindowWidget):
             return
 
         try:
-            self._weaponsListBox.copySelectedWeapons(makeSelected=True)
+            self._weaponsListBox.copySelected(makeSelected=True)
         except Exception as ex:
             message = 'Failed to copy weapon(s)'
             logging.error(message, exc_info=ex)
@@ -652,8 +670,8 @@ class GunsmithWindow(gui.WindowWidget):
             return
 
         if selectionCount == 1:
-            weapon = self._weaponsListBox.currentWeapon()
-            prompt = f'Are you sure you want to delete \'{weapon.weaponName()}\'?'
+            weapon = self._weaponsListBox.current()
+            prompt = f'Are you sure you want to delete \'{weapon.constructableName()}\'?'
         else:
             prompt = f'Are you sure you want to delete {selectionCount} weapons?'
 
@@ -663,7 +681,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         try:
             # No need to update buttons or results as delete will trigger a selection change
-            self._weaponsListBox.deleteSelectedWeapons()
+            self._weaponsListBox.deleteSelected()
         except Exception as ex:
             message = 'Failed to delete weapon(s)'
             logging.error(message, exc_info=ex)
@@ -681,17 +699,16 @@ class GunsmithWindow(gui.WindowWidget):
                 text='Unable to export while another export is in progress')
             return
 
-        weapon = self._weaponsListBox.currentWeapon()
-        if not  weapon:
+        weapon = self._weaponsListBox.current()
+        if not  isinstance(weapon, gunsmith.Weapon):
             gui.MessageBoxEx.information(
                 parent=self,
                 text='No weapon to export')
             return
 
-        currentWeapon = self._weaponsListBox.currentWeapon()
         defaultPath = os.path.join(
             self._importExportPath if self._importExportPath else QtCore.QDir.homePath(),
-            common.sanitiseFileName(fileName=currentWeapon.weaponName()) + '.pdf')
+            common.sanitiseFileName(fileName=weapon.weaponName()) + '.pdf')
 
         path, filter = QtWidgets.QFileDialog.getSaveFileName(
             parent=self,
@@ -783,7 +800,7 @@ class GunsmithWindow(gui.WindowWidget):
             return
 
         weaponName = weapon.weaponName()
-        while self._weaponsListBox.hasWeaponWithName(weaponName):
+        while self._weaponsListBox.isNameInUse(constructableName=weaponName):
             weaponName, result = gui.InputDialogEx.getText(
                 parent=self,
                 title='Weapon Name',
@@ -796,9 +813,10 @@ class GunsmithWindow(gui.WindowWidget):
 
         try:
             # No need to update buttons or results as import will trigger a selection change
-            self._weaponsListBox.importWeapon(
-                weapon=weapon,
-                makeCurrent=True)
+            self._weaponsListBox.add(
+                constructable=weapon,
+                makeCurrent=True,
+                writeToDisk=True)
         except Exception as ex:
             message = 'Failed to import weapon'
             logging.error(message, exc_info=ex)
@@ -812,8 +830,8 @@ class GunsmithWindow(gui.WindowWidget):
             self,
             weapon: gunsmith.Weapon
             ) -> bool: # False if user cancelled, otherwise True
-        readOnly = self._weaponsListBox.isWeaponReadOnly(weapon=weapon)
-        unnamed = self._weaponsListBox.isWeaponUnnamed(weapon=weapon)
+        readOnly = self._weaponsListBox.isReadOnly(constructable=weapon)
+        unnamed = self._weaponsListBox.isUnnamed(constructable=weapon)
 
         oldWeaponName = weapon.weaponName()
         newWeaponName = None
@@ -849,22 +867,22 @@ class GunsmithWindow(gui.WindowWidget):
                 originalWeapon = weapon
                 weapon = copy.deepcopy(weapon)
                 weapon.setWeaponName(name=newWeaponName)
-                self._weaponsListBox.addWeapon(
-                    weapon=weapon,
+                self._weaponsListBox.add(
+                    constructable=weapon,
                     makeCurrent=True) # Select the copy
             elif unnamed:
                 # The weapon is unnamed so rename it before saving
                 assert(newWeaponName)
-                self._weaponsListBox.renameWeapon(
-                    weapon=weapon,
+                self._weaponsListBox.rename(
+                    constructable=weapon,
                     newName=newWeaponName)
 
-            self._weaponsListBox.saveWeapon(weapon=weapon)
+            self._weaponsListBox.save(constructable=weapon)
 
             if originalWeapon:
                 # The modified weapon has been saved as something else so revert the
                 # original version
-                self._weaponsListBox.revertWeapon(weapon=originalWeapon)
+                self._weaponsListBox.revert(constructable=originalWeapon)
         except Exception as ex:
             message = 'Failed to save weapon(s)'
             logging.error(message, exc_info=ex)
@@ -879,8 +897,8 @@ class GunsmithWindow(gui.WindowWidget):
 
     def _promptSaveModified(self) -> bool: # False if the user cancelled, otherwise True
         modifiedWeapons: typing.List[gunsmith.Weapon] = []
-        for weapon in self._weaponsListBox.weapons():
-            if self._weaponsListBox.isWeaponModified(weapon=weapon):
+        for weapon in self._weaponsListBox.constructables():
+            if self._weaponsListBox.isModified(constructable=weapon):
                 modifiedWeapons.append(weapon)
         if not modifiedWeapons:
             return True # Nothing to do
@@ -917,16 +935,16 @@ class GunsmithWindow(gui.WindowWidget):
         # counter intuitive but, due to the way the app handles windows, this same window may be redisplayed if
         # the user opens the Gunsmith again. We don't want them to see the modified weapons that they said not
         # to save so best to reset everything
-        currentWeapon = self._weaponsListBox.currentWeapon()
-        for weapon in self._weaponsListBox.weapons():
-            if self._weaponsListBox.isWeaponModified(weapon=weapon):
-                self._weaponsListBox.revertWeapon(weapon=weapon)
+        currentWeapon = self._weaponsListBox.current()
+        for weapon in self._weaponsListBox.constructables():
+            if self._weaponsListBox.isModified(constructable=weapon):
+                self._weaponsListBox.revert(constructable=weapon)
             if weapon == currentWeapon:
                 # The current weapon was reverted so force an update of the configuration and results controls
                 self._selectedWeaponChanged()
 
         # Remove any unsaved weapons for the same reason the modified weapons were removed
-        self._weaponsListBox.removeUnsavedWeapons()
+        self._weaponsListBox.removeUnsaved()
         self._forceUserWeapon()
 
         return True # The user didn't cancel

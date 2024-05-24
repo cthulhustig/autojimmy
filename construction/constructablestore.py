@@ -50,6 +50,9 @@ class ConstructableStore(object):
             _ConstructableMetadata] = {}
         self._lock = threading.Lock()
 
+    def typeString(self) -> str:
+        return self._typeString
+
     def loadData(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
