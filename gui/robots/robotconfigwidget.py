@@ -7,7 +7,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class RobotConfigWidget(QtWidgets.QWidget):
-    robotChanged = QtCore.pyqtSignal(robots.Robot)
+    robotModified = QtCore.pyqtSignal(robots.Robot)
 
     _StateVersion = 'RobotConfigWidget_v1'
 
@@ -89,7 +89,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
 
         self._configureDynamicWidgets()
 
-        self.robotChanged.emit(self._robot)
+        self.robotModified.emit(self._robot)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -144,13 +144,13 @@ class RobotConfigWidget(QtWidgets.QWidget):
     def _techLevelChanged(self, techLevel: int) -> None:
         self._robot.setTechLevel(techLevel=techLevel)
         self._synchroniseStages()
-        self.robotChanged.emit(self._robot)
+        self.robotModified.emit(self._robot)
 
     def _weaponSetChanged(self) -> None:
         self._robot.setWeaponSet(
             weaponSet=self._weaponSetComboBox.currentEnum())
         self._synchroniseStages()
-        self.robotChanged.emit(self._robot)        
+        self.robotModified.emit(self._robot)        
 
     def _configureDynamicWidgets(self) -> None:
         self._removeWidgets()
@@ -190,7 +190,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
             stage: construction.ConstructionStage
             ) -> None:
         self._synchroniseStages()
-        self.robotChanged.emit(self._robot)
+        self.robotModified.emit(self._robot)
 
     def _expansionChanged(
             self,

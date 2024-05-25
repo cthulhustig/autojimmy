@@ -109,12 +109,12 @@ class RobotContext(construction.ConstructionContext):
 class Robot(construction.ConstructableInterface):
     def __init__(
             self,
-            robotName: str,
+            name: str,
             techLevel: int,
             weaponSet: traveller.StockWeaponSet,
             userNotes: typing.Optional[str] = None
             ) -> None:
-        self._robotName = robotName
+        self._name = name
         self._userNotes = userNotes if userNotes else ''
 
         # NOTE: It's important that the context is created at construction and
@@ -139,22 +139,22 @@ class Robot(construction.ConstructableInterface):
     # horrible. Rename constructableName to name and get rid of
     # robotName (same for Weapon)
     def name(self) -> typing.Optional[str]:
-        return self._robotName
+        return self._name
     
     def setName(
             self,
             name: typing.Optional[str]
             ) -> None:
-        self._robotName = name    
+        self._name = name    
 
     def robotName(self) -> typing.Optional[str]:
-        return self._robotName
+        return self._name
     
     def setRobotName(
             self,
             name: typing.Optional[str]
             ) -> None:
-        self._robotName = name
+        self._name = name
 
     def techLevel(self) -> int:
         return self._constructionContext.techLevel()
@@ -644,7 +644,16 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.HandHeldFireControl,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))       
+            maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Magazines',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Weapons,
+            baseType=robots.Magazines,
+            # Optional multi component
+            minComponents=None,
+            maxComponents=None))          
         
         stages.append(construction.ConstructionStage(
             name='Brain',
@@ -679,6 +688,8 @@ class Robot(construction.ConstructableInterface):
         # rather than being truly optional. This is needed to allow it to default
         # to the AllSlotRemoval component but still allow the user to specify
         # None to not have any slots removed
+        # TODO: Changes to this stage aren't being saved as Finalisation is an
+        # 'internal' stage so doesn't get saved
         stages.append(construction.ConstructionStage(
             name='Unused Slot Removal',
             sequence=self._sequence,

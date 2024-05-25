@@ -92,7 +92,7 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
         return self._prefix + baseText
 
 class WeaponConfigWidget(QtWidgets.QWidget):
-    weaponChanged = QtCore.pyqtSignal(gunsmith.Weapon)
+    weaponModified = QtCore.pyqtSignal(gunsmith.Weapon)
 
     _StateVersion = 'WeaponConfigWidget_v1'
 
@@ -195,7 +195,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
         self._configureDynamicWidgets()
 
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -268,7 +268,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
     def _techLevelChanged(self, techLevel: int) -> None:
         self._weapon.setTechLevel(techLevel=techLevel)
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _secondaryCountChanged(self, count: int) -> None:
         requiredCount = count + 1 # Add 1 for primary weapon
@@ -290,7 +290,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         if modified:
             self._weapon.regenerate()
             self._configureDynamicWidgets()
-            self.weaponChanged.emit(self._weapon)
+            self.weaponModified.emit(self._weapon)
 
     def _ruleStateChanged(
             self,
@@ -303,7 +303,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         else:
             self._weapon.disableRule(rule=rule)
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _configureDynamicWidgets(self) -> None:
         self._removeWidgets()
@@ -419,14 +419,14 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
     def _weaponTypeChanged(self, sequence: str) -> None:
         self._synchroniseStages(sequence=sequence)
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _stageChanged(
             self,
             stage: construction.ConstructionStage
             ) -> None:
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _expansionChanged(
             self,

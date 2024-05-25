@@ -41,6 +41,9 @@ class RobotStore(object):
         RobotStore._userDir = userDir
         RobotStore._exampleDir = exampleDir
 
+    def constructableStore(self) -> construction.ConstructableStore:
+        return RobotStore._store
+
     def loadRobots(
             self,
             progressCallback: typing.Optional[typing.Callable[[str, int, int], typing.Any]] = None
@@ -75,7 +78,7 @@ class RobotStore(object):
             weaponSet: traveller.StockWeaponSet,            
             ) -> robots.Robot:
         robot = robots.Robot(
-            robotName=robotName,
+            name=robotName,
             techLevel=techLevel,
             weaponSet=weaponSet)
         RobotStore._store.add(constructable=robot)

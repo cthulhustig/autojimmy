@@ -135,7 +135,7 @@ def deserialiseWeapon(
         weapon = inPlace
     else:
         weapon = gunsmith.Weapon(
-            weaponName=weaponName,
+            name=weaponName,
             techLevel=techLevel)
 
     rules = data.get('rules', [])

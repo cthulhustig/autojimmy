@@ -476,11 +476,6 @@ class ConstructionContext(object):
                 component = componentClass()
 
                 for stage in stages:
-                    stageSequence = stage.sequence()
-                    if stageSequence and stageSequence != sequence:
-                        # The stage is for a sequence but not this one
-                        continue
-
                     if stage.matchesComponent(component=componentClass):
                         stage.addComponent(component=component)
                         break
@@ -922,27 +917,35 @@ class ConstructionContext(object):
 
                 # NOTE: The option setValue functions will throw if the value is
                 # invalid
-                if isinstance(option, construction.BooleanOption):
-                    option.setValue(value=optionValue)
-                elif isinstance(option, construction.StringOption):
-                    option.setValue(value=optionValue)
-                elif isinstance(option, construction.IntegerOption):
-                    option.setValue(value=optionValue)
-                elif isinstance(option, construction.FloatOption):
-                    option.setValue(value=optionValue)
-                elif isinstance(option, construction.MultiSelectOption):
-                    option.setValue(value=optionValue)
-                elif isinstance(option, construction.EnumOption):
-                    enumValue = None
-                    if optionValue != None:
-                        enumType = option.type()
-                        enumValue = enumType.__members__.get(optionValue)
-                        if not enumValue:
-                            raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} has unknown value "{optionValue}"')
-                    elif not option.isOptional():
-                        raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} must have a value')
+                try:
+                    if isinstance(option, construction.BooleanOption):
+                        option.setValue(value=optionValue)
+                    elif isinstance(option, construction.StringOption):
+                        option.setValue(value=optionValue)
+                    elif isinstance(option, construction.IntegerOption):
+                        option.setValue(value=optionValue)
+                    elif isinstance(option, construction.FloatOption):
+                        option.setValue(value=optionValue)
+                    elif isinstance(option, construction.MultiSelectOption):
+                        option.setValue(value=optionValue)
+                    elif isinstance(option, construction.EnumOption):
+                        enumValue = None
+                        if optionValue != None:
+                            enumType = option.type()
+                            enumValue = enumType.__members__.get(optionValue)
+                            if not enumValue:
+                                raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} has unknown value "{optionValue}"')
+                        elif not option.isOptional():
+                            raise RuntimeError(f'Option {option.id()} for component type {type(component).__name__} must have a value')
 
-                    option.setValue(value=enumValue)
+                        option.setValue(value=enumValue)
+                except Exception:
+                    # The option couldn't be set to the value. This may be
+                    # because it's invalid or it might be the components options
+                    # need updated for it to be valid. Don't remove the option
+                    # from the ones still to be set so it will be tried again next
+                    # time round the main loop
+                    continue
 
                 # The option has been set so remove it from the pending options
                 # and record the fact we've found at least one option this time

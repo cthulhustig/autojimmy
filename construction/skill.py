@@ -83,7 +83,7 @@ class TrainedSkill(object):
           
             self._baseLevel = level
 
-        return self._baseLevel.value() > 0
+        return self._baseLevel.value() >= 0
 
     def hasSpeciality(
             self,

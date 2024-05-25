@@ -78,7 +78,7 @@ class WeaponStore(object):
             ) -> gunsmith.Weapon:
         weapon = gunsmith.Weapon(
             weaponType=weaponType,
-            weaponName=weaponName,
+            name=weaponName,
             techLevel=techLevel)
         WeaponStore._store.add(constructable=weapon)
         return weapon

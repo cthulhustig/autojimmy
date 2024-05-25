@@ -124,9 +124,9 @@ class DecreaseResiliency(ResiliencyModification):
     # can't have a resiliency decrease (as that would require 100% of
     # their hits)
 
-    _PerHitSaving = common.ScalarCalculation(
+    _BasePerHitSaving = common.ScalarCalculation(
         value=50,
-        name='Resiliency Decrease Per Hit Saving')
+        name='Resiliency Decrease Base Per Hit Saving')
     _MaxDecreaseHitPercent = 50
 
     def __init__(self) -> None:
@@ -192,12 +192,27 @@ class DecreaseResiliency(ResiliencyModification):
             value=-self._hitsDecreaseOption.value(), # NOTE: negated
             name='Specified Hits Decrease')
         
-        totalCost = common.Calculator.multiply(
-            lhs=DecreaseResiliency._PerHitSaving,
+        perHitSaving = DecreaseResiliency._BasePerHitSaving
+        locomotion = context.findFirstComponent(
+            componentType=robots.PrimaryLocomotion,
+            sequence=sequence)
+        if isinstance(locomotion, robots.PrimaryLocomotion):
+            perHitSaving = common.Calculator.multiply(
+                lhs=perHitSaving,
+                rhs=locomotion.costMultiplier(),
+                name='Resiliency Decrease Saving Per Hit Decrease')
+        
+        totalCostSaving = common.Calculator.multiply(
+            lhs=perHitSaving,
             rhs=common.Calculator.absolute(value=hitsDecrease),
+            name='Total Resiliency Decrease Cost Saving')
+        
+        totalCostDecrease = common.Calculator.negate(
+            value=totalCostSaving,
             name='Total Resiliency Decrease Cost')
         
-        step.setCredits(credits=construction.ConstantModifier(value=totalCost))
+        step.setCredits(credits=construction.ConstantModifier(
+            value=totalCostDecrease))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Hits,

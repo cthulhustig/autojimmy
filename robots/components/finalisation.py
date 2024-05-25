@@ -5,6 +5,16 @@ import robots
 import traveller
 import typing
 
+# TODO: Create a cost discount finalisation stage that can be used
+# to apply a % total cost reduction. Logically it should occur after
+# slot removal and before the main finalisation stage, however, this
+# will require the additional costs for synthetic robots that is added
+# in finalisation to be be moved out of the main finalisation stage
+# and into it's own stage that is before the discount stage. The
+# synthetics cost stage would need to be one of those stages that can
+# be none if the there are no compatible components but must select a
+# value if there are
+
 # This is based on the min manipulator size for different mounts (p61)
 def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[traveller.WeaponSize]:
     if manipulatorSize >= 7:
@@ -755,16 +765,23 @@ class Finalisation(robots.RobotComponentInterface):
             return # No max so nothing to do
         assert(isinstance(maxSlots, common.ScalarCalculation))
         usedSlots = context.usedSlots(sequence=sequence)
-        if usedSlots.value() <= maxSlots.value():
-            # Nothing to do, the note only applies the used slots greater
-            # than the max slots
+        if usedSlots.value() == maxSlots.value():
+            # Nothing to do, all available slots used
             return
         
-        note = f'WARNING: {usedSlots.value()} slots have been used but the max allowed is {maxSlots.value()}'
         step = robots.RobotStep(
             name='Slots',
-            type='Usage',
-            notes=[note])
+            type='Usage')
+        
+        if usedSlots.value() < maxSlots.value():
+            step.addFactor(factor=construction.StringFactor(
+                string=f'Unused Slots = {maxSlots.value() - usedSlots.value()}'))
+        else:
+            step.addNote(
+                note='WARNING: {use} slots have been used but the max allowed is {max}'.format(
+                    used=usedSlots.value(),
+                    max=maxSlots.value()))
+
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -787,18 +804,24 @@ class Finalisation(robots.RobotComponentInterface):
             return # No max so nothing to do
         assert(isinstance(maxBandwidth, common.ScalarCalculation))
         usedBandwidth = context.usedBandwidth(sequence=sequence)
-        if usedBandwidth.value() <= maxBandwidth.value():
-            # Nothing to do, the note only applies the used slots greater
-            # than the max slots
+        if usedBandwidth.value() == maxBandwidth.value():
+            # Nothing to do, all available bandwidth used
             return
         
-        # NOTE: The max slots can be a float as some components add/remove a
-        # percentage of the slots (e.g. None locomotion adds 25%)        
-        note = f'WARNING: {usedBandwidth.value()} bandwidth has been used but the max allowed is {math.floor(maxBandwidth.value())}'
         step = robots.RobotStep(
             name='Bandwidth',
-            type='Usage',
-            notes=[note])
+            type='Usage')
+
+        if usedBandwidth.value() < maxBandwidth.value():
+            step.addFactor(factor=construction.StringFactor(
+                string=f'Unused Slots = {maxBandwidth.value() - usedBandwidth.value()}'))
+        else:
+            # NOTE: The max slots can be a float as some components add/remove a
+            # percentage of the slots (e.g. None locomotion adds 25%)        
+            step.addNote('WARNING: {used} bandwidth has been used but the max allowed is {max}'.format(
+                used=usedBandwidth.value(),
+                max=math.floor(maxBandwidth.value())))
+
         context.applyStep(
             sequence=sequence,
             step=step)

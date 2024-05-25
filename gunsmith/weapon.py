@@ -309,13 +309,13 @@ class WeaponContext(construction.ConstructionContext):
 class Weapon(construction.ConstructableInterface):
     def __init__(
             self,
-            weaponName: str,
+            name: str,
             techLevel: int,
             rules: typing.Optional[typing.Iterable[gunsmith.RuleId]] = None,
             userNotes: typing.Optional[str] = None,
             weaponType: typing.Optional[gunsmith.WeaponType] = None, # Initial primary weapon type
             ) -> None:
-        self._weaponName = weaponName
+        self._name = name
         self._userNotes = userNotes if userNotes else ''
 
         # NOTE: It's important that the context is created at construction and
@@ -334,13 +334,13 @@ class Weapon(construction.ConstructableInterface):
                 regenerate=True) # Regenerate the weapon to initialise default components
 
     def name(self) -> typing.Optional[str]:
-        return self._weaponName
+        return self._name
 
     def setName(
             self,
             name: typing.Optional[str]
             ) -> None:
-        self._weaponName = name
+        self._name = name
 
     def techLevel(self) -> int:
         return self._constructionContext.techLevel()

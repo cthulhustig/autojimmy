@@ -47,15 +47,6 @@ def deserialiseRobot(
         raise RuntimeError('Robot data is missing the techLevel element')
     techLevel = int(techLevel)
 
-    if inPlace:
-        inPlace.setRobotName(name=robotName)
-        inPlace.setTechLevel(techLevel=techLevel, regenerate=True) # Only regenerate on last step
-        robot = inPlace
-    else:
-        robot = robots.Robot(
-            robotName=robotName,
-            techLevel=techLevel)
-        
     weaponSet = data.get('weaponSet')
     if weaponSet:
         try:
@@ -63,8 +54,18 @@ def deserialiseRobot(
         except Exception:
             logging.warning(f'Ignoring unknown weapon set \'{weaponSet}\' when loading robot \'{robot.robotName()}\'')
     if not weaponSet:
-        weaponSet = traveller.StockWeaponSet.CSC2023
-    robot.setWeaponSet(weaponSet=weaponSet)
+        weaponSet = traveller.StockWeaponSet.CSC2023    
+
+    if inPlace:
+        inPlace.setRobotName(name=robotName)
+        inPlace.setTechLevel(techLevel=techLevel, regenerate=True) # Only regenerate on last step
+        inPlace.setWeaponSet(weaponSet=weaponSet)
+        robot = inPlace
+    else:
+        robot = robots.Robot(
+            name=robotName,
+            techLevel=techLevel,
+            weaponSet=weaponSet)
 
     components = data.get('components')
     if components:
@@ -79,10 +80,10 @@ def deserialiseRobot(
     return robot
 
 def writeRobot(
-        weapon: robots.Robot,
+        robot: robots.Robot,
         filePath: str
         ) -> None:
-    data = serialiseRobot(weapon=weapon)
+    data = serialiseRobot(robot=robot)
     with open(filePath, 'w', encoding='UTF8') as file:
         json.dump(data, file, indent=4)
 
