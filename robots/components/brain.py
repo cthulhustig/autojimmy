@@ -5,6 +5,9 @@ import robots
 import typing
 
 class Brain(robots.RobotComponentInterface):
+    # TODO: Am i handling the extra storage capacity that allows more skills?
+    # TODO: Need a note that makes it clear what level of checks the brain allows to be made (i.e. Advanced
+    # only allows up to target number 10)
     class _BrainType(enum.Enum):
         Primitive = 'Primitive'
         Basic = 'Basic'

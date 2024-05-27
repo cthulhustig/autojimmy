@@ -778,7 +778,7 @@ class Finalisation(robots.RobotComponentInterface):
                 string=f'Unused Slots = {maxSlots.value() - usedSlots.value()}'))
         else:
             step.addNote(
-                note='WARNING: {use} slots have been used but the max allowed is {max}'.format(
+                note='WARNING: {used} slots have been used but the max allowed is {max}'.format(
                     used=usedSlots.value(),
                     max=maxSlots.value()))
 

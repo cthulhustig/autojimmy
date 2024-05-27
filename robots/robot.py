@@ -135,16 +135,10 @@ class Robot(construction.ConstructableInterface):
             sequenceState=sequenceState,
             regenerate=True)
         
-    # TODO: Having constructableName _and_ robotName is
-    # horrible. Rename constructableName to name and get rid of
-    # robotName (same for Weapon)
-    def name(self) -> typing.Optional[str]:
+    def name(self) -> str:
         return self._name
     
-    def setName(
-            self,
-            name: typing.Optional[str]
-            ) -> None:
+    def setName(self, name: str) -> None:
         self._name = name    
 
     def robotName(self) -> typing.Optional[str]:
@@ -689,7 +683,9 @@ class Robot(construction.ConstructableInterface):
         # to the AllSlotRemoval component but still allow the user to specify
         # None to not have any slots removed
         # TODO: Changes to this stage aren't being saved as Finalisation is an
-        # 'internal' stage so doesn't get saved
+        # 'internal' stage so doesn't get saved.
+        # - IMPORTANT: When I fix this I need to make sure I update any of the
+        #   example robots that should have Unused Slot Removal disabled
         stages.append(construction.ConstructionStage(
             name='Unused Slot Removal',
             sequence=self._sequence,

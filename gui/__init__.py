@@ -75,8 +75,8 @@ from .trader.simulatorwindow import *
 from .trader.customsectordialog import *
 from .construction.stagegroupwidget import *
 from .construction.manifesttable import *
-from .construction.constructablestorelist import *
 from .construction.constructableselectdialog import *
+from .construction.constructablemanagementwidget import *
 from .gunsmith.weaponmalfunctiongraph import *
 from .gunsmith.weaponconfigwidget import *
 from .gunsmith.weaponmanifesttable import *

@@ -13,7 +13,7 @@ _WelcomeMessage = """
 TODO
 """.format(name=app.AppName)
 
-class _RobotStoreList(gui.ConstructableStoreList):
+class _RobotManagementWidget(gui.ConstructableManagementWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponSet = traveller.StockWeaponSet.CSC2023
 
@@ -32,8 +32,8 @@ class _RobotStoreList(gui.ConstructableStoreList):
             ) -> construction.ConstructableInterface:
         return robots.Robot(
             name=name,
-            techLevel=_RobotStoreList._DefaultTechLevel,
-            weaponSet=_RobotStoreList._DefaultWeaponSet)
+            techLevel=_RobotManagementWidget._DefaultTechLevel,
+            weaponSet=_RobotManagementWidget._DefaultWeaponSet)
     
     def importConstructable(self) -> None:
         # TODO: Implement import
@@ -99,10 +99,10 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='RobotStoreListState',
+            key='RobotManagementWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._robotSelector.restoreState(storedValue)
+            self._robotManagementWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -132,7 +132,7 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         self._settings.setValue('VerticalSplitterState', self._verticalSplitter.saveState())
         self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
-        self._settings.setValue('RobotStoreListState', self._robotSelector.saveState())
+        self._settings.setValue('RobotManagementWidgetState', self._robotManagementWidget.saveState())
         self._settings.setValue('CurrentRobotDisplayModeState', self._currentRobotDisplayModeTabView.saveState())
         self._settings.setValue('ConfigurationState', self._configurationWidget.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
@@ -142,24 +142,24 @@ class RobotBuilderWindow(gui.WindowWidget):
         super().saveSettings()
 
     def closeEvent(self, e: QtGui.QCloseEvent):
-        if not self._promptSaveModified():
+        if not self._robotManagementWidget.promptSaveModified(revertUnsaved=True):
             e.ignore()
             return # User cancelled so don't close the window
 
         return super().closeEvent(e)
 
     def _setupRobotListControls(self) -> None:
-        self._robotSelector = _RobotStoreList()
-        self._robotSelector.currentChanged.connect(self._selectedRobotChanged)
+        self._robotManagementWidget = _RobotManagementWidget()
+        self._robotManagementWidget.currentChanged.connect(self._selectedRobotChanged)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._robotSelector)
+        layout.addWidget(self._robotManagementWidget)
 
         self._robotsGroupBox = QtWidgets.QGroupBox('Robots')
         self._robotsGroupBox.setLayout(layout)
 
     def _setupCurrentRobotControls(self) -> None:
-        robot = self._robotSelector.current()
+        robot = self._robotManagementWidget.current()
         assert(isinstance(robot, robots.Robot))
 
         self._configurationWidget = gui.RobotConfigWidget(robot=robot)
@@ -214,7 +214,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._updateResults()
 
     def _robotModified(self, value: int) -> None:
-        self._robotSelector.markCurrentModified()
+        self._robotManagementWidget.markCurrentModified()
         self._updateResults()
 
     def _updateResults(self) -> None:
@@ -262,12 +262,12 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._manifestTable.setManifest(manifest=robot.manifest())
 
     def _selectedRobotChanged(self) -> None:
-        robot = self._robotSelector.current()
+        robot = self._robotManagementWidget.current()
         isRobot = isinstance(robot, robots.Robot)
 
         if isRobot:
-            isUserSection = self._robotSelector.currentSection() == \
-                gui.ConstructableStoreList.Section.UserSection
+            isReadOnly = self._robotManagementWidget.isReadOnly(
+                constructable=robot)
 
             # Block signals from configuration widget while configuration widget
             # is updated as the generated change notification would cause the
@@ -279,78 +279,18 @@ class RobotBuilderWindow(gui.WindowWidget):
             with gui.SignalBlocker(widget=self._userNotesTextEdit):
                 # Use setPLainText to reset undo/redo history
                 self._userNotesTextEdit.setPlainText(robot.userNotes())
-                self._userNotesTextEdit.setReadOnly(not isUserSection)
+                self._userNotesTextEdit.setReadOnly(isReadOnly)
 
         self._currentRobotDisplayModeTabView.setHidden(not isRobot)
 
         self._updateResults()
 
     def _userNotesChanged(self) -> None:
-        robot = self._robotSelector.current()
+        robot = self._robotManagementWidget.current()
         if not isinstance(robot, robots.Robot):
             return
         robot.setUserNotes(notes=self._userNotesTextEdit.toPlainText())
-        self._robotSelector.markCurrentModified()
-
-    def _promptSaveModified(self) -> bool: # False if the user cancelled, otherwise True
-        modifiedRobots: typing.List[robots.Robot] = []
-        for robot in self._robotSelector.constructables():
-            if self._robotSelector.isModified(constructable=robot):
-                modifiedRobots.append(robot)
-        if not modifiedRobots:
-            return True # Nothing to do
-
-        if len(modifiedRobots) == 1:
-            robot = modifiedRobots[0]
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text=f'The Robot \'{robot.name()}\' has been modified, do you want to save it?',
-                buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
-                    QtWidgets.QMessageBox.StandardButton.No | \
-                    QtWidgets.QMessageBox.StandardButton.Cancel)
-            if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
-                return False # User cancelled
-
-            robotToSave = []
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                robotToSave.append(robot)
-        else:
-            dlg = gui.ConstructableSelectDialog(
-                parent=self,
-                title='Unsaved Robots',
-                text='Do you want to save these modified robots?',
-                constructables=modifiedRobots,
-                showYesNoCancel=True,
-                defaultState=QtCore.Qt.CheckState.Checked,
-                configSection='UnsavedRobotsDialog')
-            if dlg.exec() == QtWidgets.QDialog.DialogCode.Rejected:
-                return False # The use cancelled
-            robotToSave = dlg.selected()
-
-        for robot in robotToSave:
-            # TODO: This call goes nowhere
-            if not self._promptSaveRobot(robot=robot):
-                return False # The use cancelled
-
-        # Revert all weapons. Updating the list box and selected weapon when the
-        # window is being closed seems counter intuitive but, due to the way the
-        # app handles windows, this same window may be redisplayed if the user
-        # opens the Gunsmith again. We don't want them to see the modified
-        # weapons that they said not to save so best to reset everything
-        currentWeapon = self._robotSelector.current()
-        for robot in self._robotSelector.constructables():
-            if self._robotSelector.isModified(constructable=robot):
-                self._robotSelector.revert(constructable=robot)
-            if robot == currentWeapon:
-                # The current weapon was reverted so force an update of the
-                # configuration and results controls
-                self._selectedRobotChanged()
-
-        # Remove any unsaved weapons for the same reason the modified weapons
-        # were removed
-        self._robotSelector.removeUnsaved()
-
-        return True # The user didn't cancel
+        self._robotManagementWidget.markCurrentModified()
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

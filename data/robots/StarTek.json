@@ -1,0 +1,313 @@
+{
+    "name": "StarTek",
+    "techLevel": 14,
+    "weaponSet": "CSC2",
+    "components": [
+        {
+            "type": "Size5Chassis",
+            "options": []
+        },
+        {
+            "type": "GravPrimaryLocomotion",
+            "options": []
+        },
+        {
+            "type": "IncreaseArmour",
+            "options": [
+                {
+                    "id": "ArmourPoints",
+                    "value": 6
+                }
+            ]
+        },
+        {
+            "type": "IncreaseEndurance",
+            "options": [
+                {
+                    "id": "ImprovedComponents",
+                    "value": true
+                },
+                {
+                    "id": "PowerPacks",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "NoSpeedModification",
+            "options": []
+        },
+        {
+            "type": "WalkerSecondaryLocomotion",
+            "options": [
+                {
+                    "id": "LegCount",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 5
+                },
+                {
+                    "id": "Strength",
+                    "value": 12
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 8
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 5
+                },
+                {
+                    "id": "Strength",
+                    "value": 12
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 8
+                }
+            ]
+        },
+        {
+            "type": "AdditionalManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 3
+                },
+                {
+                    "id": "Strength",
+                    "value": 5
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 12
+                }
+            ]
+        },
+        {
+            "type": "PRISSensorDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "VoderSpeakerDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Standard"
+                }
+            ]
+        },
+        {
+            "type": "AuditorySensorDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Standard"
+                }
+            ]
+        },
+        {
+            "type": "WirelessDataLinkDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "TransceiverDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Improved5km"
+                }
+            ]
+        },
+        {
+            "type": "VacuumEnvironmentProtectionSlotOption",
+            "options": []
+        },
+        {
+            "type": "RadiationEnvironmentProtectionSlotOption",
+            "options": [
+                {
+                    "id": "Levels",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "MedkitSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "StarshipEngineeringToolkitSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Advanced"
+                }
+            ]
+        },
+        {
+            "type": "ManipulatorMountedWeapon",
+            "options": [
+                {
+                    "id": "Manipulator",
+                    "value": "Additional Manipulator #1"
+                },
+                {
+                    "id": "WeaponCategory",
+                    "value": "EnergyPistol"
+                },
+                {
+                    "id": "Weapon",
+                    "value": "Stunner - TL 12"
+                },
+                {
+                    "id": "LinkedCount",
+                    "value": null
+                },
+                {
+                    "id": "FireControl",
+                    "value": null
+                }
+            ]
+        },
+        {
+            "type": "VeryAdvancedTL14Brain",
+            "options": [
+                {
+                    "id": "Hardened",
+                    "value": false
+                },
+                {
+                    "id": "BandwidthUpgrade",
+                    "value": "VeryAdvancedPlus6"
+                },
+                {
+                    "id": "IntellectUpgrade",
+                    "value": "IntelligencePlus1"
+                }
+            ]
+        },
+        {
+            "type": "ElectronicsSkill",
+            "options": [
+                {
+                    "id": "CommsLevel",
+                    "value": 1
+                },
+                {
+                    "id": "ComputersLevel",
+                    "value": 1
+                },
+                {
+                    "id": "RemoteOpsLevel",
+                    "value": 1
+                },
+                {
+                    "id": "SensorsLevel",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "EngineerSkill",
+            "options": [
+                {
+                    "id": "JDriveLevel",
+                    "value": 1
+                },
+                {
+                    "id": "LifeSupportLevel",
+                    "value": 1
+                },
+                {
+                    "id": "MDriveLevel",
+                    "value": 1
+                },
+                {
+                    "id": "PowerPlantLevel",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "MechanicSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "AthleticsSkill",
+            "options": [
+                {
+                    "id": "DexterityLevel",
+                    "value": null
+                },
+                {
+                    "id": "EnduranceLevel",
+                    "value": null
+                },
+                {
+                    "id": "StrengthLevel",
+                    "value": null
+                }
+            ]
+        },
+        {
+            "type": "MedicSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "ExplosivesSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "GunCombatSkill",
+            "options": [
+                {
+                    "id": "ArchaicLevel",
+                    "value": null
+                },
+                {
+                    "id": "EnergyLevel",
+                    "value": null
+                },
+                {
+                    "id": "SlugLevel",
+                    "value": null
+                }
+            ]
+        }
+    ],
+    "notes": "\"\""
+}

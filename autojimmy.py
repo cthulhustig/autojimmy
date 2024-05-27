@@ -305,6 +305,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._gunsmithButton = QtWidgets.QPushButton('Gunsmith...', self)
         self._gunsmithButton.clicked.connect(gui.WindowManager.instance().showGunsmithWindow)
 
+        self._robotBuilderButton = QtWidgets.QPushButton('Robot Builder...', self)
+        self._robotBuilderButton.clicked.connect(gui.WindowManager.instance().showRobotBuilderWindow)
+
         generalLayout = QtWidgets.QVBoxLayout()
         generalLayout.addWidget(self._compareWorldsButton)
         generalLayout.addWidget(self._searchWorldsButton)
@@ -313,6 +316,7 @@ class MainWindow(QtWidgets.QMainWindow):
         generalLayout.addWidget(self._multiWorldTradeOptionsButton)
         generalLayout.addWidget(self._simulatorButton)
         generalLayout.addWidget(self._gunsmithButton)
+        generalLayout.addWidget(self._robotBuilderButton)
         generalGroupBox = QtWidgets.QGroupBox('General Tools')
         generalGroupBox.setLayout(generalLayout)
 

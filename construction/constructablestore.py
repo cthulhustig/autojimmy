@@ -210,7 +210,7 @@ class ConstructableStore(object):
             newConstructable = copy.deepcopy(constructable)
             newConstructable.setName(name=newConstructableName)
             self._constructableMap[newConstructable] = _ConstructableMetadata(
-                filePath=None, # Copied constructables hasn't been saved yet
+                filePath=None, # Copied constructables haven't been saved yet
                 readOnly=False) # Copied constructables are writable even when copied from read only constructables
 
             return newConstructable

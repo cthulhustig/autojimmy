@@ -230,7 +230,7 @@ class _ExportProgressDialog(gui.DialogEx):
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
-class _WeaponStoreList(gui.ConstructableStoreList):
+class _WeaponManagementWidget(gui.ConstructableManagementWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponType = gunsmith.WeaponType.ConventionalWeapon
 
@@ -250,8 +250,8 @@ class _WeaponStoreList(gui.ConstructableStoreList):
             ) -> construction.ConstructableInterface:
         return gunsmith.Weapon(
             name=name,
-            techLevel=_WeaponStoreList._DefaultTechLevel,
-            weaponType=_WeaponStoreList._DefaultWeaponType)
+            techLevel=_WeaponManagementWidget._DefaultTechLevel,
+            weaponType=_WeaponManagementWidget._DefaultWeaponType)
     
     def importConstructable(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -275,7 +275,7 @@ class _WeaponStoreList(gui.ConstructableStoreList):
             return
 
         weaponName = weapon.name()
-        while self.isNameInUse(constructableName=weaponName):
+        while self._constructableStore.exists(name=weaponName):
             weaponName, result = gui.InputDialogEx.getText(
                 parent=self,
                 title='Weapon Name',
@@ -288,10 +288,12 @@ class _WeaponStoreList(gui.ConstructableStoreList):
 
         try:
             # No need to update buttons or results as import will trigger a selection change
-            self.add(
+            self._internalAdd(
                 constructable=weapon,
+                unnamed=False,
+                writeToDisk=True,
                 makeCurrent=True,
-                writeToDisk=True)
+                sortList=True)
         except Exception as ex:
             message = 'Failed to import weapon'
             logging.error(message, exc_info=ex)
@@ -374,6 +376,7 @@ class _WeaponStoreList(gui.ConstructableStoreList):
             result: typing.Union[str, Exception]
             ) -> None:
         self._progressDlg.close()
+        self.setEnabled(True)
 
         if isinstance(result, Exception):
             message = f'Failed to export weapon to {filePath}'
@@ -443,10 +446,10 @@ class GunsmithWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='WeaponStoreListState',
+            key='WeaponManagementWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._weaponSelector.restoreState(storedValue)
+            self._weaponManagementWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -483,7 +486,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         self._settings.setValue('VerticalSplitterState', self._verticalSplitter.saveState())
         self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
-        self._settings.setValue('WeaponStoreListState', self._weaponSelector.saveState())
+        self._settings.setValue('WeaponManagementWidgetState', self._weaponManagementWidget.saveState())
         self._settings.setValue('CurrentWeaponDisplayModeState', self._currentWeaponDisplayModeTabView.saveState())
         self._settings.setValue('WeaponConfigurationState', self._configurationWidget.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
@@ -494,24 +497,24 @@ class GunsmithWindow(gui.WindowWidget):
         super().saveSettings()
 
     def closeEvent(self, e: QtGui.QCloseEvent):
-        if not self._promptSaveModified():
+        if not self._weaponManagementWidget.promptSaveModified(revertUnsaved=True):
             e.ignore()
             return # User cancelled so don't close the window
 
         return super().closeEvent(e)
 
     def _setupWeaponListControls(self) -> None:
-        self._weaponSelector = _WeaponStoreList()
-        self._weaponSelector.currentChanged.connect(self._selectedWeaponChanged)
+        self._weaponManagementWidget = _WeaponManagementWidget()
+        self._weaponManagementWidget.currentChanged.connect(self._selectedWeaponChanged)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._weaponSelector)
+        layout.addWidget(self._weaponManagementWidget)
 
         self._weaponsGroupBox = QtWidgets.QGroupBox('Weapons')
         self._weaponsGroupBox.setLayout(layout)
 
     def _setupCurrentWeaponControls(self) -> None:
-        weapon = self._weaponSelector.current()
+        weapon = self._weaponManagementWidget.current()
         assert(isinstance(weapon, gunsmith.Weapon))
 
         self._configurationWidget = gui.WeaponConfigWidget(weapon=weapon)
@@ -569,7 +572,7 @@ class GunsmithWindow(gui.WindowWidget):
         self._updateResults()
 
     def _weaponModified(self, value: int) -> None:
-        self._weaponSelector.markCurrentModified()
+        self._weaponManagementWidget.markCurrentModified()
         self._updateResults()
 
     def _updateResults(self) -> None:
@@ -578,12 +581,12 @@ class GunsmithWindow(gui.WindowWidget):
         self._weaponInfoWidget.setWeapon(weapon=weapon)
 
     def _selectedWeaponChanged(self) -> None:
-        weapon = self._weaponSelector.current()
+        weapon = self._weaponManagementWidget.current()
         isWeapon = isinstance(weapon, gunsmith.Weapon)
 
         if isWeapon:
-            isUserSection = self._weaponSelector.currentSection() == \
-                gui.ConstructableStoreList.Section.UserSection
+            isReadOnly = self._weaponManagementWidget.isReadOnly(
+                constructable=weapon)
 
             # Block signals from configuration widget while configuration widget
             # is updated as the generated change notification would cause the
@@ -595,78 +598,18 @@ class GunsmithWindow(gui.WindowWidget):
             with gui.SignalBlocker(widget=self._userNotesTextEdit):
                 # Use setPLainText to reset undo/redo history
                 self._userNotesTextEdit.setPlainText(weapon.userNotes())
-                self._userNotesTextEdit.setReadOnly(not isUserSection)
+                self._userNotesTextEdit.setReadOnly(isReadOnly)
 
         self._currentWeaponDisplayModeTabView.setHidden(not isWeapon)
 
         self._updateResults()
 
     def _userNotesChanged(self) -> None:
-        weapon = self._weaponSelector.current()
+        weapon = self._weaponManagementWidget.current()
         if not isinstance(weapon, gunsmith.Weapon):
             return
         weapon.setUserNotes(notes=self._userNotesTextEdit.toPlainText())
-        self._weaponSelector.markCurrentModified()
-
-    def _promptSaveModified(self) -> bool: # False if the user cancelled, otherwise True
-        modifiedWeapons: typing.List[gunsmith.Weapon] = []
-        for weapon in self._weaponSelector.constructables():
-            if self._weaponSelector.isModified(constructable=weapon):
-                modifiedWeapons.append(weapon)
-        if not modifiedWeapons:
-            return True # Nothing to do
-
-        if len(modifiedWeapons) == 1:
-            weapon = modifiedWeapons[0]
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text=f'The weapon \'{weapon.name()}\' has been modified, do you want to save it?',
-                buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
-                    QtWidgets.QMessageBox.StandardButton.No | \
-                    QtWidgets.QMessageBox.StandardButton.Cancel)
-            if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
-                return False # User cancelled
-
-            weaponToSave = []
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                weaponToSave.append(weapon)
-        else:
-            dlg = gui.ConstructableSelectDialog(
-                parent=self,
-                title='Unsaved Weapons',
-                text='Do you want to save these modified weapons?',
-                constructables=modifiedWeapons,
-                showYesNoCancel=True,
-                defaultState=QtCore.Qt.CheckState.Checked,
-                configSection='UnsavedWeaponsDialog')
-            if dlg.exec() == QtWidgets.QDialog.DialogCode.Rejected:
-                return False # The use cancelled
-            weaponToSave = dlg.selected()
-
-        for weapon in weaponToSave:
-            # TODO: This call goes nowhere
-            if not self._promptSaveWeapon(weapon=weapon):
-                return False # The use cancelled
-
-        # Revert all weapons. Updating the list box and selected weapon when the
-        # window is being closed seems counter intuitive but, due to the way the
-        # app handles windows, this same window may be redisplayed if the user
-        # opens the Gunsmith again. We don't want them to see the modified
-        # weapons that they said not to save so best to reset everything
-        currentWeapon = self._weaponSelector.current()
-        for weapon in self._weaponSelector.constructables():
-            if self._weaponSelector.isModified(constructable=weapon):
-                self._weaponSelector.revert(constructable=weapon)
-            if weapon == currentWeapon:
-                # The current weapon was reverted so force an update of the
-                # configuration and results controls
-                self._selectedWeaponChanged()
-
-        # Remove any unsaved weapons for the same reason the modified weapons
-        # were removed
-        self._weaponSelector.removeUnsaved()
-
-        return True # The user didn't cancel
+        self._weaponManagementWidget.markCurrentModified()
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

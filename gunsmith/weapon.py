@@ -333,13 +333,10 @@ class Weapon(construction.ConstructableInterface):
                 weaponType=weaponType,
                 regenerate=True) # Regenerate the weapon to initialise default components
 
-    def name(self) -> typing.Optional[str]:
+    def name(self) -> str:
         return self._name
 
-    def setName(
-            self,
-            name: typing.Optional[str]
-            ) -> None:
+    def setName(self, name: str ) -> None:
         self._name = name
 
     def techLevel(self) -> int:
