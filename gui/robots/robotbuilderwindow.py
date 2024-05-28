@@ -1,7 +1,5 @@
 import app
-import common
 import construction
-import enum
 import gui
 import robots
 import traveller
@@ -203,10 +201,14 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         self._infoWidget = gui.RobotInfoWidget()
 
+        scrollArea = QtWidgets.QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(self._infoWidget)        
+
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(self._manifestTable, 'Manifest')
-        self._resultsDisplayModeTabView.addTab(self._infoWidget, 'Attributes')
+        self._resultsDisplayModeTabView.addTab(scrollArea, 'Attributes')
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._resultsDisplayModeTabView)

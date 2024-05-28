@@ -960,8 +960,10 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         if not manipulator:
             return False
 
-        minSize = _ManipulatorMountedWeaponImpl._MinManipulatorSizeData[mountSize] + \
-            _ManipulatorWeaponImpl._AutoloaderMinManipulatorSizeModifier.value()
+        minSize = _ManipulatorMountedWeaponImpl._MinManipulatorSizeData[mountSize]
+        if not minSize:
+            return False # Vehicle weapons don't support autoloading
+        minSize += _ManipulatorWeaponImpl._AutoloaderMinManipulatorSizeModifier.value()
         return manipulator.size() >= minSize
     
 class _ServoMountedWeaponImpl(_WeaponImpl):

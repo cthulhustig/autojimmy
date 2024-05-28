@@ -6,7 +6,7 @@ import gui
 import gunsmith
 import logging
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class _CalculationLineEdit(gui.ContentSizedLineEdit):
     def __init__(
@@ -41,7 +41,8 @@ class _CalculationLineEdit(gui.ContentSizedLineEdit):
 
     def _showCalculations(
             self,
-            calculations: typing.Iterable[common.ScalarCalculation]):
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
         try:
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(
@@ -143,12 +144,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
         self._attributeLayout.addLayout(self._traitFormLayout)
         self._attributeLayout.addStretch(1)
 
-        self._notesTextEdit = gui.ContentSizedTextEdit()
-        self._notesTextEdit.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Preferred, # Width can vary
-            QtWidgets.QSizePolicy.Policy.Minimum) # Height fits to content
-        self._notesTextEdit.setLineWrapMode(QtWidgets.QTextEdit.LineWrapMode.WidgetWidth)
-        self._notesTextEdit.setReadOnly(True)
+        self._notesWidget = gui.NotesWidget()
 
         self._gunCombatSkillSpinBox = gui.SpinBoxEx()
         self._gunCombatSkillSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
@@ -170,7 +166,7 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             expanded=True)
         self._expanderWidget.addExpandingContent(
             label='Notes',
-            content=self._notesTextEdit,
+            content=self._notesWidget,
             expanded=True)
         self._expanderWidget.addExpandingContent(
             label='Malfunction Probabilities',
@@ -277,18 +273,12 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             content=self._attributeLayout,
             hidden=self._basicFormLayout.isEmpty() and self._reliabilityFormLayout.isEmpty() and self._traitFormLayout.isEmpty())
 
-        self._notesTextEdit.clear()
-        seenNotes = set()
-        for step in self._weapon.steps(sequence=self._sequence):
-            for note in step.notes():
-                note = f'{step.type()}: {step.name()} - {note}'
-                if note not in seenNotes:
-                    self._notesTextEdit.append(note)
-                    seenNotes.add(note)
+        self._notesWidget.setSteps(
+            self._weapon.steps(sequence=self._sequence))
 
         self._expanderWidget.setContentHidden(
-            content=self._notesTextEdit,
-            hidden=self._notesTextEdit.isEmpty())
+            content=self._notesWidget,
+            hidden=self._notesWidget.isEmpty())
 
         self._malfunctionGraph.setWeapon(
             weapon=self._weapon,
@@ -334,13 +324,13 @@ class WeaponInfoWidget(QtWidgets.QWidget):
         self._basicFormLayout.clear()
         self._reliabilityFormLayout.clear()
         self._traitFormLayout.clear()
-        self._notesTextEdit.clear()
+        self._notesWidget.clear()
 
         self._expanderWidget.setContentHidden(
             content=self._attributeLayout,
             hidden=True)
         self._expanderWidget.setContentHidden(
-            content=self._notesTextEdit,
+            content=self._notesWidget,
             hidden=True)
         self._expanderWidget.setContentHidden(
             content=self._malfunctionGraphLayout,

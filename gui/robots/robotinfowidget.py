@@ -1,4 +1,3 @@
-import app
 import construction
 import common
 import enum
@@ -6,7 +5,7 @@ import gui
 import logging
 import robots
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class _CalculationLineEdit(gui.ContentSizedLineEdit):
     def __init__(
@@ -41,7 +40,8 @@ class _CalculationLineEdit(gui.ContentSizedLineEdit):
 
     def _showCalculations(
             self,
-            calculations: typing.Iterable[common.ScalarCalculation]):
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
         try:
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(
@@ -95,6 +95,9 @@ class _AttributeLineEdit(_CalculationLineEdit):
 
 class RobotInfoWidget(QtWidgets.QWidget):
     # TODO: Need to add something to display skills and weapons
+    # TODO: Need to copy the new notes table to the gunsmith window (ideally reuse code)
+    # TODO: Need a way to copy notes text now that it's in a table
+    # - Need to support copy a single note and copy multiple/all notes
 
     _StateVersion = 'RobotInfoWidget_v1'
 
@@ -118,12 +121,7 @@ class RobotInfoWidget(QtWidgets.QWidget):
         self._attributeLayout.addLayout(self._traitFormLayout)
         self._attributeLayout.addStretch(1)
 
-        self._notesTextEdit = gui.ContentSizedTextEdit()
-        self._notesTextEdit.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Preferred, # Width can vary
-            QtWidgets.QSizePolicy.Policy.Minimum) # Height fits to content
-        self._notesTextEdit.setLineWrapMode(QtWidgets.QTextEdit.LineWrapMode.WidgetWidth)
-        self._notesTextEdit.setReadOnly(True)
+        self._notesWidget = gui.NotesWidget()
 
         self._expanderWidget = gui.ExpanderGroupWidgetEx()
         self._expanderWidget.setPersistExpanderStates(True)
@@ -133,7 +131,7 @@ class RobotInfoWidget(QtWidgets.QWidget):
             expanded=True)
         self._expanderWidget.addExpandingContent(
             label='Notes',
-            content=self._notesTextEdit,
+            content=self._notesWidget,
             expanded=True)
 
         widgetLayout = QtWidgets.QVBoxLayout()
@@ -195,18 +193,10 @@ class RobotInfoWidget(QtWidgets.QWidget):
             content=self._attributeLayout,
             hidden=self._basicFormLayout.isEmpty())
 
-        self._notesTextEdit.clear()
-        seenNotes = set()
-        for step in self._robot.steps():
-            for note in step.notes():
-                note = f'{step.type()}: {step.name()} - {note}'
-                if note not in seenNotes:
-                    self._notesTextEdit.append(note)
-                    seenNotes.add(note)
-
+        self._notesWidget.setSteps(self._robot.steps())
         self._expanderWidget.setContentHidden(
-            content=self._notesTextEdit,
-            hidden=self._notesTextEdit.isEmpty())
+            content=self._notesWidget,
+            hidden=self._notesWidget.isEmpty())
 
     def _updateAttributeLayout(
             self,
@@ -242,12 +232,14 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
     def _resetControls(self) -> None:
         self._basicFormLayout.clear()
-        self._notesTextEdit.clear()
+        self._notesWidget.clear()
 
+        # Hide expanders (and the controls they contain). They will be
+        # shown again if/when they have something to display
         self._expanderWidget.setContentHidden(
             content=self._attributeLayout,
             hidden=True)
         self._expanderWidget.setContentHidden(
-            content=self._notesTextEdit,
-            hidden=True)
+            content=self._notesWidget,
+            hidden=True)        
 

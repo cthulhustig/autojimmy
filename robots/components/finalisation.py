@@ -272,8 +272,8 @@ class Finalisation(robots.RobotComponentInterface):
     
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
 
-    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorDexterityNote = 'Attacks rolls for weapons mounted to or held by a manipulator, receive the DEX/STR characteristic DM for the manipulator in the same way as players receive a DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatNonManipulatorDexterityNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator, do not receive a DEX/STR characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
     _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
     _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
     _CombatWeaponSizeExamples = {
