@@ -132,10 +132,6 @@ class Chassis(robots.RobotComponentInterface):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Hits,
             value=self._baseHits))
-        
-        step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.AttackRollDM,
-            value=self._attackDM))
 
         if self._attackDM.value() < 0:
             step.addFactor(factor=construction.SetAttributeFactor(

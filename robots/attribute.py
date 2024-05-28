@@ -21,9 +21,6 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     BaseSlots = 'Base Slots'
     BaseProtection = 'Base Protection' # NOTE: This is an internal attribute
     MaxSlots = 'Max Slots'
-    # NOTE: The AttackRollDM is the modifier attackers get when attacking the
-    # robot (due to its size)
-    AttackRollDM = 'Attack Roll DM'
     Hits = 'Hits'
     Endurance = 'Endurance' # In hours
     Agility = 'Agility'
@@ -124,6 +121,20 @@ InternalAttributeIds = [
     RobotAttributeId.ZeroBandwidthSkillCount
 ]
 
+StandardAttributeIds = [
+    RobotAttributeId.Size,
+    RobotAttributeId.Hits,
+    RobotAttributeId.Endurance,
+    RobotAttributeId.Agility,
+    RobotAttributeId.Speed,
+    RobotAttributeId.Protection,
+    RobotAttributeId.Rads,
+    RobotAttributeId.VehicleSpeed,
+    RobotAttributeId.VehicleEndurance,
+    RobotAttributeId.Autopilot,
+    RobotAttributeId.Intelligence,
+]
+
 TraitAttributesIds = [
     RobotAttributeId.ACV,
     RobotAttributeId.Alarm,
@@ -135,6 +146,7 @@ TraitAttributesIds = [
     RobotAttributeId.IrVision,
     RobotAttributeId.IrUvVision,
     RobotAttributeId.Seafarer,
+    RobotAttributeId.Armour,
     RobotAttributeId.Large,
     RobotAttributeId.Small,
     RobotAttributeId.Stealth,

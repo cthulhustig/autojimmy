@@ -201,9 +201,12 @@ class RobotBuilderWindow(gui.WindowWidget):
     def _setupResultsControls(self) -> None:
         self._manifestTable = gui.RobotManifestTable()
 
+        self._infoWidget = gui.RobotInfoWidget()
+
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._resultsDisplayModeTabView.addTab(self._manifestTable, 'Manifest')
+        self._resultsDisplayModeTabView.addTab(self._infoWidget, 'Attributes')
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self._resultsDisplayModeTabView)
@@ -219,47 +222,8 @@ class RobotBuilderWindow(gui.WindowWidget):
 
     def _updateResults(self) -> None:
         robot = self._configurationWidget.robot()
-
-        print('----------------------------------------')
-        for attributeId in robots.RobotAttributeId:
-            attribute = robot.attribute(attributeId=attributeId)
-            if not attribute:
-                continue
-            value=attribute.value()
-            if isinstance(value, common.ScalarCalculation):
-                print(f'{attributeId.value}={value.value()}')
-            elif isinstance(value, common.DiceRoll):
-                print(f'{attributeId.value}={value}')
-            elif isinstance(value, enum.Enum):
-                print(f'{attributeId.value}={value.value}')
-            else:
-                print(attributeId.value)
-
-        for skillDef in traveller.AllStandardSkills:
-            skill = robot.skill(skillDef=skillDef)
-            if not skill:
-                continue
-            specialities = skill.specialities()
-            if specialities:
-                for speciality in specialities:
-                    level = skill.level(speciality=speciality)
-                    string = skill.name(speciality=speciality)
-                    string += f' {level.value()}'
-                    print(string)
-            else:
-                level = skill.level()
-                print(f'{skill.name()} {level.value()}')
-
-
-        seenNotes = set()
-        for step in robot.steps():
-            for note in step.notes():
-                note = f'{step.type()}: {step.name()}: {note}'
-                if note not in seenNotes:
-                    print(note)
-                    seenNotes.add(note)
-
         self._manifestTable.setManifest(manifest=robot.manifest())
+        self._infoWidget.setRobot(robot=robot)
 
     def _selectedRobotChanged(self) -> None:
         robot = self._robotManagementWidget.current()
