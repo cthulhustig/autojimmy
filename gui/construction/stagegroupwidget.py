@@ -246,6 +246,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget = gui.ComboBoxEx()
                 widget.setEditable(option.isEditable())
                 widget.setCurrentText(option.value())
+                widget.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
                 widget.setSizePolicy(
                     # If the option is editable give the user as much space as possible
                     QtWidgets.QSizePolicy.Policy.Expanding if option.isEditable() else QtWidgets.QSizePolicy.Policy.Fixed,
