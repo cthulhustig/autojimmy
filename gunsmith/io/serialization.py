@@ -10,7 +10,7 @@ def serialiseComponents(
     sequenceComponents: typing.Dict[str, typing.List[gunsmith.WeaponComponentInterface]] = {}
     commonComponents: typing.List[gunsmith.WeaponComponentInterface] = []
     for stage in weapon.stages():
-        if stage.phase() in gunsmith.InternalConstructionPhases:
+        if stage.isInternal():
             continue # Don't write internal phases
 
         sequence = stage.sequence()

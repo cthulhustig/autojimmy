@@ -95,9 +95,6 @@ class _AttributeLineEdit(_CalculationLineEdit):
 
 class RobotInfoWidget(QtWidgets.QWidget):
     # TODO: Need to add something to display skills and weapons
-    # TODO: Need to copy the new notes table to the gunsmith window (ideally reuse code)
-    # TODO: Need a way to copy notes text now that it's in a table
-    # - Need to support copy a single note and copy multiple/all notes
 
     _StateVersion = 'RobotInfoWidget_v1'
 

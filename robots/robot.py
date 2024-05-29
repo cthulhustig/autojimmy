@@ -705,6 +705,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.Finalisation,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1)) 
+            maxComponents=1,
+            isInternal=True)) 
         
         return stages

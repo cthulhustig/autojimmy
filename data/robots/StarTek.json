@@ -307,6 +307,10 @@
                     "value": null
                 }
             ]
+        },
+        {
+            "type": "NoUnusedSlotRemoval",
+            "options": []
         }
     ],
     "notes": "\"\""

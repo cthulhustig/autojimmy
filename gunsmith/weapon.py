@@ -939,7 +939,8 @@ class Weapon(construction.ConstructableInterface):
             defaultType=gunsmith.InitialisationComponent,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1)]
+            maxComponents=1,
+            isInternal=True)]
 
     def _createReceiverStages(
             self,
@@ -1274,4 +1275,5 @@ class Weapon(construction.ConstructableInterface):
             baseType=gunsmith.Finalisation,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1)]
+            maxComponents=1,
+            isInternal=True)]

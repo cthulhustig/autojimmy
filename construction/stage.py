@@ -21,7 +21,8 @@ class ConstructionStage(object):
             # allows the stage to be empty if there are no compatible components
             # but causes construction to force there to be a minimum of one
             # component in the stage if there are any compatible components.
-            forceComponent: bool = False
+            forceComponent: bool = False,
+            isInternal: bool = False
             ) -> None:
         assert((minComponents == None) or (minComponents >= 0))
         assert((maxComponents == None) or (maxComponents > 0))
@@ -35,6 +36,7 @@ class ConstructionStage(object):
         self._minComponents = minComponents
         self._maxComponents = maxComponents
         self._forceComponent = forceComponent
+        self._isInternal = isInternal
         self._components: typing.List[construction.ComponentInterface] = []
 
     def name(self) -> str:
@@ -58,6 +60,9 @@ class ConstructionStage(object):
     
     def maxComponents(self) -> typing.Optional[int]:
         return self._maxComponents
+    
+    def isInternal(self) -> bool:
+        return self._isInternal
 
     def requirement(self) -> RequirementLevel:
         if self._minComponents != None and self._minComponents >= 1:

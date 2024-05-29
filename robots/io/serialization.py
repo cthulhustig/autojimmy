@@ -10,7 +10,7 @@ def serialiseComponents(
         ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
     components: typing.List[robots.RobotComponentInterface] = []
     for stage in robot.stages():
-        if stage.phase() in robots.InternalConstructionPhases:
+        if stage.isInternal():
             continue # Don't write internal phases
         components.extend(stage.components())
     return construction.serialiseComponentList(components=components)

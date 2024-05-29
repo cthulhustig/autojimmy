@@ -814,7 +814,7 @@ class Finalisation(robots.RobotComponentInterface):
 
         if usedBandwidth.value() < maxBandwidth.value():
             step.addFactor(factor=construction.StringFactor(
-                string=f'Unused Slots = {maxBandwidth.value() - usedBandwidth.value()}'))
+                string=f'Unused Bandwidth = {maxBandwidth.value() - usedBandwidth.value()}'))
         else:
             # NOTE: The max slots can be a float as some components add/remove a
             # percentage of the slots (e.g. None locomotion adds 25%)        

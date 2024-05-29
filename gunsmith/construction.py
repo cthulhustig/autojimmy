@@ -48,12 +48,6 @@ AncillaryConstructionPhases = [
     WeaponPhase.Munitions
 ]
 
-# Internal phases
-InternalConstructionPhases = [
-    WeaponPhase.Initialisation,
-    WeaponPhase.Finalisation,
-]
-
 # Phases that make up the base weapon. Conceptually these phases get the weapon to the
 # point that it's basically usable. Accessories, loading and munitions are not included.
 BaseWeaponConstructionPhases = [

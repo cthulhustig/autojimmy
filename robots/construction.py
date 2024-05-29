@@ -18,8 +18,3 @@ class RobotPhase(construction.ConstructionPhase):
     Brain = 'Brain'
     Skills = 'Skills'
     Finalisation = 'Finalisation'
-
-# Internal phases
-InternalConstructionPhases = [
-    RobotPhase.Finalisation,
-]
