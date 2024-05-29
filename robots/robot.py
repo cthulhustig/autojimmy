@@ -682,10 +682,6 @@ class Robot(construction.ConstructableInterface):
         # rather than being truly optional. This is needed to allow it to default
         # to the AllSlotRemoval component but still allow the user to specify
         # None to not have any slots removed
-        # TODO: Changes to this stage aren't being saved as Finalisation is an
-        # 'internal' stage so doesn't get saved.
-        # - IMPORTANT: When I fix this I need to make sure I update any of the
-        #   example robots that should have Unused Slot Removal disabled
         stages.append(construction.ConstructionStage(
             name='Unused Slot Removal',
             sequence=self._sequence,
