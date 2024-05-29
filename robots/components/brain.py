@@ -697,7 +697,7 @@ class BasicBrain(RobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Language, Computer/1, Security/0'])
+            notes=['Limited Language, Computer/1, Security/0. (p66)'])
                 
 class BasicTL8Brain(BasicBrain):
     """
@@ -752,7 +752,7 @@ class HunterKillerBrain(RobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Fried or Foe, Computer/1, Security/1'])
+            notes=['Limited Fried or Foe, Computer/1, Security/1. (p66)'])
                 
 class HunterKillerTL8Brain(HunterKillerBrain):
     """
@@ -826,8 +826,8 @@ class AdvancedBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=2,
-            notes=['Intelligent Interface, Computer/2, Expert/1, Security/1',
-                   'Can only attempt tasks up to Difficult (10+)'])
+            notes=['Intelligent Interface, Computer/2, Expert/1, Security/1. (p66)',
+                   'The robot can only attempt tasks up to Difficult (10+). (p65)'])
                 
 class AdvancedTL10Brain(AdvancedBrain):
     """
@@ -896,8 +896,8 @@ class VeryAdvancedBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=[f'Intellect Interface, Computer/{inherentBandwidth}, Expert/2, Security/2',
-                   'Can only attempt tasks up to Very Difficult (12+)'])
+            notes=[f'Intellect Interface, Computer/{inherentBandwidth}, Expert/2, Security/2. (p66)',
+                   'The robot can only attempt tasks up to Very Difficult (12+). (p65)'])
                 
 class VeryAdvancedTL12Brain(VeryAdvancedBrain):
     """
@@ -969,8 +969,8 @@ class SelfAwareBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=[f'Near sentient, Computer/{inherentBandwidth}, Expert/3, Security/3',
-                   'Can only attempt tasks up to Formidable (14+)'])
+            notes=[f'Near sentient, Computer/{inherentBandwidth}, Expert/3, Security/3. (p66)',
+                   'The robot can only attempt tasks up to Formidable (14+). (p65/66)'])
                 
 class SelfAwareTL15Brain(SelfAwareBrain):
     """
@@ -1191,7 +1191,7 @@ class BrainInAJarTL12Brain(BrainInAJarBrain):
             minTL=12,
             cost=1000000,
             slots=3,
-            notes=['INT 4+ Degradation Checks must be made monthly (p93)'])
+            notes=['INT 4+ Degradation Checks must be made monthly. (p93)'])
         
 class BrainInAJarTL14Brain(BrainInAJarBrain):
     """
@@ -1205,7 +1205,7 @@ class BrainInAJarTL14Brain(BrainInAJarBrain):
             minTL=14,
             cost=2000000,
             slots=2,
-            notes=['INT 5+ Degradation Checks must be made annual (p93)'])     
+            notes=['INT 5+ Degradation Checks must be made annually. (p93)'])     
 
 class BrainInAJarTL16Brain(BrainInAJarBrain):
     """
@@ -1219,4 +1219,4 @@ class BrainInAJarTL16Brain(BrainInAJarBrain):
             minTL=16,
             cost=5000000,
             slots=2,
-            notes=['INT 3+ Degradation Checks must be made annual (p93)'])               
+            notes=['INT 3+ Degradation Checks must be made annually. (p93)'])

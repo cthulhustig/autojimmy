@@ -2798,9 +2798,9 @@ class _RoboticDroneControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (50000, 1, 8, 3)
     }
 
-    _SkillRequirementNote = 'The controlling robot requires the Electronics (remote-ops) skill'
-    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the interface'
-    _MaxDronesNote = 'Interface can control at a maximum of {maxDrones} drones'
+    _SkillRequirementNote = 'The controlling robot requires the Electronics (remote-ops) skill. (p44)'
+    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the interface. (p44)'
+    _MaxDronesNote = 'Interface can control at a maximum of {maxDrones} drones. (p44)'
 
     def __init__(
             self,
@@ -3003,9 +3003,9 @@ class _SwarmControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (100000, 1, 4, 'Formidable (14+)', 3)
     }
 
-    _SkillRequirementNote = 'The robot requires the Electronics (remote-ops) skill to use the Swarm Controller'
-    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the controller'
-    _MaxDronesNote = 'Swarms are limited to {maxTasks} tasks with a maximum complexity of {maxComplexity}'
+    _SkillRequirementNote = 'The robot requires the Electronics (remote-ops) skill to use the Swarm Controller. (p45)'
+    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the controller. (p45)'
+    _MaxDronesNote = 'Swarms are limited to {maxTasks} tasks with a maximum complexity of {maxComplexity}. (p45)'
 
     def __init__(
             self,
@@ -3736,7 +3736,7 @@ class _MedkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             sequence=sequence)
         if medicalChamber:
             maxSkill += 1
-        step.addNote(f'Medic skill is limited to {maxSkill} when using Medikit')
+        step.addNote(f'Medic skill is limited to {maxSkill} when using the Medikit. (p48)')
         
         step.addNote(_MedkitSlotOptionImpl._ReplenishmentNote)      
 
@@ -6365,8 +6365,8 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (8000, 3, 3)
     }
 
-    _MaxSkillNote = 'Science ({science}) skill is limited to {max} when using the toolkit'
-    _NoScienceSpecifiedNote = 'WARNING: The science the toolkit is designed for has not been specified'
+    _MaxSkillNote = 'Science ({science}) skill is limited to {max} when using the Toolkit. (p59)'
+    _NoScienceSpecifiedNote = 'WARNING: The science the Toolkit is designed for has not been specified.'
 
     _PlanetologyMaxSkillIncrease = common.ScalarCalculation(
         value=1,

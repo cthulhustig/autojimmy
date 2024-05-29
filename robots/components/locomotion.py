@@ -215,7 +215,7 @@ class _LocomotionImpl(object):
             stats = f'Endurance {endurance.value()}'
             if self._baseAgility:
                 stats += f' and Agility {self._baseAgility.value()}'
-            step.addNote(note=f'When using {self._componentString} the robot has {stats}')            
+            step.addNote(note=f'When using {self._componentString} locomotion the robot has {stats}.')            
 
         if self._flagTrait:
             step.addFactor(factor=construction.SetAttributeFactor(
