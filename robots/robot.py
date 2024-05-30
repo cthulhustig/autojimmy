@@ -61,7 +61,18 @@ class RobotContext(construction.ConstructionContext):
         return self.phaseCost(
             sequence=sequence,
             phase=robots.RobotPhase.BaseChassis,
-            costId=robots.RobotCost.Credits)     
+            costId=robots.RobotCost.Credits)
+
+    def totalCredits(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        slotsUsed = self.multiPhaseCost(
+            sequence=sequence,
+            costId=robots.RobotCost.Credits)
+        return common.Calculator.equals(
+            value=slotsUsed,
+            name='Total Cost')         
     
     def usedSlots(
             self,
@@ -84,7 +95,7 @@ class RobotContext(construction.ConstructionContext):
         return common.Calculator.equals(
             value=slotsUsed,
             name='Total Bandwidth Used')
-
+    
     def multiPhaseCost(
             self,
             sequence: str,
@@ -104,7 +115,7 @@ class RobotContext(construction.ConstructionContext):
 
         return common.Calculator.sum(
             values=phaseCosts,
-            name=f'Total')
+            name=f'Total {costId.value} Cost')
     
 class Robot(construction.ConstructableInterface):
     def __init__(
@@ -691,6 +702,44 @@ class Robot(construction.ConstructableInterface):
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
+        
+        # NOTE: This should happen AFTER unused slots are removed. I think the
+        # google spreadsheet might be incorrect and is doing it the other way
+        # round. I'm basing this on the fact the Mongoose excel spreadsheet
+        # removes the slots first (so the saving from removing unused slots is
+        # effectively multiplied).        
+        stages.append(construction.ConstructionStage(
+            name='Synth Additional Costs',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.SynthAdditionalCosts,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1,
+            # Force a component to be selected if there is one. There should
+            # only be compatible components if the robot is a synth
+            forceComponent=True,
+            isInternal=True))
+        
+        stages.append(construction.ConstructionStage(
+            name='Cost Modification',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.CostModification,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))
+        
+        # NOTE: It's important that no other costs are added to the robot
+        # after this stage
+        stages.append(construction.ConstructionStage(
+            name='Cost Rounding',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.SignificantFigureCostRounding,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))           
 
         # NOTE: This is the final stage of construction it MUST be last,
         # including after other stages in the finalisation phase

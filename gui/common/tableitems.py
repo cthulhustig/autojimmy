@@ -10,16 +10,20 @@ class FormattedNumberTableWidgetItem(QtWidgets.QTableWidgetItem):
             alwaysIncludeSign: bool = False,
             decimalPlaces: int = 2, # Only applies for float values
             removeTrailingZeros: bool = True, # Only applies for float values,
+            prefix: str = '', # Prefix goes before number but after any sign
+            suffix: str = '',
             other: typing.Optional['FormattedNumberTableWidgetItem'] = None
             ) -> None:
         super().__init__(other)
         self.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter))
-        self.setValue(
+        self.setConfig(
             value=other._value if other else value,
             thousandsSeparator=other._thousandsSeparator if other else thousandsSeparator,
             alwaysIncludeSign=other._alwaysIncludeSign if other else alwaysIncludeSign,
             decimalPlaces=other._decimalPlaces if other else decimalPlaces,
-            removeTrailingZeros=other._removeTrailingZeros if other else removeTrailingZeros)
+            removeTrailingZeros=other._removeTrailingZeros if other else removeTrailingZeros,
+            prefix=other._prefix if other else prefix,
+            suffix=other._suffix if other else suffix)
 
     def value(self) -> None:
         return self._value
@@ -32,14 +36,10 @@ class FormattedNumberTableWidgetItem(QtWidgets.QTableWidgetItem):
             return self._value.value()
 
         return self._value
-
+    
     def setValue(
             self,
-            value: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
-            thousandsSeparator: bool = True,
-            alwaysIncludeSign: bool = False,
-            decimalPlaces: int = 2, # Only applies for float values
-            removeTrailingZeros: bool = True, # Only applies for float values
+            value: typing.Optional[typing.Union[int, float, common.ScalarCalculation]]
             ) -> None:
         numericValue = None
         if value != None:
@@ -50,21 +50,37 @@ class FormattedNumberTableWidgetItem(QtWidgets.QTableWidgetItem):
                 assert(isinstance(value, int) or isinstance(value, float))
                 numericValue = value
         self._value = value
+
+        stringValue = ''
+        if numericValue != None:
+            stringValue = common.formatNumber(
+                number=numericValue,
+                thousandsSeparator=self._thousandsSeparator,
+                alwaysIncludeSign=self._alwaysIncludeSign,
+                decimalPlaces=self._decimalPlaces,
+                removeTrailingZeros=self._removeTrailingZeros,
+                prefix=self._prefix,
+                suffix=self._suffix,
+                infinityString='∞')
+        self.setText(stringValue)             
+
+    def setConfig(
+            self,
+            value: typing.Optional[typing.Union[int, float, common.ScalarCalculation]],
+            thousandsSeparator: bool = True,
+            alwaysIncludeSign: bool = False,
+            decimalPlaces: int = 2, # Only applies for float values
+            removeTrailingZeros: bool = True, # Only applies for float values
+            prefix: str = '', # Prefix goes before number but after any sign
+            suffix: str = '',            
+            ) -> None:
         self._thousandsSeparator = thousandsSeparator
         self._alwaysIncludeSign = alwaysIncludeSign
         self._decimalPlaces = decimalPlaces
         self._removeTrailingZeros = removeTrailingZeros
-
-        stringValue = None
-        if numericValue != None:
-            stringValue = common.formatNumber(
-                number=numericValue,
-                thousandsSeparator=thousandsSeparator,
-                alwaysIncludeSign=alwaysIncludeSign,
-                decimalPlaces=decimalPlaces,
-                removeTrailingZeros=removeTrailingZeros,
-                infinityString='∞')
-        self.setText(stringValue)
+        self._prefix = prefix
+        self._suffix = suffix
+        self.setValue(value=value)
 
     def clone(self) -> 'FormattedNumberTableWidgetItem':
         return FormattedNumberTableWidgetItem(other=self)

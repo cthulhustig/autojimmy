@@ -556,6 +556,34 @@ class Calculator(object):
         def copy(self) -> 'Calculator.CeilFunction':
             return Calculator.CeilFunction(self._value.copy())
 
+    # https://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
+    class SignificantDigitsFunction(TwoParameterFunction):
+        def value(self) -> typing.Union[int, float]:
+            digits = self._rhs.value() - int(math.floor(math.log10(abs(self._lhs.value())))) - 1
+            return round(self._lhs.value(), digits)
+
+        def calculationString(
+                self,
+                outerBrackets: bool,
+                decimalPlaces: int = 2
+                ) -> str:
+            numberString = self._lhs.name(forCalculation=True)
+            if not numberString:
+                numberString = self._lhs.calculationString(
+                    outerBrackets=False,
+                    decimalPlaces=decimalPlaces)
+                
+            digitsString = self._rhs.name(forCalculation=True)
+            if not digitsString:
+                digitsString = self._rhs.calculationString(
+                    outerBrackets=False,
+                    decimalPlaces=decimalPlaces)
+
+            return f'SignificantDigits({numberString}, {digitsString})'
+
+        def copy(self) -> 'Calculator.SignificantDigitsFunction':
+            return Calculator.SignificantDigitsFunction(self._lhs.copy(), self._rhs.copy())        
+
     class MinFunction(TwoParameterFunction):
         def value(self) -> typing.Union[int, float]:
             return min(self._lhs.value(), self._rhs.value())
@@ -1209,6 +1237,49 @@ class Calculator(object):
             worstCase=Calculator.CeilFunction(value.worstCaseCalculation()),
             bestCase=Calculator.CeilFunction(value.bestCaseCalculation()),
             averageCase=Calculator.CeilFunction(value.averageCaseCalculation()),
+            name=name)
+    
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: ScalarCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> ScalarCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: RangeCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+    
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: RangeCalculation,
+        digits: RangeCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...    
+
+    @staticmethod
+    def significantDigits(
+            value: typing.Union[ScalarCalculation, RangeCalculation],
+            digits: typing.Union[ScalarCalculation, RangeCalculation],
+            name: typing.Optional[str] = None,
+            ) -> typing.Union[ScalarCalculation, RangeCalculation]:
+        if isinstance(value, ScalarCalculation) and isinstance(digits, ScalarCalculation):
+            return ScalarCalculation(
+                value=Calculator.SignificantDigitsFunction(value, digits),
+                name=name)
+        assert(isinstance(value, ScalarCalculation) or isinstance(value, RangeCalculation))
+        assert(isinstance(digits, ScalarCalculation) or isinstance(digits, RangeCalculation))
+
+        return RangeCalculation(
+            worstCase=Calculator.SignificantDigitsFunction(value.worstCaseCalculation(), digits.worstCaseCalculation()),
+            bestCase=Calculator.SignificantDigitsFunction(value.bestCaseCalculation(), digits.bestCaseCalculation()),
+            averageCase=Calculator.SignificantDigitsFunction(value.averageCaseCalculation(), digits.averageCaseCalculation()),
             name=name)
 
     @typing.overload

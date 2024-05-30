@@ -5,15 +5,16 @@ import robots
 import traveller
 import typing
 
-# TODO: Create a cost discount finalisation stage that can be used
-# to apply a % total cost reduction. Logically it should occur after
-# slot removal and before the main finalisation stage, however, this
-# will require the additional costs for synthetic robots that is added
-# in finalisation to be be moved out of the main finalisation stage
-# and into it's own stage that is before the discount stage. The
-# synthetics cost stage would need to be one of those stages that can
-# be none if the there are no compatible components but must select a
-# value if there are
+
+
+#   █████████  ████            █████       ███████████                                                           ████ 
+#  ███░░░░░███░░███           ░░███       ░░███░░░░░███                                                         ░░███ 
+# ░███    ░░░  ░███   ██████  ███████      ░███    ░███   ██████  █████████████    ██████  █████ █████  ██████   ░███ 
+# ░░█████████  ░███  ███░░███░░░███░       ░██████████   ███░░███░░███░░███░░███  ███░░███░░███ ░░███  ░░░░░███  ░███ 
+#  ░░░░░░░░███ ░███ ░███ ░███  ░███        ░███░░░░░███ ░███████  ░███ ░███ ░███ ░███ ░███ ░███  ░███   ███████  ░███ 
+#  ███    ░███ ░███ ░███ ░███  ░███ ███    ░███    ░███ ░███░░░   ░███ ░███ ░███ ░███ ░███ ░░███ ███   ███░░███  ░███ 
+# ░░█████████  █████░░██████   ░░█████     █████   █████░░██████  █████░███ █████░░██████   ░░█████   ░░████████ █████
+#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░     ░░░░░   ░░░░░  ░░░░░░  ░░░░░ ░░░ ░░░░░  ░░░░░░     ░░░░░     ░░░░░░░░ ░░░░░ 
 
 # This is based on the min manipulator size for different mounts (p61)
 def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[traveller.WeaponSize]:
@@ -195,6 +196,325 @@ class CustomSlotRemoval(ActualUnusedSlotRemoval):
             value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
             name='Specified Custom Slot Count')
     
+
+
+#   █████████                         █████    █████           █████████                    █████           
+#  ███░░░░░███                       ░░███    ░░███           ███░░░░░███                  ░░███            
+# ░███    ░░░  █████ ████ ████████   ███████   ░███████      ███     ░░░   ██████   █████  ███████    █████ 
+# ░░█████████ ░░███ ░███ ░░███░░███ ░░░███░    ░███░░███    ░███          ███░░███ ███░░  ░░░███░    ███░░  
+#  ░░░░░░░░███ ░███ ░███  ░███ ░███   ░███     ░███ ░███    ░███         ░███ ░███░░█████   ░███    ░░█████ 
+#  ███    ░███ ░███ ░███  ░███ ░███   ░███ ███ ░███ ░███    ░░███     ███░███ ░███ ░░░░███  ░███ ███ ░░░░███
+# ░░█████████  ░░███████  ████ █████  ░░█████  ████ █████    ░░█████████ ░░██████  ██████   ░░█████  ██████ 
+#  ░░░░░░░░░    ░░░░░███ ░░░░ ░░░░░    ░░░░░  ░░░░ ░░░░░      ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░  ░░░░░░  
+#               ███ ░███                                                                                    
+#              ░░██████                                                                                     
+#               ░░░░░░  
+
+class SynthAdditionalCosts(robots.RobotComponentInterface):
+    # NOTE: This multiplier is applied to all costs except the cost for skills.
+    # This includes the cost of the Synthetic component. (p86 & p88)
+    _SyntheticsAdditionalCostMultiplier = common.ScalarCalculation(
+        value=3,
+        name='Synthetic Robot Additional Cost Multiplier')
+    _SyntheticsAdditionalCostPhases = [phase for phase in robots.RobotPhase if phase != robots.RobotPhase.Skills]
+
+    def componentString(self) -> str:
+        return 'Synth Additional Costs'
+
+    def typeString(self) -> str:
+        return 'Synth Additional Costs'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        return context.hasComponent(
+            componentType=robots.Synthetic,
+            sequence=sequence)
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return []
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        pass
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:   
+        synthetic = context.findFirstComponent(
+            componentType=robots.Synthetic,
+            sequence=sequence)
+        if not synthetic:
+            return
+        assert(isinstance(synthetic, robots.Synthetic))
+            
+        standardCost = context.multiPhaseCost(
+            sequence=sequence,
+            costId=robots.RobotCost.Credits,
+            phases=SynthAdditionalCosts._SyntheticsAdditionalCostPhases)
+        standardCost = common.Calculator.rename(
+            value=standardCost,
+            name='Robot Cost Without Skill Costs')
+
+        # NOTE: This subtracts 1 from the multiplier as we're calculating
+        # the additional cost not the total cost
+        additionalCost = common.Calculator.multiply(
+            lhs=standardCost,
+            rhs=common.Calculator.subtract(
+                lhs=SynthAdditionalCosts._SyntheticsAdditionalCostMultiplier,
+                rhs=common.ScalarCalculation(value=1)),
+            name='Synthetic Robot Additional Cost')
+        
+        step = robots.RobotStep(
+            name=f'Additional Cost',
+            type=synthetic.componentString())
+        step.setCredits(
+            credits=construction.ConstantModifier(value=additionalCost))
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+
+
+
+#    █████████                    █████       ██████   ██████              █████  ███     ██████   ███                      █████     ███                     
+#   ███░░░░░███                  ░░███       ░░██████ ██████              ░░███  ░░░     ███░░███ ░░░                      ░░███     ░░░                      
+#  ███     ░░░   ██████   █████  ███████      ░███░█████░███   ██████   ███████  ████   ░███ ░░░  ████   ██████   ██████   ███████   ████   ██████  ████████  
+# ░███          ███░░███ ███░░  ░░░███░       ░███░░███ ░███  ███░░███ ███░░███ ░░███  ███████   ░░███  ███░░███ ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███ 
+# ░███         ░███ ░███░░█████   ░███        ░███ ░░░  ░███ ░███ ░███░███ ░███  ░███ ░░░███░     ░███ ░███ ░░░   ███████   ░███     ░███ ░███ ░███ ░███ ░███ 
+# ░░███     ███░███ ░███ ░░░░███  ░███ ███    ░███      ░███ ░███ ░███░███ ░███  ░███   ░███      ░███ ░███  ███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███ 
+#  ░░█████████ ░░██████  ██████   ░░█████     █████     █████░░██████ ░░████████ █████  █████     █████░░██████ ░░████████  ░░█████  █████░░██████  ████ █████
+#   ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░     ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ 
+
+class CostModification(robots.RobotComponentInterface):
+    def typeString(self) -> str:
+        return 'Cost Modification'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence):
+            return False
+        
+        totalCost = context.totalCredits(sequence=sequence)
+        return totalCost.value() > 0
+    
+class FixedCostModifier(CostModification):
+    def __init__(self):
+        super().__init__()
+
+        self._creditsOption = construction.FloatOption(
+            id='CostModifier',
+            name='Cost Modifier',
+            value=0,
+            description='The number of credits to add to or remove from the final cost of the robot')
+        
+    def fixedModifier(self) -> common.ScalarCalculation:
+        return common.ScalarCalculation(
+            value=self._creditsOption.value(),
+            name='Specified Fixed Cost Modifier')
+    
+    def componentString(self) -> str:
+        return 'Fixed Cost Modifier'
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._creditsOption]
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        totalCost = context.totalCredits(sequence=sequence)
+        self._creditsOption.setMin(-totalCost.value())
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        costModifier = self.fixedModifier()
+        if costModifier.value() == 0:
+            return
+        stepName = 'Cost {type} ({amount})'.format(
+            type='Reduction' if costModifier.value() < 0 else 'Increase',
+            amount=common.formatNumber(
+                number=costModifier.value(),
+                alwaysIncludeSign=True,
+                prefix='Cr'))
+        step = robots.RobotStep(
+            name=stepName,
+            type=self.typeString())
+        step.setCredits(
+            credits=construction.ConstantModifier(value=costModifier))
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+        
+class PercentageCostModifier(CostModification):
+    def __init__(self):
+        super().__init__()
+
+        self._creditsOption = construction.IntegerOption(
+            id='CostModifier',
+            name='Cost Modifier',
+            value=0,
+            minValue=-100,
+            description='The percentage to add to or remove from the final cost of the robot')
+        
+    def percentModifier(self) -> common.ScalarCalculation:
+        return common.ScalarCalculation(
+            value=self._creditsOption.value(),
+            name='Specified Percentage Cost Modifier')
+    
+    def componentString(self) -> str:
+        return 'Percentage Cost Modifier'
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._creditsOption]
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        pass
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        percentageModifier = self.percentModifier()
+        if percentageModifier.value() == 0:
+            return
+        costModifier = common.Calculator.takePercentage(
+            value=context.totalCredits(sequence=sequence),
+            percentage=percentageModifier,
+            name='Fixed Cost Modifier')
+
+        stepName = 'Cost {type} ({amount})'.format(
+            type='Reduction' if percentageModifier.value() < 0 else 'Increase',
+            amount=common.formatNumber(
+                number=percentageModifier.value(),
+                alwaysIncludeSign=True,
+                suffix='%'))
+        step = robots.RobotStep(
+            name=stepName,
+            type=self.typeString())
+        step.setCredits(
+            credits=construction.ConstantModifier(value=costModifier))
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+
+
+
+#    █████████                    █████       ███████████                                      █████  ███                     
+#   ███░░░░░███                  ░░███       ░░███░░░░░███                                    ░░███  ░░░                      
+#  ███     ░░░   ██████   █████  ███████      ░███    ░███   ██████  █████ ████ ████████    ███████  ████  ████████    ███████
+# ░███          ███░░███ ███░░  ░░░███░       ░██████████   ███░░███░░███ ░███ ░░███░░███  ███░░███ ░░███ ░░███░░███  ███░░███
+# ░███         ░███ ░███░░█████   ░███        ░███░░░░░███ ░███ ░███ ░███ ░███  ░███ ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███
+# ░░███     ███░███ ░███ ░░░░███  ░███ ███    ░███    ░███ ░███ ░███ ░███ ░███  ░███ ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███
+#  ░░█████████ ░░██████  ██████   ░░█████     █████   █████░░██████  ░░████████ ████ █████░░████████ █████ ████ █████░░███████
+#   ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░     ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░ ░░░░░  ░░░░░███
+#                                                                                                                     ███ ░███
+#                                                                                                                    ░░██████ 
+#                                                                                                                     ░░░░░░  
+
+class CostRounding(robots.RobotComponentInterface):
+    def typeString(self) -> str:
+        return 'Cost Rounding'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence):
+            return False
+        
+        totalCost = context.totalCredits(sequence=sequence)
+        return totalCost.value() > 0        
+        
+class SignificantFigureCostRounding(CostRounding):
+    def __init__(self):
+        super().__init__()
+
+        self._creditsOption = construction.IntegerOption(
+            id='SignificantFigures',
+            name='Significant Figures',
+            value=1,
+            minValue=1,
+            description='The number of significant figures to round the final robot cost to.')
+        
+    def significantFigures(self) -> common.ScalarCalculation:
+        return common.ScalarCalculation(
+            value=self._creditsOption.value(),
+            name='Specified Significant Figures')
+    
+    def componentString(self) -> str:
+        return 'Significant Figures'
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        return [self._creditsOption]
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        pass
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        totalCost = context.totalCredits(sequence=sequence)
+        roundedCost = common.Calculator.significantDigits(
+            value=totalCost,
+            digits=self.significantFigures(),
+            name='Rounded Total Cost')
+        costModifier = common.Calculator.subtract(
+            lhs=roundedCost,
+            rhs=totalCost,
+            name='Rounding Cost Modifier')
+
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())
+        step.setCredits(
+            credits=construction.ConstantModifier(value=costModifier))
+        context.applyStep(
+            sequence=sequence,
+            step=step)
+
+
+
+
+#  ███████████  ███                       ████   ███                     █████     ███                     
+# ░░███░░░░░░█ ░░░                       ░░███  ░░░                     ░░███     ░░░                      
+#  ░███   █ ░  ████  ████████    ██████   ░███  ████   █████   ██████   ███████   ████   ██████  ████████  
+#  ░███████   ░░███ ░░███░░███  ░░░░░███  ░███ ░░███  ███░░   ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███ 
+#  ░███░░░█    ░███  ░███ ░███   ███████  ░███  ░███ ░░█████   ███████   ░███     ░███ ░███ ░███ ░███ ░███ 
+#  ░███  ░     ░███  ░███ ░███  ███░░███  ░███  ░███  ░░░░███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███ 
+#  █████       █████ ████ █████░░████████ █████ █████ ██████ ░░████████  ░░█████  █████░░██████  ████ █████
+# ░░░░░       ░░░░░ ░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░░ ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ 
+
 class Finalisation(robots.RobotComponentInterface):
     _AtmosphereFlyerLocomotions = [
         robots.AeroplanePrimaryLocomotion,
@@ -260,13 +580,6 @@ class Finalisation(robots.RobotComponentInterface):
     }
     _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t fall into the uncanny valley. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
 
-    # NOTE: This multiplier is applied to all costs except the cost for skills.
-    # This includes the cost of the Synthetic component. (p86 & p88)
-    _SyntheticsAdditionalCostMultiplier = common.ScalarCalculation(
-        value=3,
-        name='Synthetic Robot Additional Cost Multiplier')
-    _SyntheticsAdditionalCostPhases = [phase for phase in robots.RobotPhase if phase != robots.RobotPhase.Skills]
-
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
     
@@ -314,7 +627,6 @@ class Finalisation(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        self._createSynthCostStep(sequence=sequence, context=context)
         self._createProtectionStep(sequence=sequence, context=context)
         self._createTraitNoteSteps(sequence=sequence, context=context)
         self._createCombatStep(sequence=sequence, context=context)
@@ -325,10 +637,10 @@ class Finalisation(robots.RobotComponentInterface):
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
-        self._createSynthBrainStep(sequence=sequence, context=context)
-        self._createSkilledSensorsSteps(sequence=sequence, context=context)
         self._createSlotUsageStep(sequence=sequence, context=context)
         self._createBandwidthUsageStep(sequence=sequence, context=context)
+        self._createSynthBrainStep(sequence=sequence, context=context)
+        self._createSkilledSensorsSteps(sequence=sequence, context=context)
 
     def _createProtectionStep(
             self,
@@ -644,48 +956,6 @@ class Finalisation(robots.RobotComponentInterface):
             context.applyStep(
                 sequence=sequence,
                 step=step)
-
-    # NOTE: This should happen AFTER unused slots are removed. I think the
-    # google spreadsheet might be incorrect and is doing it the other way
-    # round. I'm basing this on the fact the Mongoose excel spreadsheet
-    # removes the slots first (so the saving is effectively multiplied).
-    def _createSynthCostStep(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        synthetic = context.findFirstComponent(
-            componentType=robots.Synthetic,
-            sequence=sequence)
-        if not synthetic:
-            return
-        assert(isinstance(synthetic, robots.Synthetic))
-
-        standardCost = context.multiPhaseCost(
-            sequence=sequence,
-            costId=robots.RobotCost.Credits,
-            phases=Finalisation._SyntheticsAdditionalCostPhases)
-        standardCost = common.Calculator.rename(
-            value=standardCost,
-            name='Robot Cost Without Skill Costs')
-
-        # NOTE: This subtracts 1 from the multiplier as we're calculating
-        # the additional cost not the total cost
-        additionalCost = common.Calculator.multiply(
-            lhs=standardCost,
-            rhs=common.Calculator.subtract(
-                lhs=self._SyntheticsAdditionalCostMultiplier,
-                rhs=common.ScalarCalculation(value=1)),
-            name='Synthetic Robot Additional Cost')
-        
-        step = robots.RobotStep(
-            name=f'Additional Cost',
-            type=synthetic.componentString())
-        step.setCredits(
-            credits=construction.ConstantModifier(value=additionalCost))
-        context.applyStep(
-            sequence=sequence,
-            step=step)                
 
     def _createSynthBrainStep(
             self,

@@ -66,14 +66,27 @@ def formatNumber(
         alwaysIncludeSign: bool = False,
         decimalPlaces: int = 2, # Only applies for float values
         removeTrailingZeros: bool = True, # Only applies for float values
-        infinityString: str = 'inf' # Only applies for float values
+        infinityString: str = 'inf', # Only applies for float values,
+        prefix: str = '', # Prefix goes before number but after any sign
+        suffix: str = ''
         ) -> str:
     if number == float('inf'):
-        return '+' + infinityString if alwaysIncludeSign else infinityString
+        if alwaysIncludeSign:
+            return '+' + prefix + infinityString
+        else:
+            return prefix + infinityString
     elif number == float('-inf'):
-        return '-' + infinityString
+        return '-' + prefix + infinityString
 
-    format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
+    if prefix:
+        if number >= 0:
+            sign = '+' if alwaysIncludeSign else ''
+        else:
+            sign = '-'
+        format = f'{sign}{prefix}{{0:{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
+        number=abs(number)
+    else:
+        format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
     string = format.format(number)
     if decimalPlaces and removeTrailingZeros:
         # Strip trailing zeros (and decimal point if needed)
@@ -92,6 +105,10 @@ def formatNumber(
             decimalPoint = '.'
 
         string = string.rstrip(decimalPoint)
+
+    if suffix:
+        string += suffix
+
     return string
 
 def clamp(
