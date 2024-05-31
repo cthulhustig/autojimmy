@@ -569,12 +569,6 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()
 
-# TODO: If you've added a lot of components and you remove the last one,
-# the view jumps back to the top of the list of widgets. This can be
-# really annoying if you're removing multiple components from the end of
-# the list
-# Update: This doesn't seem to happen in the gunsmith so I'm going to
-# leave it for now to see if it just goes away when I flesh out the UI
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
 
@@ -904,6 +898,17 @@ class _StageWidget(QtWidgets.QWidget):
         self.stageChanged.emit(self._stage)
 
     def _deleteComponentClicked(self) -> None:
+        # NOTE: This is a major bodge to prevent the ui jumping around when
+        # components are deleted. As far as I can tell it's caused by the fact
+        # the delete button will have focus (as it was clicked) and the ui will
+        # automatically switch focus to the next widget in the focus chain if
+        # the in focus widget is deleted. When this happens, If this widget is
+        # embedded in something like a QScrollArea, then it will autoscroll to
+        # have the next widget in view
+        focusWidget = QtWidgets.QApplication.focusWidget()
+        if focusWidget:
+            focusWidget.clearFocus()
+
         widget = self.sender()
         assert(isinstance(widget, _ComponentConfigWidget))
         self._removeComponentWidget(widget=widget)
