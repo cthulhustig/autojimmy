@@ -707,6 +707,14 @@ class ConstructionContext(object):
             # components it contains. By removing the component from the list
             # these checks won't see it.
             restoreIndex = stage.removeComponent(replaceComponent)
+            if restoreIndex < 0:
+                # The component to replace isn't part of the stage. Treat it as
+                # if no replace component was specified. In theory this could
+                # happen if the component has already been removed from the
+                # stage due to requiring another component to be present but
+                # it's since been removed (e.g. the Drone Interface for a robot
+                # requires the robot to have a Transmitter).
+                replaceComponent = None
 
         try:
             if restoreIndex >= 0:
@@ -982,11 +990,31 @@ class ConstructionContext(object):
 
         removedIndex = None
         if removeComponent:
-            if removeComponent not in components:
-                assert(False)
-                return
-            removedIndex = components.index(removeComponent)
-            stage.removeComponent(component=removeComponent)
+            if removeComponent in components:
+                removedIndex = components.index(removeComponent)
+                stage.removeComponent(component=removeComponent)
+            else:
+                # The component to be removed isn't in the list of components
+                # for the stage. This can happen when the component has been
+                # removed due to comparability but some external system (e.g.
+                # the UI is holding onto the component). An example of where
+                # this can be hit is if a robot has a Transceiver and a Drone
+                # Interface and then the Transceiver is removed. As the Drone
+                # interface requires the robot to have a Transceiver to be
+                # compatible, if it is removed the Drone Interface will be
+                # removed when the robot is next regenerated. This can cause
+                # this situation to be hit when the UI widget that was for
+                # the Drone Interface is updated to show whatever component
+                # automatically replaces the Drone Interface (as it's part of
+                # the Default Suite). The "correct" way to handle this would
+                # be for the caller to be aware of what has happened and add
+                # the component instead of doing a replace but that isn't
+                # straight forward and it would run the risk of bugs if I
+                # missed anywhere that needs updated. The safer option is to
+                # just handle it here by doing an simple add instead of a
+                # replace. The downside of this is it could mask legitimate
+                # coding errors.
+                removeComponent = None
 
         try:
             if addComponent and addComponent not in components:
@@ -1009,10 +1037,10 @@ class ConstructionContext(object):
                 if removedIndex == None:
                     if not stage.hasFreeCapacity(requiredCapacity=1):
                         # The stage doesn't have enough space for the new
-                        # component. I don't think this isn't a case I'd
-                        # really expect to see as it would require a stage that
-                        # has a max number of components _and_ allowed the user
-                        # to dynamically add the components. Even if such a
+                        # component. I don't think this is a case I'd really
+                        # expect to see as it would require a stage that has
+                        # a max number of components _and_ allowed the user to
+                        # dynamically add the components. Even if such a
                         # component did exist the expectation is the UI would
                         # prevent the user adding more components than the stage
                         # allowed. Apart from a bug the only time I could see it
@@ -1041,7 +1069,9 @@ class ConstructionContext(object):
                     # must be free space
                     stage.insertComponent(removedIndex, addComponent)
         except:
-            if removeComponent:
+            # Something wen't wrong adding the component so, if a component has
+            # been removed, re-add it in its original position
+            if removedIndex != None:
                 stage.insertComponent(removedIndex, removeComponent)
             raise
 
