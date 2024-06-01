@@ -171,6 +171,8 @@ class RobotConfigWidget(QtWidgets.QWidget):
                 expanded=True)
             self._phaseWidgets[phase] = phaseWidget
 
+        self._updateTabOrder()
+
     def _removeWidgets(self) -> None:
         for phaseWidget in self._phaseWidgets.values():
             phaseWidget.stageChanged.disconnect(self._stageChanged)
@@ -208,3 +210,16 @@ class RobotConfigWidget(QtWidgets.QWidget):
             self._configurationWidget.setContentHidden(
                 content=phaseWidget,
                 hidden=phaseWidget.isPointless())
+        self._updateTabOrder()
+            
+    def _updateTabOrder(self) -> None:
+        tabOrder = [self._techLevelSpinBox, self._weaponSetComboBox]
+        for widget in self._phaseWidgets.values():
+            if widget.isEnabled():
+                widget.gatherTabOrder(tabOrder)
+
+        lastTabWidget = tabOrder[0]
+        QtWidgets.QWidget.setTabOrder(self, lastTabWidget)
+        for tabWidget in tabOrder[1:]:
+            QtWidgets.QWidget.setTabOrder(lastTabWidget, tabWidget)
+            lastTabWidget = tabWidget

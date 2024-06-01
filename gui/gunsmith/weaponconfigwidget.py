@@ -77,6 +77,13 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
 
         super().synchronise()
 
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        tabWidgets.append(self._weaponTypeComboBox)
+        return super().gatherTabOrder(tabWidgets)
+
     def _weaponTypeChanged(self, index: int) -> None:
         self._weapon.setWeaponType(
             sequence=self._sequence,
@@ -376,7 +383,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             expanded=True)
         self._configurationWidget.setContentHidden(
             content=self._munitionsWidget,
-            hidden=self._munitionsWidget.isPointless())          
+            hidden=self._munitionsWidget.isPointless())
+
+        self._updateTabOrder()       
 
     def _removeWidgets(self) -> None:
         for sequenceWidget in self._sequenceWidgets.values():
@@ -469,4 +478,25 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             self._munitionsWidget.synchronise()
             self._configurationWidget.setContentHidden(
                 content=self._munitionsWidget,
-                hidden=self._munitionsWidget.isPointless())             
+                hidden=self._munitionsWidget.isPointless())
+
+        self._updateTabOrder()         
+
+    def _updateTabOrder(self) -> None:
+        tabOrder = [self._techLevelSpinBox, self._secondaryCountSpinBox]
+        tabOrder.extend(self._ruleWidgets.values())
+        for widget in self._sequenceWidgets.values():
+            if widget.isEnabled():
+                widget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._commonWidget and self._commonWidget.isEnabled():
+            self._commonWidget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._loadingWidget and self._loadingWidget.isEnabled():
+            self._loadingWidget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._munitionsWidget and self._munitionsWidget.isEnabled():
+            self._munitionsWidget.gatherTabOrder(tabWidgets=tabOrder)
+
+        lastTabWidget = tabOrder[0]
+        QtWidgets.QWidget.setTabOrder(self, lastTabWidget)
+        for tabWidget in tabOrder[1:]:
+            QtWidgets.QWidget.setTabOrder(lastTabWidget, tabWidget)
+            lastTabWidget = tabWidget        

@@ -350,11 +350,11 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def isEnabled(self) -> bool:
+    def isChecked(self) -> bool:
         return self._checkBox.isChecked()
     
-    def setEnabled(self, enabled: bool) -> None:
-        self._checkBox.setChecked(enabled)        
+    def setChecked(self, checked: bool) -> None:
+        self._checkBox.setChecked(checked)        
 
     def value(self) -> typing.Optional[typing.Union[int, float]]:
         return self._spinBox.value() if self._checkBox.isChecked() else None
@@ -458,11 +458,11 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
         return True
 
     def _checkBoxChanged(self) -> None:
-        self._spinBox.setEnabled(self.isEnabled())
+        self._spinBox.setEnabled(self.isChecked())
         self._emitValueChanged()
 
     def _spinBoxChanged(self) -> None:
-        if self.isEnabled():
+        if self.isChecked():
             self._emitValueChanged()
 
     def _emitValueChanged(self) -> None:

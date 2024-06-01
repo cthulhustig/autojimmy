@@ -153,3 +153,18 @@ def getMonospaceFont() -> QtGui.QFont:
 
     _cachedMonospaceFont = font
     return font
+
+def tabWidgetSearch(
+        widget: typing.Union[QtWidgets.QWidget, QtWidgets.QLayout],
+        tabWidgets: typing.List[QtWidgets.QWidget]
+        ) -> None:
+        if not widget.isEnabled():
+            return
+        if isinstance(widget, QtWidgets.QWidget):
+            focusPolicy = widget.focusPolicy()
+            if focusPolicy & QtCore.Qt.FocusPolicy.TabFocus:
+                tabWidgets.append(widget)
+                return
+        for child in widget.children():
+            tabWidgetSearch(widget=child, tabWidgets=tabWidgets)
+        

@@ -57,6 +57,7 @@ class ExpanderWidget(QtWidgets.QWidget):
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'minimumHeight'))
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'maximumHeight'))
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self._contentArea, b'maximumHeight'))
+        self._toggleAnimation.finished.connect(self._animationFinished)
 
         # don't waste space
         self._mainLayout = QtWidgets.QGridLayout()
@@ -163,6 +164,10 @@ class ExpanderWidget(QtWidgets.QWidget):
             self.setMaximumHeight(requiredHeight)
             self.setMinimumHeight(requiredHeight)
             self._contentArea.setMaximumHeight(contentHeight)
+            # Hide the content area (and therefore the content) if the widget is
+            # being collapsed. This is important as it makes tab order
+            # automatically skip any widgets that have been collapsed.
+            self._contentArea.setHidden(not expanded)
 
     def _startAnimation(
             self,
@@ -184,6 +189,17 @@ class ExpanderWidget(QtWidgets.QWidget):
         self._toggleAnimation.setDirection(
             QtCore.QAbstractAnimation.Direction.Forward if expanding else QtCore.QAbstractAnimation.Direction.Backward)
         self._toggleAnimation.start()
+
+        # Show the content area if the widget is being expanded. See the note in
+        # _updateState for why this is important
+        if expanding:
+            self._contentArea.setHidden(False)
+
+    def _animationFinished(self) -> None:
+        # Hide the content area if the widget has been collapsed. See the note in
+        # _updateState for why this is important        
+        if not self.isExpanded():
+            self._contentArea.setHidden(True)
 
     def _updateContentHeight(self) -> None:
         # The content height has changed. If the expander is expanded then update its height to

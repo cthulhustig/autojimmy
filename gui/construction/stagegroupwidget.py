@@ -194,6 +194,26 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         if self.currentComponent() != oldCurrent:
             self.componentChanged.emit()
 
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        tabWidgets.append(self._comboBox)
+        if self._deleteButton and self._deleteButton.isEnabled():
+            tabWidgets.append(self._deleteButton)
+        for widget in self._currentOptions.keys():
+            if not widget.isEnabled():
+                continue
+            focusPolicy = widget.focusPolicy()
+            if focusPolicy & QtCore.Qt.FocusPolicy.TabFocus:
+                tabWidgets.append(widget)
+            else:
+                gui.tabWidgetSearch(
+                    widget=widget,
+                    tabWidgets=tabWidgets)
+    
     def _updateOptionControls(self) -> None:
         component = self.currentComponent()
         options = component.options() if component else []
@@ -279,7 +299,6 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.FloatOption):
             widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
-
             if option.min() != None:
                 widget.setDecimalsForValue(option.min())
                 widget.setMinimum(option.min())
@@ -711,6 +730,20 @@ class _StageWidget(QtWidgets.QWidget):
             # the user a choice in which component to select _and_ none of them
             # have any options
             return not hasChoice
+        
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        for component in self._currentComponents.keys():
+            if component.isEnabled():
+                component.gatherTabOrder(tabWidgets=tabWidgets)
+        if self._addButton and self._addButton.isEnabled():
+            tabWidgets.append(self._addButton)
+        if self._removeAllButton and self._removeAllButton.isEnabled():
+            tabWidgets.append(self._removeAllButton)
 
     def _addComponentWidget(
             self,
@@ -1096,6 +1129,16 @@ class StageGroupWidget(QtWidgets.QWidget):
             return 'Secondary '
         else:
             return f'Secondary {sequenceIndex} '
+        
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        for widget in self._stageWidgets.values():
+            if widget.isEnabled():
+                widget.gatherTabOrder(tabWidgets=tabWidgets)
 
     def _stageStateChanged(
             self,
