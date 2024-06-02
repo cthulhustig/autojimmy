@@ -2,6 +2,7 @@ from .common.qtutils import *
 from .common.style import *
 from .common.windowsettings import *
 from .common.icons import *
+from .common.eventfilters import *
 from .common.widgets import *
 from .common.togglablewidget import *
 from .common.windowwidget import *

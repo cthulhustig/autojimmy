@@ -122,12 +122,16 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         self._munitionsWidget = None
         self._stageExpansionMap: typing.Dict[str, bool] = {}
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._techLevelSpinBox = gui.SpinBoxEx()
         self._techLevelSpinBox.setMinimum(0)
         self._techLevelSpinBox.setValue(weapon.techLevel())
         self._techLevelSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._techLevelSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._techLevelSpinBox.installEventFilter(self._noWheelFilter)
         self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)
 
         self._secondaryCountSpinBox = gui.SpinBoxEx()
@@ -136,6 +140,8 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         self._secondaryCountSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._secondaryCountSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._secondaryCountSpinBox.installEventFilter(self._noWheelFilter)        
         self._secondaryCountSpinBox.valueChanged.connect(self._secondaryCountChanged)
 
         globalLayout = gui.VBoxLayoutEx()

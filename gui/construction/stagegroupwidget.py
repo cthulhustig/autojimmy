@@ -90,6 +90,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent=parent)
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._requirement = requirement
         self._currentOptions: typing.Dict[QtWidgets.QWidget, construction.ComponentOption] = {}
         self._widgetConnections: typing.Dict[QtWidgets.QWidget, QtCore.QMetaObject.Connection] = {}
@@ -99,6 +101,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         self._comboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._comboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._comboBox.installEventFilter(self._noWheelFilter)
         self._comboBox.currentIndexChanged.connect(self._selectionChanged)
 
         comboLayout = QtWidgets.QHBoxLayout()
@@ -339,6 +343,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             labelAlignment = QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight
 
         if widget:
+            self._installNoWheelFilter(object=widget)
+
             description = option.description()
             if description:
                 widget.setToolTip(gui.createStringToolTip(description, escape=False))
@@ -467,6 +473,21 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     content=option.options(),
                     selected=option.value(),
                     unselectable=option.unselectable())
+                
+    # Disable wheel focus and events to avoid the scroll wheel
+    # changing control values when the user is scrolling the
+    # scroll area that contain the widgets. This is done
+    # recursively to account for widgets that are made up of
+    # a number of child widgets (e.g. OptionalSpinBox)
+    def _installNoWheelFilter(
+            self,
+            object: QtCore.QObject
+            ) -> None:
+        if isinstance(object, QtWidgets.QWidget):
+            object.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+            object.installEventFilter(self._noWheelFilter)
+        for child in object.children():
+            self._installNoWheelFilter(object=child)
 
     def _selectionChanged(self) -> None:
         self._updateOptionControls()

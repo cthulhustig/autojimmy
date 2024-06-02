@@ -25,12 +25,16 @@ class RobotConfigWidget(QtWidgets.QWidget):
         self._phaseWidgets: typing.Dict[robots.RobotPhase, gui.SinglePhaseStageWidget] = {}
         self._stageExpansionMap: typing.Dict[str, bool] = {}
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._techLevelSpinBox = gui.SpinBoxEx()
         self._techLevelSpinBox.setMinimum(0)
         self._techLevelSpinBox.setValue(robot.techLevel())
         self._techLevelSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._techLevelSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._techLevelSpinBox.installEventFilter(self._noWheelFilter)                 
         self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)  
 
         self._weaponSetComboBox = gui.EnumComboBox(
@@ -41,6 +45,8 @@ class RobotConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._weaponSetComboBox.setToolTip(gui.createStringToolTip(RobotConfigWidget._WeaponSetTooltip))
+        self._weaponSetComboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._weaponSetComboBox.installEventFilter(self._noWheelFilter)               
         self._weaponSetComboBox.currentIndexChanged.connect(self._weaponSetChanged)            
 
         globalLayout = gui.VBoxLayoutEx()
