@@ -742,16 +742,9 @@ class ConstructionContext(object):
                 if replaceComponent and componentType == type(replaceComponent):
                     # This is the same type of component as the component being
                     # replaced so use that component rather than creating a new
-                    # component
-                    # I really wish I had written down _why_ this is done or if
-                    # it's even important. It could have been an optimisation to
-                    # save creating a new component but that seems unlikely as
-                    # it will make effectively no difference.
-                    # One thing that this behaviour means is the component that
-                    # is checked for compatibility will have the options of the
-                    # replaceComponent rather than default options for the
-                    # component. However I can't think why that would be
-                    # required.
+                    # component. This is important as it means the list that is
+                    # returned will contain the the replace component rather
+                    # than another instance of the component
                     component = replaceComponent
                 else:
                     # Create a new component for the compatibility check

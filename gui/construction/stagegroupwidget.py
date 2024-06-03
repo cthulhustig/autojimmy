@@ -941,12 +941,19 @@ class _StageWidget(QtWidgets.QWidget):
             self,
             component: construction.ComponentInterface
             ) -> None:
-        widget = self._addComponentWidget(component=component)
-        if not widget:
+        try:
+            self._context.addComponent(
+                stage=self._stage,
+                component=component)
+        except Exception as ex:
+            message = 'Failed to add component'
+            logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
-                text='Unable to add component')
+                text=message)
             return
+
+        widget = self._addComponentWidget(component=component)
         self._updateConstruction(addComponent=widget.currentComponent())
         self._updateAllComponentWidgets(skipWidget=widget)
         self.stageChanged.emit(self._stage)
