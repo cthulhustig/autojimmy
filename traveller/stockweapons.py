@@ -109,7 +109,16 @@ class StockWeapon(object):
         return self._robotMount    
     
     def linkable(self) -> bool:
-        return self._linkable        
+        return self._linkable
+
+    # This class represents immutable data so there should be no need to deep
+    # copy it and doing so could introduce bugs because code performs
+    # comparisons with the static class instances below. I could add an
+    # equality operator but, due to the fact the data its self is static, it
+    # seems better to do this
+    # TODO: I'm not sure about this change
+    def __deepcopy__(self, memo: typing.Dict) -> 'StockWeapon':
+        return self
 
 class _StockWeaponDescription(object):
     def __init__(

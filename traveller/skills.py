@@ -54,6 +54,15 @@ class SkillDefinition(object):
     
     def customSpecialities(self) -> typing.Iterable[str]:
         return self._customSpecialities
+    
+    # This class represents immutable data so there should be no need to deep
+    # copy it and doing so could introduce bugs because code performs
+    # comparisons with the static class instances below. I could add an
+    # equality operator but, due to the fact the data its self is static, it
+    # seems better to do this
+    # TODO: I'm not sure about this change
+    def __deepcopy__(self, memo: typing.Dict) -> 'SkillDefinition':
+        return self    
 
 AdminSkillDefinition = SkillDefinition(
     skillName='Admin',
