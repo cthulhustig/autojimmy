@@ -5118,11 +5118,13 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     # internal.
     # NOTE: The rules don't explicitly state it but it seems logical that the
     # Endurance of the robot is 0 with this option installed as the length of
-    # time it can run for is determined by the external source of power. This
-    # line of thinking seems to be backed up by the description of Base
-    # Endurance (p16) which describes it as how long the robot can go without
-    # recharging. As there is no internal power source there is nothing to
-    # recharge so no Endurance.
+    # time it can run for is determined by another power source, be that RTG,
+    # solar, plugged into the wall or something else. This line of thinking
+    # seems to be backed up by the description of Base Endurance (p16) which
+    # describes it as how long the robot can go without recharging. As there is
+    # no internal power source there is nothing to recharge so no Endurance.
+    # NOTE: I've chosen to delete the Endurance attribute rather than setting
+    # it to 0 for consistency with what is done for bio robots
     # NOTE: I've added the requirements that the component is incompatible with
     # Endurance modifications and RTG & Solar Power slot options.
     # As the component sets the Endurance to 0 it doesn't make sense for a user
@@ -5142,10 +5144,6 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     # for BioRobots and that they need to eat, drink, breath (p88). This would
     # mean they don't have an internal power source so there is no internal
     # power source to remove.
-
-    _Endurance = common.ScalarCalculation(
-        value=0,
-        name='No Internal Power Endurance')
 
     def __init__(
             self,
@@ -5191,16 +5189,14 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
         if context.hasAttribute(
             attributeId=robots.RobotAttributeId.Endurance,
             sequence=sequence):
-            step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=robots.RobotAttributeId.Endurance,
-                value=_NoInternalPowerSlotOptionImpl._Endurance))
+            step.addFactor(factor=construction.DeleteAttributeFactor(
+                attributeId=robots.RobotAttributeId.Endurance))
         
         if context.hasAttribute(
             attributeId=robots.RobotAttributeId.VehicleEndurance,
             sequence=sequence):        
-            step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=robots.RobotAttributeId.VehicleEndurance,
-                value=_NoInternalPowerSlotOptionImpl._Endurance))
+            step.addFactor(factor=construction.DeleteAttributeFactor(
+                attributeId=robots.RobotAttributeId.VehicleEndurance))
         
 class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
