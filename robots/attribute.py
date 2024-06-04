@@ -23,12 +23,16 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     MaxSlots = 'Max Slots'
     Hits = 'Hits'
     Endurance = 'Endurance' # In hours
+    # Agility is used as a modifier on the base speed of 5m per minor action
+    # to get the final speed
     Agility = 'Agility'
     Speed = 'Speed' # In meters per minor action
     # See the Armour trait below for details of how it relates to Protection
     Protection = 'Protection' # Base Protection + Protection from Armour
     # Some options give the robot cumulative protection from radiation. How
     # radiation affects a robot can be found on page (p106)
+    # NOTE: I've decided to treat Rads as a trait ask it means it doesn't
+    # need to be treated separably by the UI
     Rads = 'Rads'
 
     # This is the speed of the vehicle when using Vehicle Speed Movement (p23).
@@ -128,14 +132,13 @@ StandardAttributeIds = [
     RobotAttributeId.Agility,
     RobotAttributeId.Speed,
     RobotAttributeId.Protection,
-    RobotAttributeId.Rads,
     RobotAttributeId.VehicleSpeed,
     RobotAttributeId.VehicleEndurance,
     RobotAttributeId.Autopilot,
     RobotAttributeId.Intelligence,
 ]
 
-TraitAttributesIds = [
+TraitAttributeIds = [
     RobotAttributeId.ACV,
     RobotAttributeId.Alarm,
     RobotAttributeId.Amphibious,
@@ -151,5 +154,6 @@ TraitAttributesIds = [
     RobotAttributeId.Small,
     RobotAttributeId.Stealth,
     RobotAttributeId.Thruster,
-    RobotAttributeId.Flyer
+    RobotAttributeId.Flyer,
+    RobotAttributeId.Rads, # Not actually a trait but is treated as one
 ]

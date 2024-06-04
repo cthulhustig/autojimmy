@@ -64,12 +64,13 @@ class NotesWidget(QtWidgets.QWidget):
         self._table.resizeRowsToContents()
 
     def clear(self) -> None:
-        self._table.removeAllRows()
+        self._table.removeAllRows() 
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         width = event.size().width()
         maxWidth = int(width * 0.33)
         self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
+        self._table.resizeRowsToContents()
         return super().resizeEvent(event)
     
     def copySelectionToClipboard(self):

@@ -672,7 +672,7 @@ class Finalisation(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        for trait in robots.TraitAttributesIds:
+        for trait in robots.TraitAttributeIds:
             if trait in robots.InternalAttributeIds:
                 continue
             if not context.hasAttribute(sequence=sequence, attributeId=trait):

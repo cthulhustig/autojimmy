@@ -211,6 +211,14 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.findComponents(
             componentType=componentType,
             sequence=self._sequence)
+    
+    def findFirstComponent(
+            self,
+            componentType: typing.Type[robots.RobotComponentInterface]
+            ) -> typing.Iterable[robots.RobotComponentInterface]:
+        return self._constructionContext.findFirstComponent(
+            componentType=componentType,
+            sequence=self._sequence)    
 
     def hasComponent(
             self,
@@ -371,7 +379,10 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             phase=phase,
             costId=costId)
-
+    
+    def totalCredits(self) -> common.ScalarCalculation:
+        return self._constructionContext.totalCredits(sequence=self._sequence)
+    
     def manifest(self) -> construction.Manifest:
         sequenceStates = self._constructionContext.state(
             sequence=self._sequence)

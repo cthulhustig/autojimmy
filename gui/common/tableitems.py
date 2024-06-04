@@ -2,7 +2,13 @@ import common
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-class FormattedNumberTableWidgetItem(QtWidgets.QTableWidgetItem):
+class TableWidgetItemEx(QtWidgets.QTableWidgetItem):
+    def setBold(self, enable: bool = True) -> None:
+        font = self.font()
+        font.setBold(enable)
+        self.setFont(font)
+
+class FormattedNumberTableWidgetItem(TableWidgetItemEx):
     def __init__(
             self,
             value: typing.Optional[typing.Union[int, float, common.ScalarCalculation]] = None,

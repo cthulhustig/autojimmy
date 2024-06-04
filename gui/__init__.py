@@ -26,6 +26,7 @@ from .common.expander import *
 from .common.sectionlist import *
 from .common.verticaltabs import *
 from .common.tableitems import *
+from .common.itemdelegates import *
 from .common.imageview import *
 from .common.calculationtree import *
 from .common.calculationwindow import *
@@ -87,6 +88,7 @@ from .gunsmith.weaponinfotabwidget import *
 from .gunsmith.gunsmithwindow import *
 from .robots.robotconfigwidget import *
 from .robots.robotmanifesttable import *
+from .robots.robotsheetwidget import *
 from .robots.robotinfowidget import *
 from .robots.robotbuilderwindow import *
 from .startupprogressdialog import *

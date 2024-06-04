@@ -106,26 +106,15 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
         self._robot = None
 
-        self._basicFormLayout = gui.FormLayoutEx()
-        self._basicFormLayout.setContentsMargins(0, 0, 0, 0)
-
-        self._traitFormLayout = gui.FormLayoutEx()
-        self._traitFormLayout.setContentsMargins(0, 0, 0, 0)        
-
-        self._attributeLayout = QtWidgets.QHBoxLayout()
-        self._attributeLayout.setContentsMargins(0, 0, 0, 0)
-        self._attributeLayout.addLayout(self._basicFormLayout)
-        self._attributeLayout.addLayout(self._traitFormLayout)
-        self._attributeLayout.addStretch(1)
-
+        self._statsSheetWidget = gui.RobotSheetWidget()
         self._notesWidget = gui.NotesWidget()
 
         self._expanderWidget = gui.ExpanderGroupWidgetEx()
         self._expanderWidget.setPersistExpanderStates(True)
         self._expanderWidget.addExpandingContent(
             label='Stats',
-            content=self._attributeLayout,
-            expanded=True)
+            content=self._statsSheetWidget,
+            expanded=True)        
         self._expanderWidget.addExpandingContent(
             label='Notes',
             content=self._notesWidget,
@@ -177,64 +166,25 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
         return True
 
-    def _configureControls(self) -> None:
-        self._updateAttributeLayout(
-            layout=self._basicFormLayout,
-            attributeIds=robots.StandardAttributeIds,
-            isTraitAttributes=False)
-        self._updateAttributeLayout(
-            layout=self._traitFormLayout,
-            attributeIds=robots.TraitAttributesIds,
-            isTraitAttributes=True)        
+    def _configureControls(self) -> None:       
+        self._statsSheetWidget.setRobot(robot=self._robot)
         self._expanderWidget.setContentHidden(
-            content=self._attributeLayout,
-            hidden=self._basicFormLayout.isEmpty())
+            content=self._statsSheetWidget,
+            hidden=self._robot == None)
 
         self._notesWidget.setSteps(self._robot.steps())
         self._expanderWidget.setContentHidden(
             content=self._notesWidget,
             hidden=self._notesWidget.isEmpty())
 
-    def _updateAttributeLayout(
-            self,
-            layout: gui.FormLayoutEx,
-            attributeIds: typing.Optional[typing.Iterable[robots.RobotAttributeId]],
-            isTraitAttributes: bool,
-            startRow: int = 0
-            ) -> None:
-        row = startRow
-        for attributeId in attributeIds:
-            attribute = self._robot.attribute(
-                attributeId=attributeId)
-            if not attribute:
-                continue
-
-            label = 'Trait:' if isTraitAttributes else attribute.name() + ':'
-            if row >= layout.rowCount():
-                attributeEditBox = _AttributeLineEdit(
-                    attribute=attribute,
-                    isTrait=isTraitAttributes)
-                layout.addRow(label, attributeEditBox)
-            else:
-                attributeEditBox = layout.widgetAt(row)
-                attributeEditBox.setAttribute(
-                    attribute=attribute,
-                    isTrait=isTraitAttributes)
-                layout.setLabelText(row, label)
-
-            row += 1
-
-        while layout.rowCount() > row:
-            layout.removeRow(layout.rowCount() - 1)
-
     def _resetControls(self) -> None:
-        self._basicFormLayout.clear()
+        self._statsSheetWidget.clear()
         self._notesWidget.clear()
 
         # Hide expanders (and the controls they contain). They will be
         # shown again if/when they have something to display
         self._expanderWidget.setContentHidden(
-            content=self._attributeLayout,
+            content=self._statsSheetWidget,
             hidden=True)
         self._expanderWidget.setContentHidden(
             content=self._notesWidget,
