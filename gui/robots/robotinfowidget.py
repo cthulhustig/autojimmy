@@ -94,8 +94,6 @@ class _AttributeLineEdit(_CalculationLineEdit):
         return self._attribute.calculations()
 
 class RobotInfoWidget(QtWidgets.QWidget):
-    # TODO: Need to add something to display skills and weapons
-
     _StateVersion = 'RobotInfoWidget_v1'
 
     def __init__(

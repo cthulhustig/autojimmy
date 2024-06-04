@@ -62,7 +62,6 @@ class RobotSheetWidget(QtWidgets.QWidget):
             QtWidgets.QHeaderView.ResizeMode.Fixed)
         self._table.verticalHeader().setSectionResizeMode(
             QtWidgets.QHeaderView.ResizeMode.Fixed)
-        #self._table.horizontalHeader().setStretchLastSection(True)
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
         self._table.setItemDelegate(gui.TableViewSpannedWordWrapFixDelegate())
@@ -120,9 +119,16 @@ class RobotSheetWidget(QtWidgets.QWidget):
             elif section == RobotSheetWidget._Sections.Locomotion:
                 primaryLocomotion = self._robot.findFirstComponent(
                     componentType=robots.PrimaryLocomotion)
-                if isinstance(primaryLocomotion, robots.PrimaryLocomotion):
-                    itemText = primaryLocomotion.componentString()
-                # TODO: Handle secondary locomotion
+                secondaryLocomotions = self._robot.findComponents(
+                    componentType=robots.SecondaryLocomotion)
+                locomotionStrings = []
+                if primaryLocomotion:
+                    locomotionStrings.append(primaryLocomotion.componentString())
+                for locomotion in secondaryLocomotions:
+                    componentString = locomotion.componentString()
+                    if componentString not in locomotionStrings:
+                        locomotionStrings.append(componentString)
+                itemText = ', '.join(locomotionStrings)
             elif section == RobotSheetWidget._Sections.Speed:
                 attributeValue = self._robot.attributeValue(
                     attributeId=robots.RobotAttributeId.Speed)
@@ -131,7 +137,6 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         number=attributeValue.value(),
                         suffix='m')
             elif section == RobotSheetWidget._Sections.TL:
-                # TODO: Should this also have the TL ehex in brackets (if it's > 9)
                 itemText = str(self._robot.techLevel())
             elif section == RobotSheetWidget._Sections.Cost:
                 cost = self._robot.totalCredits()
@@ -139,6 +144,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     number=cost.value(),
                     prefix='Cr')
             elif section == RobotSheetWidget._Sections.Skills:
+                skillString = []
                 for skillDef in traveller.AllStandardSkills:
                     skill = self._robot.skill(skillDef=skillDef)
                     if skill:
@@ -146,12 +152,11 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         if not specialities:
                             specialities = [None]
                         for speciality in specialities:
-                            itemText += '{separator}{skill} {level}'.format(
-                                separator=', ' if itemText else '',
+                            skillString.append('{skill} {level}'.format(
                                 skill=skill.name(speciality=speciality),
-                                level=skill.level(speciality=speciality).value())
-                if not itemText:
-                    itemText = 'None'
+                                level=skill.level(speciality=speciality).value()))
+                skillString.sort()
+                itemText = RobotSheetWidget._formatListString(skillString)
             elif section == RobotSheetWidget._Sections.Attacks:
                 seenWeapons: typing.Dict[traveller.StockWeapon, int] = {}
 
@@ -175,6 +180,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         count = seenWeapons.get(weapon, 0)
                         seenWeapons[weapon] = count + 1
 
+                weaponStrings = []
                 for weapon, count in seenWeapons.items():
                     damage = weapon.damage()
                     traits = weapon.traits()
@@ -182,14 +188,11 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         damage=weapon.damage(),
                         separator=', ' if len(damage) > 0 else '',
                         traits=traits)
-                    itemText += '{separator}{count}{weapon}{info}'.format(
-                        separator=', ' if itemText else '',
+                    weaponStrings.append('{count}{weapon}{info}'.format(
                         count=f'{count} X ' if count > 1 else '',
                         weapon=weapon.name(),
-                        info=f' ({weaponInfo})' if weaponInfo else '')
-
-                if not itemText:
-                    itemText = 'None'
+                        info=f' ({weaponInfo})' if weaponInfo else ''))
+                itemText = RobotSheetWidget._formatListString(weaponStrings)
             elif section == RobotSheetWidget._Sections.Manipulators:
                 seenCharacteristics: typing.Dict[typing.Tuple[int, int, int], int] = {}
                 components = self._robot.findComponents(
@@ -204,14 +207,15 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     count = seenCharacteristics.get(characteristics, 0)
                     seenCharacteristics[characteristics] = count + 1
 
+                manipulatorStrings = []
                 for characteristics, count in seenCharacteristics.items():
                     strength = characteristics[0]
                     dexterity = characteristics[1]
-                    itemText += '{separator}{count} X (STR {strength} DEX {dexterity})'.format(
-                        separator=', ' if itemText else '',
+                    manipulatorStrings.append('{count} X (STR {strength} DEX {dexterity})'.format(
                         count=count,
                         strength=strength,
-                        dexterity=dexterity)
+                        dexterity=dexterity))
+                itemText = RobotSheetWidget._formatListString(manipulatorStrings)
             elif section == RobotSheetWidget._Sections.Endurance:
                 attributeValue = self._robot.attributeValue(
                     attributeId=robots.RobotAttributeId.Endurance)
@@ -219,27 +223,26 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = common.formatNumber(
                         number=attributeValue.value(),
                         suffix=' hours')
-                # TODO: Could check for power related components and add something (e.g. ' + Solar Coating')
+                else:
+                    itemText = 'None'
             elif section == RobotSheetWidget._Sections.Traits:
-                # TODO: Add traits to item string in alphabetical order
+                traitStrings = []
                 for trait in robots.TraitAttributeIds:
                     attribute = self._robot.attribute(attributeId=trait)
                     if not attribute:
                         continue
-
+                    traitString = trait.value
                     value = attribute.value()
-                    valueText = None
                     if isinstance(value, common.ScalarCalculation):
-                        valueText = common.formatNumber(number=value.value())
+                        traitString += ' ' + common.formatNumber(
+                            number=value.value())
                     elif isinstance(value, common.DiceRoll):
-                        valueText = str(value)
+                        traitString += ' ' + str(value)
                     elif isinstance(value, enum.Enum):
-                        valueText = str(value.value)
-
-                    itemText += '{separator}{attribute}{value}'.format(
-                        separator=', ' if itemText else '',
-                        attribute=attribute.name(),
-                        value=f' {valueText}' if valueText else '')
+                        traitString += ' ' + str(value.value)
+                    traitStrings.append(traitString)
+                traitStrings.sort()
+                itemText = RobotSheetWidget._formatListString(traitStrings)
             elif section == RobotSheetWidget._Sections.Programming:
                 brain = self._robot.findFirstComponent(
                     componentType=robots.Brain)
@@ -251,19 +254,29 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = '{brain} (INT {intelligence})'.format(
                         brain=brain.componentString(),
                         intelligence=intelligence.value())
+                else:
+                    itemText = 'None'
             elif section == RobotSheetWidget._Sections.Options:
-                options: typing.Dict[typing.Union[robots.DefaultSuiteOption, robots.SlotOption], int] = {}
+                options: typing.Dict[str, int] = {}
                 components = self._robot.findComponents(
                     componentType=robots.DefaultSuiteOption)
                 for component in components:
-                    count = options.get(component, 0)
-                    options[component] = count + 1
-                # TODO: Add options to item string in alphabetical order
-                for option, count in options.items():
-                    itemText += '{separator}{count}{option}'.format(
-                        separator=', ' if itemText else '',
-                        count=f'{count} X ' if count > 1 else '',
-                        option=option.componentString())
+                    componentString = component.componentString()
+                    count = options.get(componentString, 0)
+                    options[componentString] = count + 1
+
+                optionStrings = []
+                orderedKeys = list(options.keys())
+                orderedKeys.sort()
+                for componentString in orderedKeys:
+                    count = options[componentString]
+                    if count > 1:
+                        componentString = f'{count} X {componentString}'
+                    optionStrings.append(componentString)
+
+                # At this point the strings should already be sorted
+                # alphabetically (but ignoring any count multiplier)
+                itemText = RobotSheetWidget._formatListString(optionStrings)
 
             item.setText(itemText)
 
@@ -280,4 +293,12 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _createDataItem(section: _Sections) -> QtWidgets.QTableWidgetItem:
         item = gui.TableWidgetItemEx()
         item.setData(QtCore.Qt.ItemDataRole.UserRole, section)
-        return item    
+        return item
+    
+    @staticmethod
+    def _formatListString(
+            stringList: typing.Iterable[str]
+            ) -> str:
+        if not stringList:
+            return 'None'
+        return ', '.join(stringList)
