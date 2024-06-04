@@ -3905,7 +3905,7 @@ class _AutobarSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Steward and Profession (bartender) skills are limited to {maxSkill} when using Autobar')      
+        step.addNote(f'Steward and Profession (Bartender) skills are limited to {maxSkill} when using Autobar')      
         step.addNote(f'Replenishing the Autobar costs Cr{replenishmentCost}') 
 
 class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
@@ -3992,7 +3992,7 @@ class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Steward and Profession (chef) skills are limited to {maxSkill} when using Autochef')
+        step.addNote(f'Steward and Profession (Chef) skills are limited to {maxSkill} when using Autochef')
 
 class _AutopilotSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -6568,7 +6568,7 @@ class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
 
     _ReplenishingNote = 'Replenishing the toolkit with product has a base cost of Cr500 but this doubles for every point past SOC 8 the product is intended for.'
-    _ProfessionNote = 'A positive Effect of a Profession (stylist) check can increase the effective SOC of the product by the Effect.'
+    _ProfessionNote = 'A positive Effect of a Profession (Stylist) check can increase the effective SOC of the product by the Effect.'
     _SpeciesNote = 'Using the toolkit on a species other than {species} gives a DM-3 or more modifier.'
     _NoSpeciesSpecifiedNote = 'WARNING: The species the toolkit is designed for has not been specified'
 
