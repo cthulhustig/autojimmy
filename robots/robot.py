@@ -215,7 +215,7 @@ class Robot(construction.ConstructableInterface):
     def findFirstComponent(
             self,
             componentType: typing.Type[robots.RobotComponentInterface]
-            ) -> typing.Iterable[robots.RobotComponentInterface]:
+            ) -> typing.Optional[robots.RobotComponentInterface]:
         return self._constructionContext.findFirstComponent(
             componentType=componentType,
             sequence=self._sequence)    
