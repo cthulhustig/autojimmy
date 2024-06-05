@@ -74,6 +74,21 @@ class RobotContext(construction.ConstructionContext):
             value=slotsUsed,
             name='Total Cost')         
     
+    def maxSlots(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        maxSlots = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.MaxSlots)
+        if not isinstance(maxSlots, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Max Slots')
+        return common.Calculator.equals(
+            value=maxSlots,
+            name='Max Slots')  
+
     def usedSlots(
             self,
             sequence: str,
@@ -83,18 +98,51 @@ class RobotContext(construction.ConstructionContext):
             costId=robots.RobotCost.Slots)
         return common.Calculator.equals(
             value=slotsUsed,
-            name='Total Slots Used')
+            name='Used Slots')
+    
+    def spareSlots(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        return common.Calculator.subtract(
+            lhs=self.maxSlots(sequence=sequence),
+            rhs=self.usedSlots(sequence=sequence),
+            name='Spare Slots')      
 
+    def maxBandwidth(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        maxBandwidth = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.MaxBandwidth)
+        if not isinstance(maxBandwidth, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Max Bandwidth')
+        return common.Calculator.equals(
+            value=maxBandwidth,
+            name='Max Bandwidth') 
+    
     def usedBandwidth(
             self,
             sequence: str,
             ) -> common.ScalarCalculation:
-        slotsUsed = self.multiPhaseCost(
+        bandwidthUsed = self.multiPhaseCost(
             sequence=sequence,
             costId=robots.RobotCost.Bandwidth)
         return common.Calculator.equals(
-            value=slotsUsed,
-            name='Total Bandwidth Used')
+            value=bandwidthUsed,
+            name='Used Bandwidth')      
+
+    def spareBandwidth(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        return common.Calculator.subtract(
+            lhs=self.maxBandwidth(sequence=sequence),
+            rhs=self.usedBandwidth(sequence=sequence),
+            name='Spare Bandwidth') 
     
     def multiPhaseCost(
             self,
@@ -381,7 +429,32 @@ class Robot(construction.ConstructableInterface):
             costId=costId)
     
     def totalCredits(self) -> common.ScalarCalculation:
-        return self._constructionContext.totalCredits(sequence=self._sequence)
+        return self._constructionContext.totalCredits(
+            sequence=self._sequence)
+    
+    def maxSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.maxSlots(
+            sequence=self._sequence)     
+    
+    def usedSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.usedSlots(
+            sequence=self._sequence)
+    
+    def spareSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.spareSlots(
+            sequence=self._sequence)
+    
+    def maxBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.maxBandwidth(
+            sequence=self._sequence)     
+    
+    def usedBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.usedBandwidth(
+            sequence=self._sequence)
+    
+    def spareBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.spareBandwidth(
+            sequence=self._sequence)
     
     def manifest(self) -> construction.Manifest:
         sequenceStates = self._constructionContext.state(

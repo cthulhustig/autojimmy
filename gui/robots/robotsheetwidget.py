@@ -7,6 +7,29 @@ import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class RobotSheetWidget(QtWidgets.QWidget):
+    # TODO: Need something that allows you to see calculations of fields where
+    # it's appropriate
+    # TODO: Need something to allow you to copy/paste all the data (similar to
+    # notes widget)
+    # TODO: I need something to handle the fact, when the book shows skills, it
+    # shows the value with the characteristic modifier pre-applied. It means all
+    # skills will be 'wrong' if someone compares with the book.
+    # - There are a few issues with displaying pre-calculated values:
+    #   - I don't think it will be how players are used to dealing with skills
+    #     (i.e. it's not the same as when using a 'normal' character sheets)
+    #   - For robots with manipulators that have different STR/DEX values as the
+    #     skill can only be precalculated using the characteristic of one
+    #     manipulator. The assumption being it's the highest value from across
+    #     all manipulators. This makes it more complicated for players when they
+    #     use one of the other manipulators as the sheet doesn't show the base
+    #     skill value.
+    # - The best idea I have so far is to have a check box (above the sheet
+    #   widget) that allows you to select if the skill values are pre-calculated
+    #   or not
+    # - This work would be further complicated by the fact that technically the
+    #   book says the value shown on the sheet should include modifiers for
+    #   'other factors' (p76)
+
     class _Sections(enum.Enum):
         Robot = 'Robot'
         Hits = 'Hits'
@@ -116,6 +139,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     attributeId=robots.RobotAttributeId.Hits)
                 if isinstance(attributeValue, common.ScalarCalculation):
                     itemText = common.formatNumber(number=attributeValue.value())
+                else:
+                    itemText = '-'
             elif section == RobotSheetWidget._Sections.Locomotion:
                 primaryLocomotion = self._robot.findFirstComponent(
                     componentType=robots.PrimaryLocomotion)
@@ -128,7 +153,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     componentString = locomotion.componentString()
                     if componentString not in locomotionStrings:
                         locomotionStrings.append(componentString)
-                itemText = ', '.join(locomotionStrings)
+                itemText = RobotSheetWidget._formatListString(locomotionStrings)
             elif section == RobotSheetWidget._Sections.Speed:
                 attributeValue = self._robot.attributeValue(
                     attributeId=robots.RobotAttributeId.Speed)
@@ -136,6 +161,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = common.formatNumber(
                         number=attributeValue.value(),
                         suffix='m')
+                else:
+                    itemText = '-'
             elif section == RobotSheetWidget._Sections.TL:
                 itemText = str(self._robot.techLevel())
             elif section == RobotSheetWidget._Sections.Cost:
@@ -156,6 +183,13 @@ class RobotSheetWidget(QtWidgets.QWidget):
                                 skill=skill.name(speciality=speciality),
                                 level=skill.level(speciality=speciality).value()))
                 skillString.sort()
+
+                # Add the amount of spare bandwidth, this should always be done at
+                # end of the string (i.e. after sorting)
+                spareBandwidth = self._robot.spareBandwidth()
+                if spareBandwidth.value() > 0:
+                    skillString.append(f' +{spareBandwidth.value()} available Bandwidth')
+
                 itemText = RobotSheetWidget._formatListString(skillString)
             elif section == RobotSheetWidget._Sections.Attacks:
                 seenWeapons: typing.Dict[traveller.StockWeapon, int] = {}
@@ -186,10 +220,10 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     traits = weapon.traits()
                     weaponInfo = '{damage}{separator}{traits}'.format(
                         damage=weapon.damage(),
-                        separator=', ' if len(damage) > 0 else '',
+                        separator=', ' if damage and traits else '',
                         traits=traits)
                     weaponStrings.append('{count}{weapon}{info}'.format(
-                        count=f'{count} X ' if count > 1 else '',
+                        count=f'{count} x ' if count > 1 else '',
                         weapon=weapon.name(),
                         info=f' ({weaponInfo})' if weaponInfo else ''))
                 itemText = RobotSheetWidget._formatListString(weaponStrings)
@@ -211,7 +245,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 for characteristics, count in seenCharacteristics.items():
                     strength = characteristics[0]
                     dexterity = characteristics[1]
-                    manipulatorStrings.append('{count} X (STR {strength} DEX {dexterity})'.format(
+                    manipulatorStrings.append('{count} x (STR {strength} DEX {dexterity})'.format(
                         count=count,
                         strength=strength,
                         dexterity=dexterity))
@@ -258,8 +292,11 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = 'None'
             elif section == RobotSheetWidget._Sections.Options:
                 options: typing.Dict[str, int] = {}
-                components = self._robot.findComponents(
-                    componentType=robots.DefaultSuiteOption)
+                components: typing.List[robots.RobotComponentInterface] = []
+                components.extend(self._robot.findComponents(
+                    componentType=robots.DefaultSuiteOption))
+                components.extend(self._robot.findComponents(
+                    componentType=robots.SlotOption))                
                 for component in components:
                     componentString = component.componentString()
                     count = options.get(componentString, 0)
@@ -271,8 +308,14 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 for componentString in orderedKeys:
                     count = options[componentString]
                     if count > 1:
-                        componentString = f'{count} X {componentString}'
+                        componentString += f'X {count}'
                     optionStrings.append(componentString)
+
+                # Add the number of spare slots, this should always be done at
+                # end of the string (i.e. after sorting)
+                spareSlots = self._robot.spareSlots()
+                if spareSlots.value() > 0:
+                    optionStrings.append(f'Spare Slots x {spareSlots.value()}')
 
                 # At this point the strings should already be sorted
                 # alphabetically (but ignoring any count multiplier)
