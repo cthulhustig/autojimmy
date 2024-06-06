@@ -267,13 +267,17 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         continue
                     traitString = trait.value
                     value = attribute.value()
+                    valueString = None
                     if isinstance(value, common.ScalarCalculation):
-                        traitString += ' ' + common.formatNumber(
-                            number=value.value())
+                        valueString = common.formatNumber(
+                            number=value.value(),
+                            alwaysIncludeSign=True)
                     elif isinstance(value, common.DiceRoll):
-                        traitString += ' ' + str(value)
+                        valueString = str(value)
                     elif isinstance(value, enum.Enum):
-                        traitString += ' ' + str(value.value)
+                        valueString = str(value.value)
+                    if valueString:
+                        traitString += f' ({valueString})'
                     traitStrings.append(traitString)
                 traitStrings.sort()
                 itemText = RobotSheetWidget._formatListString(traitStrings)

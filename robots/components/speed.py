@@ -434,6 +434,11 @@ class VehicleSpeedMovement(SpeedModification):
     # He also 
     # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
+    # TODO: I think I might be wrong about Vehicle Speed Movement being incompatible
+    # with Tactical Speed Increase. The rules actually say they can't be used in
+    # conjunction with each other, that wouldn't nessicerily mean they can't both be
+    # installed, just not used at the same time
+
     _BaseSlotPercent = common.ScalarCalculation(
         value=25,
         name='Vehicle Speed Movement Base Slot Requirement Percentage')

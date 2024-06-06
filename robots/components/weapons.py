@@ -804,7 +804,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
     # NOTE: The current implementation won't let you select a mount size
     # where the selected manipulator doesn't meet the min manipulator
     # requirement. Technically the it's not a hard requirement, you just don't
-    # get the manipulators DEX/STR characteristic DM when making  attacks if
+    # get the manipulators STR/DEX characteristic DM when making  attacks if
     # it doesn't meet the min requirement. I think the current behaviour is
     # desirable as I would expect the in the majority of cases the user wouldn't
     # want to mount weapons the robot can use effectively so it's best to stop
