@@ -234,6 +234,8 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponType = gunsmith.WeaponType.ConventionalWeapon
 
+    _StateVersion = '_WeaponManagementWidget_v1'
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -242,7 +244,40 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
             constructableStore=gunsmith.WeaponStore.instance().constructableStore(),
             parent=parent)
         self._exportJob = None
-        self._importExportPath = None # TODO: This needs to be saved and loaded between sessions
+        self._importExportPath = None
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(_WeaponManagementWidget._StateVersion)
+
+        stream.writeQString(self._importExportPath)
+
+        baseState = super().saveState()
+        stream.writeUInt32(baseState.count() if baseState else 0)
+        if baseState:
+            stream.writeRawData(baseState.data())
+
+        return state
+    
+    def restoreState(self, state: QtCore.QByteArray) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != _WeaponManagementWidget._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore _WeaponManagementWidget state (Incorrect version)')
+            return False
+
+        self._importExportPath = stream.readQString()
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        baseState = QtCore.QByteArray(stream.readRawData(count))
+        if not super().restoreState(baseState):
+            return False
+
+        return True
         
     def createConstructable(
             self,

@@ -1,6 +1,7 @@
 import app
 import construction
 import gui
+import logging
 import robots
 import traveller
 import typing
@@ -15,6 +16,8 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponSet = traveller.StockWeaponSet.CSC2023
 
+    _StateVersion = '_RobotManagementWidget_v1'
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -23,6 +26,40 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
             constructableStore=robots.RobotStore.instance().constructableStore(),
             parent=parent)
         self._exportJob = None
+        self._importExportPath = None
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(_RobotManagementWidget._StateVersion)
+
+        stream.writeQString(self._importExportPath)
+
+        baseState = super().saveState()
+        stream.writeUInt32(baseState.count() if baseState else 0)
+        if baseState:
+            stream.writeRawData(baseState.data())
+
+        return state
+    
+    def restoreState(self, state: QtCore.QByteArray) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != _RobotManagementWidget._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore _RobotManagementWidget state (Incorrect version)')
+            return False
+
+        self._importExportPath = stream.readQString()
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        baseState = QtCore.QByteArray(stream.readRawData(count))
+        if not super().restoreState(baseState):
+            return False
+
+        return True           
         
     def createConstructable(
             self,
@@ -39,7 +76,7 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
 
     def exportConstructable(self) -> None:
         # TODO: Implement export
-        pass
+        pass 
 
 class RobotBuilderWindow(gui.WindowWidget):
     _PDFFilter = 'PDF (*.pdf)'
@@ -197,6 +234,18 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._currentRobotGroupBox.setLayout(layout)
 
     def _setupResultsControls(self) -> None:
+        self._usedSlotsLabel = QtWidgets.QLabel()
+        self._usedBandwidthLabel = QtWidgets.QLabel()
+
+        labelLayout = QtWidgets.QHBoxLayout()
+        labelLayout.setContentsMargins(0, 0, 0, 0)
+        labelLayout.addLayout(gui.createLabelledWidgetLayout(
+            text='Used Slots: ',
+            widget=self._usedSlotsLabel))
+        labelLayout.addLayout(gui.createLabelledWidgetLayout(
+            text='Used Bandwidth: ',
+            widget=self._usedBandwidthLabel))
+
         self._manifestTable = gui.RobotManifestTable()
 
         self._infoWidget = gui.RobotInfoWidget()
@@ -211,6 +260,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._resultsDisplayModeTabView.addTab(scrollArea, 'Attributes')
 
         layout = QtWidgets.QVBoxLayout()
+        layout.addLayout(labelLayout)
         layout.addWidget(self._resultsDisplayModeTabView)
 
         self._manifestGroupBox = QtWidgets.QGroupBox('Results')
@@ -224,6 +274,38 @@ class RobotBuilderWindow(gui.WindowWidget):
 
     def _updateResults(self) -> None:
         robot = self._configurationWidget.robot()
+
+        defaultTextColour = QtWidgets.QApplication.palette().color(
+            QtGui.QPalette.ColorRole.WindowText)
+
+        usedSlots = robot.usedSlots().value()
+        maxSlots = robot.maxSlots().value()
+        slotsText = f'{usedSlots}/{maxSlots}'
+        slotsColour = defaultTextColour
+        if usedSlots > maxSlots:
+            slotsText += ' - Limit Exceeded!'
+            slotsColour = QtCore.Qt.GlobalColor.red
+        self._usedSlotsLabel.setText(slotsText)
+        palette = self._usedSlotsLabel.palette()
+        palette.setColor(
+            QtGui.QPalette.ColorRole.WindowText,
+            slotsColour)
+        self._usedSlotsLabel.setPalette(palette)
+
+        usedBandwidth = robot.usedBandwidth().value()
+        maxBandwidth = robot.maxBandwidth().value()
+        bandwidthText = f'{usedBandwidth}/{maxBandwidth}'
+        bandwidthColour = defaultTextColour
+        if usedBandwidth > maxBandwidth:
+            bandwidthText += ' - Limit Exceeded!'
+            bandwidthColour = QtCore.Qt.GlobalColor.red
+        self._usedBandwidthLabel.setText(bandwidthText)
+        palette = self._usedBandwidthLabel.palette()
+        palette.setColor(
+            QtGui.QPalette.ColorRole.WindowText,
+            bandwidthColour)
+        self._usedBandwidthLabel.setPalette(palette)        
+
         self._manifestTable.setManifest(manifest=robot.manifest())
         self._infoWidget.setRobot(robot=robot)
 

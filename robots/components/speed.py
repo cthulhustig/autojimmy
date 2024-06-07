@@ -99,6 +99,20 @@ class TacticalSpeedEnhancement(SpeedModification):
     - Requirement: At most 9 levels can be taken as any more than that will
     reduce the robots endurance by 100%
     """
+    # NOTE: The way the rules are worded around the the incompatibility with
+    # Vehicle Speed Movement is a little ambiguous. Rather than saying they are
+    # incompatible it says they can't be used 'in conjunction' with each other.
+    # This could be taken to mean they are compatible, they just can't be used
+    # at the same time. It would be an odd thing to say as I don't think anyone
+    # would logically think they are something that would stack as they don't
+    # share any common units, but it could be taken to mean that. The reason I
+    # think it actually means incompatible is the wording of the Tactical Speed
+    # Reduction as it says it can't be used in conjunction with the Agility
+    # Enhancement, I don't think the Agility Enhancement is something that you
+    # would logically turn on/off as it says it replaces the robots components.
+    # This would mean taking 'in conjunction' to mean you can have both
+    # installed but not use both at the same time doesn't make sense at all,
+    # the implication being it must mean only one can be installed at a time.
     # NOTE: Not being compatible with Tactical Speed Reduction and Vehicle
     # Speed Movement will come for free as all SpeedModification are
     # incompatible with each other so they will be a single select stage
@@ -433,11 +447,6 @@ class VehicleSpeedMovement(SpeedModification):
     # have a base Speed Band of Hypersonic was clarified by Geir in this thread.
     # He also 
     # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
-
-    # TODO: I think I might be wrong about Vehicle Speed Movement being incompatible
-    # with Tactical Speed Increase. The rules actually say they can't be used in
-    # conjunction with each other, that wouldn't nessicerily mean they can't both be
-    # installed, just not used at the same time
 
     _BaseSlotPercent = common.ScalarCalculation(
         value=25,

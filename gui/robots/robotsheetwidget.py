@@ -284,14 +284,15 @@ class RobotSheetWidget(QtWidgets.QWidget):
             elif section == RobotSheetWidget._Sections.Programming:
                 brain = self._robot.findFirstComponent(
                     componentType=robots.Brain)
-                intelligence = self._robot.attributeValue(
-                    attributeId=robots.RobotAttributeId.Intelligence)
-                if brain and intelligence:
+                if brain:
                     assert(isinstance(brain, robots.Brain))
-                    assert(isinstance(intelligence, common.ScalarCalculation))
-                    itemText = '{brain} (INT {intelligence})'.format(
-                        brain=brain.componentString(),
-                        intelligence=intelligence.value())
+                    itemText = brain.componentString()
+
+                    intelligence = self._robot.attributeValue(
+                        attributeId=robots.RobotAttributeId.Intelligence)
+                    if intelligence:
+                        assert(isinstance(intelligence, common.ScalarCalculation))
+                        itemText += f' (INT {intelligence.value()})'
                 else:
                     itemText = 'None'
             elif section == RobotSheetWidget._Sections.Options:

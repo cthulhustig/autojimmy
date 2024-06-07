@@ -602,23 +602,12 @@ class RobotBrain(Brain):
             name=f'{upgrade.value} Intellect Upgrade Cost')
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
+        assert(bandwidthUsed.value() > 0)
+        step.setBandwidth(bandwidth=construction.ConstantModifier(value=bandwidthUsed))
+
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Intelligence,
-            modifier=construction.ConstantModifier(value=intelligenceIncrease)))        
-        
-        # NOTE: As this is still technically part of the brain I think it makes
-        # sense to update the max available bandwidth rather than having a
-        # bandwidth cost. This means the required bandwidth value needs to be
-        # negated as the positive value needs to be converted to a negative
-        # modifier
-        # NOTE: Update max bandwidth NOT inherent bandwidth
-        assert(bandwidthUsed.value() > 0)
-        bandwidthUsed = common.Calculator.negate(
-            value=bandwidthUsed,
-            name=f'{upgrade.value} Intellect Upgrade Max Bandwidth Modifier')    
-        step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.MaxBandwidth,
-            modifier=construction.ConstantModifier(value=bandwidthUsed)))
+            modifier=construction.ConstantModifier(value=intelligenceIncrease)))
 
         return step      
     
@@ -1068,6 +1057,15 @@ class BrainInAJarBrain(Brain):
     # my logic that the skills come from the living brain that is being installed
     # NOTE: Adding a note for the Degradation check is handled by the derived
     # classes as some have a check every month and some annually
+
+    # TODO: The specified characteristics don't currently do anything other than
+    # provide a somewhere the user can specify the values for record keeping. At
+    # a minimum the value specified for for INT should set the Intelligence
+    # attribute. Ideally I would probably add attributes for all the
+    # characteristics (other than INT they would only be used for brain in a jar).
+    # These values will then be shown in the manifest and could be included in
+    # the Processing section of the robot sheet and possibly in a note added by
+    # this component.
 
     _OptionalCharacteristics = [
         "INT",

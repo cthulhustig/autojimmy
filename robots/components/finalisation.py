@@ -27,6 +27,21 @@ def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[travel
     return None
 
 class UnusedSlotRemoval(robots.RobotComponentInterface):
+    """
+    - Cost Saving: Cr100 per slot removed
+    """    
+    # NOTE: The fact this component doesn't check if there are any slots to
+    # remove is important as we don't want the component to be removed if
+    # the user temporarily adds a new component that takes the robot over
+    # the slot limit. The problem with having it removed is the None option
+    # will be selected (as it would be compatible) and then when the
+    # temporary component is removed it it will remain as None as the
+    # default component logic won't get applied (as there is a component)
+    
+    _PerSlotCostSaving = common.ScalarCalculation(
+        value=-100,
+        name='Unused Slot Removal Per Slot Cost Saving')
+    
     def typeString(self) -> str:
         return 'Unused Slot Removal'
     
@@ -45,40 +60,7 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        pass    
-
-# NOTE: This component is hack to allow the stage to default to
-# CustomSlotRemoval but still allow the user to select None as
-# an option
-class NoUnusedSlotRemoval(UnusedSlotRemoval):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def componentString(self) -> str:
-        return 'None'
-
-    def createSteps(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
-
-class ActualUnusedSlotRemoval(UnusedSlotRemoval):
-    """
-    - Cost Saving: Cr100 per slot removed
-    """    
-    # NOTE: The fact this component doesn't check if there are any slots to
-    # remove is important as we don't want the component to be removed if
-    # the user temporarily adds a new component that takes the robot over
-    # the slot limit. The problem with having it removed is the None option
-    # will be selected (as it would be compatible) and then when the
-    # temporary component is removed it it will remain as None as the
-    # default component logic won't get applied (as there is a component)
-    
-    _PerSlotCostSaving = common.ScalarCalculation(
-        value=-100,
-        name='Unused Slot Removal Per Slot Cost Saving')
+        pass        
     
     def createSteps(
             self,
@@ -104,13 +86,7 @@ class ActualUnusedSlotRemoval(UnusedSlotRemoval):
             name=f'{self.componentString()} Total Cost Saving')
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
-        # NOTE: The slots count is negated as this is a reduction in the max slots
-        step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.MaxSlots,
-            modifier=construction.ConstantModifier(
-                value=common.Calculator.negate(
-                    value=slots,
-                    name=f'{self.componentString()} Max Slot Reduction'))))
+        step.setSlots(slots=construction.ConstantModifier(value=slots))
 
         context.applyStep(
             sequence=sequence,
@@ -143,7 +119,7 @@ class ActualUnusedSlotRemoval(UnusedSlotRemoval):
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
         raise RuntimeError(f'{type(self)} is derived from ActualUnusedSlotRemoval so must implement _slotCount')    
 
-class AllSlotRemoval(ActualUnusedSlotRemoval):
+class AllSlotRemoval(UnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
         
@@ -153,7 +129,7 @@ class AllSlotRemoval(ActualUnusedSlotRemoval):
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
         return None # Remove all
 
-class CustomSlotRemoval(ActualUnusedSlotRemoval):
+class CustomSlotRemoval(UnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
 

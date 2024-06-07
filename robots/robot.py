@@ -773,18 +773,17 @@ class Robot(construction.ConstructableInterface):
             minComponents=None,
             maxComponents=None))
         
-        # NOTE: This stage is a little unusual as it uses a dummy None component
-        # rather than being truly optional. This is needed to allow it to default
-        # to the AllSlotRemoval component but still allow the user to specify
-        # None to not have any slots removed
+        # NOTE: If I ever change this so the default isn't None then I'll need
+        # to handle the fact the label in the UI will always show the max slots
+        # as the number of slots as 0. I'd also need a migration step as I
+        # suspect 
         stages.append(construction.ConstructionStage(
             name='Unused Slot Removal',
             sequence=self._sequence,
             phase=robots.RobotPhase.Finalisation,
             baseType=robots.UnusedSlotRemoval,
-            defaultType=robots.AllSlotRemoval,
-            # Mandatory single component
-            minComponents=1,
+            # Optional single component
+            minComponents=0,
             maxComponents=1))
         
         # NOTE: This should happen AFTER unused slots are removed. I think the

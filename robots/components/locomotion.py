@@ -237,9 +237,9 @@ class _NoLocomotionImpl(_LocomotionImpl):
     """
     # NOTE: The percentage slot gain is to available slots not base slots
 
-    _SlotGainPercent = common.ScalarCalculation(
+    _MaxSlotIncreasePercent = common.ScalarCalculation(
         value=+25,
-        name='No Locomotion Slot Percentage Increase')
+        name='No Locomotion Max Slots Percentage Increase')
 
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
@@ -264,7 +264,7 @@ class _NoLocomotionImpl(_LocomotionImpl):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxSlots,
             modifier=construction.PercentageModifier(
-                value=_NoLocomotionImpl._SlotGainPercent,
+                value=_NoLocomotionImpl._MaxSlotIncreasePercent,
                 roundDown=True)))
  
 class _WheelsLocomotionImpl(_LocomotionImpl):

@@ -520,7 +520,7 @@ class RemoveBaseManipulator(BaseManipulator):
     - Slot Gain: +10% of Base Slots per Base Manipulator Removed rounded up
     - Cost Saving: Cr100 * Manipulator Size limited to 20% of Base Chassis Cost    
     """
-    _SlotGainPercent = common.ScalarCalculation(
+    _MaxSlotsIncreasePercent = common.ScalarCalculation(
         value=10,
         name='Base Manipulator Removal Slot Gain Percentage')
     _CostSavingIncrement = common.ScalarCalculation(
@@ -571,16 +571,16 @@ class RemoveBaseManipulator(BaseManipulator):
             name='Removed',
             type=self.typeString())
         
-        slotGain = common.Calculator.ceil(
+        # Rather than having a negative slot cost the max slots is
+        # increased (not the base slots)
+        slotsIncrease = common.Calculator.ceil(
             value=common.Calculator.takePercentage(
                 value=context.baseSlots(sequence=sequence),
-                percentage=RemoveBaseManipulator._SlotGainPercent,
-                name='Base Manipulator Removal Slot Gain'))
-        slotModifier = common.Calculator.negate(
-            value=slotGain,
-            name='Base Manipulator Removal Slot Modifier')
-        step.setSlots(
-            slots=construction.ConstantModifier(value=slotModifier))
+                percentage=RemoveBaseManipulator._MaxSlotsIncreasePercent,
+                name='Base Manipulator Removal Max Slots Increase'))
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.MaxSlots,
+            modifier=construction.ConstantModifier(value=slotsIncrease)))
 
         size = context.attributeValue(
             attributeId=robots.RobotAttributeId.Size,
