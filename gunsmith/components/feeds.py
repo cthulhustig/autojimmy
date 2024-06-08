@@ -121,7 +121,7 @@ class Feed(gunsmith.WeaponComponentInterface):
             type=gunsmith.WeaponAttributeId,
             value=None,
             isOptional=True,
-            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
+            choices=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=Feed._PoweredFeedAssistBulkLevelOptionDescription,
             enabled=False) # Optional, enabled if supported in updateOptions
 

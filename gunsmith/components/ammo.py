@@ -397,7 +397,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             name='Distraction Type',
             type=gunsmith.Distraction,
             value=distractionType if distractionType != None else gunsmith.Distraction.Minor, # Small distraction has such a low modifier it's effectively pointless
-            options=[gunsmith.Distraction.Small, gunsmith.Distraction.Minor],
+            choices=[gunsmith.Distraction.Small, gunsmith.Distraction.Minor],
             isOptional=False,
             description=_DistractionAmmoImpl._DistractionOptionDescription)
 

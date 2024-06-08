@@ -342,16 +342,16 @@ class RobotBrain(Brain):
             context=context)
         self._bandwidthUpgradeOption.setEnabled(
             enabled=len(bandwidthUpgrades) > 0)
-        self._bandwidthUpgradeOption.setOptions(
-            options=bandwidthUpgrades)
+        self._bandwidthUpgradeOption.setChoices(
+            choices=bandwidthUpgrades)
         
         intellectUpgrades = self._allowedIntellectUpgrades(
             sequence=sequence,
             context=context)
         self._intellectUpgradeOption.setEnabled(
             enabled=len(intellectUpgrades) > 0)
-        self._intellectUpgradeOption.setOptions(
-            options=intellectUpgrades)
+        self._intellectUpgradeOption.setChoices(
+            choices=intellectUpgrades)
         
     def createSteps(
             self,

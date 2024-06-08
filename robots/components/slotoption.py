@@ -339,7 +339,7 @@ class _EnumSelectSlotOptionImpl(_SingleStepSlotOptionImpl):
             context=context)
         
         validEnums = self._calcValidEnums(sequence=sequence, context=context)
-        self._enumOption.setOptions(options=validEnums)
+        self._enumOption.setChoices(choices=validEnums)
 
     def _calcValidEnums(
             self,
@@ -1613,7 +1613,7 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
         if self._isDefaultSuite:
             # Only zero-slot options can be selected whe part of the default
             # suite
-            self._enumOption.setOptions(
+            self._enumOption.setChoices(
                 _SelfMaintenanceEnhancementSlotOptionImpl._ZeroSlotTypes)    
 
     def updateStep(
@@ -3294,7 +3294,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             id='PrimarySpecies',
             name='Species',
             value='',
-            options=_PredefinedSpecies,
+            choices=_PredefinedSpecies,
             description=_MedicalChamberSlotOptionImpl._PrimarySpeciesOptionDesc)
         
         self._cryoBerthOption = construction.EnumOption(
@@ -3404,10 +3404,10 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
                 berthOptions.append(berthType)
 
         self._cryoBerthOption.setEnabled(not not berthOptions)
-        self._cryoBerthOption.setOptions(options=berthOptions)
+        self._cryoBerthOption.setChoices(choices=berthOptions)
 
         self._lowBerthOption.setEnabled(not not berthOptions)
-        self._lowBerthOption.setOptions(options=berthOptions)
+        self._lowBerthOption.setChoices(choices=berthOptions)
 
         self._nanobotsOption.setEnabled(
             enabled=robotTL >= _MedicalChamberSlotOptionImpl._NanobotMinTL)        
@@ -3428,7 +3428,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
                         id=f'SpeciesAddon{addonIndex}',
                         name=f'Species {addonIndex}',
                         value='',
-                        options=_PredefinedSpecies,
+                        choices=_PredefinedSpecies,
                         description='Specify the species that addon {addonIndex} gives support for.'))                    
         else:
             self._speciesAddonCountOption.setEnabled(False)
@@ -6386,7 +6386,7 @@ class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             id='Science',
             name='Science',
             value='',
-            options=traveller.ScienceSkillSpecialities,
+            choices=traveller.ScienceSkillSpecialities,
             description='Specify the science the toolkit is for.')          
         
     def isZeroSlot(self) -> bool:
@@ -6583,7 +6583,7 @@ class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
             id='Species',
             name='Species',
             value='',
-            options=_PredefinedSpecies,
+            choices=_PredefinedSpecies,
             description='Specify the species the Styling Toolkit is designed for.')    
         
     def isZeroSlot(self) -> bool:

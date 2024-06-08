@@ -892,7 +892,7 @@ class Skill(robots.RobotComponentInterface):
                 nameOption = construction.StringOption(
                     id=f'Speciality{specialityIndex}Name',
                     name=f'Speciality {specialityIndex} Name',
-                    options=self._skillDef.customSpecialities(),
+                    choices=self._skillDef.customSpecialities(),
                     value='',
                     description='Specify the name of the speciality')
                 levelOption = construction.IntegerOption(

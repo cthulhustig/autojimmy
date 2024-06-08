@@ -258,7 +258,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 lambda: self._checkBoxChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
-            stringOptions = option.options()
+            stringOptions = option.choices()
             if not stringOptions:
                 # There are no pre-defined strings the user can select from so
                 # just use a line edit
@@ -344,7 +344,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget = gui.EnumComboBox(
                 type=option.type(),
                 value=option.value(),
-                options=option.options(),
+                options=option.choices(),
                 isOptional=option.isOptional())
             widget.setSizeAdjustPolicy(
                 QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
@@ -356,7 +356,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.MultiSelectOption):
             widget = _MultiSelectOptionWidget(
-                content=option.options(),
+                content=option.choices(),
                 selected=option.value(),
                 unselectable=option.unselectable())
             connection = widget.itemChanged.connect(
@@ -448,7 +448,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 if isinstance(widget, gui.LineEditEx):
                     widget.setText(option.value())
                 else:
-                    stringOptions = option.options()
+                    stringOptions = option.choices()
                     widget.clear()
                     if option.isOptional():
                         widget.addItem(_ComponentConfigWidget._NonePlaceholder)
@@ -489,13 +489,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 assert(isinstance(widget, gui.EnumComboBox))
                 widget.setEnumType(
                     type=option.type(),
-                    options=option.options(),
+                    options=option.choices(),
                     isOptional=option.isOptional())
                 widget.setCurrentEnum(value=option.value())
             elif isinstance(option, construction.MultiSelectOption):
                 assert(isinstance(widget, _MultiSelectOptionWidget))
                 widget.synchronise(
-                    content=option.options(),
+                    content=option.choices(),
                     selected=option.value(),
                     unselectable=option.unselectable())
                 

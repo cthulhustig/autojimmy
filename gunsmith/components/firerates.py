@@ -454,7 +454,7 @@ class VRFFireRate(AdvancedFireRate):
             type=gunsmith.WeaponAttributeId,
             value=gunsmith.WeaponAttributeId.Bulky, # Default to Bulky as that's what the RF capability gives
             isOptional=True,
-            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
+            choices=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=VRFFireRate._BulkLevelOptionDescription)
 
     def options(self) -> typing.List[construction.ComponentOption]:

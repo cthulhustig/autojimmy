@@ -272,7 +272,7 @@ class _WeaponImpl(object):
             id='Weapon',
             name='Weapon',
             value=None,
-            options=['default'], # This will be replaced when updateOptions is called
+            choices=['default'], # This will be replaced when updateOptions is called
             isEditable=False,
             description='Specify the weapon that is mounted.')
         
@@ -385,7 +385,7 @@ class _WeaponImpl(object):
             sequence=sequence,
             context=context)
         if weaponCategoryOptions:
-            self._weaponCategoryOption.setOptions(options=weaponCategoryOptions)
+            self._weaponCategoryOption.setChoices(choices=weaponCategoryOptions)
         self._weaponCategoryOption.setEnabled(
             enabled=len(weaponCategoryOptions) > 0)
         
@@ -393,7 +393,7 @@ class _WeaponImpl(object):
             sequence=sequence,
             context=context)
         if weaponOptions:
-            self._weaponOption.setOptions(options=weaponOptions)
+            self._weaponOption.setChoices(choices=weaponOptions)
         self._weaponOption.setEnabled(
             enabled=len(weaponOptions) > 0)
 
@@ -407,7 +407,7 @@ class _WeaponImpl(object):
             sequence=sequence,
             context=context)        
         if fireControlOptions:
-            self._fireControlOption.setOptions(options=fireControlOptions)        
+            self._fireControlOption.setChoices(choices=fireControlOptions)        
             self._fireControlOption.setOptional(
                 isOptional=not self._linkedCountOption.value()) # Mandatory if linked
         self._fireControlOption.setEnabled(
@@ -827,7 +827,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             id='Manipulator',
             name='Manipulator',
             isEditable=False,
-            options=[''], # This will be replaced by updateOptions
+            choices=[''], # This will be replaced by updateOptions
             description='Specify which manipulator the weapon is mounted on')
         
     def manipulatorString(self) -> typing.Optional[str]:
@@ -870,8 +870,8 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             context: robots.RobotContext
             ) -> None:
         manipulators = _enumerateRobotManipulators(sequence=sequence, context=context)
-        self._manipulatorOption.setOptions(
-            options=manipulators.keys())
+        self._manipulatorOption.setChoices(
+            choices=manipulators.keys())
 
         super().updateOptions(sequence=sequence, context=context)
 
@@ -1344,7 +1344,7 @@ class Magazines(robots.RobotComponentInterface):
             id='Weapon',
             name='Weapon',
             value=None,
-            options=['default'], # This will be replaced when updateOptions is called
+            choices=['default'], # This will be replaced when updateOptions is called
             isEditable=False,
             description='The weapon to purchase magazines for.')
 
@@ -1397,8 +1397,8 @@ class Magazines(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        self._weaponOption.setOptions(
-            options=self._allowedWeapons(sequence=sequence, context=context))
+        self._weaponOption.setChoices(
+            choices=self._allowedWeapons(sequence=sequence, context=context))
         
     def createSteps(
             self,

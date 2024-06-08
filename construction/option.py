@@ -65,7 +65,7 @@ class StringOption(ComponentOption):
             id: str,
             name: str,
             value: typing.Optional[str] = None,
-            options: typing.Optional[typing.Iterable[str]] = None,
+            choices: typing.Optional[typing.Iterable[str]] = None,
             isEditable: bool = True,
             isOptional: bool = False,
             description: str = '',
@@ -74,8 +74,8 @@ class StringOption(ComponentOption):
         if value == None and not isOptional:
             if isEditable:
                 value = ''
-            elif options:
-                value = options[0]
+            elif choices:
+                value = choices[0]
 
         super().__init__(
             id=id,
@@ -83,7 +83,7 @@ class StringOption(ComponentOption):
             value=value,
             description=description,
             enabled=enabled)
-        self._options = list(options) if options != None else []
+        self._choices = list(choices) if choices != None else []
         self._isEditable = isEditable
         self._isOptional = isOptional
         self._checkAndUpdateValue(value=self._value)        
@@ -94,23 +94,23 @@ class StringOption(ComponentOption):
             ) -> None:
         self._checkAndUpdateValue(value=value)   
 
-    def options(self) -> typing.Iterable[str]:
-        return self._options
+    def choices(self) -> typing.Iterable[str]:
+        return self._choices
 
-    def setOptions(
+    def setChoices(
             self,
-            options: typing.Iterable[str] = None
+            choices: typing.Iterable[str] = None
             ) -> None:
-        self._options = list(options) if options != None else []
+        self._choices = list(choices) if choices != None else []
         if self._isEditable:
             return # Nothing more to check
         
         if self._isOptional:
-            if (self._value != None) and (self._value not in options):
+            if (self._value != None) and (self._value not in choices):
                 self._value = None
         else:
-            if self._value not in self._options:
-                self._value = self._options[0] if len(self._options) > 0 else None
+            if self._value not in self._choices:
+                self._value = self._choices[0] if len(self._choices) > 0 else None
 
     def isEditable(self) -> bool:
         return self._isEditable
@@ -126,8 +126,8 @@ class StringOption(ComponentOption):
         if not self._isOptional and self._value == None:
             if self._isEditable:
                 self._value = ''
-            elif self._options:
-                self._value = self._options[0]    
+            elif self._choices:
+                self._value = self._choices[0]    
 
     def _checkAndUpdateValue(
             self,
@@ -136,7 +136,7 @@ class StringOption(ComponentOption):
         if value == None and not self._isOptional:
             raise ValueError(f'The value can\'t be None')
 
-        if value != None and not self._isEditable and value not in self._options:
+        if value != None and not self._isEditable and value not in self._choices:
             raise ValueError(f'The value {value} is not a valid option')
 
         self._value = value
@@ -314,14 +314,14 @@ class EnumOption(ComponentOption):
             name: str,
             type: typing.Type[enum.Enum],
             value: typing.Optional[enum.Enum] = None,
-            options: typing.Iterable[enum.Enum] = None,
+            choices: typing.Iterable[enum.Enum] = None,
             isOptional: bool = False,
             description: str = '',
             enabled: bool = True
             ) -> None:
-        options = list(options) if options != None else [e for e in type]
-        if value == None and not isOptional and options:
-            value = options[0]
+        choices = list(choices) if choices != None else [e for e in type]
+        if value == None and not isOptional and choices:
+            value = choices[0]
 
         super().__init__(
             id=id,
@@ -330,7 +330,7 @@ class EnumOption(ComponentOption):
             description=description,
             enabled=enabled)
         self._type = type
-        self._options = options
+        self._choices = choices
         self._isOptional = isOptional
         self._checkAndUpdateValue(value=self._value)
 
@@ -343,20 +343,20 @@ class EnumOption(ComponentOption):
             ) -> None:
         self._checkAndUpdateValue(value=value)
 
-    def options(self) -> typing.Iterable[enum.Enum]:
-        return self._options
+    def choices(self) -> typing.Iterable[enum.Enum]:
+        return self._choices
 
-    def setOptions(
+    def setChoices(
             self,
-            options: typing.Iterable[enum.Enum] = None
+            choices: typing.Iterable[enum.Enum] = None
             ) -> None:
-        self._options = list(options) if options != None else [e for e in self._type]
+        self._choices = list(choices) if choices != None else [e for e in self._type]
         if self._isOptional:
-            if (self._value != None) and (self._value not in options):
+            if (self._value != None) and (self._value not in choices):
                 self._value = None
         else:
-            if self._value not in options:
-                self._value = options[0] if len(options) > 0 else None
+            if self._value not in choices:
+                self._value = choices[0] if len(choices) > 0 else None
 
     def isOptional(self) -> bool:
         return self._isOptional
@@ -364,7 +364,7 @@ class EnumOption(ComponentOption):
     def setOptional(self, isOptional: bool) -> None:
         self._isOptional = isOptional
         if not self._isOptional and self._value == None:
-            options = self._options if self._options != None else [e for e in self._type]
+            options = self._choices if self._choices != None else [e for e in self._type]
             if options:
                 self._value = options[0]
 
@@ -375,7 +375,7 @@ class EnumOption(ComponentOption):
         if value == None and not self._isOptional:
             raise ValueError(f'The value can\'t be None')
 
-        if value != None and value not in self._options:
+        if value != None and value not in self._choices:
             raise ValueError(f'The value {value} is not a valid option')
 
         self._value = value
@@ -385,7 +385,7 @@ class MultiSelectOption(ComponentOption):
             self,
             id: str,
             name: str,
-            options: typing.Iterable[str],
+            choices: typing.Iterable[str],
             value: typing.Optional[typing.Iterable[str]] = None,
             unselectable: typing.Optional[typing.Iterable[str]] = None,
             description: str = '',
@@ -397,7 +397,7 @@ class MultiSelectOption(ComponentOption):
             value=list(value) if value else [],
             description=description,
             enabled=enabled)
-        self._options = list(options)
+        self._choices = list(choices)
         self._unselectable = list(unselectable) if unselectable else []
         self._checkAndUpdateValue(value=self._value)        
 
@@ -407,17 +407,17 @@ class MultiSelectOption(ComponentOption):
             ) -> None:
         self._checkAndUpdateValue(value=value)   
 
-    def options(self) -> typing.Iterable[str]:
-        return self._options
+    def choices(self) -> typing.Iterable[str]:
+        return self._choices
 
-    def setOptions(
+    def setChoices(
             self,
-            options: typing.Iterable[str]
+            choices: typing.Iterable[str]
             ) -> None:
-        self._options = list(options)
+        self._choices = list(choices)
 
         for item in list(self._value):
-            if item not in self._options:
+            if item not in self._choices:
                 self._value.remove(item)
 
     def unselectable(self) -> typing.Iterable[str]:
@@ -441,7 +441,7 @@ class MultiSelectOption(ComponentOption):
             value: typing.Iterable[str]
             ) -> None:
         for item in value:
-            if item not in self._options:
+            if item not in self._choices:
                 raise ValueError(f'The value {value} is not a valid selection for')
 
         self._value = list(value)
