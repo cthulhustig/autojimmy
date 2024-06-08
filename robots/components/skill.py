@@ -591,7 +591,7 @@ class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
     _TacticsCost = common.ScalarCalculation(
         value=10000,
         name='Tactics Hunter/Killer Skill Package Cost')
-    _TacticsNote = 'The rules say "This tactical skill is not subject to the INT limitations of the robot’s brain" (p73), this most likely means it doesn\'t suffer the DM-1 it normally would when using the skill due to the Hunter/Killer Brain having an INT of 3/4'
+    _TacticsNote = 'The rules say "This tactical skill is not subject to the INT limitations of the robot’s brain" (p73), this most likely means it doesn\'t suffer the DM-1 it normally would when using the skill due to the Hunter/Killer Brain having an INT of 3-4'
 
     def __init__(self) -> None:
         super().__init__(
