@@ -655,6 +655,7 @@ Inherent Bandwidth (p67)
 # NOTE: This assumes that the robot at least meets the TL and bandwidth
 # requirements for the skill at level 0. This should be enforced by the skill
 # components
+# NOTE: This shouldn't be used for Brain in a Jar as it has no max skill level
 def _calculateMaxSkillLevel(
         introTL: common.ScalarCalculation,
         robotTL: common.ScalarCalculation,
@@ -851,8 +852,8 @@ class Skill(robots.RobotComponentInterface):
         
         if hasBrainInAJar:
             maxLevel = None
-            self._levelOption.setMax(maxLevel)
-            self._levelOption.setEnabled(self._skillDef.isSimple())            
+            self._levelOption.setMax(None)
+            self._levelOption.setEnabled(self._skillDef.isSimple())
         else:
             inherentBandwidth = context.attributeValue(
                 attributeId=robots.RobotAttributeId.InherentBandwidth,
@@ -874,10 +875,16 @@ class Skill(robots.RobotComponentInterface):
                 levelOption.setMin(1)
                 levelOption.setMax(maxLevel.value() \
                                    if maxLevel != None else \
-                                    _RobotBrainMaxPossibleLevel.value())
+                                   None) # Robot brains have no max
                 levelOption.setEnabled(maxLevel == None or maxLevel.value() > 0)
         elif self._skillDef.isCustomSpeciality():
-            specialityCount = self._customSpecialityCountOption.value()
+            self._customSpecialityCountOption.setEnabled(
+                enabled=(maxLevel == None) or (maxLevel.value() > 0))
+
+            specialityCount = 0
+            if self._customSpecialityCountOption.isEnabled():
+                specialityCount = self._customSpecialityCountOption.value()
+
             while len(self._customSpecialityOptions) > specialityCount:
                 self._customSpecialityOptions.pop()
             while len(self._customSpecialityOptions) < specialityCount:
@@ -886,6 +893,7 @@ class Skill(robots.RobotComponentInterface):
                     id=f'Speciality{specialityIndex}Name',
                     name=f'Speciality {specialityIndex} Name',
                     options=self._skillDef.customSpecialities(),
+                    value='',
                     description='Specify the name of the speciality')
                 levelOption = construction.IntegerOption(
                     id=f'Speciality{specialityIndex}Level',
@@ -899,7 +907,7 @@ class Skill(robots.RobotComponentInterface):
                 levelOption.setMin(1)
                 levelOption.setMax(maxLevel.value() \
                                    if maxLevel != None else \
-                                   _RobotBrainMaxPossibleLevel.value())
+                                   None) # Robot brains have no max
                 levelOption.setEnabled(
                     enabled=nameOption.isEnabled() and nameOption.value())
             

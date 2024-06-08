@@ -288,11 +288,17 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     assert(isinstance(brain, robots.Brain))
                     itemText = brain.componentString()
 
-                    intelligence = self._robot.attributeValue(
-                        attributeId=robots.RobotAttributeId.Intelligence)
-                    if intelligence:
-                        assert(isinstance(intelligence, common.ScalarCalculation))
-                        itemText += f' (INT {intelligence.value()})'
+                    characteristicStrings = []
+                    for characteristic in robots.CharacteristicAttributeIds:
+                        characteristicValue = self._robot.attributeValue(
+                            attributeId=characteristic)
+                        if characteristicValue:
+                            assert(isinstance(characteristicValue, common.ScalarCalculation))
+                            characteristicStrings.append(
+                                f'{characteristic.value} {characteristicValue.value()}')
+                    if characteristicStrings:
+                        itemText += ' ({characteristics})'.format(
+                            characteristics=', '.join(characteristicStrings))
                 else:
                     itemText = 'None'
             elif section == RobotSheetWidget._Sections.Options:

@@ -1058,29 +1058,10 @@ class BrainInAJarBrain(Brain):
     # NOTE: Adding a note for the Degradation check is handled by the derived
     # classes as some have a check every month and some annually
 
-    # TODO: The specified characteristics don't currently do anything other than
-    # provide a somewhere the user can specify the values for record keeping. At
-    # a minimum the value specified for for INT should set the Intelligence
-    # attribute. Ideally I would probably add attributes for all the
-    # characteristics (other than INT they would only be used for brain in a jar).
-    # These values will then be shown in the manifest and could be included in
-    # the Processing section of the robot sheet and possibly in a note added by
-    # this component.
-
-    _OptionalCharacteristics = [
-        "INT",
-        "EDU",
-        "SOC",
-        "PSI",
-        "LCK",
-        "WLT",
-        "MRL",
-        "STY"
-    ]
     _CoreOptionalCharacteristics = [
-        "INT",
-        "EDU",
-        "SOC"
+        robots.RobotAttributeId.Intelligence,
+        robots.RobotAttributeId.Education,
+        robots.RobotAttributeId.Social
     ]
 
     _MinChassisSize = 2
@@ -1111,17 +1092,17 @@ class BrainInAJarBrain(Brain):
             name='Specify Brain Characteristics',
             value=False,
             description='Specify the non-physical characteristics of the brain.')
-        self._characteristicOptions: typing.List[construction.BooleanOption] = []
-        for characteristic in BrainInAJarBrain._OptionalCharacteristics:
+        self._characteristicOptions: typing.Dict[robots.RobotAttributeId, construction.IntegerOption] = {}
+        for characteristic in robots.CharacteristicAttributeIds:
             option = construction.IntegerOption(
-                id=characteristic,
-                name=characteristic,
+                id=characteristic.value,
+                name=characteristic.value,
                 isOptional=True,
                 minValue=0,
                 maxValue=99, # This is pretty arbitrary but having a max makes the UI scale the control better
                 value=0 if characteristic in BrainInAJarBrain._CoreOptionalCharacteristics else None,
-                description=f'Specify the {characteristic} characteristics of the brain.')
-            self._characteristicOptions.append(option)
+                description=f'Specify the {characteristic.value} characteristics of the brain.')
+            self._characteristicOptions[characteristic] = option
 
     def isCompatible(
             self,
@@ -1138,7 +1119,7 @@ class BrainInAJarBrain(Brain):
         
     def options(self) -> typing.List[construction.ComponentOption]:
         options = [self._specifyCharacteristicsOption]
-        for option in self._characteristicOptions:
+        for option in self._characteristicOptions.values():
             if option.isEnabled():
                 options.append(option)
         return options
@@ -1149,7 +1130,7 @@ class BrainInAJarBrain(Brain):
             context: construction.ConstructionContext
             ) -> None:
         specifyOptions = self._specifyCharacteristicsOption.value()
-        for option in self._characteristicOptions:
+        for option in self._characteristicOptions.values():
             option.setEnabled(enabled=specifyOptions)
 
     def createSteps(
@@ -1165,6 +1146,14 @@ class BrainInAJarBrain(Brain):
             credits=construction.ConstantModifier(value=self._cost))
         step.setSlots(
             slots=construction.ConstantModifier(value=self._slots))
+        
+        for characteristic, option in self._characteristicOptions.items():
+            if option.isEnabled() and option.value() != None:
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=characteristic,
+                    value=common.ScalarCalculation(
+                        value=option.value(),
+                        name=f'Specified {characteristic.value} characteristic value')))
 
         if self._notes:
             for note in self._notes:

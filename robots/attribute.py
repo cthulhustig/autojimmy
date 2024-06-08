@@ -63,8 +63,21 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # This attribute shouldn't be included in the manifest
     ZeroSlotCount = 'Zero Slot Count'    
 
+    #
     # Brain Attributes
+    #
+    # Most brains only have an Intelligence characteristic. The others have been
+    # added as part of support for Brain in a Jar where the robot has the other
+    # skills of the brain that was implanted. Physical characteristics are not
+    # included as they come from the robot body
     Intelligence = 'INT'
+    Education = 'EDU'
+    Social = 'SOC'
+    Psionic = 'PSI'
+    Luck = 'LCK'
+    Wealth = 'WLT'
+    Moral = 'MRL'
+    Sanity = 'STY'
     # The Inherent Bandwidth is the base bandwidth of the brain. This is a hard
     # limit on the max bandwidth usage of individual skills. Modifications to
     # increase bandwidth don't increase the robot's inherent bandwidth
@@ -136,6 +149,17 @@ StandardAttributeIds = [
     RobotAttributeId.VehicleEndurance,
     RobotAttributeId.Autopilot,
     RobotAttributeId.Intelligence,
+]
+
+CharacteristicAttributeIds =[
+    RobotAttributeId.Intelligence,
+    RobotAttributeId.Education,
+    RobotAttributeId.Social,
+    RobotAttributeId.Psionic,
+    RobotAttributeId.Luck,
+    RobotAttributeId.Wealth,
+    RobotAttributeId.Moral,
+    RobotAttributeId.Sanity,
 ]
 
 TraitAttributeIds = [

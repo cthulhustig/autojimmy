@@ -246,44 +246,59 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         connection = None
         fullRow = False
         widgetAlignment = QtCore.Qt.AlignmentFlag(0)
-        labelAlignment = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
+        labelAlignment = QtCore.Qt.AlignmentFlag.AlignVCenter | \
+            QtCore.Qt.AlignmentFlag.AlignRight
         if isinstance(option, construction.BooleanOption):
             widget = gui.CheckBoxEx()
             widget.setChecked(option.value())
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
+            connection = widget.stateChanged.connect(
+                lambda: self._checkBoxChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
             stringOptions = option.options()
             if not stringOptions:
-                # There are no pre-defined strings the user can select from so just use a line edit
+                # There are no pre-defined strings the user can select from so
+                # just use a line edit
                 widget = gui.LineEditEx()
                 widget.setText(option.value())
                 widget.setSizePolicy(
-                    QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
+                    # give user as much horizontal space to type as possible
+                    QtWidgets.QSizePolicy.Policy.Expanding,
                     QtWidgets.QSizePolicy.Policy.Fixed)
-                connection = widget.delayedTextEdited.connect(lambda: self._textEditChanged(widget, option))                
+                connection = widget.delayedTextEdited.connect(
+                    lambda: self._textEditChanged(widget, option))                
             else:
-                # There are pre-defined strings the user can select from so use an editable combo box
+                # There are pre-defined strings the user can select from so use
+                # an editable combo box
                 widget = gui.ComboBoxEx()
                 widget.setEditable(option.isEditable())
-                widget.setCurrentText(option.value())
-                widget.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
+                widget.setSizeAdjustPolicy(
+                    QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
                 widget.setSizePolicy(
-                    # If the option is editable give the user as much space as possible
-                    QtWidgets.QSizePolicy.Policy.Expanding if option.isEditable() else QtWidgets.QSizePolicy.Policy.Fixed,
+                    # If the option is editable give the user as much space as
+                    # possible
+                    QtWidgets.QSizePolicy.Policy.Expanding 
+                    if option.isEditable() else 
+                    QtWidgets.QSizePolicy.Policy.Fixed,
                     QtWidgets.QSizePolicy.Policy.Fixed)
                 if option.isOptional():
                     widget.addItem(_ComponentConfigWidget._NonePlaceholder)
                 for stringOption in stringOptions:
                     widget.addItem(stringOption)
-                connection = widget.currentTextChanged.connect(lambda: self._textComboChanged(widget, option))
+                # Set current text AFTER adding items as the first item added
+                # will be auto selected
+                widget.setCurrentText(option.value())
+                connection = widget.currentTextChanged.connect(
+                    lambda: self._textComboChanged(widget, option))
                 if not option.isEditable():
                     widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.IntegerOption):
-            widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
+            widget = gui.OptionalSpinBox() \
+                if option.isOptional() else \
+                gui.SpinBoxEx()
 
             if option.min() != None:
                 widget.setMinimum(option.min())
@@ -299,10 +314,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
+            connection = widget.valueChanged.connect(
+                lambda: self._spinBoxChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.FloatOption):
-            widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
+            widget = gui.OptionalDoubleSpinBox() \
+                if option.isOptional() else \
+                gui.DoubleSpinBoxEx()
             if option.min() != None:
                 widget.setDecimalsForValue(option.min())
                 widget.setMinimum(option.min())
@@ -319,7 +337,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
+            connection = widget.valueChanged.connect(
+                lambda: self._spinBoxChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.EnumOption):
             widget = gui.EnumComboBox(
@@ -327,27 +346,33 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 value=option.value(),
                 options=option.options(),
                 isOptional=option.isOptional())
-            widget.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
+            widget.setSizeAdjustPolicy(
+                QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.currentIndexChanged.connect(lambda: self._enumComboChanged(widget, option))
+            connection = widget.currentIndexChanged.connect(
+                lambda: self._enumComboChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.MultiSelectOption):
             widget = _MultiSelectOptionWidget(
                 content=option.options(),
                 selected=option.value(),
                 unselectable=option.unselectable())
-            connection = widget.itemChanged.connect(lambda: self._multiSelectChanged(widget, option))
+            connection = widget.itemChanged.connect(
+                lambda: self._multiSelectChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
-            labelAlignment = QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight
+            labelAlignment = QtCore.Qt.AlignmentFlag.AlignTop | \
+                QtCore.Qt.AlignmentFlag.AlignRight
 
         if widget:
             self._installNoWheelFilter(object=widget)
 
             description = option.description()
             if description:
-                widget.setToolTip(gui.createStringToolTip(description, escape=False))
+                widget.setToolTip(gui.createStringToolTip(
+                    string=description,
+                    escape=False))
 
             self._currentOptions[widget] = option
             self._widgetConnections[widget] = connection
