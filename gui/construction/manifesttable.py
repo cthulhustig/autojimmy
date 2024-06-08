@@ -174,9 +174,12 @@ class ManifestTable(gui.ListTable):
                 tableItem = QtWidgets.QTableWidgetItem(f'Total')
             elif isinstance(columnType, self._costType):
                 cost = self._manifest.totalCost(costId=columnType)
-                text = self.formatCost(
-                    costId=columnType,
-                    cost=cost)
+                if cost.value():
+                    text = self.formatCost(
+                        costId=columnType,
+                        cost=cost)
+                else:
+                    text = '-'
                 tableItem = QtWidgets.QTableWidgetItem(text)
             elif columnType == ManifestTable.StdColumnType.Factors:
                 tableItem = QtWidgets.QTableWidgetItem('-')
