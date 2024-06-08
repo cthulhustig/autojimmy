@@ -192,23 +192,23 @@
             "options": [
                 {
                     "id": "AirshipLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "GravLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "OrnithopterLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "RotorLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "WingLevel",
-                    "value": null
+                    "value": 0
                 }
             ]
         }

@@ -739,7 +739,6 @@ class Skill(robots.RobotComponentInterface):
             name='Level',
             value=0,
             minValue=0,
-            maxValue=_RobotBrainMaxPossibleLevel.value(),
             description='Specify the level of the skill')
         
         self._fixedSpecialityOptions = None
@@ -752,10 +751,8 @@ class Skill(robots.RobotComponentInterface):
                 levelOption = construction.IntegerOption(
                     id=f'{speciality.name}Level',
                     name=f'{speciality.value} Level',
-                    value=None,
+                    value=0,
                     minValue=0,
-                    maxValue=_RobotBrainMaxPossibleLevel.value(),
-                    isOptional=True,
                     description=f'Specify the level of the {speciality.value} speciality')
                 self._fixedSpecialityOptions.append((speciality, levelOption))
 
@@ -872,7 +869,6 @@ class Skill(robots.RobotComponentInterface):
 
         if self._skillDef.isFixedSpeciality():
             for _, levelOption in self._fixedSpecialityOptions:
-                levelOption.setMin(1)
                 levelOption.setMax(maxLevel.value() \
                                    if maxLevel != None else \
                                    None) # Robot brains have no max
@@ -899,12 +895,12 @@ class Skill(robots.RobotComponentInterface):
                     id=f'Speciality{specialityIndex}Level',
                     name=f'Speciality {specialityIndex} Level',
                     value=1,
+                    minValue=1,
                     description=f'Specify the level of the speciality')
                 self._customSpecialityOptions.append((nameOption, levelOption))
 
             # Level options are only enabled if the name is enabled and not empty
             for nameOption, levelOption in self._customSpecialityOptions:
-                levelOption.setMin(1)
                 levelOption.setMax(maxLevel.value() \
                                    if maxLevel != None else \
                                    None) # Robot brains have no max

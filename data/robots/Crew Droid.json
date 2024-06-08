@@ -255,19 +255,19 @@
             "options": [
                 {
                     "id": "CommsLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "ComputersLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "RemoteOpsLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "SensorsLevel",
-                    "value": null
+                    "value": 0
                 }
             ]
         },
@@ -276,19 +276,19 @@
             "options": [
                 {
                     "id": "JDriveLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "LifeSupportLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "MDriveLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "PowerPlantLevel",
-                    "value": null
+                    "value": 0
                 }
             ]
         },

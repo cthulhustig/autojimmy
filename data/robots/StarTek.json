@@ -261,15 +261,15 @@
             "options": [
                 {
                     "id": "DexterityLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "EnduranceLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "StrengthLevel",
-                    "value": null
+                    "value": 0
                 }
             ]
         },
@@ -296,21 +296,17 @@
             "options": [
                 {
                     "id": "ArchaicLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "EnergyLevel",
-                    "value": null
+                    "value": 0
                 },
                 {
                     "id": "SlugLevel",
-                    "value": null
+                    "value": 0
                 }
             ]
-        },
-        {
-            "type": "NoUnusedSlotRemoval",
-            "options": []
         }
     ],
     "notes": "\"\""
