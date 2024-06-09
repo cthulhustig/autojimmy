@@ -4,16 +4,16 @@ import traveller
 import typing
 
 class TrainedSkill(object):
-    _BaseLevel = common.ScalarCalculation(
+    _MinTrainedSkillLevel = common.ScalarCalculation(
         value=0,
-        name='Trained Skill Base Level')
+        name='Min Trained Skill Level')
 
     def __init__(
             self,
             skillDef: traveller.SkillDefinition
             ) -> None:
         self._skillDef = skillDef
-        self._baseLevel = TrainedSkill._BaseLevel
+        self._baseLevel = TrainedSkill._MinTrainedSkillLevel
         self._specialityLevels: typing.Dict[
             typing.Union[enum.Enum, str],
             common.ScalarCalculation] = {}
@@ -33,7 +33,7 @@ class TrainedSkill(object):
             ) -> common.ScalarCalculation:
         return self._baseLevel \
             if not speciality else \
-            self._specialityLevels.get(speciality, TrainedSkill._BaseLevel)
+            self._specialityLevels.get(speciality, TrainedSkill._MinTrainedSkillLevel)
 
     def modifyLevel(
             self,
@@ -57,7 +57,7 @@ class TrainedSkill(object):
         if speciality:
             if stacks:
                 current = self._specialityLevels.get(speciality)
-                if current:
+                if current and current.value() != 0:
                     level = common.Calculator.add(
                         lhs=current,
                         rhs=level,
@@ -75,7 +75,7 @@ class TrainedSkill(object):
                 raise AttributeError(
                     f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')  
             
-            if stacks:
+            if stacks and self._baseLevel.value() != 0:
                 level = common.Calculator.add(
                     lhs=self._baseLevel,
                     rhs=level,

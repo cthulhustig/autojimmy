@@ -2,6 +2,7 @@ import app
 import common
 import enum
 import gui
+import logging
 import robots
 import traveller
 import typing
@@ -116,15 +117,20 @@ def _calcModifierSkillLevel(
         name=f'Modified {skillDef.name(speciality=speciality)} Skill Level')
 
 class RobotSheetWidget(QtWidgets.QWidget):
-    # TODO: Need something that allows you to see calculations of fields where
-    # it's appropriate
     # TODO: Need something to allow you to copy/paste all the data (similar to
     # notes widget)
     # TODO: Need to handle the fact when adding skill modifiers is enabled and
     # you create a new default robot it has a Recon of -2. This is a problem as
     # the negative INT modifier is being applied to the Recon skill when the
     # Alert skill package says it counteracts any negative characteristic
-    # modifier
+    # modifier.
+    # - A possible way to fix this would be to add another parameter to the factor
+    # that sets skills in the same way as I added the stacks parameter. The new
+    # parameter would allow you to specify if negative characteristic modifiers
+    # are applied. Possibly even no characteristic modifiers for Racon sensor
+    # (note sensor not skill package like above). Handling this would need some
+    # extra logic around stacking as, if a software Recon skill was also added the
+    # characteristic modifier would then be applied.
 
     class _Sections(enum.Enum):
         Robot = 'Robot'
@@ -226,6 +232,9 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
         self._table.setItemDelegate(gui.TableViewSpannedWordWrapFixDelegate())
+        self._table.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)        
+        self._table.customContextMenuRequested.connect(self._tableContextMenu)
         for section, headerColumn, headerRow, dataColumn, dataRow, dataSpan in RobotSheetWidget._LayoutData:
             if dataSpan:
                 self._table.setSpan(dataRow, dataColumn, 1, RobotSheetWidget._ColumnCount - dataColumn)
@@ -271,6 +280,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 continue
 
             itemText = ''
+            calculations = []
             if section == RobotSheetWidget._Sections.Robot:
                 itemText = self._robot.name()
             elif section == RobotSheetWidget._Sections.Hits:
@@ -278,6 +288,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     attributeId=robots.RobotAttributeId.Hits)
                 if isinstance(attributeValue, common.ScalarCalculation):
                     itemText = common.formatNumber(number=attributeValue.value())
+                    calculations.append(attributeValue)
                 else:
                     itemText = '-'
             elif section == RobotSheetWidget._Sections.Locomotion:
@@ -300,6 +311,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = common.formatNumber(
                         number=attributeValue.value(),
                         suffix='m')
+                    calculations.append(attributeValue)
                 else:
                     itemText = '-'
             elif section == RobotSheetWidget._Sections.TL:
@@ -309,6 +321,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 itemText = common.formatNumber(
                     number=cost.value(),
                     prefix='Cr')
+                calculations.append(cost)
             elif section == RobotSheetWidget._Sections.Skills:
                 applySkillModifiers = self._applySkillModifiersCheckBox.isChecked()
                 skillString = []
@@ -330,6 +343,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                             skillString.append('{skill} {level}'.format(
                                 skill=skill.name(speciality=speciality),
                                 level=skillLevel.value()))
+                            calculations.append(skillLevel)
                 skillString.sort()
 
                 # Add the amount of spare bandwidth, this should always be done at
@@ -337,6 +351,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 spareBandwidth = self._robot.spareBandwidth()
                 if spareBandwidth.value() > 0:
                     skillString.append(f' +{spareBandwidth.value()} available Bandwidth')
+                    calculations.append(spareBandwidth)
 
                 itemText = RobotSheetWidget._formatListString(skillString)
             elif section == RobotSheetWidget._Sections.Attacks:
@@ -405,6 +420,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     itemText = common.formatNumber(
                         number=attributeValue.value(),
                         suffix=' hours')
+                    calculations.append(attributeValue)
                 else:
                     itemText = 'None'
             elif section == RobotSheetWidget._Sections.Traits:
@@ -427,6 +443,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     if valueString:
                         traitString += f' ({valueString})'
                     traitStrings.append(traitString)
+                    calculations.extend(attribute.calculations())
                 traitStrings.sort()
                 itemText = RobotSheetWidget._formatListString(traitStrings)
             elif section == RobotSheetWidget._Sections.Programming:
@@ -444,6 +461,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                             assert(isinstance(characteristicValue, common.ScalarCalculation))
                             characteristicStrings.append(
                                 f'{characteristic.value} {characteristicValue.value()}')
+                            calculations.append(characteristicValue)
                     if characteristicStrings:
                         itemText += ' ({characteristics})'.format(
                             characteristics=', '.join(characteristicStrings))
@@ -475,29 +493,67 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 spareSlots = self._robot.spareSlots()
                 if spareSlots.value() > 0:
                     optionStrings.append(f'Spare Slots x {spareSlots.value()}')
+                    calculations.append(spareSlots)
 
                 # At this point the strings should already be sorted
                 # alphabetically (but ignoring any count multiplier)
                 itemText = RobotSheetWidget._formatListString(optionStrings)
 
             item.setText(itemText)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, calculations)
 
         self._table.resizeRowsToContents()
 
     def _applySkillModifiersChanged(self) -> None:
         self._updateTable()
 
+    def _tableContextMenu(
+            self,
+            position: QtCore.QPoint
+            ) -> None:
+        item = self._table.itemAt(position)
+        if not item:
+            return
+        
+        calculations = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        menuItems = [
+            gui.MenuItem(
+                text='Calculation...',
+                callback=lambda: self._showCalculations(calculations=calculations),
+                enabled=calculations != None and len(calculations) > 0)
+        ]
+
+        gui.displayMenu(
+            self,
+            menuItems,
+            self._table.viewport().mapToGlobal(position))
+
+    def _showCalculations(
+            self,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> None:
+        try:
+            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
+            calculationWindow.showCalculations(
+                calculations=calculations,
+                decimalPlaces=robots.ConstructionDecimalPlaces)
+        except Exception as ex:
+            message = 'Failed to show calculations'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)              
+
     @staticmethod
     def _createHeaderItem(section: _Sections) -> QtWidgets.QTableWidgetItem:
         item = gui.TableWidgetItemEx(section.value)
         item.setBold(enable=True)
-        item.setData(QtCore.Qt.ItemDataRole.UserRole, section)
         return item
     
     @staticmethod
     def _createDataItem(section: _Sections) -> QtWidgets.QTableWidgetItem:
         item = gui.TableWidgetItemEx()
-        item.setData(QtCore.Qt.ItemDataRole.UserRole, section)
         return item
     
     @staticmethod

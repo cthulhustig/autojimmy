@@ -50,7 +50,7 @@ class FlagAttribute(AttributeInterface):
         return None
 
     def calculations(self) -> typing.Iterable[common.ScalarCalculation]:
-        return None
+        return []
 
     def applyModifier(
             self,
