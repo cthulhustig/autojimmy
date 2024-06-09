@@ -70,7 +70,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # added as part of support for Brain in a Jar where the robot has the other
     # skills of the brain that was implanted. Physical characteristics are not
     # included as they come from the robot body
-    Intelligence = 'INT'
+    Intellect = 'INT'
     Education = 'EDU'
     Social = 'SOC'
     Psionic = 'PSI'
@@ -148,11 +148,11 @@ StandardAttributeIds = [
     RobotAttributeId.VehicleSpeed,
     RobotAttributeId.VehicleEndurance,
     RobotAttributeId.Autopilot,
-    RobotAttributeId.Intelligence,
+    RobotAttributeId.Intellect,
 ]
 
 CharacteristicAttributeIds =[
-    RobotAttributeId.Intelligence,
+    RobotAttributeId.Intellect,
     RobotAttributeId.Education,
     RobotAttributeId.Social,
     RobotAttributeId.Psionic,

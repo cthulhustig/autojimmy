@@ -402,7 +402,7 @@ class Robot(construction.ConstructableInterface):
             self,
             skillDef: traveller.SkillDefinition,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
-            ) -> bool:
+            ) -> common.ScalarCalculation:
         return self._constructionContext.skillLevel(
             sequence=self._sequence,
             skillDef=skillDef,

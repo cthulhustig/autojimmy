@@ -481,7 +481,7 @@ class RobotBrain(Brain):
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.Intelligence,
+            attributeId=robots.RobotAttributeId.Intellect,
             value=self._intelligence))
         
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -563,7 +563,7 @@ class RobotBrain(Brain):
             name=f'{upgrade.value} Intellect Upgrade Required Bandwidth')        
 
         oldIntelligence = context.attributeValue(
-            attributeId=robots.RobotAttributeId.Intelligence,
+            attributeId=robots.RobotAttributeId.Intellect,
             sequence=sequence)
         assert(isinstance(oldIntelligence, common.ScalarCalculation))
 
@@ -606,7 +606,7 @@ class RobotBrain(Brain):
         step.setBandwidth(bandwidth=construction.ConstantModifier(value=bandwidthUsed))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.Intelligence,
+            attributeId=robots.RobotAttributeId.Intellect,
             modifier=construction.ConstantModifier(value=intelligenceIncrease)))
 
         return step      
@@ -1059,7 +1059,7 @@ class BrainInAJarBrain(Brain):
     # classes as some have a check every month and some annually
 
     _CoreOptionalCharacteristics = [
-        robots.RobotAttributeId.Intelligence,
+        robots.RobotAttributeId.Intellect,
         robots.RobotAttributeId.Education,
         robots.RobotAttributeId.Social
     ]

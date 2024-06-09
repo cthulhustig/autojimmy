@@ -1,3 +1,4 @@
+import app
 import common
 import enum
 import gui
@@ -6,29 +7,124 @@ import traveller
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+# NOTE: This maps skills to the characteristic that gives the DM
+# modifier. The values come from the table on p74
+_SkillCharacteristicMap = {
+    traveller.AdminSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AdvocateSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AnimalsSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ArtSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AstrogationSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AthleticsSkillDefinition: {
+        traveller.AthleticsSkillSpecialities.Dexterity: traveller.Characteristics.Dexterity,
+        traveller.AthleticsSkillSpecialities.Endurance: None, # No characteristic modifier for Endurance
+        traveller.AthleticsSkillSpecialities.Strength: traveller.Characteristics.Strength,
+    },
+    traveller.BrokerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.CarouseSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DeceptionSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DiplomatSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DriveSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.ElectronicsSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.EngineerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ExplosivesSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.FlyerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.GamblerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.GunCombatSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.GunnerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.HeavyWeaponsSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.InvestigateSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.JackOfAllTradesSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.LanguageSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.LeadershipSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MechanicSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MedicSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MeleeSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.NavigationSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.PersuadeSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.PilotSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.ProfessionSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ReconSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ScienceSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.SeafarerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.StealthSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.StewardSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.StreetwiseSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.SurvivalSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.TacticsSkillDefinition: traveller.Characteristics.Intellect,
+    # Jack of all trades is needed for Brain in a Jar
+    traveller.JackOfAllTradesSkillDefinition: None
+}
+
+# TODO: There is a deficiency in the way I'm applying characteristics
+# modifiers but it's not really in this piece of code. The issue can be seen
+# with the StarTek example robot. In the book it's final sheet shows Athletics
+# (Strength) 2 where as I'm showing it as Athletics 0. I think this is because
+# the book is taking into account the the Athletics you get from manipulators
+# (p26). I'm currently handling it with a note but it would be good if I
+# could somehow show it in the actual skill like the book. As usual ambiguities
+# with multiple manipulators apply
+
+def _calcModifierSkillLevel(
+        robot: robots.Robot,
+        skillDef: traveller.SkillDefinition,
+        speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+        ) -> common.ScalarCalculation:
+    skillLevel = robot.skillLevel(
+        skillDef=skillDef,
+        speciality=speciality)
+
+    characteristic = _SkillCharacteristicMap[skillDef]
+    if isinstance(characteristic, dict):
+        characteristic = characteristic.get(speciality)   
+    if not characteristic:
+        return skillLevel
+        
+    if characteristic == traveller.Characteristics.Intellect:
+        characteristicValue = robot.attributeValue(
+            attributeId=robots.RobotAttributeId.Intellect)
+        if not characteristicValue:
+            return skillLevel
+    else:
+        manipulators = robot.findComponents(
+            componentType=robots.Manipulator)
+        highestValue = None
+        for manipulator in manipulators:
+            if isinstance(manipulator, robots.RemoveBaseManipulator):
+                continue
+            assert(isinstance(manipulator, robots.Manipulator))
+            if characteristic == traveller.Characteristics.Strength:
+                manipulatorValue = manipulator.strength()
+            else:
+                manipulatorValue = manipulator.dexterity()
+            if highestValue == None or manipulatorValue > highestValue:
+                highestValue = manipulatorValue
+        if not highestValue:
+            return skillLevel
+
+        characteristicValue = common.ScalarCalculation(
+            value=highestValue,
+            name=f'Highest Manipulator {characteristic.value} Characteristic')
+    
+    characteristicModifier = common.ScalarCalculation(
+        value=traveller.CharacteristicDMFunction(
+            characteristic=characteristic,
+            level=characteristicValue))
+    return common.Calculator.add(
+        lhs=skillLevel,
+        rhs=characteristicModifier,
+        name=f'Modified {skillDef.name(speciality=speciality)} Skill Level')
+
 class RobotSheetWidget(QtWidgets.QWidget):
     # TODO: Need something that allows you to see calculations of fields where
     # it's appropriate
     # TODO: Need something to allow you to copy/paste all the data (similar to
     # notes widget)
-    # TODO: I need something to handle the fact, when the book shows skills, it
-    # shows the value with the characteristic modifier pre-applied. It means all
-    # skills will be 'wrong' if someone compares with the book.
-    # - There are a few issues with displaying pre-calculated values:
-    #   - I don't think it will be how players are used to dealing with skills
-    #     (i.e. it's not the same as when using a 'normal' character sheets)
-    #   - For robots with manipulators that have different STR/DEX values as the
-    #     skill can only be precalculated using the characteristic of one
-    #     manipulator. The assumption being it's the highest value from across
-    #     all manipulators. This makes it more complicated for players when they
-    #     use one of the other manipulators as the sheet doesn't show the base
-    #     skill value.
-    # - The best idea I have so far is to have a check box (above the sheet
-    #   widget) that allows you to select if the skill values are pre-calculated
-    #   or not
-    # - This work would be further complicated by the fact that technically the
-    #   book says the value shown on the sheet should include modifiers for
-    #   'other factors' (p76)
+    # TODO: Need to handle the fact when adding skill modifiers is enabled and
+    # you create a new default robot it has a Recon of -2. This is a problem as
+    # the negative INT modifier is being applied to the Recon skill when the
+    # Alert skill package says it counteracts any negative characteristic
+    # modifier
 
     class _Sections(enum.Enum):
         Robot = 'Robot'
@@ -64,6 +160,39 @@ class RobotSheetWidget(QtWidgets.QWidget):
         (_Sections.Options, 0, 8, 1, 8, True)
     )
 
+    # TODO: The wording of this probably need improved
+    # - Cover the fact "other modifiers" aren't applied
+    _ApplySkillModifiersToolTip = \
+        """
+        <p>Choose if Skills have the relevant characteristic modifier
+        pre-applied as they do in the book.<p>
+        <p>By default {name} will just display the base skill level in an
+        effort to make dealing with robots in game more straight forward. By
+        doing this it means calculating the final modifier is handled in the
+        same way as for a meat sack traveller. Any relevant characteristic
+        modifiers are applied to the skill level along with any other applicable
+        modifiers. The only difference is, with the exception of robots using a
+        Brain in a Jar, if the SOC or EDU characteristic modifier would usually
+        be applied, instead you use the INT characteristic modifier as described
+        in Inherent Skill DMs (p73). This aim of displaying the skill levels in
+        this way is to make it easier to deal with situations where a
+        non-standard characteristic modifier mights be required (e.g. using
+        Deception combined with DEX for slight of hand) or when dealing with
+        more complex robots (e.g. physical skills for robots with no
+        manipulators or manipulators with different STR/DEX modifiers).</p>
+        <p>Alternatively {name} can be configured to display skills with the
+        default characteristic modifier pre-applied in an attempt to replicate
+        how robots are displayed in the Robot Handbook and described in the
+        Finalisation section (p76). However, displaying skills like this is
+        <b>not recommended</b>. Not only does it make dealing with robots in
+        game more complex, the same issues that make it complex in game also
+        make it prohibitively complex to create code that would fully replicate
+        how the book displays the robots skills.</p>
+        <p><b>When enabled, the list of automatically generated notes may
+        still contain notes covering modifiers that have been pre-applied. It's
+        up to the user to not double count them.</b></p>
+        """.format(name=app.AppName)
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -71,6 +200,15 @@ class RobotSheetWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self._robot = None
         self._dataItemMap: typing.Dict[RobotSheetWidget._Sections, QtWidgets.QTableWidgetItem] = {}
+
+        # TODO: Need to add saving/loading of the state of this check box
+        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Apply Skill Modifiers')
+        self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
+
+        controlsLayout = QtWidgets.QVBoxLayout()
+        controlsLayout.addWidget(self._applySkillModifiersCheckBox)
+        controlsLayout.addStretch()
 
         self._table = QtWidgets.QTableWidget()
         self._table.setColumnCount(RobotSheetWidget._ColumnCount)
@@ -99,6 +237,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(controlsLayout)
         layout.addWidget(self._table)
 
         self.setLayout(layout)
@@ -171,6 +310,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     number=cost.value(),
                     prefix='Cr')
             elif section == RobotSheetWidget._Sections.Skills:
+                applySkillModifiers = self._applySkillModifiersCheckBox.isChecked()
                 skillString = []
                 for skillDef in traveller.AllStandardSkills:
                     skill = self._robot.skill(skillDef=skillDef)
@@ -179,9 +319,17 @@ class RobotSheetWidget(QtWidgets.QWidget):
                         if not specialities:
                             specialities = [None]
                         for speciality in specialities:
+                            if applySkillModifiers:
+                                skillLevel = _calcModifierSkillLevel(
+                                    robot=self._robot,
+                                    skillDef=skillDef,
+                                    speciality=speciality)
+                            else:
+                                skillLevel = skill.level(speciality=speciality)
+
                             skillString.append('{skill} {level}'.format(
                                 skill=skill.name(speciality=speciality),
-                                level=skill.level(speciality=speciality).value()))
+                                level=skillLevel.value()))
                 skillString.sort()
 
                 # Add the amount of spare bandwidth, this should always be done at
@@ -335,6 +483,9 @@ class RobotSheetWidget(QtWidgets.QWidget):
             item.setText(itemText)
 
         self._table.resizeRowsToContents()
+
+    def _applySkillModifiersChanged(self) -> None:
+        self._updateTable()
 
     @staticmethod
     def _createHeaderItem(section: _Sections) -> QtWidgets.QTableWidgetItem:

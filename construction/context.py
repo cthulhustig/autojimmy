@@ -861,7 +861,7 @@ class ConstructionContext(object):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.hasAttribute(
+        return sequenceState.skillLevel(
             skillDef=skillDef,
             speciality=speciality)
 
