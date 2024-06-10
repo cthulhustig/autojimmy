@@ -554,7 +554,6 @@ class LineEditEx(QtWidgets.QLineEdit):
     delayedTextEdited = QtCore.pyqtSignal(str)
 
     _DarkModeInvalidRegexHighlight = QtGui.QColor(100, 0, 0)
-    _DefaultDelayedEditSignalMilliseconds = 500
 
     _StateVersion = 'LineEditEx_v1'
 
@@ -569,17 +568,13 @@ class LineEditEx(QtWidgets.QLineEdit):
         self._regexCheckingEnabled = False
         self._regexPattern = None
         self._cachedBaseColour = None
-        self._delayedEditSignalTimer = QtCore.QTimer()
-        self._delayedEditSignalTimer.setInterval(LineEditEx._DefaultDelayedEditSignalMilliseconds)
-        self._delayedEditSignalTimer.setSingleShot(True)        
-        self._delayedEditSignalTimer.timeout.connect(self._delayedEditSignalFired)
+        self._delayedTextEditedTimer = None
 
         # Always connect the signal, even though regex checking might not be enabled. This
         # is VERY important as signals are executed in the order they're connected and we
         # want regex checking to be performed before any external consumers are notified of
         # the text being changed (as they may check the regex validity in response to it)
         self.textChanged.connect(self._textChanged)
-        self.textEdited.connect(self._textEdited)
 
     def isEmpty(self) -> bool:
         return len(self.text()) <= 0
@@ -603,11 +598,23 @@ class LineEditEx(QtWidgets.QLineEdit):
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
     
-    def setDelayedEditSignalTimeout(
+    def enableDelayedTextEdited(
             self,
-            milliseconds: int
-            ):
-        self._delayedEditSignalTimer.setInterval(milliseconds)
+            msecs: int
+            ) -> None:
+        if not self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer = QtCore.QTimer()
+            self._delayedTextEditedTimer.setSingleShot(True)
+            self._delayedTextEditedTimer.timeout.connect(self._delayedTextEditedFired)
+            self.textEdited.connect(self._primeDelayedTextEdited)
+        self._delayedTextEditedTimer.setInterval(msecs)
+
+    def disableDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+            del self._delayedTextEditedTimer
+            self._delayedTextEditedTimer = None
+        self.textEdited.disconnect(self._primeDelayedTextEdited)
 
     def setPalette(self, palette: QtGui.QPalette) -> None:
         if self._regexCheckingEnabled:
@@ -655,10 +662,11 @@ class LineEditEx(QtWidgets.QLineEdit):
         if self._regexCheckingEnabled:
             self._checkRegex()
 
-    def _textEdited(self, text: str) -> None:
-        self._delayedEditSignalTimer.start()
+    def _primeDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.start()
 
-    def _delayedEditSignalFired(self) -> None:
+    def _delayedTextEditedFired(self) -> None:
         self.delayedTextEdited.emit(self.text())
 
     def _checkRegex(
@@ -809,6 +817,75 @@ class FloatLineEdit(QtWidgets.QLineEdit):
         return True
 
 class ComboBoxEx(QtWidgets.QComboBox):
+    userEdited = QtCore.pyqtSignal(str)
+    delayedUserEdited = QtCore.pyqtSignal(str)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+        self._delayedUserEditedTimer = None
+
+    def enableDelayedUserEdited(
+            self,
+            msecs: int
+            ) -> None:
+        if not self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer = QtCore.QTimer()
+            self._delayedUserEditedTimer.setSingleShot(True)
+            self._delayedUserEditedTimer.timeout.connect(
+                self._delayedUserEditedFired)
+
+            # Subscribe to the combo box's activated even to get notification
+            # when the user selects a new item from the drop down. Subscribe
+            # to the line edit's textEdited event to get notification when the
+            # user changes the text in an editable combo box.
+            self.activated.connect(self._userEdited)
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)
+        self._delayedUserEditedTimer.setInterval(msecs)
+
+    def disableDelayedUserEdited(self) -> None:
+        if self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer.stop()
+            del self._delayedUserEditedTimer
+            self._delayedUserEditedTimer = None
+        self.activated.disconnect(self._userEdited)
+        lineEdit = self.lineEdit()
+        if lineEdit:
+            lineEdit.textEdited.disconnect(self._userEdited)
+
+    def setEditable(
+            self,
+            editable: bool
+            ) -> None:
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.disconnect(self._userEdited)
+
+        super().setEditable(editable)
+
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)
+
+    def setLineEdit(
+            self,
+            edit: QtWidgets.QLineEdit
+            ) -> None:
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.disconnect(self._userEdited)
+
+        super().setLineEdit(edit)
+
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)            
+
     def addItemAlphabetically(
             self,
             text: str,
@@ -849,6 +926,14 @@ class ComboBoxEx(QtWidgets.QComboBox):
 
     def selectAll(self) -> None:
         self.lineEdit().selectAll()
+
+    def _userEdited(self) -> None:
+        self.userEdited.emit(self.currentText())
+        if self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer.start()
+
+    def _delayedUserEditedFired(self) -> None: 
+        self.delayedUserEdited.emit(self.currentText())
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
     def __init__(

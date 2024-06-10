@@ -80,6 +80,9 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     _NonePlaceholder = 'None'
 
+    _TextEditSignalDelayMsecs = 500
+
+
     def __init__(
             self,
             components: typing.Optional[typing.Iterable[construction.ComponentInterface]] = None,
@@ -268,6 +271,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     # give user as much horizontal space to type as possible
                     QtWidgets.QSizePolicy.Policy.Expanding,
                     QtWidgets.QSizePolicy.Policy.Fixed)
+                widget.enableDelayedTextEdited(
+                    msecs=_ComponentConfigWidget._TextEditSignalDelayMsecs)
                 connection = widget.delayedTextEdited.connect(
                     lambda: self._textEditChanged(widget, option))                
             else:
@@ -291,7 +296,10 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 # Set current text AFTER adding items as the first item added
                 # will be auto selected
                 widget.setCurrentText(option.value())
-                connection = widget.currentTextChanged.connect(
+                widget.enableDelayedUserEdited(
+                    msecs=_ComponentConfigWidget._TextEditSignalDelayMsecs
+                    if option.isEditable() else 0)
+                connection = widget.delayedUserEdited.connect(
                     lambda: self._textComboChanged(widget, option))
                 if not option.isEditable():
                     widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
@@ -405,7 +413,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             elif isinstance(widget, gui.LineEditEx):
                 widget.delayedTextEdited.disconnect(connection)
             elif isinstance(widget, gui.ComboBoxEx):
-                widget.currentTextChanged.disconnect(connection)
+                widget.delayedUserEdited.disconnect(connection)
             elif isinstance(widget, gui.SpinBoxEx):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.OptionalSpinBox):
@@ -449,12 +457,27 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     widget.setText(option.value())
                 else:
                     stringOptions = option.choices()
-                    widget.clear()
-                    if option.isOptional():
-                        widget.addItem(_ComponentConfigWidget._NonePlaceholder)
-                    for stringOption in stringOptions:
-                        widget.addItem(stringOption)                    
-                    widget.setCurrentText(option.value())
+                    updateList = False
+                    if len(stringOptions) == widget.count():
+                        for index in range(widget.count()):
+                            itemText = widget.itemText(index)
+                            if itemText != stringOptions[index]:
+                                updateList = True
+                                break
+                    else:
+                        updateList = True
+
+                    # Only update the list and text if needed. This is done to
+                    # avoid clearing the auto complete highlighting if this
+                    # widget triggered the update
+                    if updateList:
+                        widget.clear()
+                        if option.isOptional():
+                            widget.addItem(_ComponentConfigWidget._NonePlaceholder)
+                        for stringOption in stringOptions:
+                            widget.addItem(stringOption)
+                    if widget.currentText() != option.value():
+                        widget.setCurrentText(option.value())
             elif isinstance(option, construction.IntegerOption):
                 assert(isinstance(widget, gui.SpinBoxEx) or \
                        isinstance(widget, gui.OptionalSpinBox))
