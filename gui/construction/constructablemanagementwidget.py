@@ -286,6 +286,7 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
                     newName = None
 
         sortList = False
+        wasRenamed = False
         try:
             section, item = self._findItemByConstructable(
                 constructable=constructable)
@@ -305,7 +306,8 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
                     sortList=False) # Only sort once at end
                 sortList = True
                 section, item = self._findItemByConstructable(
-                    constructable=constructable)                
+                    constructable=constructable) 
+                wasRenamed = True               
             elif unnamed:
                 # The constructable is unnamed so rename it before saving
                 assert(newName)
@@ -315,6 +317,7 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
                     newName=newName,
                     sortList=False) # Only sort once at end
                 sortList = True
+                wasRenamed = True
 
             self._internalSave(section=section, item=item)
 
@@ -335,6 +338,9 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
             
         if sortList:
             self._sortList()
+
+        if wasRenamed:
+            self._handleCurrentChanged()
 
         return True # User didn't cancel    
 
