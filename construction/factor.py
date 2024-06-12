@@ -167,27 +167,29 @@ class SetSkillFactor(SkillFactor):
     def __init__(
             self,
             skillDef: traveller.SkillDefinition,
-            level: common.ScalarCalculation,
+            levels: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
+            flags: typing.Optional[construction.SkillFlags] = None,
             stacks: bool = True
             ) -> None:
         super().__init__()
         assert(isinstance(skillDef, traveller.SkillDefinition))
         self._skillDef = skillDef
         self._speciality = speciality
-        self._level = level
+        self._levels = levels
+        self._flags = flags
         self._stacks = stacks
 
     def skillDef(self) -> construction.ConstructionAttributeId:
         return self._skillDef
 
     def calculations(self) -> typing.Collection[common.ScalarCalculation]:
-        return [self._level]
+        return [self._levels]
 
     def displayString(self) -> str:
         return '{skill} {level}'.format(
             skill=self._skillDef.name(speciality=self._speciality),
-            level=self._level.value())
+            level=self._levels.value())
 
     def applyTo(
             self,
@@ -195,6 +197,7 @@ class SetSkillFactor(SkillFactor):
             ) -> None:
         skillGroup.modifyLevel(
             skillDef=self._skillDef,
-            level=self._level,
+            levels=self._levels,
             speciality=self._speciality,
+            flags=self._flags,
             stacks=self._stacks)

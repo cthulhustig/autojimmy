@@ -48,6 +48,11 @@ class IncreaseEndurance(EnduranceModification):
     # NOTE: The Athletics (Endurance) skill given by Increased Endurance stacks
     # with any levels from software skill packages. This was clarified by Geir
     # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
+    # NOTE: The book doesn't explicitly say if characteristics modifiers apply
+    # to checks made with the Athletics (Endurance) skill given by this
+    # component. However, robots don't have an END characteristic so it can't
+    # apply. Robots do have an Endurance value but this is a number of hours not
+    # a characteristic value so can't be used as one.
 
     _ImprovedComponentsIncreasePercent = common.ScalarCalculation(
         value=100,
@@ -210,7 +215,8 @@ class IncreaseEndurance(EnduranceModification):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Endurance,
-            level=enduranceSkill))
+            levels=enduranceSkill,
+            flags=construction.SkillFlags(0)))
                         
         context.applyStep(
             sequence=sequence,

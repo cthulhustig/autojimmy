@@ -216,6 +216,9 @@ class SequenceState(object):
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         return self._attributes.attributeValue(attributeId=attributeId)
     
+    def skills(self) -> typing.Iterable[construction.TrainedSkill]:
+        return self._skills.all()
+    
     # NOTE: A skill is only classed as having a speciality if it has the
     # speciality at level 1 or higher
     def hasSkill(
@@ -826,6 +829,15 @@ class ConstructionContext(object):
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
         return sequenceState.attributeValue(attributeId=attributeId)
+    
+    def skills(
+            self,
+            sequence: str
+            ) -> typing.Iterable[construction.TrainedSkill]:
+        sequenceState = self._sequenceStates.get(sequence)
+        if not sequenceState:
+            raise RuntimeError(f'Unknown sequence {sequence}')
+        return sequenceState.skills()
     
     # NOTE: A skill is only classed as having a speciality if it has the
     # speciality at level 1 or higher    

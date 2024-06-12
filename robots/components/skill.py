@@ -135,7 +135,9 @@ class SkillPackage(robots.RobotComponentInterface):
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=skillDef,
                 speciality=speciality,
-                level=level,
+                levels=level,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
                 stacks=_stacksWithHardware(
                     skillDef=skillDef,
                     speciality=speciality)))
@@ -366,7 +368,9 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
 
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=RobotVehicleSkillDefinition,
-            level=agilityModifier,
+            levels=agilityModifier,
+            # Set flags for no negative modifiers
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,            
             stacks=_stacksWithHardware(skillDef=RobotVehicleSkillDefinition)))
 
         if agilityModifier.value() != 0:
@@ -443,7 +447,9 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ProfessionSkillDefinition,
             speciality=profession.value,
-            level=ServantBasicSkillPackage._ProfessionSkillLevel,
+            levels=ServantBasicSkillPackage._ProfessionSkillLevel,
+            # Set flags for no negative modifiers
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,            
             stacks=_stacksWithHardware(
                 skillDef=traveller.ProfessionSkillDefinition,
                 speciality=profession.value)))  
@@ -470,7 +476,7 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
     has a Self Destruct System Slot Option
     """
     class _CombatSkills(enum.Enum):
-        Explosives = 'Explosives',
+        Explosives = 'Explosives'
         Weapon = 'Weapon'
 
     _CombatSkillLevel = common.ScalarCalculation(
@@ -508,12 +514,16 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
         if combatSkill == TargetBasicSkillPackage._CombatSkills.Explosives:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=traveller.ExplosivesSkillDefinition,
-                level=TargetBasicSkillPackage._CombatSkillLevel,
+                levels=TargetBasicSkillPackage._CombatSkillLevel,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                
                 stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
         elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=RobotWeaponSkillDefinition,
-                level=TargetBasicSkillPackage._CombatSkillLevel,
+                levels=TargetBasicSkillPackage._CombatSkillLevel,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                
                 stacks=_stacksWithHardware(skillDef=RobotWeaponSkillDefinition)))
             
             if context.hasComponent(
@@ -521,7 +531,9 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
                 sequence=sequence):
                 step.addFactor(factor=construction.SetSkillFactor(
                     skillDef=traveller.ExplosivesSkillDefinition,
-                    level=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
+                    levels=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
+                    # Set flags for no negative modifiers
+                    flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                        
                     stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
 
         return step
@@ -992,7 +1004,9 @@ class Skill(robots.RobotComponentInterface):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=self._skillDef,
             speciality=speciality,
-            level=level,
+            levels=level,
+            # Set flags for positive and negative characteristics to be applied
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier | construction.SkillFlags.ApplyNegativeCharacteristicModifier,
             stacks=_stacksWithHardware(
                 skillDef=self._skillDef,
                 speciality=speciality)))

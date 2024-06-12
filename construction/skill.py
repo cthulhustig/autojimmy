@@ -3,20 +3,32 @@ import enum
 import traveller
 import typing
 
+class SkillFlags(enum.IntFlag):
+    ApplyNegativeCharacteristicModifier = enum.auto()
+    ApplyPositiveCharacteristicModifier = enum.auto()
+SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
+
+# TODO: Why isn't this just called Skill?
 class TrainedSkill(object):
     _MinTrainedSkillLevel = common.ScalarCalculation(
         value=0,
         name='Min Trained Skill Level')
+    _DefaultFlags = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
 
     def __init__(
             self,
             skillDef: traveller.SkillDefinition
             ) -> None:
         self._skillDef = skillDef
-        self._baseLevel = TrainedSkill._MinTrainedSkillLevel
-        self._specialityLevels: typing.Dict[
-            typing.Union[enum.Enum, str],
-            common.ScalarCalculation] = {}
+        self._levels: typing.Dict[
+            typing.Optional[typing.Union[enum.Enum, str]],
+            typing.Tuple[
+                common.ScalarCalculation,
+                typing.Optional[SkillFlags]]] = {}
+        # Set base skill level to default
+        self._levels[None] = (
+            TrainedSkill._MinTrainedSkillLevel,
+            None) # Default modifier flags will be used
 
     def skillDef(self) -> traveller.SkillDefinition:
         return self._skillDef
@@ -31,16 +43,23 @@ class TrainedSkill(object):
             self,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> common.ScalarCalculation:
-        return self._baseLevel \
-            if not speciality else \
-            self._specialityLevels.get(speciality, TrainedSkill._MinTrainedSkillLevel)
+        if speciality not in self._levels:
+            # We should only ever get here if an unknown speciality was
+            # specified as there should always be an entry in the levels map for
+            # None representing the base level. If it's a specialisation we don't
+            # have then we know it's skill level 0
+            assert(speciality)
+            return TrainedSkill._MinTrainedSkillLevel
+        level, _ = self._levels[speciality]
+        return level
 
     def modifyLevel(
             self,
-            level: common.ScalarCalculation,
+            levels: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
-            stacks: bool = True
-            ) -> bool: # True if skill is still trained otherwise False
+            flags: typing.Optional[SkillFlags] = None,
+            stacks: bool = True,
+           ) -> bool: # True if skill is still trained otherwise False
         if self._skillDef.isSimple():
             if speciality != None:
                 raise AttributeError(
@@ -53,46 +72,60 @@ class TrainedSkill(object):
             if speciality != None and not isinstance(speciality, str):
                 raise AttributeError(
                     f'Unable to use speciality type {type(speciality)} to set custom speciality skill {self._skillDef.name()}')
+            
+        if not speciality and not self._skillDef.isSimple() and levels.value() != 0:
+            raise AttributeError(
+                f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')             
+
+        if speciality and speciality in self._levels:
+            currentLevel, _ = self._levels[speciality]
+        else:
+            currentLevel, _ = self._levels[None]
+
+        if stacks:
+            levels = common.Calculator.add(
+                lhs=currentLevel,
+                rhs=levels,
+                name=f'Stacked {self.name(speciality=speciality)} Level')
 
         if speciality:
-            if stacks:
-                current = self._specialityLevels.get(speciality)
-                if current and current.value() != 0:
-                    level = common.Calculator.add(
-                        lhs=current,
-                        rhs=level,
-                        name=f'Stacked {self.name(speciality=speciality)} Level')
-            
-            if level.value() >= 1:
+            if levels.value() >= 1:
                 # Speciality skills have to have a value of 1 or higher
-                self._specialityLevels[speciality] = level
-            elif speciality in self._specialityLevels:
+                self._levels[speciality] = (levels, flags)
+            elif speciality in self._levels:
                 # The speciality skill is 0 (or less) so delete the speciality
                 # so the skill reverts to using the base skill level
-                del self._specialityLevels[speciality]
-        else:
-            if not self._skillDef.isSimple() and level.value() != 0:
-                raise AttributeError(
-                    f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')  
-            
-            if stacks and self._baseLevel.value() != 0:
-                level = common.Calculator.add(
-                    lhs=self._baseLevel,
-                    rhs=level,
-                    name=f'Stacked {self.name(speciality=speciality)} Level')
-          
-            self._baseLevel = level
+                del self._levels[speciality]
 
-        return self._baseLevel.value() >= 0
+            # Modifying a speciality can't cause a skill to become untrained
+            isTrained = True
+        else:
+            self._levels[None] = (levels, flags)
+
+            # The skill is no longer trained if the base skill has dropped below 0
+            isTrained = levels.value() >= 0
+
+        return isTrained
 
     def hasSpeciality(
             self,
             speciality: typing.Union[enum.Enum, str]
             ) -> bool:
-        return speciality in self._specialityLevels
+        return speciality and speciality in self._levels
     
     def specialities(self) -> typing.Iterable[typing.Union[enum.Enum, str]]:
-        return list(self._specialityLevels.keys())
+        return [s for s in self._levels.keys() if s != None]
+    
+    def flags(
+            self,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> SkillFlags:
+        if speciality in self._levels:
+            _, flags = self._levels[speciality]
+            if flags != None:
+                return flags
+        _, flags = self._levels[None]
+        return flags if flags != None else TrainedSkill._DefaultFlags
 
 class SkillGroup(object):
     _UntrainedSkillLevel = common.ScalarCalculation(
@@ -104,6 +137,9 @@ class SkillGroup(object):
             traveller.SkillDefinition,
             TrainedSkill
         ] = {}
+
+    def all(self) -> typing.Iterable[TrainedSkill]:
+        return list(self._skills.values())
 
     # NOTE: A skill is only classed as having a speciality if it has the
     # speciality at level 1 or higher
@@ -147,14 +183,16 @@ class SkillGroup(object):
     def modifyLevel(
             self,
             skillDef: traveller.SkillDefinition,
-            level: common.ScalarCalculation,
+            levels: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
+            flags: typing.Optional[SkillFlags] = None,
             stacks: bool = True
             ) -> None:
         skill = self._skills.get(skillDef)
         if skill:
             isTrained = skill.modifyLevel(
-                level=level,
+                levels=levels,
+                flags=flags,
                 speciality=speciality,
                 stacks=stacks)
             if not isTrained:
@@ -163,7 +201,8 @@ class SkillGroup(object):
         else:
             skill = TrainedSkill(skillDef=skillDef)
             isTrained = skill.modifyLevel(
-                level=level,
+                levels=levels,
+                flags=flags,
                 speciality=speciality,
                 stacks=stacks)
             if not isTrained:

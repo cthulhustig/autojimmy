@@ -23,6 +23,10 @@ class AgilityEnhancement(robots.RobotComponentInterface):
     # him) but I'm working on the assumption the Athletics (Dexterity) given
     # by an Agility Enhancement stacks with any levels from software skill
     # packages or from manipulators (p26)
+    # TODO: The book doesn't seem to say if characteristics modifier for DEX
+    # applies to checks made with the Athletics (Dexterity) skill this gives.
+    # I'd be included to say they don't as that's how all the other skills
+    # received from hardware components seem to work.
 
     def __init__(
             self,
@@ -96,7 +100,8 @@ class AgilityEnhancement(robots.RobotComponentInterface):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Dexterity,
-            level=self._agilityModifier))
+            levels=self._agilityModifier,
+            flags=construction.SkillFlags(0)))
 
         context.applyStep(
             sequence=sequence,

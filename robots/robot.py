@@ -378,6 +378,10 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             attributeId=attributeId)
     
+    def skills(self) -> typing.Iterable[construction.TrainedSkill]:
+        return self._constructionContext.skills(
+            sequence=self._sequence)    
+    
     # NOTE: A skill is only classed as having a speciality if it has the
     # speciality at level 1 or higher    
     def hasSkill(
@@ -396,7 +400,7 @@ class Robot(construction.ConstructableInterface):
             ) -> typing.Optional[construction.TrainedSkill]:
         return self._constructionContext.skill(
             sequence=self._sequence,
-            skillDef=skillDef)  
+            skillDef=skillDef)
     
     def skillLevel(
             self,

@@ -4656,7 +4656,8 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
             name=f'{systemType.value} {self.componentString()} Navigation Skill Level')
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.NavigationSkillDefinition,
-            level=navigation))
+            levels=navigation,
+            flags=construction.SkillFlags(0)))
         
         step.addNote(_NavigationSystemSlotOptionImpl._NavigationNote)
 
@@ -5914,7 +5915,8 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
             name=f'{sensorType.value} {self.componentString()} Recon Skill Level')
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ReconSkillDefinition,
-            level=recon))
+            levels=recon,
+            flags=construction.SkillFlags(0)))
         
         step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
 

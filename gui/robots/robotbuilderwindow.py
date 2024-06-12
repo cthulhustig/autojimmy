@@ -160,6 +160,13 @@ class RobotBuilderWindow(gui.WindowWidget):
         if storedValue:
             self._resultsDisplayModeTabView.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='InfoWidgetState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._infoWidget.restoreState(storedValue)            
+
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
@@ -171,6 +178,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._settings.setValue('CurrentRobotDisplayModeState', self._currentRobotDisplayModeTabView.saveState())
         self._settings.setValue('ConfigurationState', self._configurationWidget.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
+        self._settings.setValue('InfoWidgetState', self._infoWidget.saveState())
 
         self._settings.endGroup()
 

@@ -1,5 +1,6 @@
 import app
 import common
+import construction
 import enum
 import gui
 import logging
@@ -54,7 +55,10 @@ _SkillCharacteristicMap = {
     traveller.SurvivalSkillDefinition: traveller.Characteristics.Intellect,
     traveller.TacticsSkillDefinition: traveller.Characteristics.Intellect,
     # Jack of all trades is needed for Brain in a Jar
-    traveller.JackOfAllTradesSkillDefinition: None
+    traveller.JackOfAllTradesSkillDefinition: None,
+    # Non-standard skills added for robot construction
+    robots.RobotVehicleSkillDefinition: traveller.Characteristics.Dexterity,
+    robots.RobotWeaponSkillDefinition: traveller.Characteristics.Dexterity,
 }
 
 # TODO: There is a deficiency in the way I'm applying characteristics
@@ -68,24 +72,27 @@ _SkillCharacteristicMap = {
 
 def _calcModifierSkillLevel(
         robot: robots.Robot,
-        skillDef: traveller.SkillDefinition,
+        skill: construction.TrainedSkill,
         speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
         ) -> common.ScalarCalculation:
-    skillLevel = robot.skillLevel(
-        skillDef=skillDef,
-        speciality=speciality)
+    level = skill.level(speciality=speciality)
+    flags = skill.flags(speciality=speciality)
+    if (flags & construction.SkillFlagsCharacteristicModifierMask) == 0:
+        # Characteristic modifiers aren't applied for this skill
+        return level
 
-    characteristic = _SkillCharacteristicMap[skillDef]
+    characteristic = _SkillCharacteristicMap[skill.skillDef()]
     if isinstance(characteristic, dict):
         characteristic = characteristic.get(speciality)   
     if not characteristic:
-        return skillLevel
+        # There is no applicable robot characteristic for this skill
+        return level
         
     if characteristic == traveller.Characteristics.Intellect:
         characteristicValue = robot.attributeValue(
             attributeId=robots.RobotAttributeId.Intellect)
         if not characteristicValue:
-            return skillLevel
+            return level
     else:
         manipulators = robot.findComponents(
             componentType=robots.Manipulator)
@@ -101,20 +108,30 @@ def _calcModifierSkillLevel(
             if highestValue == None or manipulatorValue > highestValue:
                 highestValue = manipulatorValue
         if not highestValue:
-            return skillLevel
+            # No manipulators so no DEX characteristic
+            return level
 
         characteristicValue = common.ScalarCalculation(
             value=highestValue,
-            name=f'Highest Manipulator {characteristic.value} Characteristic')
+            name=f'Highest Manipulator {characteristic.value}')
     
     characteristicModifier = common.ScalarCalculation(
         value=traveller.CharacteristicDMFunction(
             characteristic=characteristic,
             level=characteristicValue))
+    if characteristicModifier.value() > 0:
+        if (flags & construction.SkillFlags.ApplyPositiveCharacteristicModifier) == 0:
+            return level
+    elif characteristicModifier.value() < 0:
+        if (flags & construction.SkillFlags.ApplyNegativeCharacteristicModifier) == 0:
+            return level
+    else:
+        return level
+
     return common.Calculator.add(
-        lhs=skillLevel,
+        lhs=level,
         rhs=characteristicModifier,
-        name=f'Modified {skillDef.name(speciality=speciality)} Skill Level')
+        name=f'Modified {skill.name(speciality=speciality)} Skill Level')
 
 class RobotSheetWidget(QtWidgets.QWidget):
     # TODO: Need something to allow you to copy/paste all the data (similar to
@@ -131,6 +148,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
     # (note sensor not skill package like above). Handling this would need some
     # extra logic around stacking as, if a software Recon skill was also added the
     # characteristic modifier would then be applied.
+
+    _StateVersion = 'RobotSheetWidget_v1'
 
     class _Sections(enum.Enum):
         Robot = 'Robot'
@@ -180,23 +199,29 @@ class RobotSheetWidget(QtWidgets.QWidget):
         modifiers. The only difference is, with the exception of robots using a
         Brain in a Jar, if the SOC or EDU characteristic modifier would usually
         be applied, instead you use the INT characteristic modifier as described
-        in Inherent Skill DMs (p73). This aim of displaying the skill levels in
-        this way is to make it easier to deal with situations where a
-        non-standard characteristic modifier mights be required (e.g. using
-        Deception combined with DEX for slight of hand) or when dealing with
-        more complex robots (e.g. physical skills for robots with no
-        manipulators or manipulators with different STR/DEX modifiers).</p>
+        in Inherent Skill DMs (p73).<br>
+        This aim of displaying the skill levels in this way is to make it easier
+        to deal with situations where a non-standard characteristic modifier
+        might be required (e.g. using Deception combined with DEX for slight of
+        hand) or when dealing with more complex robots (e.g. physical skills for
+        robots with no manipulators or manipulators with different STR/DEX
+        modifiers).</p>
         <p>Alternatively {name} can be configured to display skills with the
         default characteristic modifier pre-applied in an attempt to replicate
         how robots are displayed in the Robot Handbook and described in the
-        Finalisation section (p76). However, displaying skills like this is
-        <b>not recommended</b>. Not only does it make dealing with robots in
-        game more complex, the same issues that make it complex in game also
-        make it prohibitively complex to create code that would fully replicate
-        how the book displays the robots skills.</p>
-        <p><b>When enabled, the list of automatically generated notes may
-        still contain notes covering modifiers that have been pre-applied. It's
-        up to the user to not double count them.</b></p>
+        Finalisation section (p76).<br>
+        However, displaying skills like this is <b>not recommended</b>. As well
+        as making it more difficult to calculate modifiers for more complex
+        robots or more unusual tasks, the logic behind the values that are
+        shown in the book also makes it prohibitively complex to create code
+        that would replicate the values for all of the example robots. What it
+        currently does is a best effort attempt to replicate how skill values
+        are shown and it's only really intended as an aid if you're trying to
+        replicate one of the example robots from the book.</p>
+        <p><b>When characteristic DMs are being included in the displayed skill
+        values, the list of automatically generated notes will still contain
+        notes covering the modifiers that have been applied. It's up to the user
+        to not double count them.</b></p>
         """.format(name=app.AppName)
 
     def __init__(
@@ -207,13 +232,12 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._robot = None
         self._dataItemMap: typing.Dict[RobotSheetWidget._Sections, QtWidgets.QTableWidgetItem] = {}
 
-        # TODO: Need to add saving/loading of the state of this check box
-        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Apply Skill Modifiers')
-        self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
-        self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
+        self._characteristicsDMCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
+        self._characteristicsDMCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._characteristicsDMCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
 
         controlsLayout = QtWidgets.QVBoxLayout()
-        controlsLayout.addWidget(self._applySkillModifiersCheckBox)
+        controlsLayout.addWidget(self._characteristicsDMCheckBox)
         controlsLayout.addStretch()
 
         self._table = QtWidgets.QTableWidget()
@@ -271,7 +295,39 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.horizontalHeader().setMinimumSectionSize(maxWidth)
         self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
         self._table.resizeRowsToContents()
-        return super().resizeEvent(event)      
+        return super().resizeEvent(event)
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(self._StateVersion)
+
+        modifiersState = self._characteristicsDMCheckBox.saveState()
+        stream.writeUInt32(modifiersState.count() if modifiersState else 0)
+        if modifiersState:
+            stream.writeRawData(modifiersState.data())
+
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != self._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug('Failed to restore RobotSheetWidget state (Incorrect version)')
+            return False
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        modifiersState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._characteristicsDMCheckBox.restoreState(modifiersState):
+            return False
+
+        return True        
 
     def _updateTable(self) -> None:
         for section, item in self._dataItemMap.items():
@@ -323,27 +379,25 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     prefix='Cr')
                 calculations.append(cost)
             elif section == RobotSheetWidget._Sections.Skills:
-                applySkillModifiers = self._applySkillModifiersCheckBox.isChecked()
+                applySkillModifiers = self._characteristicsDMCheckBox.isChecked()
                 skillString = []
-                for skillDef in traveller.AllStandardSkills:
-                    skill = self._robot.skill(skillDef=skillDef)
-                    if skill:
-                        specialities = skill.specialities()
-                        if not specialities:
-                            specialities = [None]
-                        for speciality in specialities:
-                            if applySkillModifiers:
-                                skillLevel = _calcModifierSkillLevel(
-                                    robot=self._robot,
-                                    skillDef=skillDef,
-                                    speciality=speciality)
-                            else:
-                                skillLevel = skill.level(speciality=speciality)
+                for skill in self._robot.skills():
+                    specialities = skill.specialities()
+                    if not specialities:
+                        specialities = [None]
+                    for speciality in specialities:
+                        if applySkillModifiers:
+                            skillLevel = _calcModifierSkillLevel(
+                                robot=self._robot,
+                                skill=skill,
+                                speciality=speciality)
+                        else:
+                            skillLevel = skill.level(speciality=speciality)
 
-                            skillString.append('{skill} {level}'.format(
-                                skill=skill.name(speciality=speciality),
-                                level=skillLevel.value()))
-                            calculations.append(skillLevel)
+                        skillString.append('{skill} {level}'.format(
+                            skill=skill.name(speciality=speciality),
+                            level=skillLevel.value()))
+                        calculations.append(skillLevel)
                 skillString.sort()
 
                 # Add the amount of spare bandwidth, this should always be done at

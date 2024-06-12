@@ -137,6 +137,11 @@ class RobotInfoWidget(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(self._StateVersion)
 
+        statsState = self._statsSheetWidget.saveState()
+        stream.writeUInt32(statsState.count() if statsState else 0)
+        if statsState:
+            stream.writeRawData(statsState.data())
+
         expanderState = self._expanderWidget.saveState()
         stream.writeUInt32(expanderState.count() if expanderState else 0)
         if expanderState:
@@ -154,6 +159,13 @@ class RobotInfoWidget(QtWidgets.QWidget):
             # Wrong version so unable to restore state safely
             logging.debug('Failed to restore RobotInfoWidget state (Incorrect version)')
             return False
+        
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        statsState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._statsSheetWidget.restoreState(statsState):
+            return False        
 
         count = stream.readUInt32()
         if count <= 0:
