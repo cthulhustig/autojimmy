@@ -9,7 +9,7 @@ class SkillFlags(enum.IntFlag):
 SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
 
 # TODO: Why isn't this just called Skill?
-class TrainedSkill(object):
+class Skill(object):
     _MinTrainedSkillLevel = common.ScalarCalculation(
         value=0,
         name='Min Trained Skill Level')
@@ -27,7 +27,7 @@ class TrainedSkill(object):
                 typing.Optional[SkillFlags]]] = {}
         # Set base skill level to default
         self._levels[None] = (
-            TrainedSkill._MinTrainedSkillLevel,
+            Skill._MinTrainedSkillLevel,
             None) # Default modifier flags will be used
 
     def skillDef(self) -> traveller.SkillDefinition:
@@ -49,7 +49,7 @@ class TrainedSkill(object):
             # None representing the base level. If it's a specialisation we don't
             # have then we know it's skill level 0
             assert(speciality)
-            return TrainedSkill._MinTrainedSkillLevel
+            return Skill._MinTrainedSkillLevel
         level, _ = self._levels[speciality]
         return level
 
@@ -125,7 +125,7 @@ class TrainedSkill(object):
             if flags != None:
                 return flags
         _, flags = self._levels[None]
-        return flags if flags != None else TrainedSkill._DefaultFlags
+        return flags if flags != None else Skill._DefaultFlags
 
 class SkillGroup(object):
     _UntrainedSkillLevel = common.ScalarCalculation(
@@ -135,10 +135,10 @@ class SkillGroup(object):
     def __init__(self) -> None:
         self._skills: typing.Dict[
             traveller.SkillDefinition,
-            TrainedSkill
+            Skill
         ] = {}
 
-    def all(self) -> typing.Iterable[TrainedSkill]:
+    def all(self) -> typing.Iterable[Skill]:
         return list(self._skills.values())
 
     # NOTE: A skill is only classed as having a speciality if it has the
@@ -158,7 +158,7 @@ class SkillGroup(object):
     def skill(
             self,
             skillDef: traveller.SkillDefinition
-            ) -> typing.Optional[TrainedSkill]:
+            ) -> typing.Optional[Skill]:
         return self._skills.get(skillDef)
 
     def level(
@@ -199,7 +199,7 @@ class SkillGroup(object):
                 # Skill is no longer trained so remove it
                 del self._skills[skillDef]
         else:
-            skill = TrainedSkill(skillDef=skillDef)
+            skill = Skill(skillDef=skillDef)
             isTrained = skill.modifyLevel(
                 levels=levels,
                 flags=flags,

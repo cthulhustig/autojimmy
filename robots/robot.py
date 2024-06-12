@@ -378,7 +378,7 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             attributeId=attributeId)
     
-    def skills(self) -> typing.Iterable[construction.TrainedSkill]:
+    def skills(self) -> typing.Iterable[construction.Skill]:
         return self._constructionContext.skills(
             sequence=self._sequence)    
     
@@ -397,7 +397,7 @@ class Robot(construction.ConstructableInterface):
     def skill(
             self,
             skillDef: traveller.SkillDefinition
-            ) -> typing.Optional[construction.TrainedSkill]:
+            ) -> typing.Optional[construction.Skill]:
         return self._constructionContext.skill(
             sequence=self._sequence,
             skillDef=skillDef)

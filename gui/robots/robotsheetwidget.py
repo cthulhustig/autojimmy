@@ -72,7 +72,7 @@ _SkillCharacteristicMap = {
 
 def _calcModifierSkillLevel(
         robot: robots.Robot,
-        skill: construction.TrainedSkill,
+        skill: construction.Skill,
         speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
         ) -> common.ScalarCalculation:
     level = skill.level(speciality=speciality)

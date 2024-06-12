@@ -216,7 +216,7 @@ class SequenceState(object):
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         return self._attributes.attributeValue(attributeId=attributeId)
     
-    def skills(self) -> typing.Iterable[construction.TrainedSkill]:
+    def skills(self) -> typing.Iterable[construction.Skill]:
         return self._skills.all()
     
     # NOTE: A skill is only classed as having a speciality if it has the
@@ -233,7 +233,7 @@ class SequenceState(object):
     def skill(
             self,
             skillDef: traveller.SkillDefinition
-            ) -> typing.Optional[construction.TrainedSkill]:
+            ) -> typing.Optional[construction.Skill]:
         return self._skills.skill(skillDef)
     
     def skillLevel(
@@ -833,7 +833,7 @@ class ConstructionContext(object):
     def skills(
             self,
             sequence: str
-            ) -> typing.Iterable[construction.TrainedSkill]:
+            ) -> typing.Iterable[construction.Skill]:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
@@ -858,7 +858,7 @@ class ConstructionContext(object):
             self,
             skillDef: traveller.SkillDefinition,
             sequence: str
-            ) -> typing.Optional[construction.TrainedSkill]:
+            ) -> typing.Optional[construction.Skill]:
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
