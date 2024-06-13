@@ -260,6 +260,10 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         scrollArea = QtWidgets.QScrollArea()
         scrollArea.setWidgetResizable(True)
+        # Always show scroll bars as in reduces the amount the ui jumps around
+        # when note filters change the table size as the user is typing
+        scrollArea.setVerticalScrollBarPolicy(
+            QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         scrollArea.setWidget(self._infoWidget)        
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()

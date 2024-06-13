@@ -1,3 +1,4 @@
+import common
 import enum
 import gui
 import logging
@@ -88,6 +89,7 @@ class ListTable(QtWidgets.QTableWidget):
         self._columnWidths = {}
         self._headerIconClickIndex = None
         self._headerStyle = _SizeableIconHeaderStyle(iconSize=self.iconSize())
+        self._rowFilter = None
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -281,6 +283,46 @@ class ListTable(QtWidgets.QTableWidget):
         self._headerStyle.setBaseStyle(style)
         super().setStyle(style)
 
+    def setItem(
+            self,
+            row: int,
+            column: int,
+            item: QtWidgets.QTableWidgetItem
+            ) -> None:
+        super().setItem(row, column, item)
+        self._checkRowFiltering(row=row)
+
+    def takeItem(
+            self,
+            row: int,
+            column: int
+            ) -> QtWidgets.QTableWidgetItem:
+        item = super().takeItem(row, column)
+        self._checkRowFiltering(row=row)
+        return item
+
+    def setRowFilter(
+            self,
+            filterType: common.StringFilterType,
+            filterString: typing.Optional[str] = None,
+            ignoreCase: bool = True
+            ) -> None:
+        if filterType == common.StringFilterType.NoFilter:
+            if self._rowFilter:
+                self._rowFilter = None
+                self.itemChanged.disconnect(self._filterWhenItemChanged)
+        else:
+            if not self._rowFilter:
+                self._rowFilter = common.StringFilter()
+                self.itemChanged.connect(self._filterWhenItemChanged)
+            self._rowFilter.setFilter(
+                filterType=filterType,
+                filterString=filterString,
+                ignoreCase=ignoreCase)
+
+        for row in range(self.rowCount()):
+            self._checkRowFiltering(row=row)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.ToolTip:
@@ -373,7 +415,7 @@ class ListTable(QtWidgets.QTableWidget):
             item: QtWidgets.QTableWidgetItem
             ) -> typing.Optional[str]:
         return None
-
+    
     def _moveSelection(
             self,
             moveUp: bool
@@ -400,6 +442,27 @@ class ListTable(QtWidgets.QTableWidget):
             swappedRows.append((currentRow, swapRow))
 
         return swappedRows
+    
+    def _checkRowFiltering(
+            self,
+            row: int
+            ) -> None:
+        hideRow = False
+        if self._rowFilter:
+            matches = False
+            for column in range(self.columnCount()):
+                item = self.item(row, column)
+                if item and self._rowFilter.matches(string=item.text()):
+                    matches = True
+                    break
+            hideRow = not matches
+        self.setRowHidden(row, hideRow)
+
+    def _filterWhenItemChanged(
+            self,
+            item: QtWidgets.QTableWidgetItem
+            ) -> None:
+        self._checkRowFiltering(row=item.row())
 
     def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
@@ -662,6 +725,26 @@ class FrozenColumnListTable(ListTable):
     def setColumnHidden(self, column: int, hide: bool) -> None:
         self._frozenColumnWidget.setColumnHidden(column, hide)
         return super().setColumnHidden(column, hide)
+
+    def hideColumn(self, column: int) -> None:
+        self._frozenColumnWidget.hideColumn(column)
+        return super().hideColumn(column)
+
+    def showColumn(self, column: int) -> None:
+        self._frozenColumnWidget.showColumn(column)
+        return super().showColumn(column)        
+
+    def setRowHidden(self, row: int, hide: bool) -> None:
+        self._frozenColumnWidget.setRowHidden(row, hide)
+        return super().setRowHidden(row, hide)
+
+    def hideRow(self, row: int) -> None:
+        self._frozenColumnWidget.hideRow(row)
+        return super().hideRow(row)
+
+    def showRow(self, row: int) -> None:
+        self._frozenColumnWidget.showRow(row)
+        super().showRow(row)
 
     def resizeColumnsToContents(self) -> None:
         self._frozenColumnWidget.resizeColumnsToContents()

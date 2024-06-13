@@ -54,6 +54,10 @@ _SkillCharacteristicMap = {
     traveller.StreetwiseSkillDefinition: traveller.Characteristics.Intellect,
     traveller.SurvivalSkillDefinition: traveller.Characteristics.Intellect,
     traveller.TacticsSkillDefinition: traveller.Characteristics.Intellect,
+    # Vacc Suit isn't included in the list of skills on p74. The fact it
+    # uses Intellect is based on the fact the example use of the skill in
+    # the core rules use EDU which is INT for a robot
+    traveller.VaccSuitSkillDefinition: traveller.Characteristics.Intellect,
     # Jack of all trades is needed for Brain in a Jar
     traveller.JackOfAllTradesSkillDefinition: None,
     # Non-standard skills added for robot construction
@@ -327,7 +331,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if not self._characteristicsDMCheckBox.restoreState(modifiersState):
             return False
 
-        return True        
+        return True
 
     def _updateTable(self) -> None:
         for section, item in self._dataItemMap.items():

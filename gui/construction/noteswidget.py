@@ -1,11 +1,14 @@
-from PyQt5.QtCore import QEvent, QObject
+import common
 import construction
 import gui
+import logging
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 class NotesWidget(QtWidgets.QWidget):
     _ColumnNames = ['Source', 'Note']
+
+    _StateVersion = 'NotesWidget_v1'
 
     def __init__(
             self,
@@ -13,8 +16,41 @@ class NotesWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent=parent)
 
-        self._table = gui.ListTable()
+        self._cachedFilterBkColour = None
 
+        self._filterLineEdit = gui.LineEditEx()
+        self._filterLineEdit.textEdited.connect(self._updateFilter)
+
+        self._clearFilterButton = QtWidgets.QPushButton()
+        self._clearFilterButton.setIcon(gui.loadIcon(gui.Icon.CloseTab))
+        self._clearFilterButton.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._clearFilterButton.setToolTip('Clear filter')
+        self._clearFilterButton.clicked.connect(self._clearFilter)
+
+        self._filterTypeComboBox = gui.EnumComboBox(
+            type=common.StringFilterType,
+            value=common.StringFilterType.ContainsString,
+            options=[
+                common.StringFilterType.ContainsString,
+                common.StringFilterType.Regex,
+                common.StringFilterType.Wildcard])
+        self._filterTypeComboBox.activated.connect(self._updateFilter)
+
+        self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case")  
+        self._filterIgnoreCaseCheckBox.setChecked(True)
+        self._filterIgnoreCaseCheckBox.stateChanged.connect(self._updateFilter)
+
+        controlsLayout = QtWidgets.QHBoxLayout()
+        controlsLayout.setContentsMargins(0, 0, 0, 0)
+        controlsLayout.addWidget(QtWidgets.QLabel('Filter:'))
+        controlsLayout.addWidget(self._filterLineEdit)
+        controlsLayout.addWidget(self._clearFilterButton)
+        controlsLayout.addWidget(self._filterTypeComboBox)
+        controlsLayout.addWidget(self._filterIgnoreCaseCheckBox)
+        controlsLayout.addStretch()
+        
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
         self._table.setSizeAdjustPolicy(
@@ -31,6 +67,7 @@ class NotesWidget(QtWidgets.QWidget):
         
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(controlsLayout)
         layout.addWidget(self._table)
 
         self.setLayout(layout)
@@ -89,7 +126,7 @@ class NotesWidget(QtWidgets.QWidget):
         if content:
             clipboard.setText(content)
             
-    def eventFilter(self, object: QObject, event: QEvent) -> bool:
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self._table:
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
@@ -99,6 +136,106 @@ class NotesWidget(QtWidgets.QWidget):
                     return True
 
         return super().eventFilter(object, event)
+    
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(self._StateVersion)
+
+        filterState = self._filterLineEdit.saveState()
+        stream.writeUInt32(filterState.count() if filterState else 0)
+        if filterState:
+            stream.writeRawData(filterState.data())
+
+        typeState = self._filterTypeComboBox.saveState()
+        stream.writeUInt32(typeState.count() if typeState else 0)
+        if typeState:
+            stream.writeRawData(typeState.data())
+
+        caseState = self._filterIgnoreCaseCheckBox.saveState()
+        stream.writeUInt32(caseState.count() if caseState else 0)
+        if caseState:
+            stream.writeRawData(caseState.data())  
+
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != self._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug('Failed to restore NotesWidget state (Incorrect version)')
+            return False
+
+        try:
+            count = stream.readUInt32()
+            if count <= 0:
+                return True
+            filterState = QtCore.QByteArray(stream.readRawData(count))
+            with gui.SignalBlocker(widget=self._filterLineEdit):
+                if not self._filterLineEdit.restoreState(filterState):
+                    return False
+            
+            count = stream.readUInt32()
+            if count <= 0:
+                return True
+            typeState = QtCore.QByteArray(stream.readRawData(count))
+            with gui.SignalBlocker(widget=self._filterTypeComboBox):
+                if not self._filterTypeComboBox.restoreState(typeState):
+                    return False
+            
+            count = stream.readUInt32()
+            if count <= 0:
+                return True
+            caseState = QtCore.QByteArray(stream.readRawData(count))
+            with gui.SignalBlocker(widget=self._filterIgnoreCaseCheckBox):
+                if not self._filterIgnoreCaseCheckBox.restoreState(caseState):
+                    return False
+        finally:
+            # Call update filter so the table is in sync with the filter config,
+            # or whatever part of the filter config we managed to load.
+            self._updateFilter()
+
+        return True    
+    
+    def _updateFilter(self) -> None:
+        filterString = self._filterLineEdit.text()
+        filterType = common.StringFilterType.NoFilter
+        ignoreCase = True
+        if filterString:
+            filterType = self._filterTypeComboBox.currentEnum()
+            ignoreCase = self._filterIgnoreCaseCheckBox.isChecked()
+
+        isValidFilter = False
+        try:
+            self._table.setRowFilter(
+                filterType=filterType,
+                filterString=filterString,
+                ignoreCase=ignoreCase)
+            isValidFilter = True
+        except:
+            # Something wen't wrong setting the filter, most likely an error in
+            # a regex. Just disable filtering until the user corrects it
+            self._table.setRowFilter(
+                filterType=common.StringFilterType.NoFilter)
+
+        palette = self._filterLineEdit.palette()
+        if not self._cachedFilterBkColour:
+            self._cachedFilterBkColour = palette.color(
+                QtGui.QPalette.ColorRole.Base)
+        palette.setColor(
+            QtGui.QPalette.ColorRole.Base,
+            self._cachedFilterBkColour
+            if isValidFilter else
+            palette.color(QtGui.QPalette.ColorRole.BrightText))
+        self._filterLineEdit.setPalette(palette)
+    
+    def _clearFilter(self) -> None:
+        self._filterLineEdit.clear()
+        self._updateFilter()
 
     
 

@@ -93,6 +93,11 @@ class _AttributeLineEdit(_CalculationLineEdit):
     def _calculations(self) -> typing.Iterable[common.ScalarCalculation]:
         return self._attribute.calculations()
 
+# TODO: There is an ugly bug where sometimes while typing, the notes
+# table jumps up massively for a few seconds then goes back down again.
+# To reproduce type a long string of garbage so nothing matches then
+# hold the delete key, they jump happens at the point it gets short
+# enough to start matching stuff
 class RobotInfoWidget(QtWidgets.QWidget):
     _StateVersion = 'RobotInfoWidget_v1'
 
@@ -142,6 +147,11 @@ class RobotInfoWidget(QtWidgets.QWidget):
         if statsState:
             stream.writeRawData(statsState.data())
 
+        notesState = self._notesWidget.saveState()
+        stream.writeUInt32(notesState.count() if notesState else 0)
+        if notesState:
+            stream.writeRawData(notesState.data())            
+
         expanderState = self._expanderWidget.saveState()
         stream.writeUInt32(expanderState.count() if expanderState else 0)
         if expanderState:
@@ -165,6 +175,13 @@ class RobotInfoWidget(QtWidgets.QWidget):
             return True
         statsState = QtCore.QByteArray(stream.readRawData(count))
         if not self._statsSheetWidget.restoreState(statsState):
+            return False
+        
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        notesState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._notesWidget.restoreState(notesState):
             return False        
 
         count = stream.readUInt32()

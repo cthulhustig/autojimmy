@@ -8,7 +8,6 @@ class SkillFlags(enum.IntFlag):
     ApplyPositiveCharacteristicModifier = enum.auto()
 SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
 
-# TODO: Why isn't this just called Skill?
 class Skill(object):
     _MinTrainedSkillLevel = common.ScalarCalculation(
         value=0,

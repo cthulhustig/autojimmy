@@ -553,8 +553,6 @@ class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)
     delayedTextEdited = QtCore.pyqtSignal(str)
 
-    _DarkModeInvalidRegexHighlight = QtGui.QColor(100, 0, 0)
-
     _StateVersion = 'LineEditEx_v1'
 
     @typing.overload
@@ -683,11 +681,12 @@ class LineEditEx(QtWidgets.QLineEdit):
         except:
             self._regexPattern = None
 
+        palette = self.palette()
+
         colour = self._cachedBaseColour
         if not self._regexPattern:
-            colour = self._DarkModeInvalidRegexHighlight if gui.isDarkModeEnabled() else QtCore.Qt.GlobalColor.red
+            colour = palette.color(QtGui.QPalette.ColorRole.BrightText)
 
-        palette = self.palette()
         palette.setColor(QtGui.QPalette.ColorRole.Base, colour)
         super().setPalette(palette) # Call base to prevent updating valid colour
 
