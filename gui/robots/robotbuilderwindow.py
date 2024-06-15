@@ -255,7 +255,6 @@ class RobotBuilderWindow(gui.WindowWidget):
             widget=self._usedBandwidthLabel))
 
         self._manifestTable = gui.RobotManifestTable()
-
         self._infoWidget = gui.RobotInfoWidget()
 
         scrollArea = QtWidgets.QScrollArea()
@@ -264,7 +263,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         # when note filters change the table size as the user is typing
         scrollArea.setVerticalScrollBarPolicy(
             QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        scrollArea.setWidget(self._infoWidget)        
+        scrollArea.setWidget(self._infoWidget)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)

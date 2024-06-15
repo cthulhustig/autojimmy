@@ -261,7 +261,10 @@ class RobotSheetWidget(QtWidgets.QWidget):
             self._table.resizeRowsToContents)
         self._table.setItemDelegate(gui.TableViewSpannedWordWrapFixDelegate())
         self._table.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)        
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._table.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)           
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
         for section, headerColumn, headerRow, dataColumn, dataRow, dataSpan in RobotSheetWidget._LayoutData:
             if dataSpan:

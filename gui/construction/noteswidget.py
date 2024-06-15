@@ -53,8 +53,17 @@ class NotesWidget(QtWidgets.QWidget):
         
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
-        self._table.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        # Having the table automatically adjust to the content size can cause
+        # odd draw issues if the NotesWidget inside another widget such as a
+        # group box or expander. If you type a sequence of the same character
+        # into the filter edit so that no notes are mated, then hold delete
+        # to delete the string quickly character by character, occasionally
+        # the notes widget will briefly jump upwards. When used in the
+        # robot/weapon it cause it to temporarily appear over the top of the
+        # stats widget above it. Rather than have it happen automatically,
+        # instead the widget is resized as the displayed content changes
+        #self._table.setSizeAdjustPolicy(
+        #    QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._table.setWordWrap(True)
         self._table.setAlternatingRowColors(False)
         self._table.setSortingEnabled(False)
@@ -64,11 +73,15 @@ class NotesWidget(QtWidgets.QWidget):
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
         self._table.installEventFilter(self)
+        self._table.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)
         
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(controlsLayout)
         layout.addWidget(self._table)
+        layout.addStretch(1)
 
         self.setLayout(layout)
         
@@ -98,16 +111,13 @@ class NotesWidget(QtWidgets.QWidget):
                         QtWidgets.QTableWidgetItem(note))
 
                     seenNotes.add(key)
-        self._table.resizeRowsToContents()
+        self._resizeTableToContents()
 
     def clear(self) -> None:
-        self._table.removeAllRows() 
+        self._table.removeAllRows()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        width = event.size().width()
-        maxWidth = int(width * 0.33)
-        self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
-        self._table.resizeRowsToContents()
+        self._resizeTableToContents()
         return super().resizeEvent(event)
     
     def copySelectionToClipboard(self):
@@ -221,6 +231,8 @@ class NotesWidget(QtWidgets.QWidget):
             # a regex. Just disable filtering until the user corrects it
             self._table.setRowFilter(
                 filterType=common.StringFilterType.NoFilter)
+        
+        self._resizeTableToContents()
 
         palette = self._filterLineEdit.palette()
         if not self._cachedFilterBkColour:
@@ -236,6 +248,22 @@ class NotesWidget(QtWidgets.QWidget):
     def _clearFilter(self) -> None:
         self._filterLineEdit.clear()
         self._updateFilter()
+
+    def _resizeTableToContents(self) -> None:
+        width = self._table.sizeHintForColumn(0)
+        if width:
+            self._table.setColumnWidth(0, width)
+
+        self._table.resizeRowsToContents()
+        totalHeight = self._table.horizontalHeader().sizeHint().height() + 4
+        for row in range(self._table.rowCount()):
+            if self._table.isRowHidden(row):
+                continue
+            height = self._table.sizeHintForRow(row)
+            if height > 0:
+                totalHeight += height + 2
+        self._table.setMinimumHeight(totalHeight)
+
 
     
 

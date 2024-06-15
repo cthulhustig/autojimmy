@@ -21,23 +21,23 @@ class RobotInfoWidget(QtWidgets.QWidget):
         self._robot = None
 
         self._statsSheetWidget = gui.RobotSheetWidget()
-        self._notesWidget = gui.NotesWidget()
+        statsSheetGroupBox = QtWidgets.QGroupBox('Stats')
+        statsSheetLayout = QtWidgets.QHBoxLayout()
+        #statsSheetLayout.setContentsMargins(0, 0, 0, 0)
+        statsSheetLayout.addWidget(self._statsSheetWidget)    
+        statsSheetGroupBox.setLayout(statsSheetLayout)        
 
-        self._expanderWidget = gui.ExpanderGroupWidgetEx()
-        self._expanderWidget.setPersistExpanderStates(True)
-        self._expanderWidget.addExpandingContent(
-            label='Stats',
-            content=self._statsSheetWidget,
-            expanded=True)        
-        self._expanderWidget.addExpandingContent(
-            label='Notes',
-            content=self._notesWidget,
-            expanded=True)
+        self._notesWidget = gui.NotesWidget()
+        notesGroupBox = QtWidgets.QGroupBox('Notes')
+        notesLayout = QtWidgets.QHBoxLayout()
+        #notesLayout.setContentsMargins(0, 0, 0, 0)
+        notesLayout.addWidget(self._notesWidget)    
+        notesGroupBox.setLayout(notesLayout)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addWidget(self._expanderWidget)
-        widgetLayout.addStretch(1)
+        widgetLayout.addWidget(statsSheetGroupBox)
+        widgetLayout.addWidget(notesGroupBox, 1)
 
         self.setLayout(widgetLayout)
 
@@ -62,11 +62,6 @@ class RobotInfoWidget(QtWidgets.QWidget):
         stream.writeUInt32(notesState.count() if notesState else 0)
         if notesState:
             stream.writeRawData(notesState.data())            
-
-        expanderState = self._expanderWidget.saveState()
-        stream.writeUInt32(expanderState.count() if expanderState else 0)
-        if expanderState:
-            stream.writeRawData(expanderState.data())
 
         return state
 
@@ -93,38 +88,20 @@ class RobotInfoWidget(QtWidgets.QWidget):
             return True
         notesState = QtCore.QByteArray(stream.readRawData(count))
         if not self._notesWidget.restoreState(notesState):
-            return False        
-
-        count = stream.readUInt32()
-        if count <= 0:
-            return True
-        expanderState = QtCore.QByteArray(stream.readRawData(count))
-        if not self._expanderWidget.restoreState(expanderState):
             return False
 
         return True
 
     def _configureControls(self) -> None:       
         self._statsSheetWidget.setRobot(robot=self._robot)
-        self._expanderWidget.setContentHidden(
-            content=self._statsSheetWidget,
-            hidden=self._robot == None)
+        self._statsSheetWidget.setHidden(self._robot == None)
 
         self._notesWidget.setSteps(self._robot.steps())
-        self._expanderWidget.setContentHidden(
-            content=self._notesWidget,
-            hidden=self._notesWidget.isEmpty())
+        self._notesWidget.setHidden(self._notesWidget.isEmpty())
 
     def _resetControls(self) -> None:
+        self._statsSheetWidget.setHidden(True)
         self._statsSheetWidget.clear()
+        self._notesWidget.setHidden(True)
         self._notesWidget.clear()
-
-        # Hide expanders (and the controls they contain). They will be
-        # shown again if/when they have something to display
-        self._expanderWidget.setContentHidden(
-            content=self._statsSheetWidget,
-            hidden=True)
-        self._expanderWidget.setContentHidden(
-            content=self._notesWidget,
-            hidden=True)        
 
