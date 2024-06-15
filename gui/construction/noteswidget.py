@@ -255,13 +255,13 @@ class NotesWidget(QtWidgets.QWidget):
             self._table.setColumnWidth(0, width)
 
         self._table.resizeRowsToContents()
-        totalHeight = self._table.horizontalHeader().sizeHint().height() + 4
+        totalHeight = self._table.horizontalHeader().sizeHint().height() + 2
         for row in range(self._table.rowCount()):
             if self._table.isRowHidden(row):
                 continue
             height = self._table.sizeHintForRow(row)
             if height > 0:
-                totalHeight += height + 2
+                totalHeight += height + 3
         self._table.setMinimumHeight(totalHeight)
 
 

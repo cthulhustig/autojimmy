@@ -137,14 +137,20 @@ class WeaponInfoWidget(QtWidgets.QWidget):
         self._traitFormLayout = gui.FormLayoutEx()
         self._traitFormLayout.setContentsMargins(0, 0, 0, 0)
 
-        self._attributeLayout = QtWidgets.QHBoxLayout()
-        self._attributeLayout.setContentsMargins(0, 0, 0, 0)
-        self._attributeLayout.addLayout(self._basicFormLayout)
-        self._attributeLayout.addLayout(self._reliabilityFormLayout)
-        self._attributeLayout.addLayout(self._traitFormLayout)
-        self._attributeLayout.addStretch(1)
+        statsLayout = QtWidgets.QHBoxLayout()
+        statsLayout.addLayout(self._basicFormLayout)
+        statsLayout.addLayout(self._reliabilityFormLayout)
+        statsLayout.addLayout(self._traitFormLayout)
+        statsLayout.addStretch(1)
+        self._statsGroupBox = QtWidgets.QGroupBox('Stats')
+        self._statsGroupBox.setLayout(statsLayout)
 
         self._notesWidget = gui.NotesWidget()
+
+        notesLayout = QtWidgets.QVBoxLayout()
+        notesLayout.addWidget(self._notesWidget)
+        self._notesGroupBox = QtWidgets.QGroupBox('Notes')
+        self._notesGroupBox.setLayout(notesLayout)
 
         self._gunCombatSkillSpinBox = gui.SpinBoxEx()
         self._gunCombatSkillSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
@@ -154,28 +160,17 @@ class WeaponInfoWidget(QtWidgets.QWidget):
 
         self._malfunctionGraph = gui.WeaponMalfunctionGraph()
 
-        self._malfunctionGraphLayout = QtWidgets.QVBoxLayout()
-        self._malfunctionGraphLayout.addLayout(gunCombatLayout, 0)
-        self._malfunctionGraphLayout.addWidget(self._malfunctionGraph, 1)
-
-        self._expanderWidget = gui.ExpanderGroupWidgetEx()
-        self._expanderWidget.setPersistExpanderStates(True)
-        self._expanderWidget.addExpandingContent(
-            label='Stats',
-            content=self._attributeLayout,
-            expanded=True)
-        self._expanderWidget.addExpandingContent(
-            label='Notes',
-            content=self._notesWidget,
-            expanded=True)
-        self._expanderWidget.addExpandingContent(
-            label='Malfunction Probabilities',
-            content=self._malfunctionGraphLayout,
-            expanded=True)
+        malfunctionLayout = QtWidgets.QVBoxLayout()
+        malfunctionLayout.addLayout(gunCombatLayout, 0)
+        malfunctionLayout.addWidget(self._malfunctionGraph, 1)
+        self._malfunctionGroupBox = QtWidgets.QGroupBox('Malfunction Probabilities')
+        self._malfunctionGroupBox.setLayout(malfunctionLayout)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addWidget(self._expanderWidget)
+        widgetLayout.addWidget(self._statsGroupBox)
+        widgetLayout.addWidget(self._notesGroupBox)
+        widgetLayout.addWidget(self._malfunctionGroupBox)
         widgetLayout.addStretch(1)
 
         self.setLayout(widgetLayout)
@@ -208,11 +203,6 @@ class WeaponInfoWidget(QtWidgets.QWidget):
 
         stream.writeInt32(self._gunCombatSkillSpinBox.value())
 
-        expanderState = self._expanderWidget.saveState()
-        stream.writeUInt32(expanderState.count() if expanderState else 0)
-        if expanderState:
-            stream.writeRawData(expanderState.data())
-
         return state
 
     def restoreState(
@@ -227,13 +217,6 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             return False
 
         self._gunCombatSkillSpinBox.setValue(stream.readInt32())
-
-        count = stream.readUInt32()
-        if count <= 0:
-            return True
-        expanderState = QtCore.QByteArray(stream.readRawData(count))
-        if not self._expanderWidget.restoreState(expanderState):
-            return False
 
         return True
 
@@ -269,23 +252,19 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             layout=self._traitFormLayout,
             attributeIds=gunsmith.TraitAttributeIds,
             isTraitAttributes=True)
-        self._expanderWidget.setContentHidden(
-            content=self._attributeLayout,
-            hidden=self._basicFormLayout.isEmpty() and self._reliabilityFormLayout.isEmpty() and self._traitFormLayout.isEmpty())
+        self._statsGroupBox.setHidden(
+            self._basicFormLayout.isEmpty() and self._reliabilityFormLayout.isEmpty() and self._traitFormLayout.isEmpty())
 
         self._notesWidget.setSteps(
             self._weapon.steps(sequence=self._sequence))
-
-        self._expanderWidget.setContentHidden(
-            content=self._notesWidget,
-            hidden=self._notesWidget.isEmpty())
+        self._notesGroupBox.setHidden(
+            self._notesWidget.isEmpty())
 
         self._malfunctionGraph.setWeapon(
             weapon=self._weapon,
             sequence=self._sequence)
-        self._expanderWidget.setContentHidden(
-            content=self._malfunctionGraphLayout,
-            hidden=not self._malfunctionGraph.hasPlots())
+        self._malfunctionGroupBox.setHidden(
+            not self._malfunctionGraph.hasPlots())
 
     def _updateAttributeLayout(
             self,
@@ -321,20 +300,14 @@ class WeaponInfoWidget(QtWidgets.QWidget):
             layout.removeRow(layout.rowCount() - 1)
 
     def _resetControls(self) -> None:
+        self._statsGroupBox.setHidden(True)
+        self._notesGroupBox.setHidden(True)
+        self._malfunctionGroupBox.setHidden(True)
+
         self._basicFormLayout.clear()
         self._reliabilityFormLayout.clear()
         self._traitFormLayout.clear()
         self._notesWidget.clear()
-
-        self._expanderWidget.setContentHidden(
-            content=self._attributeLayout,
-            hidden=True)
-        self._expanderWidget.setContentHidden(
-            content=self._notesWidget,
-            hidden=True)
-        self._expanderWidget.setContentHidden(
-            content=self._malfunctionGraphLayout,
-            hidden=True)
 
     def _gunCombatSkillChanged(self) -> None:
         self._malfunctionGraph.setGunCombatSkill(

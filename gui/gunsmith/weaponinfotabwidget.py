@@ -29,7 +29,6 @@ class WeaponInfoTabWidget(QtWidgets.QWidget):
         layout.setSpacing(0) # No spacing between tabs and scroll area
         layout.addWidget(self._tabBar)
         layout.addWidget(self._scrollArea)
-        layout.addStretch(1)
 
         self.setLayout(layout)
 

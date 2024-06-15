@@ -21,23 +21,22 @@ class RobotInfoWidget(QtWidgets.QWidget):
         self._robot = None
 
         self._statsSheetWidget = gui.RobotSheetWidget()
-        statsSheetGroupBox = QtWidgets.QGroupBox('Stats')
-        statsSheetLayout = QtWidgets.QHBoxLayout()
-        #statsSheetLayout.setContentsMargins(0, 0, 0, 0)
-        statsSheetLayout.addWidget(self._statsSheetWidget)    
-        statsSheetGroupBox.setLayout(statsSheetLayout)        
+        statsLayout = QtWidgets.QHBoxLayout()
+        statsLayout.addWidget(self._statsSheetWidget)    
+        self._statsGroupBox = QtWidgets.QGroupBox('Stats')
+        self._statsGroupBox.setLayout(statsLayout)        
 
         self._notesWidget = gui.NotesWidget()
-        notesGroupBox = QtWidgets.QGroupBox('Notes')
         notesLayout = QtWidgets.QHBoxLayout()
-        #notesLayout.setContentsMargins(0, 0, 0, 0)
         notesLayout.addWidget(self._notesWidget)    
-        notesGroupBox.setLayout(notesLayout)
+        self._notesGroupBox = QtWidgets.QGroupBox('Notes')
+        self._notesGroupBox.setLayout(notesLayout)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addWidget(statsSheetGroupBox)
-        widgetLayout.addWidget(notesGroupBox, 1)
+        widgetLayout.addWidget(self._statsGroupBox)
+        widgetLayout.addWidget(self._notesGroupBox)
+        widgetLayout.addStretch(1)
 
         self.setLayout(widgetLayout)
 
@@ -94,14 +93,15 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
     def _configureControls(self) -> None:       
         self._statsSheetWidget.setRobot(robot=self._robot)
-        self._statsSheetWidget.setHidden(self._robot == None)
+        self._statsGroupBox.setHidden(self._robot == None)
 
         self._notesWidget.setSteps(self._robot.steps())
-        self._notesWidget.setHidden(self._notesWidget.isEmpty())
+        self._notesGroupBox.setHidden(self._notesWidget.isEmpty())
 
     def _resetControls(self) -> None:
-        self._statsSheetWidget.setHidden(True)
+        self._statsGroupBox.setHidden(True)
+        self._notesGroupBox.setHidden(True)
+
         self._statsSheetWidget.clear()
-        self._notesWidget.setHidden(True)
         self._notesWidget.clear()
 
