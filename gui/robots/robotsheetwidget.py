@@ -140,18 +140,6 @@ def _calcModifierSkillLevel(
 class RobotSheetWidget(QtWidgets.QWidget):
     # TODO: Need something to allow you to copy/paste all the data (similar to
     # notes widget)
-    # TODO: Need to handle the fact when adding skill modifiers is enabled and
-    # you create a new default robot it has a Recon of -2. This is a problem as
-    # the negative INT modifier is being applied to the Recon skill when the
-    # Alert skill package says it counteracts any negative characteristic
-    # modifier.
-    # - A possible way to fix this would be to add another parameter to the factor
-    # that sets skills in the same way as I added the stacks parameter. The new
-    # parameter would allow you to specify if negative characteristic modifiers
-    # are applied. Possibly even no characteristic modifiers for Racon sensor
-    # (note sensor not skill package like above). Handling this would need some
-    # extra logic around stacking as, if a software Recon skill was also added the
-    # characteristic modifier would then be applied.
 
     _StateVersion = 'RobotSheetWidget_v1'
 

@@ -6,13 +6,15 @@ import typing
 class SkillFlags(enum.IntFlag):
     ApplyNegativeCharacteristicModifier = enum.auto()
     ApplyPositiveCharacteristicModifier = enum.auto()
-SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
+SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | \
+    SkillFlags.ApplyNegativeCharacteristicModifier
 
 class Skill(object):
     _MinTrainedSkillLevel = common.ScalarCalculation(
         value=0,
         name='Min Trained Skill Level')
-    _DefaultFlags = SkillFlags.ApplyPositiveCharacteristicModifier | SkillFlags.ApplyNegativeCharacteristicModifier
+    _DefaultFlags = SkillFlags.ApplyPositiveCharacteristicModifier | \
+        SkillFlags.ApplyNegativeCharacteristicModifier
 
     def __init__(
             self,

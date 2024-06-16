@@ -22,11 +22,11 @@ class AgilityEnhancement(robots.RobotComponentInterface):
     # NOTE: It wasn't one of the things that Geir clarified (I forgot to ask
     # him) but I'm working on the assumption the Athletics (Dexterity) given
     # by an Agility Enhancement stacks with any levels from software skill
-    # packages or from manipulators (p26)
-    # TODO: The book doesn't seem to say if characteristics modifier for DEX
-    # applies to checks made with the Athletics (Dexterity) skill this gives.
-    # I'd be included to say they don't as that's how all the other skills
-    # received from hardware components seem to work.
+    # packages or from manipulators (p26). I'm also working on the assumption
+    # that the robots DEX characteristic modifier is applied when using the
+    # skill. This is based on the fact the rules don't say it's not where as
+    # other hardware components that give a skill (e.g. Recon Sensor)
+    # explicitly say that negative characteristic modifiers don't apply
 
     def __init__(
             self,
@@ -101,7 +101,8 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Dexterity,
             levels=self._agilityModifier,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier | \
+                construction.SkillFlags.ApplyNegativeCharacteristicModifier))
 
         context.applyStep(
             sequence=sequence,

@@ -1006,7 +1006,8 @@ class Skill(robots.RobotComponentInterface):
             speciality=speciality,
             levels=level,
             # Set flags for positive and negative characteristics to be applied
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier | construction.SkillFlags.ApplyNegativeCharacteristicModifier,
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier |
+                construction.SkillFlags.ApplyNegativeCharacteristicModifier,
             stacks=_stacksWithHardware(
                 skillDef=self._skillDef,
                 speciality=speciality)))

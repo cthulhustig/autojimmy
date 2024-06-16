@@ -4,11 +4,6 @@ import robots
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: There is an ugly bug where sometimes while typing, the notes
-# table jumps up massively for a few seconds then goes back down again.
-# To reproduce type a long string of garbage so nothing matches then
-# hold the delete key, they jump happens at the point it gets short
-# enough to start matching stuff
 class RobotInfoWidget(QtWidgets.QWidget):
     _StateVersion = 'RobotInfoWidget_v1'
 
