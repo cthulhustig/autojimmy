@@ -22,11 +22,14 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
             sequence=sequence,
             sequences=weapon.sequences())
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
         self._weaponTypeComboBox = gui.EnumComboBox(type=gunsmith.WeaponType)
         self._weaponTypeComboBox.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
         self._weaponTypeComboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._weaponTypeComboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._weaponTypeComboBox.installEventFilter(self._noWheelFilter)
         self._weaponTypeComboBox.currentIndexChanged.connect(self._weaponTypeChanged)
 
         self._configurationWidget.addExpandingContent(
