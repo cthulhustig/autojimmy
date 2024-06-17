@@ -4,5 +4,6 @@ from .routeplannerjobs import *
 from .traderjobs import *
 from .simulatorjob import *
 from .exportweaponjob import *
+from .exportrobotnjob import *
 from .posterjobasync import *
 from .lintjobasync import *

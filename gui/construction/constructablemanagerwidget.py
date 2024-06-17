@@ -73,10 +73,10 @@ class _CustomListWidgetItem(QtWidgets.QListWidgetItem):
             return text[:-len(_CustomListWidgetItem._UnsavedSuffix)]
         return text
 
-class ConstructableManagementWidget(QtWidgets.QWidget):
+class ConstructableManagerWidget(QtWidgets.QWidget):
     currentChanged = QtCore.pyqtSignal()
 
-    _StateVersion = '_ConstructableManagementWidget_v1'
+    _StateVersion = 'ConstructableManagerWidget_v1'
 
     def __init__(
             self,
@@ -165,13 +165,13 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
             self,
             name: str
             ) -> construction.ConstructableInterface:
-        raise RuntimeError(f'{type(self)} is derived from ConstructableManagementWidget so must implement createNew')
+        raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement createNew')
     
     def importConstructable(self) -> None:
-        raise RuntimeError(f'{type(self)} is derived from ConstructableManagementWidget so must implement importConstructable')
+        raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement importConstructable')
 
     def exportConstructable(self) -> None:
-        raise RuntimeError(f'{type(self)} is derived from ConstructableManagementWidget so must implement exportConstructable')
+        raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement exportConstructable')
     
     def current(self) -> typing.Optional[construction.ConstructableInterface]:
         item = self._sectionList.currentItem()
@@ -437,7 +437,7 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
         version = stream.readQString()
         if version != self._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug('Failed to restore ConstructableManagementWidget state (Incorrect version)')
+            logging.debug('Failed to restore ConstructableManagerWidget state (Incorrect version)')
             return False
 
         count = stream.readUInt32()
@@ -450,7 +450,7 @@ class ConstructableManagementWidget(QtWidgets.QWidget):
         if constructableName:
             _, item = self._findItemByName(constructableName=constructableName)
             if not item:
-                logging.debug(f'Failed to restore ConstructableManagementWidget state (Unknown {self._constructableStore.typeString()} "{constructableName}")')
+                logging.debug(f'Failed to restore ConstructableManagerWidget state (Unknown {self._constructableStore.typeString()} "{constructableName}")')
                 return False                
             self._makeItemCurrent(item=item)
 

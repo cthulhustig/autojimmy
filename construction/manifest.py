@@ -72,6 +72,9 @@ class Manifest(object):
 
     def costsType(self) -> typing.Type[construction.ConstructionCost]:
         return self._costsType
+    
+    def isEmpty(self) -> bool:
+        return not self._sections
 
     def sections(self) -> typing.Collection[ManifestSection]:
         return self._sections

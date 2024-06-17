@@ -30,5 +30,4 @@ from .components.cartridges import *
 from .components.powerpack import *
 from .io.serialization import *
 from .io.weaponstore import *
-from .io.exportpdf import *
 from .io.exportcsv import *

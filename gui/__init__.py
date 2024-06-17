@@ -1,4 +1,5 @@
 from .common.qtutils import *
+from .common.filefilters import *
 from .common.style import *
 from .common.windowsettings import *
 from .common.icons import *
@@ -79,7 +80,7 @@ from .construction.stagegroupwidget import *
 from .construction.manifesttable import *
 from .construction.noteswidget import *
 from .construction.constructableselectdialog import *
-from .construction.constructablemanagementwidget import *
+from .construction.constructablemanagerwidget import *
 from .gunsmith.weaponmalfunctiongraph import *
 from .gunsmith.weaponconfigwidget import *
 from .gunsmith.weaponmanifesttable import *

@@ -34,7 +34,7 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
-class _PDFExportSettingsDialog(gui.DialogEx):
+class _WeaponPDFExportDialog(gui.DialogEx):
     def __init__(
             self,
             hasMagazineQuantities: bool,
@@ -42,8 +42,8 @@ class _PDFExportSettingsDialog(gui.DialogEx):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='PDF Export Settings',
-            configSection='PDFExportSettingsDialog',
+            title='Weapon PDF Export',
+            configSection='WeaponPDFExportDialog',
             parent=parent)
 
         self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include editable fields')
@@ -230,11 +230,11 @@ class _ExportProgressDialog(gui.DialogEx):
         self._progressBar.setMaximum(int(total))
         self._progressBar.setValue(int(current))
 
-class _WeaponManagementWidget(gui.ConstructableManagementWidget):
+class _WeaponManagerWidget(gui.ConstructableManagerWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponType = gunsmith.WeaponType.ConventionalWeapon
 
-    _StateVersion = '_WeaponManagementWidget_v1'
+    _StateVersion = '_WeaponManagerWidget_v1'
 
     def __init__(
             self,
@@ -249,7 +249,7 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(_WeaponManagementWidget._StateVersion)
+        stream.writeQString(_WeaponManagerWidget._StateVersion)
 
         stream.writeQString(self._importExportPath)
 
@@ -263,7 +263,7 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
     def restoreState(self, state: QtCore.QByteArray) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != _WeaponManagementWidget._StateVersion:
+        if version != _WeaponManagerWidget._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore _WeaponManagementWidget state (Incorrect version)')
             return False
@@ -285,14 +285,14 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
             ) -> construction.ConstructableInterface:
         return gunsmith.Weapon(
             name=name,
-            techLevel=_WeaponManagementWidget._DefaultTechLevel,
-            weaponType=_WeaponManagementWidget._DefaultWeaponType)
+            techLevel=_WeaponManagerWidget._DefaultTechLevel,
+            weaponType=_WeaponManagerWidget._DefaultWeaponType)
     
     def importConstructable(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             parent=self,
             directory=self._importExportPath if self._importExportPath else QtCore.QDir.homePath(),
-            filter=GunsmithWindow._JSONFilter)
+            filter=gui.JSONFileFilter)
         if not path:
             return # User cancelled
 
@@ -360,15 +360,15 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
             parent=self,
             caption='Export File',
             directory=defaultPath,
-            filter=f'{GunsmithWindow._PDFFilter};;{GunsmithWindow._JSONFilter};;{GunsmithWindow._CSVFilter}')
+            filter=f'{gui.PDFFileFilter};;{gui.JSONFileFilter};;{gui.CSVFileFilter}')
         if not path:
             return # User cancelled
 
         self._importExportPath = os.path.dirname(path)
 
         try:
-            if filter == GunsmithWindow._PDFFilter:
-                dlg = _PDFExportSettingsDialog(
+            if filter == gui.PDFFileFilter:
+                dlg = _WeaponPDFExportDialog(
                     parent=self,
                     hasMagazineQuantities=weapon.hasComponent(componentType=gunsmith.MagazineQuantity),
                     hasAmmoQuantities=weapon.hasComponent(componentType=gunsmith.AmmoQuantity))
@@ -391,9 +391,9 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
                     finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))
 
                 self.setDisabled(True)
-            elif filter == GunsmithWindow._JSONFilter:
+            elif filter == gui.JSONFileFilter:
                 gunsmith.writeWeapon(weapon=weapon, filePath=path)
-            elif filter == GunsmithWindow._CSVFilter:
+            elif filter == gui.CSVFileFilter:
                 gunsmith.exportToCsv(weapon=weapon, filePath=path)
             else:
                 raise ValueError(f'Unexpected filter {filter}')
@@ -425,10 +425,6 @@ class _WeaponManagementWidget(gui.ConstructableManagementWidget):
         self._progressDlg = None
          
 class GunsmithWindow(gui.WindowWidget):
-    _PDFFilter = 'PDF (*.pdf)'
-    _JSONFilter = 'JSON (*.json)'
-    _CSVFilter = 'CSV (*.csv)'
-
     _ConfigurationBottomSpacing = 300
 
     def __init__(self) -> None:
@@ -539,7 +535,7 @@ class GunsmithWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupWeaponListControls(self) -> None:
-        self._weaponManagementWidget = _WeaponManagementWidget()
+        self._weaponManagementWidget = _WeaponManagerWidget()
         self._weaponManagementWidget.currentChanged.connect(self._selectedWeaponChanged)
 
         layout = QtWidgets.QVBoxLayout()

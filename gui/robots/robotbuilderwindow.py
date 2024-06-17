@@ -1,7 +1,10 @@
 import app
+import common
 import construction
 import gui
+import jobs
 import logging
+import os
 import robots
 import traveller
 import typing
@@ -12,11 +15,102 @@ _WelcomeMessage = """
 TODO
 """.format(name=app.AppName)
 
-class _RobotManagementWidget(gui.ConstructableManagementWidget):
+class _RobotPDFExportDialog(gui.DialogEx):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            title='Robot PDF Export',
+            configSection='RobotPDFExportDialog',
+            parent=parent)
+
+        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include editable fields')
+        self._includeEditableFieldsCheckBox.setChecked(True)
+
+        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include manifest table')
+        self._includeManifestTableCheckBox.setChecked(True)
+
+        self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')
+        self._blackAndWhiteCheckBox.setChecked(False)
+
+        self._okButton = QtWidgets.QPushButton('OK')
+        self._okButton.setDefault(True)
+        self._okButton.clicked.connect(self.accept)
+
+        self._cancelButton = QtWidgets.QPushButton('Cancel')
+        self._cancelButton.clicked.connect(self.reject)
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self._okButton)
+        buttonLayout.addWidget(self._cancelButton)
+
+        windowLayout = QtWidgets.QVBoxLayout()
+        windowLayout.addWidget(self._includeEditableFieldsCheckBox)
+        windowLayout.addWidget(self._includeManifestTableCheckBox)
+        windowLayout.addWidget(self._blackAndWhiteCheckBox)
+        windowLayout.addLayout(buttonLayout)
+
+        self.setLayout(windowLayout)
+
+        # Prevent the dialog being resized
+        windowLayout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetFixedSize)
+        self.setSizeGripEnabled(False)
+
+    def isIncludeEditableFieldsChecked(self) -> bool:
+        return self._includeEditableFieldsCheckBox.isChecked()
+
+    def isIncludeManifestTableChecked(self) -> bool:
+        return self._includeManifestTableCheckBox.isChecked()
+
+    def isBlackAndWhiteChecked(self) -> bool:
+        return self._blackAndWhiteCheckBox.isChecked()
+
+    # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeEditableFields',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeEditableFieldsCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='IncludeManifestTable',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._includeManifestTableCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='BlackAndWhite',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._blackAndWhiteCheckBox.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def accept(self) -> None:
+        self._settings.beginGroup(self._configSection)
+        self._settings.setValue('IncludeEditableFields', self._includeEditableFieldsCheckBox.saveState())
+        self._settings.setValue('IncludeManifestTable', self._includeManifestTableCheckBox.saveState())
+        self._settings.setValue('BlackAndWhite', self._blackAndWhiteCheckBox.saveState())
+        self._settings.endGroup()
+
+        super().accept()
+
+class _RobotManagerWidget(gui.ConstructableManagerWidget):
     _DefaultTechLevel = 12
     _DefaultWeaponSet = traveller.StockWeaponSet.CSC2023
 
-    _StateVersion = '_RobotManagementWidget_v1'
+    _StateVersion = '_RobotManagerWidget_v1'
 
     def __init__(
             self,
@@ -31,7 +125,7 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(_RobotManagementWidget._StateVersion)
+        stream.writeQString(_RobotManagerWidget._StateVersion)
 
         stream.writeQString(self._importExportPath)
 
@@ -45,7 +139,7 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
     def restoreState(self, state: QtCore.QByteArray) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != _RobotManagementWidget._StateVersion:
+        if version != _RobotManagerWidget._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore _RobotManagementWidget state (Incorrect version)')
             return False
@@ -67,22 +161,138 @@ class _RobotManagementWidget(gui.ConstructableManagementWidget):
             ) -> construction.ConstructableInterface:
         return robots.Robot(
             name=name,
-            techLevel=_RobotManagementWidget._DefaultTechLevel,
-            weaponSet=_RobotManagementWidget._DefaultWeaponSet)
+            techLevel=_RobotManagerWidget._DefaultTechLevel,
+            weaponSet=_RobotManagerWidget._DefaultWeaponSet)
     
     def importConstructable(self) -> None:
-        # TODO: Implement import
-        pass
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            parent=self,
+            directory=self._importExportPath if self._importExportPath else QtCore.QDir.homePath(),
+            filter=gui.JSONFileFilter)
+        if not path:
+            return # User cancelled
+
+        self._importExportPath = os.path.dirname(path)
+
+        try:
+            robot = robots.readRobot(filePath=path)
+        except Exception as ex:
+            message = f'Failed to load robot from {path}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        robotName = robot.name()
+        while self._constructableStore.exists(name=robotName):
+            robotName, result = gui.InputDialogEx.getText(
+                parent=self,
+                title='Robot Name',
+                label=f'A robot named \'{robotName}\' already exists.\nEnter a new name for the imported robot',
+                text=robotName)
+            if not result:
+                return # User cancelled
+        if robotName != robot.name():
+            robot.setName(robotName)
+
+        try:
+            # No need to update buttons or results as import will trigger a selection change
+            self._internalAdd(
+                constructable=robot,
+                unnamed=False,
+                writeToDisk=True,
+                makeCurrent=True,
+                sortList=True)
+        except Exception as ex:
+            message = 'Failed to import robot'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
     def exportConstructable(self) -> None:
-        # TODO: Implement export
-        pass 
+        if self._exportJob:
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='Unable to export while another export is in progress')
+            return
+
+        robot = self.current()
+        if not  isinstance(robot, robots.Robot):
+            gui.MessageBoxEx.information(
+                parent=self,
+                text='No robot to export')
+            return
+
+        defaultPath = os.path.join(
+            self._importExportPath if self._importExportPath else QtCore.QDir.homePath(),
+            common.sanitiseFileName(fileName=robot.name()) + '.pdf')
+
+        path, filter = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption='Export File',
+            directory=defaultPath,
+            filter=f'{gui.PDFFileFilter};;{gui.JSONFileFilter}')
+        if not path:
+            return # User cancelled
+
+        self._importExportPath = os.path.dirname(path)
+
+        try:
+            if filter == gui.PDFFileFilter:
+                dlg = _RobotPDFExportDialog(parent=self)
+                if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+                    return # User cancelled
+
+                self._progressDlg = _RobotPDFExportDialog(parent=self)
+
+                self._exportJob = jobs.ExportRobotJob(
+                    parent=self,
+                    robot=robot,
+                    filePath=path,
+                    includeEditableFields=dlg.isIncludeEditableFieldsChecked(),
+                    includeManifestTable=dlg.isIncludeManifestTableChecked(),
+                    colour=not dlg.isBlackAndWhiteChecked(),
+                    progressCallback=self._progressDlg.update,
+                    finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))
+
+                self.setDisabled(True)
+            elif filter == gui.JSONFileFilter:
+                robots.writeRobot(robot=robot, filePath=path)
+            else:
+                raise ValueError(f'Unexpected filter {filter}')
+        except Exception as ex:
+            message = f'Failed to export robot to {path}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            
+    def _exportFinished(
+            self,
+            filePath: str,
+            result: typing.Union[str, Exception]
+            ) -> None:
+        self._progressDlg.close()
+        self.setEnabled(True)
+
+        if isinstance(result, Exception):
+            message = f'Failed to export robot to {filePath}'
+            logging.error(message, exc_info=result)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=result)
+
+        self._exportJob = None
+        self._progressDlg = None
 
 class RobotBuilderWindow(gui.WindowWidget):
-    _PDFFilter = 'PDF (*.pdf)'
-    _JSONFilter = 'JSON (*.json)'
-    _CSVFilter = 'CSV (*.csv)'
-
     _ConfigurationBottomSpacing = 300
 
     def __init__(self) -> None:
@@ -192,7 +402,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupRobotListControls(self) -> None:
-        self._robotManagementWidget = _RobotManagementWidget()
+        self._robotManagementWidget = _RobotManagerWidget()
         self._robotManagementWidget.currentChanged.connect(self._selectedRobotChanged)
 
         layout = QtWidgets.QVBoxLayout()
