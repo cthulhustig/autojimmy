@@ -12,6 +12,11 @@ import typing
 
 _PageSize = A4
 
+_TopMargin = 72.0
+_BottomMargin = 72.0
+_LeftMargin = 72.0
+_RightMargin = 72.0
+
 _FontName = 'Helvetica'
 _TitleFontSize = 12
 _HeadingFontSize = 8
@@ -77,11 +82,6 @@ _TableHeaderNormalStyle = ParagraphStyle(
     parent=_NormalStyle,
     fontName=_FontName + '-Bold')
 
-_TableHeaderCenterStyle = ParagraphStyle(
-    name='TableHeaderCenter',
-    parent=_TableHeaderNormalStyle,
-    alignment=TA_CENTER)
-
 _TableDataNormalStyle = ParagraphStyle(
     name='TableDataNormal',
     parent=_NormalStyle)
@@ -90,6 +90,12 @@ _TableDataBoldStyle = ParagraphStyle(
     name='TableDataBold',
     parent=_TableDataNormalStyle,
     fontName=_FontName + '-Bold')
+
+_TableDataBoldHighlightedStyle = ParagraphStyle(
+    name='TableDataBold',
+    parent=_TableDataNormalStyle,
+    fontName=_FontName + '-Bold',
+    backColor='#AAAAAA')
 
 _ListItemStyle = ParagraphStyle(
     name='ListItem',
@@ -182,7 +188,11 @@ class RobotToPdf(object):
             pageNumberFontSize=_PageNumberFontSize,
             pageNumberTextColour=_TextColour,
             pageNumberHMargin=_PageNumberHorizontalMargin,
-            pageNumberVMargin=_PageNumberVerticalMargin)
+            pageNumberVMargin=_PageNumberVerticalMargin,
+            topMargin=_TopMargin,
+            bottomMargin=_BottomMargin,
+            leftMargin=_LeftMargin,
+            rightMargin=_RightMargin)
         template.build(layout)
         if notifier:
             notifier.update()
@@ -276,7 +286,7 @@ class RobotToPdf(object):
                 tableStyle=self._createTableStyle(),
                 headerStyle=_TableHeaderNormalStyle,
                 contentStyle=_TableDataNormalStyle,
-                totalStyle=_TableDataBoldStyle,
+                totalStyle=_TableDataBoldHighlightedStyle if self._colour else _TableDataBoldStyle,
                 copyHeaderOnSplit=True,
                 horzCellPadding=5,
                 vertCellPadding=3,
@@ -307,7 +317,10 @@ class RobotToPdf(object):
             tableSpans = []
 
             # TODO: Do this better
-            thirdHeight = (_PageSize[1] / 3) - 75
+            _, usableHeight = self._usablePageSize()
+            usableHeight -= min(_CellVerticalPadding * 2, usableHeight)
+            usableHeight -= 20
+            thirdHeight = usableHeight / 3
 
             row = [
                 self._createMultiLineEditBox(
@@ -405,7 +418,17 @@ class RobotToPdf(object):
     
     def _createTableStyle(
             self,
-            spans: typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]] = None,
+            spans: typing.Optional[typing.Iterable[
+                typing.Tuple[
+                    typing.Tuple[int, int], # Upper left of span
+                    typing.Tuple[int, int] # Lower right of span
+                    ]]] = None,
+            backColours: typing.Optional[typing.Iterable[
+                typing.Tuple[
+                    typing.Tuple[int, int], # Upper left of span
+                    typing.Tuple[int, int], # Lower right of span
+                    str, # Background colour string
+                    ]]] = None
             ) -> Table:
         gridColour = _TableGridColour if self._colour else '#000000'
         styles = [
@@ -415,6 +438,9 @@ class RobotToPdf(object):
         if spans:
             for ul, br in spans:
                 styles.append(('SPAN', ul, br))
+        if self._colour and backColours:
+            for ul, br, colour in backColours:
+                styles.append(('BACKGROUND', ul, br, colour))
 
         return TableStyle(styles)
     
@@ -487,3 +513,8 @@ class RobotToPdf(object):
             spans=tableSpans,
             colWidths=[None] * len(tableData[0]),
             copyHeaderOnSplit=False)
+    
+    def _usablePageSize(self) -> typing.Tuple[float, float]:
+        return (
+            max(_PageSize[0] - (_LeftMargin + _RightMargin), 0),
+            max(_PageSize[1] - (_TopMargin + _BottomMargin), 0))

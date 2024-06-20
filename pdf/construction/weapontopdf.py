@@ -142,6 +142,12 @@ _TableDataBoldStyle = ParagraphStyle(
     parent=_TableDataNormalStyle,
     fontName=_FontName + '-Bold')
 
+_TableDataBoldHighlightedStyle = ParagraphStyle(
+    name='TableDataBold',
+    parent=_TableDataNormalStyle,
+    fontName=_FontName + '-Bold',
+    backColor='#AAAAAA')
+
 _ListItemStyle = ParagraphStyle(
     name='ListItem',
     parent=_NormalStyle,
@@ -325,7 +331,7 @@ class WeaponToPdf(object):
                 tableStyle=self._createTableStyle(),
                 headerStyle=_TableHeaderNormalStyle,
                 contentStyle=_TableDataNormalStyle,
-                totalStyle=_TableDataBoldStyle,
+                totalStyle=_TableDataBoldHighlightedStyle if self._colour else _TableDataBoldStyle,
                 copyHeaderOnSplit=True,
                 horzCellPadding=5,
                 vertCellPadding=3,

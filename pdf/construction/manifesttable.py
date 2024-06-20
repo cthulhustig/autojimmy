@@ -24,6 +24,10 @@ def createManifestTable(
         ) -> typing.Optional[Table]:
     if manifest.isEmpty():
         return None
+    
+    # Copy table style as it will be updated to add change the
+    # background colour on total rows to highlight them
+    tableStyle = TableStyle(parent=tableStyle)
 
     costType = manifest.costsType()
     header = [pdf.ParagraphEx(
@@ -48,21 +52,25 @@ def createManifestTable(
             tableData.append(_createManifestEntryRow(
                 entry=entry,
                 costType=costType,
-                style=contentStyle,
+                contentStyle=contentStyle,
                 decimalPlaces=decimalPlaces,
                 costUnits=costUnits))
 
         tableData.append(_createManifestSectionTotalRow(
+            row=len(tableData),
             section=section,
             costType=costType,
-            style=totalStyle,
+            contentStyle=totalStyle,
+            tableStyle=tableStyle,
             decimalPlaces=decimalPlaces,
             costUnits=costUnits))
 
     tableData.append(_createManifestTotalRow(
+        row=len(tableData),
         manifest=manifest,
         costType=costType,
-        style=totalStyle,
+        contentStyle=totalStyle,
+        tableStyle=tableStyle,
         decimalPlaces=decimalPlaces,
         costUnits=costUnits))
     
@@ -83,7 +91,7 @@ def createManifestTable(
 def _createManifestEntryRow(
         entry: construction.ManifestEntry,
         costType: enum.Enum,
-        style: typing.Optional[ParagraphStyle],
+        contentStyle: typing.Optional[ParagraphStyle],
         decimalPlaces: int,
         costUnits: typing.Optional[typing.Mapping[
             construction.ConstructionCost,
@@ -92,7 +100,7 @@ def _createManifestEntryRow(
         ) -> typing.List[typing.Union[str, Flowable]]:
     elements = [pdf.ParagraphEx(
         text=entry.component(),
-        style=style)]
+        style=contentStyle)]
     
     for costId in costType:
         cost = entry.cost(costId=costId)
@@ -114,7 +122,7 @@ def _createManifestEntryRow(
             costString = '-'
         elements.append(pdf.ParagraphEx(
             text=costString,
-            style=style))
+            style=contentStyle))
 
     factors = entry.factors()
     if factors:
@@ -128,14 +136,16 @@ def _createManifestEntryRow(
         factorsString = '-'
     elements.append(pdf.ParagraphEx(
         text=factorsString,
-        style=style))
+        style=contentStyle))
 
     return elements
 
 def _createManifestSectionTotalRow(
+        row: int,
         section: construction.ManifestSection,
         costType: enum.Enum,
-        style: typing.Optional[ParagraphStyle],
+        contentStyle: typing.Optional[ParagraphStyle],
+        tableStyle: typing.Optional[TableStyle],
         decimalPlaces: int,
         costUnits: typing.Optional[typing.Mapping[
             construction.ConstructionCost,
@@ -144,7 +154,7 @@ def _createManifestSectionTotalRow(
         ) -> typing.List[typing.Union[str, Flowable]]:
     elements = [pdf.ParagraphEx(
         text=f'{section.name()} Total',
-        style=style)]
+        style=contentStyle)]
     
     for costId in costType:
         cost = section.totalCost(costId=costId)
@@ -162,19 +172,25 @@ def _createManifestSectionTotalRow(
             costString = '-'
         elements.append(pdf.ParagraphEx(
             text=costString,
-            style=style))    
+            style=contentStyle))
 
     # Total rows have no factors
     elements.append(pdf.ParagraphEx(
         text='-',
-        style=style))
+        style=contentStyle))
+    
+    # Highlight total row
+    if tableStyle and contentStyle and hasattr(contentStyle, 'backColor'):
+        tableStyle.add('BACKGROUND', (0, row), (len(elements) - 1, row), contentStyle.backColor)
 
     return elements
 
 def _createManifestTotalRow(
+        row: int,
         manifest: construction.Manifest,
         costType: enum.Enum,
-        style: typing.Optional[ParagraphStyle],
+        contentStyle: typing.Optional[ParagraphStyle],
+        tableStyle: typing.Optional[TableStyle],
         decimalPlaces: int,
         costUnits: typing.Optional[typing.Mapping[
             construction.ConstructionCost,
@@ -183,7 +199,7 @@ def _createManifestTotalRow(
         ) -> typing.List[typing.Union[str, Flowable]]:
     elements = [pdf.ParagraphEx(
         text='Total',
-        style=style)]
+        style=contentStyle)]
     
     for costId in costType:
         cost = manifest.totalCost(costId=costId)
@@ -201,11 +217,15 @@ def _createManifestTotalRow(
             costString = '-'
         elements.append(pdf.ParagraphEx(
             text=costString,
-            style=style))  
+            style=contentStyle))  
 
     # Total rows have no factors
     elements.append(pdf.ParagraphEx(
         text='-',
-        style=style))
+        style=contentStyle))
+    
+    # Highlight total row
+    if tableStyle and contentStyle and hasattr(contentStyle, 'backColor'):
+        tableStyle.add('BACKGROUND', (0, row), (len(elements) - 1, row), contentStyle.backColor)  
 
     return elements

@@ -207,16 +207,17 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        # Draw polygon to set background colour
-        canvas.setFillColor(self._pageColour)
-        path = canvas.beginPath()
-        path.moveTo(0 * cm, 0 * cm)
-        path.lineTo(0 * cm, 30 * cm)
-        path.lineTo(25 * cm, 30 * cm)
-        path.lineTo(25 * cm, 0 * cm)
-        canvas.drawPath(path, True, True)
-
-        canvas.restoreState()
+        try:
+            # Draw polygon to set background colour
+            canvas.setFillColor(self._pageColour)
+            path = canvas.beginPath()
+            path.moveTo(0 * cm, 0 * cm)
+            path.lineTo(0 * cm, self.pagesize[1])
+            path.lineTo(self.pagesize[0], self.pagesize[1])
+            path.lineTo(self.pagesize[0], 0 * cm)
+            canvas.drawPath(path, True, True)
+        finally:
+            canvas.restoreState()
 
     def _drawFooter(
             self,
@@ -225,16 +226,17 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        canvas.setFont(
-            psfontname=self._footerFontName,
-            size=self._footerFontSize)
-        canvas.setFillColor(self._footerTextColour)
-        canvas.drawCentredString(
-            text=self._footerText,
-            x=doc.leftMargin + (doc.width / 2),
-            y=self._footerVMargin + (self._footerFontSize / 2))
-
-        canvas.restoreState()
+        try:
+            canvas.setFont(
+                psfontname=self._footerFontName,
+                size=self._footerFontSize)
+            canvas.setFillColor(self._footerTextColour)
+            canvas.drawCentredString(
+                text=self._footerText,
+                x=doc.leftMargin + (doc.width / 2),
+                y=self._footerVMargin + (self._footerFontSize / 2))
+        finally:
+            canvas.restoreState()
 
     def _drawPageNumber(
             self,
@@ -243,24 +245,25 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        pageWidth = doc.width + (doc.leftMargin * 2)
+        try:
+            pageWidth = doc.width + (doc.leftMargin * 2)
 
-        text = str(self._pageNumber)
-        width = stringWidth(
-            text=text,
-            fontName=self._pageNumberFontName,
-            fontSize=self._pageNumberFontSize)
-        indent = self._pageNumberHMargin + (width / 2)
-        canvas.setFont(
-            psfontname=self._pageNumberFontName,
-            size=self._pageNumberFontSize)
-        canvas.setFillColor(self._pageNumberTextColour)
-        canvas.drawCentredString(
-            text=str(self._pageNumber),
-            x=pageWidth - indent if self._pageNumber % 2 else indent,
-            y=self._pageNumberVMargin + (self._pageNumberFontSize / 2))
-
-        canvas.restoreState()
+            text = str(self._pageNumber)
+            width = stringWidth(
+                text=text,
+                fontName=self._pageNumberFontName,
+                fontSize=self._pageNumberFontSize)
+            indent = self._pageNumberHMargin + (width / 2)
+            canvas.setFont(
+                psfontname=self._pageNumberFontName,
+                size=self._pageNumberFontSize)
+            canvas.setFillColor(self._pageNumberTextColour)
+            canvas.drawCentredString(
+                text=str(self._pageNumber),
+                x=pageWidth - indent if self._pageNumber % 2 else indent,
+                y=self._pageNumberVMargin + (self._pageNumberFontSize / 2))
+        finally:
+            canvas.restoreState()
 
 def createTableCellStyles(
         tableData: typing.Iterable[typing.Iterable[Paragraph]],
