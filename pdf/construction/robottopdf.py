@@ -327,7 +327,6 @@ class RobotToPdf(object):
             tableData = []
             tableSpans = []
 
-            # TODO: Do this better
             _, usableHeight = self._usablePageSize()
             usableHeight -= min(_CellVerticalPadding * 2, usableHeight)
             usableHeight -= 20
