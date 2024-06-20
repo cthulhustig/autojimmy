@@ -50,6 +50,10 @@ _PageNumberVerticalMargin = 10
 
 _MaxWastedSpace = 200
 
+# This controls the number of empty rows added at the bottom of the current details table for user
+# specified stuff. These row will have both the state name and value as editable fields
+_EditableInfoRows = 4
+
 _NormalStyle = ParagraphStyle(
     name='Normal',
     parent=getSampleStyleSheet()['Normal'],
@@ -212,14 +216,11 @@ class RobotToPdf(object):
             robot=robot,
             layout=layout,
             progressCallback=progressCallback)
-
-        if includeEditableFields:
-            # TODO: Include editable fields???????
-            pass
             
         self._addInfo(
             robot=robot,
             layout=layout,
+            includeEditableFields=includeEditableFields,
             progressCallback=progressCallback)
         
         if includeManifestTable:
@@ -249,10 +250,13 @@ class RobotToPdf(object):
             self,
             robot: robots.Robot,
             layout: typing.Optional[typing.List[Flowable]],
+            includeEditableFields: bool,
             progressCallback: typing.Optional[typing.Callable[[], None]] = None
             ) -> None:
         if layout != None:
-            sheetTable = self._createWorksheetTable(robot=robot)
+            sheetTable = self._createWorksheetTable(
+                robot=robot,
+                includeEditableFields=includeEditableFields)
             notesTable = pdf.createNotesTable(
                 steps=robot.steps(),
                 tableStyle=self._createTableStyle(),
@@ -467,12 +471,15 @@ class RobotToPdf(object):
 
     def _createWorksheetTable(
             self,
-            robot: robots.Robot
+            robot: robots.Robot,
+            includeEditableFields: bool
             ) -> Table:
         worksheet = robot.worksheet(
             applySkillModifiers=False) # TODO: Make this configurable
         tableData = []
         tableSpans = []
+
+        columnCount = len(_WorksheetTopRow)
 
         row = []
         for field in _WorksheetTopRow:
@@ -499,19 +506,37 @@ class RobotToPdf(object):
                 pdf.ParagraphEx(
                     text=worksheet.value(field=field),
                     style=_TableDataNormalStyle)]
-            for _ in range(len(row), len(tableData[0])):
+            for _ in range(len(row), columnCount):
                 row.append(pdf.ParagraphEx(
                     text='',
                     style=_TableDataNormalStyle))
             tableData.append(row)
 
-            row = len(tableData) - 1
-            tableSpans.append(((1, row), (5, row)))
+            rowIndex = len(tableData) - 1
+            tableSpans.append(((1, rowIndex), (columnCount - 1, rowIndex)))
+
+        if includeEditableFields:
+            for index in range(_EditableInfoRows):
+                row = [
+                    self._createSingleLineEditBox(
+                        name=f'InfoEditName {index + 1}',
+                        style=_TableHeaderNormalStyle),
+                    self._createSingleLineEditBox(
+                        name=f'InfoEditValue {index + 1}',
+                        style=_TableHeaderNormalStyle)]
+                for _ in range(len(row), columnCount):
+                    row.append(pdf.ParagraphEx(
+                        text='',
+                        style=_TableDataNormalStyle))
+                tableData.append(row)
+
+                rowIndex = len(tableData) - 1
+                tableSpans.append(((1, rowIndex), (columnCount - 1, rowIndex)))
 
         return self._createTable(
             data=tableData,
             spans=tableSpans,
-            colWidths=[None] * len(tableData[0]),
+            colWidths=[None] * columnCount,
             copyHeaderOnSplit=False)
     
     def _usablePageSize(self) -> typing.Tuple[float, float]:
