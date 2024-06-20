@@ -118,15 +118,21 @@ class ConstructableStore(object):
         metadata = self._constructableMap.get(constructable)
         return metadata != None and metadata.readOnly()
 
+    def find(
+            self,
+            name: str
+            ) -> typing.Optional[construction.ConstructableInterface]:
+        with self._lock:
+            for constructable in self._constructableMap.keys():
+                if name == constructable.name():
+                    return constructable
+        return None
+
     def exists(
             self,
             name: str
             ) -> bool:
-        with self._lock:
-            for constructable in self._constructableMap.keys():
-                if name == constructable.name():
-                    return True
-        return False
+        return self.find(name=name) != None
 
     def add(
             self,

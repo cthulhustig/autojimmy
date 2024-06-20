@@ -2,6 +2,8 @@ from .attribute import *
 from .construction import *
 from .step import *
 from .component import *
+from .skilldefs import *
+from .worksheet import *
 from .robot import *
 from .components.chassis import *
 from .components.locomotion import *

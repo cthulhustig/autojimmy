@@ -3,7 +3,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
-from reportlab.platypus import Table, TableStyle, Flowable
+from reportlab.platypus import PageBreak, Table, TableStyle, Flowable
 
 import app
 import pdf
@@ -27,7 +27,7 @@ _ListItemSpacing = _NormalFontSize * 0.8
 _PageColour = '#D4D4D4'
 _TextColour = '#000000'
 
-_TableGridColour = '#D36852'
+_TableGridColour = '#414141'
 _TableLineWidth = 1.5
 _CellHorizontalPadding = 5
 _CellVerticalPadding = 3
@@ -95,6 +95,15 @@ _ListItemStyle = ParagraphStyle(
     name='ListItem',
     parent=_NormalStyle,
     spaceAfter=_ListItemSpacing)
+
+_WorksheetTopRow = [
+    robots.Worksheet.Field.Robot,
+    robots.Worksheet.Field.Hits,
+    robots.Worksheet.Field.Locomotion,
+    robots.Worksheet.Field.Speed,
+    robots.Worksheet.Field.TL,
+    robots.Worksheet.Field.Cost
+]
 
 class _Counter():
     def __init__(self) -> None:
@@ -197,19 +206,22 @@ class RobotToPdf(object):
         if includeEditableFields:
             # TODO: Include editable fields???????
             pass
-
+            
+        self._addInfo(
+            robot=robot,
+            layout=layout,
+            progressCallback=progressCallback)
+        
         if includeManifestTable:
             self._addManifest(
                 robot=robot,
                 layout=layout,
                 progressCallback=progressCallback)
-            
-        # TODO: Add robot stats
 
-        self._addNotes(
-            robot=robot,
-            layout=layout,
-            progressCallback=progressCallback)
+        if includeEditableFields:
+            self._addTrailingPages(
+                layout=layout,
+                progressCallback=progressCallback)
                     
     def _addTitle(
             self,
@@ -222,6 +234,35 @@ class RobotToPdf(object):
             layout.append(pdf.VerticalSpacer(height=_TitleSpacing))
         if progressCallback:
             progressCallback()
+
+    def _addInfo(
+            self,
+            robot: robots.Robot,
+            layout: typing.Optional[typing.List[Flowable]],
+            progressCallback: typing.Optional[typing.Callable[[], None]] = None
+            ) -> None:
+        if layout != None:
+            sheetTable = self._createWorksheetTable(robot=robot)
+            notesTable = pdf.createNotesTable(
+                steps=robot.steps(),
+                tableStyle=self._createTableStyle(),
+                headerStyle=_TableHeaderNormalStyle,
+                contentStyle=_TableDataNormalStyle,
+                listItemStyle=_ListItemStyle,
+                copyHeaderOnSplit=True,
+                horzCellPadding=_CellHorizontalPadding,
+                vertCellPadding=_CellVerticalPadding)            
+            if sheetTable:
+                flowables = [sheetTable]
+                if notesTable:
+                    flowables.append(pdf.VerticalSpacer(height=_ElementSpacing))
+                    flowables.append(notesTable)
+                layout.append(pdf.KeepTogetherEx(
+                    flowables=flowables,
+                    limitWaste=_MaxWastedSpace))
+
+        if progressCallback:
+            progressCallback()          
 
     def _addManifest(
             self,
@@ -243,8 +284,8 @@ class RobotToPdf(object):
                 costUnits={
                     robots.RobotCost.Credits: ('Cr', True)}) # Prefix
             if manifestTable:
+                layout.append(PageBreak())
                 flowables = [
-                    pdf.VerticalSpacer(height=_SectionSpacing),
                     pdf.ParagraphEx(text='Manifest', style=_HeadingStyle),
                     pdf.VerticalSpacer(height=_HeadingElementSpacing),
                     manifestTable
@@ -256,30 +297,48 @@ class RobotToPdf(object):
         if progressCallback:
             progressCallback()
 
-    def _addNotes(
+    def _addTrailingPages(
             self,
-            robot: robots.Robot,
             layout: typing.Optional[typing.List[Flowable]],
             progressCallback: typing.Optional[typing.Callable[[], None]] = None
             ) -> None:
         if layout != None:
-            notesTable = pdf.createNotesTable(
-                steps=robot.steps(),
-                tableStyle=self._createTableStyle(),
-                headerStyle=_TableHeaderNormalStyle,
-                contentStyle=_TableDataNormalStyle,
-                listItemStyle=_ListItemStyle,
-                copyHeaderOnSplit=True,
-                horzCellPadding=_CellHorizontalPadding,
-                vertCellPadding=_CellVerticalPadding)
-            if notesTable:
-                flowables = [
-                    pdf.VerticalSpacer(height=_ElementSpacing),
-                    notesTable
-                ]
-                layout.append(pdf.KeepTogetherEx(
-                    flowables=flowables,
-                    limitWaste=_MaxWastedSpace))
+            tableData = []
+            tableSpans = []
+
+            # TODO: Do this better
+            thirdHeight = (_PageSize[1] / 3) - 75
+
+            row = [
+                self._createMultiLineEditBox(
+                    name=f'Notes 1',
+                    style=_TableDataNormalStyle,
+                    maxHeight=thirdHeight),
+                pdf.ParagraphEx(text='', style=_TableDataNormalStyle)]
+            tableData.append(row)
+            tableSpans = [((0, 0), (1, 0))]
+            
+            row = [
+                self._createMultiLineEditBox(
+                    name=f'Notes 2',
+                    style=_TableDataNormalStyle,
+                    maxHeight=thirdHeight * 2),
+                self._createMultiLineEditBox(
+                    name=f'Notes 3',
+                    style=_TableDataNormalStyle,
+                    maxHeight=thirdHeight * 2)]
+            tableData.append(row)
+            
+            layout.append(PageBreak())
+            layout.append(self._createTable(
+                data=tableData,
+                spans=tableSpans,
+                colWidths=['*', '*'],
+                copyHeaderOnSplit=False))
+            layout.append(PageBreak())
+            layout.append(self._createMultiLineEditBox(
+                name=f'Notes 4',
+                style=_TableDataNormalStyle))
 
         if progressCallback:
             progressCallback()
@@ -379,3 +438,52 @@ class RobotToPdf(object):
             style=tableStyle,
             colWidths=colWidths,
             cellStyles=cellStyles)
+
+    def _createWorksheetTable(
+            self,
+            robot: robots.Robot
+            ) -> Table:
+        worksheet = robot.worksheet(
+            applySkillModifiers=False) # TODO: Make this configurable
+        tableData = []
+        tableSpans = []
+
+        row = []
+        for field in _WorksheetTopRow:
+            row.append(pdf.ParagraphEx(
+                text=field.value,
+                style=_TableHeaderNormalStyle))
+        tableData.append(row)
+
+        row = []
+        for field in _WorksheetTopRow:
+            row.append(pdf.ParagraphEx(
+                text=worksheet.value(field=field),
+                style=_TableDataNormalStyle))
+        tableData.append(row)
+
+        for field in robots.Worksheet.Field:
+            if field in _WorksheetTopRow:
+                continue
+
+            row = [
+                pdf.ParagraphEx(
+                    text=field.value,
+                    style=_TableHeaderNormalStyle),
+                pdf.ParagraphEx(
+                    text=worksheet.value(field=field),
+                    style=_TableDataNormalStyle)]
+            for _ in range(len(row), len(tableData[0])):
+                row.append(pdf.ParagraphEx(
+                    text='',
+                    style=_TableDataNormalStyle))
+            tableData.append(row)
+
+            row = len(tableData) - 1
+            tableSpans.append(((1, row), (5, row)))
+
+        return self._createTable(
+            data=tableData,
+            spans=tableSpans,
+            colWidths=[None] * len(tableData[0]),
+            copyHeaderOnSplit=False)

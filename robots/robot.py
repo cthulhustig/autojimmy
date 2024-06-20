@@ -6,6 +6,62 @@ import traveller
 import typing
 import uuid
 
+# NOTE: This maps skills to the characteristic that gives the DM
+# modifier. The values come from the table on p74
+_SkillCharacteristicMap = {
+    traveller.AdminSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AdvocateSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AnimalsSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ArtSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AstrogationSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.AthleticsSkillDefinition: {
+        traveller.AthleticsSkillSpecialities.Dexterity: traveller.Characteristics.Dexterity,
+        traveller.AthleticsSkillSpecialities.Endurance: None, # No characteristic modifier for Endurance
+        traveller.AthleticsSkillSpecialities.Strength: traveller.Characteristics.Strength,
+    },
+    traveller.BrokerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.CarouseSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DeceptionSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DiplomatSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.DriveSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.ElectronicsSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.EngineerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ExplosivesSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.FlyerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.GamblerSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.GunCombatSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.GunnerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.HeavyWeaponsSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.InvestigateSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.JackOfAllTradesSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.LanguageSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.LeadershipSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MechanicSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MedicSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.MeleeSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.NavigationSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.PersuadeSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.PilotSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.ProfessionSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ReconSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.ScienceSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.SeafarerSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.StealthSkillDefinition: traveller.Characteristics.Dexterity,
+    traveller.StewardSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.StreetwiseSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.SurvivalSkillDefinition: traveller.Characteristics.Intellect,
+    traveller.TacticsSkillDefinition: traveller.Characteristics.Intellect,
+    # Vacc Suit isn't included in the list of skills on p74. The fact it
+    # uses Intellect is based on the fact the example use of the skill in
+    # the core rules use EDU which is INT for a robot
+    traveller.VaccSuitSkillDefinition: traveller.Characteristics.Intellect,
+    # Jack of all trades is needed for Brain in a Jar
+    traveller.JackOfAllTradesSkillDefinition: None,
+    # Non-standard skills added for robot construction
+    robots.RobotVehicleSkillDefinition: traveller.Characteristics.Dexterity,
+    robots.RobotWeaponSkillDefinition: traveller.Characteristics.Dexterity,
+}
+
 class _RobotSequenceState(construction.SequenceState):
     def __init__(
             self,
@@ -503,6 +559,308 @@ class Robot(construction.ConstructableInterface):
                         factors=factors)
 
         return manifest
+    
+    # TODO: There is a deficiency in the way I'm applying characteristics
+    # modifiers but it's not really in this piece of code. The issue can be seen
+    # with the StarTek example robot. In the book it's final sheet shows Athletics
+    # (Strength) 2 where as I'm showing it as Athletics 0. I think this is because
+    # the book is taking into account the the Athletics you get from manipulators
+    # (p26). I'm currently handling it with a note but it would be good if I
+    # could somehow show it in the actual skill like the book. As usual ambiguities
+    # with multiple manipulators apply    
+    def worksheet(
+            self,
+            applySkillModifiers: bool
+            ) -> robots.Worksheet:
+        worksheet = robots.Worksheet()
+
+        for field in robots.Worksheet.Field:
+            fieldText = ''
+            calculations = []
+            if field == robots.Worksheet.Field.Robot:
+                fieldText = self.name()
+            elif field == robots.Worksheet.Field.Hits:
+                attributeValue = self.attributeValue(
+                    attributeId=robots.RobotAttributeId.Hits)
+                if isinstance(attributeValue, common.ScalarCalculation):
+                    fieldText = common.formatNumber(number=attributeValue.value())
+                    calculations.append(attributeValue)
+                else:
+                    fieldText = '-'
+            elif field == robots.Worksheet.Field.Locomotion:
+                primaryLocomotion = self.findFirstComponent(
+                    componentType=robots.PrimaryLocomotion)
+                secondaryLocomotions = self.findComponents(
+                    componentType=robots.SecondaryLocomotion)
+                locomotionStrings = []
+                if primaryLocomotion:
+                    locomotionStrings.append(primaryLocomotion.componentString())
+                for locomotion in secondaryLocomotions:
+                    componentString = locomotion.componentString()
+                    if componentString not in locomotionStrings:
+                        locomotionStrings.append(componentString)
+                fieldText = Robot._formatWorksheetListString(locomotionStrings)
+            elif field == robots.Worksheet.Field.Speed:
+                attributeValue = self.attributeValue(
+                    attributeId=robots.RobotAttributeId.Speed)
+                if isinstance(attributeValue, common.ScalarCalculation):
+                    fieldText = common.formatNumber(
+                        number=attributeValue.value(),
+                        suffix='m')
+                    calculations.append(attributeValue)
+                else:
+                    fieldText = '-'
+            elif field == robots.Worksheet.Field.TL:
+                fieldText = str(self.techLevel())
+            elif field == robots.Worksheet.Field.Cost:
+                cost = self.totalCredits()
+                fieldText = common.formatNumber(
+                    number=cost.value(),
+                    prefix='Cr')
+                calculations.append(cost)
+            elif field == robots.Worksheet.Field.Skills:
+                skillString = []
+                for skill in self.skills():
+                    specialities = skill.specialities()
+                    if not specialities:
+                        specialities = [None]
+                    for speciality in specialities:
+                        if applySkillModifiers:
+                            skillLevel = self._calcModifierSkillLevel(
+                                skill=skill,
+                                speciality=speciality)
+                        else:
+                            skillLevel = skill.level(speciality=speciality)
+
+                        skillString.append('{skill} {level}'.format(
+                            skill=skill.name(speciality=speciality),
+                            level=skillLevel.value()))
+                        calculations.append(skillLevel)
+                skillString.sort()
+
+                # Add the amount of spare bandwidth, this should always be done at
+                # end of the string (i.e. after sorting)
+                spareBandwidth = self.spareBandwidth()
+                if spareBandwidth.value() > 0:
+                    skillString.append(f' +{spareBandwidth.value()} available Bandwidth')
+                    calculations.append(spareBandwidth)
+
+                fieldText = Robot._formatWorksheetListString(skillString)
+            elif field == robots.Worksheet.Field.Attacks:
+                seenWeapons: typing.Dict[traveller.StockWeapon, int] = {}
+
+                components = self.findComponents(
+                    componentType=robots.MountedWeapon)
+                for component in components:
+                    assert(isinstance(component, robots.MountedWeapon))
+                    weapon = component.weaponData(
+                        weaponSet=self.weaponSet())
+                    if weapon:
+                        count = seenWeapons.get(weapon, 0)
+                        seenWeapons[weapon] = count + 1
+
+                components = self.findComponents(
+                    componentType=robots.HandHeldWeapon)
+                for component in components:
+                    assert(isinstance(component, robots.HandHeldWeapon))
+                    weapon = component.weaponData(
+                        weaponSet=self.weaponSet())
+                    if weapon:
+                        count = seenWeapons.get(weapon, 0)
+                        seenWeapons[weapon] = count + 1
+
+                weaponStrings = []
+                for weapon, count in seenWeapons.items():
+                    damage = weapon.damage()
+                    traits = weapon.traits()
+                    weaponInfo = '{damage}{separator}{traits}'.format(
+                        damage=weapon.damage(),
+                        separator=', ' if damage and traits else '',
+                        traits=traits)
+                    weaponStrings.append('{count}{weapon}{info}'.format(
+                        count=f'{count} x ' if count > 1 else '',
+                        weapon=weapon.name(),
+                        info=f' ({weaponInfo})' if weaponInfo else ''))
+                fieldText = Robot._formatWorksheetListString(weaponStrings)
+            elif field == robots.Worksheet.Field.Manipulators:
+                seenCharacteristics: typing.Dict[typing.Tuple[int, int, int], int] = {}
+                components = self.findComponents(
+                    componentType=robots.Manipulator)
+                for component in components:
+                    assert(isinstance(component, robots.Manipulator))
+                    if isinstance(component, robots.RemoveBaseManipulator):
+                        continue
+                    characteristics = (
+                        component.strength(),
+                        component.dexterity())
+                    count = seenCharacteristics.get(characteristics, 0)
+                    seenCharacteristics[characteristics] = count + 1
+
+                manipulatorStrings = []
+                for characteristics, count in seenCharacteristics.items():
+                    strength = characteristics[0]
+                    dexterity = characteristics[1]
+                    manipulatorStrings.append('{count} x (STR {strength} DEX {dexterity})'.format(
+                        count=count,
+                        strength=strength,
+                        dexterity=dexterity))
+                fieldText = Robot._formatWorksheetListString(manipulatorStrings)
+            elif field == robots.Worksheet.Field.Endurance:
+                attributeValue = self.attributeValue(
+                    attributeId=robots.RobotAttributeId.Endurance)
+                if isinstance(attributeValue, common.ScalarCalculation):
+                    fieldText = common.formatNumber(
+                        number=attributeValue.value(),
+                        suffix=' hours')
+                    calculations.append(attributeValue)
+                else:
+                    fieldText = 'None'
+            elif field == robots.Worksheet.Field.Traits:
+                traitStrings = []
+                for trait in robots.TraitAttributeIds:
+                    attribute = self.attribute(attributeId=trait)
+                    if not attribute:
+                        continue
+                    traitString = trait.value
+                    value = attribute.value()
+                    valueString = None
+                    if isinstance(value, common.ScalarCalculation):
+                        valueString = common.formatNumber(
+                            number=value.value(),
+                            alwaysIncludeSign=True)
+                    elif isinstance(value, common.DiceRoll):
+                        valueString = str(value)
+                    elif isinstance(value, enum.Enum):
+                        valueString = str(value.value)
+                    if valueString:
+                        traitString += f' ({valueString})'
+                    traitStrings.append(traitString)
+                    calculations.extend(attribute.calculations())
+                traitStrings.sort()
+                fieldText = Robot._formatWorksheetListString(traitStrings)
+            elif field == robots.Worksheet.Field.Programming:
+                brain = self.findFirstComponent(
+                    componentType=robots.Brain)
+                if brain:
+                    assert(isinstance(brain, robots.Brain))
+                    fieldText = brain.componentString()
+
+                    characteristicStrings = []
+                    for characteristic in robots.CharacteristicAttributeIds:
+                        characteristicValue = self.attributeValue(
+                            attributeId=characteristic)
+                        if characteristicValue:
+                            assert(isinstance(characteristicValue, common.ScalarCalculation))
+                            characteristicStrings.append(
+                                f'{characteristic.value} {characteristicValue.value()}')
+                            calculations.append(characteristicValue)
+                    if characteristicStrings:
+                        fieldText += ' ({characteristics})'.format(
+                            characteristics=', '.join(characteristicStrings))
+                else:
+                    fieldText = 'None'
+            elif field == robots.Worksheet.Field.Options:
+                options: typing.Dict[str, int] = {}
+                components: typing.List[robots.RobotComponentInterface] = []
+                components.extend(self.findComponents(
+                    componentType=robots.DefaultSuiteOption))
+                components.extend(self.findComponents(
+                    componentType=robots.SlotOption))                
+                for component in components:
+                    componentString = component.componentString()
+                    count = options.get(componentString, 0)
+                    options[componentString] = count + 1
+
+                optionStrings = []
+                orderedKeys = list(options.keys())
+                orderedKeys.sort()
+                for componentString in orderedKeys:
+                    count = options[componentString]
+                    if count > 1:
+                        componentString += f'X {count}'
+                    optionStrings.append(componentString)
+
+                # Add the number of spare slots, this should always be done at
+                # end of the string (i.e. after sorting)
+                spareSlots = self.spareSlots()
+                if spareSlots.value() > 0:
+                    optionStrings.append(f'Spare Slots x {spareSlots.value()}')
+                    calculations.append(spareSlots)
+
+                # At this point the strings should already be sorted
+                # alphabetically (but ignoring any count multiplier)
+                fieldText = Robot._formatWorksheetListString(optionStrings)
+
+            if fieldText:
+                worksheet.setField(
+                    field=field,
+                    value=fieldText,
+                    calculations=calculations if calculations else None)
+
+        return worksheet
+    
+    def _calcModifierSkillLevel(
+            self,
+            skill: construction.Skill,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
+            ) -> common.ScalarCalculation:
+        level = skill.level(speciality=speciality)
+        flags = skill.flags(speciality=speciality)
+        if (flags & construction.SkillFlagsCharacteristicModifierMask) == 0:
+            # Characteristic modifiers aren't applied for this skill
+            return level
+
+        characteristic = _SkillCharacteristicMap[skill.skillDef()]
+        if isinstance(characteristic, dict):
+            characteristic = characteristic.get(speciality)   
+        if not characteristic:
+            # There is no applicable robot characteristic for this skill
+            return level
+            
+        if characteristic == traveller.Characteristics.Intellect:
+            characteristicValue = self.attributeValue(
+                attributeId=robots.RobotAttributeId.Intellect)
+            if not characteristicValue:
+                return level
+        else:
+            manipulators = self.findComponents(
+                componentType=robots.Manipulator)
+            highestValue = None
+            for manipulator in manipulators:
+                if isinstance(manipulator, robots.RemoveBaseManipulator):
+                    continue
+                assert(isinstance(manipulator, robots.Manipulator))
+                if characteristic == traveller.Characteristics.Strength:
+                    manipulatorValue = manipulator.strength()
+                else:
+                    manipulatorValue = manipulator.dexterity()
+                if highestValue == None or manipulatorValue > highestValue:
+                    highestValue = manipulatorValue
+            if not highestValue:
+                # No manipulators so no DEX characteristic
+                return level
+
+            characteristicValue = common.ScalarCalculation(
+                value=highestValue,
+                name=f'Highest Manipulator {characteristic.value}')
+        
+        characteristicModifier = common.ScalarCalculation(
+            value=traveller.CharacteristicDMFunction(
+                characteristic=characteristic,
+                level=characteristicValue))
+        if characteristicModifier.value() > 0:
+            if (flags & construction.SkillFlags.ApplyPositiveCharacteristicModifier) == 0:
+                return level
+        elif characteristicModifier.value() < 0:
+            if (flags & construction.SkillFlags.ApplyNegativeCharacteristicModifier) == 0:
+                return level
+        else:
+            return level
+
+        return common.Calculator.add(
+            lhs=level,
+            rhs=characteristicModifier,
+            name=f'Modified {skill.name(speciality=speciality)} Skill Level')       
 
     def _createStages(
             self
@@ -841,3 +1199,12 @@ class Robot(construction.ConstructableInterface):
             isInternal=True)) 
         
         return stages
+
+    @staticmethod
+    def _formatWorksheetListString(
+            stringList: typing.Iterable[str]
+            ) -> str:
+        if not stringList:
+            return 'None'
+        return ', '.join(stringList)
+ 

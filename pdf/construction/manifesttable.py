@@ -70,12 +70,14 @@ def createManifestTable(
         tableData=tableData,
         horzCellPadding=horzCellPadding,
         vertCellPadding=vertCellPadding)
+    
+    colWidths = ['*'] + ([None] * (len(header) - 2)) + ['*']
 
     return Table(
         data=tableData,
         repeatRows=1 if copyHeaderOnSplit else 0,
         style=tableStyle,
-        colWidths=['*', None, None, '*'],
+        colWidths=colWidths,
         cellStyles=cellStyles)
 
 def _createManifestEntryRow(

@@ -32,15 +32,6 @@ def _stacksWithHardware(
 #                                                     ░░██████                  
 #                                                      ░░░░░░    
 
-# Define custom skills for the Vehicle and Weapon skills used by some packages
-RobotVehicleSkillDefinition = traveller.SkillDefinition(
-    skillName='Vehicle',
-    skillType=traveller.SkillDefinition.SkillType.Simple)
-
-RobotWeaponSkillDefinition = traveller.SkillDefinition(
-    skillName='Weapon',
-    skillType=traveller.SkillDefinition.SkillType.Simple) 
-
 class SkillPackage(robots.RobotComponentInterface):
     def __init__(
             self,
@@ -234,7 +225,7 @@ class HomingPrimitiveSkillPackage(PrimitiveSkillPackage):
     def __init__(self) -> None:
         super().__init__(
             componentName='Homing',
-            skills=[(RobotWeaponSkillDefinition, None, 1)])
+            skills=[(robots.RobotWeaponSkillDefinition, None, 1)])
 
 class BasicSkillPackage(SkillPackage):
     """
@@ -367,11 +358,11 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
             agilityModifier = LocomotionBasicSkillPackage._DefaultAgilityModifier
 
         step.addFactor(factor=construction.SetSkillFactor(
-            skillDef=RobotVehicleSkillDefinition,
+            skillDef=robots.RobotVehicleSkillDefinition,
             levels=agilityModifier,
             # Set flags for no negative modifiers
             flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,            
-            stacks=_stacksWithHardware(skillDef=RobotVehicleSkillDefinition)))
+            stacks=_stacksWithHardware(skillDef=robots.RobotVehicleSkillDefinition)))
 
         if agilityModifier.value() != 0:
             step.addNote(note=LocomotionBasicSkillPackage._AthleticsNote.format(
@@ -404,7 +395,7 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
     def __init__(self) -> None:
         super().__init__(
             componentName='Security',
-            skills=[(RobotWeaponSkillDefinition, None, 1),
+            skills=[(robots.RobotWeaponSkillDefinition, None, 1),
                     (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
 
 class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
@@ -520,11 +511,11 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
                 stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
         elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
             step.addFactor(factor=construction.SetSkillFactor(
-                skillDef=RobotWeaponSkillDefinition,
+                skillDef=robots.RobotWeaponSkillDefinition,
                 levels=TargetBasicSkillPackage._CombatSkillLevel,
                 # Set flags for no negative modifiers
                 flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                
-                stacks=_stacksWithHardware(skillDef=RobotWeaponSkillDefinition)))
+                stacks=_stacksWithHardware(skillDef=robots.RobotWeaponSkillDefinition)))
             
             if context.hasComponent(
                 componentType=robots.SelfDestructSystemSlotOption,

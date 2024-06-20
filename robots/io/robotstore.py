@@ -64,6 +64,12 @@ class RobotStore(object):
             robot: robots.Robot
             ) -> bool:
         return RobotStore._store.isReadOnly(constructable=robot)
+    
+    def findRobot(
+            self,
+            robotName: str
+            ) -> typing.Optional[robots.Robot]:
+        return RobotStore._store.find(name=robotName)
 
     def hasRobot(
             self,
