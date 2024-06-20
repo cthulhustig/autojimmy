@@ -25,11 +25,14 @@ class _RobotPDFExportDialog(gui.DialogEx):
             configSection='RobotPDFExportDialog',
             parent=parent)
 
-        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include editable fields')
+        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include Editable Fields')
         self._includeEditableFieldsCheckBox.setChecked(True)
 
-        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include manifest table')
+        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include Manifest Table')
         self._includeManifestTableCheckBox.setChecked(True)
+
+        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
+        self._applySkillModifiersCheckBox.setChecked(False)        
 
         self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')
         self._blackAndWhiteCheckBox.setChecked(False)
@@ -50,6 +53,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._includeEditableFieldsCheckBox)
         windowLayout.addWidget(self._includeManifestTableCheckBox)
+        windowLayout.addWidget(self._applySkillModifiersCheckBox)
         windowLayout.addWidget(self._blackAndWhiteCheckBox)
         windowLayout.addLayout(buttonLayout)
 
@@ -64,6 +68,9 @@ class _RobotPDFExportDialog(gui.DialogEx):
 
     def isIncludeManifestTableChecked(self) -> bool:
         return self._includeManifestTableCheckBox.isChecked()
+    
+    def isApplySkillModifiersChecked(self) -> bool:
+        return self._applySkillModifiersCheckBox.isChecked()            
 
     def isBlackAndWhiteChecked(self) -> bool:
         return self._blackAndWhiteCheckBox.isChecked()
@@ -72,7 +79,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
     def loadSettings(self) -> None:
         super().loadSettings()
 
-        self._settings.beginGroup(self._configSection)
+        self._settings.beginGroup(self._configSection)          
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -90,6 +97,13 @@ class _RobotPDFExportDialog(gui.DialogEx):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='ApplySkillModifiers',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._applySkillModifiersCheckBox.restoreState(storedValue)                
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='BlackAndWhite',
             type=QtCore.QByteArray)
         if storedValue:
@@ -101,6 +115,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('IncludeEditableFields', self._includeEditableFieldsCheckBox.saveState())
         self._settings.setValue('IncludeManifestTable', self._includeManifestTableCheckBox.saveState())
+        self._settings.setValue('ApplySkillModifiers', self._applySkillModifiersCheckBox.saveState())
         self._settings.setValue('BlackAndWhite', self._blackAndWhiteCheckBox.saveState())
         self._settings.endGroup()
 
@@ -256,6 +271,7 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
                     filePath=path,
                     includeEditableFields=dlg.isIncludeEditableFieldsChecked(),
                     includeManifestTable=dlg.isIncludeManifestTableChecked(),
+                    applySkillModifiers=dlg.isApplySkillModifiersChecked(),
                     colour=not dlg.isBlackAndWhiteChecked(),
                     progressCallback=self._progressDlg.update,
                     finishedCallback=lambda result: self._exportFinished(filePath=path, result=result))

@@ -17,6 +17,7 @@ class ExportRobotJob(QtCore.QThread):
             colour: bool,
             includeEditableFields: bool,
             includeManifestTable: bool,
+            applySkillModifiers: bool,
             progressCallback: typing.Callable[[int, int], typing.Any],
             finishedCallback: typing.Callable[[typing.Union[str, Exception]], typing.Any],
             ) -> None:
@@ -28,6 +29,7 @@ class ExportRobotJob(QtCore.QThread):
         self._colour = colour
         self._includeEditableFields = includeEditableFields
         self._includeManifestTable = includeManifestTable
+        self._applySkillModifiers = applySkillModifiers
 
         if progressCallback:
             self._progressSignal[int, int].connect(progressCallback)
@@ -46,6 +48,7 @@ class ExportRobotJob(QtCore.QThread):
                 colour=self._colour,
                 includeEditableFields=self._includeEditableFields,
                 includeManifestTable=self._includeManifestTable,
+                applySkillModifiers=self._applySkillModifiers,
                 progressCallback=self._handleProgressUpdate)
 
             self._finishedSignal[str].emit('Finished')

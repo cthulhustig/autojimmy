@@ -46,26 +46,26 @@ class _WeaponPDFExportDialog(gui.DialogEx):
             configSection='WeaponPDFExportDialog',
             parent=parent)
 
-        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include editable fields')
+        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include Editable Fields')
         self._includeEditableFieldsCheckBox.setChecked(True)
 
-        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include manifest table')
+        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include Manifest Table')
         self._includeManifestTableCheckBox.setChecked(True)
 
         self._includeAmmoTableCheckBox = gui.CheckBoxEx(
-            'Include magazine && ammo table(s)') # Double & for escaping to prevent interpretation as hotkey char
+            'Include Magazine && Ammo Table(s)') # Double & for escaping to prevent interpretation as hotkey char
         self._includeAmmoTableCheckBox.setChecked(True)
         self._includeAmmoTableCheckBox.stateChanged.connect(self._includeAmmoTableChanged)
 
         self._usePurchasedMagazinesCheckBox = None
         if hasMagazineQuantities:
-            self._usePurchasedMagazinesCheckBox = gui.CheckBoxEx('Use purchased magazine types')
+            self._usePurchasedMagazinesCheckBox = gui.CheckBoxEx('Use Purchased Magazine Types')
             self._usePurchasedMagazinesCheckBox.setEnabled(hasMagazineQuantities)
             self._usePurchasedMagazinesCheckBox.setChecked(hasMagazineQuantities)
 
         self._usePurchasedAmmoCheckBox = None
         if hasAmmoQuantities:
-            self._usePurchasedAmmoCheckBox = gui.CheckBoxEx('Use purchased ammunition types')
+            self._usePurchasedAmmoCheckBox = gui.CheckBoxEx('Use Purchased Ammunition Types')
             self._usePurchasedAmmoCheckBox.setEnabled(hasAmmoQuantities)
             self._usePurchasedAmmoCheckBox.setChecked(hasAmmoQuantities)
 

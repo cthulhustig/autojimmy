@@ -150,6 +150,7 @@ class RobotToPdf(object):
             colour: bool = True,
             includeEditableFields: bool = True,
             includeManifestTable: bool = True,
+            applySkillModifiers: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, int], None]] = None
             ) -> None:
         self._colour = colour
@@ -162,6 +163,7 @@ class RobotToPdf(object):
                 robot=robot,
                 includeEditableFields=includeEditableFields,
                 includeManifestTable=includeManifestTable,
+                applySkillModifiers=applySkillModifiers,
                 layout=None,
                 progressCallback=counter.increment)
             counter.increment() # Add 1 for the build step
@@ -175,6 +177,7 @@ class RobotToPdf(object):
             robot=robot,
             includeEditableFields=includeEditableFields,
             includeManifestTable=includeManifestTable,
+            applySkillModifiers=applySkillModifiers,
             layout=layout,
             progressCallback=notifier.update if notifier else None)
 
@@ -206,6 +209,7 @@ class RobotToPdf(object):
             robot: robots.Robot,
             includeEditableFields: bool,
             includeManifestTable: bool,
+            applySkillModifiers: bool,
             layout: typing.Optional[typing.List[Flowable]],
             progressCallback: typing.Optional[typing.Callable[[], None]],
             ) -> None:
@@ -221,6 +225,7 @@ class RobotToPdf(object):
             robot=robot,
             layout=layout,
             includeEditableFields=includeEditableFields,
+            applySkillModifiers=applySkillModifiers,
             progressCallback=progressCallback)
         
         if includeManifestTable:
@@ -251,12 +256,14 @@ class RobotToPdf(object):
             robot: robots.Robot,
             layout: typing.Optional[typing.List[Flowable]],
             includeEditableFields: bool,
+            applySkillModifiers: bool,
             progressCallback: typing.Optional[typing.Callable[[], None]] = None
             ) -> None:
         if layout != None:
             sheetTable = self._createWorksheetTable(
                 robot=robot,
-                includeEditableFields=includeEditableFields)
+                includeEditableFields=includeEditableFields,
+                applySkillModifiers=applySkillModifiers)
             notesTable = pdf.createNotesTable(
                 steps=robot.steps(),
                 tableStyle=self._createTableStyle(),
@@ -472,10 +479,11 @@ class RobotToPdf(object):
     def _createWorksheetTable(
             self,
             robot: robots.Robot,
-            includeEditableFields: bool
+            includeEditableFields: bool,
+            applySkillModifiers: bool
             ) -> Table:
         worksheet = robot.worksheet(
-            applySkillModifiers=False) # TODO: Make this configurable
+            applySkillModifiers=applySkillModifiers)
         tableData = []
         tableSpans = []
 
