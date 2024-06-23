@@ -12,6 +12,8 @@ class EnduranceModification(robots.RobotComponentInterface):
     # compatible with BioRobots. The rules say standard robot Endurance
     # doesn't apply for BioRobots (p88), so it would seem logical that
     # Endurance modifications would also not apply.
+    # TODO: Default recharge time is 8 hours (p19). It might be nice to
+    # have recharge time on the worksheet in the same section as endurance
 
     def typeString(self) -> str:
         return 'Endurance Modification'

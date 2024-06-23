@@ -1,6 +1,7 @@
 import common
 import construction
 import enum
+import math
 import robots
 import traveller
 import typing
@@ -567,7 +568,12 @@ class Robot(construction.ConstructableInterface):
     # the book is taking into account the the Athletics you get from manipulators
     # (p26). I'm currently handling it with a note but it would be good if I
     # could somehow show it in the actual skill like the book. As usual ambiguities
-    # with multiple manipulators apply    
+    # with multiple manipulators apply  
+    # TODO: Should I add Agility to the worksheet? It's not included in the one in
+    # the book but I'm not sure if it's something the user needs to know. It depends
+    # if it's used for anything other than a Speed modifier. If it's only used for
+    # that then I don't need to include it as construction already applies the
+    # agility modifier to the robots Speed attribute  
     def worksheet(
             self,
             applySkillModifiers: bool
@@ -588,6 +594,14 @@ class Robot(construction.ConstructableInterface):
                 else:
                     fieldText = '-'
             elif field == robots.Worksheet.Field.Locomotion:
+                # TODO: Ideally this wouldn't include anything for the primary
+                # locomotion if it's NoPrimaryLocomotion and there are any
+                # secondary locomotions as it looks weird. The problem with
+                # doing it though is the Endurance field currently will
+                # display the endurance for the primary locomotion but not
+                # the secondary, but if I make the change here it will be
+                # easy to think the displayed endurance is for when using
+                # the secondary locomotion
                 primaryLocomotion = self.findFirstComponent(
                     componentType=robots.PrimaryLocomotion)
                 secondaryLocomotions = self.findComponents(
@@ -601,6 +615,8 @@ class Robot(construction.ConstructableInterface):
                         locomotionStrings.append(componentString)
                 fieldText = Robot._formatWorksheetListString(locomotionStrings)
             elif field == robots.Worksheet.Field.Speed:
+                # TODO: Need to include the speed when using secondary locomotions.
+                # See Endurance for a note on how to possibly do this
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.Speed)
                 if isinstance(attributeValue, common.ScalarCalculation):
@@ -608,6 +624,14 @@ class Robot(construction.ConstructableInterface):
                         number=attributeValue.value(),
                         suffix='m')
                     calculations.append(attributeValue)
+
+                    # TODO: This doesn't match with the book. Finalisations says to
+                    # use a '-' if the robot has VSM. This makes me think robots
+                    # with VSM can't move at their non-VSM speed but that seems weird
+                    attributeValue = self.attributeValue(
+                        attributeId=robots.RobotAttributeId.VehicleSpeed)
+                    if isinstance(attributeValue, robots.SpeedBand):
+                        fieldText += f' ({attributeValue.value})'
                 else:
                     fieldText = '-'
             elif field == robots.Worksheet.Field.TL:
@@ -706,13 +730,32 @@ class Robot(construction.ConstructableInterface):
                         dexterity=dexterity))
                 fieldText = Robot._formatWorksheetListString(manipulatorStrings)
             elif field == robots.Worksheet.Field.Endurance:
+                # NOTE: Although it seems unusual, the Endurance is rounded to the nearest
+                # hour rather than rounding down as would possibly seem more logical. The
+                # book explicitly says this is what should be done in the Final Endurance
+                # section (p23)
+                # TODO: Need to include the endurance when using secondary locomotion. I
+                # think the simplest way to do this would be to only allow a single
+                # secondary locomotion and add Endurance (and probably Speed) attributes
+                # for it. The intention does seem to be that there is only a single
+                # secondary locomotion, it's implied by the rules and both spreadsheets
+                # only support 1.
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.Endurance)
                 if isinstance(attributeValue, common.ScalarCalculation):
                     fieldText = common.formatNumber(
-                        number=attributeValue.value(),
-                        suffix=' hours')
+                        number=round(attributeValue.value()))
                     calculations.append(attributeValue)
+
+                    attributeValue = self.attributeValue(
+                        attributeId=robots.RobotAttributeId.VehicleEndurance)
+                    if isinstance(attributeValue, common.ScalarCalculation):
+                        fieldText += ' ({vspeed})'.format(
+                            vspeed=common.formatNumber(
+                                number=round(attributeValue.value())))
+                        calculations.append(attributeValue)
+
+                    fieldText += ' hours'
                 else:
                     fieldText = 'None'
             elif field == robots.Worksheet.Field.Traits:
@@ -767,7 +810,7 @@ class Robot(construction.ConstructableInterface):
                 components.extend(self.findComponents(
                     componentType=robots.SlotOption))                
                 for component in components:
-                    componentString = component.componentString()
+                    componentString = component.instanceString()
                     count = options.get(componentString, 0)
                     options[componentString] = count + 1
 

@@ -193,6 +193,11 @@ class _LocomotionImpl(object):
             step.setSlots(
                 slots=construction.ConstantModifier(value=requiredSlots))
             
+            # NOTE: So I don't panic myself thinking there is a bug in the
+            # future. This looks broken because IncreasedEndurance appears
+            # in a stage after locomotion, but remember that this branch in
+            # the code is used for secondary locomotion which is in a stage
+            # after the one IncreaseEndurance appears in.
             enduranceIncrease = context.findFirstComponent(
                 componentType=robots.IncreaseEndurance,
                 sequence=sequence)
@@ -212,7 +217,11 @@ class _LocomotionImpl(object):
                     value=endurance,
                     name='Improved Endurance')
 
-            stats = f'Endurance {endurance.value()}'
+            # TODO: Should this also give the speed when using the secondary locomotion?
+            # It would need to take Agility into acount (see how primary branch of this
+            # code does it)
+            stats = 'Endurance {endurance} hours'.format(
+                endurance=common.formatNumber(number=endurance.value()))
             if self._baseAgility:
                 stats += f' and Agility {self._baseAgility.value()}'
             step.addNote(note=f'When using {self._componentString} locomotion the robot has {stats}.')            
@@ -412,11 +421,10 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     # locomotion so it forces it to be selected.
 
     _SmallAeroplaneNote = 'Can be launched by hand (p17)'
-    _LargeAeroplaneNote = 'Require a runway of at least 50m for takeoff (p17)'
 
     _CommonAeroplaneNotes = [
-        'Requires a runway of at least 50m for landing (p17)'
-        'Cannot move slower than Speed Band (Slow) (p17)',
+        'Landing requires a runway of at least 50m (p17)',
+        'Cannot move slower than Speed Band (Slow) without stalling (p17)',
         'Requires a secondary locomotion type to do more than taxi to the runway (p17)']
 
     def __init__(self, isPrimary: bool) -> None:
@@ -428,7 +436,7 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             baseEndurance=12,
             costMultiplier=12,
             notes=None, # Notes handled locally
-            isNatural=True)
+            isNatural=True) # TODO: It seems odd this is considered natural
         
     def updateStep(
             self,
@@ -445,8 +453,6 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             context.hasComponent(componentType=robots.Size2Chassis) or \
             context.hasComponent(componentType=robots.Size3Chassis):
             step.addNote(note=_AeroplaneLocomotionImpl._SmallAeroplaneNote)
-        else:
-            step.addNote(note=_AeroplaneLocomotionImpl._LargeAeroplaneNote)
 
         for note in _AeroplaneLocomotionImpl._CommonAeroplaneNotes:
             step.addNote(note=note)
@@ -488,9 +494,9 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
             baseAgility=+0,
             baseEndurance=24,
             costMultiplier=14,
-            isNatural=True,
+            isNatural=True, # TODO: It seems odd this is considered natural
             notes=[
-                'Agility -1 in thin atmosphere (p17)',
+                'Agility -1 in thin atmosphere (p17). Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1 (p16).',
                 'Requires a secondary locomotion type to move across the ground (p17)'])
         
 class _WalkerLocomotionImpl(_LocomotionImpl):
@@ -555,8 +561,21 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             baseEndurance=24,
             costMultiplier=10,
             isNatural=False,
-            notes=['Agility -1 in thin atmosphere (p17)'])
+            notes=['Agility -1 in thin atmosphere (p17). Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1 (p16).'])
         
+# TODO: After re-reading the Thrusters trait (p17) I think I
+# need 2 types of thruster, a standard one an a missile-like
+# one. The standard one would have the default 0.1G thrust,
+# missile-like ones would either be 10G or 15G depending on
+# the tech level. It could also be handled with a single
+# thruster component and a boolean option that allows the
+# user to select if it's missile-like or not.
+# Update there is some text covering missile-like on the
+# right hand side of p17. It says they're a special class
+# where the robot has thrusters for primary and secondary
+# locomotion and has vehicle speed movement. If I was
+# handling this logic it would either need to be done in
+# Vehicle Speed Movement or Finalisation
 class _ThrusterLocomotionImpl(_LocomotionImpl):
     """
     - TL: 7

@@ -3,6 +3,11 @@ import construction
 import robots
 import typing
 
+# TODO: It would be nice to have a component that allows
+# you to specify the final number of hits. Could possibly
+# have it as a single component that allows you to specify
+# either the desired final number of hits or the number
+# to increase/decrease the number of hits by
 class ResiliencyModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Resiliency Modification'

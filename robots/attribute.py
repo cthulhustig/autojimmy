@@ -47,17 +47,6 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # having the vehicle speed endurance in brackets after the standard endurance.
     VehicleEndurance = 'Vehicle Endurance'
 
-    # This covers the base autopilot given by the Vehicle Speed Movement
-    # locomotion modifier (p23) and Autopilot slot option (p49). It works the
-    # same as the relevant vehicle skill for the robot piloting the form of
-    # locomotion it has, but the two don't stack.
-    # As far as I can tell the AutoPilot rating only applies when using Vehicle
-    # Speed Movement this is based on the way the description of the AutoPilot
-    # slot option is worded (p49). It talks about Vehicle Speed Movement a LOT
-    # and doesn't have any mention of having AutoPilot in a robot not equipped
-    # with Vehicle Speed Movement
-    Autopilot = 'Autopilot'
-
     # This attribute is a hack to allow zero slot options to track how many zero
     # slot options have been added to know if they should start consuming a slot.
     # This attribute shouldn't be included in the manifest
@@ -112,6 +101,20 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # Protection value (i.e. Base Protection from the chassis and Protection
     # from any armour added _or_ removed).
     Armour = 'Armour' # (p7)
+    # This covers the base autopilot given by the Vehicle Speed Movement
+    # locomotion modifier (p23) and Autopilot slot option (p49). It works the
+    # same as the relevant vehicle skill for the robot piloting the form of
+    # locomotion it has, but the two don't stack. This isn't listed as a trait
+    # but it feels like it should be (it's not a skill or a property of the
+    # robot in the way speed and hits are)
+    # As far as I can tell the AutoPilot rating only applies when using Vehicle
+    # Speed Movement this is based on the way the description of the AutoPilot
+    # slot option is worded (p49). It talks about Vehicle Speed Movement a LOT
+    # and doesn't have any mention of having AutoPilot in a robot not equipped
+    # with Vehicle Speed Movement
+    # TODO: Would it make more sense for Autopilot to be a robot specific skill
+    # in the same way as Weapon & Vehicle are?
+    Autopilot = 'Autopilot'
     # NOTE: I believe the Large/Small traits are from the traits for Beasts in
     # the core rules (p81)
     # The Large/Small traits should be mutually exclusive but that that comes
@@ -147,7 +150,6 @@ StandardAttributeIds = [
     RobotAttributeId.Protection,
     RobotAttributeId.VehicleSpeed,
     RobotAttributeId.VehicleEndurance,
-    RobotAttributeId.Autopilot,
     RobotAttributeId.Intellect,
 ]
 
@@ -167,6 +169,7 @@ TraitAttributeIds = [
     RobotAttributeId.Alarm,
     RobotAttributeId.Amphibious,
     RobotAttributeId.ATV,
+    RobotAttributeId.Autopilot,    
     RobotAttributeId.Hardened,
     RobotAttributeId.HeightenedSenses,
     RobotAttributeId.Invisible,

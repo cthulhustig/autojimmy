@@ -485,8 +485,8 @@ class VehicleSpeedMovement(SpeedModification):
         robots.VTOLPrimaryLocomotion
     ]
 
-    _GravLocomotionNote = 'Grav locomotion systems equipped with vehicle speed movement are capable of propelling a robot to orbit. (p23)'
-    _ThrusterLocomotionNote = 'Thruster locomotion can only achieve Hypersonic speeds in a vacuum. (clarified by Geir Lanesskog, Robot Handbook author) '
+    _GravLocomotionNote = 'The robot can reach orbit using grav locomotion and vehicle speed movement. (p23)'
+    _ThrusterLocomotionNote = 'Thruster locomotion can only achieve hypersonic speeds in a vacuum. (clarified by Geir Lanesskog, Robot Handbook author) '
 
     def __init__(self) -> None:
         super().__init__()

@@ -517,11 +517,11 @@ class _AudibleConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
     _DataMap = {
         _OptionLevel.Basic: (5, -1, 50),
         _OptionLevel.Improved: (10, -2, 10),
-        _OptionLevel.Advanced: (50, -3, 50),
+        _OptionLevel.Advanced: (50, -3, 5),
     }
 
     _ReconNote = 'Recon checks to detect the robot audibly receive a DM{modifier} at >= {range}m (p32)'
-    _HeightenSensesTrait = 'An entity trying to detect the robot audibly does not get to include any bonus from the Heighten Senses Trait (p32)'
+    _HeightenSensesTrait = 'Attempts to detect the robot audibly don\'t get to include any bonus from the Heighten Senses Trait (p32)'
 
     def __init__(
             self,
@@ -579,7 +579,7 @@ class _OlfactoryConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
     }
 
     _ReconNote = 'Recon checks to detect the robot using specialised sensors or by creatures who use smell as a primary sense receive a DM{modifier} at >= {range}m (p32)'
-    _HeightenSensesTrait = 'An entity trying to detect the robot olfactorily does not get to include any bonus from the Heighten Senses Trait (p32)'
+    _HeightenSensesTrait = 'Attempts to detect the robot olfactorily don\'t get to include any bonus from the Heighten Senses Trait (p32)'
 
     def __init__(
             self,
@@ -638,7 +638,7 @@ class _HostileEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         
         return not context.hasComponent(
             componentType=robots.DecreaseArmour,
-            sequence=sequence)         
+            sequence=sequence)
         
     def updateStep(
             self,
@@ -659,11 +659,15 @@ class _ReflectArmourSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Cost: Cr100 * Base Slots
     - Requirement: Not compatible with Visual Concealment
     - Requirement: Not compatible with Solar Coating
+    - Requirement: Incompatible with Armour Decrease chassis option (p19)
     - Note: DM-2 to Stealth checks (p32)
     - Note: Protection +10 against laser fire in addition to the robot's existing armour (p32)
     """
     # NOTE: The compatibility requirements are handled by the component rather
     # than the impl
+    # TODO: The book says Protection +10 but I think it should say Armour +10 as
+    # that's what it translates to and it's Armour that gets shown to the user
+    # in the worksheet
 
     def __init__(
             self,
@@ -675,10 +679,22 @@ class _ReflectArmourSlotOptionImpl(_SingleStepSlotOptionImpl):
             perBaseSlotCost=100,
             incompatibleTypes=incompatibleTypes,
             notes=['DM-2 to Stealth checks (p32).',
-                   'Protection +10 against laser fire in addition to the robot\'s existing armour (p32)'])
+                   'Protection +10 against laser fire. This is in addition to the robot\'s existing armour. (p32)'])
         
     def isZeroSlot(self) -> bool:
-        return True        
+        return True
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+        
+        return not context.hasComponent(
+            componentType=robots.DecreaseArmour,
+            sequence=sequence)     
         
 class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -723,27 +739,27 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12,
     }
 
-    _BasicRechargeNote = 'Can fully recharge in 4 * Endurance hours if robot is dormant (p33)'
-    _BetterRechargeNote = 'Can fully recharge in Endurance hours if robot is fully dormant or 4 * Endurance hours if the robot is limited to minimal operation and speeds of 1m per round or less (p33)'
+    _BasicRechargeNote = 'Can fully recharge in 4 * Endurance hours if robot is dormant/immobile (p33)'
+    _BetterRechargeNote = 'Can fully recharge in Endurance hours if robot is completely dormant or 4 * Endurance hours if the robot is limited to minimal operation and speeds of 1m per round or less (p33)'
 
     # Data Structure: Cost Per Base Slot, ground note, flyer note, recharge note
     _DataMap = {
         _OptionLevel.Basic: (
             500,
-            'Max ground speed of 1m per round when relying on solar coating for power (p33)',
-            'Unable to fly when relying on using solar coating for power (p33)',
+            'Max ground speed of 1m per round when using only solar coating for power (p33)',
+            'Unable to fly when using only using solar coating for power (p33)',
             _BasicRechargeNote
         ),
         _OptionLevel.Improved: (
             100,
-            'Max ground speed of 2m per round when relying on solar coating for power (p33)',
-            'Unable to fly when relying on using solar coating for power (p33)',
+            'Max ground speed of 2m per round when using only solar coating for power (p33)',
+            'Unable to fly when using only solar coating for power (p33)',
             _BetterRechargeNote,
         ),
         _OptionLevel.Enhanced: (
             200,
-            'Max ground speed of 4m per round when relying on solar coating for power (p33)',
-            'Max flying speed of 1m per round when relying on solar coating for power (p33)',
+            'Max ground speed of 4m per round when using only solar coating for power (p33)',
+            'Max flying speed of 1m per round when using only solar coating for power (p33)',
             _BetterRechargeNote
         ),
         _OptionLevel.Advanced: (
@@ -821,6 +837,8 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         - Cost: Cr50000 * Base Slots 
         - Requirement: Only compatible with biological robots (p34)
     """
+    # TODO: There component description (p34) has a load of stuff I
+    # could add as notes
 
     _StandardMinTL = common.ScalarCalculation(
         value=7,
@@ -891,6 +909,8 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
 
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
+        
+# TODO: Drone Interface is next up for testing
         
 class _DroneInterfaceSlotOptionImpl(_SingleStepSlotOptionImpl):
     """

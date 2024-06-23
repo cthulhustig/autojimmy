@@ -657,8 +657,9 @@ class Finalisation(robots.RobotComponentInterface):
             name = trait.value
             notes = []
             if trait == robots.RobotAttributeId.ACV:
-                notes.append('The robot can travel over solid and liquid surfaces.')
-                notes.append('The robot only hover up to a few meters over above the surface and requires at least at thin atmosphere to operate.')
+                notes.append('The robot can travel over solid and liquid surfaces (p17)')
+                notes.append('The robot can only hover up to a few meters above the surface (p17)')
+                notes.append('The robot need a minimum of a thin atmosphere to hover (p17)')
             elif trait == robots.RobotAttributeId.Alarm:
                 pass
             elif trait == robots.RobotAttributeId.Amphibious:
@@ -672,7 +673,7 @@ class Finalisation(robots.RobotComponentInterface):
                 # allow the robot to operate while submerged.
                 pass
             elif trait == robots.RobotAttributeId.ATV:
-                notes.append('DM+2 to checks made to negotiate rough terrain.')
+                notes.append('DM+2 to checks made to negotiate rough terrain (p17)')
             elif trait == robots.RobotAttributeId.Hardened:
                 notes.append('The robot\'s brain is immune to ion weapons.')
                 notes.append('Radiation damage inflicted on the robot is halved.')
@@ -706,7 +707,7 @@ class Finalisation(robots.RobotComponentInterface):
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
-                notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust.')
+                notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust (p17)')
             elif trait == robots.RobotAttributeId.Flyer:
                 needsAtmosphere = False
                 for locomotion in Finalisation._AtmosphereFlyerLocomotions:
@@ -716,7 +717,7 @@ class Finalisation(robots.RobotComponentInterface):
                         needsAtmosphere = True
                         break
                 if needsAtmosphere:
-                    notes.append(f'Aeroplane or VTOL Flyer robots require at least a thin atmosphere to operate.')    
+                    notes.append(f'Aeroplane or VTOL Flyer robots need a minimum of a thin atmosphere to fly (p17)')    
             
                 needsGrav = False
                 for locomotion in Finalisation._GraveFlyerLocomotions:
