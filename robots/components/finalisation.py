@@ -502,8 +502,8 @@ class Finalisation(robots.RobotComponentInterface):
         robots.GravSecondaryLocomotion
     ]
     _ImprovedMaintenanceOptions = [
-        robots.SelfMaintenanceEnhancementDefaultSuiteOption,
-        robots.SelfMaintenanceEnhancementSlotOption
+        robots.SelfMaintenanceDefaultSuiteOption,
+        robots.SelfMaintenanceSlotOption
     ]
     _AutopilotVehicleSkills = [
         traveller.DriveSkillDefinition,
@@ -554,7 +554,7 @@ class Finalisation(robots.RobotComponentInterface):
             "Self-Aware",
             [robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
     }
-    _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t fall into the uncanny valley. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
+    _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t trigger the uncanny valley effect in lifeforms it interacts with. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'

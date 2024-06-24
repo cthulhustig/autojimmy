@@ -413,7 +413,7 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     # implied from the fact the p17 of the robot rules say the Aeroplane
     # locomotion requires the Vehicle Speed Movement Locomotion Modification and
     # p22 says Locomotion Modifications alter the performance characteristics of
-    # a robots primary form of locomotion
+    # a robot's primary form of locomotion
     # NOTE: The requirement that Aeroplane locomotion requires Vehicle Speed
     # Movement is handled by the way I've set up the Speed Modification stage.
     # The stage is mandatory and added a hacky None component. All components

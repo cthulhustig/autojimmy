@@ -28,11 +28,11 @@ class IncreaseResiliency(ResiliencyModification):
     - Requirement: Max 50% of Base Slots can be allocated (p20)
     - Requirement: Not compatible with robots that only have one slot
     """
-    # NOTE: The facts that at most 50% of the robots slots can be allocated to
+    # NOTE: The facts that at most 50% of the robot's slots can be allocated to
     # resiliency _and_ we deal in whole slots imply that robots with only one
     # slot can't have a resiliency increase (as that would require 100% of
     # their slots)
-    # NOTE: The rules on p20 just say at most 50% of the robots Slots can be
+    # NOTE: The rules on p20 just say at most 50% of the robot's Slots can be
     # used. I've made the assumption that it means Base Slots as that's what
     # everything generally seems to be based on
 
@@ -49,7 +49,7 @@ class IncreaseResiliency(ResiliencyModification):
             name='Hits Increase',
             value=1,
             minValue=1,
-            description='Specify the increase in the robots hits.')
+            description='Specify the increase in the robot\'s hits.')
 
     def componentString(self) -> str:
         return 'Resiliency Increase'
@@ -121,10 +121,10 @@ class IncreaseResiliency(ResiliencyModification):
 class DecreaseResiliency(ResiliencyModification):
     """
     - Cost Saving: Cr50 * Locomotion Multiplier for each Hit reduced
-    - Requirement: Only 50% of the robots Base Hits can be removed  
+    - Requirement: Only 50% of the robot's Base Hits can be removed  
     - Requirement: Not compatible with robots that only have one hit  
     """
-    # NOTE: The facts that at most 50% of the robots hits can be reduced
+    # NOTE: The facts that at most 50% of the robot's hits can be reduced
     # _and_ we deal in whole hits imply that robots with only one hit
     # can't have a resiliency decrease (as that would require 100% of
     # their hits)
@@ -142,7 +142,7 @@ class DecreaseResiliency(ResiliencyModification):
             name='Hits Decrease',
             value=1,
             minValue=1,
-            description='Specify the decrease in the robots hits.')
+            description='Specify the decrease in the robot\'s hits.')
 
     def componentString(self) -> str:
         return 'Resiliency Decrease'

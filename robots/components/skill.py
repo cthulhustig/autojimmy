@@ -301,9 +301,9 @@ class LaboureurBasicSkillPackage(PreInstalledBasicSkillPackage):
         
 class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
-    - Skill: Vehicle skill equal to the robots Agility Enhancement Level (or
+    - Skill: Vehicle skill equal to the robot's Agility Enhancement Level (or
       0 if no enhancement)
-    - Note: Athletics (dexterity) equal to the robots Agility Enhancement Level
+    - Note: Athletics (dexterity) equal to the robot's Agility Enhancement Level
     for purposes of hazardous manoeuvring and reactions such as dodging
     - Note: If the robot also has an Autopilot score, the modifiers for the
     Autopilot and Vehicle Skill don't stack (p49)
@@ -697,7 +697,7 @@ class Skill(robots.RobotComponentInterface):
     # brain (p68) and skills (p75). The description for the brain says the robot
     # can have 5 zero bandwidth skills and its list of skills shows it has 4
     # skills with bandwidth 0 and it says there is 1 spare zero bandwidth skill.
-    # This means the fact the robots Mechanic 1 skill has not been counted
+    # This means the fact the robot's Mechanic 1 skill has not been counted
     # towards the number of zero bandwidth skills the robot has.    
 
     # This max count needs to be large enough to cover any legitimate user
@@ -807,7 +807,7 @@ class Skill(robots.RobotComponentInterface):
             return False
         
         # The bandwidth required for the skill at level 0 must be less than or
-        # equal to the robots Inherent Bandwidth
+        # equal to the robot's Inherent Bandwidth
         inherentBandwidth = context.attributeValue(
             attributeId=robots.RobotAttributeId.InherentBandwidth,
             sequence=sequence)

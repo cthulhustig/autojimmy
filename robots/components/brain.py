@@ -50,7 +50,7 @@ class Brain(robots.RobotComponentInterface):
 class RobotBrain(Brain):
     """
     - Slots: The number of slots taken up by a brain works like this (p66)
-        - The brain has no slot requirement If the robots Size is greater than
+        - The brain has no slot requirement If the robot's Size is greater than
         or equal to:
         (Computer/X - (RobotTL - BrainMinTL))
         - Otherwise the brain costs 1 slot

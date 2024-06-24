@@ -283,7 +283,7 @@ class _EnumSelectSlotOptionImpl(_SingleStepSlotOptionImpl):
             # all enums of enumType can be selected from
             optionChoices: typing.Optional[typing.Iterable[enum.Enum]] = None,
             # If minTLMap is specified then the list of options that can be
-            # selected will be filtered based on the robots TL.
+            # selected will be filtered based on the robot's TL.
             # NOTE: If specified minTLMap MUST contain an entry for all enums
             # that can be a valid choice. If an enum doesn't have an entry in
             # the map it will never be a possible selection
@@ -910,8 +910,6 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
         
-# TODO: Drone Interface is next up for testing
-        
 class _DroneInterfaceSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - Min TL: 6
@@ -1327,6 +1325,8 @@ class _VideoScreenSurfaceSlotOptionImpl(_VideoScreenSlotOptionImpl):
         - Cost: Cr2000 * Base Slots
     """
 
+    _CamouflageNote = 'The video screen covering the robot\'s surface can be used as an improvised basic visual camouflage (p35). This gives a DM-2 to attempts to detect the robot visually at ranges >= 250m, based on a Size 5 robot (p31).'
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -1364,6 +1364,8 @@ class _VideoScreenSurfaceSlotOptionImpl(_VideoScreenSlotOptionImpl):
 
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
+        
+        step.addNote(_VideoScreenSurfaceSlotOptionImpl._CamouflageNote)
         
 class _VoderSpeakerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -1466,6 +1468,7 @@ class _GeckoGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentString='Gecko Grippers',
             minTL=9,
             perBaseSlotCost=500,
+            notes=['Traversing walls and ceilings requires the local gravity to be 1.5G or lower and movement is halved when doing so (p36).'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -1481,6 +1484,21 @@ class _InjectorNeedleSlotOptionImpl(_SingleStepSlotOptionImpl):
     # NOTE: Support for multiple injectors is achieved in the component rather
     # than the impl
 
+    _TL6to8APTrait = common.ScalarCalculation(
+        value=2,
+        name='TL 6-8 Injector Needle AP Trait')
+    _TL9to11APTrait = common.ScalarCalculation(
+        value=3,
+        name='TL 9-11 Injector Needle AP Trait')
+    _TL12to17APTrait = common.ScalarCalculation(
+        value=4,
+        name='TL 12-17 Injector Needle AP Trait')
+    _TL18PlusAPTrait = common.ScalarCalculation(
+        value=6,
+        name='TL 18+ Injector Needle AP Trait')
+    
+    _AttackNote = 'Requires a melee attack to use and does 1 point of damage with AP {ap} (p19).'
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -1492,7 +1510,34 @@ class _InjectorNeedleSlotOptionImpl(_SingleStepSlotOptionImpl):
             incompatibleTypes=incompatibleTypes) 
         
     def isZeroSlot(self) -> bool:
-        return True        
+        return True
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+        
+        currentTL = context.techLevel()
+        apTrait = None
+        if currentTL >= 18:
+            apTrait = _StingerSlotOptionImpl._TL18PlusAPTrait
+        elif currentTL >= 12:
+            apTrait = _StingerSlotOptionImpl._TL12to17APTrait
+        elif currentTL >= 9:
+            apTrait = _StingerSlotOptionImpl._TL9to11APTrait
+        elif currentTL >= 6:
+            apTrait = _StingerSlotOptionImpl._TL6to8APTrait
+
+        if apTrait:        
+            step.addNote(_InjectorNeedleSlotOptionImpl._AttackNote.format(
+                ap=apTrait.value()))
+
 
 class _LaserDesignatorSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -1502,6 +1547,8 @@ class _LaserDesignatorSlotOptionImpl(_SingleStepSlotOptionImpl):
     illuminated using a Laser Designator
     """
     # NOTE: The note is handled by the Fire Control System
+    _RangeNote = 'Effective range 100m'
+    _TargettingNote = 'Targetting an object requires a Minor Action and an Average (8+) check. Range and DEX modifiers apply to this check in the same way as ranged weapons. The targetting process must be repeated each round, however, subsequent checks receive DM+4 if the target is stationary. (p37)'
 
     def __init__(
             self,
@@ -1514,7 +1561,21 @@ class _LaserDesignatorSlotOptionImpl(_SingleStepSlotOptionImpl):
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
-        return True        
+        return True 
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        step.addNote(_LaserDesignatorSlotOptionImpl._RangeNote)
+        step.addNote(_LaserDesignatorSlotOptionImpl._TargettingNote)           
         
 class _MagneticGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -1530,7 +1591,7 @@ class _MagneticGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentString='Magnetic Grippers',
             minTL=8,
             perBaseSlotCost=10,
-            notes=['Robot can grip to metallic surfaces in gravity of 0-1.5G'],
+            notes=['Traversing walls and ceilings requires local gravity to be 1.5G or lower and movement is halved when doing so (p36).'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -1554,7 +1615,7 @@ class _ParasiticLinkSlotOptionImpl(_SingleStepSlotOptionImpl):
     def isZeroSlot(self) -> bool:
         return True        
         
-class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
+class _SelfMaintenanceSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     Basic (p37)
     - Min TL: 7
@@ -1593,7 +1654,7 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _DataMap = {
         _OptionLevel.Basic: (20000, None, 12, 1),
         _OptionLevel.Improved: (50000, None, 24, 2),
-        _OptionLevel.Improved: (200000, 10, 60, 5),
+        _OptionLevel.Enhanced: (200000, 10, 60, 5),
         _OptionLevel.Advanced: (500000, 10, None, None)
     }
 
@@ -1602,26 +1663,30 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Improved
     ]    
 
+    _PeriodNote = 'The robot requires maintenance every {period} years. (p37 & p54)'
+    _MalfunctionNote = 'If the maintenance schedule is not followed, a Malfunction check must be made every {wording}. (p108)'
+    _NoMaintenanceNote = 'The robot can operate indefinitely without maintenance. (p54)'
+
     def __init__(
             self,
             isDefaultSuite: bool,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Self-Maintenance Enhancement',
+            componentString='Self-Maintenance',
             enumType=_OptionLevel,
             optionId='Level',
             optionName='Level',
             optionDescription='Specify the maintenance level.',            
             optionDefault=_OptionLevel.Basic,                      
-            minTLMap=_SelfMaintenanceEnhancementSlotOptionImpl._MinTLMap,
+            minTLMap=_SelfMaintenanceSlotOptionImpl._MinTLMap,
             incompatibleTypes=incompatibleTypes)
         
         self._isDefaultSuite = isDefaultSuite
         
     def isZeroSlot(self) -> bool:
         transceiverType = self._enumOption.value()
-        return transceiverType in _SelfMaintenanceEnhancementSlotOptionImpl._ZeroSlotTypes
+        return transceiverType in _SelfMaintenanceSlotOptionImpl._ZeroSlotTypes
     
     def updateOptions(
             self,
@@ -1634,7 +1699,7 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
             # Only zero-slot options can be selected whe part of the default
             # suite
             self._enumOption.setChoices(
-                _SelfMaintenanceEnhancementSlotOptionImpl._ZeroSlotTypes)    
+                _SelfMaintenanceSlotOptionImpl._ZeroSlotTypes)    
 
     def updateStep(
             self,
@@ -1651,7 +1716,7 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
         assert(isinstance(level, _OptionLevel))
 
         perSlotCost, percentageSlots, maintenancePeriod, malfunctionCheck = \
-            _SelfMaintenanceEnhancementSlotOptionImpl._DataMap[level]
+            _SelfMaintenanceSlotOptionImpl._DataMap[level]
         
         baseString = f'{level.value} {self.componentString()}'
         
@@ -1680,13 +1745,13 @@ class _SelfMaintenanceEnhancementSlotOptionImpl(_EnumSelectSlotOptionImpl):
 
         if maintenancePeriod:
             step.addNote(
-                note='The robot requires maintenance every {period} years'.format(
+                note=_SelfMaintenanceSlotOptionImpl._PeriodNote.format(
                     period=maintenancePeriod))
             step.addNote(
-                note='If the maintenance schedule is not followed, a Malfunction Check must be made every {wording} (p108) '.format(
+                note=_SelfMaintenanceSlotOptionImpl._MalfunctionNote.format(
                     wording='year' if malfunctionCheck == 1 else f'{malfunctionCheck} years'))
         else:
-            step.addNote(note='The robot can operate indefinitely without maintenance')
+            step.addNote(note=_SelfMaintenanceSlotOptionImpl._NoMaintenanceNote)
 
 class _StingerSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -1712,6 +1777,8 @@ class _StingerSlotOptionImpl(_SingleStepSlotOptionImpl):
     _TL18PlusAPTrait = common.ScalarCalculation(
         value=6,
         name='TL 18+ Stinger AP Trait')
+    
+    _AttackNote = 'Requires a melee attack to use and does 1 point of damage with AP {ap}. Up to 4 stingers can be used in a single attack. (p38)'
 
     def __init__(
             self,
@@ -1749,7 +1816,8 @@ class _StingerSlotOptionImpl(_SingleStepSlotOptionImpl):
             apTrait = _StingerSlotOptionImpl._TL6to8APTrait
 
         if apTrait:        
-            step.addNote(f'Does 1 point of damage and has AP {apTrait.value()}')
+            step.addNote(_StingerSlotOptionImpl._AttackNote.format(
+                ap=apTrait.value()))
 
 class _AtmosphericSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -1848,7 +1916,18 @@ class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Min TL: 10
     - Cost: Cr10000
     - Trait: Heightened Senses
+    - Skill: Recon 0
     """
+    # NOTE: The rules say the Recon skill is limited to "the processors sensory
+    # input" (p38). This makes me think it wouldn't get the INT characteristic
+    # modifier. This seems to be confirmed by the Angel of Mercy (p145) as it
+    # has Recon 0 rather than Recon 1 as it would have if it's INT modifier was
+    # being included
+
+    _ReconSkill = common.ScalarCalculation(
+        value=0,
+        name='Environmental Processor Skill Level')
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -1872,9 +1951,17 @@ class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
             sequence=sequence,
             context=context,
             step=step)
+        
+        step.addFactor(factor=construction.SetSkillFactor(
+            skillDef=traveller.ReconSkillDefinition,
+            levels=_EnvironmentalProcessorSlotOptionImpl._ReconSkill,
+            flags=construction.SkillFlags(0),
+            stacks=True))
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.HeightenedSenses))
+
+# TODO: Geiger counter is next up to test
 
 class _GeigerCounterSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -2819,7 +2906,7 @@ class _RoboticDroneControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     }
 
     _SkillRequirementNote = 'The controlling robot requires the Electronics (remote-ops) skill. (p44)'
-    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the interface. (p44)'
+    _MaxSkillNote = 'The robot\'s Electronics (remote-ops) skill is limited to {maxSkill} when using the interface. (p44)'
     _MaxDronesNote = 'Interface can control at a maximum of {maxDrones} drones. (p44)'
 
     def __init__(
@@ -3024,7 +3111,7 @@ class _SwarmControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
     }
 
     _SkillRequirementNote = 'The robot requires the Electronics (remote-ops) skill to use the Swarm Controller. (p45)'
-    _MaxSkillNote = 'The robots Electronics (remote-ops) skill is limited to {maxSkill} when using the controller. (p45)'
+    _MaxSkillNote = 'The robot\'s Electronics (remote-ops) skill is limited to {maxSkill} when using the controller. (p45)'
     _MaxDronesNote = 'Swarms are limited to {maxTasks} tasks with a maximum complexity of {maxComplexity}. (p45)'
 
     def __init__(
@@ -4689,8 +4776,8 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 5% of Base Slots
         - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D
           Severity Brain Critical Hits (p53)
-        - Note: Anyone within 3 meters of the robot will take half the robots
-          damage dice rounded down minis the robots armour (p53)
+        - Note: Anyone within 3 meters of the robot will take half the robot's
+          damage dice rounded down minis the robot's armour (p53)
         - Note: The explosion has the Blast 3 trait (p53)
     - Offensive
         - Min TL: 6
@@ -4698,7 +4785,7 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         - Slots: 10% of Base Slots
         - Note: The robot takes (Hits / 3) rounded up D damage plus 3 x 1D
           Severity Brain Critical Hits (p53)
-        - Note: Anyone within the blast radius will take half the robots damage
+        - Note: Anyone within the blast radius will take half the robot's damage
           dice rounded down (p53)
         - Note: The explosion has the Blast <Robot Size> trait (p53)
     - TDX
@@ -5222,16 +5309,16 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
 class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     - <ALL>
-        - Note: When using the RTG as the only power source the robots movement
+        - Note: When using the RTG as the only power source the robot's movement
         rate and STR are halved (rounded down), it suffers an Agility -2 modifier
         and it cannot use the Vehicle Speed Movement modification or Athletics
         (endurance) skill. (p55)
-        - Note: The RTG can recharge the robots power pack in 3 * <Robot
+        - Note: The RTG can recharge the robot's power pack in 3 * <Robot
         Endurance> hours if the robot remains stationary or performs minimal
         activity. (p56)
         - Note: After the <Half Life> years the RTG continues to provide
         power but it takes twice as long to recharge power packs and, when 
-        using the RTG as the only power source, the robots movement rate and STR
+        using the RTG as the only power source, the robot's movement rate and STR
         are halved (rounded down) again. (p56)
         - Note: The RTG stops providing power after <Half Life> * 2 years. (p56)
         - Requirement: If a robot installs two RTG or solar power sources, in
@@ -5327,9 +5414,9 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=2,
         name='RTG Failure Multiplier')
 
-    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
-    _PowerPackRechargeNote = 'The robots power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity. (p56)'
-    _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robots movement rate and STR are halved again (rounded down). (p56)'
+    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
+    _PowerPackRechargeNote = 'The robot\'s power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity. (p56)'
+    _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robot\'s movement rate and STR are halved again (rounded down). (p56)'
     _FailureNote = 'After {failure} years the RTG is no longer able to provide power to the robot. (p56)'
 
     def __init__(
@@ -5432,7 +5519,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
 class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     - <ALL>
-        - Note: When using the Solar Power as the only power source the robots
+        - Note: When using the Solar Power as the only power source the robot's
         movement rate and STR are halved (rounded down), it suffers an Agility -2
         modifier and it cannot use the Vehicle Speed Movement modification or the
         Athletics (endurance) skill.
@@ -5449,7 +5536,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         stationary or performing minimal activity, it can recharge its power
         pack in <Robot Endurance> * 2 hours
         - Note: The solar panels stops providing power after <Lifespan> years        
-        - Note: When solar panels are deployed the robots size is +1, it suffers
+        - Note: When solar panels are deployed the robot's size is +1, it suffers
         a DM-2 to Stealth checks or provides a DM+2 to the oppositions
         Electronics (sensors) or Recon checks. Although the rules covering this
         increase in size (p57) don't explicitly state it, one of the
@@ -5559,11 +5646,11 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=10,
         name='Solar Power Panel Hit Percentage')
 
-    _OnlyPowerSourceNote = 'When relying on the Solar Power as the only power source, the robots movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
+    _OnlyPowerSourceNote = 'When relying on the Solar Power as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
     _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
     _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
     _LifespanNote = 'The solar panels stops providing power after {lifespan} years. (p57)'
-    _DeployedNote = 'When the solar panels are deployed the robots Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM} (p13).'
+    _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM} (p13).'
     _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}. (p57)'
     _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components. (p57)'
 
@@ -6059,7 +6146,7 @@ class _ElectronicsToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # NOTE: The rules say the toolkit only allows a positive DM when working on
     # equipment less than or equal to its TL. However, I'm not sure what
     # positive DM it's talking about. It could be the word 'allows' is important
-    # and it means the robots Electronics skill is limited to 0  if the
+    # and it means the robot's Electronics skill is limited to 0  if the
     # equipments TL is higher than the toolkits
 
     _MinTLMap = {
@@ -6806,9 +6893,9 @@ class ReflectArmourDefaultSuiteOption(DefaultSuiteOption):
             incompatibleTypes=[VisualConcealmentDefaultSuiteOption,
                                SolarCoatingDefaultSuiteOption]))
         
-class SelfMaintenanceEnhancementDefaultSuiteOption(DefaultSuiteOption):
+class SelfMaintenanceDefaultSuiteOption(DefaultSuiteOption):
     def __init__(self) -> None:
-        super().__init__(impl=_SelfMaintenanceEnhancementSlotOptionImpl(isDefaultSuite=True))
+        super().__init__(impl=_SelfMaintenanceSlotOptionImpl(isDefaultSuite=True))
 
 class SolarCoatingDefaultSuiteOption(DefaultSuiteOption):
     """
@@ -7409,15 +7496,15 @@ class SelfDestructSystemSlotOption(MiscSlotOption):
         super().__init__(
             impl=_SelfDestructSystemSlotOptionImpl())
         
-class SelfMaintenanceEnhancementSlotOption(MiscSlotOption):
+class SelfMaintenanceSlotOption(MiscSlotOption):
     """
     - Requirement: Not compatible with default suite equivalent
     """    
     def __init__(self) -> None:
         super().__init__(
-            impl=_SelfMaintenanceEnhancementSlotOptionImpl(
+            impl=_SelfMaintenanceSlotOptionImpl(
                 isDefaultSuite=False,
-                incompatibleTypes=[SelfMaintenanceEnhancementDefaultSuiteOption]))
+                incompatibleTypes=[SelfMaintenanceDefaultSuiteOption]))
         
 class StealthSlotOption(MiscSlotOption):
     def __init__(self) -> None:

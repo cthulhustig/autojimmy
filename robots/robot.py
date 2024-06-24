@@ -573,7 +573,7 @@ class Robot(construction.ConstructableInterface):
     # the book but I'm not sure if it's something the user needs to know. It depends
     # if it's used for anything other than a Speed modifier. If it's only used for
     # that then I don't need to include it as construction already applies the
-    # agility modifier to the robots Speed attribute  
+    # agility modifier to the robot's Speed attribute  
     def worksheet(
             self,
             applySkillModifiers: bool

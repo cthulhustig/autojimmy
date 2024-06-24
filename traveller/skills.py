@@ -287,7 +287,7 @@ PilotSkillDefinition = SkillDefinition(
     fixedSpecialities=PilotSkillSpecialities) 
 
 # This list is a combination of examples from p68 of the core rule book and the
-# ones selectable in the robots spreadsheet
+# ones selectable in the robot's spreadsheet
 ProfessionSkillSpecialities = [
     'Belter',
     'Biologicals',

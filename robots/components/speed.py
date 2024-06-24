@@ -97,7 +97,7 @@ class TacticalSpeedEnhancement(SpeedModification):
     - Requirement: Tactical speed enhancement cannot increase a robot’s
     tactical movement rate beyond 12 metres per Minor Action
     - Requirement: At most 9 levels can be taken as any more than that will
-    reduce the robots endurance by 100%
+    reduce the robot's endurance by 100%
     """
     # NOTE: The way the rules are worded around the the incompatibility with
     # Vehicle Speed Movement is a little ambiguous. Rather than saying they are
@@ -109,7 +109,7 @@ class TacticalSpeedEnhancement(SpeedModification):
     # think it actually means incompatible is the wording of the Tactical Speed
     # Reduction as it says it can't be used in conjunction with the Agility
     # Enhancement, I don't think the Agility Enhancement is something that you
-    # would logically turn on/off as it says it replaces the robots components.
+    # would logically turn on/off as it says it replaces the robot's components.
     # This would mean taking 'in conjunction' to mean you can have both
     # installed but not use both at the same time doesn't make sense at all,
     # the implication being it must mean only one can be installed at a time.
@@ -440,7 +440,7 @@ class VehicleSpeedMovement(SpeedModification):
     # Speed Movement sets the Flyer trait but it's implied by the fact there
     # are example robots (e.g. p133 & p134) that have a Flyer trait higher
     # than Idle but I can't find anything that explicitly says it gives that.
-    # I think it comes from Vehicle Speed Moment as, although the robots don't
+    # I think it comes from Vehicle Speed Moment as, although the robot's don't
     # state they have it, all the examples I can see have the extra Endurance
     # in brackets that the Final Endurance section suggests (p23)
     # NOTE: The fact Aeroplane have a base Speed Band of Medium and Thrusters

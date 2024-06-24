@@ -154,28 +154,28 @@ class BasicAndroidSynthetic(AndroidSynthetic):
     - Min TL: 8
     - Cost: Cr1000 Per Base Slot
     - Minimum Brain: Basic (X) or Hunter/Killer
-    - Note: Barely emulating. DM-2 on all social interactions from uncanny valley effect.    
+    - Note: Barely emulating. DM-2 on all social interactions from the uncanny valley effect.    
     """
     def __init__(self) -> None:
         super().__init__(
             componentString='Basic Android',
             minTL=8,
             perSlotCost=1000,
-            notes=['Barely emulating. DM-2 on all social interactions from uncanny valley effect. (p87)'])
+            notes=['Barely emulating. DM-2 on all social interactions from the uncanny valley effect. (p87)'])
             
 class ImprovedAndroidSynthetic(AndroidSynthetic):
     """
     - Min TL: 10
     - Cost: Cr2000 Per Slot
     - Minimum Brain: Advanced
-    - Note: Natural-looking. Passes at a distance but uncanny valley DM-2 within 5 metres.  
+    - Note: Natural-looking. Passes at a distance but triggers the uncanny valley DM-2 within 5 metres.  
     """
     def __init__(self) -> None:
         super().__init__(
             componentString='Improved Android',
             minTL=10,
             perSlotCost=2000,
-            notes=['Natural-looking. Passes at a distance but uncanny valley DM-2 within 5 metres. (p87)']) 
+            notes=['Natural-looking. Passes at a distance but triggers the uncanny valley DM-2 within 5 metres. (p87)']) 
 
 class EnhancedAndroidSynthetic(AndroidSynthetic):
     """

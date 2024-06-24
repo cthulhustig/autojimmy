@@ -253,11 +253,11 @@ class _WeaponImpl(object):
         value=1,
         name='Fire Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait (p60).'
-    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the Fire Control System\'s Weapon Skill DM of {modifier} instead of the robots {skill} skill. Note that this just in place of the skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
+    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the fire control system\'s Weapon Skill DM of {modifier} instead of the robot\'s {skill} skill. Note that this just in place of the skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
     _FireControlLaserDesignatorComponents = [
         robots.LaserDesignatorDefaultSuiteOption,
         robots.LaserDesignatorSlotOption]
-    _FireControlLaserDesignatorNote = 'DM+2 to attacks against targets that have been illuminated with the Laser Designator (p37).'
+    _FireControlLaserDesignatorNote = 'DM+2 to attacks against targets that have been illuminated with the robot\'s laser designator (p37).'
 
     def __init__(self) -> None:
         super().__init__()

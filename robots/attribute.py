@@ -97,7 +97,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # Robot Numeric Traits
     #
     # NOTE: Based on the description of the Armour trait (p7) and what I can see
-    # in the rest of the rules. The trait is equal to the robots final
+    # in the rest of the rules. The trait is equal to the robot's final
     # Protection value (i.e. Base Protection from the chassis and Protection
     # from any armour added _or_ removed).
     Armour = 'Armour' # (p7)

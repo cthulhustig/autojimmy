@@ -23,7 +23,7 @@ class AgilityEnhancement(robots.RobotComponentInterface):
     # him) but I'm working on the assumption the Athletics (Dexterity) given
     # by an Agility Enhancement stacks with any levels from software skill
     # packages or from manipulators (p26). I'm also working on the assumption
-    # that the robots DEX characteristic modifier is applied when using the
+    # that the robot's DEX characteristic modifier is applied when using the
     # skill. This is based on the fact the rules don't say it's not where as
     # other hardware components that give a skill (e.g. Recon Sensor)
     # explicitly say that negative characteristic modifiers don't apply
