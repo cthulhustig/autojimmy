@@ -420,12 +420,12 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     # other than Vehicle Speed Movement are incompatible with Aeroplane
     # locomotion so it forces it to be selected.
 
-    _SmallAeroplaneNote = 'Can be launched by hand (p17)'
+    _SmallAeroplaneNote = 'Can be launched by hand. (p17)'
 
     _CommonAeroplaneNotes = [
-        'Landing requires a runway of at least 50m (p17)',
-        'Cannot move slower than Speed Band (Slow) without stalling (p17)',
-        'Requires a secondary locomotion type to do more than taxi to the runway (p17)']
+        'Landing requires a runway of at least 50m. (p17)',
+        'Cannot move slower than Speed Band (Slow) without stalling. (p17)',
+        'Requires a secondary locomotion type to do more than taxi to the runway. (p17)']
 
     def __init__(self, isPrimary: bool) -> None:
         super().__init__(
@@ -496,8 +496,8 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
             costMultiplier=14,
             isNatural=True, # TODO: It seems odd this is considered natural
             notes=[
-                'Agility -1 in thin atmosphere (p17). Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1 (p16).',
-                'Requires a secondary locomotion type to move across the ground (p17)'])
+                'Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17)',
+                'Requires a secondary locomotion type to move across the ground. (p17)'])
         
 class _WalkerLocomotionImpl(_LocomotionImpl):
     """
@@ -561,7 +561,7 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             baseEndurance=24,
             costMultiplier=10,
             isNatural=False,
-            notes=['Agility -1 in thin atmosphere (p17). Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1 (p16).'])
+            notes=['Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17).'])
         
 # TODO: After re-reading the Thrusters trait (p17) I think I
 # need 2 types of thruster, a standard one an a missile-like

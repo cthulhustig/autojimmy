@@ -557,14 +557,14 @@ class Finalisation(robots.RobotComponentInterface):
     _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t trigger the uncanny valley effect in lifeforms it interacts with. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
-    _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed (p108)'
+    _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed. (p108)'
     
     _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
 
     _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator, receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
     _CombatNonManipulatorCharacteristicsNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator, do not receive a STR/DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus (p61)'
-    _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus (p61)'
+    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus. (p61)'
+    _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus. (p61)'
     _CombatWeaponSizeExamples = {
         traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
         traveller.WeaponSize.Medium: 'any larger weapon usable by Melee or Gun Combat skills or an explosive of up to six kilograms',
@@ -657,9 +657,9 @@ class Finalisation(robots.RobotComponentInterface):
             name = trait.value
             notes = []
             if trait == robots.RobotAttributeId.ACV:
-                notes.append('The robot can travel over solid and liquid surfaces (p17)')
-                notes.append('The robot can only hover up to a few meters above the surface (p17)')
-                notes.append('The robot need a minimum of a thin atmosphere to hover (p17)')
+                notes.append('The robot can travel over solid and liquid surfaces. (p17)')
+                notes.append('The robot can only hover up to a few meters above the surface. (p17)')
+                notes.append('The robot need a minimum of a thin atmosphere to hover. (p17)')
             elif trait == robots.RobotAttributeId.Alarm:
                 pass
             elif trait == robots.RobotAttributeId.Amphibious:
@@ -673,7 +673,7 @@ class Finalisation(robots.RobotComponentInterface):
                 # allow the robot to operate while submerged.
                 pass
             elif trait == robots.RobotAttributeId.ATV:
-                notes.append('DM+2 to checks made to negotiate rough terrain (p17)')
+                notes.append('DM+2 to checks made to negotiate rough terrain. (p17)')
             elif trait == robots.RobotAttributeId.Hardened:
                 notes.append('The robot\'s brain is immune to ion weapons.')
                 notes.append('Radiation damage inflicted on the robot is halved.')
@@ -707,7 +707,7 @@ class Finalisation(robots.RobotComponentInterface):
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
-                notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust (p17)')
+                notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust. (p17)')
             elif trait == robots.RobotAttributeId.Flyer:
                 needsAtmosphere = False
                 for locomotion in Finalisation._AtmosphereFlyerLocomotions:
@@ -717,7 +717,7 @@ class Finalisation(robots.RobotComponentInterface):
                         needsAtmosphere = True
                         break
                 if needsAtmosphere:
-                    notes.append(f'Aeroplane or VTOL Flyer robots need a minimum of a thin atmosphere to fly (p17)')    
+                    notes.append(f'Aeroplane or VTOL Flyer robots need a minimum of a thin atmosphere to fly. (p17)')    
             
                 needsGrav = False
                 for locomotion in Finalisation._GraveFlyerLocomotions:

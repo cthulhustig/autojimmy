@@ -252,8 +252,8 @@ class BioRobotSynthetic(Synthetic):
             notes: typing.Optional[typing.Iterable[str]]
             ) -> None:
         newNotes = list(notes) if notes else []
-        newNotes.append('All biological robots have \'Natural-looking\' and \'Selfrepairing\' properties (p88)')
-        newNotes.append('Standard Endurance doesn\'t apply to Biological Robots, they have to eat, drink & breath (p88)')
+        newNotes.append('All biological robots have \'Natural-looking\' and \'Selfrepairing\' properties. (p88)')
+        newNotes.append('Standard Endurance doesn\'t apply to Biological Robots, they have to eat, drink & breath. (p88)')
         super().__init__(
             componentString=componentString,
             minTL=minTL,

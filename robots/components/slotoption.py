@@ -475,7 +475,7 @@ class _VisualConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
         _OptionLevel.Superior: (2500, -4, 1),
     }
 
-    _ReconNote = 'Recon checks to detect the robot visually receive a DM{modifier} at >= {range}m. This is based on a Size 5 robot and may vary at the Referee\'s discretion (p31).'
+    _ReconNote = 'Recon checks to detect the robot visually receive a DM{modifier} at >= {range}m. This is based on a Size 5 robot and may vary at the Referee\'s discretion. (p31)'
 
     def __init__(
             self,
@@ -520,8 +520,8 @@ class _AudibleConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
         _OptionLevel.Advanced: (50, -3, 5),
     }
 
-    _ReconNote = 'Recon checks to detect the robot audibly receive a DM{modifier} at >= {range}m (p32)'
-    _HeightenSensesTrait = 'Attempts to detect the robot audibly don\'t get to include any bonus from the Heighten Senses Trait (p32)'
+    _ReconNote = 'Recon checks to detect the robot audibly receive a DM{modifier} at >= {range}m. (p32)'
+    _HeightenSensesTrait = 'Attempts to detect the robot audibly don\'t get to include any bonus from the Heighten Senses Trait. (p32)'
 
     def __init__(
             self,
@@ -578,8 +578,8 @@ class _OlfactoryConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
         _OptionLevel.Advanced: (100, -3, 10),
     }
 
-    _ReconNote = 'Recon checks to detect the robot using specialised sensors or by creatures who use smell as a primary sense receive a DM{modifier} at >= {range}m (p32)'
-    _HeightenSensesTrait = 'Attempts to detect the robot olfactorily don\'t get to include any bonus from the Heighten Senses Trait (p32)'
+    _ReconNote = 'Recon checks to detect the robot using specialised sensors or by creatures who use smell as a primary sense receive a DM{modifier} at >= {range}m. (p32)'
+    _HeightenSensesTrait = 'Attempts to detect the robot olfactorily don\'t get to include any bonus from the Heighten Senses Trait. (p32)'
 
     def __init__(
             self,
@@ -678,7 +678,7 @@ class _ReflectArmourSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=10,
             perBaseSlotCost=100,
             incompatibleTypes=incompatibleTypes,
-            notes=['DM-2 to Stealth checks (p32).',
+            notes=['DM-2 to Stealth checks. (p32)',
                    'Protection +10 against laser fire. This is in addition to the robot\'s existing armour. (p32)'])
         
     def isZeroSlot(self) -> bool:
@@ -739,33 +739,33 @@ class _SolarCoatingSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12,
     }
 
-    _BasicRechargeNote = 'Can fully recharge in 4 * Endurance hours if robot is dormant/immobile (p33)'
-    _BetterRechargeNote = 'Can fully recharge in Endurance hours if robot is completely dormant or 4 * Endurance hours if the robot is limited to minimal operation and speeds of 1m per round or less (p33)'
+    _BasicRechargeNote = 'Can fully recharge in 4 * Endurance hours if robot is dormant/immobile. (p33)'
+    _BetterRechargeNote = 'Can fully recharge in Endurance hours if robot is completely dormant or 4 * Endurance hours if the robot is limited to minimal operation and speeds of 1m per round or less. (p33)'
 
     # Data Structure: Cost Per Base Slot, ground note, flyer note, recharge note
     _DataMap = {
         _OptionLevel.Basic: (
             500,
-            'Max ground speed of 1m per round when using only solar coating for power (p33)',
-            'Unable to fly when using only using solar coating for power (p33)',
+            'Max ground speed of 1m per round when using only solar coating for power. (p33)',
+            'Unable to fly when using only using solar coating for power. (p33)',
             _BasicRechargeNote
         ),
         _OptionLevel.Improved: (
             100,
-            'Max ground speed of 2m per round when using only solar coating for power (p33)',
-            'Unable to fly when using only solar coating for power (p33)',
+            'Max ground speed of 2m per round when using only solar coating for power. (p33)',
+            'Unable to fly when using only solar coating for power. (p33)',
             _BetterRechargeNote,
         ),
         _OptionLevel.Enhanced: (
             200,
-            'Max ground speed of 4m per round when using only solar coating for power (p33)',
-            'Max flying speed of 1m per round when using only solar coating for power (p33)',
+            'Max ground speed of 4m per round when using only solar coating for power. (p33)',
+            'Max flying speed of 1m per round when using only solar coating for power. (p33)',
             _BetterRechargeNote
         ),
         _OptionLevel.Advanced: (
             500,
-            'Ground speed is not reduced when relying on solar coating for power (p33)',
-            'Max flying speed of 2m per round when relying on solar coating for power (p33)',
+            'Ground speed is not reduced when relying on solar coating for power. (p33)',
+            'Max flying speed of 2m per round when relying on solar coating for power. (p33)',
             _BetterRechargeNote
         )
     }
@@ -1468,7 +1468,7 @@ class _GeckoGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentString='Gecko Grippers',
             minTL=9,
             perBaseSlotCost=500,
-            notes=['Traversing walls and ceilings requires the local gravity to be 1.5G or lower and movement is halved when doing so (p36).'],
+            notes=['Traversing walls and ceilings requires the local gravity to be 1.5G or lower and movement is halved when doing so. (p36)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -1497,7 +1497,7 @@ class _InjectorNeedleSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=6,
         name='TL 18+ Injector Needle AP Trait')
     
-    _AttackNote = 'Requires a melee attack to use and does 1 point of damage with AP {ap} (p19).'
+    _AttackNote = 'Requires a melee attack to use and does 1 point of damage with AP {ap}. (p19)'
 
     def __init__(
             self,
@@ -1591,7 +1591,7 @@ class _MagneticGrippersSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentString='Magnetic Grippers',
             minTL=8,
             perBaseSlotCost=10,
-            notes=['Traversing walls and ceilings requires local gravity to be 1.5G or lower and movement is halved when doing so (p36).'],
+            notes=['Traversing walls and ceilings requires local gravity to be 1.5G or lower and movement is halved when doing so. (p36)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -4831,16 +4831,16 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _ExplosiveType.Nuclear:   (None, 500000, None,    4, 1000)
     }
 
-    _ConventionalRobotDamageNote = 'The robot takes {damageDice}D damage plus 3 x 1D Severity Brain Critical Hits (p53)'
-    _NuclearRobotDamageNote = 'The robot is vaporised (p53)'
+    _ConventionalRobotDamageNote = 'The robot takes {damageDice}D damage plus 3 x 1D Severity Brain Critical Hits. (p53)'
+    _NuclearRobotDamageNote = 'The robot is vaporised. (p53)'
 
-    _DefensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {halfDamageDice}D-{robotArmour} damage (p53)'
-    _OffensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {twoThirdDamageDice}D damage (p53)'
-    _TDXExternalDamageNote = 'Anyone within {blastRadius}m will take {robotHits}D damage (p53)'
-    _NuclearExternalDamageNote = 'Anyone within {blastRadius}m will take 10DD damage (p53)'
+    _DefensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {halfDamageDice}D-{robotArmour} damage. (p53)'
+    _OffensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {twoThirdDamageDice}D damage. (p53)'
+    _TDXExternalDamageNote = 'Anyone within {blastRadius}m will take {robotHits}D damage. (p53)'
+    _NuclearExternalDamageNote = 'Anyone within {blastRadius}m will take 10DD damage. (p53)'
 
-    _ConventionalBlastTraitNote = 'The blast has the Blast {blastTrait} trait (p53)'
-    _NuclearBlastTraitNote = 'The blast has the Blast {blastTrait} and Radiation traits (p53)'
+    _ConventionalBlastTraitNote = 'The blast has the Blast {blastTrait} trait. (p53)'
+    _NuclearBlastTraitNote = 'The blast has the Blast {blastTrait} and Radiation traits. (p53)'
 
     def __init__(
             self,
@@ -5650,7 +5650,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
     _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
     _LifespanNote = 'The solar panels stops providing power after {lifespan} years. (p57)'
-    _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM} (p13).'
+    _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM}. (p13)'
     _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}. (p57)'
     _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components. (p57)'
 
