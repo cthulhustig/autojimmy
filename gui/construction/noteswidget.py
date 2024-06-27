@@ -102,13 +102,13 @@ class NotesWidget(QtWidgets.QWidget):
                     row = self._table.rowCount()
                     self._table.insertRow(row)
 
-                    self._table.setItem(
-                        row, 0,
-                        QtWidgets.QTableWidgetItem(source))
+                    item = QtWidgets.QTableWidgetItem(source)
+                    item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
+                    self._table.setItem(row, 0, item)
                     
-                    self._table.setItem(
-                        row, 1,
-                        QtWidgets.QTableWidgetItem(note))
+                    item = QtWidgets.QTableWidgetItem(note)
+                    item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
+                    self._table.setItem(row, 1, item)
 
                     seenNotes.add(key)
         self._resizeTableToContents()
@@ -250,9 +250,10 @@ class NotesWidget(QtWidgets.QWidget):
         self._updateFilter()
 
     def _resizeTableToContents(self) -> None:
-        width = self._table.sizeHintForColumn(0)
-        if width:
-            self._table.setColumnWidth(0, width)
+        maxWidth = int(self._table.width() * 0.3)
+        self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
+        hintWidth = self._table.sizeHintForColumn(0)
+        self._table.setColumnWidth(0, min(hintWidth, maxWidth))
 
         self._table.resizeRowsToContents()
         totalHeight = self._table.horizontalHeader().sizeHint().height() + 2

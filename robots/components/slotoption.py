@@ -156,10 +156,10 @@ class _SingleStepSlotOptionImpl(_SlotOptionImpl):
                 value=constantSlots,
                 name=f'{componentString} Slot Requirement')
 
-        self._perBaseSlotCost = perBaseSlotCost
-        self._constantCost = constantCost
-        self._percentBaseSlots = percentBaseSlots
-        self._constantSlots = constantSlots
+        self._perBaseSlotCost: typing.Optional[common.ScalarCalculation] = perBaseSlotCost
+        self._constantCost: typing.Optional[common.ScalarCalculation] = constantCost
+        self._percentBaseSlots: typing.Optional[common.ScalarCalculation] = percentBaseSlots
+        self._constantSlots: typing.Optional[common.ScalarCalculation] = constantSlots
         self._notes = notes
 
     def isZeroSlot(self) -> bool:
@@ -216,11 +216,19 @@ class _SingleStepSlotOptionImpl(_SlotOptionImpl):
                 modifier=construction.ConstantModifier(
                     value=SlotOption._ZeroSlotCountIncrement)))
         elif self._percentBaseSlots:
-            slots = common.Calculator.ceil(
-                value=common.Calculator.takePercentage(
-                    value=context.baseSlots(sequence=sequence),
-                    percentage=self._percentBaseSlots),
-                name=f'{self.componentString()} Required Slots')
+            slots = common.Calculator.takePercentage(
+                value=context.baseSlots(sequence=sequence),
+                percentage=self._percentBaseSlots)
+            if self._percentBaseSlots.value() >= 0:
+                slots = common.Calculator.ceil(
+                    value=slots,
+                    name=f'{self.componentString()} Required Slots')
+            else:
+                # NOTE: Doing this for negative values was added for no internal power.
+                # I think it's the only slot option that does it
+                slots = common.Calculator.floor(
+                    value=slots,
+                    name=f'{self.componentString()} Saved Slots')
         elif self._constantSlots:
             slots = self._constantSlots
 
@@ -579,7 +587,7 @@ class _OlfactoryConcealmentSlotOptionImpl(_ConcealmentSlotOptionImpl):
     }
 
     _ReconNote = 'Recon checks to detect the robot using specialised sensors or by creatures who use smell as a primary sense receive a DM{modifier} at >= {range}m. (p32)'
-    _HeightenSensesTrait = 'Attempts to detect the robot olfactorily don\'t get to include any bonus from the Heighten Senses Trait. (p32)'
+    _HeightenSensesTrait = 'Attempts to detect the robot olfactorily don\'t get to include any bonus from the Heighten Senses trait. (p32)'
 
     def __init__(
             self,
@@ -610,10 +618,16 @@ class _HostileEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Cost: Cr300 * Base Slots
     - Trait: Rads +500
     - Requirement: Incompatible with Armour Decrease chassis option (p19)
+    - Requirement: Doubles the length of time a robot can operate in a vacuum (p32)
     """
+    # NOTE :The fact this doubles the length of time a robot can operate in a
+    # vacuum is handled in finalisation
+
     _RadsTrait = common.ScalarCalculation(
         value=+500,
         name='Hostile Environment Protection Rads Modifier')
+    
+    _ProtectionNote = 'Gives protection from temperatures between -50°C and +50°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, D and E. (p32)'
 
     def __init__(
             self,
@@ -623,6 +637,7 @@ class _HostileEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentString='Hostile Environment Protection',
             minTL=6,
             perBaseSlotCost=300,
+            notes=[_HostileEnvironmentProtectionSlotOptionImpl._ProtectionNote],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -852,6 +867,9 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     _BiologicalCostPerSlot = common.ScalarCalculation(
         value=50000,
         name='BioRobot Vacuum Environment Protection Cost Per Slot')
+    
+    _ProtectionNote = 'Gives protection from temperatures between -250°C and +250°C. (p34)'
+    _AtmosphereNote = 'The robot can operate in class 0-A, D, E and some F atmospheres as well as up to 10m underwater in standard atmosphere/gravity. It can also survive {robotTL} hours in a class B (corrosive) atmosphere and {robotTL} mins in a class C (insidious) atmosphere. (p34)'
 
     def __init__(
             self,
@@ -906,6 +924,12 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
             lhs=costPerSlot,
             rhs=context.baseSlots(sequence=sequence),
             name=f'{self.componentString()} Cost')
+        
+        
+        step.addNote(note=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionNote)
+        
+        step.addNote(note=_VacuumEnvironmentProtectionSlotOptionImpl._AtmosphereNote.format(
+            robotTL=common.formatNumber(context.techLevel())))
 
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
@@ -1961,8 +1985,6 @@ class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.HeightenedSenses))
 
-# TODO: Geiger counter is next up to test
-
 class _GeigerCounterSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     Min TL: 8
@@ -2003,6 +2025,8 @@ class _LightIntensifierSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (1250, robots.RobotAttributeId.IrVision)
     }
 
+    _RangeNote = 'Allows clear, monochrome vision up to 18m in all but complete darkness. (p39)'
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -2042,10 +2066,12 @@ class _LightIntensifierSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))        
 
+        step.addNote(_LightIntensifierSensorSlotOptionImpl._RangeNote)
+
         if trait:
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=trait))
-            
+                        
 class _OlfactorySensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     Basic
@@ -2067,11 +2093,14 @@ class _OlfactorySensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12
     }
 
-    # Data Structure: Cost, Trait
+    _LowTierAtmosphereNote = 'The sensor operates without modifiers in class 4-9 atmospheres and at DM-2 in class 2-3, D and E. (p39)'
+    _HighTierAtmosphereNote = 'The sensor operates in class 1-F atmospheres. (p39)'
+
+    # Data Structure: Cost, Trait, Note
     _DataMap = {
-        _OptionLevel.Basic: (1000, None),
-        _OptionLevel.Improved: (3500, robots.RobotAttributeId.HeightenedSenses),
-        _OptionLevel.Advanced: (10000, robots.RobotAttributeId.HeightenedSenses)
+        _OptionLevel.Basic: (1000, None, _LowTierAtmosphereNote),
+        _OptionLevel.Improved: (3500, robots.RobotAttributeId.HeightenedSenses, _LowTierAtmosphereNote),
+        _OptionLevel.Advanced: (10000, robots.RobotAttributeId.HeightenedSenses, _HighTierAtmosphereNote)
     }
 
     def __init__(
@@ -2105,13 +2134,15 @@ class _OlfactorySensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         sensorType = self._enumOption.value()
         assert(isinstance(sensorType, _OptionLevel))
 
-        cost, trait = _OlfactorySensorSlotOptionImpl._DataMap[sensorType]
+        cost, trait, note = _OlfactorySensorSlotOptionImpl._DataMap[sensorType]
 
         cost = common.ScalarCalculation(
             value=cost,
             name=f'{sensorType.value} {self.componentString()} Cost')
         step.setCredits(
-            credits=construction.ConstantModifier(value=cost))        
+            credits=construction.ConstantModifier(value=cost))
+
+        step.addNote(note)   
 
         if trait:
             step.addFactor(factor=construction.SetAttributeFactor(
@@ -2123,6 +2154,8 @@ class _PRISSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     Cost: Cr2000
     Trait: IR/UV Vision
     """
+
+    _GeigerCounterNote = 'Can function as a geiger counter. (p39)'
 
     def __init__(
             self,
@@ -2150,6 +2183,8 @@ class _PRISSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
         
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.IrUvVision))
+        
+        step.addNote(_PRISSensorSlotOptionImpl._GeigerCounterNote)
         
 class _ThermalSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -2232,7 +2267,7 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=4,
         name='Active Camouflage Stealth Trait')
     
-    _StealthSkillNote = 'When Active Camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has (clarified by Geir Lanesskog, Robot Handbook author)'
+    _StealthSkillNote = 'When active camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has. (clarified by Geir Lanesskog, Robot Handbook author)'
 
     def __init__(
             self,
@@ -2271,8 +2306,19 @@ class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Min TL: 9
     - Cost: Cr600 * Base Slots
     - Slots: 1
+    - Trait: Rads +500    
+    - Note: Gives protection from temperatures between -200°C and +200°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)
     - Requirement: Incompatible with Armour Decrease chassis option (p19)
     """
+    # NOTE: Some of the details of what protection this gives (including the rads)
+    # comes from the book says it gives the same protection as hostile environment
+    # protection (p41)
+
+    _RadsTrait = common.ScalarCalculation(
+        value=+500,
+        name='Corrosive Environment Protection Rads Modifier')
+    
+    _ProtectionNote = 'Gives protection from temperatures between -200°C and +200°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)'
 
     def __init__(
             self,
@@ -2283,6 +2329,7 @@ class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=9,
             perBaseSlotCost=600,
             constantSlots=1,
+            notes=[_CorrosiveEnvironmentProtectionSlotOptionImpl._ProtectionNote],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -2300,13 +2347,44 @@ class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
             componentType=robots.DecreaseArmour,
             sequence=sequence)
     
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(sequence, context, step)
+
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Rads,
+            modifier=construction.ConstantModifier(
+                value=_CorrosiveEnvironmentProtectionSlotOptionImpl._RadsTrait)))    
+    
 class _InsidiousEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - Min TL: 11
     - Cost: Cr3000 * Base Slots
     - Slots: 1
+    - Trait: Rads +500    
+    - Note: Gives TL days of protection in class C (insidious) atmospheres. (p41)
+    - Note: Gives protection from temperatures between -270°C and +800°C, pressures up to TL * 10 atmospheres, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)
     - Requirement: Incompatible with Armour Decrease chassis option (p19)
     """
+    # NOTE: Some of the details of what protection this gives (including the rads)
+    # comes from the book says it gives the same protection as hostile environment
+    # protection (p41)    
+
+    _RadsTrait = common.ScalarCalculation(
+        value=+500,
+        name='Insidious Environment Protection Rads Modifier')
+    
+    _MaxPressureTLMultiplier = common.ScalarCalculation(
+        value=10,
+        name='Insidious Environment Protection Max Pressure TL Multiplier')
+    
+    _InsidiousNote = 'Gives {robotTL} days of protection in class C (insidious) atmospheres. (p41)'
+    _ProtectionNote = 'Gives protection from temperatures between -270°C and +800°C, pressures up to {maxPressure} atmospheres, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)'
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -2331,7 +2409,32 @@ class _InsidiousEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         
         return not context.hasComponent(
             componentType=robots.DecreaseArmour,
-            sequence=sequence)    
+            sequence=sequence)
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(sequence, context, step)
+
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Rads,
+            modifier=construction.ConstantModifier(
+                value=_InsidiousEnvironmentProtectionSlotOptionImpl._RadsTrait)))            
+        
+        robotTL = common.ScalarCalculation(
+            value=context.techLevel(),
+            name='Robot TL')
+        maxPressure = common.Calculator.multiply(
+            robotTL,
+            _InsidiousEnvironmentProtectionSlotOptionImpl._MaxPressureTLMultiplier,
+            name='Max Atmospheres Pressure')
+        step.addNote(note=_InsidiousEnvironmentProtectionSlotOptionImpl._InsidiousNote.format(
+            robotTL=robotTL.value()))
+        step.addNote(note=_InsidiousEnvironmentProtectionSlotOptionImpl._ProtectionNote.format(
+            maxPressure=maxPressure.value()))
     
 class _RadiationEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -2437,6 +2540,8 @@ class _SelfRepairingChassisSlotOptionImpl(_SingleStepSlotOptionImpl):
     Cost: Cr1000 * Base Slots
     Slots: 5% of Base Slots rounded up
     """
+    _RepairNote = 'Repairs are limited to minor damage and can only restores 1 Hit from a penetrating attack. Each repair takes 1 minute to complete. (p42)'
+
     def __init__(
             self,
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
@@ -2446,6 +2551,7 @@ class _SelfRepairingChassisSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=11,
             perBaseSlotCost=1000,
             percentBaseSlots=5,
+            notes=[_SelfRepairingChassisSlotOptionImpl._RepairNote],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -2485,6 +2591,11 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
         - Slots: (2% of Base Slots * levels) rounded up
         - Note: Safe Depth (4000m * levels)
     """
+    # NOTE: It seems odd that the rules don't include hovercraft in the list
+    # of locomotions that can't be used while submerged as almost by definition
+    # the need to operate on top of a surface. Not sure if it's just an
+    # oversight or if there is some kind of future hovercraft tech that would
+    # work underwater, either way I'm going with the book and allowing it
 
     _MinTLMap = {
         _OptionLevel.Basic: 4,
@@ -2498,7 +2609,7 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
     _DataMap = {
         _OptionLevel.Basic: (200, 5, 50),
         _OptionLevel.Improved: (400, 2, 200),
-        _OptionLevel.Improved: (800, 2, 600),
+        _OptionLevel.Enhanced: (800, 2, 600),
         _OptionLevel.Advanced: (1000, 2, 2000),
         _OptionLevel.Superior: (2000, 2, 4000)
     }
@@ -2508,6 +2619,10 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
         robots.VTOLPrimaryLocomotion,
         robots.VTOLSecondaryLocomotion
     ]
+
+    _MaxDepthNote = 'Safe depth for the robot is {maxDepth}m. (p42)'
+    _UnusableLocomotionNote = '{names} locomotion can\'t be used while submerged. (p42)'
+    _ReducedLocomotionNote = '{names} locomotion suffer Agility -2 while submerged. (p42)'
 
     def __init__(
             self,
@@ -2622,7 +2737,8 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
                 slots=construction.ConstantModifier(value=totalSlots))            
 
         maxDepth *= levels.value()
-        step.addNote(note=f'Safe depth for the robot is {maxDepth}m')
+        step.addNote(note=_SubmersibleEnvironmentProtectionSlotOptionImpl._MaxDepthNote.format(
+            maxDepth=maxDepth))
 
         locomotions = context.findComponents(
             componentType=robots.Locomotion,
@@ -2644,10 +2760,12 @@ class _SubmersibleEnvironmentProtectionSlotOptionImpl(_EnumSelectSlotOptionImpl)
                     modifiedLocomotions.append(locomotionName)
         if unusableLocomotions:
             names = common.humanFriendlyListString(unusableLocomotions)
-            step.addNote(note=f'{names} locomotion can\'t be used while submerged')
+            step.addNote(note=_SubmersibleEnvironmentProtectionSlotOptionImpl._UnusableLocomotionNote.format(
+                names=names))
         if modifiedLocomotions:
             names = common.humanFriendlyListString(modifiedLocomotions)
-            step.addNote(note=f'{names} locomotion suffer Agility -2 while submerged')
+            step.addNote(note=_SubmersibleEnvironmentProtectionSlotOptionImpl._ReducedLocomotionNote.format(
+                names=names))
 
 class _CleaningEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -2905,9 +3023,9 @@ class _RoboticDroneControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (50000, 1, 8, 3)
     }
 
-    _SkillRequirementNote = 'The controlling robot requires the Electronics (remote-ops) skill. (p44)'
-    _MaxSkillNote = 'The robot\'s Electronics (remote-ops) skill is limited to {maxSkill} when using the interface. (p44)'
-    _MaxDronesNote = 'Interface can control at a maximum of {maxDrones} drones. (p44)'
+    _SkillRequirementNote = 'The controlling robot requires the Electronics (Remote Ops) skill. (p44)'
+    _MaxSkillNote = 'The robot\'s Electronics (Remote Ops) skill is limited to {maxSkill} when using the interface. (p44)'
+    _MaxDronesNote = 'Interface can control at a maximum of {maxDrones} drone(s). (p44)'
 
     def __init__(
             self,
@@ -3110,9 +3228,9 @@ class _SwarmControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (100000, 1, 4, 'Formidable (14+)', 3)
     }
 
-    _SkillRequirementNote = 'The robot requires the Electronics (remote-ops) skill to use the Swarm Controller. (p45)'
-    _MaxSkillNote = 'The robot\'s Electronics (remote-ops) skill is limited to {maxSkill} when using the controller. (p45)'
-    _MaxDronesNote = 'Swarms are limited to {maxTasks} tasks with a maximum complexity of {maxComplexity}. (p45)'
+    _SkillRequirementNote = 'The robot requires the Electronics (Remote Ops) skill to use the Swarm Controller. (p45)'
+    _MaxSkillNote = 'The robot\'s Electronics (Remote Ops) skill is limited to {maxSkill} when using the controller. (p45)'
+    _MaxDronesNote = 'Swarms can perform {maxTasks} task(s) simultaneously with the max task complexity limited to {maxComplexity} or the max complexity the robots brain allows (which ever is lower). (p45)'
 
     def __init__(
             self,
@@ -3199,7 +3317,7 @@ class _TightbeamCommunicatorSlotOptionImpl(_SingleStepSlotOptionImpl):
     # will be correct at the point it's fully loaded.    
 
     _StandardRangeNote = 'Range is 5,000km'
-    _SatelliteRangeNote = 'Range is 5,000km or 500,000km if using the Satellite Uplink'
+    _SatelliteRangeNote = 'Range is 5,000km or 500,000km if using the robot\'s satellite uplink'
 
     def __init__(
             self,
@@ -3324,11 +3442,15 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         name='Medical Chamber Cryoberth Addon Required Slots')
     _LowBerthCost = common.ScalarCalculation(
         value=20000,
-        name='Medical Chamber Low-berth Addon Cost')
+        name='Medical Chamber Low berth Addon Cost')
     _LowBerthSlots = common.ScalarCalculation(
         value=8,
-        name='Medical Chamber Low-berth Addon Required Slots') 
-    _ImprovedBerthNote = 'DM+1 to freezing and revival checks'   
+        name='Medical Chamber Low berth Addon Required Slots') 
+    _CryoBerthNote = 'Requires a low berth survival check when a patient enters and exits cryogenic hibernation. Medic checks during the freezing and revival process are made at {modifier}. (p47)'
+    _BasicLowBerthNote = 'Requires a low berth survival check when a patient exits hibernation. (p47)'
+    _ImprovedLowBerthNote = 'Requires a low berth survival check when a patient exits hibernation. Medic checks during the revival process are made at DM+1. (p47)'
+    _ReanimationSkillNote = 'Reanimation requires a Difficult (10+) Medic check and takes 1D x 10 minutes. (p47)'
+    _ReanimationTimeNote = 'Reanimation must take place within 2D minutes of the patient\'s death or twice this long if the body is stored in extremely cold conditions. The time is extended to 1D days if the body is stored in a low berth or indefinitely if cryogenically frozen. (p47)'
 
     _NanobotMinTL = 13
     # Data Structure: Cost, Slots
@@ -3392,8 +3514,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         self._slotsOption = construction.IntegerOption(
             id='Slots',
             name='Slots',
-            value=1,
-            maxValue=1, # Set in updateOptions
+            value=50,
+            maxValue=50,
             minValue=1,
             description='Specify the number of slots to allocate to the Medical Chamber.')
         
@@ -3414,11 +3536,11 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         
         self._lowBerthOption = construction.EnumOption(
             id='LowBerth',
-            name='Low-berth',
+            name='Low berth',
             type=_OptionLevel,
             value=None,
             isOptional=True,
-            description='Add a Low-berth to the Medical Chamber')
+            description='Add a Low berth to the Medical Chamber')
         
         self._nanobotsOption = construction.EnumOption(
             id='Nanobots',
@@ -3631,8 +3753,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         step.setSlots(slots=construction.ConstantModifier(
             value=_MedicalChamberSlotOptionImpl._CryoberthSlots))
         
-        if optionType == _OptionLevel.Improved:
-            step.addNote(_MedicalChamberSlotOptionImpl._ImprovedBerthNote)
+        step.addNote(_MedicalChamberSlotOptionImpl._CryoBerthNote.format(
+            modifier='DM-1' if optionType == _OptionLevel.Improved else 'DM-2'))
                             
         context.applyStep(
             sequence=sequence,
@@ -3648,15 +3770,17 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         assert(isinstance(optionType, _OptionLevel))
 
         step = robots.RobotStep(
-            name=f'{self.componentString()} {optionType.value} Low-berth',
+            name=f'{self.componentString()} {optionType.value} Low berth',
             type=typeString)
         step.setCredits(credits=construction.ConstantModifier(
             value=_MedicalChamberSlotOptionImpl._LowBerthCost))        
         step.setSlots(slots=construction.ConstantModifier(
             value=_MedicalChamberSlotOptionImpl._LowBerthSlots))
         
-        if optionType == _OptionLevel.Improved:
-            step.addNote(_MedicalChamberSlotOptionImpl._ImprovedBerthNote)
+        if optionType == _OptionLevel.Basic:
+            step.addNote(_MedicalChamberSlotOptionImpl._BasicLowBerthNote)
+        elif  optionType == _OptionLevel.Improved:
+            step.addNote(_MedicalChamberSlotOptionImpl._ImprovedLowBerthNote)
                             
         context.applyStep(
             sequence=sequence,
@@ -3708,6 +3832,9 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             value=_MedicalChamberSlotOptionImpl._ReanimationCost))        
         step.setSlots(slots=construction.ConstantModifier(
             value=_MedicalChamberSlotOptionImpl._ReanimationSlots))
+        
+        step.addNote(note=_MedicalChamberSlotOptionImpl._ReanimationSkillNote)
+        step.addNote(note=_MedicalChamberSlotOptionImpl._ReanimationTimeNote)
         
         context.applyStep(
             sequence=sequence,
@@ -3788,7 +3915,7 @@ class _MedkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (10000, 1, 3)
     }
 
-    _ReplenishmentNote = 'Replenishing the Medikit costs Cr500'
+    _ReplenishmentNote = 'Replenishing the medikit costs Cr500. (p48)'
 
     def __init__(
             self,
@@ -3922,7 +4049,7 @@ class _AgriculturalEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Can process {speed} square meters per hour')
+        step.addNote(f'Can process {speed} square meters per hour. (p48)')
         
 class _AutobarSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -4012,8 +4139,8 @@ class _AutobarSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Steward and Profession (Bartender) skills are limited to {maxSkill} when using Autobar')      
-        step.addNote(f'Replenishing the Autobar costs Cr{replenishmentCost}') 
+        step.addNote(f'Steward and Profession (Bartender) skills are limited to {maxSkill} when using autobar. (p49)')      
+        step.addNote(f'Replenishing the autobar costs Cr{replenishmentCost}. (p49)') 
 
 class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -4099,7 +4226,7 @@ class _AutochefSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Steward and Profession (Chef) skills are limited to {maxSkill} when using Autochef')
+        step.addNote(f'Steward and Profession (Chef) skills are limited to {maxSkill} when using autochef. (p49)')
 
 class _AutopilotSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -4563,7 +4690,7 @@ class _ForkliftSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
         
-        step.addNote(f'Maximum load is {maxLoad} ton')
+        step.addNote(f'Maximum load is {maxLoad} ton(s). (p52)')
 
 class _HolographicProjectorSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -4711,7 +4838,7 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (50000, 1, 4)
     }
 
-    _NavigationNote = 'Navigation skill checks made using the Navigation System don\'t receive an INT DM modifier.'
+    _NavigationNote = 'Navigation skill checks made using the navigation system don\'t receive an INT characteristic DM modifier. (p53)'
 
     def __init__(
             self,
@@ -4827,20 +4954,22 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _DataMap = {
         _ExplosiveType.Defensive: ( 500,   None,    5, None,    3),
         _ExplosiveType.Offensive: (1000,   None,   10, None, None),
-        _ExplosiveType.TDX:       (1000,   None,   10, None,   15),
+        _ExplosiveType.TDX:       (5000,   None,   10, None,   15),
         _ExplosiveType.Nuclear:   (None, 500000, None,    4, 1000)
     }
 
     _ConventionalRobotDamageNote = 'The robot takes {damageDice}D damage plus 3 x 1D Severity Brain Critical Hits. (p53)'
     _NuclearRobotDamageNote = 'The robot is vaporised. (p53)'
 
-    _DefensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {halfDamageDice}D-{robotArmour} damage. (p53)'
-    _OffensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {twoThirdDamageDice}D damage. (p53)'
-    _TDXExternalDamageNote = 'Anyone within {blastRadius}m will take {robotHits}D damage. (p53)'
+    _DefensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {externalDamage} damage. (p53)'
+    _OffensiveExternalDamageNote = 'Anyone within {blastRadius}m will take {externalDamageDice}D damage. (p53)'
+    _TDXExternalDamageNote = 'Anyone within {blastRadius}m will take {externalDamageDice}D damage. (p53)'
     _NuclearExternalDamageNote = 'Anyone within {blastRadius}m will take 10DD damage. (p53)'
 
     _ConventionalBlastTraitNote = 'The blast has the Blast {blastTrait} trait. (p53)'
     _NuclearBlastTraitNote = 'The blast has the Blast {blastTrait} and Radiation traits. (p53)'
+
+    _OffensiveDetectionNote = 'Passing through starport security requires a Very Difficult (12+) Stealth check. (p54)'
 
     def __init__(
             self,
@@ -4928,27 +5057,30 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
             sequence=sequence)
         armour = armour.value() if armour else 0
 
-        damageDice = math.ceil(hits / 3)
+        robotDamageDice = math.ceil(hits / 3)
 
         if explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Nuclear:
             step.addNote(_SelfDestructSystemSlotOptionImpl._NuclearRobotDamageNote)
         else:
             step.addNote(_SelfDestructSystemSlotOptionImpl._ConventionalRobotDamageNote.format(
-                damageDice=damageDice))
+                damageDice=robotDamageDice))
 
         if explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Defensive:
-            step.addNote(_SelfDestructSystemSlotOptionImpl._DefensiveExternalDamageNote.format(
-                blastRadius=blastTrait,
-                halfDamageDice=math.floor(damageDice / 2),
-                robotArmour=armour))
+            externalDamage = math.floor(robotDamageDice / 2) - armour
+            if externalDamage > 0:
+                step.addNote(_SelfDestructSystemSlotOptionImpl._DefensiveExternalDamageNote.format(
+                    blastRadius=blastTrait,
+                    externalDamage=externalDamage))
         elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Offensive:
-            step.addNote(_SelfDestructSystemSlotOptionImpl._OffensiveExternalDamageNote.format(
-                blastRadius=blastTrait,
-                twoThirdDamageDice=math.floor(damageDice * 2/3)))
+            externalDamageDice = math.floor(hits * (2/3))
+            if externalDamageDice > 0:
+                step.addNote(_SelfDestructSystemSlotOptionImpl._OffensiveExternalDamageNote.format(
+                    blastRadius=blastTrait,
+                    externalDamageDice=externalDamageDice))
         elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.TDX:
             step.addNote(_SelfDestructSystemSlotOptionImpl._TDXExternalDamageNote.format(
                 blastRadius=blastTrait,
-                robotHits=hits))
+                externalDamageDice=hits))
         elif explosiveType == _SelfDestructSystemSlotOptionImpl._ExplosiveType.Nuclear:
             step.addNote(_SelfDestructSystemSlotOptionImpl._NuclearExternalDamageNote.format(
                 blastRadius=blastTrait))
@@ -4959,6 +5091,9 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         else:
             step.addNote(_SelfDestructSystemSlotOptionImpl._ConventionalBlastTraitNote.format(
                 blastTrait=blastTrait))
+            
+        if explosiveType != _SelfDestructSystemSlotOptionImpl._ExplosiveType.Defensive:
+            step.addNote(_SelfDestructSystemSlotOptionImpl._OffensiveDetectionNote)
 
 class _StealthSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -4985,9 +5120,13 @@ class _StealthSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     # NOTE: The costs for the stealth is per base slot rather than per slot used
     # by the component.
-    # NOTE: This is dealing with the Stealth Trait not the Stealth Skill
+    # NOTE: This is dealing with the Stealth Trait not the Stealth Skill. From the
+    # description in the book this component allows hiding from electronic sensors
+    # and detectors and is achieved through active and passive means (p54).
     # NOTE: Unlike the Autopilot slot option, the rules don't say that this
     # modifier doesn't stack with the Stealth skill.
+    # NOTE: The fact that advanced stealth takes 3 rather than 4 slots is not
+    # typo, it's as it is in the book (p54)
 
 
     _MinTLMap = {
@@ -5002,7 +5141,7 @@ class _StealthSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Basic: (300, 1, 1),
         _OptionLevel.Improved: (600, 2, 2),
         _OptionLevel.Enhanced: (900, 3, 3),
-        _OptionLevel.Advanced: (1200, 4, 4)
+        _OptionLevel.Advanced: (1200, 3, 4)
     } 
 
     def __init__(
@@ -5222,8 +5361,7 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     # It's not clear if this is talking about the additional power packs that
     # can be added to increase Endurance or if it's talking about external power
     # packs. My take is the latter as the this is the 'No Internal Power' slot
-    # option and the power packs used to increase Endurance Endurance are still
-    # internal.
+    # option and the power packs used to increase Endurance are still internal.
     # NOTE: The rules don't explicitly state it but it seems logical that the
     # Endurance of the robot is 0 with this option installed as the length of
     # time it can run for is determined by another power source, be that RTG,
@@ -5237,9 +5375,7 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
     # Endurance modifications and RTG & Solar Power slot options.
     # As the component sets the Endurance to 0 it doesn't make sense for a user
     # to have spent credits on increasing it Endurance only to have it reduced
-    # to zero. It also doesn't seem sensible that they should be able to get a
-    # cost saving from reducing Endurance if the power source that gives the
-    # endurance is being removed.
+    # to zero.
     # The RTG & Solar Power slot options are incompatible as I'm classing them
     # as an internal power source similar to the power pack logic covered above.
     # The incompatibility with these power sources is handled by the component
@@ -5260,7 +5396,7 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
         super().__init__(
             componentString='No Internal Power',
             minTL=6,
-            percentBaseSlots=10,
+            percentBaseSlots=-10,
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -5379,11 +5515,18 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
     # Ideally it would just be there if the robot had 2 required power units,
     # but I don't think it's worth the faff to implement it when the note is good
     # enough.
+    # NOTE: It's not entirely clear if the cost of a short duration RTG is based 
+    # on the robot's base slots or the number of slots it consumes. The
+    # description of the long duration RTG explicitly says it's based on the base
+    # slots and it's table says the values are per base slot. However, there is no
+    # such statement in the short duration description and the table containing
+    # it's values just says it's per slot. Both spreadsheets have it per base slot
+    # so i've done the same.
 
     class _Duration(enum.Enum):
         LongBasic = 'Basic Long Duration'
         LongImproved = 'Improved Long Duration'
-        LongAdvanced = 'Advanced)Long Duration'
+        LongAdvanced = 'Advanced Long Duration'
         ShortBasic = 'Basic Short Duration'
         ShortImproved = 'Improved Short Duration'
         ShortAdvanced = 'Advanced Short Duration'           
@@ -5397,7 +5540,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _Duration.ShortAdvanced: 12
     }
 
-    # Data Structure: Cost Per Slot, Base Slot Percentage, Half Life (years)
+    # Data Structure: Cost Per Base Slot, Cost Per Slot, Base Slot Percentage, Half Life (years)
     _DataMap = {
         _Duration.LongBasic: (20000, 20, 25),
         _Duration.LongImproved: (50000, 15, 50),
@@ -5414,7 +5557,8 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=2,
         name='RTG Failure Multiplier')
 
-    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
+    _OnlyPowerSourceNote = 'When relying on the RTG as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. (p55)'
+    _OnlyPowerSourceComplexNote = 'When relying on the RTG as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. These restrictions can be avoided by using 2 RTG or Solar Power units simultaneously (in any combination). (p55)'
     _PowerPackRechargeNote = 'The robot\'s power packs can be recharged in {recharge} hours if the robot remains stationary or performs minimal activity. (p56)'
     _HalfLifeNote = 'After {endurance} years the RTG continues to power the robot but it takes twice as long to recharge power packs and, when using the RTG as the only power source, the robot\'s movement rate and STR are halved again (rounded down). (p56)'
     _FailureNote = 'After {failure} years the RTG is no longer able to provide power to the robot. (p56)'
@@ -5462,7 +5606,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         duration = self._enumOption.value()
         assert(isinstance(duration, _RTGSlotOptionImpl._Duration))
 
-        costPerSlot, slotsPercentage, halfLife = \
+        costPerBaseSlot, slotsPercentage, halfLife = \
             _RTGSlotOptionImpl._DataMap[duration]
         componentString = f'{duration.value} {self.componentString()}'        
 
@@ -5477,17 +5621,28 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))        
         
-        costPerSlot = common.ScalarCalculation(
-            value=costPerSlot,
-            name=f'{componentString} Cost Per Slot')
+        costPerBaseSlot = common.ScalarCalculation(
+            value=costPerBaseSlot,
+            name=f'{componentString} Cost Per Base Slot')
         cost = common.Calculator.multiply(
-            lhs=slots,
-            rhs=costPerSlot,
+            lhs=context.baseSlots(sequence=sequence),
+            rhs=costPerBaseSlot,
             name=f'{componentString} Cost')
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
         
-        step.addNote(_RTGSlotOptionImpl._OnlyPowerSourceNote)        
+        compatiblePowerSources = [
+            RTGSlotOption,
+            SolarPowerUnitSlotOption]
+        compatiblePowerSourceCount = 0
+        for powerSourceType in compatiblePowerSources:
+            compatiblePowerSourceCount += len(context.findComponents(
+                componentType=powerSourceType,
+                sequence=sequence))
+        
+        step.addNote(_RTGSlotOptionImpl._OnlyPowerSourceNote
+                     if compatiblePowerSourceCount <= 1 else
+                     _RTGSlotOptionImpl._OnlyPowerSourceComplexNote)
         
         hasInternalPower = not context.hasComponent(
             componentType=NoInternalPowerSlotOption,
@@ -5504,7 +5659,7 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
                 name=f'Power Pack Recharge Time')
 
             step.addNote(_RTGSlotOptionImpl._PowerPackRechargeNote.format(
-                recharge=rechargeHours.value()))
+                recharge=common.formatNumber(rechargeHours.value())))
             
         halfLife = common.ScalarCalculation(
             value=halfLife,
@@ -5513,8 +5668,10 @@ class _RTGSlotOptionImpl(_EnumSelectSlotOptionImpl):
             lhs=halfLife,
             rhs=_RTGSlotOptionImpl._FailureEnduranceMultiplier,
             name=f'{componentString} Usable Lifetime')
-        step.addNote(_RTGSlotOptionImpl._HalfLifeNote.format(endurance=halfLife.value()))
-        step.addNote(_RTGSlotOptionImpl._FailureNote.format(failure=usableLife.value()))
+        step.addNote(_RTGSlotOptionImpl._HalfLifeNote.format(
+            endurance=common.formatNumber(halfLife.value())))
+        step.addNote(_RTGSlotOptionImpl._FailureNote.format(
+            failure=common.formatNumber(usableLife.value())))
 
 class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -5607,7 +5764,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: 12
     }
 
-    # Data Structure: Cost Per Slot, Base Slot Percentage, Lifespan (years)
+    # Data Structure: Cost Per Base Slot, Base Slot Percentage, Lifespan (years)
     _DataMap = {
         _OptionLevel.Basic: (2000, 20, 10),
         _OptionLevel.Improved: (5000, 15, 25),
@@ -5646,11 +5803,12 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=10,
         name='Solar Power Panel Hit Percentage')
 
-    _OnlyPowerSourceNote = 'When relying on the Solar Power as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the Vehicle Speed Movement modification or the Athletics (endurance) skill. This can be avoided by running 2 RTG or Solar Power units simultaneously (in any combination), when doing so Vehicle Speed Movement can also be achieved. (p55)'
-    _SunlightNote = 'The robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the length of time it spent in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
+    _OnlyPowerSourceNote = 'When relying on the solar power unit as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. (p55)'
+    _OnlyPowerSourceComplexNote = 'When relying on the solar power unit as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. These restrictions can be avoided by using 2 RTG or Solar Power units simultaneously (in any combination). (p55)'
+    _SunlightNote = 'When relying on the solar power unit as the only power source, the robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the same length of time as it spends in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
     _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
     _LifespanNote = 'The solar panels stops providing power after {lifespan} years. (p57)'
-    _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM}. (p13)'
+    _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (Sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM}. (p13)'
     _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}. (p57)'
     _AttacksNote = 'When attacks are made against a robot with deployed solar panels, half the successful attacks hit the panels unless they were specifically targetted at other components. (p57)'
 
@@ -5697,32 +5855,46 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         panelType = self._enumOption.value()
         assert(isinstance(panelType, _OptionLevel))
 
-        costPerSlot, slotsPercentage, lifespan = \
+        costPerBaseSlot, slotsPercentage, lifespan = \
             _SolarPowerUnitSlotOptionImpl._DataMap[panelType]
-        componentString = f'{panelType.value} {self.componentString()}'        
+        componentString = f'{panelType.value} {self.componentString()}' 
+
+        baseSlots = context.baseSlots(sequence=sequence)       
 
         slotsPercentage = common.ScalarCalculation(
             value=slotsPercentage,
             name=f'{componentString} Base Slot Percentage Required')
         slots = common.Calculator.ceil(
             value=common.Calculator.takePercentage(
-                value=context.baseSlots(sequence=sequence),
+                value=baseSlots,
                 percentage=slotsPercentage),
             name=f'{componentString} Slots Required')
         step.setSlots(
-            slots=construction.ConstantModifier(value=slots))        
+            slots=construction.ConstantModifier(value=slots)) 
         
-        costPerSlot = common.ScalarCalculation(
-            value=costPerSlot,
-            name=f'{componentString} Cost Per Slot')
+        costPerBaseSlot = common.ScalarCalculation(
+            value=costPerBaseSlot,
+            name=f'{componentString} Cost Per Base Slot')
         cost = common.Calculator.multiply(
-            lhs=slots,
-            rhs=costPerSlot,
+            lhs=baseSlots,
+            rhs=costPerBaseSlot,
             name=f'{componentString} Cost')
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
         
-        step.addNote(_SolarPowerUnitSlotOptionImpl._OnlyPowerSourceNote)
+        compatiblePowerSources = [
+            RTGSlotOption,
+            SolarPowerUnitSlotOption]
+        compatiblePowerSourceCount = 0
+        for powerSourceType in compatiblePowerSources:
+            compatiblePowerSourceCount += len(context.findComponents(
+                componentType=powerSourceType,
+                sequence=sequence))
+
+        step.addNote(_SolarPowerUnitSlotOptionImpl._OnlyPowerSourceNote
+                     if compatiblePowerSourceCount <= 1 else
+                     _SolarPowerUnitSlotOptionImpl._OnlyPowerSourceComplexNote)                  
+
         step.addNote(_SolarPowerUnitSlotOptionImpl._SunlightNote)
         
         hasInternalPower = not context.hasComponent(
@@ -5750,12 +5922,12 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
                 name='Quarter Minimal Power Pack Recharge Time')
 
             step.addNote(_SolarPowerUnitSlotOptionImpl._RechargeNote.format(
-                normal=normalRechargeHours.value(),
-                quarter=quarterRechargeHours.value(),
-                minimal=minimalRechargeHours.value()))
+                normal=common.formatNumber(normalRechargeHours.value()),
+                quarter=common.formatNumber(quarterRechargeHours.value()),
+                minimal=common.formatNumber(minimalRechargeHours.value())))
             
             step.addNote(_SolarPowerUnitSlotOptionImpl._LifespanNote.format(
-                lifespan=lifespan))
+                lifespan=common.formatNumber(lifespan)))
             
         robotSize = context.attributeValue(
             attributeId=robots.RobotAttributeId.Size,
@@ -5834,7 +6006,7 @@ class _BioscannerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=15,
             constantCost=350000,
             constantSlots=2,
-            notes=['Requires at least Electronics (sensors) level 0 to operator'],
+            notes=['The robot must have at least Electronics (Sensors) 0 to use the sensor. (p57)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -5860,8 +6032,8 @@ class _DensitometerSensorSlotOptionImpl(_SingleStepSlotOptionImpl):
             constantCost=20000,
             constantSlots=3,
             notes=[
-                'Target must be within 100m to be scanned',
-                'Requires at least Electronics (sensors) level 0 to operator'],
+                'Target must be within 100m to be scanned accurately. (p57)',
+                'The robot must have at least Electronics (Sensors) 0 to use the sensor. (p57)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -5887,8 +6059,8 @@ class _NeuralActivitySensorSlotOptionImpl(_SingleStepSlotOptionImpl):
             constantCost=35000,
             constantSlots=5,
             notes=[
-                'Detects Neural Activity within 500m',
-                'Requires at least Electronics (sensors) level 0 to operator'],
+                'Detects Neural Activity within 500m. (p58)',
+                'The robot must have at least Electronics (Sensors) 0 to use the sensor. (p57)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -5918,7 +6090,9 @@ class _PlanetologySensorSuiteSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=12,
             constantCost=25000,
             constantSlots=5,
-            notes=['Adds DM+1 to any checks conducted in conjunction with data provided by the suite'],
+            notes=[
+                'Adds DM+1 to any checks conducted in conjunction with data provided by the suite. (p58)',
+                'The robot must have at least Electronics (Sensors) 0 to use the sensor. (p57)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -6026,6 +6200,8 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
             flags=construction.SkillFlags(0)))
         
         step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
+
+# TODO: Cutting torch is next up for test
 
 class _CuttingTorchSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """

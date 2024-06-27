@@ -114,6 +114,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # with Vehicle Speed Movement
     # TODO: Would it make more sense for Autopilot to be a robot specific skill
     # in the same way as Weapon & Vehicle are?
+    # UPDATE: I'm thinking not, keep it like other hardware 'skills'
     Autopilot = 'Autopilot'
     # NOTE: I believe the Large/Small traits are from the traits for Beasts in
     # the core rules (p81)

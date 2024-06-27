@@ -1,5 +1,6 @@
 import common
 import construction
+import enum
 import math
 import robots
 import traveller
@@ -572,6 +573,18 @@ class Finalisation(robots.RobotComponentInterface):
     }
 
     _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel} they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware (clarified by Geir Lanesskog, Robot Handbook author)'
+
+    _VacuumOperationWithEnduranceNote = 'When operating in a vacuum, the robot\'s Endurance is halved to {halfEndurance} hour(s) and it must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
+    _VacuumOperationNoEnduranceNote = 'When operating in a vacuum, the robot must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
+    _VacuumOperationBiologicalNote = 'When operating in a vacuum, biological robots suffer all the same effects as their template lifeform would. (p34)'
+    _VacuumProtectionComponents = [
+        robots.VacuumEnvironmentProtectionDefaultSuiteOption,
+        robots.VacuumEnvironmentProtectionSlotOption
+    ]
+    _VacuumIncreaseComponents = [
+        robots.HostileEnvironmentProtectionDefaultSuiteOption,
+        robots.HostileEnvironmentProtectionSlotOption
+    ]
  
     _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
 
@@ -606,6 +619,7 @@ class Finalisation(robots.RobotComponentInterface):
         self._createProtectionStep(sequence=sequence, context=context)
         self._createTraitNoteSteps(sequence=sequence, context=context)
         self._createCombatStep(sequence=sequence, context=context)
+        self._vacuumOperationStep(sequence=sequence, context=context)
         self._createInoperableStep(sequence=sequence, context=context)
         self._createMaintenanceStep(sequence=sequence, context=context)
         self._createAutopilotStep(sequence=sequence, context=context)
@@ -691,24 +705,38 @@ class Finalisation(robots.RobotComponentInterface):
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
+                assert(isinstance(value, common.ScalarCalculation))
+                name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
                 notes.append(f'Attackers receive DM+{value.value()} when making ranged attacks against the robot.')
             elif trait == robots.RobotAttributeId.Small:
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
+                assert(isinstance(value, common.ScalarCalculation))
+                name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
                 notes.append(f'Attackers receive DM{value.value()} when making ranged attacks against the robot.')
             elif trait == robots.RobotAttributeId.Stealth:
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
+                assert(isinstance(value, common.ScalarCalculation))
+                name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
                 notes.append(f'DM+{value.value()} to checks made to evade electronic sensors such as radar or lidar.')
                 notes.append(f'Electronic (sensors) checks to detect the robot suffer a negative DM equal to the difference between the robot\'s TL ({context.techLevel()} and the TL of the equipment.')
             elif trait == robots.RobotAttributeId.Thruster:
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
+                assert(isinstance(value, common.ScalarCalculation))
+                name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
                 notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust. (p17)')
             elif trait == robots.RobotAttributeId.Flyer:
+                value = context.attributeValue(
+                    attributeId=trait,
+                    sequence=sequence)
+                assert(isinstance(value, enum.Enum))
+                name = f'{trait.value} ({value.value})'
+
                 needsAtmosphere = False
                 for locomotion in Finalisation._AtmosphereFlyerLocomotions:
                     if context.hasComponent(
@@ -933,6 +961,47 @@ class Finalisation(robots.RobotComponentInterface):
             context.applyStep(
                 sequence=sequence,
                 step=step)
+
+    def _vacuumOperationStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        for componentType in Finalisation._VacuumProtectionComponents:
+            if context.hasComponent(
+                componentType=componentType,
+                sequence=sequence):
+                return
+            
+        if context.hasComponent(componentType=robots.BioRobotSynthetic):
+            note = Finalisation._VacuumOperationBiologicalNote
+        else:
+            malfunctionInterval = 1
+            for componentType in Finalisation._VacuumIncreaseComponents:
+                if context.hasComponent(
+                    componentType=componentType,
+                    sequence=sequence):
+                    malfunctionInterval = 2
+                    break
+
+            endurance = context.attributeValue(
+                attributeId=robots.RobotAttributeId.Endurance,
+                sequence=sequence)
+            if isinstance(endurance, common.ScalarCalculation) and endurance.value() > 0:
+                note = Finalisation._VacuumOperationWithEnduranceNote.format(
+                    halfEndurance=common.formatNumber(endurance.value() / 2),
+                    interval=common.formatNumber(malfunctionInterval))
+            else:
+                note = Finalisation._VacuumOperationNoEnduranceNote.format(
+                    interval=common.formatNumber(malfunctionInterval))
+
+        step = robots.RobotStep(
+            name='Vacuum',
+            type='Environment')
+        step.addNote(note=note)
+        context.applyStep(
+            sequence=sequence,
+            step=step)  
 
     def _createSynthBrainStep(
             self,

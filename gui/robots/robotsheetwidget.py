@@ -111,9 +111,13 @@ class RobotSheetWidget(QtWidgets.QWidget):
         for field, headerColumn, headerRow, dataColumn, dataRow, dataSpan in RobotSheetWidget._LayoutData:
             if dataSpan:
                 self._table.setSpan(dataRow, dataColumn, 1, RobotSheetWidget._ColumnCount - dataColumn)
+
             item = RobotSheetWidget._createHeaderItem(field)
+            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
             self._table.setItem(headerRow, headerColumn, item)
+
             item = RobotSheetWidget._createDataItem(field)
+            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
             self._table.setItem(dataRow, dataColumn, item)
             self._dataItemMap[field] = item
 
