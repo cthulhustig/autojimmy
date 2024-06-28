@@ -3446,7 +3446,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
     _LowBerthSlots = common.ScalarCalculation(
         value=8,
         name='Medical Chamber Low berth Addon Required Slots') 
-    _CryoBerthNote = 'Requires a low berth survival check when a patient enters and exits cryogenic hibernation. Medic checks during the freezing and revival process are made at {modifier}. (p47)'
+    _CryoberthNote = 'Requires a low berth survival check when a patient enters and exits cryogenic hibernation. Medic checks during the freezing and revival process are made at {modifier}. (p47)'
     _BasicLowBerthNote = 'Requires a low berth survival check when a patient exits hibernation. (p47)'
     _ImprovedLowBerthNote = 'Requires a low berth survival check when a patient exits hibernation. Medic checks during the revival process are made at DM+1. (p47)'
     _ReanimationSkillNote = 'Reanimation requires a Difficult (10+) Medic check and takes 1D x 10 minutes. (p47)'
@@ -3526,13 +3526,13 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             choices=_PredefinedSpecies,
             description=_MedicalChamberSlotOptionImpl._PrimarySpeciesOptionDesc)
         
-        self._cryoBerthOption = construction.EnumOption(
-            id='CryoBerth',
-            name='Cryo Berth',
+        self._cryoberthOption = construction.EnumOption(
+            id='Cryoberth',
+            name='Cryoberth',
             type=_OptionLevel,
             value=None,
             isOptional=True,
-            description='Add a Cryo Berth to the Medical Chamber')
+            description='Add a Cryoberth to the Medical Chamber')
         
         self._lowBerthOption = construction.EnumOption(
             id='LowBerth',
@@ -3596,8 +3596,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         options.append(self._slotsOption)
         options.append(self._primarySpeciesOption)
 
-        if self._cryoBerthOption.isEnabled():
-            options.append(self._cryoBerthOption)
+        if self._cryoberthOption.isEnabled():
+            options.append(self._cryoberthOption)
         
         if self._lowBerthOption.isEnabled():
             options.append(self._lowBerthOption)
@@ -3632,8 +3632,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             if robotTL >= minTL:
                 berthOptions.append(berthType)
 
-        self._cryoBerthOption.setEnabled(not not berthOptions)
-        self._cryoBerthOption.setChoices(choices=berthOptions)
+        self._cryoberthOption.setEnabled(not not berthOptions)
+        self._cryoberthOption.setChoices(choices=berthOptions)
 
         self._lowBerthOption.setEnabled(not not berthOptions)
         self._lowBerthOption.setChoices(choices=berthOptions)
@@ -3674,8 +3674,8 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             context=context,
             typeString=typeString)
         
-        if self._cryoBerthOption.isEnabled() and \
-                self._cryoBerthOption.value() != None:
+        if self._cryoberthOption.isEnabled() and \
+                self._cryoberthOption.value() != None:
             self._createCryoberthStep(
                 sequence=sequence,
                 context=context,
@@ -3742,7 +3742,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
             context: robots.RobotContext,
             typeString: str
             ) -> None:
-        optionType = self._cryoBerthOption.value()
+        optionType = self._cryoberthOption.value()
         assert(isinstance(optionType, _OptionLevel))
 
         step = robots.RobotStep(
@@ -3753,7 +3753,7 @@ class _MedicalChamberSlotOptionImpl(_SlotOptionImpl):
         step.setSlots(slots=construction.ConstantModifier(
             value=_MedicalChamberSlotOptionImpl._CryoberthSlots))
         
-        step.addNote(_MedicalChamberSlotOptionImpl._CryoBerthNote.format(
+        step.addNote(_MedicalChamberSlotOptionImpl._CryoberthNote.format(
             modifier='DM-1' if optionType == _OptionLevel.Improved else 'DM-2'))
                             
         context.applyStep(
@@ -6201,8 +6201,6 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         
         step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
 
-# TODO: Cutting torch is next up for test
-
 class _CuttingTorchSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
     - <ALL>
@@ -6227,19 +6225,19 @@ class _CuttingTorchSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _MinTLMap = {
         _OptionLevel.Basic: 5,
         _OptionLevel.Improved: 9,
-        _OptionLevel.Enhanced: 13
+        _OptionLevel.Advanced: 13
     }
 
     # Data Structure: Cost, Slots
     _DataMap = {
         _OptionLevel.Basic: (500, 2),
         _OptionLevel.Improved: (5000, 2),
-        _OptionLevel.Enhanced: (5000, 1)
+        _OptionLevel.Advanced: (5000, 1)
     } 
 
-    _BasicNote = 'Can cut through metal but not crystaliron or superdense alloys.'
-    _BetterNote = 'Can cut through nearly all materials, but can take a long time to breach hull armour.'
-    _WeaponNote = 'Can be used as a weapon doing 3D damage with AP 4.'
+    _BasicNote = 'Can cut through metal but not crystaliron or superdense alloys. (p58)'
+    _BetterNote = 'Can cut through nearly all materials, but can take a long time to breach hull armour. (p58)'
+    _WeaponNote = 'Can be used as a weapon doing 3D damage with AP 4. (p58)'
 
     def __init__(
             self,
@@ -6344,8 +6342,8 @@ class _ElectronicsToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         value=1,
         name='Electronics Toolkit Required Slots')
 
-    _MaxSkillNote = 'Electronics skills are limited to {max} when using the toolkit'
-    _MaxTLNote = 'In general the toolkit only allows a positive DM to repair attempts on equipment with a TL less than or equal to {techlevel}.'
+    _MaxSkillNote = 'Electronics skills are limited to {max} when using the toolkit. (p58)'
+    _MaxTLNote = 'The toolkit only gives a positive DM when working on equipment with a TL {techLevel} or less. (p58)'
 
     def __init__(
             self,
@@ -6393,7 +6391,7 @@ class _ElectronicsToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.addNote(_ElectronicsToolkitSlotOptionImpl._MaxSkillNote.format(
             max=maxSkill))
         step.addNote(_ElectronicsToolkitSlotOptionImpl._MaxTLNote.format(
-            techlevel=minTL))
+            techLevel=minTL))
 
 class _FireExtinguisherSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
@@ -6416,8 +6414,8 @@ class _FireExtinguisherSlotOptionImpl(_SingleStepSlotOptionImpl):
             constantCost=100,
             constantSlots=1,
             notes=[
-                'Can extinguish most chemical and electrical fires.',
-                'If used to assist a Traveller or NPC who has been set on fire, damage is reduced by half in the first round and all damage in subsequent rounds'],
+                'Can extinguish most chemical and electrical fires. (p59)',
+                'If used to extinguish a Traveller or NPC who has been set on fire, damage is halved in the first round and eliminated completely in subsequent rounds. (p59)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:
@@ -6448,7 +6446,7 @@ class _ForensicToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
 
     _MinTLMap = {
-        _OptionLevel.Basic: 9,
+        _OptionLevel.Basic: 8,
         _OptionLevel.Improved: 10,
         _OptionLevel.Enhanced: 12,
         _OptionLevel.Advanced: 14
@@ -6462,7 +6460,7 @@ class _ForensicToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (10000, 3, 3)
     }
 
-    _MaxSkillNote = 'Science skills are limited to {max} when using the toolkit'
+    _MaxSkillNote = 'Science skills are limited to {max} when using the toolkit. (p59)'
 
     def __init__(
             self,
@@ -6534,19 +6532,19 @@ class _MechanicalToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _MinTLMap = {
         _OptionLevel.Basic: 4,
         _OptionLevel.Improved: 8,
-        _OptionLevel.Enhanced: 12
+        _OptionLevel.Advanced: 12
     }
 
     # Data Structure: Cost, Slots
     _DataMap = {
         _OptionLevel.Basic: (1000, 6),
         _OptionLevel.Improved: (2000, 4),
-        _OptionLevel.Enhanced: (4000, 2)
+        _OptionLevel.Advanced: (4000, 2)
     }
 
     _AdditionalTL = 2
 
-    _MaxTLNote = 'Repair attempts suffer a DM-2 if the equipment being repaired is TL {techlevel} or higher.'
+    _MaxTLNote = 'Repair attempts suffer a DM-2 if the equipment being repaired is TL {techLevel} or higher. (p59)'
 
     def __init__(
             self,
@@ -6595,9 +6593,8 @@ class _MechanicalToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
 
-        maxTL = min(robotTL, minTL) + 2
         step.addNote(_MechanicalToolkitSlotOptionImpl._MaxTLNote.format(
-            techlevel=maxTL))
+            techLevel=max(robotTL, minTL) + 3))
         
 class _ScientificToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -6782,7 +6779,7 @@ class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (10000, 4, 3)
     }
 
-    _MaxSkillNote = 'Electronics, Engineering and Mechanic skills are limited to {max} when using the toolkit'
+    _MaxSkillNote = 'Electronics, Engineering and Mechanic skills are limited to {max} when using the toolkit. (p60)'
 
     def __init__(
             self,
@@ -6848,10 +6845,10 @@ class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
     multiple species
     """
 
-    _ReplenishingNote = 'Replenishing the toolkit with product has a base cost of Cr500 but this doubles for every point past SOC 8 the product is intended for.'
-    _ProfessionNote = 'A positive Effect of a Profession (Stylist) check can increase the effective SOC of the product by the Effect.'
-    _SpeciesNote = 'Using the toolkit on a species other than {species} gives a DM-3 or more modifier.'
-    _NoSpeciesSpecifiedNote = 'WARNING: The species the toolkit is designed for has not been specified'
+    _ReplenishingNote = 'The robot holds enough product for 10 full styling sessions. Replenishing the toolkit with product has a base cost of Cr500, but this doubles for every point past SOC 8 the product is intended for. (p60)'
+    _ProfessionNote = 'A Profession (Stylist) check can be made to increase the effective SOC of the product, with the SOC being increased by the Effect of the roll. (p60)'
+    _SpeciesNote = 'Using the toolkit on a species other than {species} gives a DM-3 or more modifier. (p60)'
+    _NoSpeciesSpecifiedNote = 'WARNING: The species the toolkit is designed for has not been specified.'
 
     def __init__(
             self,
