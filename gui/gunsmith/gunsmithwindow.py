@@ -265,7 +265,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
         version = stream.readQString()
         if version != _WeaponManagerWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore _WeaponManagementWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore _WeaponManagerWidget state (Incorrect version)')
             return False
 
         self._importExportPath = stream.readQString()
@@ -491,10 +491,17 @@ class GunsmithWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='WeaponConfigurationState',
+            key='ConfigurationState',
             type=QtCore.QByteArray)
         if storedValue:
             self._configurationWidget.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ConfigurationScrollAreaState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._configurationScrollArea.restoreState(storedValue)            
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -519,7 +526,8 @@ class GunsmithWindow(gui.WindowWidget):
         self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
         self._settings.setValue('WeaponManagementWidgetState', self._weaponManagementWidget.saveState())
         self._settings.setValue('CurrentWeaponDisplayModeState', self._currentWeaponDisplayModeTabView.saveState())
-        self._settings.setValue('WeaponConfigurationState', self._configurationWidget.saveState())
+        self._settings.setValue('ConfigurationState', self._configurationWidget.saveState())
+        self._settings.setValue('ConfigurationScrollAreaState', self._configurationScrollArea.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('WeaponInfoState', self._weaponInfoWidget.saveState())
 
@@ -562,9 +570,9 @@ class GunsmithWindow(gui.WindowWidget):
         wrapperWidget = QtWidgets.QWidget()
         wrapperWidget.setLayout(spacerLayout)
 
-        scrollArea = QtWidgets.QScrollArea()
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setWidget(wrapperWidget)
+        self._configurationScrollArea = gui.ScrollAreaEx()
+        self._configurationScrollArea.setWidgetResizable(True)
+        self._configurationScrollArea.setWidget(wrapperWidget)
 
         # Use a plain text edit for the notes as we don't want the advanced stuff (tables etc)
         # supported by QTextEdit. This text could end up in the notes section of a pdf so
@@ -575,7 +583,7 @@ class GunsmithWindow(gui.WindowWidget):
 
         self._currentWeaponDisplayModeTabView = gui.TabWidgetEx()
         self._currentWeaponDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
-        self._currentWeaponDisplayModeTabView.addTab(scrollArea, 'Configuration')
+        self._currentWeaponDisplayModeTabView.addTab(self._configurationScrollArea, 'Configuration')
         self._currentWeaponDisplayModeTabView.addTab(self._userNotesTextEdit, 'User Notes')
 
         layout = QtWidgets.QVBoxLayout()

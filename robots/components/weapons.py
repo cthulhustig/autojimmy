@@ -253,7 +253,7 @@ class _WeaponImpl(object):
         value=1,
         name='Fire Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait. (p60)'
-    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the fire control system\'s Weapon Skill DM of {modifier} instead of the robot\'s {skill} skill. Note that this just in place of the skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
+    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the fire control system\'s Weapon Skill DM of {modifier} instead of the robot\'s {skill} skill. Note that this is only in place of the skill (p60 and clarified by Geir Lanesskog, Robot Handbook author)'
     _FireControlLaserDesignatorComponents = [
         robots.LaserDesignatorDefaultSuiteOption,
         robots.LaserDesignatorSlotOption]
@@ -489,33 +489,44 @@ class _WeaponImpl(object):
         if weaponCost and weaponCost.value() > 0:
             step.setCredits(credits=construction.ConstantModifier(value=weaponCost))
 
-        damage = weaponData.damage()
-        if damage:
+        weaponDamage = weaponData.damage()
+        if weaponDamage:
             step.addFactor(factor=construction.StringFactor(
-                string=f'Weapon Base Damage = {damage}'))
+                string=f'Weapon Base Damage = {weaponDamage}'))
+            
+        weaponRange = weaponData.range()
+        if weaponRange:
+            step.addFactor(factor=construction.StringFactor(
+                string=f'Weapon Range = {weaponRange}m'))        
 
-        traits = weaponData.traits()
-        if traits:
+        weaponTraits = weaponData.traits()
+        if weaponTraits:
             step.addFactor(factor=construction.StringFactor(
-                string=f'Weapon Traits = {traits}'))
+                string=f'Weapon Traits = {weaponTraits}'))
+            
+        magazineCapacity = weaponData.magazineCapacity()
+        magazineCost = weaponData.magazineCost()
 
         skill = weaponData.skill()
-        skillName = skill.name(speciality=weaponData.specialty())        
-        note = f'The weapon uses the {skillName} skill'
-        if damage and traits:
-            note += f', does a base {damage} damage and has the {traits} trait(s)'
-        elif damage:
-            note += f' and does a base {damage} damage'
-        elif traits:
-            note += f' and has the {traits} traits'
-        note += '.'
-        step.addNote(note)
+        skillName = skill.name(speciality=weaponData.specialty())
+        weaponStats = [f'Skill: {skillName}']
+        if weaponDamage:
+            weaponStats.append(f'Damage: {weaponDamage}')
+        if weaponRange:
+            weaponStats.append(f'Range: {weaponRange}m')
+        if weaponTraits:
+            weaponStats.append(f'Traits: {weaponTraits}')
+        if magazineCapacity:
+            weaponStats.append(f'Magazine Capacity: {magazineCapacity}')    
+        if magazineCost:
+            weaponStats.append(f'Magazine Cost: Cr{magazineCost}')        
+        step.addNote(note='\n'.join(weaponStats))
 
         linkedGroupSize = self.linkedGroupSize()
         if linkedGroupSize:
             damageDieCount = None
-            if damage:
-                damageRoll = common.DiceRoll.fromString(damage)
+            if weaponDamage:
+                damageRoll = common.DiceRoll.fromString(weaponDamage)
                 if damageRoll:
                     damageDieCount = damageRoll.dieCount()
 
@@ -526,10 +537,7 @@ class _WeaponImpl(object):
             else:
                 step.addNote(note=_WeaponImpl._MultiLinkAttackUnknownDiceNote.format(
                     count=linkedGroupSize.value(),
-                    modifier=linkedGroupSize.value() - 1))  
-
-        if weaponData.magazineCost():
-            step.addNote(f'A magazine for the weapon costs Cr{weaponData.magazineCost()}')
+                    modifier=linkedGroupSize.value() - 1))
 
         return step
     
@@ -662,7 +670,11 @@ class _WeaponImpl(object):
         fireControlCost = common.ScalarCalculation(
             value=fireControlCost,
             name=f'{fireControl.value} Fire Control System Cost')
-        step.setCredits(credits=construction.ConstantModifier(value=fireControlCost))
+        step.setCredits(credits=construction.ConstantModifier(
+            value=fireControlCost))
+
+        step.setSlots(slots=construction.ConstantModifier(
+            value=_WeaponImpl._FireControlRequiredSlots))
         
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if weaponData:

@@ -236,7 +236,7 @@ class RadioButtonEx(QtWidgets.QRadioButton):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(CheckBoxEx._StateVersion)
+        stream.writeQString(RadioButtonEx._StateVersion)
         stream.writeBool(self.isChecked())
         return state
 
@@ -246,7 +246,7 @@ class RadioButtonEx(QtWidgets.QRadioButton):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != CheckBoxEx._StateVersion:
+        if version != RadioButtonEx._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore RadioButtonEx state (Incorrect version)')
             return False
@@ -306,7 +306,7 @@ class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(SpinBoxEx._StateVersion)
+        stream.writeQString(DoubleSpinBoxEx._StateVersion)
         stream.writeDouble(self.value())
         return state
 
@@ -316,7 +316,7 @@ class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != SpinBoxEx._StateVersion:
+        if version != DoubleSpinBoxEx._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore DoubleSpinBoxEx state (Incorrect version)')
             return False
@@ -935,6 +935,46 @@ class ComboBoxEx(QtWidgets.QComboBox):
         self.delayedUserEdited.emit(self.currentText())
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
+    _StateVersion = 'ScrollAreaEx_v1'
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(ScrollAreaEx._StateVersion)
+
+        scrollBar = self.horizontalScrollBar()
+        stream.writeInt(scrollBar.value() if scrollBar else 0)
+
+        scrollBar = self.verticalScrollBar()
+        stream.writeInt(scrollBar.value() if scrollBar else 0)
+
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != ScrollAreaEx._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore ScrollAreaEx state (Incorrect version)')
+            return False
+
+        scrollBar = self.horizontalScrollBar()
+        if scrollBar:
+            scrollBar.setValue(stream.readInt())
+
+        scrollBar = self.verticalScrollBar()
+        if scrollBar:
+            scrollBar.setValue(stream.readInt())
+
+        return True        
+
+# NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
+# doesn't make logical sense to save scrollbar state for an auto
+# scrolling widget.
+class AutoScrollArea(QtWidgets.QScrollArea):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None

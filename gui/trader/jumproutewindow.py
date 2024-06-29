@@ -334,7 +334,7 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
         version = stream.readQString()
         if version != _StartFinishWorldsSelectWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore _StartFinishWorldSelectWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore _StartFinishWorldsSelectWidget state (Incorrect version)')
             return False
 
         count = stream.readUInt32()

@@ -285,7 +285,7 @@ class TradeGoodTable(gui.ListTable):
         version = stream.readQString()
         if version != TradeGoodTable._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore NearbyWorldWindow TradeGoodTable state (Incorrect version)')
+            logging.debug(f'Failed to restore TradeGoodTable state (Incorrect version)')
             return False
 
         count = stream.readUInt32()
