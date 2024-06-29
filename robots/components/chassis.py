@@ -40,8 +40,6 @@ class Chassis(robots.RobotComponentInterface):
     # - You can't get a Locomotion < TL5, even the 'None' locomotion has a Min
     # TL of 5 in the table on p16
     # - You can't get a Brain < TL7
-    # TODO: I should set a min value on the TL control to prevent it going below this.
-    # Either that or I need to have it so ALL components go away when it drops to low
     _MinTechLevel = 7
 
     def __init__(

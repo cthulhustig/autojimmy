@@ -188,9 +188,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
         for phaseWidget in self._phaseWidgets.values():
             phaseWidget.stageChanged.disconnect(self._stageChanged)
             phaseWidget.expansionChanged.disconnect(self._expansionChanged)
-            # TODO: Check this ordering is correct, shouldn't teardown come after removal from the config widget?
-            # This would also apply to the gunsmith as this ordering was copied (and then flattened) from the
-            # equivalent implementation there
+
             phaseWidget.teardown()
             self._configurationWidget.removeContent(content=phaseWidget)
             phaseWidget.setParent(None)

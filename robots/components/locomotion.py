@@ -436,7 +436,7 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             baseEndurance=12,
             costMultiplier=12,
             notes=None, # Notes handled locally
-            isNatural=True) # TODO: It seems odd this is considered natural
+            isNatural=True)
         
     def updateStep(
             self,
@@ -494,7 +494,7 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
             baseAgility=+0,
             baseEndurance=24,
             costMultiplier=14,
-            isNatural=True, # TODO: It seems odd this is considered natural
+            isNatural=True,
             notes=[
                 'Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17)',
                 'Requires a secondary locomotion type to move across the ground. (p17)'])

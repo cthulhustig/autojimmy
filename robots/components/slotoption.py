@@ -680,9 +680,6 @@ class _ReflectArmourSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     # NOTE: The compatibility requirements are handled by the component rather
     # than the impl
-    # TODO: The book says Protection +10 but I think it should say Armour +10 as
-    # that's what it translates to and it's Armour that gets shown to the user
-    # in the worksheet
 
     def __init__(
             self,
@@ -852,8 +849,6 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         - Cost: Cr50000 * Base Slots 
         - Requirement: Only compatible with biological robots (p34)
     """
-    # TODO: There component description (p34) has a load of stuff I
-    # could add as notes
 
     _StandardMinTL = common.ScalarCalculation(
         value=7,

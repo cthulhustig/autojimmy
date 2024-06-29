@@ -569,11 +569,6 @@ class Robot(construction.ConstructableInterface):
     # (p26). I'm currently handling it with a note but it would be good if I
     # could somehow show it in the actual skill like the book. As usual ambiguities
     # with multiple manipulators apply  
-    # TODO: Should I add Agility to the worksheet? It's not included in the one in
-    # the book but I'm not sure if it's something the user needs to know. It depends
-    # if it's used for anything other than a Speed modifier. If it's only used for
-    # that then I don't need to include it as construction already applies the
-    # agility modifier to the robot's Speed attribute  
     def worksheet(
             self,
             applySkillModifiers: bool
@@ -625,9 +620,9 @@ class Robot(construction.ConstructableInterface):
                         suffix='m')
                     calculations.append(attributeValue)
 
-                    # TODO: This doesn't match with the book. Finalisations says to
-                    # use a '-' if the robot has VSM. This makes me think robots
-                    # with VSM can't move at their non-VSM speed but that seems weird
+                    # NOTE: Finalisation (p76) says to use a '-' if the robot
+                    # has VSM. This would suggest that a robot with VSM can only
+                    # move at VSM speeds but that seems odd.
                     attributeValue = self.attributeValue(
                         attributeId=robots.RobotAttributeId.VehicleSpeed)
                     if isinstance(attributeValue, robots.SpeedBand):
