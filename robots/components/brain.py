@@ -237,16 +237,22 @@ class RobotBrain(Brain):
             _BandwidthUpgrade.AdvancedPlus3,
             _BandwidthUpgrade.AdvancedPlus4,            
             _BandwidthUpgrade.VeryAdvancedPlus6,
-            _BandwidthUpgrade.VeryAdvancedPlus8,            
+            _BandwidthUpgrade.VeryAdvancedPlus8,
             _BandwidthUpgrade.SelfAwarePlus10,
             _BandwidthUpgrade.SelfAwarePlus15,
             _BandwidthUpgrade.SelfAwarePlus20,
-            _BandwidthUpgrade.SelfAwarePlus25,            
+            _BandwidthUpgrade.SelfAwarePlus25,
             _BandwidthUpgrade.ConsciousPlus30,
             _BandwidthUpgrade.ConsciousPlus40,
             _BandwidthUpgrade.ConsciousPlus50
         ]
     }
+
+    _RetrotechCompatibleBrains = [
+        Brain._BrainType.VeryAdvanced,
+        Brain._BrainType.SelfAware,
+        Brain._BrainType.Conscious
+    ]
 
     _BandwidthUpgradeSlots = common.ScalarCalculation(
         value=1,
@@ -463,14 +469,16 @@ class RobotBrain(Brain):
             step.setSlots(slots=construction.ConstantModifier(
                 value=RobotBrain._HighRelativeBrainSizeSlotCost))
         
-        # A brains cost drops by 50% for every TL after it was introduced
+        # The cost of brains of Very Advanced construction or later drops by
+        # 50% for every TL after it was introduced
         cost = self._cost
-        for index in range(deltaTL.value()):
-            iterTL = self._minTL.value() + index + 1
-            cost = common.Calculator.multiply(
-                lhs=cost,
-                rhs=RobotBrain._RetrotechPerTLCostScale,
-                name=f'{self.componentString()} Cost For TL{iterTL} Robot')
+        if self._brainType in RobotBrain._RetrotechCompatibleBrains:
+            for index in range(deltaTL.value()):
+                iterTL = self._minTL.value() + index + 1
+                cost = common.Calculator.multiply(
+                    lhs=cost,
+                    rhs=RobotBrain._RetrotechPerTLCostScale,
+                    name=f'Retrotech {self.componentString()} Cost at TL{iterTL}')
         if self._isHardened():
             cost = common.Calculator.applyPercentage(
                 value=cost,
@@ -631,7 +639,7 @@ class PrimitiveBrain(RobotBrain):
             cost=cost,
             intelligence=1,
             inherentBandwidth=0,
-            notes=['Programmable'])
+            notes=['Programmable, Computer/0. (p66)'])
         
 class PrimitiveTL7Brain(PrimitiveBrain):
     """
@@ -683,7 +691,7 @@ class BasicBrain(RobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Language, Computer/1, Security/0. (p66)'])
+            notes=['Limited Language, Security/0, Computer/1. (p66)'])
                 
 class BasicTL8Brain(BasicBrain):
     """
@@ -738,7 +746,7 @@ class HunterKillerBrain(RobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=1,
-            notes=['Limited Fried or Foe, Computer/1, Security/1. (p66)'])
+            notes=['Limited Fried or Foe, Security/1, Computer/1. (p66)'])
                 
 class HunterKillerTL8Brain(HunterKillerBrain):
     """
@@ -812,7 +820,7 @@ class AdvancedBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=2,
-            notes=['Intelligent Interface, Computer/2, Expert/1, Security/1. (p66)',
+            notes=['Intelligent Interface, Expert/1, Security/1, Computer/2. (p66)',
                    'The robot can only attempt tasks up to Difficult (10+). (p65)'])
                 
 class AdvancedTL10Brain(AdvancedBrain):
@@ -882,7 +890,7 @@ class VeryAdvancedBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=[f'Intellect Interface, Computer/{inherentBandwidth}, Expert/2, Security/2. (p66)',
+            notes=[f'Intellect Interface, Expert/2, Security/2, Computer/{inherentBandwidth}. (p66)',
                    'The robot can only attempt tasks up to Very Difficult (12+). (p65)'])
                 
 class VeryAdvancedTL12Brain(VeryAdvancedBrain):
@@ -955,7 +963,7 @@ class SelfAwareBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=[f'Near sentient, Computer/{inherentBandwidth}, Expert/3, Security/3. (p66)',
+            notes=[f'Near sentient, Expert/3, Security/3, Computer/{inherentBandwidth}. (p66)',
                    'The robot can only attempt tasks up to Formidable (14+). (p65/66)'])
                 
 class SelfAwareTL15Brain(SelfAwareBrain):
@@ -1010,7 +1018,7 @@ class ConsciousBrain(SkilledRobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=[f'Conscious Intelligence, Computer/{inherentBandwidth}, Security/3'])
+            notes=[f'Conscious Intelligence, Security/3, Computer/{inherentBandwidth}. (p66)'])
                 
 class ConsciousTL17Brain(ConsciousBrain):
     """
@@ -1147,6 +1155,7 @@ class BrainInAJarBrain(Brain):
         step.setSlots(
             slots=construction.ConstantModifier(value=self._slots))
         
+        characteristicNotes = []
         for characteristic, option in self._characteristicOptions.items():
             if option.isEnabled() and option.value() != None:
                 step.addFactor(factor=construction.SetAttributeFactor(
@@ -1154,6 +1163,11 @@ class BrainInAJarBrain(Brain):
                     value=common.ScalarCalculation(
                         value=option.value(),
                         name=f'Specified {characteristic.value} characteristic value')))
+
+                characteristicNotes.append(f'{characteristic.value} {option.value()}')
+
+        if characteristicNotes:
+            step.addNote(note=', '.join(characteristicNotes))
 
         if self._notes:
             for note in self._notes:

@@ -51,7 +51,9 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
-        return True    
+        return context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return []

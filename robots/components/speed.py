@@ -33,6 +33,11 @@ class SpeedModification(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
+        if not context.hasComponent(
+            componentType=robots.Chassis,
+            sequence=sequence):
+            return False
+                
         # Not compatible with no primary locomotion
         locomotion = context.findFirstComponent(
             componentType=robots.NoPrimaryLocomotion,
