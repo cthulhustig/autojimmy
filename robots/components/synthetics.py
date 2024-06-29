@@ -3,6 +3,8 @@ import construction
 import robots
 import typing
 
+# TODO: Synthetics is the next thing to test
+
 class Synthetic(robots.RobotComponentInterface):
     """
     - Protection: 0 (p19 & p86)
@@ -161,7 +163,7 @@ class BasicAndroidSynthetic(AndroidSynthetic):
             componentString='Basic Android',
             minTL=8,
             perSlotCost=1000,
-            notes=['Barely emulating. DM-2 on all social interactions from the uncanny valley effect. (p87)'])
+            notes=['All social interaction receive a DM-2 due to the uncanny valley effect. (p87)'])
             
 class ImprovedAndroidSynthetic(AndroidSynthetic):
     """
@@ -175,7 +177,8 @@ class ImprovedAndroidSynthetic(AndroidSynthetic):
             componentString='Improved Android',
             minTL=10,
             perSlotCost=2000,
-            notes=['Natural-looking. Passes at a distance but triggers the uncanny valley DM-2 within 5 metres. (p87)']) 
+            notes=['Natural-looking. (p87)',
+                   'Social interactions with others within 5m of the robot receive a DM-2 due to the uncanny valley effect. (p87)']) 
 
 class EnhancedAndroidSynthetic(AndroidSynthetic):
     """
@@ -189,7 +192,8 @@ class EnhancedAndroidSynthetic(AndroidSynthetic):
             componentString='Enhanced Android',
             minTL=12,
             perSlotCost=5000,
-            notes=['Natural-looking; Invisitech. Passes in close interaction, but on a roll of a natural 2 the uncanny valley sets in. (p87)'])                
+            notes=['Natural-looking, Invisitech. (p87 & p93)',
+                   'On a roll of a natural 2 for a social interaction, the uncanny valley effect sets in and further rolls are at DM-2. (p87)'])
 
 class AdvancedAndroidSynthetic(AndroidSynthetic):
     """
@@ -204,12 +208,13 @@ class AdvancedAndroidSynthetic(AndroidSynthetic):
             componentString='Advanced Android',
             minTL=14,
             perSlotCost=10000,
-            notes=['Natural-looking; Invisitech; Self-repairing. Can pass as a biological being unless scanned. (p87)'])      
+            notes=['Natural-looking, Invisitech, Self-repairing. (p87 & p93)',
+                   'Scanning is required to distinguish the robot from the species it\'s designed to imitate. (p87)'])      
 
 class SuperiorAndroidSynthetic(AndroidSynthetic):
     """
     - Min TL: 16
-    - Cost: Cr1000 Per Slot
+    - Cost: Cr2000 Per Slot
     - Minimum Brain: Self-Aware
     - Note: Natural-looking; Invisitech; Self-repairing. Can pass even after
       most scans.
@@ -217,15 +222,15 @@ class SuperiorAndroidSynthetic(AndroidSynthetic):
     def __init__(self) -> None:
         super().__init__(
             componentString='Superior Android',
-            minTL=14,
-            perSlotCost=10000,
-            notes=['Natural-looking; Invisitech; Self-repairing. Can pass even after most scans. (p87)']) 
+            minTL=16,
+            perSlotCost=20000,
+            notes=['Natural-looking, Invisitech, Self-repairing. (p87 & p93)',
+                   'Most scanners are unable to distinguish the robot from the species it\'s designed to imitate. (p87)']) 
 
 class BioRobotSynthetic(Synthetic):
     """
     - Slots: 75% of Base Slots
-    - Note: All biological robots have 'Natural-looking' and 'Selfrepairing'
-      properties (p88)
+    - Note: Natural-looking, Self-repairing (p88)
     - Requirement: Locomotion is limited to natural forms of locomotion (p88)
     - Requirement: Standard Endurance doesn't apply to Biological Robots, they
       have to eat, drink & breath (p88)
@@ -242,6 +247,11 @@ class BioRobotSynthetic(Synthetic):
     # rely on Endurance will either be incompatible with BioRobots or able to
     # handle Endurance possibly not being set, which ever makes the most logical
     # sense for the component in question.
+    # NOTE: I've intentionally not included the note about biological robots
+    # needing to eat/drink/breath as it doesn't seem worth the clutter. I think
+    # it's pretty obvious that the robot needs to partake in whatever activities
+    # the species it's based on needs to in order to survive. What's not obvious
+    # is that would always include eat/drink/breath.
     # TODO: Handle body augments
 
     def __init__(
@@ -251,9 +261,9 @@ class BioRobotSynthetic(Synthetic):
             perSlotCost: int,
             notes: typing.Optional[typing.Iterable[str]]
             ) -> None:
-        newNotes = list(notes) if notes else []
-        newNotes.append('All biological robots have \'Natural-looking\' and \'Selfrepairing\' properties. (p88)')
-        newNotes.append('Standard Endurance doesn\'t apply to Biological Robots, they have to eat, drink & breath. (p88)')
+        newNotes = ['Natural-looking, Self-repairing. (p88 & p93)']
+        if notes:
+            newNotes.extend(notes)
         super().__init__(
             componentString=componentString,
             minTL=minTL,
@@ -308,7 +318,8 @@ class BasicBioRobotSynthetic(BioRobotSynthetic):
             componentString='Basic Bio-Robot',
             minTL=11,
             perSlotCost=2000,
-            notes=['DM-2 on all healing checks. Emissions from the electronic brain or interfaces are detectable by attuned scanners and by any psionic life detection. (p88)'])  
+            notes=['Only scanners and psionic life detection can differentiate the robot from the species it\'s designed to imitate. (p88)',
+                   'DM-2 on all healing checks. (p88)'])  
 
 class ImprovedBioRobotSynthetic(BioRobotSynthetic):
     """
@@ -322,7 +333,7 @@ class ImprovedBioRobotSynthetic(BioRobotSynthetic):
             componentString='Improved Bio-Robot',
             minTL=13,
             perSlotCost=5000,
-            notes=['Treat detection of an artificial brain as DM-2 on any scanner check, including psionic life detection. (p88) '])
+            notes=['Only scanners and psionic life detection can differentiate the robot from the species it\'s designed to imitate, and they do so at DM-2. (p88) '])
 
 class EnhancedBioRobotSynthetic(BioRobotSynthetic):
     """
@@ -336,18 +347,20 @@ class EnhancedBioRobotSynthetic(BioRobotSynthetic):
             componentString='Enhanced Bio-Robot',
             minTL=15,
             perSlotCost=10000,
-            notes=['DM+2 on all healing checks. DM-4 on any scanner check, including psionic life detection. (p88)'])
+            notes=['Only scanners and psionic life detection can differentiate the robot from the species it\'s designed to imitate, and they do so at DM-4. (p88)',
+                   'DM+2 on all healing checks. (p88)'])
 
 class AdvancedBioRobotSynthetic(BioRobotSynthetic):
     """
     - Min TL: 17
     - Cost: Cr20000
     - Minimum Brain: Self-Aware
-    - Note: DM+4 on all healing checks. Undisguisable from a fully biological being, even psionically. (p88)    
+    - Note: DM+4 on all healing checks. Indistinguishable from a fully biological being, even psionically. (p88)    
     """
     def __init__(self) -> None:
         super().__init__(
             componentString='Advanced Bio-Robot',
             minTL=17,
             perSlotCost=20000,
-            notes=['DM+4 on all healing checks. Undisguisable from a fully biological being, even psionically. (p88)'])    
+            notes=['The robot is biologically indistinguishable from the species it\'s designed to imitate, even psionically. (p88)',
+                   'DM+4 on all healing checks. (p88)'])    

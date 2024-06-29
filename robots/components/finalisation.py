@@ -557,7 +557,7 @@ class Finalisation(robots.RobotComponentInterface):
             "Self-Aware",
             [robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
     }
-    _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t trigger the uncanny valley effect in lifeforms it interacts with. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
+    _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} brain or better to be lifelike enough that it doesn\'t trigger the uncanny valley effect during social interactions. Without it, the robot suffers DM-2 in all such interactions. (p86/88)'
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it\'s inoperable and cannot be easily repaired. If the robot sustains {doubleHits} cumulative damage, the robot is destroyed and can\'t be repaired. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed. (p108)'
@@ -578,7 +578,7 @@ class Finalisation(robots.RobotComponentInterface):
 
     _VacuumOperationWithEnduranceNote = 'When operating in a vacuum, the robot\'s Endurance is halved to {halfEndurance} hour(s) and it must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
     _VacuumOperationNoEnduranceNote = 'When operating in a vacuum, the robot must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
-    _VacuumOperationBiologicalNote = 'When operating in a vacuum, biological robots suffer all the same effects as their template lifeform would. (p34)'
+    _VacuumOperationBiologicalNote = 'When operating in a vacuum, the robot suffers all the same effects as the species it\'s designed to imitate. (p34)'
     _VacuumProtectionComponents = [
         robots.VacuumEnvironmentProtectionDefaultSuiteOption,
         robots.VacuumEnvironmentProtectionSlotOption
