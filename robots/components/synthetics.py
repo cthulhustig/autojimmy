@@ -3,8 +3,6 @@ import construction
 import robots
 import typing
 
-# TODO: Synthetics is the next thing to test
-
 class Synthetic(robots.RobotComponentInterface):
     """
     - Protection: 0 (p19 & p86)

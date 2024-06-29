@@ -731,9 +731,6 @@ class ConstructionContext(object):
             componentTypes = common.getSubclasses(
                 classType=stage.baseType(),
                 topLevelOnly=True)
-            # TODO: This change needs a lot of testing. I think it should be
-            # safe as it will only come into play if there was a stage where
-            # prior to the change there were never any compatible components.
             if not componentTypes:
                 # The stage base type has no subclasses. This is expected for
                 # stages that only ever have one compatible component type (that

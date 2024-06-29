@@ -60,7 +60,6 @@ class SkillDefinition(object):
     # comparisons with the static class instances below. I could add an
     # equality operator but, due to the fact the data its self is static, it
     # seems better to do this
-    # TODO: I'm not sure about this change
     def __deepcopy__(self, memo: typing.Dict) -> 'SkillDefinition':
         return self    
 
