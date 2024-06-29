@@ -120,7 +120,7 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
             name='Unused Slots')
     
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
-        raise RuntimeError(f'{type(self)} is derived from ActualUnusedSlotRemoval so must implement _slotCount')    
+        raise RuntimeError(f'{type(self)} is derived from UnusedSlotRemoval so must implement _slotCount')    
 
 class AllSlotRemoval(UnusedSlotRemoval):
     def __init__(self) -> None:
@@ -559,22 +559,22 @@ class Finalisation(robots.RobotComponentInterface):
     }
     _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} or better brain to be lifelike enough that it doesn\'t trigger the uncanny valley effect in lifeforms it interacts with. Without it the robot suffers DM-2 to all social interactions. (p86/88)'
 
-    _InoperableNote = 'When a robot\'s Hits reach 0, it is inoperable and considered wrecked, or at least cannot be easily repaired; at a cumulative damage of {doubleHits} the robot is irreparably destroyed. (p13)'
+    _InoperableNote = 'When a robot\'s Hits reach 0, it\'s inoperable and cannot be easily repaired. If the robot sustains {doubleHits} cumulative damage, the robot is destroyed and can\'t be repaired. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed. (p108)'
     
-    _AutopilotNote = 'The modifiers for the robot\'s Autopilot rating and its vehicle operating skills don\'t stack, the higher of the values should be used.'
+    _AutopilotNote = 'The DM for the robot\'s Autopilot rating and its vehicle skills don\'t stack, the higher of the two values should be used. (p49)'
 
-    _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator, receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatNonManipulatorCharacteristicsNote = 'Attack rolls for weapons _not_ mounted to or held by a manipulator, do not receive a STR/DEX characteristic DM (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to use weapons effectively. Attacks rolls do not get the manipulators DEX or STR bonus. (p61)'
-    _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can use {examples}. If weapons larger than this are used, attack rolls do not get the manipulators STR or DEX bonus. (p61)'
+    _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatNonManipulatorCharacteristicsNote = 'Attack rolls for weapons not mounted to or held by a manipulator do not receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to hold weapons and use them effectively. Attacks rolls do not get the manipulators DEX or STR bonus. (p61)'
+    _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can hold and effectively use {examples}. If weapons larger than this are being held, attack rolls do not get the manipulators STR or DEX bonus. (p61)'
     _CombatWeaponSizeExamples = {
         traveller.WeaponSize.Small: 'melee weapon useable with one hand, any pistol or equivalent single-handed ranged weapon, or an explosive charge or grenade of less than three kilograms',
         traveller.WeaponSize.Medium: 'any larger weapon usable by Melee or Gun Combat skills or an explosive of up to six kilograms',
         traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
     }
 
-    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel} they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware (clarified by Geir Lanesskog, Robot Handbook author)'
+    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel}, they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware. (clarified by Geir Lanesskog, Robot Handbook author)'
 
     _VacuumOperationWithEnduranceNote = 'When operating in a vacuum, the robot\'s Endurance is halved to {halfEndurance} hour(s) and it must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
     _VacuumOperationNoEnduranceNote = 'When operating in a vacuum, the robot must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
@@ -588,7 +588,7 @@ class Finalisation(robots.RobotComponentInterface):
         robots.HostileEnvironmentProtectionSlotOption
     ]
  
-    _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (sensors) 0 skill required to operate its {component}'
+    _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (Sensors) 0 skill required to operate its {component}'
 
     def componentString(self) -> str:
         return 'Finalisation'
@@ -691,16 +691,17 @@ class Finalisation(robots.RobotComponentInterface):
             elif trait == robots.RobotAttributeId.ATV:
                 notes.append('DM+2 to checks made to negotiate rough terrain. (p17)')
             elif trait == robots.RobotAttributeId.Hardened:
-                notes.append('The robot\'s brain is immune to ion weapons.')
-                notes.append('Radiation damage inflicted on the robot is halved.')
+                notes.append('The robot\'s brain is immune to ion weapons. (p8)')
+                notes.append('Radiation damage inflicted on the robot is halved. (p8 & p106)')
+                notes.append('The effects of critical hits against the robot\'s brain are negated. (p106)')
             elif trait == robots.RobotAttributeId.HeightenedSenses:
-                notes.append('DM+1 to Recon and Survival Checks.')
+                notes.append('DM+1 to Recon and Survival Checks. (p8)')
             elif trait == robots.RobotAttributeId.Invisible:
-                notes.append('DM-4 to checks to see the robot. This applies across the electromagnetic spectrum.')
+                notes.append('DM-4 to checks to see the robot. This applies across the electromagnetic spectrum. (p8)')
             elif trait == robots.RobotAttributeId.IrVision:
-                notes.append('The robot can sense its environment in the visual and infrared spectrum, allowing it to see heat sources without visible light.')
+                notes.append('The robot can see heat sources without the need for visible light. (p8)')
             elif trait == robots.RobotAttributeId.IrUvVision:
-                notes.append('The robot can sense its environment in a greatly extended electromagnetic range. It can see clearly without the need for visible light and, at the Referee\'s discretion, it may see electromagnetic emissions from equipment.')
+                notes.append('The robot can see clearly without the need for visible light. At the Referee\'s discretion, it may also be able see electromagnetic emissions from equipment. (p8)')
             elif trait == robots.RobotAttributeId.Seafarer:
                 pass
             elif trait == robots.RobotAttributeId.Large:
@@ -709,22 +710,22 @@ class Finalisation(robots.RobotComponentInterface):
                     sequence=sequence)
                 assert(isinstance(value, common.ScalarCalculation))
                 name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
-                notes.append(f'Attackers receive DM+{value.value()} when making ranged attacks against the robot.')
+                notes.append(f'Attackers receive DM+{value.value()} when making ranged attacks against the robot. (p8)')
             elif trait == robots.RobotAttributeId.Small:
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
                 assert(isinstance(value, common.ScalarCalculation))
                 name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
-                notes.append(f'Attackers receive DM{value.value()} when making ranged attacks against the robot.')
+                notes.append(f'Attackers receive DM{value.value()} when making ranged attacks against the robot. (p8)')
             elif trait == robots.RobotAttributeId.Stealth:
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
                 assert(isinstance(value, common.ScalarCalculation))
                 name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
-                notes.append(f'DM+{value.value()} to checks made to evade electronic sensors such as radar or lidar.')
-                notes.append(f'Electronic (sensors) checks to detect the robot suffer a negative DM equal to the difference between the robot\'s TL ({context.techLevel()} and the TL of the equipment.')
+                notes.append(f'DM+{value.value()} to checks made to evade electronic sensors such as radar or lidar. (p8)')
+                notes.append(f'Electronic (Sensors) checks to detect the robot suffer a negative DM equal to the difference between the robot\'s TL of ({context.techLevel()} and the TL of the equipment. (p8)')
             elif trait == robots.RobotAttributeId.Thruster:
                 value = context.attributeValue(
                     attributeId=trait,
@@ -757,7 +758,7 @@ class Finalisation(robots.RobotComponentInterface):
                         needsGrav = True
                         break
                 if needsGrav:
-                    notes.append(f'Grav Flyer robots require at a gravitational field to operate.')    
+                    notes.append(f'Grav Flyer robots require at a gravitational field to operate. (p17)')    
 
             if notes:
                 step = robots.RobotStep(
@@ -916,9 +917,9 @@ class Finalisation(robots.RobotComponentInterface):
             assert(isinstance(manipulator, robots.Manipulator))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
-            size = manipulator.size()
-            if size not in allManipulatorSizes:
-                allManipulatorSizes.append(size)
+            manipulatorSize = manipulator.size()
+            if manipulatorSize not in allManipulatorSizes:
+                allManipulatorSizes.append(manipulatorSize)
         allManipulatorSizes.sort()
 
         # Cover how DEX is used in attack rolls
@@ -946,7 +947,8 @@ class Finalisation(robots.RobotComponentInterface):
                 type='Combat')            
             sizingMap: typing.Dict[traveller.WeaponSize, typing.Iterable[str]] = {}
             for manipulatorSize in allManipulatorSizes:
-                weaponSize = _manipulatorSizeToWeaponSize(manipulatorSize=size)
+                weaponSize = _manipulatorSizeToWeaponSize(
+                    manipulatorSize=manipulatorSize)
                 manipulatorSizes = sizingMap.get(weaponSize)
                 if not manipulatorSizes:
                     manipulatorSizes = []
@@ -1096,7 +1098,7 @@ class Finalisation(robots.RobotComponentInterface):
                 string=f'Unused Slots = {maxSlots.value() - usedSlots.value()}'))
         else:
             step.addNote(
-                note='WARNING: {used} slots have been used but the max allowed is {max}'.format(
+                note='WARNING: {used} slots have been used but the robot has a max of {max}'.format(
                     used=usedSlots.value(),
                     max=maxSlots.value()))
 
@@ -1136,7 +1138,7 @@ class Finalisation(robots.RobotComponentInterface):
         else:
             # NOTE: The max slots can be a float as some components add/remove a
             # percentage of the slots (e.g. None locomotion adds 25%)        
-            step.addNote('WARNING: {used} bandwidth has been used but the max allowed is {max}'.format(
+            step.addNote('WARNING: {used} bandwidth has been used but the robot has a max of {max}'.format(
                 used=usedBandwidth.value(),
                 max=math.floor(maxBandwidth.value())))
 
