@@ -115,7 +115,7 @@ CarouseSkillDefinition = SkillDefinition(
     skillType=SkillDefinition.SkillType.Simple)  
 
 DeceptionSkillDefinition = SkillDefinition(
-    skillName='Carouse',
+    skillName='Deception',
     skillType=SkillDefinition.SkillType.Simple)
 
 DiplomatSkillDefinition = SkillDefinition(

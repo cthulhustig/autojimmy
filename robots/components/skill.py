@@ -148,7 +148,7 @@ class PrimitiveSkillPackage(SkillPackage):
     - Requirement: Only compatible with primitive brain
     """
 
-    _PrimitiveNote = 'The package counteracts any potential negative DMs associated with the computer\'s DEX or INT characteristics'
+    _PrimitiveNote = 'The skill package counteracts any negative DMs associated with the robot\'s DEX or INT characteristics. (p69)'
 
     def __init__(
             self,
@@ -257,6 +257,11 @@ class BasicSkillPackage(SkillPackage):
     
 # NOTE: None is the first basic skill package listed as it should appear
 # before other 'real' options when listed by enumeration
+# TODO: Re-reading the rules I think this should allow the selection of an
+# arbitrary skill at up to level 1. It's this skill that would be affected
+# by the robots INT characteristic DM.
+# TODO: It looks like you can also add a basic skill package on a chip for
+# Cr1000. It would be good if there was the option to buy multiple chips
 class NoneBasicSkillPackage(BasicSkillPackage):
     """
     - Note: Skill packages installed in the brain are subject to limitations and negative modifiers
@@ -273,7 +278,7 @@ class PreInstalledBasicSkillPackage(BasicSkillPackage):
     apply when making checks using skills provided by the package. (p70)
     """
 
-    _BasicNote = 'Negative modifiers due to the robot\'s INT characteristic do no apply when making checks using skills provided by the package. (p70)'    
+    _BasicNote = 'The skill package counteracts any negative DMs associated with the robot\'s INT characteristic. (p70)'    
 
     def __init__(
             self,
@@ -316,7 +321,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
         value=0,
         name='Default Agility Enhancement')
 
-    _AthleticsNote = 'The robot has Athletics (dexterity) {agility} for purposes of hazardous manoeuvring and reactions such as dodging.'
+    _AthleticsNote = 'The robot has Athletics (dexterity) {agility} for purposes of hazardous manoeuvring and reactions such as dodging. (p71)'
 
     def __init__(self) -> None:
         super().__init__(componentName='Locomotion')
@@ -383,6 +388,7 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Weapon 1
     - Skill: Tactics (military) 1
+    - Trait: Alarm
     - Option: Need something to select which Weapon skill this gives
     """
     _WeaponSkillLevel = common.ScalarCalculation(
@@ -397,6 +403,19 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
             componentName='Security',
             skills=[(robots.RobotWeaponSkillDefinition, None, 1),
                     (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
+        
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.Alarm))
+        
+        return step
+
 
 class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
@@ -458,14 +477,18 @@ class ServiceBasicSkillPackage(PreInstalledBasicSkillPackage):
             componentName='Service',
             skills=[(traveller.MechanicSkillDefinition, None, 0),
                     (traveller.StewardSkillDefinition, None, 0)],
-            notes=['Can support up to 8 Middle or 100 Basic passengers'])
+            notes=['Can support up to 8 Middle or 100 Basic passengers. (p72)'])
 
 class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Explosives 1 or Weapon 1
     - Skill: Explosives 0 if Weapon is taken as the primary skill and the robot
     has a Self Destruct System Slot Option
+    - Skill: Recon 0 (p72)
     """
+    # NOTE: The table on p70 doesn't have Recon 0 but the description on
+    # p72 does
+
     class _CombatSkills(enum.Enum):
         Explosives = 'Explosives'
         Weapon = 'Weapon'
@@ -479,7 +502,9 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
         name='Target Basic Skill Package Self Destruct Explosives Skill')
 
     def __init__(self) -> None:
-        super().__init__(componentName='Target')
+        super().__init__(
+            componentName='Target',
+            skills=[(traveller.ReconSkillDefinition, None, 0)])
 
         self._combatSkillOption = construction.EnumOption(
             id='CombatSkill',
@@ -546,6 +571,14 @@ class HunterKillerSkillPackage(SkillPackage):
     # bandwidth upgrade but that would be weird to be forced to upgrade the base
     # brain to use a skill package, it also doesn't really make sense that it
     # would be less than the bandwidth of the basic brain package
+    # NOTE: The rules don't explicitly state that the package negates negative
+    # characteristics DM. The tactical variant says "This tactical skill is not
+    # subject to the INT limitations of the robot’s brain" but there is nothing
+    # for the standard package. I suspect this is an oversight as it would be
+    # odd for a hunter/killers Recon skill to be affected by INT when the basic
+    # recon and target packages aren't.
+
+    _BaseNote = 'The rules don\'t explicitly state it, but it seems logical that this skill package counteracts any negative DMs associated with the robot\'s INT characteristic in the same way as basic skill packages do. (p72)'
 
     def __init__(
             self,
@@ -563,7 +596,7 @@ class HunterKillerSkillPackage(SkillPackage):
             brainType=robots.HunterKillerBrain,
             bandwidth=1,
             skills=skills,
-            notes=notes)
+            notes=[HunterKillerSkillPackage._BaseNote])
         
     def typeString(self) -> str:
         return 'Hunter/Killer Skill Package'
@@ -591,10 +624,12 @@ class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
     - Note: The Tactics (military) skill is not subject to the INT limitations
     of the robot's brain (e.g. negative DMs)    
     """
+    # NOTE: The note about the skill not being affected by INT is handled
+    # in the base class
+
     _TacticsCost = common.ScalarCalculation(
         value=10000,
         name='Tactics Hunter/Killer Skill Package Cost')
-    _TacticsNote = 'The rules say "This tactical skill is not subject to the INT limitations of the robot’s brain" (p73), this most likely means it doesn\'t suffer the DM-1 it normally would when using the skill due to the Hunter/Killer Brain having an INT of 3-4'
 
     def __init__(self) -> None:
         super().__init__(
@@ -602,8 +637,7 @@ class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
             skills=[(traveller.GunCombatSkillDefinition, None, 0),
                     (traveller.MeleeSkillDefinition, None, 0),
                     (traveller.ReconSkillDefinition, None, 0),
-                    (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 2)],
-            notes=[TacticalHunterKillerSkillPackage._TacticsNote])
+                    (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 2)])
 
     def _createStep(
             self,
@@ -1182,6 +1216,9 @@ class DeceptionSkill(Skill):
             minTL=13,
             levelZeroBandwidth=1,
             levelZeroCost=1000)
+        
+    def isCompatible(self, sequence: str, context: construction.ConstructionContext) -> bool:
+        return super().isCompatible(sequence, context)
 
 class DiplomatSkill(Skill):
     """
@@ -1413,7 +1450,7 @@ class MeleeSkill(Skill):
     def __init__(self) -> None:
         super().__init__(
             skillDef=traveller.MeleeSkillDefinition,
-            minTL=9,
+            minTL=8,
             levelZeroBandwidth=0,
             levelZeroCost=100)        
 
