@@ -7,9 +7,6 @@ import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class RobotSheetWidget(QtWidgets.QWidget):
-    # TODO: Need something to allow you to copy/paste all the data (similar to
-    # notes widget)
-
     _StateVersion = 'RobotSheetWidget_v1'
 
     _ColumnCount = 6
@@ -106,7 +103,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
             QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Fixed)           
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._table.installEventFilter(self)      
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
         for field, headerColumn, headerRow, dataColumn, dataRow, dataSpan in RobotSheetWidget._LayoutData:
             if dataSpan:
@@ -149,6 +147,17 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
         self._table.resizeRowsToContents()
         return super().resizeEvent(event)
+    
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if object == self._table:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
+                    self._copyToClipboard()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)    
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -196,6 +205,20 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _applySkillModifiersChanged(self) -> None:
         self._updateTable()
 
+    def _copyToClipboard(self) -> None:
+        clipboard = QtWidgets.QApplication.clipboard()
+        if not clipboard:
+            return
+                
+        content = ''
+        for _, headerColumn, headerRow, dataColumn, dataRow, _ in RobotSheetWidget._LayoutData:
+            headerItem = self._table.item(headerRow, headerColumn)
+            dataItem = self._table.item(dataRow, dataColumn)
+            if headerItem and dataItem:
+                content += f'{headerItem.text()} -- {dataItem.text()}\n'
+        if content:
+            clipboard.setText(content)
+
     def _tableContextMenu(
             self,
             position: QtCore.QPoint
@@ -232,7 +255,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)              
+                exception=ex)            
 
     @staticmethod
     def _createHeaderItem(field: robots.Worksheet.Field) -> QtWidgets.QTableWidgetItem:
