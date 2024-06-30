@@ -115,14 +115,19 @@ class StringOption(ComponentOption):
     def isEditable(self) -> bool:
         return self._isEditable
     
-    def setIsEditable(self) -> None:
-        self._isEditable = False
+    def setEditable(
+            self,
+            editable: bool
+            ) -> None:
+        self._isEditable = editable
+        if self._value != None and not self._isEditable and self._value not in self._choices:
+            self._value = self._choices[0] if len(self._choices) > 0 else None
 
     def isOptional(self) -> bool:
         return self._isOptional
     
-    def setOptional(self, isOptional: bool) -> None:
-        self._isOptional = isOptional
+    def setOptional(self, optional: bool) -> None:
+        self._isOptional = optional
         if not self._isOptional and self._value == None:
             if self._isEditable:
                 self._value = ''

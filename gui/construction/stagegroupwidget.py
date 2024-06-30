@@ -261,6 +261,12 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 lambda: self._checkBoxChanged(widget, option))
             widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
+            # TODO: There is a potential bug here if an option ever changes
+            # if there are choices after the widget for the object has been
+            # created. The problem is this code is only run when an option
+            # is first added so updates it's state won't cause the type of
+            # widget used to change. I'm not doing anything about it at the
+            # moment as it's not an issue with any of the current use cases.
             stringOptions = option.choices()
             if not stringOptions:
                 # There are no pre-defined strings the user can select from so
@@ -289,7 +295,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     if option.isEditable() else 
                     QtWidgets.QSizePolicy.Policy.Fixed,
                     QtWidgets.QSizePolicy.Policy.Fixed)
-                if option.isOptional():
+                if option.isOptional() and not option.isEditable():
                     widget.addItem(_ComponentConfigWidget._NonePlaceholder)
                 for stringOption in stringOptions:
                     widget.addItem(stringOption)
@@ -456,6 +462,15 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 if isinstance(widget, gui.LineEditEx):
                     widget.setText(option.value())
                 else:
+                    widget.setEditable(option.isEditable())
+                    widget.setSizePolicy(
+                        # If the option is editable give the user as much space as
+                        # possible
+                        QtWidgets.QSizePolicy.Policy.Expanding 
+                        if option.isEditable() else 
+                        QtWidgets.QSizePolicy.Policy.Fixed,
+                        QtWidgets.QSizePolicy.Policy.Fixed)
+                                    
                     stringOptions = option.choices()
                     updateList = False
                     if len(stringOptions) == widget.count():
@@ -472,7 +487,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     # widget triggered the update
                     if updateList:
                         widget.clear()
-                        if option.isOptional():
+                        if option.isOptional() and not option.isEditable():
                             widget.addItem(_ComponentConfigWidget._NonePlaceholder)
                         for stringOption in stringOptions:
                             widget.addItem(stringOption)
