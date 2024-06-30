@@ -32,14 +32,14 @@ class RobotSheetWidget(QtWidgets.QWidget):
         """
         <p>Choose if the displayed skill values include the the characteristic
         DM as they do in the Robot Handbook.<p>
-        <p>The skill values listed for example robots in the Robot Handbook
-        have characteristic DMs pre-applied as described in the Inherent Skill
-        DMs and Finalisation sections (p73 & p76). This can result in confusion
-        due to it being different to how skills are handled for player/NPC
-        character sheets. It also makes it far harder to work out modifiers
-        for robots with manipulators of different sizes or for situations where
-        the 'standard' characteristic may not be the most suitable for the check
-        being made.</p>
+        <p>The skill values listed for robots in the Robot Handbook have the
+        characteristic DMs included in the values as described in the Inherent
+        Skill DMs and Finalisation sections (p73 & p76). This can result in
+        confusion due to it being different to how skills are handled for
+        player/NPC character sheets. It also makes it far harder to work out
+        modifiers for robots with manipulators of different sizes or for
+        situations where the 'standard' characteristic may not be the most
+        suitable for the check being made.</p>
         <p>By default, {name} will only display the base skill level. This is
         done in an effort to make dealing with robots in game more straight
         forward. By doing this it means calculating the final DM is handled in
