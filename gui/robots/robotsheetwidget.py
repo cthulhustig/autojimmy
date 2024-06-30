@@ -28,39 +28,30 @@ class RobotSheetWidget(QtWidgets.QWidget):
         (robots.Worksheet.Field.Options, 0, 8, 1, 8, True)
     )
 
-    # TODO: The wording of this probably need improved
-    # - Cover the fact "other modifiers" aren't applied
     _ApplySkillModifiersToolTip = \
         """
-        <p>Choose if Skills have the relevant characteristic modifier
-        pre-applied as they do in the book.<p>
-        <p>By default {name} will just display the base skill level in an
-        effort to make dealing with robots in game more straight forward. By
-        doing this it means calculating the final modifier is handled in the
-        same way as for a meat sack traveller. Any relevant characteristic
-        modifiers are applied to the skill level along with any other applicable
-        modifiers. The only difference is, with the exception of robots using a
-        Brain in a Jar, if the SOC or EDU characteristic modifier would usually
-        be applied, instead you use the INT characteristic modifier as described
-        in Inherent Skill DMs (p73).<br>
-        This aim of displaying the skill levels in this way is to make it easier
-        to deal with situations where a non-standard characteristic modifier
-        might be required (e.g. using Deception combined with DEX for slight of
-        hand) or when dealing with more complex robots (e.g. physical skills for
-        robots with no manipulators or manipulators with different STR/DEX
-        modifiers).</p>
-        <p>Alternatively {name} can be configured to display skills with the
-        default characteristic modifier pre-applied in an attempt to replicate
-        how robots are displayed in the Robot Handbook and described in the
-        Finalisation section (p76).<br>
-        However, displaying skills like this is <b>not recommended</b>. As well
-        as making it more difficult to calculate modifiers for more complex
-        robots or more unusual tasks, the logic behind the values that are
-        shown in the book also makes it prohibitively complex to create code
-        that would replicate the values for all of the example robots. What it
-        currently does is a best effort attempt to replicate how skill values
-        are shown and it's only really intended as an aid if you're trying to
-        replicate one of the example robots from the book.</p>
+        <p>Choose if the displayed skill values include the the characteristic
+        DM as they do in the Robot Handbook.<p>
+        <p>The skill values listed for example robots in the Robot Handbook
+        have characteristic DMs pre-applied as described in the Inherent Skill
+        DMs and Finalisation sections (p73 & p76). This can result in confusion
+        due to it being different to how skills are handled for player/NPC
+        character sheets. It also makes it far harder to work out modifiers
+        for robots with manipulators of different sizes or for situations where
+        the 'standard' characteristic may not be the most suitable for the check
+        being made.</p>
+        <p>By default, {name} will only display the base skill level. This is
+        done in an effort to make dealing with robots in game more straight
+        forward. By doing this it means calculating the final DM is handled in
+        the same way as for a meat sack traveller. When making a check, the DM
+        for the appropriate characteristic is added to the skill level along
+        with any situation specific DMs. The only difference is, unless your
+        dealing with a robot that specifically has a SOC/EDU characteristic,
+        the robots INT characteristic is used in their place as described in
+        the Inherent Skill DMs section (p73).</p>
+        <p>Alternatively, when this option is enabled, {name} will include
+        characteristics DMs in the displayed skill values. However, displaying
+        skills like this is <b>not recommended</b>.</p>
         <p><b>When characteristic DMs are being included in the displayed skill
         values, the list of automatically generated notes will still contain
         notes covering the modifiers that have been applied. It's up to the user
