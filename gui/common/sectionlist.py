@@ -256,6 +256,47 @@ class SectionList(QtWidgets.QWidget):
         if hasCurrent:
             self.currentChanged.emit()
 
+    def ensureVisible(
+            self,
+            section: int,
+            row: int
+            ) -> None:
+        listWidget = self._listWidget(section)
+        if listWidget == None:
+            return
+        item = listWidget.item(row)
+        if not item:
+            return
+        rect = listWidget.visualItemRect(item)
+        globalTL = listWidget.mapToGlobal(rect.topLeft())
+        globalBR = listWidget.mapToGlobal(rect.bottomRight())
+        scrollTL = self._treeWidget.mapFromGlobal(globalTL)
+        scrollBR = self._treeWidget.mapFromGlobal(globalBR)
+        scrollRect = QtCore.QRect(scrollTL, scrollBR)
+
+        treeRect = self._treeWidget.rect()
+        if treeRect.contains(scrollRect):
+            # item is already fully visible so nothing to do
+            return
+        
+        scrollBar = self._treeWidget.verticalScrollBar()
+        if not scrollBar:
+            return
+                
+        targetPos = scrollRect.center().y()
+
+        currentPos = scrollBar.value()
+        if targetPos < currentPos:
+            scrollBar.setValue(scrollBR.y())
+        elif targetPos > currentPos:
+            scrollBar.setValue(scrollTL.y())
+
+    def ensureCurrentVisible(self) -> None:
+        section, row = self.currentRow()
+        if section < 0 or row < 0:
+            return
+        self.ensureVisible(section=section, row=row)
+
     def selectionMode(self) -> QtWidgets.QListWidget.SelectionMode:
         return self._selectionMode
 

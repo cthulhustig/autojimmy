@@ -340,7 +340,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._sortList()
 
         if wasRenamed:
-            self._handleCurrentChanged()
+            self._handleCurrentChanged(ensureVisible=True)
 
         return True # User didn't cancel    
 
@@ -403,7 +403,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 if constructable == current:
                     # The current constructable was reverted so notify listeners that
                     # it was modified
-                    self._handleCurrentChanged()
+                    self._handleCurrentChanged(ensureVisible=True)
 
             # Remove any unsaved constructables for the same reason the modified
             # constructables were removed
@@ -566,7 +566,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
 
             if makeSelected and newCurrentItem:
                 self._sectionList.setCurrentItem(newCurrentItem)
-                self._handleCurrentChanged()
+                self._handleCurrentChanged(ensureVisible=True)
 
         self._sortList()
 
@@ -590,7 +590,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._internalDefault()
             self._forceSelection()
 
-        self._handleCurrentChanged()
+        self._handleCurrentChanged(ensureVisible=True)
 
     def _deleteUnsaved(self) -> None:
         for section in range(self._sectionList.sectionCount()):
@@ -673,7 +673,13 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._revertAction.setEnabled(isModified and isStored)
         self._deleteAction.setEnabled(not isReadOnly)
 
-    def _handleCurrentChanged(self) -> None:
+    def _handleCurrentChanged(
+            self,
+            ensureVisible: bool = False
+            ) -> None:
+        if ensureVisible:
+            self._sectionList.ensureCurrentVisible()
+
         self._updateButtons()
         self.currentChanged.emit()
 
@@ -682,7 +688,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._internalNew(
                 makeCurrent=True,
                 sortList=True)
-            self._handleCurrentChanged()
+            self._handleCurrentChanged(ensureVisible=True)
         except Exception as ex:
             message = f'Failed to create new {self._constructableStore.typeString()}'
             logging.error(message, exc_info=ex)
@@ -749,7 +755,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
             
-        self._handleCurrentChanged()            
+        self._handleCurrentChanged(ensureVisible=True)            
 
     def _revertClicked(self) -> None:
         selectionCount = self._sectionList.selectedItemCount()
@@ -785,7 +791,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 exception=ex)
 
         self._sortList() # Sort list as names may have changed
-        self._handleCurrentChanged()
+        self._handleCurrentChanged(ensureVisible=True)
 
     def _copyClicked(self) -> None:
         if self._sectionList.selectedItemCount() < 0:
