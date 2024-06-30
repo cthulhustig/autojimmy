@@ -39,7 +39,6 @@ def serialiseOptions(
                 'value': value.name if value else None
             })
         elif isinstance(option, construction.MultiSelectOption):
-            # TODO: This hasn't been tested
             assert(value == None or isinstance(value, list))
             options.append({
                 'id': option.id(),
