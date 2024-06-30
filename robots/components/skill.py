@@ -231,16 +231,6 @@ class SkillPackage(robots.RobotComponentInterface):
             componentType=self._brainType,
             sequence=sequence)
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-    
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,

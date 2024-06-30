@@ -67,16 +67,6 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             componentType=robots.NoPrimaryLocomotion,
             sequence=sequence)
         return locomotion == None
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

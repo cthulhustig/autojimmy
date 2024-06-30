@@ -23,16 +23,6 @@ class Stock(gunsmith.WeaponComponentInterface):
             componentType=gunsmith.Receiver,
             sequence=None)
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
 class StocklessStock(Stock):
     """
     - Quickdraw: +2 for Longarm or Assault Weapons

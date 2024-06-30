@@ -62,13 +62,6 @@ class LoaderQuantity(gunsmith.WeaponComponentInterface):
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._numberOfLoadersOption]
 
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,

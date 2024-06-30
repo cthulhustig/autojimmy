@@ -70,17 +70,7 @@ class NoSpeedModification(SpeedModification):
         locomotion = context.findFirstComponent(
             componentType=robots.AeroplanePrimaryLocomotion,
             sequence=sequence)
-        return locomotion == None
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass       
+        return locomotion == None 
 
     def createSteps(
             self,

@@ -84,16 +84,6 @@ class Chassis(robots.RobotComponentInterface):
             context: robots.RobotContext
             ) -> bool:
         return context.techLevel() >= self._MinTechLevel
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

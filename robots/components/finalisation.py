@@ -54,17 +54,7 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
         return context.hasComponent(
             componentType=robots.Chassis,
             sequence=sequence)
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
 
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass        
-    
     def createSteps(
             self,
             sequence: str,
@@ -211,16 +201,6 @@ class SynthAdditionalCosts(robots.RobotComponentInterface):
         return context.hasComponent(
             componentType=robots.Synthetic,
             sequence=sequence)
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -363,13 +343,6 @@ class PercentageCostModifier(CostModification):
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._creditsOption]
 
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,
@@ -450,13 +423,6 @@ class SignificantFigureCostRounding(CostRounding):
     
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._creditsOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -602,16 +568,6 @@ class Finalisation(robots.RobotComponentInterface):
             context: robots.RobotContext
             ) -> bool:
         return True
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: robots.RobotContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

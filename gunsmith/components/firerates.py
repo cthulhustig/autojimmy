@@ -17,16 +17,6 @@ class FireRate(gunsmith.WeaponComponentInterface):
             componentType=gunsmith.Receiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
 # I've created the standard fire rate to allow the HeatGeneration attribute to be set
 # for non-RF/VRF weapons
 class StandardFireRate(FireRate):

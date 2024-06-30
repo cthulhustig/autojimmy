@@ -552,9 +552,13 @@ class RemoveBaseManipulator(BaseManipulator):
             ) -> bool:
         return True
     
+    # NOTE: This intentionally doesn't call the base class as none of its
+    # options are used when removing a manipulator
     def options(self) -> typing.List[construction.ComponentOption]:
         return []
 
+    # NOTE: This intentionally doesn't call the base class as none of its
+    # options are used when removing a manipulator
     def updateOptions(
             self,
             sequence: str,

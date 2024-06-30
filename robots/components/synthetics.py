@@ -74,16 +74,6 @@ class Synthetic(robots.RobotComponentInterface):
         return context.hasComponent(
             componentType=robots.Chassis,
             sequence=sequence) 
-    
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: construction.ConstructionContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

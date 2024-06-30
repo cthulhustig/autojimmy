@@ -44,16 +44,6 @@ class CapacityModification(gunsmith.WeaponComponentInterface):
                 componentType=gunsmith.StandardSingleShotLauncherReceiver,
                 sequence=sequence)
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
 class DesiredCapacityModification(CapacityModification):
     """
     - Note: Base Ammo Capacity can be lowered or raised in 10% increments

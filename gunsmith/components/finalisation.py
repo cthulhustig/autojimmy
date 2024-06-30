@@ -46,16 +46,6 @@ class Finalisation(gunsmith.WeaponComponentInterface):
             ) -> bool:
         return True
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,

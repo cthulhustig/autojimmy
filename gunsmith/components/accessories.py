@@ -97,13 +97,6 @@ class BarrelAccessory(Accessory):
             options.append(self._attachedOption)
         return options
 
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
     def isDetachable(self) -> bool:
         # Accessory is detachable if the option to attach it exists and the user hasn't set it
         # to be permanently attached
@@ -533,13 +526,6 @@ class WeaponAccessory(Accessory):
         if self._attachedOption.isEnabled():
             options.append(self._attachedOption)
         return options
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def isDetachable(self) -> bool:
         # Accessory is detachable if the option to attach it exists and the user hasn't set it

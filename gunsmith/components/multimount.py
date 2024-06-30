@@ -142,13 +142,6 @@ class MultiMount(gunsmith.WeaponComponentInterface):
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._weaponCountOption, self._quickdrawModifierOption]
 
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,
@@ -338,16 +331,6 @@ class MultiMountLoaded(gunsmith.WeaponComponentInterface):
             context.hasComponent(
                 sequence=sequence,
                 componentType=gunsmith.AmmoLoaded)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

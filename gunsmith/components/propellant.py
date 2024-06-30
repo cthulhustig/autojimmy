@@ -53,16 +53,6 @@ class PropellantType(gunsmith.WeaponComponentInterface):
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
 
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
-
     def createSteps(
             self,
             sequence: str,
@@ -222,13 +212,6 @@ class PropellantQuantity(gunsmith.WeaponComponentInterface):
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._propellantWeightOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
