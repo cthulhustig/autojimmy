@@ -561,14 +561,16 @@ class Robot(construction.ConstructableInterface):
 
         return manifest
     
-    # TODO: There is a deficiency in the way I'm applying characteristics
-    # modifiers but it's not really in this piece of code. The issue can be seen
-    # with the StarTek example robot. In the book it's final sheet shows Athletics
-    # (Strength) 2 where as I'm showing it as Athletics 0. I think this is because
-    # the book is taking into account the the Athletics you get from manipulators
-    # (p26). I'm currently handling it with a note but it would be good if I
-    # could somehow show it in the actual skill like the book. As usual ambiguities
-    # with multiple manipulators apply  
+    # NOTE: The Finalisation section (p76) says, as well as characteristics DMs,
+    # any additional modifiers should be included in the skill levels listed in
+    # a robots worksheet. It would only make sense for this to be done for
+    # modifiers that are applied in all situations (rather than situation specific
+    # ones), but I'm not sure which modifiers this would be.
+    # One case I know where the skill levels don't match this in the book is the
+    # levels of Athletics (Dexterity/Strength) skill that a robot can get from its
+    # manipulators. The Robots Handbook lists these in the skills section (e.g the
+    # StarTek example robot) whereas I'm listing them as notes as the modifier
+    # varies for robots with multiple manipulators.
     def worksheet(
             self,
             applySkillModifiers: bool
