@@ -270,9 +270,9 @@ class SectionList(QtWidgets.QWidget):
         rect = listWidget.visualItemRect(item)
         globalTL = listWidget.mapToGlobal(rect.topLeft())
         globalBR = listWidget.mapToGlobal(rect.bottomRight())
-        scrollTL = self._treeWidget.mapFromGlobal(globalTL)
-        scrollBR = self._treeWidget.mapFromGlobal(globalBR)
-        scrollRect = QtCore.QRect(scrollTL, scrollBR)
+        scrollRect = QtCore.QRect(
+            self._treeWidget.mapFromGlobal(globalTL),
+            self._treeWidget.mapFromGlobal(globalBR))
 
         treeRect = self._treeWidget.rect()
         if treeRect.contains(scrollRect):
@@ -287,9 +287,9 @@ class SectionList(QtWidgets.QWidget):
 
         currentPos = scrollBar.value()
         if targetPos < currentPos:
-            scrollBar.setValue(scrollBR.y())
+            scrollBar.setValue(scrollRect.bottom())
         elif targetPos > currentPos:
-            scrollBar.setValue(scrollTL.y())
+            scrollBar.setValue(scrollRect.top())
 
     def ensureCurrentVisible(self) -> None:
         section, row = self.currentRow()
