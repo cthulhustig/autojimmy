@@ -6,11 +6,6 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: There is still a bug in here somewhere that can cause the view
-# to jump around. To replicate, select cost rounding then set it back
-# to None, it should jump up to the top of the window. It seems to stop
-# happening if you revert the config or switch to another robot
-
 class RobotConfigWidget(QtWidgets.QWidget):
     robotModified = QtCore.pyqtSignal(robots.Robot)
 

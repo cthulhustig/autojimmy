@@ -337,6 +337,18 @@ class RobotBuilderWindow(gui.WindowWidget):
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
+
+        # TODO: This is a MASSIVE hack. There is a bug where after the window is
+        # first shown, if you add a finalisation component then remove it, the
+        # scroll view jumps back to the top of the configuration widget. I've
+        # not been able to work out what the correct fix for this is but I did
+        # find it doesn't happen if you do anything that causes the robot to be
+        # set on the configuration widget, even if just setting it to the same
+        # robot. The biggest downside with the hack I've not found a way to make
+        # it work with saving of the scroll areas position and restoring it next
+        # session but loosing that feature doesn't seem like an issue
+        self._selectedRobotChanged()
+
         super().firstShowEvent(e)
 
     def loadSettings(self) -> None:
@@ -381,13 +393,6 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='ConfigurationScrollAreaState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._configurationScrollArea.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
             key='ResultsDisplayModeState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -410,7 +415,6 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._settings.setValue('RobotManagementWidgetState', self._robotManagementWidget.saveState())
         self._settings.setValue('CurrentRobotDisplayModeState', self._currentRobotDisplayModeTabView.saveState())
         self._settings.setValue('ConfigurationState', self._configurationWidget.saveState())
-        self._settings.setValue('ConfigurationScrollAreaState', self._configurationScrollArea.saveState())
         self._settings.setValue('ResultsDisplayModeState', self._resultsDisplayModeTabView.saveState())
         self._settings.setValue('InfoWidgetState', self._infoWidget.saveState())
 
@@ -453,9 +457,9 @@ class RobotBuilderWindow(gui.WindowWidget):
         wrapperWidget = QtWidgets.QWidget()
         wrapperWidget.setLayout(spacerLayout)
 
-        self._configurationScrollArea = gui.ScrollAreaEx()
-        self._configurationScrollArea.setWidgetResizable(True)
-        self._configurationScrollArea.setWidget(wrapperWidget)
+        configurationScrollArea = gui.ScrollAreaEx()
+        configurationScrollArea.setWidgetResizable(True)
+        configurationScrollArea.setWidget(wrapperWidget)
 
         # Use a plain text edit for the notes as we don't want the advanced stuff (tables etc)
         # supported by QTextEdit. This text could end up in the notes section of a pdf so
@@ -466,7 +470,7 @@ class RobotBuilderWindow(gui.WindowWidget):
 
         self._currentRobotDisplayModeTabView = gui.TabWidgetEx()
         self._currentRobotDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
-        self._currentRobotDisplayModeTabView.addTab(self._configurationScrollArea, 'Configuration')
+        self._currentRobotDisplayModeTabView.addTab(configurationScrollArea, 'Configuration')
         self._currentRobotDisplayModeTabView.addTab(self._userNotesTextEdit, 'User Notes')
 
         layout = QtWidgets.QVBoxLayout()
