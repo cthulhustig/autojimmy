@@ -663,68 +663,95 @@ class Robot(construction.ConstructableInterface):
                 # end of the string (i.e. after sorting)
                 spareBandwidth = self.spareBandwidth()
                 if spareBandwidth.value() > 0:
-                    skillString.append(f' +{spareBandwidth.value()} available Bandwidth')
+                    skillString.append(f'+{spareBandwidth.value()} Available Bandwidth')
                     calculations.append(spareBandwidth)
 
                 fieldText = Robot._formatWorksheetListString(skillString)
             elif field == robots.Worksheet.Field.Attacks:
-                seenWeapons: typing.Dict[traveller.StockWeapon, int] = {}
-
                 components = self.findComponents(
-                    componentType=robots.MountedWeapon)
+                    componentType=robots.Weapon)
+                seenWeapons: typing.Dict[str, int] = {}
                 for component in components:
-                    assert(isinstance(component, robots.MountedWeapon))
-                    weapon = component.weaponData(
+                    assert(isinstance(component, robots.Weapon))
+                    weaponData = component.weaponData(
                         weaponSet=self.weaponSet())
-                    if weapon:
-                        count = seenWeapons.get(weapon, 0)
-                        seenWeapons[weapon] = count + 1
+                    if not weaponData:
+                        continue
+                    damage = weaponData.damage()
+                    traits = weaponData.traits()
 
-                components = self.findComponents(
-                    componentType=robots.HandHeldWeapon)
-                for component in components:
-                    assert(isinstance(component, robots.HandHeldWeapon))
-                    weapon = component.weaponData(
-                        weaponSet=self.weaponSet())
-                    if weapon:
-                        count = seenWeapons.get(weapon, 0)
-                        seenWeapons[weapon] = count + 1
-
-                weaponStrings = []
-                for weapon, count in seenWeapons.items():
-                    damage = weapon.damage()
-                    traits = weapon.traits()
                     weaponInfo = '{damage}{separator}{traits}'.format(
-                        damage=weapon.damage(),
+                        damage=weaponData.damage(),
                         separator=', ' if damage and traits else '',
                         traits=traits)
-                    weaponStrings.append('{count}{weapon}{info}'.format(
-                        count=f'{count} x ' if count > 1 else '',
-                        weapon=weapon.name(),
-                        info=f' ({weaponInfo})' if weaponInfo else ''))
+                    if isinstance(component, robots.MountedWeapon):
+                        weaponInfo += '{separator}Mounted'.format(
+                            separator=', ' if weaponInfo and traits else '')    
+                        autoloaderCount = component.autoloaderMagazineCount()
+                        if autoloaderCount:
+                            weaponInfo += '{separator}Autoloader x{count}'.format(
+                                separator=', ' if weaponInfo and traits else '',
+                                count=autoloaderCount.value())                                           
+                        linkedCount = component.linkedGroupSize()
+                        if linkedCount:
+                            weaponInfo += '{separator}Linked x{count}'.format(
+                                separator=', ' if weaponInfo and traits else '',
+                                count=linkedCount.value())                            
+                        fireControl = component.fireControl()
+                        if fireControl:
+                            weaponInfo += '{separator}{level} Fire Control'.format(
+                                separator=', ' if weaponInfo and traits else '',
+                                level=fireControl.value)
+                    elif isinstance(component, robots.HandHeldWeapon):
+                        weaponInfo += '{separator}Hand Held'.format(
+                            separator=', ' if weaponInfo and traits else '')  
+                    weaponString = weaponData.name()
+                    if weaponInfo:
+                        weaponString += f' ({weaponInfo})'
+
+                    count = seenWeapons.get(weaponString, 0)
+                    seenWeapons[weaponString] = count + 1
+
+                weaponStrings = []                 
+                for weaponString, count in seenWeapons.items():
+                    if count > 1:
+                        weaponString = f'{count} x {weaponString}'
+                    weaponStrings.append(weaponString)
                 fieldText = Robot._formatWorksheetListString(weaponStrings)
             elif field == robots.Worksheet.Field.Manipulators:
-                seenCharacteristics: typing.Dict[typing.Tuple[int, int, int], int] = {}
+                handheldFireControl = self.findComponents(
+                    componentType=robots.HandHeldFireControl)
+                fireControlManipulators: typing.Dict[robots.Manipulator, robots.FireControlLevel] = {}
+                for component in handheldFireControl:
+                    assert(isinstance(component, robots.HandHeldFireControl))
+                    manipulator = component.manipulator(
+                        context=self._constructionContext,
+                        sequence=self._sequence)
+                    fireControl = component.fireControl()
+                    if manipulator and fireControl:
+                        fireControlManipulators[manipulator] = fireControl
+                    
                 components = self.findComponents(
                     componentType=robots.Manipulator)
+                seenManipulators: typing.Dict[str, int] = {}
                 for component in components:
                     assert(isinstance(component, robots.Manipulator))
                     if isinstance(component, robots.RemoveBaseManipulator):
                         continue
-                    characteristics = (
-                        component.strength(),
-                        component.dexterity())
-                    count = seenCharacteristics.get(characteristics, 0)
-                    seenCharacteristics[characteristics] = count + 1
+
+                    manipulatorString = 'STR {strength}, DEX {dexterity}'.format(
+                        strength=component.strength(),
+                        dexterity=component.dexterity())
+                    fireControl = fireControlManipulators.get(component)
+                    if fireControl:
+                        manipulatorString += f', {fireControl.value} Fire Control'
+                    
+                    count = seenManipulators.get(manipulatorString, 0)
+                    seenManipulators[manipulatorString] = count + 1
 
                 manipulatorStrings = []
-                for characteristics, count in seenCharacteristics.items():
-                    strength = characteristics[0]
-                    dexterity = characteristics[1]
-                    manipulatorStrings.append('{count} x (STR {strength} DEX {dexterity})'.format(
-                        count=count,
-                        strength=strength,
-                        dexterity=dexterity))
+                for manipulatorString, count in seenManipulators.items():
+                    manipulatorStrings.append(f'{count} x ({manipulatorString})')
                 fieldText = Robot._formatWorksheetListString(manipulatorStrings)
             elif field == robots.Worksheet.Field.Endurance:
                 # NOTE: Although it seems unusual, the Endurance is rounded to the nearest
@@ -737,24 +764,28 @@ class Robot(construction.ConstructableInterface):
                 # for it. The intention does seem to be that there is only a single
                 # secondary locomotion, it's implied by the rules and both spreadsheets
                 # only support 1.
-                attributeValue = self.attributeValue(
-                    attributeId=robots.RobotAttributeId.Endurance)
-                if isinstance(attributeValue, common.ScalarCalculation):
-                    fieldText = common.formatNumber(
-                        number=round(attributeValue.value()))
-                    calculations.append(attributeValue)
-
+                isBiological = self.hasComponent(componentType=robots.BioRobotSynthetic)
+                if isBiological:
+                    fieldText = 'As biological being'
+                else:
                     attributeValue = self.attributeValue(
-                        attributeId=robots.RobotAttributeId.VehicleEndurance)
+                        attributeId=robots.RobotAttributeId.Endurance)
                     if isinstance(attributeValue, common.ScalarCalculation):
-                        fieldText += ' ({vspeed})'.format(
-                            vspeed=common.formatNumber(
-                                number=round(attributeValue.value())))
+                        fieldText = common.formatNumber(
+                            number=round(attributeValue.value()))
                         calculations.append(attributeValue)
 
-                    fieldText += ' hours'
-                else:
-                    fieldText = 'None'
+                        attributeValue = self.attributeValue(
+                            attributeId=robots.RobotAttributeId.VehicleEndurance)
+                        if isinstance(attributeValue, common.ScalarCalculation):
+                            fieldText += ' ({vspeed})'.format(
+                                vspeed=common.formatNumber(
+                                    number=round(attributeValue.value())))
+                            calculations.append(attributeValue)
+
+                        fieldText += ' hours'
+                    else:
+                        fieldText = 'None'
             elif field == robots.Worksheet.Field.Traits:
                 traitStrings = []
                 for trait in robots.TraitAttributeIds:
@@ -817,7 +848,7 @@ class Robot(construction.ConstructableInterface):
                 for componentString in orderedKeys:
                     count = options[componentString]
                     if count > 1:
-                        componentString += f'X {count}'
+                        componentString += f' x {count}'
                     optionStrings.append(componentString)
 
                 # Add the number of spare slots, this should always be done at
