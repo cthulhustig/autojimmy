@@ -599,38 +599,45 @@ class Robot(construction.ConstructableInterface):
                 # the secondary, but if I make the change here it will be
                 # easy to think the displayed endurance is for when using
                 # the secondary locomotion
-                primaryLocomotion = self.findFirstComponent(
-                    componentType=robots.PrimaryLocomotion)
-                secondaryLocomotions = self.findComponents(
-                    componentType=robots.SecondaryLocomotion)
+                locomotions = self.findComponents(
+                    componentType=robots.Locomotion)
                 locomotionStrings = []
-                if primaryLocomotion:
-                    locomotionStrings.append(primaryLocomotion.componentString())
-                for locomotion in secondaryLocomotions:
+                for locomotion in locomotions:
+                    assert(isinstance(locomotion, robots.Locomotion))
                     componentString = locomotion.componentString()
                     if componentString not in locomotionStrings:
                         locomotionStrings.append(componentString)
                 fieldText = Robot._formatWorksheetListString(locomotionStrings)
             elif field == robots.Worksheet.Field.Speed:
-                # TODO: Need to include the speed when using secondary locomotions.
-                # See Endurance for a note on how to possibly do this
+                speedStrings = []
+
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.Speed)
                 if isinstance(attributeValue, common.ScalarCalculation):
-                    fieldText = common.formatNumber(
+                    speedStrings.append(common.formatNumber(
                         number=attributeValue.value(),
-                        suffix='m')
+                        suffix='m'))
+                    calculations.append(attributeValue)
+                else:
+                    speedStrings.append('-')
+
+                attributeValue = self.attributeValue(
+                    attributeId=robots.RobotAttributeId.SecondarySpeed)
+                if isinstance(attributeValue, common.ScalarCalculation):
+                    speedStrings.append(common.formatNumber(
+                        number=attributeValue.value(),
+                        suffix='m'))
                     calculations.append(attributeValue)
 
-                    # NOTE: Finalisation (p76) says to use a '-' if the robot
-                    # has VSM. This would suggest that a robot with VSM can only
-                    # move at VSM speeds but that seems odd.
-                    attributeValue = self.attributeValue(
-                        attributeId=robots.RobotAttributeId.VehicleSpeed)
-                    if isinstance(attributeValue, robots.SpeedBand):
-                        fieldText += f' ({attributeValue.value})'
-                else:
-                    fieldText = '-'
+                # NOTE: Finalisation (p76) says to use a '-' for speed if
+                # the robot has VSM. This would suggest that a robot with
+                # VSM can only move at VSM speeds but that seems odd.
+                attributeValue = self.attributeValue(
+                    attributeId=robots.RobotAttributeId.VehicleSpeed)
+                if isinstance(attributeValue, robots.SpeedBand):
+                    speedStrings.append(attributeValue.value)
+
+                fieldText = Robot._formatWorksheetListString(speedStrings)
             elif field == robots.Worksheet.Field.TL:
                 fieldText = str(self.techLevel())
             elif field == robots.Worksheet.Field.Cost:
@@ -663,7 +670,8 @@ class Robot(construction.ConstructableInterface):
                 # end of the string (i.e. after sorting)
                 spareBandwidth = self.spareBandwidth()
                 if spareBandwidth.value() > 0:
-                    skillString.append(f'+{spareBandwidth.value()} Available Bandwidth')
+                    skillString.append('+{bandwidth} Available Bandwidth'.format(
+                        bandwidth=common.formatNumber(number=spareBandwidth.value())))
                     calculations.append(spareBandwidth)
 
                 fieldText = Robot._formatWorksheetListString(skillString)
@@ -691,12 +699,12 @@ class Robot(construction.ConstructableInterface):
                         if autoloaderCount:
                             weaponInfo += '{separator}Autoloader x{count}'.format(
                                 separator=', ' if weaponInfo and traits else '',
-                                count=autoloaderCount.value())                                           
+                                count=common.formatNumber(number=autoloaderCount.value()))                                 
                         linkedCount = component.linkedGroupSize()
                         if linkedCount:
                             weaponInfo += '{separator}Linked x{count}'.format(
                                 separator=', ' if weaponInfo and traits else '',
-                                count=linkedCount.value())                            
+                                count=common.formatNumber(number=linkedCount.value()))                            
                         fireControl = component.fireControl()
                         if fireControl:
                             weaponInfo += '{separator}{level} Fire Control'.format(
@@ -715,7 +723,9 @@ class Robot(construction.ConstructableInterface):
                 weaponStrings = []                 
                 for weaponString, count in seenWeapons.items():
                     if count > 1:
-                        weaponString = f'{count} x {weaponString}'
+                        weaponString = '{count} x {weapon}'.format(
+                            count=common.formatNumber(number=count),
+                            weapon=weaponString)
                     weaponStrings.append(weaponString)
                 fieldText = Robot._formatWorksheetListString(weaponStrings)
             elif field == robots.Worksheet.Field.Manipulators:
@@ -740,8 +750,8 @@ class Robot(construction.ConstructableInterface):
                         continue
 
                     manipulatorString = 'STR {strength}, DEX {dexterity}'.format(
-                        strength=component.strength(),
-                        dexterity=component.dexterity())
+                        strength=common.formatNumber(number=component.strength()),
+                        dexterity=common.formatNumber(number=component.dexterity()))
                     fireControl = fireControlManipulators.get(component)
                     if fireControl:
                         manipulatorString += f', {fireControl.value} Fire Control'
@@ -751,7 +761,9 @@ class Robot(construction.ConstructableInterface):
 
                 manipulatorStrings = []
                 for manipulatorString, count in seenManipulators.items():
-                    manipulatorStrings.append(f'{count} x ({manipulatorString})')
+                    manipulatorStrings.append('{count} x ({manipulator})'.format(
+                        count=common.formatNumber(number=count),
+                        manipulator=manipulatorString))
                 fieldText = Robot._formatWorksheetListString(manipulatorStrings)
             elif field == robots.Worksheet.Field.Endurance:
                 # NOTE: Although it seems unusual, the Endurance is rounded to the nearest
@@ -768,24 +780,34 @@ class Robot(construction.ConstructableInterface):
                 if isBiological:
                     fieldText = 'As biological being'
                 else:
+                    enduranceStrings = []
                     attributeValue = self.attributeValue(
                         attributeId=robots.RobotAttributeId.Endurance)
                     if isinstance(attributeValue, common.ScalarCalculation):
-                        fieldText = common.formatNumber(
-                            number=round(attributeValue.value()))
+                        enduranceStrings.append(common.formatNumber(
+                            number=round(attributeValue.value()),
+                            suffix=' hours'))
+                        calculations.append(attributeValue)
+                    else:
+                        enduranceStrings.append('None')
+
+                    attributeValue = self.attributeValue(
+                        attributeId=robots.RobotAttributeId.SecondaryEndurance)
+                    if isinstance(attributeValue, common.ScalarCalculation):
+                        enduranceStrings.append(common.formatNumber(
+                            number=round(attributeValue.value()),
+                            suffix=' hours'))
                         calculations.append(attributeValue)
 
-                        attributeValue = self.attributeValue(
-                            attributeId=robots.RobotAttributeId.VehicleEndurance)
-                        if isinstance(attributeValue, common.ScalarCalculation):
-                            fieldText += ' ({vspeed})'.format(
-                                vspeed=common.formatNumber(
-                                    number=round(attributeValue.value())))
-                            calculations.append(attributeValue)
+                    attributeValue = self.attributeValue(
+                        attributeId=robots.RobotAttributeId.VehicleEndurance)
+                    if isinstance(attributeValue, common.ScalarCalculation):
+                        enduranceStrings.append(common.formatNumber(
+                            number=round(attributeValue.value()),
+                            suffix=' hours'))
+                        calculations.append(attributeValue) 
 
-                        fieldText += ' hours'
-                    else:
-                        fieldText = 'None'
+                    fieldText = Robot._formatWorksheetListString(enduranceStrings)
             elif field == robots.Worksheet.Field.Traits:
                 traitStrings = []
                 for trait in robots.TraitAttributeIds:
@@ -848,14 +870,16 @@ class Robot(construction.ConstructableInterface):
                 for componentString in orderedKeys:
                     count = options[componentString]
                     if count > 1:
-                        componentString += f' x {count}'
+                        componentString += ' x {count}'.format(
+                            count=common.formatNumber(number=count))
                     optionStrings.append(componentString)
 
                 # Add the number of spare slots, this should always be done at
                 # end of the string (i.e. after sorting)
                 spareSlots = self.spareSlots()
                 if spareSlots.value() > 0:
-                    optionStrings.append(f'Spare Slots x {spareSlots.value()}')
+                    optionStrings.append('Spare Slots x {slots}'.format(
+                        slots=common.formatNumber(number=spareSlots.value())))
                     calculations.append(spareSlots)
 
                 # At this point the strings should already be sorted
@@ -1015,16 +1039,17 @@ class Robot(construction.ConstructableInterface):
         
         # NOTE: I've not seen anything anything in the rules that explicitly
         # says you can only have one secondary locomotion, although it could be
-        # the expectation is it's implied by the name. As it doesn't explicitly
-        # say, i've chosen to allow it.
+        # the expectation is it's implied by the name. I've decided to make it
+        # singular as it makes it easier to track things like endurance for
+        # displaying in the worksheet
         stages.append(construction.ConstructionStage(
             name='Secondary Locomotion',
             sequence=self._sequence,
             phase=robots.RobotPhase.LocomotiveMods,
             baseType=robots.SecondaryLocomotion,
-            # Optional multi component
-            minComponents=None,
-            maxComponents=None)) 
+            # Optional single component
+            minComponents=0,
+            maxComponents=1)) 
         
         stages.append(construction.ConstructionStage(
             name='Base Manipulators',

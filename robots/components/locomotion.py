@@ -215,16 +215,28 @@ class _LocomotionImpl(object):
                         rhs=powerPackCount))
                 endurance = common.Calculator.rename(
                     value=endurance,
-                    name='Improved Endurance')
-
-            # TODO: Should this also give the speed when using the secondary locomotion?
-            # It would need to take Agility into acount (see how primary branch of this
-            # code does it)
-            stats = 'Endurance {endurance} hours'.format(
-                endurance=common.formatNumber(number=endurance.value()))
+                    name='Improved Secondary Endurance')
+                
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.SecondaryEndurance,
+                value=endurance))
+            
             if self._baseAgility:
-                stats += f' and Agility {self._baseAgility.value()}'
-            step.addNote(note=f'When using {self._componentString} locomotion the robot has {stats}.')            
+                # NOTE: The secondary agility doesn't have any Agility Increase
+                # modifiers applied as it's a locomotion modification and the
+                # book says locomotion modification only apply to primary
+                # locomotion (p22)
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=robots.RobotAttributeId.SecondaryAgility,
+                    value=self._baseAgility))
+                
+                speed = common.Calculator.add(
+                    lhs=_LocomotionImpl._BaseSpeed,
+                    rhs=self._baseAgility,
+                    name=f'{self._componentString} Base Speed')
+                step.addFactor(factor=construction.SetAttributeFactor(
+                    attributeId=robots.RobotAttributeId.SecondarySpeed,
+                    value=speed))          
 
         if self._flagTrait:
             step.addFactor(factor=construction.SetAttributeFactor(

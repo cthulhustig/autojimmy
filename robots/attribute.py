@@ -35,6 +35,10 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # need to be treated separably by the UI
     Rads = 'Rads'
 
+    SecondaryEndurance = 'Secondary Endurance'
+    SecondaryAgility = 'Secondary Agility'
+    SecondarySpeed = 'Secondary Speed'
+
     # This is the speed of the vehicle when using Vehicle Speed Movement (p23).
     # When not using Vehicle Speed Movement my assumption is the Speed attribute
     # applies. As far as I can tell the only thing that sets this is the Vehicle
