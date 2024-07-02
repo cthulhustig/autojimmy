@@ -217,6 +217,10 @@ class _LocomotionImpl(object):
                     value=endurance,
                     name='Improved Secondary Endurance')
                 
+            # TODO: If secondary locomotion type is the same as the first I think
+            # it should set secondary endurance, agility and speed to the primary
+            # locomotion values (including any modifiers)
+            # TODO: Shouldn't set secondary endurance if this is a bio robot
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.SecondaryEndurance,
                 value=endurance))

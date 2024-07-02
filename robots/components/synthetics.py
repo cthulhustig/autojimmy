@@ -287,8 +287,9 @@ class BioRobotSynthetic(Synthetic):
         # attribute rather than setting it to 0. This avoids having it
         # displayed to the user and and lets later components check for
         # its presence to avoid applying Endurance modifiers
+        # NOTE: Can't delete SecondaryEndurance here as it's not been set yet
         step.addFactor(factor=construction.DeleteAttributeFactor(
-            attributeId=robots.RobotAttributeId.Endurance))
+            attributeId=robots.RobotAttributeId.Endurance))     
 
         return step
 

@@ -5430,6 +5430,12 @@ class _NoInternalPowerSlotOptionImpl(_SingleStepSlotOptionImpl):
             sequence=sequence):
             step.addFactor(factor=construction.DeleteAttributeFactor(
                 attributeId=robots.RobotAttributeId.Endurance))
+            
+        if context.hasAttribute(
+            attributeId=robots.RobotAttributeId.SecondaryEndurance,
+            sequence=sequence):
+            step.addFactor(factor=construction.DeleteAttributeFactor(
+                attributeId=robots.RobotAttributeId.SecondaryEndurance))
         
         if context.hasAttribute(
             attributeId=robots.RobotAttributeId.VehicleEndurance,
