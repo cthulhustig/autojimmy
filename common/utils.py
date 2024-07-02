@@ -67,23 +67,24 @@ def formatNumber(
         decimalPlaces: int = 2, # Only applies for float values
         removeTrailingZeros: bool = True, # Only applies for float values
         infinityString: str = 'inf', # Only applies for float values,
-        prefix: str = '', # Prefix goes before number but after any sign
+        prefix: str = '',
+        infix: str = '', # Infix (my own term) goes before number but after any sign (used for money)
         suffix: str = ''
         ) -> str:
     if number == float('inf'):
         if alwaysIncludeSign:
-            return '+' + prefix + infinityString
+            return prefix + '+' + infix + infinityString
         else:
-            return prefix + infinityString
+            return prefix + infix + infinityString
     elif number == float('-inf'):
-        return '-' + prefix + infinityString
+        return prefix + '-' + infix + infinityString
 
-    if prefix:
+    if prefix or infix:
         if number >= 0:
             sign = '+' if alwaysIncludeSign else ''
         else:
             sign = '-'
-        format = f'{sign}{prefix}{{0:{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
+        format = f'{prefix}{sign}{infix}{{0:{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
         number=abs(number)
     else:
         format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'

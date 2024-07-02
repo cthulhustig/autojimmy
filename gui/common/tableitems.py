@@ -16,7 +16,8 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             alwaysIncludeSign: bool = False,
             decimalPlaces: int = 2, # Only applies for float values
             removeTrailingZeros: bool = True, # Only applies for float values,
-            prefix: str = '', # Prefix goes before number but after any sign
+            prefix: str = '',
+            infix: str = '', # Infix (my own term) goes before number but after any sign
             suffix: str = '',
             other: typing.Optional['FormattedNumberTableWidgetItem'] = None
             ) -> None:
@@ -29,6 +30,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             decimalPlaces=other._decimalPlaces if other else decimalPlaces,
             removeTrailingZeros=other._removeTrailingZeros if other else removeTrailingZeros,
             prefix=other._prefix if other else prefix,
+            infix=other._infix if other else infix,
             suffix=other._suffix if other else suffix)
 
     def value(self) -> None:
@@ -66,6 +68,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
                 decimalPlaces=self._decimalPlaces,
                 removeTrailingZeros=self._removeTrailingZeros,
                 prefix=self._prefix,
+                infix=self._infix,
                 suffix=self._suffix,
                 infinityString='∞')
         self.setText(stringValue)             
@@ -77,7 +80,8 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             alwaysIncludeSign: bool = False,
             decimalPlaces: int = 2, # Only applies for float values
             removeTrailingZeros: bool = True, # Only applies for float values
-            prefix: str = '', # Prefix goes before number but after any sign
+            prefix: str = '',
+            infix: str = '', # Infix (my own term) goes before number but after any sign
             suffix: str = '',            
             ) -> None:
         self._thousandsSeparator = thousandsSeparator
@@ -85,6 +89,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
         self._decimalPlaces = decimalPlaces
         self._removeTrailingZeros = removeTrailingZeros
         self._prefix = prefix
+        self._infix = infix
         self._suffix = suffix
         self.setValue(value=value)
 

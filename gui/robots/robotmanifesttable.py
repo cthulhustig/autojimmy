@@ -19,17 +19,10 @@ class RobotManifestTable(gui.ManifestTable):
             costId: robots.RobotCost,
             cost: common.ScalarCalculation
             ) -> str:
-        text = common.formatNumber(
+        return common.formatNumber(
             number=cost.value(),
-            decimalPlaces=self.decimalPlaces())
-        if costId == robots.RobotCost.Credits:
-            return 'Cr' + text
-        elif costId == robots.RobotCost.Slots:
-            return text
-        elif costId == robots.RobotCost.Bandwidth:
-            return text
-
-        return '????' # Should never happen
+            decimalPlaces=self.decimalPlaces(),
+            infix='Cr' if costId == robots.RobotCost.Credits else '')
 
     def decimalPlaces(self) -> int:
         return robots.ConstructionDecimalPlaces

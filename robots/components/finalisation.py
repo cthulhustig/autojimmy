@@ -309,9 +309,8 @@ class FixedCostModifier(CostModification):
         stepName = 'Cost {type} ({amount})'.format(
             type='Reduction' if costModifier.value() < 0 else 'Increase',
             amount=common.formatNumber(
-                number=costModifier.value(),
-                alwaysIncludeSign=True,
-                prefix='Cr'))
+                number=abs(costModifier.value()),
+                infix='Cr'))
         step = robots.RobotStep(
             name=stepName,
             type=self.typeString())

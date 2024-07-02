@@ -626,6 +626,7 @@ class Robot(construction.ConstructableInterface):
                 if isinstance(attributeValue, common.ScalarCalculation):
                     speedStrings.append(common.formatNumber(
                         number=attributeValue.value(),
+                        prefix='2nd: ',
                         suffix='m'))
                     calculations.append(attributeValue)
 
@@ -635,7 +636,7 @@ class Robot(construction.ConstructableInterface):
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.VehicleSpeed)
                 if isinstance(attributeValue, robots.SpeedBand):
-                    speedStrings.append(attributeValue.value)
+                    speedStrings.append(f'VSM: {attributeValue.value}')
 
                 fieldText = Robot._formatWorksheetListString(speedStrings)
             elif field == robots.Worksheet.Field.TL:
@@ -644,7 +645,7 @@ class Robot(construction.ConstructableInterface):
                 cost = self.totalCredits()
                 fieldText = common.formatNumber(
                     number=cost.value(),
-                    prefix='Cr')
+                    infix='Cr')
                 calculations.append(cost)
             elif field == robots.Worksheet.Field.Skills:
                 skillString = []
@@ -796,6 +797,7 @@ class Robot(construction.ConstructableInterface):
                     if isinstance(attributeValue, common.ScalarCalculation):
                         enduranceStrings.append(common.formatNumber(
                             number=round(attributeValue.value()),
+                            prefix='2nd: ',
                             suffix=' hours'))
                         calculations.append(attributeValue)
 
@@ -804,6 +806,7 @@ class Robot(construction.ConstructableInterface):
                     if isinstance(attributeValue, common.ScalarCalculation):
                         enduranceStrings.append(common.formatNumber(
                             number=round(attributeValue.value()),
+                            prefix='VSM: ',
                             suffix=' hours'))
                         calculations.append(attributeValue) 
 

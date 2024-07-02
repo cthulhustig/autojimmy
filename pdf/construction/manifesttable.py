@@ -110,10 +110,13 @@ def _createManifestEntryRow(
                 prefix = False
                 if costUnits and costId in costUnits:
                     units, prefix = costUnits[costId]
+                # NOTE: This actually uses infix instead of prefix as the only
+                # 'prefixed' numerical values displayed in a manifest are
+                # credit amounts                    
                 costString = common.formatNumber(
                     number=cost.numeric(),
                     decimalPlaces=decimalPlaces,
-                    prefix=units if prefix else None,
+                    infix=units if prefix else None,
                     suffix=units if not prefix else None)
             else:
                 costString = cost.displayString(
@@ -163,10 +166,13 @@ def _createManifestSectionTotalRow(
             prefix = False
             if costUnits and costId in costUnits:
                 units, prefix = costUnits[costId]
+            # NOTE: This actually uses infix instead of prefix as the only
+            # 'prefixed' numerical values displayed in a manifest are
+            # credit amounts
             costString = common.formatNumber(
                 number=cost.value(),
                 decimalPlaces=decimalPlaces,
-                prefix=units if prefix else None,
+                infix=units if prefix else None,
                 suffix=units if not prefix else None)
         else:
             costString = '-'
@@ -208,10 +214,13 @@ def _createManifestTotalRow(
             prefix = False
             if costUnits and costId in costUnits:
                 units, prefix = costUnits[costId]
+            # NOTE: This actually uses infix instead of prefix as the only
+            # 'prefixed' numerical values displayed in a manifest are
+            # credit amounts                
             costString = common.formatNumber(
                 number=cost.value(),
                 decimalPlaces=decimalPlaces,
-                prefix=units if prefix else None,
+                infix=units if prefix else None,
                 suffix=units if not prefix else None)
         else:
             costString = '-'
