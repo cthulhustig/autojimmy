@@ -685,9 +685,9 @@ class Finalisation(robots.RobotComponentInterface):
                 value = context.attributeValue(
                     attributeId=trait,
                     sequence=sequence)
-                assert(isinstance(value, common.ScalarCalculation))
-                name = f'{trait.value} ({common.formatNumber(value.value(), alwaysIncludeSign=True)})'
-                notes.append(f'The robot\'s thrusters can provide {value.value()}G of thrust. (p17)')
+                assert(isinstance(value, enum.Enum))
+                name = f'{trait.value} ({value.value})'
+                notes.append(f'The robot\'s thrusters can provide {value.value} of thrust. (p17)')
             elif trait == robots.RobotAttributeId.Flyer:
                 value = context.attributeValue(
                     attributeId=trait,

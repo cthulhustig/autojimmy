@@ -3,17 +3,17 @@ import construction
 import robots
 import typing
 
-
-# TODO: If you select no primary locomotion and thrusters as a
-# secondary locomotion the you can't give the robot vehicle speed
-# movement. It's possible (but really not clear) that this is the
-# intentional and explains why the rules say thrusters are generally
-# secondary locomotions and what seems to be be a tiering system in
-# the thruster description (p17). Is the intention that if you only
-# have 1 thruster locomotion you can't have VSM and can only
-# accelerate at 0.1g but if you have both locomotions as thruster
-# you can have VSM and get 10/15g acceleration.
-
+#  █████                           ████ 
+# ░░███                           ░░███ 
+#  ░███  █████████████   ████████  ░███ 
+#  ░███ ░░███░░███░░███ ░░███░░███ ░███ 
+#  ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
+#  ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
+#  █████ █████░███ █████ ░███████  █████
+# ░░░░░ ░░░░░ ░░░ ░░░░░  ░███░░░  ░░░░░ 
+#                        ░███           
+#                        █████          
+#                       ░░░░░          
 
 class _LocomotionImpl(object):
     """
@@ -247,6 +247,9 @@ class _LocomotionImpl(object):
         if self._notes:
             for note in self._notes:
                 step.addNote(note)
+
+    def _isPrimary(self) -> bool:
+        return self._primaryEquivType == None
 
     def _calculatePrimaryEndurance(
             self,
@@ -652,19 +655,6 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             notes=['Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17).'],
             primaryEquivType=primaryEquivType)
         
-# TODO: After re-reading the Thrusters trait (p17) I think I
-# need 2 types of thruster, a standard one an a missile-like
-# one. The standard one would have the default 0.1G thrust,
-# missile-like ones would either be 10G or 15G depending on
-# the tech level. It could also be handled with a single
-# thruster component and a boolean option that allows the
-# user to select if it's missile-like or not.
-# Update there is some text covering missile-like on the
-# right hand side of p17. It says they're a special class
-# where the robot has thrusters for primary and secondary
-# locomotion and has vehicle speed movement. If I was
-# handling this logic it would either need to be done in
-# Vehicle Speed Movement or Finalisation
 class _ThrusterLocomotionImpl(_LocomotionImpl):
     """
     - TL: 7
@@ -672,27 +662,20 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
     - Traits: Thruster
     - Base Endurance: 2 hours
     - Cost Multiplier: x20
-    - Options: Thrust level (p17)
-        - 0.1G (default)
-        - 10G (TL8-13)
-        - 15G (TL14+)
-    - Option: Number of thrusters
+    - Trait: Thrust 0.1G as standard (p17)
+    = Trait: Thrust 10G (TL8-13) or 15G (TL14+) if primary and secondary
+      thrusters and Vehicle speed movement (p17)
     """
+    # NOTE: There are 2 types of thrusters, standard thrusters intended to as a
+    # secondary form of locomotion so the robot can maneuver in low gravity
+    # (<= 0.1G), and missile thrusters that require thrusters to be installed as
+    # the primary and secondary locomotion along with vehicle speed movement
     # NOTE: The table on p16 of the robot rules doesn't say that the Thrust
     # locomotion type has the Thrust trait from p17. I'm working on the
     # assumption this is an oversight
-    # NOTE: On p17 the rules say that Thrusters are generally only available
-    # as secondary locomotion types however it doesn't say it's never available
-    # as a primary type so I allow it.
-    _BaseThrust = common.ScalarCalculation(
-        value=0.1,
-        name='Basic Thruster G-Force')
-    _TL8Thrust = common.ScalarCalculation(
-        value=10,
-        name='TL8+ Thruster G-Force')
-    _TL14Thrust = common.ScalarCalculation(
-        value=15,
-        name='TL14+ Thruster G-Force')
+
+    _LowMissileTL = 8
+    _HighMissileTL = 14
 
     def __init__(
             self,
@@ -717,18 +700,30 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
             sequence=sequence,
             context=context,
             step=step)
-
-        if context.techLevel() >= 14:
-            thrust = _ThrusterLocomotionImpl._TL14Thrust
-        elif context.techLevel() >= 8:
-            thrust = _ThrusterLocomotionImpl._TL8Thrust
-        else:
-            thrust = _ThrusterLocomotionImpl._BaseThrust
+        
+        thrust = robots.ThrustGForce.Thrust0p1G
+        if not self._isPrimary():
+            # Only check for missile thrusters on secondary locomotion. I think
+            # it makes logical sense as, out of the components requirements for
+            # missile thrusters, secondary locomotion is the last in construction
+            # so its conceptually it the component that takes it from standard
+            # to missile.
+            hasPrimaryThrusters = context.hasComponent(
+                componentType=self._primaryEquivType,
+                sequence=sequence)
+            hasVehicleSpeed = context.hasComponent(
+                componentType=robots.VehicleSpeedMovement,
+                sequence=sequence)
+            if hasPrimaryThrusters and hasVehicleSpeed:
+                if context.techLevel() >= _ThrusterLocomotionImpl._HighMissileTL:
+                    thrust = robots.ThrustGForce.Thrust15G
+                elif context.techLevel() >= _ThrusterLocomotionImpl._LowMissileTL:
+                    thrust = robots.ThrustGForce.Thrust10G
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Thruster,
             value=thrust))
-        
+    
 class Locomotion(robots.RobotComponentInterface):
     def __init__(
             self,
@@ -783,6 +778,19 @@ class Locomotion(robots.RobotComponentInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
+
+        
+#  ███████████             ███                                                
+# ░░███░░░░░███           ░░░                                                 
+#  ░███    ░███ ████████  ████  █████████████    ██████   ████████  █████ ████
+#  ░██████████ ░░███░░███░░███ ░░███░░███░░███  ░░░░░███ ░░███░░███░░███ ░███ 
+#  ░███░░░░░░   ░███ ░░░  ░███  ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███ 
+#  ░███         ░███      ░███  ░███ ░███ ░███  ███░░███  ░███      ░███ ░███ 
+#  █████        █████     █████ █████░███ █████░░████████ █████     ░░███████ 
+# ░░░░░        ░░░░░     ░░░░░ ░░░░░ ░░░ ░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███ 
+#                                                                    ███ ░███ 
+#                                                                   ░░██████  
+#                                                                    ░░░░░░  
 
 class PrimaryLocomotion(Locomotion):
     def __init__(
@@ -851,6 +859,20 @@ class ThrusterPrimaryLocomotion(PrimaryLocomotion):
     # Speed Movement which is primary locomotion only.
     def __init__(self) -> None:
         super().__init__(impl=_ThrusterLocomotionImpl())
+
+
+
+#   █████████                                            █████                               
+#  ███░░░░░███                                          ░░███                                
+# ░███    ░░░   ██████   ██████   ██████  ████████    ███████   ██████   ████████  █████ ████
+# ░░█████████  ███░░███ ███░░███ ███░░███░░███░░███  ███░░███  ░░░░░███ ░░███░░███░░███ ░███ 
+#  ░░░░░░░░███░███████ ░███ ░░░ ░███ ░███ ░███ ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███ 
+#  ███    ░███░███░░░  ░███  ███░███ ░███ ░███ ░███ ░███ ░███  ███░░███  ░███      ░███ ░███ 
+# ░░█████████ ░░██████ ░░██████ ░░██████  ████ █████░░████████░░████████ █████     ░░███████ 
+#  ░░░░░░░░░   ░░░░░░   ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███ 
+#                                                                                   ███ ░███ 
+#                                                                                  ░░██████  
+#                                                                                   ░░░░░░  
 
 class SecondaryLocomotion(Locomotion):
     """

@@ -15,6 +15,11 @@ class SpeedBand(enum.Enum):
     Supersonic = 'Supersonic'
     Hypersonic = 'Hypersonic'
 
+class ThrustGForce(enum.Enum):
+    Thrust0p1G = '0.1G'
+    Thrust10G = '10G'
+    Thrust15G = '15G'
+
 class RobotAttributeId(construction.ConstructionAttributeId):
     # Attributes Used By All Robots (Numeric unless otherwise stated)
     Size = 'Size'
@@ -130,12 +135,12 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # activated. It's only given by the Active Camouflage and Stealth component
     # option and is not the same thing as the Stealth skill.
     Stealth = 'Stealth' # (p7)
-    Thruster = 'Thruster' # In G (p17)
 
     #
     # Robot Enum Traits
     #
     Flyer = 'Flyer' # SpeedBand (p8 & p17)
+    Thruster = 'Thruster' # Acceleration G-Force (p17)
 
 InternalAttributeIds = [
     RobotAttributeId.BaseProtection,
