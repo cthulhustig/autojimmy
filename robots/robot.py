@@ -591,23 +591,19 @@ class Robot(construction.ConstructableInterface):
                 else:
                     fieldText = '-'
             elif field == robots.Worksheet.Field.Locomotion:
-                # TODO: Ideally this wouldn't include anything for the primary
-                # locomotion if it's NoPrimaryLocomotion and there are any
-                # secondary locomotions as it looks weird. The problem with
-                # doing it though is the Endurance field currently will
-                # display the endurance for the primary locomotion but not
-                # the secondary, but if I make the change here it will be
-                # easy to think the displayed endurance is for when using
-                # the secondary locomotion
                 locomotions = self.findComponents(
                     componentType=robots.Locomotion)
                 locomotionStrings = []
                 for locomotion in locomotions:
                     assert(isinstance(locomotion, robots.Locomotion))
+                    if isinstance(locomotion, robots.NoPrimaryLocomotion):
+                        continue
                     componentString = locomotion.componentString()
                     if componentString not in locomotionStrings:
                         locomotionStrings.append(componentString)
-                fieldText = Robot._formatWorksheetListString(locomotionStrings)
+                fieldText = Robot._formatWorksheetListString(
+                    locomotionStrings,
+                    emptyText='-')
             elif field == robots.Worksheet.Field.Speed:
                 speedStrings = []
 
@@ -618,15 +614,13 @@ class Robot(construction.ConstructableInterface):
                         number=attributeValue.value(),
                         suffix='m'))
                     calculations.append(attributeValue)
-                else:
-                    speedStrings.append('-')
 
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.SecondarySpeed)
                 if isinstance(attributeValue, common.ScalarCalculation):
                     speedStrings.append(common.formatNumber(
                         number=attributeValue.value(),
-                        prefix='2nd: ',
+                        prefix='2ndry: ',
                         suffix='m'))
                     calculations.append(attributeValue)
 
@@ -638,7 +632,9 @@ class Robot(construction.ConstructableInterface):
                 if isinstance(attributeValue, robots.SpeedBand):
                     speedStrings.append(f'VSM: {attributeValue.value}')
 
-                fieldText = Robot._formatWorksheetListString(speedStrings)
+                fieldText = Robot._formatWorksheetListString(
+                    speedStrings,
+                    emptyText='-')
             elif field == robots.Worksheet.Field.TL:
                 fieldText = str(self.techLevel())
             elif field == robots.Worksheet.Field.Cost:
@@ -771,12 +767,6 @@ class Robot(construction.ConstructableInterface):
                 # hour rather than rounding down as would possibly seem more logical. The
                 # book explicitly says this is what should be done in the Final Endurance
                 # section (p23)
-                # TODO: Need to include the endurance when using secondary locomotion. I
-                # think the simplest way to do this would be to only allow a single
-                # secondary locomotion and add Endurance (and probably Speed) attributes
-                # for it. The intention does seem to be that there is only a single
-                # secondary locomotion, it's implied by the rules and both spreadsheets
-                # only support 1.
                 isBiological = self.hasComponent(componentType=robots.BioRobotSynthetic)
                 if isBiological:
                     fieldText = 'As biological being'
@@ -797,7 +787,7 @@ class Robot(construction.ConstructableInterface):
                     if isinstance(attributeValue, common.ScalarCalculation):
                         enduranceStrings.append(common.formatNumber(
                             number=round(attributeValue.value()),
-                            prefix='2nd: ',
+                            prefix='2ndry: ',
                             suffix=' hours'))
                         calculations.append(attributeValue)
 
@@ -1301,9 +1291,10 @@ class Robot(construction.ConstructableInterface):
 
     @staticmethod
     def _formatWorksheetListString(
-            stringList: typing.Iterable[str]
+            stringList: typing.Iterable[str],
+            emptyText: str = 'None'
             ) -> str:
         if not stringList:
-            return 'None'
+            return emptyText
         return ', '.join(stringList)
  
