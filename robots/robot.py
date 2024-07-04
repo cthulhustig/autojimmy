@@ -960,6 +960,7 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             phase=robots.RobotPhase.BaseChassis,
             baseType=robots.Chassis,
+            defaultType=robots.Size5Chassis, # Default to human size
             # Mandatory single component
             minComponents=1,
             maxComponents=1))

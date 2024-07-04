@@ -472,7 +472,7 @@ class Manipulator(robots.RobotComponentInterface):
             context: robots.RobotContext
             ) -> None:
         manipulators = context.findComponents(
-            componentType=type(self),
+            componentType=robots.Manipulator,
             sequence=sequence)
         foundIndex = None
         for index, manipulator in enumerate(manipulators):
@@ -480,16 +480,18 @@ class Manipulator(robots.RobotComponentInterface):
                 foundIndex = index + 1
                 break
 
-        stepName = '{component} #{index} (Size: {size}, STR: {strength}, DEX: {dexterity})'.format(
+        stepName = '{component} (Size: {size}, STR: {strength}, DEX: {dexterity})'.format(
             component=self.componentString(),
-            index=foundIndex if foundIndex != None else '??',
             size=self.size(),
             strength=self.strength(),
-            dexterity=self.dexterity())        
+            dexterity=self.dexterity())
+        stepType = '{type} #{index}'.format(
+            type=self.typeString(),
+            index=foundIndex if foundIndex != None else '??')
 
         step = robots.RobotStep(
             name=stepName,
-            type=self.typeString())
+            type=stepType)
         
         self._impl.updateStep(
             sequence=sequence,
