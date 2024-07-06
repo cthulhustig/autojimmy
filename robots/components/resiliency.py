@@ -3,14 +3,6 @@ import construction
 import robots
 import typing
 
-# TODO: It would be nice to have a component that allows
-# you to specify the final number of hits. Could possibly
-# have it as a single component that allows you to specify
-# either the desired final number of hits or the number
-# to increase/decrease the number of hits by. However, if
-# I do it for this then I should really also do it for armour
-# and endurance  chassis mod and probably agility and speed
-# locomotion mods
 class ResiliencyModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Resiliency Modification'

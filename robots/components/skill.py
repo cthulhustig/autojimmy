@@ -388,8 +388,12 @@ class BasicSkillPackage(SkillPackage):
     
 # NOTE: None is the first basic skill package listed as it should appear
 # before other 'real' options when listed by enumeration
-# TODO: It looks like you can also add a basic skill package on a chip for
-# Cr1000. It would be good if there was the option to buy multiple chips
+# NOTE: The rules also talk about being able to buy basic skill packages
+# on a chip that you can install on a robot with a Basic (None) skill
+# package. I've not done anything to implement this for now as I don't
+# think it's worth the faff. If you want to know the robots stats with
+# chip installed you can just switch it from None to whatever skill package
+# you installed in the UI.
 class NoneBasicSkillPackage(BasicSkillPackage):
     """
     - Requirement: A Basic (None) robot can have up to 2 standard skills
