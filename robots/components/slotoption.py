@@ -840,6 +840,7 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
     - <All>
         - Requirement: Incompatible with Armour Decrease chassis option (p19)
+        - Requirement: Includes all benefits of Hostile Environment Protection except vacuum protection
     - Standard
         - Min TL: 7
         - Cost: Cr600 * Base Slots
@@ -863,8 +864,12 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=50000,
         name='BioRobot Vacuum Environment Protection Cost Per Slot')
     
-    _ProtectionNote = 'Gives protection from temperatures between -250°C and +250°C. (p34)'
-    _AtmosphereNote = 'The robot can operate in class 0-A, D, E and some F atmospheres as well as up to 10m underwater in standard atmosphere/gravity. It can also survive {robotTL} hours in a class B (corrosive) atmosphere and {robotTL} mins in a class C (insidious) atmosphere. (p34)'
+    _RadsTrait = common.ScalarCalculation(
+        value=+500,
+        name='Vacuum Environment Protection Rads Modifier')
+    
+    _ProtectionNote = 'Gives protection from temperatures between -250°C and +250°C, high/low humidity and most biological attacks (p34 & p32)'
+    _AtmosphereNote = 'The robot can operate in class 0-A, D, E and some F atmospheres as well as up to 10m underwater in standard atmosphere/gravity. It can also survive {robotTL} hours in a class B (corrosive) atmosphere and {robotTL} mins in a class C (insidious) atmosphere. (p34 & p32)'
 
     def __init__(
             self,
@@ -920,6 +925,10 @@ class _VacuumEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
             rhs=context.baseSlots(sequence=sequence),
             name=f'{self.componentString()} Cost')
         
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.Rads,
+            modifier=construction.ConstantModifier(
+                value=_VacuumEnvironmentProtectionSlotOptionImpl._RadsTrait)))        
         
         step.addNote(note=_VacuumEnvironmentProtectionSlotOptionImpl._ProtectionNote)
         
@@ -2304,6 +2313,7 @@ class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Trait: Rads +500    
     - Note: Gives protection from temperatures between -200°C and +200°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)
     - Requirement: Incompatible with Armour Decrease chassis option (p19)
+    - Requirement: Includes all benefits of Hostile Environment Protection except vacuum protection
     """
     # NOTE: Some of the details of what protection this gives (including the rads)
     # comes from the book says it gives the same protection as hostile environment
@@ -2313,7 +2323,7 @@ class _CorrosiveEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=+500,
         name='Corrosive Environment Protection Rads Modifier')
     
-    _ProtectionNote = 'Gives protection from temperatures between -200°C and +200°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)'
+    _ProtectionNote = 'Gives protection from temperatures between -200°C and +200°C, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41 & p32)'
 
     def __init__(
             self,
@@ -2364,6 +2374,7 @@ class _InsidiousEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
     - Note: Gives TL days of protection in class C (insidious) atmospheres. (p41)
     - Note: Gives protection from temperatures between -270°C and +800°C, pressures up to TL * 10 atmospheres, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)
     - Requirement: Incompatible with Armour Decrease chassis option (p19)
+    - Requirement: Includes all benefits of Hostile Environment Protection except vacuum protection
     """
     # NOTE: Some of the details of what protection this gives (including the rads)
     # comes from the book says it gives the same protection as hostile environment
@@ -2378,7 +2389,7 @@ class _InsidiousEnvironmentProtectionSlotOptionImpl(_SingleStepSlotOptionImpl):
         name='Insidious Environment Protection Max Pressure TL Multiplier')
     
     _InsidiousNote = 'Gives {robotTL} days of protection in class C (insidious) atmospheres. (p41)'
-    _ProtectionNote = 'Gives protection from temperatures between -270°C and +800°C, pressures up to {maxPressure} atmospheres, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41)'
+    _ProtectionNote = 'Gives protection from temperatures between -270°C and +800°C, pressures up to {maxPressure} atmospheres, high/low humidity, most biological attacks and atmosphere classes 2-9, A, B, D and E. (p41 & p32)'
 
     def __init__(
             self,
