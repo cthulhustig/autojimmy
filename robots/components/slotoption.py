@@ -5807,7 +5807,7 @@ class _SolarPowerUnitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     _OnlyPowerSourceNote = 'When relying on the solar power unit as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. (p55)'
     _OnlyPowerSourceComplexNote = 'When relying on the solar power unit as the only power source, the robot\'s movement rate and STR are halved (rounded down), it suffers an Agility -2 modifier and it cannot use the vehicle speed movement modification or the Athletics (Endurance) skill. These restrictions can be avoided by using 2 RTG or Solar Power units simultaneously (in any combination). (p55)'
     _SunlightNote = 'When relying on the solar power unit as the only power source, the robot can maintain a normal activity level for half the length of time it spends in sunlight. If the robot halves its movement rate and STR again and applies a further Agility -2 modifier, it can operation for the same length of time as it spends in sunlight. If the robot is stationary or performs minimal activity it can operate for twice as long as it spends in sunlight. (p56)'
-    _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot applies the further reductions to movement rate and STR and Agility modifier, it can recharge its power packs in {quarter} hours. If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
+    _RechargeNote = 'If maintaining a normal activity level, the robot can recharge its power packs in {normal} hours. If the robot halves its movement rate and applies a -2 STR and Agility modifier, it can recharge its power packs in {quarter} hours (this stacks with modifiers for using solar power as the only power source). If the robot is stationary or performing minimal activity, it can recharge its power pack in {minimal} hours. (p56)'
     _LifespanNote = 'The solar panels stops providing power after {lifespan} years. (p57)'
     _DeployedNote = 'When the solar panels are deployed the robot\'s Size is {size}, it suffers a DM-2 to Stealth checks or provides a DM+2 to the oppositions Electronics (Sensors) or Recon checks. Although the rules covering this increase in size don\'t explicitly state it (p57), one of the implications of this increase of size is it will increase the Attack Roll DM that attackers get when attacking the robot to {attackDM}. (p13)'
     _DurabilityNote = 'The solar panels have an Armour of {armour} and Hits of {hits}. (p57)'
@@ -5983,7 +5983,7 @@ class _QuickChargerSlotOptionImpl(_SingleStepSlotOptionImpl):
             minTL=8,
             constantCost=200,
             constantSlots=1,
-            notes=['Can fully recharge a robot not running on external power in 1 hour'],
+            notes=['A high amperage power source can be used to fully recharge the robot in 1 hour. (p57)'],
             incompatibleTypes=incompatibleTypes)
         
     def isZeroSlot(self) -> bool:

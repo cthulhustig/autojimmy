@@ -573,14 +573,15 @@ class Finalisation(robots.RobotComponentInterface):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        self._createProtectionStep(sequence=sequence, context=context)
-        self._createTraitNoteSteps(sequence=sequence, context=context)
-        self._createCombatStep(sequence=sequence, context=context)
-        self._vacuumOperationStep(sequence=sequence, context=context)
-        self._createInoperableStep(sequence=sequence, context=context)
+        self._createRechargeStep(sequence=sequence, context=context)
         self._createMaintenanceStep(sequence=sequence, context=context)
+        self._createTraitNoteSteps(sequence=sequence, context=context)
         self._createAutopilotStep(sequence=sequence, context=context)
+        self._createProtectionStep(sequence=sequence, context=context)
         self._createManipulatorAthleticsStep(sequence=sequence, context=context)
+        self._createCombatStep(sequence=sequence, context=context)
+        self._createInoperableStep(sequence=sequence, context=context)
+        self._createVacuumOperationStep(sequence=sequence, context=context)
 
         # These are intentionally left to last to hopefully make them more
         # obvious.
@@ -743,7 +744,35 @@ class Finalisation(robots.RobotComponentInterface):
             doubleHits=hits.value() * 2))
         context.applyStep(
             sequence=sequence,
-            step=step)                      
+            step=step)
+
+    def _createRechargeStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        noInternalPower = context.hasComponent(
+            componentType=robots.NoInternalPowerSlotOption,
+            sequence=sequence)
+        if noInternalPower:
+            return
+        
+        hasQuickCharger = context.hasComponent(
+            componentType=robots.QuickChargerSlotOption,
+            sequence=sequence)
+        
+        if hasQuickCharger:
+            rechargeNote = 'It takes 8 hours to fully recharge the robot when not using an external power supply capable of quick charging. (p57)'
+        else:
+            rechargeNote = 'It takes 8 hours to fully recharge the robot using an external power supply. (p19)'
+
+        step = robots.RobotStep(
+            name=f'Recharge',
+            type='Basic Info')
+        step.addNote(note=rechargeNote)
+        context.applyStep(
+            sequence=sequence,
+            step=step)                          
 
     def _createMaintenanceStep(
             self,
@@ -760,7 +789,7 @@ class Finalisation(robots.RobotComponentInterface):
 
         step = robots.RobotStep(
             name='Maintenance',
-            type='Resilience',
+            type='Basic Info',
             notes=[Finalisation._DefaultMaintenanceNote])
         context.applyStep(
             sequence=sequence,
@@ -921,7 +950,7 @@ class Finalisation(robots.RobotComponentInterface):
                 sequence=sequence,
                 step=step)
 
-    def _vacuumOperationStep(
+    def _createVacuumOperationStep(
             self,
             sequence: str,
             context: robots.RobotContext
