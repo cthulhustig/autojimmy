@@ -6,6 +6,15 @@ import robots
 import traveller
 import typing
 
+# TODO: Handle Traveller robots (p115)
+# - Looks like most of it could be done in a finalisation step that adds some notes and sets END/EDU/SOC
+# attributes (SOC would be user specified).
+# - Could also handle the other characteristics Brain in a Jar handles
+# - I don't think it makes sense for Brain in a Jar to be compatible with robot Travellers as they
+# have rules about how the values are calculated
+# - From a construction flow point of view it probably makes more sense for it to be something the user 
+# specifies right at the start (i.e. like TL, weapon set)
+
 
 
 #   █████████  ████            █████       ███████████                                                           ████ 
