@@ -534,7 +534,7 @@ class Finalisation(robots.RobotComponentInterface):
     _SyntheticMinBrainNote = 'WARNING: The robot requires a {brain} brain or better to be lifelike enough that it doesn\'t trigger the uncanny valley effect during social interactions. Without it, the robot suffers DM-2 in all such interactions. (p86/88)'
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it\'s inoperable and cannot be easily repaired. If the robot sustains {doubleHits} cumulative damage, the robot is destroyed and can\'t be repaired. (p13)'
-    _DefaultMaintenanceNote = 'The robot requires maintenance once a year and malfunction checks must be made every month if it\'s not followed. (p108)'
+    _DefaultMaintenanceNote = 'The robot requires maintenance once a year. If the maintenance schedule is not followed, a Malfunction check must be made every month. (p108)'
     
     _AutopilotNote = 'The DM for the robot\'s Autopilot rating and its vehicle skills don\'t stack, the higher of the two values should be used. (p49)'
 
