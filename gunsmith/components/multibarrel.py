@@ -18,7 +18,7 @@ class MultiBarrel(gunsmith.WeaponComponentInterface):
     _BarrelCountOptionDescription = \
         '<p>Specify the number of barrels the weapon has.</p>' \
         '<p>Note that this is for a receiver with multiple barrels such as double barrel ' \
-        'shotguns or rotary barrel weapons. Cases where each barrel has a it\'s own receiver ' \
+        'shotguns or rotary barrel weapons. Cases where each barrel has its own receiver ' \
         'should be handled as a secondary weapon.</p>'
 
     def __init__(
