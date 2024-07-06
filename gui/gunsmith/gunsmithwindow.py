@@ -14,14 +14,15 @@ _WelcomeMessage = """
     <p>The Gunsmith window allows you to generate weapons using the rules from the Mongoose 2e
     Field Catalogue. It's aimed to aid in the creation of weapons and is not intended to be a
     substitute for the rules book.</p>
-    <p>I have to mention the number of contradictions and ambiguities that the Field Catalogue
-    contains. I'm not taking a pop at Mongoose, the Field Catalogue is by far my favourite of their
-    books, however, it directly affects how the Gunsmith tool is used. Efforts have been made to add
-    options so users can choose how they interpret the rules in cases where it wasn't possible to
-    clearly determine the intent of the rules. However, in some cases the holes are so fundamental
-    to the construction process that it's not feasible to do this (notably RF/VRF weapons and multi
-    barrel/receiver weapons). In these cases, it was necessary to choose what seemed like the most
-    logical interpretation and go with that, it's not ideal, but it was the only real option.</p>
+    <p>Before going any further, I have to mention the number of contradictions and ambiguities in
+    the Field Catalogue. I'm not taking a pop at Mongoose, the Field Catalogue is by far my
+    favourite of their books, however, it directly affects how the Gunsmith tool is used. Efforts
+    have been made to add options so users can choose how they interpret the rules in cases where
+    it wasn't possible to clearly determine the intent from what is written. However, in some cases
+    the holes are so fundamental to the construction process that it's not feasible to do this
+    (notably RF/VRF weapons and multi barrel/receiver weapons). In these cases, it was necessary to
+    choose what seemed like the most logical interpretation and go with that, it's not ideal, but
+    it was the only real option.</p>
     <p>{name} comes with pre-configured example weapons based on the examples from the rule book.
     This is another area the book seems to fall a little short. Almost none of the examples in the
     book appear to follow the rules to the letter. The amount they differ varies, but out of 40
