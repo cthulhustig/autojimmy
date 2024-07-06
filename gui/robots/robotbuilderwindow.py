@@ -10,9 +10,31 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Add welcome message
+# TODO: Cover the fact example robots have characteristic DMs and other modifiers
+# included in the listed skills where as Auto-Jimmy doesn't by default
 _WelcomeMessage = """
-TODO
+    <html>
+    <p>The Robot Builder window allows you to create robots using the rules
+    from the Mongoose 2e Robot Handbook. It's aimed to aid in the creation of
+    robots and is not intended to be a substitute for the rules book.</p>
+    <p>A big thanks goes out to Geir Lanesskog, the book's author, for his help
+    clarifying some of the rules. You can find the discussion we had around
+    these clarifications in the thread below.<br>
+    <a href='https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/'>https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/</a>
+    </p>
+    <p>Another big thanks goes to Technetium 98 on the Mongoose forum for
+    creating the Google worksheet implementation of the Robot Handbook rules.
+    It was an indispensable reference when it came to me implementing the Robot
+    Builder.<br>
+    <a href='https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/'>https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/</a>
+    </p>
+    <p>Unfortunately, the Gunsmith and Robot Builder are not integrated at this
+    time, which means it's not possible to select a custom weapon when arming
+    a robot. Integrating custom weapons would be a surprisingly large amount of
+    work, so it will have to wait for some future version. Your Terminators will
+    need to make do with the weapons from the core rules and supply catalogues
+    for now.</p>
+    </html>
 """.format(name=app.AppName)
 
 class _RobotPDFExportDialog(gui.DialogEx):
@@ -338,15 +360,15 @@ class RobotBuilderWindow(gui.WindowWidget):
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
 
-        # TODO: This is a MASSIVE hack. There is a bug where after the window is
-        # first shown, if you add a finalisation component then remove it, the
-        # scroll view jumps back to the top of the configuration widget. I've
-        # not been able to work out what the correct fix for this is but I did
-        # find it doesn't happen if you do anything that causes the robot to be
-        # set on the configuration widget, even if just setting it to the same
-        # robot. The biggest downside with the hack I've not found a way to make
-        # it work with saving of the scroll areas position and restoring it next
-        # session but loosing that feature doesn't seem like an issue
+        # TODO: This is a MASSIVE hack. There is a bug where, after the window
+        # is first shown, the scroll view jumps back to the top of the config
+        # widget if you add a finalisation component then remove it (e.g. adding
+        # final cost rounding). I've not been able to work out what the correct
+        # fix for this is but I did find it doesn't happen if you do anything
+        # that causes the robot to be set on the configuration widget after
+        # first display, even if just setting it to the same robot. The biggest
+        # downside of the hack is I've not found a way to make saving/restoring
+        # the scroll views position between sessions work with it in place.
         self._selectedRobotChanged()
 
         super().firstShowEvent(e)
