@@ -64,18 +64,23 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     #
     # Brain Attributes
     #
-    # Most brains only have an Intelligence characteristic. The others have been
-    # added as part of support for Brain in a Jar where the robot has the other
-    # skills of the brain that was implanted. Physical characteristics are not
-    # included as they come from the robot body
-    Intellect = 'INT'
-    Education = 'EDU'
-    Social = 'SOC'
-    Psionic = 'PSI'
-    Luck = 'LCK'
-    Wealth = 'WLT'
-    Moral = 'MRL'
-    Sanity = 'STY'
+    # Most brains only have an Intelligence characteristic, the others have been
+    # added to support robots as player characters and brain in a jar.
+    # STR, DEX and END are specific to robots as player characters. It should be
+    # noted that END is not the same as the Endurance attribute, the former is
+    # the equivalent of a meat bag players END characteristic and the later is
+    # the time between recharges in hours.
+    STR = 'STR'
+    DEX = 'DEX'
+    END = 'END'
+    INT = 'INT'
+    EDU = 'EDU'
+    SOC = 'SOC'
+    PSI = 'PSI'
+    LCK = 'LCK'
+    WLT = 'WLT'
+    MRL = 'MRL'
+    STY = 'STY'
     # The Inherent Bandwidth is the base bandwidth of the brain. This is a hard
     # limit on the max bandwidth usage of individual skills. Modifications to
     # increase bandwidth don't increase the robot's inherent bandwidth
@@ -157,19 +162,33 @@ StandardAttributeIds = [
     RobotAttributeId.Protection,
     RobotAttributeId.VehicleSpeed,
     RobotAttributeId.VehicleEndurance,
-    RobotAttributeId.Intellect,
+    RobotAttributeId.INT,
 ]
 
-CharacteristicAttributeIds =[
-    RobotAttributeId.Intellect,
-    RobotAttributeId.Education,
-    RobotAttributeId.Social,
-    RobotAttributeId.Psionic,
-    RobotAttributeId.Luck,
-    RobotAttributeId.Wealth,
-    RobotAttributeId.Moral,
-    RobotAttributeId.Sanity,
+PhysicalCharacteristicAttributeIds =[
+    RobotAttributeId.STR,
+    RobotAttributeId.DEX,
+    RobotAttributeId.END
 ]
+
+MentalCharacteristicAttributeIds =[
+    RobotAttributeId.INT,
+    RobotAttributeId.EDU,
+    RobotAttributeId.SOC
+]
+
+OptionalCharacteristicAttributeIds =[
+    RobotAttributeId.PSI,
+    RobotAttributeId.LCK,
+    RobotAttributeId.WLT,
+    RobotAttributeId.MRL,
+    RobotAttributeId.STY
+]
+
+CharacteristicAttributeIds = \
+    PhysicalCharacteristicAttributeIds + \
+    MentalCharacteristicAttributeIds + \
+    OptionalCharacteristicAttributeIds
 
 TraitAttributeIds = [
     RobotAttributeId.ACV,

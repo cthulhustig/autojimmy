@@ -43,8 +43,8 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             value=costPercent,
             name=f'{self._componentString} Cost Percentage')
 
-    def agilityModifier(self) -> int:
-        return self._agilityModifier.value()
+    def agilityModifier(self) -> common.ScalarCalculation:
+        return self._agilityModifier
 
     def componentString(self) -> str:
         return self._componentString

@@ -5052,7 +5052,7 @@ class _SelfDestructSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
                 componentType=robots.Chassis,
                 sequence=sequence)
             assert(isinstance(chassis, robots.Chassis))
-            blastTrait = chassis.size()
+            blastTrait = chassis.size().value()
 
         hits = context.attributeValue(
             attributeId=robots.RobotAttributeId.Hits,

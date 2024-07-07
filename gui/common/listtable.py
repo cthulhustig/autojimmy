@@ -6,14 +6,6 @@ import math
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# Delegate that draws items without the cell focus highlight
-class _NoFocusDelegate(QtWidgets.QStyledItemDelegate):
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        itemOption = QtWidgets.QStyleOptionViewItem(option)
-        if option.state & QtWidgets.QStyle.StateFlag.State_HasFocus:
-            itemOption.state = itemOption.state ^ QtWidgets.QStyle.StateFlag.State_HasFocus
-        super().paint(painter, itemOption, index)
-
 # This QProxyStyle is intended to work around what appears to be a bug in Qt that means the icon
 # size set for the table isn't applied to the header
 # https://bugreports.qt.io/browse/QTBUG-61559
@@ -108,7 +100,9 @@ class ListTable(QtWidgets.QTableWidget):
         self.installEventFilter(self)
         self.resizeRowsToContents()
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.setItemDelegate(_NoFocusDelegate())
+        itemDelegate = gui.TableViewItemDelegateEx()
+        itemDelegate.setHighlightCurrentItem(enabled=False)
+        self.setItemDelegate(itemDelegate)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()

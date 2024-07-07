@@ -1,4 +1,28 @@
+import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
+
+class TableViewItemDelegateEx(QtWidgets.QStyledItemDelegate):
+    def __init__(
+            self,
+            parent: typing.Optional[QtCore.QObject] = None
+            ) -> None:
+        super().__init__(parent)
+        self._highlightCurrentItem = True
+
+    def highlightCurrentItem(self) -> bool:
+        return self._highlightCurrentItem
+
+    def setHighlightCurrentItem(
+            self,
+            enabled: bool
+            ) -> None:
+        self._highlightCurrentItem = enabled
+
+    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
+        itemOption = QtWidgets.QStyleOptionViewItem(option)
+        if not self._highlightCurrentItem and option.state & QtWidgets.QStyle.StateFlag.State_HasFocus:
+            itemOption.state = itemOption.state ^ QtWidgets.QStyle.StateFlag.State_HasFocus
+        super().paint(painter, itemOption, index)
 
 # This delegate is a fix for the fact QTableWidget (and possibly QTableView)
 # don't seem to properly support word wrapping text in spanned rows. The issue
@@ -7,7 +31,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # span to calculate how tall the word wrapped text will be.
 # NOTE: Currently only supports spans covering multiple columns, not multiple
 # rows
-class TableViewSpannedWordWrapFixDelegate(QtWidgets.QStyledItemDelegate):
+class TableViewSpannedWordWrapFixDelegate(TableViewItemDelegateEx):
     def sizeHint(
             self,
             option: QtWidgets.QStyleOptionViewItem,

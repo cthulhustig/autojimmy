@@ -578,7 +578,7 @@ class Robot(construction.ConstructableInterface):
         worksheet = robots.Worksheet()
 
         for field in robots.Worksheet.Field:
-            fieldText = ''
+            fieldText = None
             calculations = []
             if field == robots.Worksheet.Field.Robot:
                 fieldText = self.name()
@@ -831,18 +831,10 @@ class Robot(construction.ConstructableInterface):
                     assert(isinstance(brain, robots.Brain))
                     fieldText = brain.componentString()
 
-                    characteristicStrings = []
-                    for characteristic in robots.CharacteristicAttributeIds:
-                        characteristicValue = self.attributeValue(
-                            attributeId=characteristic)
-                        if characteristicValue:
-                            assert(isinstance(characteristicValue, common.ScalarCalculation))
-                            characteristicStrings.append(
-                                f'{characteristic.value} {characteristicValue.value()}')
-                            calculations.append(characteristicValue)
-                    if characteristicStrings:
-                        fieldText += ' ({characteristics})'.format(
-                            characteristics=', '.join(characteristicStrings))
+                    attributeValue = self.attributeValue(
+                        attributeId=robots.RobotAttributeId.INT)
+                    if isinstance(attributeValue, common.ScalarCalculation):
+                        fieldText += f' (INT {attributeValue.value()})'
                 else:
                     fieldText = 'None'
             elif field == robots.Worksheet.Field.Options:
@@ -878,8 +870,26 @@ class Robot(construction.ConstructableInterface):
                 # At this point the strings should already be sorted
                 # alphabetically (but ignoring any count multiplier)
                 fieldText = Robot._formatWorksheetListString(optionStrings)
+            elif field == robots.Worksheet.Field.Characteristics:
+                isPlayerCharacter = self.hasComponent(
+                    componentType=robots.PlayerCharacter)
+                isBrainInAJar = self.hasComponent(
+                    componentType=robots.BrainInAJarBrain)
+                if isPlayerCharacter or isBrainInAJar:
+                    characteristicStrings = []
+                    for characteristic in robots.CharacteristicAttributeIds:
+                        characteristicValue = self.attributeValue(
+                            attributeId=characteristic)
+                        if isinstance(characteristicValue, common.ScalarCalculation):
+                            characteristicStrings.append(
+                                f'{characteristic.value} {characteristicValue.value()}')
+                            calculations.append(characteristicValue)
+                    fieldText = Robot._formatWorksheetListString(characteristicStrings)
+                else:
+                    # Don't add characteristics field
+                    fieldText = None
 
-            if fieldText:
+            if fieldText != None:
                 worksheet.setField(
                     field=field,
                     value=fieldText,
@@ -907,7 +917,7 @@ class Robot(construction.ConstructableInterface):
             
         if characteristic == traveller.Characteristics.Intellect:
             characteristicValue = self.attributeValue(
-                attributeId=robots.RobotAttributeId.Intellect)
+                attributeId=robots.RobotAttributeId.INT)
             if not characteristicValue:
                 return level
         else:
@@ -1224,6 +1234,15 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
+        
+        stages.append(construction.ConstructionStage(
+            name='Special Use',
+            sequence=self._sequence,
+            phase=robots.RobotPhase.Finalisation,
+            baseType=robots.PlayerCharacter,
+            # Optional single component
+            minComponents=0,
+            maxComponents=1))        
         
         # NOTE: If I ever change this so the default isn't None then I'll need
         # to handle the fact the label in the UI will always show the max slots

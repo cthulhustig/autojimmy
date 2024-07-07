@@ -15,6 +15,257 @@ import typing
 # - From a construction flow point of view it probably makes more sense for it to be something the user 
 # specifies right at the start (i.e. like TL, weapon set)
 
+#  ███████████  ████                                               █████████  █████                                              █████                      
+# ░░███░░░░░███░░███                                              ███░░░░░███░░███                                              ░░███                       
+#  ░███    ░███ ░███   ██████   █████ ████  ██████  ████████     ███     ░░░  ░███████    ██████   ████████   ██████    ██████  ███████    ██████  ████████ 
+#  ░██████████  ░███  ░░░░░███ ░░███ ░███  ███░░███░░███░░███   ░███          ░███░░███  ░░░░░███ ░░███░░███ ░░░░░███  ███░░███░░░███░    ███░░███░░███░░███
+#  ░███░░░░░░   ░███   ███████  ░███ ░███ ░███████  ░███ ░░░    ░███          ░███ ░███   ███████  ░███ ░░░   ███████ ░███ ░░░   ░███    ░███████  ░███ ░░░ 
+#  ░███         ░███  ███░░███  ░███ ░███ ░███░░░   ░███        ░░███     ███ ░███ ░███  ███░░███  ░███      ███░░███ ░███  ███  ░███ ███░███░░░   ░███     
+#  █████        █████░░████████ ░░███████ ░░██████  █████        ░░█████████  ████ █████░░████████ █████    ░░████████░░██████   ░░█████ ░░██████  █████    
+# ░░░░░        ░░░░░  ░░░░░░░░   ░░░░░███  ░░░░░░  ░░░░░          ░░░░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░      ░░░░░░░░  ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     
+#                                ███ ░███                                                                                                                   
+#                               ░░██████                                                                                                                    
+#                                ░░░░░░   
+
+class PlayerCharacter(robots.RobotComponentInterface):
+    """
+    - STR: Strength of strongest manipulator. Robots without manipulators
+      have STR 0
+    - DEX: Dexterity of most dextrous manipulator + Any agility
+      enhancement
+    - END: Base of 6 or Robot Size, which ever is greater. If robot has
+      Athletics (Endurance) 1 its END is 9, for Athletics (Endurance) 2
+      its END is 12 and for Athletics (Endurance) 3+ its 15. Efficiency
+      modification adds +1 (this seems to be a flat +1 rather than per
+      level). Robots with RTG have an END of 16 but this is halves with
+      the half life of the radiative source
+    - INT: Brain INT score + any levels of INT upgrade
+    - EDU: When using its skills, EDU is equal to the robots INT. When
+      not using its skills, EDU is the Brain bandwidth minus any
+      bandwidth used for INT upgrades
+    - SOC: User specifiable, default 0
+    - Note: STR & DEX checks are based on the STR of the manipulator
+      being used
+    - Requirement: Requires a very advanced brain
+    """
+    # NOTE: This assumes the INT attribute is already set to the robots
+    # INT with INT upgrades applied
+
+    _ConfigurableCharacteristics = [robots.RobotAttributeId.SOC] + \
+        robots.OptionalCharacteristicAttributeIds
+
+    _CompatibleBrains = [
+        robots.VeryAdvancedBrain,
+        robots.SelfAwareBrain,
+        robots.ConsciousBrain,
+        robots.BrainInAJarBrain,
+    ]
+    
+    _NoManipulatorStrength = common.ScalarCalculation(
+        value=0,
+        name='Player Character No Manipulator STR')
+    _NoManipulatorDexterity = common.ScalarCalculation(
+        value=0,
+        name='Player Character No Manipulator DEX')
+    
+    _MinEndurance = common.ScalarCalculation(
+        value=6,
+        name='Player Character Min END')
+
+    _PowerPackEndurance1 = common.ScalarCalculation(
+        value=9,
+        name='Player Character 1 Power Pack END')
+    _PowerPackEndurance2 = common.ScalarCalculation(
+        value=12,
+        name='Player Character 2 Power Packs END')
+    _PowerPackEndurance3 = common.ScalarCalculation(
+        value=15,
+        name='Player Character 3 Power Packs END')
+    _EnhancedComponentsEnduranceModifier = common.ScalarCalculation(
+        value=+1,
+        name='Player Character Enhanced Components END Modifier')
+
+    _RtgEndurance = common.ScalarCalculation(
+        value=15,
+        name='Player CharacterRTG Power Source END')
+    
+    _StrengthAndDexterityNote = 'For STR or DEX based checks that are reliant on the use of a robots manipulator(s), the STR/DEX characteristic of the manipulator should be used rather than robots general STR/DEX characteristic. (p115)'
+
+    _EducationNote = 'For EDU based checks that don\'t use one of the robots skills, the robots EDU characteristic is {maxBandwidth}. (p115)'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self._characteristicOptions: typing.Dict[robots.RobotAttributeId, construction.IntegerOption] = {}
+        for characteristic in PlayerCharacter._ConfigurableCharacteristics:
+            isOptional = characteristic in robots.OptionalCharacteristicAttributeIds
+            option = construction.IntegerOption(
+                id=characteristic.value,
+                name=characteristic.value,
+                isOptional=isOptional,
+                minValue=0,
+                maxValue=99, # This is pretty arbitrary but having a max makes the UI scale the control better
+                value=None if isOptional else 0,
+                description=f'Specify the {characteristic.value} characteristics of the robot.')
+            self._characteristicOptions[characteristic] = option    
+
+    def componentString(self) -> str:
+        return 'Player Character'
+
+    def typeString(self) -> str:
+        return 'Special Use'
+    
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        brain = context.findFirstComponent(
+            componentType=robots.Brain,
+            sequence=sequence)
+        for brainType in PlayerCharacter._CompatibleBrains:
+            if isinstance(brain, brainType):
+                return True
+        return False
+    
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = []
+        for option in self._characteristicOptions.values():
+            if option.isEnabled():
+                options.append(option)
+        return options
+    
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        isBrainInAJar = context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence)
+        for option in self._characteristicOptions.values():
+            option.setEnabled(not isBrainInAJar)
+
+    def createSteps(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> None:
+        step = robots.RobotStep(
+            name=self.instanceString(),
+            type=self.typeString())
+
+        isBrainInAJar = context.hasComponent(
+            componentType=robots.BrainInAJarBrain,
+            sequence=sequence)
+
+        manipulators = context.findComponents(
+            componentType=robots.Manipulator,
+            sequence=sequence)
+        robotStr = PlayerCharacter._NoManipulatorStrength
+        robotDex = PlayerCharacter._NoManipulatorDexterity
+        for index, manipulator in enumerate(manipulators):
+            if isinstance(manipulator, robots.RemoveBaseManipulator):
+                continue
+            assert(isinstance(manipulator, robots.Manipulator))
+            manipulatorStr = manipulator.strength()
+            if not robotStr or manipulatorStr > robotStr.value():
+                robotStr = common.ScalarCalculation(
+                    value=manipulatorStr,
+                    name=f'Manipulator #{index} STR')
+            manipulatorDex = manipulator.dexterity()
+            if not robotDex or  manipulatorDex > robotDex.value():
+                robotDex = common.ScalarCalculation(
+                    value=manipulatorDex,
+                    name=f'Manipulator #{index} DEX')
+
+        robotStr = common.Calculator.equals(
+            value=robotStr,
+            name='Player Character Robot STR')
+        robotDex = common.Calculator.equals(
+            value=robotDex,
+            name='Player Character Robot DEX')
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.STR,
+            value=robotStr))
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.DEX,
+            value=robotDex))        
+        step.addNote(note=PlayerCharacter._StrengthAndDexterityNote)
+                 
+        agilityEnhancement = context.findFirstComponent(
+            componentType=robots.AgilityEnhancement,
+            sequence=sequence)
+        if isinstance(agilityEnhancement, robots.AgilityEnhancement):
+            robotDex = common.Calculator.add(
+                lhs=robotDex,
+                rhs=agilityEnhancement.agilityModifier())
+        
+        chassis = context.findFirstComponent(
+            componentType=robots.Chassis,
+            sequence=sequence)
+        assert(isinstance(chassis, robots.Chassis))
+        robotEnd = common.Calculator.max(
+            lhs=chassis.size(),
+            rhs=PlayerCharacter._MinEndurance)
+        
+        hasRtg = context.hasComponent(
+            componentType=robots.RTGSlotOption,
+            sequence=sequence)
+        if hasRtg:
+            robotEnd = PlayerCharacter._RtgEndurance
+        else:
+            enduranceIncrease = context.findFirstComponent(
+                componentType=robots.IncreaseEndurance,
+                sequence=sequence)
+            if isinstance(enduranceIncrease, robots.IncreaseEndurance):
+                powerPacks = enduranceIncrease.powerPackCount()
+                if powerPacks.value() >= 3:
+                    robotEnd = PlayerCharacter._PowerPackEndurance3
+                elif powerPacks.value() >= 2:
+                    robotEnd = PlayerCharacter._PowerPackEndurance2
+                elif powerPacks.value() >= 1:
+                    robotEnd = PlayerCharacter._PowerPackEndurance1
+
+                if enduranceIncrease.improvedComponents():
+                    robotEnd = common.Calculator.add(
+                        lhs=robotEnd,
+                        rhs=PlayerCharacter._EnhancedComponentsEnduranceModifier)
+                    
+        robotEnd = common.Calculator.equals(
+            value=robotEnd,
+            name='Player Character Robot END')
+        step.addFactor(factor=construction.SetAttributeFactor(
+            attributeId=robots.RobotAttributeId.END,
+            value=robotEnd))                
+        
+        if not isBrainInAJar:
+            robotEdu = context.attributeValue(
+                attributeId=robots.RobotAttributeId.INT,
+                sequence=sequence)
+            assert(isinstance(robotEdu, common.ScalarCalculation))
+            robotEnd = common.Calculator.equals(
+                value=robotEnd,
+                name='Player Character Robot EDU') 
+            step.addFactor(factor=construction.SetAttributeFactor(
+                attributeId=robots.RobotAttributeId.EDU,
+                value=robotEdu))
+            maxBandwidth = context.maxBandwidth(sequence=sequence)
+            step.addNote(note=PlayerCharacter._EducationNote.format(
+                maxBandwidth=common.formatNumber(number=maxBandwidth.value())))
+
+            for characteristic, option in self._characteristicOptions.items():
+                if option.isEnabled() and option.value() != None:
+                    value = common.ScalarCalculation(
+                        value=option.value(),
+                        name=f'Player Character Robot {characteristic.value}')
+                    step.addFactor(factor=construction.SetAttributeFactor(
+                        attributeId=characteristic,
+                        value=value))
+        
+        context.applyStep(
+            sequence=sequence,
+            step=step)
 
 
 #   █████████  ████            █████       ███████████                                                           ████ 

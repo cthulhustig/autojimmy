@@ -145,6 +145,11 @@ class RobotBrain(Brain):
     # giving the INT modifier for the brain. The numbers match up with those
     # used when doing the same for player characteristics (e.g. an INT of 1
     # gives a -2 modifier). If this is not
+    # NOTE: The INT upgrade reduces Max Bandwidth rather than having a bandwidth
+    # cost. This makes handling some stuff easier (e.g. robot as a player
+    # character) and it also makes some conceptual sense as this is being done
+    # as a mod to the brain rather than a skill that would require bandwidth to
+    # execute
 
     class _BandwidthUpgrade(enum.Enum):
         BasicHunterKillerPlus1 = 'Basic or Hunter/Killer +1'
@@ -258,7 +263,7 @@ class RobotBrain(Brain):
         value=1,
         name='Bandwidth Upgrade Required Slots')
 
-    # Data Structure: INT Increase, Bandwidth Cost
+    # Data Structure: INT Increase, Required Bandwidth
     _IntellectUpgradeBandwidthUsage = {
         _IntellectUpgrade.IntelligencePlus1: (1, 1),
         _IntellectUpgrade.IntelligencePlus2: (2, 3),
@@ -419,13 +424,13 @@ class RobotBrain(Brain):
         maxBandwidth = self._inherentBandwidth.value()
         bandwidthUpgrade = self._selectedBandwidthUpgrade()
         if bandwidthUpgrade:
-            _, _, bandwidthUsed = RobotBrain._BandwidthUpgradeData[bandwidthUpgrade]
-            maxBandwidth += bandwidthUsed
+            _, _, bandwidthIncrease = RobotBrain._BandwidthUpgradeData[bandwidthUpgrade]
+            maxBandwidth += bandwidthIncrease
             
         allowed = []
         for upgrade in RobotBrain._IntellectUpgrade:
-            _, bandwidthUsed = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
-            if bandwidthUsed <= maxBandwidth:
+            _, requiredBandwidth = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
+            if requiredBandwidth <= maxBandwidth:
                 allowed.append(upgrade)
         return allowed
 
@@ -489,7 +494,7 @@ class RobotBrain(Brain):
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
-            attributeId=robots.RobotAttributeId.Intellect,
+            attributeId=robots.RobotAttributeId.INT,
             value=self._intelligence))
         
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -517,12 +522,12 @@ class RobotBrain(Brain):
             return None# Nothing to do
         assert(isinstance(upgrade, RobotBrain._BandwidthUpgrade))
         
-        _, cost, bandwidth = RobotBrain._BandwidthUpgradeData[upgrade]
+        _, cost, bandwidthIncrease = RobotBrain._BandwidthUpgradeData[upgrade]
         cost = common.ScalarCalculation(
             value=cost,
             name=f'{upgrade.value} Bandwidth Upgrade Cost')
-        bandwidth = common.ScalarCalculation(
-            value=bandwidth,
+        bandwidthIncrease = common.ScalarCalculation(
+            value=bandwidthIncrease,
             name=f'{upgrade.value} Bandwidth Increase')
         
         stepName = f'Bandwidth Upgrade ({upgrade.value})'
@@ -544,7 +549,7 @@ class RobotBrain(Brain):
         # NOTE: Update max bandwidth NOT inherent bandwidth
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxBandwidth,
-            modifier=construction.ConstantModifier(value=bandwidth)))
+            modifier=construction.ConstantModifier(value=bandwidthIncrease)))
 
         return step   
 
@@ -562,16 +567,19 @@ class RobotBrain(Brain):
             name=f'Intellect Upgrade ({upgrade.value})',
             type=self.typeString())        
 
-        intelligenceIncrease, bandwidthUsed = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
+        intelligenceIncrease, requiredBandwidth = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
         intelligenceIncrease = common.ScalarCalculation(
             value=intelligenceIncrease,
             name=f'{upgrade.value} Intellect Upgrade INT Increase')
-        bandwidthUsed = common.ScalarCalculation(
-            value=bandwidthUsed,
-            name=f'{upgrade.value} Intellect Upgrade Required Bandwidth')        
+        requiredBandwidth = common.ScalarCalculation(
+            value=requiredBandwidth,
+            name=f'{upgrade.value} Intellect Upgrade Required Bandwidth')
+        maxBandwidthModifier = common.Calculator.negate(
+            value=requiredBandwidth,
+            name=f'{upgrade.value} Intellect Upgrade Max Bandwidth Modifier')
 
         oldIntelligence = context.attributeValue(
-            attributeId=robots.RobotAttributeId.Intellect,
+            attributeId=robots.RobotAttributeId.INT,
             sequence=sequence)
         assert(isinstance(oldIntelligence, common.ScalarCalculation))
 
@@ -610,12 +618,14 @@ class RobotBrain(Brain):
             name=f'{upgrade.value} Intellect Upgrade Cost')
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
-        assert(bandwidthUsed.value() > 0)
-        step.setBandwidth(bandwidth=construction.ConstantModifier(value=bandwidthUsed))
-
         step.addFactor(factor=construction.ModifyAttributeFactor(
-            attributeId=robots.RobotAttributeId.Intellect,
+            attributeId=robots.RobotAttributeId.INT,
             modifier=construction.ConstantModifier(value=intelligenceIncrease)))
+        
+        # NOTE: Update max bandwidth NOT inherent bandwidth
+        step.addFactor(factor=construction.ModifyAttributeFactor(
+            attributeId=robots.RobotAttributeId.MaxBandwidth,
+            modifier=construction.ConstantModifier(value=maxBandwidthModifier)))        
 
         return step      
     
@@ -1066,11 +1076,8 @@ class BrainInAJarBrain(Brain):
     # NOTE: Adding a note for the Degradation check is handled by the derived
     # classes as some have a check every month and some annually
 
-    _CoreOptionalCharacteristics = [
-        robots.RobotAttributeId.Intellect,
-        robots.RobotAttributeId.Education,
-        robots.RobotAttributeId.Social
-    ]
+    _ConfigurableCharacteristics = robots.MentalCharacteristicAttributeIds + \
+        robots.OptionalCharacteristicAttributeIds
 
     _MinChassisSize = 2
 
@@ -1095,20 +1102,16 @@ class BrainInAJarBrain(Brain):
         
         self._notes = notes
 
-        self._specifyCharacteristicsOption = construction.BooleanOption(
-            id='SpecifyCharacteristics',
-            name='Specify Brain Characteristics',
-            value=False,
-            description='Specify the non-physical characteristics of the brain.')
         self._characteristicOptions: typing.Dict[robots.RobotAttributeId, construction.IntegerOption] = {}
-        for characteristic in robots.CharacteristicAttributeIds:
+        for characteristic in BrainInAJarBrain._ConfigurableCharacteristics:
+            isOptional = characteristic in robots.OptionalCharacteristicAttributeIds
             option = construction.IntegerOption(
                 id=characteristic.value,
                 name=characteristic.value,
-                isOptional=True,
+                isOptional=isOptional,
                 minValue=0,
                 maxValue=99, # This is pretty arbitrary but having a max makes the UI scale the control better
-                value=0 if characteristic in BrainInAJarBrain._CoreOptionalCharacteristics else None,
+                value=None if isOptional else 0,
                 description=f'Specify the {characteristic.value} characteristics of the brain.')
             self._characteristicOptions[characteristic] = option
 
@@ -1126,20 +1129,11 @@ class BrainInAJarBrain(Brain):
         return chassisSize and chassisSize.value() >= BrainInAJarBrain._MinChassisSize
         
     def options(self) -> typing.List[construction.ComponentOption]:
-        options = [self._specifyCharacteristicsOption]
+        options = []
         for option in self._characteristicOptions.values():
             if option.isEnabled():
                 options.append(option)
         return options
-    
-    def updateOptions(
-            self,
-            sequence: str,
-            context: construction.ConstructionContext
-            ) -> None:
-        specifyOptions = self._specifyCharacteristicsOption.value()
-        for option in self._characteristicOptions.values():
-            option.setEnabled(enabled=specifyOptions)
 
     def createSteps(
             self,

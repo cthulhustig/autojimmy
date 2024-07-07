@@ -9,24 +9,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class RobotSheetWidget(QtWidgets.QWidget):
     _StateVersion = 'RobotSheetWidget_v1'
 
-    _ColumnCount = 6
-    _RowCount = 9
-    # Data Format: Section, Header Column, Header Row, Data Column, Data Row, Data Span Columns
-    _LayoutData = (
-        (robots.Worksheet.Field.Robot, 0, 0, 0, 1, False),
-        (robots.Worksheet.Field.Hits, 1, 0, 1, 1, False),
-        (robots.Worksheet.Field.Locomotion, 2, 0, 2, 1, False),
-        (robots.Worksheet.Field.Speed, 3, 0, 3, 1, False),
-        (robots.Worksheet.Field.TL, 4, 0, 4, 1, False),
-        (robots.Worksheet.Field.Cost, 5, 0, 5, 1, False),
-        (robots.Worksheet.Field.Skills, 0, 2, 1, 2, True),
-        (robots.Worksheet.Field.Attacks, 0, 3, 1, 3, True),
-        (robots.Worksheet.Field.Manipulators, 0, 4, 1, 4, True),
-        (robots.Worksheet.Field.Endurance, 0, 5, 1, 5, True),
-        (robots.Worksheet.Field.Traits, 0, 6, 1, 6, True),
-        (robots.Worksheet.Field.Programming, 0, 7, 1, 7, True),
-        (robots.Worksheet.Field.Options, 0, 8, 1, 8, True)
-    )
+    _WorksheetTopRow = [
+        robots.Worksheet.Field.Robot,
+        robots.Worksheet.Field.Hits,
+        robots.Worksheet.Field.Locomotion,
+        robots.Worksheet.Field.Speed,
+        robots.Worksheet.Field.TL,
+        robots.Worksheet.Field.Cost
+    ]    
 
     _ApplySkillModifiersToolTip = \
         """
@@ -64,7 +54,6 @@ class RobotSheetWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
         self._robot = None
-        self._dataItemMap: typing.Dict[RobotSheetWidget._Sections, QtWidgets.QTableWidgetItem] = {}
 
         self._characteristicsDMCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
         self._characteristicsDMCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
@@ -75,8 +64,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
         controlsLayout.addStretch()
 
         self._table = QtWidgets.QTableWidget()
-        self._table.setColumnCount(RobotSheetWidget._ColumnCount)
-        self._table.setRowCount(RobotSheetWidget._RowCount)        
+        self._table.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self._table.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._table.setWordWrap(True)
@@ -89,26 +78,16 @@ class RobotSheetWidget(QtWidgets.QWidget):
             QtWidgets.QHeaderView.ResizeMode.Fixed)
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
-        self._table.setItemDelegate(gui.TableViewSpannedWordWrapFixDelegate())
         self._table.setContextMenuPolicy(
             QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        itemDelegate = gui.TableViewSpannedWordWrapFixDelegate()
+        itemDelegate.setHighlightCurrentItem(enabled=False)
+        self._table.setItemDelegate(itemDelegate)        
         self._table.installEventFilter(self)      
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
-        for field, headerColumn, headerRow, dataColumn, dataRow, dataSpan in RobotSheetWidget._LayoutData:
-            if dataSpan:
-                self._table.setSpan(dataRow, dataColumn, 1, RobotSheetWidget._ColumnCount - dataColumn)
-
-            item = RobotSheetWidget._createHeaderItem(field)
-            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
-            self._table.setItem(headerRow, headerColumn, item)
-
-            item = RobotSheetWidget._createDataItem(field)
-            item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
-            self._table.setItem(dataRow, dataColumn, item)
-            self._dataItemMap[field] = item
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -132,11 +111,13 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._updateTable()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        width = event.size().width() - 2 # -2 is needed to stop horizontal scrollbar appearing
-        maxWidth = int(width / RobotSheetWidget._ColumnCount)
-        self._table.horizontalHeader().setMinimumSectionSize(maxWidth)
-        self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
-        self._table.resizeRowsToContents()
+        columnCount = self._table.columnCount()
+        if columnCount:
+            width = event.size().width() - 2 # -2 is needed to stop horizontal scrollbar appearing
+            maxWidth = int(width / columnCount)
+            self._table.horizontalHeader().setMinimumSectionSize(maxWidth)
+            self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
+            self._table.resizeRowsToContents()
         return super().resizeEvent(event)
     
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
@@ -185,12 +166,54 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _updateTable(self) -> None:
         worksheet = self._robot.worksheet(
             applySkillModifiers=self._characteristicsDMCheckBox.isChecked())
-        for field, item in self._dataItemMap.items():
-            item.setText(worksheet.value(field=field))
-            item.setData(
-                QtCore.Qt.ItemDataRole.UserRole,
-                worksheet.calculations(field=field))
 
+        self._table.clear()
+
+        columnCount = 0
+        for field in RobotSheetWidget._WorksheetTopRow:
+            if worksheet.hasField(field=field):
+                columnCount += 1
+        if not columnCount:
+            return # This should never happen
+        self._table.setColumnCount(columnCount)
+        self._table.setRowCount(2)
+
+        columnIndex = 0
+        for field in RobotSheetWidget._WorksheetTopRow:
+            if not worksheet.hasField(field=field):
+                continue
+            item = RobotSheetWidget._createHeaderItem(field)
+            self._table.setItem(0, columnIndex, item)
+            columnIndex += 1
+
+        columnIndex = 0
+        for field in RobotSheetWidget._WorksheetTopRow:
+            if not worksheet.hasField(field=field):
+                continue
+            item = RobotSheetWidget._createDataItem(
+                value=worksheet.value(field=field),
+                calculations=worksheet.calculations(field=field))       
+            self._table.setItem(1, columnIndex, item)
+            columnIndex += 1
+
+        for field in robots.Worksheet.Field:
+            if field in RobotSheetWidget._WorksheetTopRow:
+                continue
+            if not worksheet.hasField(field=field):
+                continue
+
+            rowIndex = self._table.rowCount()
+            self._table.insertRow(rowIndex)
+            self._table.setSpan(rowIndex, 1, 1, columnCount - 1)            
+
+            item = RobotSheetWidget._createHeaderItem(field)
+            self._table.setItem(rowIndex, 0, item)
+
+            item = RobotSheetWidget._createDataItem(
+                value=worksheet.value(field=field),
+                calculations=worksheet.calculations(field=field))
+            self._table.setItem(rowIndex, 1, item)
+  
         self._table.resizeRowsToContents()
 
     def _applySkillModifiersChanged(self) -> None:
@@ -202,11 +225,19 @@ class RobotSheetWidget(QtWidgets.QWidget):
             return
                 
         content = ''
-        for _, headerColumn, headerRow, dataColumn, dataRow, _ in RobotSheetWidget._LayoutData:
-            headerItem = self._table.item(headerRow, headerColumn)
-            dataItem = self._table.item(dataRow, dataColumn)
+
+        for columnIndex in range(self._table.columnCount()):
+            headerItem = self._table.item(0, columnIndex)
+            dataItem = self._table.item(1, columnIndex)
             if headerItem and dataItem:
-                content += f'{headerItem.text()} -- {dataItem.text()}\n'
+                content += f'{headerItem.text()} -- {dataItem.text()}\n'            
+
+        for rowIndex in range(2, self._table.rowCount()):
+            headerItem = self._table.item(rowIndex, 0)
+            dataItem = self._table.item(rowIndex, 1)
+            if headerItem and dataItem:
+                content += f'{headerItem.text()} -- {dataItem.text()}\n'                  
+
         if content:
             clipboard.setText(content)
 
@@ -252,9 +283,19 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _createHeaderItem(field: robots.Worksheet.Field) -> QtWidgets.QTableWidgetItem:
         item = gui.TableWidgetItemEx(field.value)
         item.setBold(enable=True)
+        item.setTextAlignment(
+            int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
         return item
     
     @staticmethod
-    def _createDataItem(field: robots.Worksheet.Field) -> QtWidgets.QTableWidgetItem:
-        item = gui.TableWidgetItemEx()
+    def _createDataItem(
+            value: str,
+            calculations: typing.Iterable[common.ScalarCalculation]
+            ) -> QtWidgets.QTableWidgetItem:
+        item = gui.TableWidgetItemEx(value)
+        item.setTextAlignment(
+            int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
+        item.setData(
+            QtCore.Qt.ItemDataRole.UserRole,
+            calculations)        
         return item

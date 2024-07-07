@@ -747,9 +747,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
             sequence=sequence)
         if agilityEnhancement:
             assert(isinstance(agilityEnhancement, robots.AgilityEnhancement))
-            agilityModifier = common.ScalarCalculation(
-                value=agilityEnhancement.agilityModifier(),
-                name='Agility Enhancement Modifier')
+            agilityModifier = agilityEnhancement.agilityModifier()
         else:
             agilityModifier = LocomotionBasicSkillPackage._DefaultAgilityModifier
 

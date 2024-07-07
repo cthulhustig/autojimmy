@@ -18,7 +18,7 @@ class ParagraphEx(Paragraph):
             encoding: str = 'utf8'
             ) -> None:
         super().__init__(
-            text.replace('\n', '<br />'),
+            text.replace('\n', '<br />') if text else text,
             style,
             bulletText,
             frags,

@@ -486,24 +486,27 @@ class RobotToPdf(object):
         tableData = []
         tableSpans = []
 
-        columnCount = len(_WorksheetTopRow)
-
         row = []
         for field in _WorksheetTopRow:
-            row.append(pdf.ParagraphEx(
-                text=field.value,
-                style=_TableHeaderNormalStyle))
+            if worksheet.hasField(field=field):
+                row.append(pdf.ParagraphEx(
+                    text=field.value,
+                    style=_TableHeaderNormalStyle))
         tableData.append(row)
+        columnCount = len(row)
 
         row = []
         for field in _WorksheetTopRow:
-            row.append(pdf.ParagraphEx(
-                text=worksheet.value(field=field),
-                style=_TableDataNormalStyle))
+            if worksheet.hasField(field=field):
+                row.append(pdf.ParagraphEx(
+                    text=worksheet.value(field=field),
+                    style=_TableDataNormalStyle))
         tableData.append(row)
 
         for field in robots.Worksheet.Field:
             if field in _WorksheetTopRow:
+                continue
+            if not worksheet.hasField(field=field):
                 continue
 
             row = [

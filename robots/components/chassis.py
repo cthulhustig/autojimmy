@@ -69,8 +69,8 @@ class Chassis(robots.RobotComponentInterface):
             value=basicCost,
             name=f'{self._componentString} Chassis Basic Cost')
 
-    def size(self) -> int:
-        return self._size.value()
+    def size(self) -> common.ScalarCalculation:
+        return self._size
 
     def componentString(self) -> str:
         return self._componentString
