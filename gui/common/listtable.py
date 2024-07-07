@@ -41,14 +41,25 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             ) -> None:
         if element != QtWidgets.QStyle.ControlElement.CE_HeaderLabel:
             return super().drawControl(element, option, painter, widget)
+        
+        icon = None
+        alignment = None
 
-        assert(isinstance(option, QtWidgets.QStyleOptionHeader))
+        # NOTE: On macOS the header is using QStyleOptionViewItem but on Windows
+        # and Linux it's using QStyleOptionHeader. I've not looked into why, the
+        # simplest thing is to just handle both.
+        if isinstance(option, QtWidgets.QStyleOptionHeader):
+            icon = option.icon
+            alignment = option.textAlignment
+        elif isinstance(option, QtWidgets.QStyleOptionViewItem):
+            icon = option.icon
+            alignment = option.displayAlignment
 
-        if option.icon == None:
+        if not icon or not alignment:
             return super().drawControl(element, option, painter, widget)
 
-        assert(isinstance(option.icon, QtGui.QIcon))
-        pixmap = option.icon.pixmap(self._iconSize, QtGui.QIcon.Mode.Normal)
+        assert(isinstance(icon, QtGui.QIcon))
+        pixmap = icon.pixmap(self._iconSize, QtGui.QIcon.Mode.Normal)
         if not pixmap:
             return super().drawControl(element, option, painter, widget)
 
@@ -64,7 +75,7 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
         painter.drawPixmap(iconRect, pixmap)
         painter.drawText(
             textRect,
-            int(option.textAlignment), # Older versions of PyQt require explicit cast
+            int(alignment), # Older versions of PyQt require explicit cast
             option.text)
 
 class ListTable(gui.TableWidgetEx):
