@@ -1,3 +1,4 @@
+import app
 import common
 import gui
 import logging
@@ -933,6 +934,44 @@ class ComboBoxEx(QtWidgets.QComboBox):
 
     def _delayedUserEditedFired(self) -> None: 
         self.delayedUserEdited.emit(self.currentText())
+
+class TableWidgetEx(QtWidgets.QTableWidget):
+    _FocusRectStyle = 'QTableWidget:focus{{border:{width}px solid {colour};}}'
+    _FocusRectRegex = re.compile(r'QTableWidget:focus\s*{.*?}')
+    _FocusRectWidth = 4
+
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, rows: int, columns: int, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+
+    def __init__(
+            self,
+            *args,
+            **kwargs
+            ) -> None:
+        super().__init__(*args, **kwargs)
+        self._showFocusRect = False
+
+    def showFocusRect(self) -> bool:
+        return self._showFocusRect
+
+    def setShowFocusRect(self, enabled: bool) -> None:
+        self._showFocusRect = enabled
+        styleSheet = TableWidgetEx._FocusRectRegex.sub(self.styleSheet(), '')
+        styleSheet.strip()
+        self.setStyleSheet(styleSheet)
+            
+    def setStyleSheet(self, styleSheet: str) -> None:
+        if self._showFocusRect and not TableWidgetEx._FocusRectRegex.match(styleSheet):
+            palette = self.palette()
+            focusColour = palette.color(QtGui.QPalette.ColorRole.Highlight)
+            if styleSheet:
+                styleSheet += ' '
+            styleSheet += TableWidgetEx._FocusRectStyle.format(
+                width=int(TableWidgetEx._FocusRectWidth * app.Config.instance().interfaceScale()),
+                colour=gui.colourToString(focusColour, includeAlpha=False))
+        super().setStyleSheet(styleSheet)
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'

@@ -63,7 +63,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
         controlsLayout.addWidget(self._characteristicsDMCheckBox)
         controlsLayout.addStretch()
 
-        self._table = QtWidgets.QTableWidget()
+        self._table = gui.TableWidgetEx()
+        self._table.setShowFocusRect(enabled=True)
         self._table.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
         self._table.setSizeAdjustPolicy(
@@ -88,6 +89,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.setItemDelegate(itemDelegate)        
         self._table.installEventFilter(self)      
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
+
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)

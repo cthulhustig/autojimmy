@@ -67,7 +67,7 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             int(option.textAlignment), # Older versions of PyQt require explicit cast
             option.text)
 
-class ListTable(QtWidgets.QTableWidget):
+class ListTable(gui.TableWidgetEx):
     keyPressed = QtCore.pyqtSignal(int)
     iconClicked = QtCore.pyqtSignal(int)
 
