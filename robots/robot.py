@@ -561,7 +561,7 @@ class Robot(construction.ConstructableInterface):
 
         return manifest
     
-    # NOTE: The Finalisation section (p76) says, as well as characteristics DMs,
+    # NOTE: The Finalisation section (p76) says, as well as characteristic DMs,
     # any additional modifiers should be included in the skill levels listed in
     # a robots worksheet. It would only make sense for this to be done for
     # modifiers that are applied in all situations (rather than situation specific

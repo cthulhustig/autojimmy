@@ -10,8 +10,6 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Cover the fact example robots have characteristic DMs and other modifiers
-# included in the listed skills where as Auto-Jimmy doesn't by default
 _WelcomeMessage = """
     <html>
     <p>The Robot Builder window allows you to create robots using the rules
@@ -28,6 +26,47 @@ _WelcomeMessage = """
     Builder.<br>
     <a href='https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/'>https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/</a>
     </p>
+    <p>Unlike the robots in the Robots Handbook, by default, {name} does not
+    include characteristic DMs when displaying final skill levels. This is
+    done to avoid ambiguities and unnecessary complexities when dealing with
+    robots that have manipulators with different characteristics or in cases
+    where the 'standard' characteristic isn't the one that is appropriate one to
+    use with the skill in the situation at hand. In game, this change means
+    making skill checks for a robot is effectively identical to the process used
+    when making skill checks for a meatbag traveller, the characteristic DM and
+    any other situational DMs are added to the skill level to get the final DM.
+    The only difference when dealing with robots is, in general, skills that
+    would usually be paired with EDU or SOC characteristics, instead use the
+    robots INT characteristic.</p>
+    <p>If you try to recreate the robots from the Robots Handbook in {name},
+    you may find there are some differences. Common reasons for this are:
+    <ul style="margin-left:15px; -qt-list-indent:0;">
+    <li>As mentioned above, the Robots Handbook includes characteristic DMs
+    in final skill levels it gives for a robot whereas Auto-Jimmy doesn't do
+    this by default.</li>
+    <li>The Robots Handbook includes some information in a robot's worksheet
+    that is actually situationally dependant. For example, the StarTek example
+    robot is shown to have Athletics (Strength) 2 (p78), which appears to come
+    from the Manipulator Athletics Skill Requirements rules (p26). The problem
+    with just listing this with the rest of the robot's skills is that it
+    doesn't apply when the robot is using its smaller manipulator, this fact
+    would be very easy to miss from just looking at the robot's worksheet. To
+    avoid this sort of confusion, instead of listing situationally dependant
+    stats in the robots worksheet, {name} instead generates notes that cover
+    how the robots base stats change in different situations.</li>
+    <li>The worksheets from the Robots Handbook don't give a complete list of
+    the components that make up the robot, so there can be different component
+    configurations that give the same stats but with different costs or
+    slot/bandwidth requirements.</li>
+    <li>{name} includes some additional information in the worksheet that the
+    Robots Handbook doesn't, an example of this is showing speeds and endurance
+    values for primary & secondary locomotions and vehicle speed movement if the
+    robot has them.</li>
+    <li>Some of the robots in the Robot Handbook don't seem to follow the rules
+    as written. For example, Ultra (p258) has Camouflage: Visual Concealment
+    (p31) and Solar Coating (p33) but the rules say those components are
+    incompatible with each other.</li>
+    </ul></p>
     <p>Unfortunately, the Gunsmith and Robot Builder are not integrated at this
     time, which means it's not possible to select a custom weapon when arming
     a robot. Integrating custom weapons would be a surprisingly large amount of

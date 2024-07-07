@@ -68,7 +68,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # added to support robots as player characters and brain in a jar.
     # STR, DEX and END are specific to robots as player characters. It should be
     # noted that END is not the same as the Endurance attribute, the former is
-    # the equivalent of a meat bag players END characteristic and the later is
+    # the equivalent of a meatbag players END characteristic and the later is
     # the time between recharges in hours.
     STR = 'STR'
     DEX = 'DEX'

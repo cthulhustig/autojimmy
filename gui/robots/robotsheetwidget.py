@@ -40,7 +40,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         the robots INT characteristic is used in their place as described in
         the Inherent Skill DMs section (p73).</p>
         <p>Alternatively, when this option is enabled, {name} will include
-        characteristics DMs in the displayed skill values. However, displaying
+        characteristic DMs in the displayed skill values. However, displaying
         skills like this is <b>not recommended</b>.</p>
         <p><b>When characteristic DMs are being included in the displayed skill
         values, the list of automatically generated notes will still contain
