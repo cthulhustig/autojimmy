@@ -1,5 +1,6 @@
-import enum
+import common
 import construction
+import enum
 import typing
 
 class ConstructionStage(object):
@@ -39,6 +40,15 @@ class ConstructionStage(object):
         self._isInternal = isInternal
         self._components: typing.List[construction.ComponentInterface] = []
 
+        self._componentTypes = common.getSubclasses(
+            classType=self._baseType,
+            topLevelOnly=True)
+        if not self._componentTypes:
+            # The stage base type has no subclasses. This is expected for
+            # stages that only ever have one compatible component type (that
+            # being the base type its self)
+            self._componentTypes = [self._baseType]    
+
     def name(self) -> str:
         return self._name
 
@@ -51,6 +61,9 @@ class ConstructionStage(object):
 
     def baseType(self) -> typing.Type[construction.ComponentInterface]:
         return self._baseType
+    
+    def componentTypes(self) -> typing.Iterable[construction.ComponentInterface]:
+        return iter(self._componentTypes)
 
     def defaultComponent(self) -> typing.Optional[construction.ComponentInterface]:
         return self._defaultType() if self._defaultType else None

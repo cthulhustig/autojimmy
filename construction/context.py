@@ -728,15 +728,7 @@ class ConstructionContext(object):
                 # has been checked
                 self.regenerate(stopStage=stage)
 
-            componentTypes = common.getSubclasses(
-                classType=stage.baseType(),
-                topLevelOnly=True)
-            if not componentTypes:
-                # The stage base type has no subclasses. This is expected for
-                # stages that only ever have one compatible component type (that
-                # being the base type its self)
-                componentTypes = [stage.baseType()]
-
+            componentTypes = stage.componentTypes()
             compatible = []
             for componentType in componentTypes:
                 if replaceComponent and componentType == type(replaceComponent):
