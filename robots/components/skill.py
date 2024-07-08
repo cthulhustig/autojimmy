@@ -9,7 +9,7 @@ class _SkillData(object):
     _RobotBrainMaxPossibleLevel = common.ScalarCalculation(
         value=3,
         name='Robot Brain Max Possible Skill Level')
-    
+
     def __init__(
             self,
             skillDef: traveller.SkillDefinition,
@@ -30,26 +30,26 @@ class _SkillData(object):
 
     def skillDef(self) -> traveller.SkillDefinition:
         return self._skillDef
-    
+
     def name(self) -> str:
         return self._skillDef.name()
-    
+
     def minTL(self) -> common.ScalarCalculation:
         return self._minTL
-    
+
     def levelZeroBandwidth(self) -> common.ScalarCalculation:
         return self._levelZeroBandwidth
-    
+
     def levelZeroCost(self) -> common.ScalarCalculation:
         return self._levelZeroCost
-    
+
     """
     - Requirement: The absolute max skill level for a robot is 3 (p73)
     - Requirement: Each increase in skill level after 0 requires an additional
     TL before it becomes available (p73)
     - Requirement: A robot can't have a skill that requires more bandwidth than
     its Inherent Bandwidth (p67)
-    """    
+    """
     # NOTE: This assumes that the robot at least meets the TL and bandwidth
     # requirements for the skill at level 0. This should be enforced by the
     # skill components
@@ -60,6 +60,7 @@ class _SkillData(object):
     # rules just say you can install a package up to level 1 (p71). It does
     # say the skill is subject to the limitations of the brain but that seems
     # to be talking about modifiers to skill checks not compatibility.
+
     def calculateMaxSkillLevel(
             self,
             robotTL: common.ScalarCalculation,
@@ -92,7 +93,8 @@ class _SkillData(object):
                 lhs=bandwidth,
                 rhs=level,
                 name=f'{self._skillDef.name()} {level.value()} Required Bandwidth')
-        return bandwidth 
+        return bandwidth
+
 
 # NOTE: Vacc Suit is the only core rule skill that isn't given skill requirement
 # data (p74). This appears to have been an oversight given Geir's post here
@@ -161,17 +163,17 @@ def _stacksWithHardware(
     return  skillDef != traveller.NavigationSkillDefinition
 
 
-#  ███████████                     █████                                         
-# ░░███░░░░░███                   ░░███                                          
-#  ░███    ░███  ██████    ██████  ░███ █████  ██████    ███████  ██████   █████ 
-#  ░██████████  ░░░░░███  ███░░███ ░███░░███  ░░░░░███  ███░░███ ███░░███ ███░░  
-#  ░███░░░░░░    ███████ ░███ ░░░  ░██████░    ███████ ░███ ░███░███████ ░░█████ 
+#  ███████████                     █████
+# ░░███░░░░░███                   ░░███
+#  ░███    ░███  ██████    ██████  ░███ █████  ██████    ███████  ██████   █████
+#  ░██████████  ░░░░░███  ███░░███ ░███░░███  ░░░░░███  ███░░███ ███░░███ ███░░
+#  ░███░░░░░░    ███████ ░███ ░░░  ░██████░    ███████ ░███ ░███░███████ ░░█████
 #  ░███         ███░░███ ░███  ███ ░███░░███  ███░░███ ░███ ░███░███░░░   ░░░░███
-#  █████       ░░████████░░██████  ████ █████░░████████░░███████░░██████  ██████ 
-# ░░░░░         ░░░░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░███ ░░░░░░  ░░░░░░  
-#                                                      ███ ░███                 
-#                                                     ░░██████                  
-#                                                      ░░░░░░    
+#  █████       ░░████████░░██████  ████ █████░░████████░░███████░░██████  ██████
+# ░░░░░         ░░░░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░███ ░░░░░░  ░░░░░░
+#                                                      ███ ░███
+#                                                     ░░██████
+#                                                      ░░░░░░
 
 class SkillPackage(robots.RobotComponentInterface):
     def __init__(
@@ -193,12 +195,12 @@ class SkillPackage(robots.RobotComponentInterface):
         self._minTL = common.ScalarCalculation(
             value=minTL,
             name=f'{self._componentName} {self.typeString()} Minimum TL')
-        self._brainType = brainType 
+        self._brainType = brainType
         self._bandwidth = common.ScalarCalculation(
             value=bandwidth,
             name=f'{self._componentName} {self.typeString()} Required Bandwidth')
-        self._notes = notes        
-        
+        self._notes = notes
+
         self._skills: typing.List[typing.Tuple[
             traveller.SkillDefinition,
             typing.Optional[typing.Union[enum.Enum, str]],
@@ -226,7 +228,7 @@ class SkillPackage(robots.RobotComponentInterface):
             ) -> bool:
         if context.techLevel() < self._minTL.value():
             return False
-        
+
         return context.hasComponent(
             componentType=self._brainType,
             sequence=sequence)
@@ -248,11 +250,11 @@ class SkillPackage(robots.RobotComponentInterface):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         if self._bandwidth.value() > 0:
             step.setBandwidth(
                 bandwidth=construction.ConstantModifier(value=self._bandwidth))
-            
+
         for skillDef, speciality, level in self._skills:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=skillDef,
@@ -263,13 +265,13 @@ class SkillPackage(robots.RobotComponentInterface):
                 stacks=_stacksWithHardware(
                     skillDef=skillDef,
                     speciality=speciality)))
-            
+
         if self._notes:
             for note in self._notes:
                 step.addNote(note)
-        
+
         return step
-    
+
 class PrimitiveSkillPackage(SkillPackage):
     """
     - Min TL: 7
@@ -298,7 +300,7 @@ class PrimitiveSkillPackage(SkillPackage):
             bandwidth=0,
             skills=skills,
             notes=notes + [PrimitiveSkillPackage._PrimitiveNote] if notes else [PrimitiveSkillPackage._PrimitiveNote])
-        
+
     def typeString(self) -> str:
         return 'Primitive Skill Package'
 
@@ -306,7 +308,8 @@ class AlertPrimitiveSkillPackage(PrimitiveSkillPackage):
     """
     - Trait: Alarm
     - Skill: Recon 0
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Alert',
@@ -321,13 +324,14 @@ class AlertPrimitiveSkillPackage(PrimitiveSkillPackage):
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Alarm))
-        
+
         return step
 
 class CleanPrimitiveSkillPackage(PrimitiveSkillPackage):
     """
     - Skill: Profession (domestic cleaner) 2
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Clean',
@@ -336,8 +340,9 @@ class CleanPrimitiveSkillPackage(PrimitiveSkillPackage):
 class EvadePrimitiveSkillPackage(PrimitiveSkillPackage):
     """
     - Skill: Athletics (dexterity) 1
-    - Skill: Stealth 2       
+    - Skill: Stealth 2
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Evade',
@@ -361,7 +366,7 @@ class HomingPrimitiveSkillPackage(PrimitiveSkillPackage):
 class BasicSkillPackage(SkillPackage):
     """
     - Min TL: 8
-    - Requirement: Only compatible with basic brain   
+    - Requirement: Only compatible with basic brain
     """
 
     def __init__(
@@ -382,10 +387,10 @@ class BasicSkillPackage(SkillPackage):
             bandwidth=bandwidth,
             skills=skills,
             notes=notes)
-        
+
     def typeString(self) -> str:
         return 'Basic Skill Package'
-    
+
 # NOTE: None is the first basic skill package listed as it should appear
 # before other 'real' options when listed by enumeration
 # NOTE: The rules also talk about being able to buy basic skill packages
@@ -407,8 +412,8 @@ class NoneBasicSkillPackage(BasicSkillPackage):
     def __init__(self) -> None:
         super().__init__(
             componentName='None',
-            bandwidth=0)    
-        
+            bandwidth=0)
+
         self._primarySkillOption = construction.StringOption(
             id='PrimarySkill',
             name='Primary Skill',
@@ -418,7 +423,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             isEditable=False,
             enabled=False,
             description='Optionally select a primary standard skill to be installed on the robot. (p71)')
-        
+
         self._primarySpecialityOption = construction.StringOption(
             id='PrimarySpeciality',
             name='Primary Speciality',
@@ -426,8 +431,8 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             choices=[],
             isOptional=True,
             enabled=False,
-            description='Optionally select a speciality for the primary skill.')        
-        
+            description='Optionally select a speciality for the primary skill.')
+
         self._primaryLevelOption = construction.IntegerOption(
             id='PrimaryLevel',
             name='Primary Level',
@@ -436,7 +441,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             maxValue=1,
             enabled=False,
             description='Select the level for the primary skill.')
-        
+
         self._secondarySkillOption = construction.StringOption(
             id='SecondarySkill',
             name='Secondary Skill',
@@ -446,7 +451,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             isEditable=False,
             enabled=False,
             description='Optionally select a secondary standard skill to be installed on the robot. (p71)')
-        
+
         self._secondarySpecialityOption = construction.StringOption(
             id='SecondarySpeciality',
             name='Secondary Speciality',
@@ -454,8 +459,8 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             choices=[],
             isOptional=True,
             enabled=False,
-            description='Optionally select a speciality for the secondary skill.')        
-        
+            description='Optionally select a speciality for the secondary skill.')
+
         self._secondaryLevelOption = construction.IntegerOption(
             id='SecondaryLevel',
             name='Secondary Level',
@@ -464,7 +469,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
             maxValue=1,
             enabled=False,
             description='Select the primary level for the secondary skill.')
-        
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
 
@@ -480,10 +485,10 @@ class NoneBasicSkillPackage(BasicSkillPackage):
         if self._secondarySpecialityOption.isEnabled():
             options.append(self._secondarySpecialityOption)
         if self._secondaryLevelOption.isEnabled():
-            options.append(self._secondaryLevelOption)            
-        
+            options.append(self._secondaryLevelOption)
+
         return options
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -496,7 +501,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
 
     def _updateSkillOptions(
             self,
-            context: robots.RobotContext,            
+            context: robots.RobotContext,
             isPrimary: bool
             ) -> None:
         if isPrimary:
@@ -534,7 +539,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                 elif skillDef.isCustomSpeciality():
                     specialityOption.setChoices(
                         choices=skillDef.customSpecialities())
-                    
+
                 specialityOption.setEditable(
                     editable=skillDef.isCustomSpeciality())
                 specialityOption.setEnabled(enabled=True)
@@ -574,8 +579,8 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                     skillDef=skillDef,
                     speciality=speciality,
                     levels=level,
-                    stacks=stacks))     
-            
+                    stacks=stacks))
+
         totalBandwidth = common.Calculator.sum(
             values=bandwidths,
             name=f'{self.componentString()} Total Bandwidth Required')
@@ -586,7 +591,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
         if hasSkill:
             step.addNote(note=NoneBasicSkillPackage._StandardSkillNote)
 
-        return step        
+        return step
 
     def _compatibleSkills(
             self,
@@ -607,7 +612,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                 skills[skillData.name()] = skillData
 
         return skills
-        
+
     def _selectedSkill(
             self,
             isPrimary: bool
@@ -639,9 +644,9 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                     return speciality
         elif skillDef.isCustomSpeciality():
             return specialityName
-        
+
         return None
-    
+
     def _selectedLevel(
             self,
             isPrimary: bool
@@ -649,7 +654,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
         skillData = self._selectedSkill(isPrimary=isPrimary)
         if not skillData:
             return None
-        
+
         speciality = self._selectedSpeciality(isPrimary=isPrimary)
         if speciality:
             skillLevel = 1
@@ -663,12 +668,12 @@ class NoneBasicSkillPackage(BasicSkillPackage):
 
 class PreInstalledBasicSkillPackage(BasicSkillPackage):
     """
-    - Bandwidth: 1    
+    - Bandwidth: 1
     - Note: Negative modifiers due to the robot\'s INT characteristic do no
     apply when making checks using skills provided by the package. (p70)
     """
 
-    _BasicNote = 'The skill package counteracts any negative DMs associated with the robot\'s INT characteristic. (p70)'    
+    _BasicNote = 'The skill package counteracts any negative DMs associated with the robot\'s INT characteristic. (p70)'
 
     def __init__(
             self,
@@ -684,17 +689,18 @@ class PreInstalledBasicSkillPackage(BasicSkillPackage):
             componentName=componentName,
             skills=skills,
             bandwidth=1,
-            notes=notes + [PreInstalledBasicSkillPackage._BasicNote] if notes else [PreInstalledBasicSkillPackage._BasicNote])  
+            notes=notes + [PreInstalledBasicSkillPackage._BasicNote] if notes else [PreInstalledBasicSkillPackage._BasicNote])
 
 class LaboureurBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Profession (laboureur) 2
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Laboureur',
             skills=[(traveller.ProfessionSkillDefinition, 'Laboureur', 2)])
-        
+
 class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Vehicle skill equal to the robot's Agility Enhancement Level (or
@@ -724,7 +730,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         locomotions = context.findComponents(
             componentType=robots.Locomotion,
             sequence=sequence)
@@ -755,7 +761,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
             skillDef=robots.RobotVehicleSkillDefinition,
             levels=agilityModifier,
             # Set flags for no negative modifiers
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,            
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
             stacks=_stacksWithHardware(skillDef=robots.RobotVehicleSkillDefinition)))
 
         if agilityModifier.value() != 0:
@@ -768,11 +774,12 @@ class ReconBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Recon 2
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Recon',
             skills=[(traveller.ReconSkillDefinition, None, 2)])
-        
+
 class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     - Skill: Weapon 1
@@ -785,14 +792,14 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
         name='Primitive Homing Package Weapon Skill Level')
     _TacticsSkillLevel = common.ScalarCalculation(
         value=1,
-        name='Primitive Homing Package Tactics (Military) Skill Level')    
+        name='Primitive Homing Package Tactics (Military) Skill Level')
 
     def __init__(self) -> None:
         super().__init__(
             componentName='Security',
             skills=[(robots.RobotWeaponSkillDefinition, None, 1),
                     (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
-        
+
     def _createStep(
             self,
             sequence: str,
@@ -802,7 +809,7 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Alarm))
-        
+
         return step
 
 class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
@@ -816,7 +823,7 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
 
     _ProfessionSkillLevel = common.ScalarCalculation(
         value=2,
-        name='Servant Profession Skill Level')        
+        name='Servant Profession Skill Level')
 
     def __init__(self) -> None:
         super().__init__(componentName='Servant')
@@ -826,7 +833,7 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
             name='Profession',
             type=ServantBasicSkillPackage._Professions,
             description='Specify the Profession speciality given by the skill package')
-        
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._professionSkillOption)
@@ -847,10 +854,10 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
             speciality=profession.value,
             levels=ServantBasicSkillPackage._ProfessionSkillLevel,
             # Set flags for no negative modifiers
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,            
+            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
             stacks=_stacksWithHardware(
                 skillDef=traveller.ProfessionSkillDefinition,
-                speciality=profession.value)))  
+                speciality=profession.value)))
 
         return step
 
@@ -860,6 +867,7 @@ class ServiceBasicSkillPackage(PreInstalledBasicSkillPackage):
     - Skill: Steward 0
     - Note: Can support up to 8 Middle or 100 Basic passengers
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Service',
@@ -884,7 +892,7 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
     _CombatSkillLevel = common.ScalarCalculation(
         value=1,
         name='Target Basic Skill Package Combat Skill Level')
-    
+
     _SelfDestructExplosivesSkillLevel = common.ScalarCalculation(
         value=0,
         name='Target Basic Skill Package Self Destruct Explosives Skill')
@@ -899,12 +907,12 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
             name='Combat Skill',
             type=TargetBasicSkillPackage._CombatSkills,
             description='Specify the combat skill granted by the Target Basic Skill Package')
-        
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._combatSkillOption)
         return options
-    
+
     def _createStep(
             self,
             sequence: str,
@@ -920,24 +928,24 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
                 skillDef=traveller.ExplosivesSkillDefinition,
                 levels=TargetBasicSkillPackage._CombatSkillLevel,
                 # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
         elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
             step.addFactor(factor=construction.SetSkillFactor(
                 skillDef=robots.RobotWeaponSkillDefinition,
                 levels=TargetBasicSkillPackage._CombatSkillLevel,
                 # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=robots.RobotWeaponSkillDefinition)))
-            
+
             if context.hasComponent(
-                componentType=robots.SelfDestructSystemSlotOption,
-                sequence=sequence):
+                    componentType=robots.SelfDestructSystemSlotOption,
+                    sequence=sequence):
                 step.addFactor(factor=construction.SetSkillFactor(
                     skillDef=traveller.ExplosivesSkillDefinition,
                     levels=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
                     # Set flags for no negative modifiers
-                    flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,                        
+                    flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
                     stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
 
         return step
@@ -985,32 +993,33 @@ class HunterKillerSkillPackage(SkillPackage):
             bandwidth=1,
             skills=skills,
             notes=[HunterKillerSkillPackage._BaseNote])
-        
+
     def typeString(self) -> str:
         return 'Hunter/Killer Skill Package'
-    
+
 class StandardHunterKillerSkillPackage(HunterKillerSkillPackage):
     """
     - Skill: Gun Combat 0
     - Skill: Melee 0
-    - Skill: Recon 0    
+    - Skill: Recon 0
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentName='Standard',
             skills=[(traveller.GunCombatSkillDefinition, None, 0),
                     (traveller.MeleeSkillDefinition, None, 0),
                     (traveller.ReconSkillDefinition, None, 0)])
-        
+
 class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
     """
     - Cost: Cr10000
     - Skill: Gun Combat 0
     - Skill: Melee 0
-    - Skill: Recon 0        
+    - Skill: Recon 0
     - Skill: Tactics (military) 2
     - Note: The Tactics (military) skill is not subject to the INT limitations
-    of the robot's brain (e.g. negative DMs)    
+    of the robot's brain (e.g. negative DMs)
     """
     # NOTE: The note about the skill not being affected by INT is handled
     # in the base class
@@ -1040,16 +1049,14 @@ class TacticalHunterKillerSkillPackage(HunterKillerSkillPackage):
         return step
 
 
-
-#   █████████  █████       ███  ████  ████         
-#  ███░░░░░███░░███       ░░░  ░░███ ░░███         
-# ░███    ░░░  ░███ █████ ████  ░███  ░███   █████ 
-# ░░█████████  ░███░░███ ░░███  ░███  ░███  ███░░  
-#  ░░░░░░░░███ ░██████░   ░███  ░███  ░███ ░░█████ 
+#   █████████  █████       ███  ████  ████
+#  ███░░░░░███░░███       ░░░  ░░███ ░░███
+# ░███    ░░░  ░███ █████ ████  ░███  ░███   █████
+# ░░█████████  ░███░░███ ░░███  ░███  ░███  ███░░
+#  ░░░░░░░░███ ░██████░   ░███  ░███  ░███ ░░█████
 #  ███    ░███ ░███░░███  ░███  ░███  ░███  ░░░░███
-# ░░█████████  ████ █████ █████ █████ █████ ██████ 
-#  ░░░░░░░░░  ░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░░  
-
+# ░░█████████  ████ █████ █████ █████ █████ ██████
+#  ░░░░░░░░░  ░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░ ░░░░░░
 _PerLevelCostMultiplier = common.ScalarCalculation(
     value=10,
     name='Per Additional Level Cost Multiplier')
@@ -1072,7 +1079,7 @@ class Skill(robots.RobotComponentInterface):
     - Cost: Level 0 cost is multiplied by 10 for each additional level after 0
     = Option: Level
         - Range: 0-3
-        - Requirement: 
+        - Requirement:
     - Requirement: A robot can have a number of bandwidth 0 skills equal to
     its Inherent Bandwidth, after that they require 1 bandwidth at level 0 (p73)
     """
@@ -1085,7 +1092,7 @@ class Skill(robots.RobotComponentInterface):
     # can have 5 zero bandwidth skills and its list of skills shows it has 4
     # skills with bandwidth 0 and it says there is 1 spare zero bandwidth skill.
     # This means the fact the robot's Mechanic 1 skill has not been counted
-    # towards the number of zero bandwidth skills the robot has.    
+    # towards the number of zero bandwidth skills the robot has.
 
     # This max count needs to be large enough to cover any legitimate user
     # requirement but also prevent the user for causing problems by specifying
@@ -1099,7 +1106,7 @@ class Skill(robots.RobotComponentInterface):
     _ZeroBandwidthSkillOverride = common.ScalarCalculation(
         value=1,
         name='Zero Bandwidth Skill Inherent Bandwidth Requirement')
-    
+
     _ZeroBandwidthSkillCountIncrement = common.ScalarCalculation(
         value=1,
         name='Zero BandwidthSkill Count Increment')
@@ -1109,16 +1116,16 @@ class Skill(robots.RobotComponentInterface):
             skillDef: traveller.SkillDefinition
             ) -> None:
         super().__init__()
-        
-        self._skillDef = skillDef    
-        
+
+        self._skillDef = skillDef
+
         self._levelOption = construction.IntegerOption(
             id='Level',
             name='Level',
             value=0,
             minValue=0,
             description='Specify the level of the skill')
-        
+
         self._fixedSpecialityOptions = None
         if self._skillDef.isFixedSpeciality():
             self._fixedSpecialityOptions: typing.List[typing.Tuple[
@@ -1144,16 +1151,16 @@ class Skill(robots.RobotComponentInterface):
                 minValue=0,
                 maxValue=Skill._CustomSpecialityMaxCount,
                 description='Specify the number of skill specialities.')
-                        
+
             self._customSpecialityOptions: typing.List[typing.Tuple[
                 construction.IntegerOption,
                 construction.IntegerOption]] = []
 
     def componentString(self) -> str:
         return self._skillDef.name()
-    
+
     def typeString(self) -> str:
-        return 'Skill'        
+        return 'Skill'
 
     def isCompatible(
             self,
@@ -1162,10 +1169,10 @@ class Skill(robots.RobotComponentInterface):
             ) -> bool:
         # Can only have a single instance of each skill
         if context.hasComponent(
-            componentType=type(self),
-            sequence=sequence):
+                componentType=type(self),
+                sequence=sequence):
             return False
-                
+
         hasBrainInAJar = context.hasComponent(
             componentType=robots.BrainInAJarBrain,
             sequence=sequence)
@@ -1178,10 +1185,10 @@ class Skill(robots.RobotComponentInterface):
             return False
 
         if not context.hasComponent(
-            componentType=robots.SkilledRobotBrain,
-            sequence=sequence):
+                componentType=robots.SkilledRobotBrain,
+                sequence=sequence):
             return False
-        
+
         # The bandwidth required for the skill at level 0 must be less than or
         # equal to the robot's Inherent Bandwidth
         inherentBandwidth = context.attributeValue(
@@ -1193,7 +1200,7 @@ class Skill(robots.RobotComponentInterface):
             return True
         assert(isinstance(inherentBandwidth, common.ScalarCalculation))
         return skillData.levelZeroBandwidth().value() <= inherentBandwidth.value()
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._levelOption.isEnabled():
@@ -1203,12 +1210,12 @@ class Skill(robots.RobotComponentInterface):
                 if levelOption.isEnabled():
                     options.append(levelOption)
         if self._customSpecialityCountOption and \
-            self._customSpecialityCountOption.isEnabled():
+                self._customSpecialityCountOption.isEnabled():
             options.append(self._customSpecialityCountOption)
         if self._customSpecialityOptions:
             for nameOption, levelOption in self._customSpecialityOptions:
                 if nameOption.isEnabled():
-                    options.append(nameOption)                
+                    options.append(nameOption)
                 if levelOption.isEnabled():
                     options.append(levelOption)
         return options
@@ -1217,15 +1224,15 @@ class Skill(robots.RobotComponentInterface):
             self,
             sequence: str,
             context: robots.RobotContext
-            ) -> None:       
+            ) -> None:
         robotTL = common.ScalarCalculation(
             value=context.techLevel(),
             name='Robot TL')
-        
+
         hasBrainInAJar = context.hasComponent(
             componentType=robots.BrainInAJarBrain,
             sequence=sequence)
-        
+
         if hasBrainInAJar:
             maxLevel = None
             self._levelOption.setMax(None)
@@ -1241,8 +1248,8 @@ class Skill(robots.RobotComponentInterface):
                 robotTL=robotTL,
                 inherentBandwidth=inherentBandwidth)
             self._levelOption.setMax(maxLevel.value() \
-                                    if self._skillDef.isSimple() else \
-                                    Skill._SpecialitySkillMaxBaseLevel.value())
+                                     if self._skillDef.isSimple() else \
+                                     Skill._SpecialitySkillMaxBaseLevel.value())
             self._levelOption.setEnabled(self._levelOption.max() > 0)
 
         if self._skillDef.isFixedSpeciality():
@@ -1284,7 +1291,7 @@ class Skill(robots.RobotComponentInterface):
                                    None) # Robot brains have no max
                 levelOption.setEnabled(
                     enabled=nameOption.isEnabled() and nameOption.value())
-            
+
     def createSteps(
             self,
             sequence: str,
@@ -1316,7 +1323,7 @@ class Skill(robots.RobotComponentInterface):
                 context=context)
         else:
             if self._fixedSpecialityOptions:
-                for speciality, levelOption in self._fixedSpecialityOptions:                
+                for speciality, levelOption in self._fixedSpecialityOptions:
                     if not levelOption.isEnabled():
                         continue
                     value = levelOption.value()
@@ -1328,7 +1335,7 @@ class Skill(robots.RobotComponentInterface):
                         speciality=speciality,
                         sequence=sequence,
                         context=context)
-                    
+
             if self._customSpecialityOptions:
                 for nameOption, levelOption in self._customSpecialityOptions:
                     if not nameOption.isEnabled() or not nameOption.value():
@@ -1344,14 +1351,14 @@ class Skill(robots.RobotComponentInterface):
                         speciality=nameOption.value(),
                         sequence=sequence,
                         context=context)
-        
+
     def _createSkillSteps(
-        self,
-        level: int,
-        speciality: typing.Optional[typing.Union[enum.Enum, str]],
-        sequence: str,
-        context: robots.RobotContext,
-        ) -> None:
+            self,
+            level: int,
+            speciality: typing.Optional[typing.Union[enum.Enum, str]],
+            sequence: str,
+            context: robots.RobotContext,
+            ) -> None:
         skillName = self._skillDef.name(speciality=speciality)
         level = common.ScalarCalculation(
             value=level,
@@ -1361,19 +1368,19 @@ class Skill(robots.RobotComponentInterface):
 
         hasBrainInAJar = context.hasComponent(
             componentType=robots.BrainInAJarBrain,
-            sequence=sequence)        
+            sequence=sequence)
 
         step = robots.RobotStep(
             name=f'{skillName} {level.value()}',
             type=self.typeString())
-        
+
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=self._skillDef,
             speciality=speciality,
             levels=level,
             # Set flags for positive and negative characteristics to be applied
             flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier |
-                construction.SkillFlags.ApplyNegativeCharacteristicModifier,
+            construction.SkillFlags.ApplyNegativeCharacteristicModifier,
             stacks=_stacksWithHardware(
                 skillDef=self._skillDef,
                 speciality=speciality)))
@@ -1399,7 +1406,7 @@ class Skill(robots.RobotComponentInterface):
                     attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
                     sequence=sequence)
                 assert(not currentCount or isinstance(currentCount, common.ScalarCalculation))
-                
+
                 if currentCount and currentCount.value() >= inherentBandwidth.value():
                     # The robot already has the max number of zero bandwidth skills
                     # so this one requires bandwidth
@@ -1411,12 +1418,12 @@ class Skill(robots.RobotComponentInterface):
                     step.addFactor(factor=construction.ModifyAttributeFactor(
                         attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount,
                         modifier=construction.ConstantModifier(
-                            value=Skill._ZeroBandwidthSkillCountIncrement)))                           
+                            value=Skill._ZeroBandwidthSkillCountIncrement)))
 
             if bandwidth.value() > 0:
                 step.setBandwidth(
-                    bandwidth=construction.ConstantModifier(value=bandwidth))  
-            
+                    bandwidth=construction.ConstantModifier(value=bandwidth))
+
             cost = _calculateSkillCost(
                 levelZeroCost=skillData.levelZeroCost(),
                 skillLevel=level)
@@ -1425,8 +1432,8 @@ class Skill(robots.RobotComponentInterface):
 
         context.applyStep(
             sequence=sequence,
-            step=step) 
-    
+            step=step)
+
 class AdminSkill(Skill):
     """
     - Min TL: 8
@@ -1434,18 +1441,20 @@ class AdminSkill(Skill):
     - Characteristics: INT
     - Cost Cr100
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.AdminSkillDefinition)
-        
+
 class AdvocateSkill(Skill):
     """
     - Min TL: 10
     - Bandwidth: 0
     - Characteristics: INT
-    - Cost Cr500   
+    - Cost Cr500
     """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.AdvocateSkillDefinition)    
+        super().__init__(skillDef=traveller.AdvocateSkillDefinition)
 
 class AnimalsSkill(Skill):
     """
@@ -1454,6 +1463,7 @@ class AnimalsSkill(Skill):
     - Characteristics: DEX
     - Cost Cr200
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.AnimalsSkillDefinition)
 
@@ -1464,6 +1474,7 @@ class ArtSkill(Skill):
     - Characteristics: INT
     - Cost Cr500
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.ArtSkillDefinition)
 
@@ -1474,9 +1485,10 @@ class AstrogationSkill(Skill):
     - Characteristics: INT
     - Cost Cr500
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.AstrogationSkillDefinition)
-        
+
 class AthleticsSkill(Skill):
     """
     - Min TL: 8
@@ -1484,6 +1496,7 @@ class AthleticsSkill(Skill):
     - Characteristics: variable
     - Cost Cr100
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.AthleticsSkillDefinition)
 
@@ -1494,6 +1507,7 @@ class BrokerSkill(Skill):
     - Characteristics: INT
     - Cost Cr200
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.BrokerSkillDefinition)
 
@@ -1502,8 +1516,9 @@ class CarouseSkill(Skill):
     - Min TL: 11
     - Bandwidth: 1
     - Characteristics: INT
-    - Cost Cr500  
-    """    
+    - Cost Cr500
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.CarouseSkillDefinition)
 
@@ -1512,8 +1527,9 @@ class DeceptionSkill(Skill):
     - Min TL: 13
     - Bandwidth: 1
     - Characteristics: INT
-    - Cost Cr1000 
-    """    
+    - Cost Cr1000
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.DeceptionSkillDefinition)
 
@@ -1523,42 +1539,45 @@ class DiplomatSkill(Skill):
     - Bandwidth: 1
     - Characteristics: INT
     - Cost Cr500
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.DiplomatSkillDefinition)
-  
+
 class DriveSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
-    - Cost Cr100  
+    - Cost Cr100
     - Note: If the robot also has an Autopilot score, the modifiers for the
     Autopilot and Vehicle Skill don't stack (p49)
-    """    
+    """
     # NOTE: The note about Autopilot and vehicle skills not stacking is handled
     # by a note added in finalisation
 
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.DriveSkillDefinition)
-        
+
 class ElectronicsSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.ElectronicsSkillDefinition)
-        
+
 class EngineerSkill(Skill):
     """
     - Min TL: 9
     - Bandwidth: 0
     - Characteristics: INT
-    - Cost Cr200 
-    """    
+    - Cost Cr200
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.EngineerSkillDefinition)
 
@@ -1567,23 +1586,24 @@ class ExplosivesSkill(Skill):
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: INT
-    - Cost Cr100  
-    """    
+    - Cost Cr100
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.ExplosivesSkillDefinition)
-        
+
 class FlyerSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
-    - Cost Cr100   
+    - Cost Cr100
     - Note: If the robot also has an Autopilot score, the modifiers for the
     Autopilot and Vehicle Skill don't stack (p49)
-    """    
+    """
     # NOTE: The note about Autopilot and vehicle skills not stacking is handled
     # by a note added in finalisation
-    
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.FlyerSkillDefinition)
 
@@ -1593,37 +1613,41 @@ class GamblerSkill(Skill):
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr500
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.GamblerSkillDefinition)
-        
+
 class GunCombatSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.GunCombatSkillDefinition)
-        
+
 class GunnerSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
-    - Cost Cr100   
-    """    
+    - Cost Cr100
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.GunnerSkillDefinition)
-        
+
 class HeavyWeaponsSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
-    - Cost Cr100   
-    """    
+    - Cost Cr100
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.HeavyWeaponsSkillDefinition)
 
@@ -1633,7 +1657,8 @@ class InvestigateSkill(Skill):
     - Bandwidth: 1
     - Characteristics: INT
     - Cost Cr500
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.InvestigateSkillDefinition)
 
@@ -1643,27 +1668,30 @@ class LanguageSkill(Skill):
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr200
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.LanguageSkillDefinition)  
-        
+        super().__init__(skillDef=traveller.LanguageSkillDefinition)
+
 class LeadershipSkill(Skill):
     """
     - Min TL: 13
     - Bandwidth: 1
     - Characteristics: INT
-    - Cost Cr1000 
-    """    
+    - Cost Cr1000
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.LeadershipSkillDefinition)
-        
+
 class MechanicSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.MechanicSkillDefinition)
 
@@ -1672,20 +1700,22 @@ class MedicSkill(Skill):
     - Min TL: 9
     - Bandwidth: 0
     - Characteristics: INT
-    - Cost Cr200  
-    """    
+    - Cost Cr200
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.MedicSkillDefinition)
-        
+
 class MeleeSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.MeleeSkillDefinition)        
+        super().__init__(skillDef=traveller.MeleeSkillDefinition)
 
 class NavigationSkill(Skill):
     """
@@ -1693,37 +1723,41 @@ class NavigationSkill(Skill):
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.NavigationSkillDefinition)
-        
+
 class PersuadeSkill(Skill):
     """
     - Min TL: 11
     - Bandwidth: 1
     - Characteristics: INT
-    - Cost Cr500 
-    """    
+    - Cost Cr500
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.PersuadeSkillDefinition)
-        
+
 class PilotSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
-    - Cost Cr100 
-    """    
+    - Cost Cr100
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.PilotSkillDefinition)
-        
+
 class ProfessionSkill(Skill):
     """
     - Min TL: 9
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr200
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.ProfessionSkillDefinition)
 
@@ -1732,60 +1766,66 @@ class ReconSkill(Skill):
     - Min TL: 10
     - Bandwidth: 0
     - Characteristics: INT
-    - Cost Cr500  
-    """    
+    - Cost Cr500
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.ReconSkillDefinition)
-        
+
 class ScienceSkill(Skill):
     """
     - Min TL: 9
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr200
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.ScienceSkillDefinition) 
-        
+        super().__init__(skillDef=traveller.ScienceSkillDefinition)
+
 class SeafarerSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.SeafarerSkillDefinition)            
-   
+        super().__init__(skillDef=traveller.SeafarerSkillDefinition)
+
 class StealthSkill(Skill):
     """
     - Min TL: 10
     - Bandwidth: 0
     - Characteristics: DEX
     - Cost Cr500
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.StealthSkillDefinition)  
-        
+        super().__init__(skillDef=traveller.StealthSkillDefinition)
+
 class StewardSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.StewardSkillDefinition) 
-        
+        super().__init__(skillDef=traveller.StewardSkillDefinition)
+
 class StreetwiseSkill(Skill):
     """
     - Min TL: 13
     - Bandwidth: 1
     - Characteristics: INT
     - Cost Cr1000
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.StreetwiseSkillDefinition)       
+        super().__init__(skillDef=traveller.StreetwiseSkillDefinition)
 
 class SurvivalSkill(Skill):
     """
@@ -1793,20 +1833,22 @@ class SurvivalSkill(Skill):
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr200
-    """    
+    """
+
     def __init__(self) -> None:
-        super().__init__(skillDef=traveller.SurvivalSkillDefinition)  
-        
+        super().__init__(skillDef=traveller.SurvivalSkillDefinition)
+
 class TacticsSkill(Skill):
     """
     - Min TL: 8
     - Bandwidth: 0
     - Characteristics: INT
     - Cost Cr100
-    """    
+    """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.TacticsSkillDefinition)
-        
+
 class VaccSuitSkill(Skill):
     """
     - Min TL: 8
@@ -1814,9 +1856,10 @@ class VaccSuitSkill(Skill):
     - Characteristics: DEX
     - Cost Cr100
     """
+
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.VaccSuitSkillDefinition)
-        
+
 class JackOfAllTradesSkill(Skill):
     """
     - Requirement: Only compatible with Brain In A Jar
@@ -1826,7 +1869,7 @@ class JackOfAllTradesSkill(Skill):
 
     def __init__(self) -> None:
         super().__init__(skillDef=traveller.JackOfAllTradesSkillDefinition)
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -1834,12 +1877,12 @@ class JackOfAllTradesSkill(Skill):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         return context.hasComponent(
             componentType=robots.BrainInAJarBrain,
             sequence=sequence)
 
     def updateOptions(self, sequence: str, context: robots.RobotContext) -> None:
-        super().updateOptions(sequence=sequence, context=context)    
+        super().updateOptions(sequence=sequence, context=context)
         if self._levelOption.isEnabled():
             self._levelOption.setMax(JackOfAllTradesSkill._MaxJackSkillLevel)

@@ -452,7 +452,7 @@ class _LegendWidget(QtWidgets.QWidget):
             amberZoneColour = '#B0000000' # Note that this is alpha blended
             lowPopulationStyle = 'text-transform: uppercase;'
             highPopulationStyle = 'text-transform: uppercase; text-decoration: underline;'
-            capitalStyle = 'text-transform: uppercase;'            
+            capitalStyle = 'text-transform: uppercase;'
         elif style is travellermap.Style.Atlas:
             textStyle = 'color: black;'
             backgroundStyle = 'background-color: #FFFFFF;'
@@ -485,7 +485,7 @@ class _LegendWidget(QtWidgets.QWidget):
 
         characteristicItems = []
         if app.Config.instance().mapOption(travellermap.Option.WorldColours) and \
-            style is not travellermap.Style.Atlas:
+                style is not travellermap.Style.Atlas:
             characteristicItems.extend([
                 ('Rich &amp; Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#F1C232'), ''),
                 ('Agricultural', self._createWorldGlyph(size=worldGlyphSize, fill='#6AA84F'), ''),

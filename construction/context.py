@@ -215,10 +215,10 @@ class SequenceState(object):
             attributeId: construction.ConstructionAttributeId
             ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
         return self._attributes.attributeValue(attributeId=attributeId)
-    
+
     def skills(self) -> typing.Iterable[construction.Skill]:
         return self._skills.all()
-    
+
     # NOTE: A skill is only classed as having a speciality if it has the
     # speciality at level 1 or higher
     def hasSkill(
@@ -235,7 +235,7 @@ class SequenceState(object):
             skillDef: traveller.SkillDefinition
             ) -> typing.Optional[construction.Skill]:
         return self._skills.skill(skillDef)
-    
+
     def skillLevel(
             self,
             skillDef: traveller.SkillDefinition,
@@ -483,7 +483,7 @@ class ConstructionContext(object):
                         stage.addComponent(component=component)
                         break
 
-                componentOptionData[component] = optionData                
+                componentOptionData[component] = optionData
 
         if not componentOptionData:
             # If there are no component options then we can bail early.
@@ -491,7 +491,7 @@ class ConstructionContext(object):
             # compared to if there had been options
             self.regenerate()
             return
-        
+
         self._resetConstruction()
 
         # Regenerate the weapon, loading component options as we go
@@ -522,7 +522,7 @@ class ConstructionContext(object):
                     self._regenerateStage(
                         sequence=sequence,
                         stage=stage)
-                    
+
         for component, optionData in componentOptionData.items():
             if not optionData:
                 continue # All options were applied
@@ -582,7 +582,7 @@ class ConstructionContext(object):
             self.regenerate()
 
         return modified
-    
+
     def clearStage(
             self,
             stage: construction.ConstructionStage,
@@ -596,7 +596,7 @@ class ConstructionContext(object):
         # If regenerate is specified always regenerate even if nothing was
         # modified
         if regenerate:
-            self.regenerate()            
+            self.regenerate()
 
         return modified
 
@@ -788,7 +788,7 @@ class ConstructionContext(object):
             if sequenceState.hasComponent(componentType=componentType):
                 return True
         return False
-    
+
     def hasAttribute(
             self,
             attributeId: construction.ConstructionAttributeId,
@@ -797,8 +797,8 @@ class ConstructionContext(object):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.hasAttribute(attributeId=attributeId)    
-    
+        return sequenceState.hasAttribute(attributeId=attributeId)
+
     def attribute(
             self,
             attributeId: construction.ConstructionAttributeId,
@@ -807,7 +807,7 @@ class ConstructionContext(object):
         sequenceState = self._sequenceStates.get(sequence)
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
-        return sequenceState.attribute(attributeId=attributeId)    
+        return sequenceState.attribute(attributeId=attributeId)
 
     def attributeValue(
             self,
@@ -818,7 +818,7 @@ class ConstructionContext(object):
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
         return sequenceState.attributeValue(attributeId=attributeId)
-    
+
     def skills(
             self,
             sequence: str
@@ -827,9 +827,9 @@ class ConstructionContext(object):
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
         return sequenceState.skills()
-    
+
     # NOTE: A skill is only classed as having a speciality if it has the
-    # speciality at level 1 or higher    
+    # speciality at level 1 or higher
     def hasSkill(
             self,
             skillDef: traveller.SkillDefinition,
@@ -842,7 +842,7 @@ class ConstructionContext(object):
         return sequenceState.hasSkill(
             skillDef=skillDef,
             speciality=speciality)
-    
+
     def skill(
             self,
             skillDef: traveller.SkillDefinition,
@@ -852,7 +852,7 @@ class ConstructionContext(object):
         if not sequenceState:
             raise RuntimeError(f'Unknown sequence {sequence}')
         return sequenceState.skill(skillDef=skillDef)
-    
+
     def skillLevel(
             self,
             skillDef: traveller.SkillDefinition,
@@ -899,7 +899,7 @@ class ConstructionContext(object):
         # sets any that still need to be set. This process repeats until there
         # are no more options needing set _OR_ we have a pass where none of the
         # remaining options were set (the later avoids an infinite loop if there
-        # is an invalid option)        
+        # is an invalid option)
         while optionData:
             component.updateOptions(
                 sequence=stage.sequence(),
@@ -958,7 +958,7 @@ class ConstructionContext(object):
             if not optionFound:
                 # No pending options are found so no reason to think another
                 # iteration will cause any more to be applied
-                break 
+                break
 
     def _modifyStage(
             self,
@@ -1014,7 +1014,7 @@ class ConstructionContext(object):
             if addComponent and addComponent not in components:
                 if not stage.matchesComponent(component=addComponent):
                     raise construction.CompatibilityException()
-                
+
                 # Check that the component to be added is compatible with the
                 # context. This needs to be done after the component to be
                 # removed has been removed in order to to allow for the case where
@@ -1091,7 +1091,7 @@ class ConstructionContext(object):
         self._enforceStageLimits(sequence=sequence, stage=stage)
 
         # Create steps for the stage
-        self._createSteps(sequence=sequence, stage=stage)            
+        self._createSteps(sequence=sequence, stage=stage)
 
     def _removeIncompatibleComponents(
             self,
@@ -1182,7 +1182,7 @@ class ConstructionContext(object):
                     stage=stage,
                     component=defaultComponent,
                     regenerate=False)
-            
+
         # Remove components if current stage component count is to high
         maxComponents = stage.maxComponents()
         if maxComponents != None:

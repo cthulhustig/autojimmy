@@ -18,7 +18,7 @@ class _ManipulatorImpl(object):
             - Chassis Size - 1: 5% of Base Slots rounded up
             - Chassis Size: 10% of Base Slots rounded up
             - Chassis Size + 1: 20% of Base Slots rounded up
-            - Chassis Size + 2: 40% of Base Slots rounded up        
+            - Chassis Size + 2: 40% of Base Slots rounded up
         - Cost: Cr100 * the difference in slots between the robot size and the
         new manipulator size. The reduction in cost is clamped to 20% of the
         Base Chassis Cost
@@ -68,14 +68,14 @@ class _ManipulatorImpl(object):
     _MaxSizeIncrease = common.ScalarCalculation(
         value=2,
         name='Max Manipulator Size Increase')
-    
+
     _SizeModificationCostIncrement = common.ScalarCalculation(
         value=100,
         name='Manipulator Size Modification Cost Per Increment')
     _SizeModificationCostReductionLimitPercent = common.ScalarCalculation(
         value=20,
-        name='Manipulator Size Modification Cost Reduction Limit Percentage')        
-    
+        name='Manipulator Size Modification Cost Reduction Limit Percentage')
+
     _SizeModificationSlotCostMap = {
         +2: common.ScalarCalculation(
             value=40,
@@ -109,27 +109,27 @@ class _ManipulatorImpl(object):
             name='Size -6 Manipulator Slot Requirement Percentage'),
         -7: common.ScalarCalculation(
             value=1,
-            name='Size -7 Manipulator Slot Requirement Percentage') 
+            name='Size -7 Manipulator Slot Requirement Percentage')
     }
 
     _MaxStrengthIncreaseMultiplier = common.ScalarCalculation(
         value=2,
         name='Max Manipulator STR Increase Multiplier')
-    
+
     _MaxDexterityTechLevelModifier = common.ScalarCalculation(
         value=3,
         name='Max Manipulator DEX Increase TL Modifier')
     _DexterityModifierCostMultiplier = common.ScalarCalculation(
         value=2,
-        name='Manipulator DEX Modification Cost Multiplier')    
-    
+        name='Manipulator DEX Modification Cost Multiplier')
+
     _BaseStrengthSizeMultiplier = common.ScalarCalculation(
         value=2,
         name='Manipulator Base STR Size Multiplier')
     _BaseStrengthConstant = common.ScalarCalculation(
         value=-1,
         name='Manipulator Base STR Constant')
-    
+
     _BaseDexterityTechLevelDivisor = common.ScalarCalculation(
         value=2,
         name='Manipulator Base DEX TL Divisor')
@@ -147,7 +147,7 @@ class _ManipulatorImpl(object):
         self._cachedTechLevel = None
         self._cachedRobotSize = None
         self._cachedManipulatorSize = None
-        
+
         self._sizeOption = construction.IntegerOption(
             id='Size',
             name='Size',
@@ -155,7 +155,7 @@ class _ManipulatorImpl(object):
             minValue=0,
             maxValue=0,
             description='Specify the the size of the manipulator.')
-        
+
         self._strengthOption = construction.IntegerOption(
             id='Strength',
             name='STR',
@@ -163,7 +163,7 @@ class _ManipulatorImpl(object):
             minValue=0,
             maxValue=0,
             description='Specify the the strength of the manipulator.')
-        
+
         self._dexterityOption = construction.IntegerOption(
             id='Dexterity',
             name='DEX',
@@ -191,7 +191,7 @@ class _ManipulatorImpl(object):
             self,
             sequence: str,
             context: robots.RobotContext
-            ) -> bool:       
+            ) -> bool:
         return context.hasComponent(
             componentType=robots.Chassis,
             sequence=sequence)
@@ -220,7 +220,7 @@ class _ManipulatorImpl(object):
 
         self._sizeOption.setMin(value=1)
         self._sizeOption.setMax(
-            value=robotSize.value() +  _ManipulatorImpl._MaxSizeIncrease.value())
+            value=robotSize.value() + _ManipulatorImpl._MaxSizeIncrease.value())
         if self._cachedRobotSize == None or \
                 self._cachedRobotSize.value() != robotSize.value():
             self._sizeOption.setValue(robotSize.value())
@@ -269,12 +269,12 @@ class _ManipulatorImpl(object):
             lhs=manipulatorSize,
             rhs=robotSize,
             name='Base Manipulator Size Delta')
-        
+
         baseCost = common.Calculator.multiply(
             lhs=_ManipulatorImpl._SizeModificationCostIncrement,
             rhs=manipulatorSize,
-            name='Manipulator Base Cost')        
-        
+            name='Manipulator Base Cost')
+
         baseSlots = context.baseSlots(sequence=sequence)
         costList = []
         slots = None
@@ -341,7 +341,7 @@ class _ManipulatorImpl(object):
                     lhs=strengthIncrease,
                     rhs=strengthIncrease,
                     name='Manipulator STR Increase Squared')))
-            
+
         manipulatorDexterity = common.ScalarCalculation(
             value=self._dexterityOption.value(),
             name='Specified Manipulator DEX')
@@ -357,7 +357,7 @@ class _ManipulatorImpl(object):
                 rhs=common.Calculator.multiply(
                     lhs=dexterityIncrease,
                     rhs=dexterityIncrease,
-                    name='Manipulator DEX Increase Squared')))            
+                    name='Manipulator DEX Increase Squared')))
 
         if costList:
             cost = common.Calculator.sum(
@@ -371,7 +371,7 @@ class _ManipulatorImpl(object):
     def _calcBaseStrength(
             self,
             sequence: str,
-            context: robots.RobotContext            
+            context: robots.RobotContext
             ) -> common.ScalarCalculation:
         size = common.ScalarCalculation(
             value=self._sizeOption.value(),
@@ -383,11 +383,11 @@ class _ManipulatorImpl(object):
                 rhs=_ManipulatorImpl._BaseStrengthSizeMultiplier),
             rhs=_ManipulatorImpl._BaseStrengthConstant,
             name='Base STR')
-    
+
     def _calcMaxStrength(
             self,
             sequence: str,
-            context: robots.RobotContext            
+            context: robots.RobotContext
             ) -> common.ScalarCalculation:
         return common.Calculator.multiply(
             lhs=self._calcBaseStrength(
@@ -399,11 +399,11 @@ class _ManipulatorImpl(object):
     def _calcBaseDexterity(
             self,
             sequence: str,
-            context: robots.RobotContext            
+            context: robots.RobotContext
             ) -> common.ScalarCalculation:
         techLevel = common.ScalarCalculation(
             value=context.techLevel(),
-            name='Robot TL')        
+            name='Robot TL')
         return common.Calculator.ceil(
             value=common.Calculator.add(
                 lhs=common.Calculator.divideFloat(
@@ -411,11 +411,11 @@ class _ManipulatorImpl(object):
                     rhs=_ManipulatorImpl._BaseDexterityTechLevelDivisor),
                 rhs=_ManipulatorImpl._BaseDexterityConstant),
             name='Base DEX')
-    
+
     def _calcMaxDexterity(
             self,
             sequence: str,
-            context: robots.RobotContext            
+            context: robots.RobotContext
             ) -> common.ScalarCalculation:
         techLevel = common.ScalarCalculation(
             value=context.techLevel(),
@@ -424,7 +424,7 @@ class _ManipulatorImpl(object):
             lhs=techLevel,
             rhs=_ManipulatorImpl._MaxDexterityTechLevelModifier,
             name='Max DEX')
-    
+
 class Manipulator(robots.RobotComponentInterface):
     def __init__(
             self,
@@ -432,7 +432,7 @@ class Manipulator(robots.RobotComponentInterface):
             ) -> None:
         super().__init__()
         self._impl = impl
-        
+
     def size(self) -> int:
         return self._impl.size()
 
@@ -441,7 +441,7 @@ class Manipulator(robots.RobotComponentInterface):
 
     def dexterity(self) -> int:
         return self._impl.dexterity()
-    
+
     def typeString(self) -> str:
         return 'Manipulator'
 
@@ -453,7 +453,7 @@ class Manipulator(robots.RobotComponentInterface):
         return self._impl.isCompatible(
             sequence=sequence,
             context=context)
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
 
@@ -492,16 +492,16 @@ class Manipulator(robots.RobotComponentInterface):
         step = robots.RobotStep(
             name=stepName,
             type=stepType)
-        
+
         self._impl.updateStep(
             sequence=sequence,
             context=context,
-            step=step)        
-                        
+            step=step)
+
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
 class BaseManipulator(Manipulator):
     def __init__(
             self,
@@ -513,14 +513,14 @@ class InstalledBaseManipulator(BaseManipulator):
     def __init__(self) -> None:
         super().__init__(impl=_ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Base))
-        
+
     def componentString(self) -> str:
-        return 'Base Manipulator'        
+        return 'Base Manipulator'
 
 class RemoveBaseManipulator(BaseManipulator):
     """
     - Slot Gain: +10% of Base Slots per Base Manipulator Removed rounded up
-    - Cost Saving: Cr100 * Manipulator Size limited to 20% of Base Chassis Cost    
+    - Cost Saving: Cr100 * Manipulator Size limited to 20% of Base Chassis Cost
     """
     _MaxSlotsIncreasePercent = common.ScalarCalculation(
         value=10,
@@ -537,7 +537,7 @@ class RemoveBaseManipulator(BaseManipulator):
 
     def size(self) -> int:
         return 0
-    
+
     def strength(self) -> int:
         return 0
 
@@ -546,14 +546,14 @@ class RemoveBaseManipulator(BaseManipulator):
 
     def componentString(self) -> str:
         return 'Remove Manipulator'
-    
+
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         return True
-    
+
     # NOTE: This intentionally doesn't call the base class as none of its
     # options are used when removing a manipulator
     def options(self) -> typing.List[construction.ComponentOption]:
@@ -576,7 +576,7 @@ class RemoveBaseManipulator(BaseManipulator):
         step = robots.RobotStep(
             name='Removed',
             type=self.typeString())
-        
+
         # Rather than having a negative slot cost the max slots is
         # increased (not the base slots)
         slotsIncrease = common.Calculator.ceil(
@@ -607,28 +607,29 @@ class RemoveBaseManipulator(BaseManipulator):
             name='Base Manipulator Removal Cost Modifier')
         step.setCredits(
             credits=construction.ConstantModifier(value=costModifier))
-                        
+
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
 class AdditionalManipulator(Manipulator):
     def __init__(self) -> None:
-        super().__init__(impl = _ManipulatorImpl(
+        super().__init__(impl=_ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Additional))
 
     def componentString(self) -> str:
         return 'Additional Manipulator'
-        
+
 class LegManipulator(Manipulator):
     """
     - Requirement: The number of leg manipulators should be limited by the number
     of legs
     """
+
     def __init__(self) -> None:
-        super().__init__(impl = _ManipulatorImpl(
+        super().__init__(impl=_ManipulatorImpl(
             manipulatorType=_ManipulatorImpl.ManipulatorType.Leg))
-        
+
     def componentString(self) -> str:
         return 'Leg Manipulator'
 
@@ -638,27 +639,27 @@ class LegManipulator(Manipulator):
             context: robots.RobotContext
             ) -> bool:
         if not super().isCompatible(
-            sequence=sequence,
-            context=context):
+                sequence=sequence,
+                context=context):
             return False
 
         legCount = self._totalLegCount(sequence=sequence, context=context)
-        
+
         # Leg manipulators can only be used added to robots with legs
         if not legCount:
-            return False 
-        
+            return False
+
         # Further leg manipulators can't be added if there is already one for
         # every leg
         legManipulators = context.findComponents(
             componentType=robots.LegManipulator,
             sequence=sequence)
-        return len(legManipulators) < legCount              
-            
+        return len(legManipulators) < legCount
+
     def _totalLegCount(
             self,
             sequence: str,
-            context: robots.RobotContext            
+            context: robots.RobotContext
             ) -> int:
         locomotionTypes = [
             robots.WalkerPrimaryLocomotion,

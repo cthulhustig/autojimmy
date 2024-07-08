@@ -3,7 +3,7 @@ from PyQt5 import QtCore, QtWidgets
 class NoWheelEventFilter(QtCore.QObject):
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if event.type() == QtCore.QEvent.Type.Wheel:
-                return True
+            return True
         return super().eventFilter(object, event)
 
 # For this have any real effect the widget(s) it's used should NOT

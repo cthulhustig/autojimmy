@@ -34,34 +34,35 @@ class SkillDefinition(object):
         if isinstance(speciality, enum.Enum):
             return f'{self._skillName} ({speciality.value})'
         if isinstance(speciality, str):
-            return f'{self._skillName} ({speciality})' 
+            return f'{self._skillName} ({speciality})'
         return self._skillName
-    
+
     def type(self) -> SkillType:
         return self._skillType
 
     def isSimple(self) -> bool:
         return self._skillType == SkillDefinition.SkillType.Simple
-    
+
     def isFixedSpeciality(self) -> bool:
         return self._skillType == SkillDefinition.SkillType.FixedSpeciality
-    
+
     def isCustomSpeciality(self) -> bool:
         return self._skillType == SkillDefinition.SkillType.CustomSpeciality
-    
+
     def fixedSpecialities(self) -> enum.Enum:
         return self._fixedSpecialities
-    
+
     def customSpecialities(self) -> typing.Iterable[str]:
         return self._customSpecialities
-    
+
     # This class represents immutable data so there should be no need to deep
     # copy it and doing so could introduce bugs because code performs
     # comparisons with the static class instances below. I could add an
     # equality operator but, due to the fact the data its self is static, it
     # seems better to do this
     def __deepcopy__(self, memo: typing.Dict) -> 'SkillDefinition':
-        return self    
+        return self
+
 
 AdminSkillDefinition = SkillDefinition(
     skillName='Admin',
@@ -69,12 +70,14 @@ AdminSkillDefinition = SkillDefinition(
 
 AdvocateSkillDefinition = SkillDefinition(
     skillName='Advocate',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 class AnimalsSkillSpecialities(enum.Enum):
     Handling = 'Handling'
     Training = 'Training'
     Veterinary = 'Veterinary'
+
+
 AnimalsSkillDefinition = SkillDefinition(
     skillName='Animals',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
@@ -90,28 +93,30 @@ ArtSkillSpecialities = [
 ArtSkillDefinition = SkillDefinition(
     skillName='Art',
     skillType=SkillDefinition.SkillType.CustomSpeciality,
-    customSpecialities=ArtSkillSpecialities) 
-        
+    customSpecialities=ArtSkillSpecialities)
+
 AstrogationSkillDefinition = SkillDefinition(
     skillName='Astrogation',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 class AthleticsSkillSpecialities(enum.Enum):
     Dexterity = 'Dexterity'
     Endurance = 'Endurance'
     Strength = 'Strength'
+
+
 AthleticsSkillDefinition = SkillDefinition(
     skillName='Athletics',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=AthleticsSkillSpecialities)       
+    fixedSpecialities=AthleticsSkillSpecialities)
 
 BrokerSkillDefinition = SkillDefinition(
     skillName='Broker',
-    skillType=SkillDefinition.SkillType.Simple)  
+    skillType=SkillDefinition.SkillType.Simple)
 
 CarouseSkillDefinition = SkillDefinition(
     skillName='Carouse',
-    skillType=SkillDefinition.SkillType.Simple)  
+    skillType=SkillDefinition.SkillType.Simple)
 
 DeceptionSkillDefinition = SkillDefinition(
     skillName='Deception',
@@ -127,30 +132,36 @@ class DriveSkillSpecialities(enum.Enum):
     Tracked = 'Tracked'
     Walker = 'Walker'
     Wheeled = 'Wheeled'
+
+
 DriveSkillDefinition = SkillDefinition(
     skillName='Drive',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=DriveSkillSpecialities) 
+    fixedSpecialities=DriveSkillSpecialities)
 
 class ElectronicsSkillSpecialities(enum.Enum):
     Comms = 'Comms'
     Computers = 'Computers'
     RemoteOps = 'Remote Ops'
     Sensors = 'Sensors'
+
+
 ElectronicsSkillDefinition = SkillDefinition(
     skillName='Electronics',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=ElectronicsSkillSpecialities) 
+    fixedSpecialities=ElectronicsSkillSpecialities)
 
 class EngineerSkillSpecialities(enum.Enum):
     JDrive = 'J-Drive'
     LifeSupport = 'Life Support'
     MDrive = 'M-Drive'
     PowerPlant = 'Power Plant'
+
+
 EngineerSkillDefinition = SkillDefinition(
     skillName='Engineer',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=EngineerSkillSpecialities) 
+    fixedSpecialities=EngineerSkillSpecialities)
 
 ExplosivesSkillDefinition = SkillDefinition(
     skillName='Explosives',
@@ -162,10 +173,12 @@ class FlyerSkillSpecialities(enum.Enum):
     Ornithopter = 'Ornithopter'
     Rotor = 'Rotor'
     Wing = 'Wing'
+
+
 FlyerSkillDefinition = SkillDefinition(
     skillName='Flyer',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=FlyerSkillSpecialities) 
+    fixedSpecialities=FlyerSkillSpecialities)
 
 GamblerSkillDefinition = SkillDefinition(
     skillName='Gambler',
@@ -175,6 +188,8 @@ class GunCombatSkillSpecialities(enum.Enum):
     Archaic = 'Archaic'
     Energy = 'Energy'
     Slug = 'Slug'
+
+
 GunCombatSkillDefinition = SkillDefinition(
     skillName='Gun Combat',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
@@ -185,19 +200,23 @@ class GunnerSkillSpecialities(enum.Enum):
     Ortillery = 'Ortillery'
     Screen = 'Screen'
     Turret = 'Turret'
+
+
 GunnerSkillDefinition = SkillDefinition(
     skillName='Gunner',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=GunnerSkillSpecialities) 
+    fixedSpecialities=GunnerSkillSpecialities)
 
 class HeavyWeaponsSkillSpecialities(enum.Enum):
     Artillery = 'Artillery'
     Portable = 'Portable' # aka Man-Port
     Vehicle = 'Vehicle'
+
+
 HeavyWeaponsSkillDefinition = SkillDefinition(
     skillName='Heavy Weapons',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=HeavyWeaponsSkillSpecialities) 
+    fixedSpecialities=HeavyWeaponsSkillSpecialities)
 
 InvestigateSkillDefinition = SkillDefinition(
     skillName='Investigate',
@@ -240,7 +259,7 @@ LanguageSkillSpecialities = [
 LanguageSkillDefinition = SkillDefinition(
     skillName='Language',
     skillType=SkillDefinition.SkillType.CustomSpeciality,
-    customSpecialities=LanguageSkillSpecialities) 
+    customSpecialities=LanguageSkillSpecialities)
 
 LeadershipSkillDefinition = SkillDefinition(
     skillName='Leadership',
@@ -263,10 +282,12 @@ class MeleeSkillSpecialities(enum.Enum):
     # some of the weapons from the robot construction spreadsheet (which seem to
     # have come from the Central Supply Catalogue)
     Whip = 'Whip'
+
+
 MeleeSkillDefinition = SkillDefinition(
     skillName='Melee',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=MeleeSkillSpecialities) 
+    fixedSpecialities=MeleeSkillSpecialities)
 
 NavigationSkillDefinition = SkillDefinition(
     skillName='Navigation',
@@ -280,10 +301,12 @@ class PilotSkillSpecialities(enum.Enum):
     CapitalShips = 'Capital Ships'
     SmallCraft = 'Small Craft'
     Spacecraft = 'Spacecraft'
+
+
 PilotSkillDefinition = SkillDefinition(
     skillName='Pilot',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=PilotSkillSpecialities) 
+    fixedSpecialities=PilotSkillSpecialities)
 
 # This list is a combination of examples from p68 of the core rule book and the
 # ones selectable in the robot's spreadsheet
@@ -304,7 +327,7 @@ ProfessionSkillSpecialities = [
 ProfessionSkillDefinition = SkillDefinition(
     skillName='Profession',
     skillType=SkillDefinition.SkillType.CustomSpeciality,
-    customSpecialities=ProfessionSkillSpecialities) 
+    customSpecialities=ProfessionSkillSpecialities)
 
 ReconSkillDefinition = SkillDefinition(
     skillName='Recon',
@@ -379,37 +402,41 @@ ScienceSkillSpecialities = [
 ScienceSkillDefinition = SkillDefinition(
     skillName='Science',
     skillType=SkillDefinition.SkillType.CustomSpeciality,
-    customSpecialities=ScienceSkillSpecialities) 
+    customSpecialities=ScienceSkillSpecialities)
 
 class SeafarerSkillSpecialities(enum.Enum):
     OceanShips = 'Ocean Ships'
     Personal = 'Personal'
     Sail = 'Sail'
     Submarine = 'Submarine'
+
+
 SeafarerSkillDefinition = SkillDefinition(
     skillName='Seafarer',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
-    fixedSpecialities=SeafarerSkillSpecialities) 
+    fixedSpecialities=SeafarerSkillSpecialities)
 
 StealthSkillDefinition = SkillDefinition(
     skillName='Stealth',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 StewardSkillDefinition = SkillDefinition(
     skillName='Steward',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 StreetwiseSkillDefinition = SkillDefinition(
     skillName='Streetwise',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 SurvivalSkillDefinition = SkillDefinition(
     skillName='Survival',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 class TacticsSkillSpecialities(enum.Enum):
     Military = 'Military'
     Naval = 'Naval'
+
+
 TacticsSkillDefinition = SkillDefinition(
     skillName='Tactics',
     skillType=SkillDefinition.SkillType.FixedSpeciality,
@@ -417,7 +444,7 @@ TacticsSkillDefinition = SkillDefinition(
 
 VaccSuitSkillDefinition = SkillDefinition(
     skillName='Vacc Suit',
-    skillType=SkillDefinition.SkillType.Simple) 
+    skillType=SkillDefinition.SkillType.Simple)
 
 # NOTE: This list shouldn't be used as custom construction type specific skills
 # can be defined. I've commented it out rather than delete it as it's the best

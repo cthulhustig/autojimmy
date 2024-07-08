@@ -50,7 +50,7 @@ class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
         traveller.WorldManager.instance().loadSectors(
             progressCallback=self._handleProgressUpdate)
-        
+
 class LoadRobotsJob(StartupJobBase):
     def executeJob(self) -> None:
         robots.RobotStore.instance().loadRobots(

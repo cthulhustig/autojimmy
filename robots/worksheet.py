@@ -46,6 +46,6 @@ class Worksheet(object):
 
     def value(self, field: Field) -> typing.Optional[str]:
         return self._values.get(field)
-    
+
     def calculations(self, field: Field) -> typing.Iterable[common.ScalarCalculation]:
         return self._calculations.get(field, [])

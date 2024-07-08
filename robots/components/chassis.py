@@ -55,7 +55,7 @@ class Chassis(robots.RobotComponentInterface):
         self._componentString = f'Size {size}'
         self._size = common.ScalarCalculation(
             value=size,
-            name=f'Chassis Size')        
+            name=f'Chassis Size')
         self._baseSlots = common.ScalarCalculation(
             value=baseSlots,
             name=f'{self._componentString} Chassis Base Slots')
@@ -102,23 +102,23 @@ class Chassis(robots.RobotComponentInterface):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         step.setCredits(
             credits=construction.ConstantModifier(value=self._basicCost))
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Size,
-            value=self._size))        
+            value=self._size))
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.BaseSlots,
             value=self._baseSlots))
-        
+
         # Init Available Slots to the base slots
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxSlots,
             value=self._baseSlots))
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Hits,
             value=self._baseHits))
@@ -131,7 +131,7 @@ class Chassis(robots.RobotComponentInterface):
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Large,
                 value=self._attackDM))
-            
+
         currentTL = context.techLevel()
         for minTL, maxTL, protection in Chassis._BaseProtectionDetails:
             if currentTL >= minTL and ((maxTL == None) or (currentTL <= maxTL)):
@@ -141,7 +141,7 @@ class Chassis(robots.RobotComponentInterface):
                     name=f'TL{range} Chassis Base Protection')
                 step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.BaseProtection,
-                    value=protection))                
+                    value=protection))
                 step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.Protection,
                     value=protection))
@@ -154,7 +154,7 @@ class Size1Chassis(Chassis):
     - Base Slots: 1
     - Base Hits: 1
     - Attack Roll DM: -4
-    - Basic Cost: Cr100    
+    - Basic Cost: Cr100
     """
 
     def __init__(self) -> None:
@@ -164,7 +164,7 @@ class Size1Chassis(Chassis):
             baseHits=1,
             attackDM=-4,
             basicCost=100)
-        
+
 class Size2Chassis(Chassis):
     """
     - Base Slots: 2
@@ -196,7 +196,7 @@ class Size3Chassis(Chassis):
             baseHits=8,
             attackDM=-2,
             basicCost=400)
-        
+
 class Size4Chassis(Chassis):
     """
     - Base Slots: 8
@@ -212,7 +212,7 @@ class Size4Chassis(Chassis):
             baseHits=12,
             attackDM=-1,
             basicCost=800)
-        
+
 class Size5Chassis(Chassis):
     """
     - Base Slots: 16
@@ -228,7 +228,7 @@ class Size5Chassis(Chassis):
             baseHits=20,
             attackDM=+0,
             basicCost=1000)
-        
+
 class Size6Chassis(Chassis):
     """
     - Base Slots: 32
@@ -244,7 +244,7 @@ class Size6Chassis(Chassis):
             baseHits=32,
             attackDM=+1,
             basicCost=2000)
-        
+
 class Size7Chassis(Chassis):
     """
     - Base Slots: 64
@@ -260,7 +260,7 @@ class Size7Chassis(Chassis):
             baseHits=50,
             attackDM=+2,
             basicCost=4000)
-        
+
 class Size8Chassis(Chassis):
     """
     - Base Slots: 128

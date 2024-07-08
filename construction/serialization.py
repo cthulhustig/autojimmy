@@ -19,7 +19,7 @@ def serialiseOptions(
             options.append({
                 'id': option.id(),
                 'value': value
-            })            
+            })
         elif isinstance(option, construction.IntegerOption):
             assert(value == None or isinstance(value, int))
             options.append({
@@ -43,7 +43,7 @@ def serialiseOptions(
             options.append({
                 'id': option.id(),
                 'value': value
-            })            
+            })
 
     return options
 

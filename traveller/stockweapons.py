@@ -8,6 +8,7 @@ class StockWeaponSet(enum.Enum):
     CSC2 = 'Central Supply Catalogue 2e'
     CSC2023 = 'Central Supply Catalogue 2023'
 
+
 _CoreCompatible = [StockWeaponSet.Core2, StockWeaponSet.Core2022]
 _SupplyCatalogueCompatible = [StockWeaponSet.CSC2, StockWeaponSet.CSC2023]
 _AllCompatible = _CoreCompatible + _SupplyCatalogueCompatible
@@ -17,7 +18,7 @@ class WeaponCategory(enum.Enum):
     Blade = 'Blade'
     UpClose = 'Up Close'
     Shield = 'Shield'
-    Whip = 'Whip'    
+    Whip = 'Whip'
     SlugPistol = 'Slug Pistol'
     SlugRifle = 'Slug Rifle'
     EnergyPistol = 'Energy Pistol'
@@ -71,43 +72,43 @@ class StockWeapon(object):
 
     def name(self) -> str:
         return self._name
-    
+
     def category(self) -> WeaponCategory:
         return self._category
-    
+
     def techLevel(self) -> int:
         return self._techLevel
-    
+
     def skill(self) -> traveller.SkillDefinition:
         return self._skill
-    
+
     def specialty(self) -> typing.Optional[enum.Enum]:
         return self._specialty
-    
+
     def cost(self) -> int:
         return self._cost
-    
+
     def weight(self) -> typing.Optional[float]:
         return self._weight
 
     def range(self) -> typing.Optional[float]:
         return self._range
-    
+
     def magazineCapacity(self) -> typing.Optional[int]:
         return self._magazineCapacity
 
     def magazineCost(self) -> typing.Optional[int]:
         return self._magazineCost
-            
+
     def damage(self) -> str:
         return self._damage
-        
+
     def traits(self) -> str:
         return self._traits
-    
+
     def robotMount(self) -> typing.Optional[WeaponSize]:
-        return self._robotMount    
-    
+        return self._robotMount
+
     def linkable(self) -> bool:
         return self._linkable
 
@@ -156,13 +157,13 @@ class _StockWeaponDescription(object):
 
     def name(self) -> str:
         return self._name
-    
+
     def isCompatible(
             self,
             weaponSet: StockWeaponSet
             ) -> bool:
-        return not self._weaponSets or weaponSet in self._weaponSets        
-    
+        return not self._weaponSets or weaponSet in self._weaponSets
+
     def createStockWeapon(
             self,
             weaponSet: StockWeaponSet
@@ -242,7 +243,7 @@ class _StockBladeWeaponDescription(_StockWeaponDescription):
             robotMount=robotMount,
             linkable=False,
             weaponSets=weaponSets)
-        
+
 class _StockUpCloseWeaponDescription(_StockWeaponDescription):
     def __init__(
             self,
@@ -270,7 +271,7 @@ class _StockUpCloseWeaponDescription(_StockWeaponDescription):
             robotMount=WeaponSize.Small,
             linkable=False,
             weaponSets=weaponSets)
-        
+
 class _StockShieldDescription(_StockWeaponDescription):
     def __init__(
             self,
@@ -341,7 +342,7 @@ class _StockSlugPistolDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -374,7 +375,7 @@ class _StockSlugRifleDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -407,7 +408,7 @@ class _StockEnergyPistolDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -425,7 +426,7 @@ class _StockEnergyPistolDescription(_StockWeaponDescription):
             traits=traits,
             robotMount=robotMount,
             linkable=linkable,
-            weaponSets=weaponSets)    
+            weaponSets=weaponSets)
 
 class _StockEnergyRifleDescription(_StockWeaponDescription):
     def __init__(
@@ -440,7 +441,7 @@ class _StockEnergyRifleDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -474,7 +475,7 @@ class _StockArchaicWeaponDescription(_StockWeaponDescription):
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
             linkable: bool = False,
-            weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,            
+            weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
             name=name,
@@ -521,7 +522,7 @@ class _StockGrenadeDescription(_StockWeaponDescription):
             robotMount=WeaponSize.Small,
             linkable=False,
             weaponSets=weaponSets)
-        
+
 class _StockExplosiveDescription(_StockWeaponDescription):
     def __init__(
             self,
@@ -562,7 +563,7 @@ class _StockHeavyPortableWeaponDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -580,7 +581,7 @@ class _StockHeavyPortableWeaponDescription(_StockWeaponDescription):
             traits=traits,
             robotMount=robotMount,
             linkable=linkable,
-            weaponSets=weaponSets)          
+            weaponSets=weaponSets)
 
 class _StockArtilleryDescription(_StockWeaponDescription):
     def __init__(
@@ -595,7 +596,7 @@ class _StockArtilleryDescription(_StockWeaponDescription):
             magazineCost: typing.Optional[typing.Union[int, typing.Mapping[StockWeaponSet, int]]] = None,
             traits: typing.Union[str, typing.Mapping[StockWeaponSet, str]] = '',
             robotMount: typing.Optional[WeaponSize] = None,
-            linkable: bool = False,            
+            linkable: bool = False,
             weaponSets: typing.Optional[typing.Iterable[StockWeaponSet]] = None,
             ) -> None:
         super().__init__(
@@ -613,8 +614,8 @@ class _StockArtilleryDescription(_StockWeaponDescription):
             traits=traits,
             robotMount=robotMount,
             linkable=linkable,
-            weaponSets=weaponSets)     
-        
+            weaponSets=weaponSets)
+
 class _StockVehicleWeaponDescription(_StockWeaponDescription):
     def __init__(
             self,
@@ -647,7 +648,7 @@ class _StockVehicleWeaponDescription(_StockWeaponDescription):
             robotMount=robotMount,
             linkable=linkable,
             weaponSets=weaponSets)
-        
+
 class _StockLaunchedWeaponDescription(_StockWeaponDescription):
     def __init__(
             self,
@@ -680,7 +681,7 @@ class _StockLaunchedWeaponDescription(_StockWeaponDescription):
             robotMount=robotMount,
             linkable=linkable,
             weaponSets=weaponSets)
-    
+
 # List of weapons taken from the MGT2 Robot Worksheet v1.50.01 spreadsheet
 # IMPORTANT: These weapon names MUST remain constant between versions otherwise
 # it will break weapons saved by older versions
@@ -697,9 +698,10 @@ class _StockLaunchedWeaponDescription(_StockWeaponDescription):
 # it's best to allow any weapon to be multi-linked and leave it up to referees
 # to say if it's allowed.
 
+
 _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
-    #  ███████████  ████                 █████                                        ███                     
-    # ░░███░░░░░███░░███                ░░███                                        ░░░                      
+    #  ███████████  ████                 █████                                        ███
+    # ░░███░░░░░███░░███                ░░███                                        ░░░
     #  ░███    ░███ ░███  █████ ████  ███████   ███████  ██████   ██████  ████████   ████  ████████    ███████
     #  ░██████████  ░███ ░░███ ░███  ███░░███  ███░░███ ███░░███ ███░░███░░███░░███ ░░███ ░░███░░███  ███░░███
     #  ░███░░░░░███ ░███  ░███ ░███ ░███ ░███ ░███ ░███░███████ ░███ ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███
@@ -707,8 +709,8 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
     #  ███████████  █████ ░░████████░░████████░░███████░░██████ ░░██████  ████ █████ █████ ████ █████░░███████
     # ░░░░░░░░░░░  ░░░░░   ░░░░░░░░  ░░░░░░░░  ░░░░░███ ░░░░░░   ░░░░░░  ░░░░ ░░░░░ ░░░░░ ░░░░ ░░░░░  ░░░░░███
     #                                          ███ ░███                                               ███ ░███
-    #                                         ░░██████                                               ░░██████ 
-    #                                          ░░░░░░                                                 ░░░░░░  
+    #                                         ░░██████                                               ░░██████
+    #                                          ░░░░░░                                                 ░░░░░░
 
     _StockBludgeoningWeaponDescription(
         name='Anti-Armour Flail',
@@ -718,22 +720,22 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         damage='4D',
         traits='AP 5, One Use',
         robotMount=WeaponSize.Small,
-        weaponSets=_SupplyCatalogueCompatible),        
+        weaponSets=_SupplyCatalogueCompatible),
     _StockBludgeoningWeaponDescription(
         name='Club',
         techLevel={
             StockWeaponSet.Core2: 1,
-            StockWeaponSet.Core2022: 1,            
+            StockWeaponSet.Core2022: 1,
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
         weight={
             StockWeaponSet.Core2: 3,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},             
+            StockWeaponSet.CSC2023: 2},
         damage='2D',
         robotMount=WeaponSize.Small,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockBludgeoningWeaponDescription(
         name='Gravity Hammer',
         techLevel=13,
@@ -742,7 +744,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         damage='5D',
         traits='AP 50, Bulky, Smasher',
         robotMount=WeaponSize.Medium,
-        weaponSets=_SupplyCatalogueCompatible),        
+        weaponSets=_SupplyCatalogueCompatible),
     _StockBludgeoningWeaponDescription(
         name='Mace',
         techLevel=1,
@@ -777,14 +779,14 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         techLevel=1,
         cost={
             StockWeaponSet.Core2: None,
-            StockWeaponSet.Core2022: None,            
+            StockWeaponSet.Core2022: None,
             StockWeaponSet.CSC2: None,
             StockWeaponSet.CSC2023: 5},
         weight={
             StockWeaponSet.Core2: 3,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},            
+            StockWeaponSet.CSC2023: 2},
         damage='2D',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
@@ -805,21 +807,21 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 1,
             StockWeaponSet.Core2022: 0.5,
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0.5},          
+            StockWeaponSet.CSC2023: 0.5},
         damage='2D',
         traits='Stun',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
 
 
-    #  ███████████  ████                █████         
-    # ░░███░░░░░███░░███               ░░███          
-    #  ░███    ░███ ░███   ██████    ███████   ██████ 
+    #  ███████████  ████                █████
+    # ░░███░░░░░███░░███               ░░███
+    #  ░███    ░███ ░███   ██████    ███████   ██████
     #  ░██████████  ░███  ░░░░░███  ███░░███  ███░░███
-    #  ░███░░░░░███ ░███   ███████ ░███ ░███ ░███████ 
-    #  ░███    ░███ ░███  ███░░███ ░███ ░███ ░███░░░  
-    #  ███████████  █████░░████████░░████████░░██████ 
-    # ░░░░░░░░░░░  ░░░░░  ░░░░░░░░  ░░░░░░░░  ░░░░░░  
+    #  ░███░░░░░███ ░███   ███████ ░███ ░███ ░███████
+    #  ░███    ░███ ░███  ███░░███ ░███ ░███ ░███░░░
+    #  ███████████  █████░░████████░░████████░░██████
+    # ░░░░░░░░░░░  ░░░░░  ░░░░░░░░  ░░░░░░░░  ░░░░░░
 
     _StockBladeWeaponDescription(
         name='Arc-Field Weapon',
@@ -860,18 +862,18 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         robotMount=WeaponSize.Medium,
         weaponSets=_SupplyCatalogueCompatible),
     _StockBladeWeaponDescription(
-        name='Blade',     
+        name='Blade',
         techLevel={
             StockWeaponSet.Core2: 2,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         cost=100,
         weight={
             StockWeaponSet.Core2: 2,
             StockWeaponSet.Core2022: 1,
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         damage='2D',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
@@ -879,7 +881,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         name='Broadsword',
         techLevel={
             StockWeaponSet.Core2: 2,
-            StockWeaponSet.Core2022: 2,            
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 2,
             StockWeaponSet.CSC2023: 1},
         cost=500,
@@ -887,7 +889,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 8,
             StockWeaponSet.Core2022: 3,
             StockWeaponSet.CSC2: 8,
-            StockWeaponSet.CSC2023: 3},         
+            StockWeaponSet.CSC2023: 3},
         damage='4D',
         traits='Bulky',
         robotMount=WeaponSize.Medium,
@@ -898,7 +900,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=600,
         weight={
             StockWeaponSet.CSC2: 7,
-            StockWeaponSet.CSC2023: 6},           
+            StockWeaponSet.CSC2023: 6},
         damage='4D',
         traits='AP 4, Bulky',
         robotMount=WeaponSize.Medium,
@@ -909,7 +911,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=500,
         weight={
             StockWeaponSet.CSC2: 5,
-            StockWeaponSet.CSC2023: 4},        
+            StockWeaponSet.CSC2023: 4},
         damage='4D',
         traits='AP 2',
         robotMount=WeaponSize.Small,
@@ -922,7 +924,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 4,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 4,
-            StockWeaponSet.CSC2023: 2},         
+            StockWeaponSet.CSC2023: 2},
         damage='3D',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
@@ -934,7 +936,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 1,
             StockWeaponSet.Core2022: 0.5,
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0.5},           
+            StockWeaponSet.CSC2023: 0.5},
         damage='1D+2',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
@@ -944,7 +946,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=750,
         weight={
             StockWeaponSet.CSC2: 10,
-            StockWeaponSet.CSC2023: 8},             
+            StockWeaponSet.CSC2023: 8},
         damage='4D+2',
         traits='Smasher, Very Bulky',
         robotMount=WeaponSize.Heavy,
@@ -965,7 +967,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=5,
         damage='1D',
         robotMount=WeaponSize.Small,
-        weaponSets=[StockWeaponSet.CSC2]),    
+        weaponSets=[StockWeaponSet.CSC2]),
     _StockBladeWeaponDescription(
         name='Lance',
         techLevel=1,
@@ -989,17 +991,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         name='Long Blade - TL 2',
         techLevel=2,
         cost=200,
-        weight=4,        
+        weight=4,
         damage='3D',
         robotMount=WeaponSize.Small,
-        weaponSets=[StockWeaponSet.CSC2]),        
+        weaponSets=[StockWeaponSet.CSC2]),
     _StockBladeWeaponDescription(
         name='Long Blade - TL 3',
         techLevel=3,
         cost=300,
         weight={
             StockWeaponSet.CSC2: 4,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         damage='3D+2',
         robotMount=WeaponSize.Small,
         weaponSets=_SupplyCatalogueCompatible),
@@ -1009,7 +1011,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=2500,
         weight={
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         damage='3D',
         traits='AP 10',
         robotMount=WeaponSize.Small,
@@ -1039,7 +1041,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=30000,
         weight={
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         damage='2D',
         traits={
             StockWeaponSet.CSC2: '',
@@ -1054,7 +1056,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=25000,
         weight={
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0.5},        
+            StockWeaponSet.CSC2023: 0.5},
         damage='1D+2',
         traits={
             StockWeaponSet.CSC2: '',
@@ -1073,7 +1075,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 2,
             StockWeaponSet.Core2022: 0.5,
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},            
+            StockWeaponSet.CSC2023: 1},
         damage='2D',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
@@ -1093,7 +1095,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=750,
         weight={
             StockWeaponSet.CSC2: 6,
-            StockWeaponSet.CSC2023: 5},           
+            StockWeaponSet.CSC2023: 5},
         damage='4D',
         traits='AP 6, Smasher',
         robotMount=WeaponSize.Heavy,
@@ -1104,7 +1106,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=1000,
         weight={
             StockWeaponSet.CSC2: 5,
-            StockWeaponSet.CSC2023: 4},        
+            StockWeaponSet.CSC2023: 4},
         damage='4D+2',
         traits='AP 8, Smasher',
         robotMount=WeaponSize.Medium,
@@ -1115,7 +1117,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=700,
         weight={
             StockWeaponSet.CSC2: 4,
-            StockWeaponSet.CSC2023: 3},        
+            StockWeaponSet.CSC2023: 3},
         damage='3D',
         traits='AP 5',
         robotMount=WeaponSize.Small,
@@ -1126,7 +1128,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=900,
         weight={
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         damage='3D+2',
         traits='AP 6',
         robotMount=WeaponSize.Small,
@@ -1137,7 +1139,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=175,
         weight={
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0.5},        
+            StockWeaponSet.CSC2023: 0.5},
         damage='1D+2',
         robotMount=WeaponSize.Small,
         weaponSets=_SupplyCatalogueCompatible),
@@ -1147,7 +1149,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=5,
         weight={
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         damage={
             StockWeaponSet.CSC2: '2D',
             StockWeaponSet.CSC2023: '2D+1'},
@@ -1168,17 +1170,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_SupplyCatalogueCompatible),
 
 
-    #  █████  █████                █████████  ████                           
-    # ░░███  ░░███                ███░░░░░███░░███                           
-    #  ░███   ░███  ████████     ███     ░░░  ░███   ██████   █████   ██████ 
+    #  █████  █████                █████████  ████
+    # ░░███  ░░███                ███░░░░░███░░███
+    #  ░███   ░███  ████████     ███     ░░░  ░███   ██████   █████   ██████
     #  ░███   ░███ ░░███░░███   ░███          ░███  ███░░███ ███░░   ███░░███
-    #  ░███   ░███  ░███ ░███   ░███          ░███ ░███ ░███░░█████ ░███████ 
-    #  ░███   ░███  ░███ ░███   ░░███     ███ ░███ ░███ ░███ ░░░░███░███░░░  
-    #  ░░████████   ░███████     ░░█████████  █████░░██████  ██████ ░░██████ 
-    #   ░░░░░░░░    ░███░░░       ░░░░░░░░░  ░░░░░  ░░░░░░  ░░░░░░   ░░░░░░  
-    #               ░███                                                     
-    #               █████                                                    
-    #              ░░░░░         
+    #  ░███   ░███  ░███ ░███   ░███          ░███ ░███ ░███░░█████ ░███████
+    #  ░███   ░███  ░███ ░███   ░░███     ███ ░███ ░███ ░███ ░░░░███░███░░░
+    #  ░░████████   ░███████     ░░█████████  █████░░██████  ██████ ░░██████
+    #   ░░░░░░░░    ░███░░░       ░░░░░░░░░  ░░░░░  ░░░░░░  ░░░░░░   ░░░░░░
+    #               ░███
+    #               █████
+    #              ░░░░░
 
     _StockUpCloseWeaponDescription(
         name='Brass Knuckles',
@@ -1234,7 +1236,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=150,
         weight={
             StockWeaponSet.CSC2: None,
-            StockWeaponSet.CSC2023: 0.5},        
+            StockWeaponSet.CSC2023: 0.5},
         damage='5D',
         weaponSets=_SupplyCatalogueCompatible),
     _StockUpCloseWeaponDescription(
@@ -1250,7 +1252,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=150,
         weight={
             StockWeaponSet.CSC2: None,
-            StockWeaponSet.CSC2023: 0.5},  
+            StockWeaponSet.CSC2023: 0.5},
         damage='3D+2',
         weaponSets=_SupplyCatalogueCompatible),
     _StockUpCloseWeaponDescription(
@@ -1263,13 +1265,13 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
 
 
     #   █████████  █████       ███           ████      █████
-    #  ███░░░░░███░░███       ░░░           ░░███     ░░███ 
-    # ░███    ░░░  ░███████   ████   ██████  ░███   ███████ 
-    # ░░█████████  ░███░░███ ░░███  ███░░███ ░███  ███░░███ 
-    #  ░░░░░░░░███ ░███ ░███  ░███ ░███████  ░███ ░███ ░███ 
-    #  ███    ░███ ░███ ░███  ░███ ░███░░░   ░███ ░███ ░███ 
+    #  ███░░░░░███░░███       ░░░           ░░███     ░░███
+    # ░███    ░░░  ░███████   ████   ██████  ░███   ███████
+    # ░░█████████  ░███░░███ ░░███  ███░░███ ░███  ███░░███
+    #  ░░░░░░░░███ ░███ ░███  ░███ ░███████  ░███ ░███ ░███
+    #  ███    ░███ ░███ ░███  ░███ ░███░░░   ░███ ░███ ░███
     # ░░█████████  ████ █████ █████░░██████  █████░░████████
-    #  ░░░░░░░░░  ░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░  ░░░░░░░░ 
+    #  ░░░░░░░░░  ░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░  ░░░░░░░░
 
     _StockShieldDescription(
         name='Boarding Shield',
@@ -1292,7 +1294,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=10,
         weight={
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         damage='1D',
         robotMount=WeaponSize.Small,
         weaponSets=_SupplyCatalogueCompatible),
@@ -1326,39 +1328,39 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=175,
         weight={
             StockWeaponSet.CSC2: 4,
-            StockWeaponSet.CSC2023: 1.5},        
+            StockWeaponSet.CSC2023: 1.5},
         damage='1D',
         robotMount=WeaponSize.Small,
-        weaponSets=_SupplyCatalogueCompatible), 
+        weaponSets=_SupplyCatalogueCompatible),
     _StockShieldDescription(
         name='Shield',
         techLevel={
             StockWeaponSet.Core2: 1,
-            StockWeaponSet.Core2022: 1,            
+            StockWeaponSet.Core2022: 1,
             StockWeaponSet.CSC2: 1,
             StockWeaponSet.CSC2023: 0},
         cost=150,
         weight={
             StockWeaponSet.Core2: 6,
-            StockWeaponSet.Core2022: 2,            
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 6,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         damage='1D',
         robotMount=WeaponSize.Small,
         weaponSets=_AllCompatible),
 
 
-    #  █████   ███   █████ █████       ███           
-    # ░░███   ░███  ░░███ ░░███       ░░░            
-    #  ░███   ░███   ░███  ░███████   ████  ████████ 
+    #  █████   ███   █████ █████       ███
+    # ░░███   ░███  ░░███ ░░███       ░░░
+    #  ░███   ░███   ░███  ░███████   ████  ████████
     #  ░███   ░███   ░███  ░███░░███ ░░███ ░░███░░███
     #  ░░███  █████  ███   ░███ ░███  ░███  ░███ ░███
     #   ░░░█████░█████░    ░███ ░███  ░███  ░███ ░███
-    #     ░░███ ░░███      ████ █████ █████ ░███████ 
-    #      ░░░   ░░░      ░░░░ ░░░░░ ░░░░░  ░███░░░  
-    #                                       ░███     
-    #                                       █████    
-    #                                      ░░░░░     
+    #     ░░███ ░░███      ████ █████ █████ ░███████
+    #      ░░░   ░░░      ░░░░ ░░░░░ ░░░░░  ░███░░░
+    #                                       ░███
+    #                                       █████
+    #                                      ░░░░░
 
     _StockWhipDescription(
         name='Shock Whip',
@@ -1377,17 +1379,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_SupplyCatalogueCompatible),
 
 
-    #   █████████  ████                         ███████████   ███           █████             ████ 
-    #  ███░░░░░███░░███                        ░░███░░░░░███ ░░░           ░░███             ░░███ 
-    # ░███    ░░░  ░███  █████ ████  ███████    ░███    ░███ ████   █████  ███████    ██████  ░███ 
-    # ░░█████████  ░███ ░░███ ░███  ███░░███    ░██████████ ░░███  ███░░  ░░░███░    ███░░███ ░███ 
-    #  ░░░░░░░░███ ░███  ░███ ░███ ░███ ░███    ░███░░░░░░   ░███ ░░█████   ░███    ░███ ░███ ░███ 
-    #  ███    ░███ ░███  ░███ ░███ ░███ ░███    ░███         ░███  ░░░░███  ░███ ███░███ ░███ ░███ 
+    #   █████████  ████                         ███████████   ███           █████             ████
+    #  ███░░░░░███░░███                        ░░███░░░░░███ ░░░           ░░███             ░░███
+    # ░███    ░░░  ░███  █████ ████  ███████    ░███    ░███ ████   █████  ███████    ██████  ░███
+    # ░░█████████  ░███ ░░███ ░███  ███░░███    ░██████████ ░░███  ███░░  ░░░███░    ███░░███ ░███
+    #  ░░░░░░░░███ ░███  ░███ ░███ ░███ ░███    ░███░░░░░░   ░███ ░░█████   ░███    ░███ ░███ ░███
+    #  ███    ░███ ░███  ░███ ░███ ░███ ░███    ░███         ░███  ░░░░███  ░███ ███░███ ░███ ░███
     # ░░█████████  █████ ░░████████░░███████    █████        █████ ██████   ░░█████ ░░██████  █████
-    #  ░░░░░░░░░  ░░░░░   ░░░░░░░░  ░░░░░███   ░░░░░        ░░░░░ ░░░░░░     ░░░░░   ░░░░░░  ░░░░░ 
-    #                               ███ ░███                                                       
-    #                              ░░██████                                                        
-    #                               ░░░░░░     
+    #  ░░░░░░░░░  ░░░░░   ░░░░░░░░  ░░░░░███   ░░░░░        ░░░░░ ░░░░░░     ░░░░░   ░░░░░░  ░░░░░
+    #                               ███ ░███
+    #                              ░░██████
+    #                               ░░░░░░
 
     _StockSlugPistolDescription(
         name='Antique Pistol',
@@ -1554,7 +1556,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 1,
             StockWeaponSet.Core2022: 0.5,
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0.5},        
+            StockWeaponSet.CSC2023: 0.5},
         range=10,
         damage='3D-3',
         magazineCapacity=6,
@@ -1612,17 +1614,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_SupplyCatalogueCompatible),
 
 
-    #   █████████  ████                         ███████████    ███     ██████  ████          
-    #  ███░░░░░███░░███                        ░░███░░░░░███  ░░░     ███░░███░░███          
-    # ░███    ░░░  ░███  █████ ████  ███████    ░███    ░███  ████   ░███ ░░░  ░███   ██████ 
+    #   █████████  ████                         ███████████    ███     ██████  ████
+    #  ███░░░░░███░░███                        ░░███░░░░░███  ░░░     ███░░███░░███
+    # ░███    ░░░  ░███  █████ ████  ███████    ░███    ░███  ████   ░███ ░░░  ░███   ██████
     # ░░█████████  ░███ ░░███ ░███  ███░░███    ░██████████  ░░███  ███████    ░███  ███░░███
-    #  ░░░░░░░░███ ░███  ░███ ░███ ░███ ░███    ░███░░░░░███  ░███ ░░░███░     ░███ ░███████ 
-    #  ███    ░███ ░███  ░███ ░███ ░███ ░███    ░███    ░███  ░███   ░███      ░███ ░███░░░  
-    # ░░█████████  █████ ░░████████░░███████    █████   █████ █████  █████     █████░░██████ 
-    #  ░░░░░░░░░  ░░░░░   ░░░░░░░░  ░░░░░███   ░░░░░   ░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░  
-    #                               ███ ░███                                                 
-    #                              ░░██████                                                  
-    #                               ░░░░░░ 
+    #  ░░░░░░░░███ ░███  ░███ ░███ ░███ ░███    ░███░░░░░███  ░███ ░░░███░     ░███ ░███████
+    #  ███    ░███ ░███  ░███ ░███ ░███ ░███    ░███    ░███  ░███   ░███      ░███ ░███░░░
+    # ░░█████████  █████ ░░████████░░███████    █████   █████ █████  █████     █████░░██████
+    #  ░░░░░░░░░  ░░░░░   ░░░░░░░░  ░░░░░███   ░░░░░   ░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░
+    #                               ███ ░███
+    #                              ░░██████
+    #                               ░░░░░░
 
     _StockSlugRifleDescription(
         name='Accelerator Rifle - TL 9',
@@ -1638,7 +1640,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Zero-G',
         robotMount=WeaponSize.Medium,
         linkable=True,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockSlugRifleDescription(
         name='Accelerator Rifle - TL 11',
         techLevel=11,
@@ -1686,7 +1688,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=350,
         weight={
             StockWeaponSet.CSC2: 5,
-            StockWeaponSet.CSC2023: 3},        
+            StockWeaponSet.CSC2023: 3},
         range=75,
         damage='3D-2',
         magazineCapacity=1,
@@ -1707,7 +1709,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 6,
             StockWeaponSet.Core2022: 3,
             StockWeaponSet.CSC2: 6,
-            StockWeaponSet.CSC2023: 3},        
+            StockWeaponSet.CSC2023: 3},
         range=25,
         damage='3D-3',
         magazineCapacity=1,
@@ -1760,7 +1762,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=1250,
         weight={
             StockWeaponSet.CSC2: 9,
-            StockWeaponSet.CSC2023: 8},        
+            StockWeaponSet.CSC2023: 8},
         range=200,
         damage='3D+3',
         magazineCapacity=5,
@@ -1862,7 +1864,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=10,
         robotMount=WeaponSize.Small,
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),        
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockSlugRifleDescription(
         name='Magrail Rifle',
         techLevel=14,
@@ -1884,7 +1886,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 5,
             StockWeaponSet.Core2022: 3,
             StockWeaponSet.CSC2: 5,
-            StockWeaponSet.CSC2023: 3},          
+            StockWeaponSet.CSC2023: 3},
         range=250,
         damage='3D',
         magazineCapacity=5,
@@ -1976,17 +1978,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_AllCompatible),
 
 
-    #  ██████████                                                      ███████████   ███           █████             ████ 
-    # ░░███░░░░░█                                                     ░░███░░░░░███ ░░░           ░░███             ░░███ 
-    #  ░███  █ ░  ████████    ██████  ████████   ███████ █████ ████    ░███    ░███ ████   █████  ███████    ██████  ░███ 
-    #  ░██████   ░░███░░███  ███░░███░░███░░███ ███░░███░░███ ░███     ░██████████ ░░███  ███░░  ░░░███░    ███░░███ ░███ 
-    #  ░███░░█    ░███ ░███ ░███████  ░███ ░░░ ░███ ░███ ░███ ░███     ░███░░░░░░   ░███ ░░█████   ░███    ░███ ░███ ░███ 
-    #  ░███ ░   █ ░███ ░███ ░███░░░   ░███     ░███ ░███ ░███ ░███     ░███         ░███  ░░░░███  ░███ ███░███ ░███ ░███ 
+    #  ██████████                                                      ███████████   ███           █████             ████
+    # ░░███░░░░░█                                                     ░░███░░░░░███ ░░░           ░░███             ░░███
+    #  ░███  █ ░  ████████    ██████  ████████   ███████ █████ ████    ░███    ░███ ████   █████  ███████    ██████  ░███
+    #  ░██████   ░░███░░███  ███░░███░░███░░███ ███░░███░░███ ░███     ░██████████ ░░███  ███░░  ░░░███░    ███░░███ ░███
+    #  ░███░░█    ░███ ░███ ░███████  ░███ ░░░ ░███ ░███ ░███ ░███     ░███░░░░░░   ░███ ░░█████   ░███    ░███ ░███ ░███
+    #  ░███ ░   █ ░███ ░███ ░███░░░   ░███     ░███ ░███ ░███ ░███     ░███         ░███  ░░░░███  ░███ ███░███ ░███ ░███
     #  ██████████ ████ █████░░██████  █████    ░░███████ ░░███████     █████        █████ ██████   ░░█████ ░░██████  █████
-    # ░░░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░░      ░░░░░███  ░░░░░███    ░░░░░        ░░░░░ ░░░░░░     ░░░░░   ░░░░░░  ░░░░░ 
-    #                                           ███ ░███  ███ ░███                                                        
-    #                                          ░░██████  ░░██████                                                         
-    #                                           ░░░░░░    ░░░░░░ 
+    # ░░░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░░      ░░░░░███  ░░░░░███    ░░░░░        ░░░░░ ░░░░░░     ░░░░░   ░░░░░░  ░░░░░
+    #                                           ███ ░███  ███ ░███
+    #                                          ░░██████  ░░██████
+    #                                           ░░░░░░    ░░░░░░
 
     _StockEnergyPistolDescription(
         name='Gauntlet Laser',
@@ -2028,7 +2030,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 3,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},            
+            StockWeaponSet.CSC2023: 2},
         range=20,
         damage='3D',
         magazineCapacity=100,
@@ -2036,16 +2038,16 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Zero-G',
         robotMount=WeaponSize.Small,
         linkable=True,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockEnergyPistolDescription(
         name='Laser Pistol - TL 11',
         techLevel=11,
         cost=3000,
         weight={
             StockWeaponSet.Core2: 2,
-            StockWeaponSet.Core2022: 1,            
+            StockWeaponSet.Core2022: 1,
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 1},          
+            StockWeaponSet.CSC2023: 1},
         range=30,
         damage='3D+3',
         magazineCapacity=100,
@@ -2060,7 +2062,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=25000,
         weight={
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},  
+            StockWeaponSet.CSC2023: 2},
         range=20,
         damage='3D+3',
         magazineCapacity=12,
@@ -2108,7 +2110,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=6000,
         weight={
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},          
+            StockWeaponSet.CSC2023: 2},
         range=25,
         damage='3D+3',
         magazineCapacity=25,
@@ -2129,7 +2131,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Stun, Zero-G',
         robotMount=WeaponSize.Small,
         linkable=True,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockEnergyPistolDescription(
         name='Stunner - TL 10',
         techLevel=10,
@@ -2155,7 +2157,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 0.5,
             StockWeaponSet.Core2022: None,
             StockWeaponSet.CSC2: 0.5,
-            StockWeaponSet.CSC2023: None},        
+            StockWeaponSet.CSC2023: None},
         range=10,
         damage='3D',
         magazineCapacity=100,
@@ -2166,17 +2168,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_AllCompatible),
 
 
-    #  ██████████                                                      ███████████    ███     ██████  ████          
-    # ░░███░░░░░█                                                     ░░███░░░░░███  ░░░     ███░░███░░███          
-    #  ░███  █ ░  ████████    ██████  ████████   ███████ █████ ████    ░███    ░███  ████   ░███ ░░░  ░███   ██████ 
+    #  ██████████                                                      ███████████    ███     ██████  ████
+    # ░░███░░░░░█                                                     ░░███░░░░░███  ░░░     ███░░███░░███
+    #  ░███  █ ░  ████████    ██████  ████████   ███████ █████ ████    ░███    ░███  ████   ░███ ░░░  ░███   ██████
     #  ░██████   ░░███░░███  ███░░███░░███░░███ ███░░███░░███ ░███     ░██████████  ░░███  ███████    ░███  ███░░███
-    #  ░███░░█    ░███ ░███ ░███████  ░███ ░░░ ░███ ░███ ░███ ░███     ░███░░░░░███  ░███ ░░░███░     ░███ ░███████ 
-    #  ░███ ░   █ ░███ ░███ ░███░░░   ░███     ░███ ░███ ░███ ░███     ░███    ░███  ░███   ░███      ░███ ░███░░░  
-    #  ██████████ ████ █████░░██████  █████    ░░███████ ░░███████     █████   █████ █████  █████     █████░░██████ 
-    # ░░░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░░      ░░░░░███  ░░░░░███    ░░░░░   ░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░  
-    #                                           ███ ░███  ███ ░███                                                  
-    #                                          ░░██████  ░░██████                                                   
-    #                                           ░░░░░░    ░░░░░░    
+    #  ░███░░█    ░███ ░███ ░███████  ░███ ░░░ ░███ ░███ ░███ ░███     ░███░░░░░███  ░███ ░░░███░     ░███ ░███████
+    #  ░███ ░   █ ░███ ░███ ░███░░░   ░███     ░███ ░███ ░███ ░███     ░███    ░███  ░███   ░███      ░███ ░███░░░
+    #  ██████████ ████ █████░░██████  █████    ░░███████ ░░███████     █████   █████ █████  █████     █████░░██████
+    # ░░░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░░      ░░░░░███  ░░░░░███    ░░░░░   ░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░
+    #                                           ███ ░███  ███ ░███
+    #                                          ░░██████  ░░██████
+    #                                           ░░░░░░    ░░░░░░
 
     _StockEnergyRifleDescription(
         name='Cartridge Laser Carbine - TL 10',
@@ -2262,7 +2264,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         cost=14000,
         weight={
             StockWeaponSet.CSC2: 18,
-            StockWeaponSet.CSC2023: 12},        
+            StockWeaponSet.CSC2023: 12},
         range=1200,
         damage='6D',
         magazineCapacity=12,
@@ -2309,16 +2311,16 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Zero-G',
         linkable=True,
         robotMount=WeaponSize.Medium,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockEnergyRifleDescription(
         name='Laser Carbine - TL 11',
         techLevel=11,
         cost=4000,
         weight={
             StockWeaponSet.Core2: 3,
-            StockWeaponSet.Core2022: 2,            
+            StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         range=200,
         damage='4D+3',
         magazineCapacity=50,
@@ -2343,7 +2345,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Zero-G',
         robotMount=WeaponSize.Medium,
         linkable=True,
-        weaponSets=_AllCompatible),        
+        weaponSets=_AllCompatible),
     _StockEnergyRifleDescription(
         name='Laser Rifle - TL 11',
         techLevel=11,
@@ -2369,13 +2371,13 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 6,
             StockWeaponSet.Core2022: 4,
             StockWeaponSet.CSC2: 6,
-            StockWeaponSet.CSC2023: 4},        
+            StockWeaponSet.CSC2023: 4},
         range=600,
         damage={
             StockWeaponSet.Core2: '5D+3',
             StockWeaponSet.Core2022: '5D+3',
             StockWeaponSet.CSC2: '6D+3',
-            StockWeaponSet.CSC2023: '5D+3'},        
+            StockWeaponSet.CSC2023: '5D+3'},
         magazineCapacity=6,
         magazineCost=250,
         traits='Scope, Zero-G',
@@ -2386,7 +2388,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         name='Maser Rifle',
         techLevel=16,
         cost=30000,
-        weight=8,        
+        weight=8,
         range=300,
         damage='5D+3',
         magazineCapacity=20,
@@ -2402,7 +2404,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 6,
             StockWeaponSet.Core2022: 4,
             StockWeaponSet.CSC2: 6,
-            StockWeaponSet.CSC2023: 4},        
+            StockWeaponSet.CSC2023: 4},
         range=300,
         damage={
             StockWeaponSet.Core2: '6D',
@@ -2479,17 +2481,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Stun, Zero-G',
         robotMount=WeaponSize.Medium,
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),           
+        weaponSets=[StockWeaponSet.CSC2023]),
 
 
-    #    █████████                      █████                 ███          
-    #   ███░░░░░███                    ░░███                 ░░░           
-    #  ░███    ░███  ████████   ██████  ░███████    ██████   ████   ██████ 
+    #    █████████                      █████                 ███
+    #   ███░░░░░███                    ░░███                 ░░░
+    #  ░███    ░███  ████████   ██████  ░███████    ██████   ████   ██████
     #  ░███████████ ░░███░░███ ███░░███ ░███░░███  ░░░░░███ ░░███  ███░░███
-    #  ░███░░░░░███  ░███ ░░░ ░███ ░░░  ░███ ░███   ███████  ░███ ░███ ░░░ 
+    #  ░███░░░░░███  ░███ ░░░ ░███ ░░░  ░███ ░███   ███████  ░███ ░███ ░░░
     #  ░███    ░███  ░███     ░███  ███ ░███ ░███  ███░░███  ░███ ░███  ███
-    #  █████   █████ █████    ░░██████  ████ █████░░████████ █████░░██████ 
-    # ░░░░░   ░░░░░ ░░░░░      ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░  ░░░░░░  
+    #  █████   █████ █████    ░░██████  ████ █████░░████████ █████░░██████
+    # ░░░░░   ░░░░░ ░░░░░      ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░  ░░░░░░
 
     # NOTE: The Atlatl isn't a weapon it's a tool that allows you to throw
     # darts or javelin better. It doubles the range and allows you to add
@@ -2602,7 +2604,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         name='Repeating Crossbow',
         techLevel={
             StockWeaponSet.CSC2: 3,
-            StockWeaponSet.CSC2023: 2},        
+            StockWeaponSet.CSC2023: 2},
         cost=400,
         weight=4,
         range=75,
@@ -2621,7 +2623,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         name='Short Bow',
         techLevel={
             StockWeaponSet.CSC2: 1,
-            StockWeaponSet.CSC2023: 0},             
+            StockWeaponSet.CSC2023: 0},
         cost=50,
         weight=1,
         range=75,
@@ -2638,15 +2640,15 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_SupplyCatalogueCompatible),
 
 
-    #    █████████                                              █████         
-    #   ███░░░░░███                                            ░░███          
-    #  ███     ░░░  ████████   ██████  ████████    ██████    ███████   ██████ 
+    #    █████████                                              █████
+    #   ███░░░░░███                                            ░░███
+    #  ███     ░░░  ████████   ██████  ████████    ██████    ███████   ██████
     # ░███         ░░███░░███ ███░░███░░███░░███  ░░░░░███  ███░░███  ███░░███
-    # ░███    █████ ░███ ░░░ ░███████  ░███ ░███   ███████ ░███ ░███ ░███████ 
-    # ░░███  ░░███  ░███     ░███░░░   ░███ ░███  ███░░███ ░███ ░███ ░███░░░  
-    #  ░░█████████  █████    ░░██████  ████ █████░░████████░░████████░░██████ 
-    #   ░░░░░░░░░  ░░░░░      ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░░░░  ░░░░░░  
-    
+    # ░███    █████ ░███ ░░░ ░███████  ░███ ░███   ███████ ░███ ░███ ░███████
+    # ░░███  ░░███  ░███     ░███░░░   ░███ ░███  ███░░███ ░███ ░███ ░███░░░
+    #  ░░█████████  █████    ░░██████  ████ █████░░████████░░████████░░██████
+    #   ░░░░░░░░░  ░░░░░      ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░░░░  ░░░░░░
+
     _StockGrenadeDescription(
         name='Aerosol Grenade',
         techLevel=9,
@@ -2745,17 +2747,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=[StockWeaponSet.CSC2023]),
 
 
-    #  ██████████                       ████                    ███                      
-    # ░░███░░░░░█                      ░░███                   ░░░                       
-    #  ░███  █ ░  █████ █████ ████████  ░███   ██████   █████  ████  █████ █████  ██████ 
+    #  ██████████                       ████                    ███
+    # ░░███░░░░░█                      ░░███                   ░░░
+    #  ░███  █ ░  █████ █████ ████████  ░███   ██████   █████  ████  █████ █████  ██████
     #  ░██████   ░░███ ░░███ ░░███░░███ ░███  ███░░███ ███░░  ░░███ ░░███ ░░███  ███░░███
-    #  ░███░░█    ░░░█████░   ░███ ░███ ░███ ░███ ░███░░█████  ░███  ░███  ░███ ░███████ 
-    #  ░███ ░   █  ███░░░███  ░███ ░███ ░███ ░███ ░███ ░░░░███ ░███  ░░███ ███  ░███░░░  
-    #  ██████████ █████ █████ ░███████  █████░░██████  ██████  █████  ░░█████   ░░██████ 
-    # ░░░░░░░░░░ ░░░░░ ░░░░░  ░███░░░  ░░░░░  ░░░░░░  ░░░░░░  ░░░░░    ░░░░░     ░░░░░░  
-    #                         ░███                                                       
-    #                         █████                                                      
-    #                        ░░░░░ 
+    #  ░███░░█    ░░░█████░   ░███ ░███ ░███ ░███ ░███░░█████  ░███  ░███  ░███ ░███████
+    #  ░███ ░   █  ███░░░███  ░███ ░███ ░███ ░███ ░███ ░░░░███ ░███  ░░███ ███  ░███░░░
+    #  ██████████ █████ █████ ░███████  █████░░██████  ██████  █████  ░░█████   ░░██████
+    # ░░░░░░░░░░ ░░░░░ ░░░░░  ░███░░░  ░░░░░  ░░░░░░  ░░░░░░  ░░░░░    ░░░░░     ░░░░░░
+    #                         ░███
+    #                         █████
+    #                        ░░░░░
 
     _StockExplosiveDescription(
         name='Breaching Charge',
@@ -2821,23 +2823,23 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: None,
             StockWeaponSet.Core2022: None,
             StockWeaponSet.CSC2: None,
-            StockWeaponSet.CSC2023: 1},        
+            StockWeaponSet.CSC2023: 1},
         damage='4D',
         traits='Blast 15',
         weaponSets=_AllCompatible),
 
 
-    #  █████   █████                                              ███████████                      █████              █████     ████          
-    # ░░███   ░░███                                              ░░███░░░░░███                    ░░███              ░░███     ░░███          
-    #  ░███    ░███   ██████   ██████   █████ █████ █████ ████    ░███    ░███  ██████  ████████  ███████    ██████   ░███████  ░███   ██████ 
+    #  █████   █████                                              ███████████                      █████              █████     ████
+    # ░░███   ░░███                                              ░░███░░░░░███                    ░░███              ░░███     ░░███
+    #  ░███    ░███   ██████   ██████   █████ █████ █████ ████    ░███    ░███  ██████  ████████  ███████    ██████   ░███████  ░███   ██████
     #  ░███████████  ███░░███ ░░░░░███ ░░███ ░░███ ░░███ ░███     ░██████████  ███░░███░░███░░███░░░███░    ░░░░░███  ░███░░███ ░███  ███░░███
-    #  ░███░░░░░███ ░███████   ███████  ░███  ░███  ░███ ░███     ░███░░░░░░  ░███ ░███ ░███ ░░░   ░███      ███████  ░███ ░███ ░███ ░███████ 
-    #  ░███    ░███ ░███░░░   ███░░███  ░░███ ███   ░███ ░███     ░███        ░███ ░███ ░███       ░███ ███ ███░░███  ░███ ░███ ░███ ░███░░░  
-    #  █████   █████░░██████ ░░████████  ░░█████    ░░███████     █████       ░░██████  █████      ░░█████ ░░████████ ████████  █████░░██████ 
-    # ░░░░░   ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░      ░░░░░███    ░░░░░         ░░░░░░  ░░░░░        ░░░░░   ░░░░░░░░ ░░░░░░░░  ░░░░░  ░░░░░░  
-    #                                                ███ ░███                                                                                 
-    #                                               ░░██████                                                                                  
-    #                                                ░░░░░░    
+    #  ░███░░░░░███ ░███████   ███████  ░███  ░███  ░███ ░███     ░███░░░░░░  ░███ ░███ ░███ ░░░   ░███      ███████  ░███ ░███ ░███ ░███████
+    #  ░███    ░███ ░███░░░   ███░░███  ░░███ ███   ░███ ░███     ░███        ░███ ░███ ░███       ░███ ███ ███░░███  ░███ ░███ ░███ ░███░░░
+    #  █████   █████░░██████ ░░████████  ░░█████    ░░███████     █████       ░░██████  █████      ░░█████ ░░████████ ████████  █████░░██████
+    # ░░░░░   ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░      ░░░░░███    ░░░░░         ░░░░░░  ░░░░░        ░░░░░   ░░░░░░░░ ░░░░░░░░  ░░░░░  ░░░░░░
+    #                                                ███ ░███
+    #                                               ░░██████
+    #                                                ░░░░░░
 
     _StockHeavyPortableWeaponDescription(
         name='Anti-Material Rifle',
@@ -3097,7 +3099,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 12,
             StockWeaponSet.Core2022: 10,
             StockWeaponSet.CSC2: 12,
-            StockWeaponSet.CSC2023: 10},        
+            StockWeaponSet.CSC2023: 10},
         range=500,
         damage='3D',
         magazineCapacity=60,
@@ -3172,7 +3174,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: 2,
             StockWeaponSet.Core2022: 2,
             StockWeaponSet.CSC2: 2,
-            StockWeaponSet.CSC2023: 6},        
+            StockWeaponSet.CSC2023: 6},
         range=250,
         damage='As Grenade',
         magazineCapacity=6,
@@ -3242,17 +3244,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_AllCompatible),
 
 
-    #    █████████              █████     ███  ████  ████                               
-    #   ███░░░░░███            ░░███     ░░░  ░░███ ░░███                               
+    #    █████████              █████     ███  ████  ████
+    #   ███░░░░░███            ░░███     ░░░  ░░███ ░░███
     #  ░███    ░███  ████████  ███████   ████  ░███  ░███   ██████  ████████  █████ ████
-    #  ░███████████ ░░███░░███░░░███░   ░░███  ░███  ░███  ███░░███░░███░░███░░███ ░███ 
-    #  ░███░░░░░███  ░███ ░░░   ░███     ░███  ░███  ░███ ░███████  ░███ ░░░  ░███ ░███ 
-    #  ░███    ░███  ░███       ░███ ███ ░███  ░███  ░███ ░███░░░   ░███      ░███ ░███ 
-    #  █████   █████ █████      ░░█████  █████ █████ █████░░██████  █████     ░░███████ 
-    # ░░░░░   ░░░░░ ░░░░░        ░░░░░  ░░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░       ░░░░░███ 
-    #                                                                          ███ ░███ 
-    #                                                                         ░░██████  
-    #                                                                          ░░░░░░   
+    #  ░███████████ ░░███░░███░░░███░   ░░███  ░███  ░███  ███░░███░░███░░███░░███ ░███
+    #  ░███░░░░░███  ░███ ░░░   ░███     ░███  ░███  ░███ ░███████  ░███ ░░░  ░███ ░███
+    #  ░███    ░███  ░███       ░███ ███ ░███  ░███  ░███ ░███░░░   ░███      ░███ ░███
+    #  █████   █████ █████      ░░█████  █████ █████ █████░░██████  █████     ░░███████
+    # ░░░░░   ░░░░░ ░░░░░        ░░░░░  ░░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░       ░░░░░███
+    #                                                                          ███ ░███
+    #                                                                         ░░██████
+    #                                                                          ░░░░░░
 
     _StockArtilleryDescription(
         name='Black Powder Mortar',
@@ -3265,7 +3267,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=50,
         traits='Artillery, Blast 6',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),    
+        weaponSets=_SupplyCatalogueCompatible),
     _StockArtilleryDescription(
         name='Bombardment Gun',
         techLevel=5,
@@ -3313,7 +3315,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=400,
         traits='AP 8, Artillery, Blast 10',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),               
+        weaponSets=_SupplyCatalogueCompatible),
     _StockArtilleryDescription(
         name='Infantry Mortar',
         techLevel=5,
@@ -3376,7 +3378,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=5000,
         traits='AP 10, Artillery, Blast 50',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),           
+        weaponSets=_SupplyCatalogueCompatible),
     _StockArtilleryDescription(
         name='Support Mortar',
         techLevel=7,
@@ -3394,14 +3396,14 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weaponSets=_SupplyCatalogueCompatible),
 
 
-    #  █████   █████          █████       ███           ████          
-    # ░░███   ░░███          ░░███       ░░░           ░░███          
-    #  ░███    ░███   ██████  ░███████   ████   ██████  ░███   ██████ 
+    #  █████   █████          █████       ███           ████
+    # ░░███   ░░███          ░░███       ░░░           ░░███
+    #  ░███    ░███   ██████  ░███████   ████   ██████  ░███   ██████
     #  ░███    ░███  ███░░███ ░███░░███ ░░███  ███░░███ ░███  ███░░███
-    #  ░░███   ███  ░███████  ░███ ░███  ░███ ░███ ░░░  ░███ ░███████ 
-    #   ░░░█████░   ░███░░░   ░███ ░███  ░███ ░███  ███ ░███ ░███░░░  
-    #     ░░███     ░░██████  ████ █████ █████░░██████  █████░░██████ 
-    #      ░░░       ░░░░░░  ░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░  ░░░░░░  
+    #  ░░███   ███  ░███████  ░███ ░███  ░███ ░███ ░░░  ░███ ░███████
+    #   ░░░█████░   ░███░░░   ░███ ░███  ░███ ░███  ███ ░███ ░███░░░
+    #     ░░███     ░░██████  ████ █████ █████░░██████  █████░░██████
+    #      ░░░       ░░░░░░  ░░░░ ░░░░░ ░░░░░  ░░░░░░  ░░░░░  ░░░░░░
 
     _StockVehicleWeaponDescription(
         name='Aerospace Defence Laser',
@@ -3464,7 +3466,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCapacity=1,
         magazineCost=50,
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),        
+        weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
         name='Light Cannon',
         techLevel=5,
@@ -3476,7 +3478,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=5000,
         traits='Blast 6',
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),        
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockVehicleWeaponDescription(
         name='Medium Cannon', # NOTE: This is Cannon in Core rules and CSC 2
         techLevel=8,
@@ -3487,7 +3489,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
             StockWeaponSet.Core2: '8D',
             StockWeaponSet.Core2022: '8D',
             StockWeaponSet.CSC2: '1DD',
-            StockWeaponSet.CSC2023: '1DD'},        
+            StockWeaponSet.CSC2023: '1DD'},
         magazineCapacity=30,
         magazineCost=5000,
         traits='Blast 10',
@@ -3515,9 +3517,9 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=1000,
         damage='8D',
         magazineCapacity=1,
-        magazineCost=75,        
+        magazineCost=75,
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),        
+        weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
         name='Fusion Gun - TL 13',
         techLevel=13,
@@ -3566,10 +3568,10 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=1000,
         damage='6D',
         magazineCapacity=200,
-        magazineCost=800,        
+        magazineCost=800,
         traits='AP 5, Auto 3',
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]), 
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockVehicleWeaponDescription(
         name='Medium Gauss Cannon', # NOTE: This is Gauss Cannon in CSC2
         techLevel=12,
@@ -3578,7 +3580,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=2000,
         damage='1DD',
         magazineCapacity=200,
-        magazineCost=1000,        
+        magazineCost=1000,
         traits='AP 10, Auto 3',
         linkable=True,
         weaponSets=_SupplyCatalogueCompatible),
@@ -3590,10 +3592,10 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=3000,
         damage='2DD',
         magazineCapacity=60,
-        magazineCost=800,        
+        magazineCost=800,
         traits='AP 15, Auto 2',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),    
+        weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
         name='Heavy Machinegun',
         techLevel=6,
@@ -3619,10 +3621,10 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=5000,
         damage='2DD',
         magazineCapacity=50,
-        magazineCost=5000,        
+        magazineCost=5000,
         traits='AP 30, Scope',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),        
+        weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
         name='Light Laser Cannon',
         techLevel=9,
@@ -3632,7 +3634,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         damage='8D',
         traits='AP 5',
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),        
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockVehicleWeaponDescription(
         name='Medium Laser Cannon', # NOTE: This is Laser Cannon in Core and CSC 2e rules
         techLevel=9,
@@ -3682,7 +3684,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=10000,
         traits={
             StockWeaponSet.CSC2: 'AP 30, Scope, Track',
-            StockWeaponSet.CSC2023: 'AP 30, Scope'},          
+            StockWeaponSet.CSC2023: 'AP 30, Scope'},
         linkable=True,
         weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
@@ -3692,7 +3694,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weight=4000,
         range=6000,
         damage='2DD',
-        traits='AP 10',          
+        traits='AP 10',
         linkable=True,
         weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
@@ -3702,7 +3704,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weight=4000,
         range=8000,
         damage='2DD',
-        traits='AP 20',          
+        traits='AP 20',
         linkable=True,
         weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
@@ -3712,7 +3714,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         weight=4000,
         range=10000,
         damage='2DD',
-        traits='AP 30',          
+        traits='AP 30',
         linkable=True,
         weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
@@ -3723,10 +3725,10 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=4000,
         damage='1DD',
         magazineCapacity=50,
-        magazineCost=2500,        
-        traits='AP 20',          
+        magazineCost=2500,
+        traits='AP 20',
         linkable=True,
-        weaponSets=_SupplyCatalogueCompatible),       
+        weaponSets=_SupplyCatalogueCompatible),
     _StockVehicleWeaponDescription(
         name='VRF Gauss Gun',
         techLevel=12,
@@ -3765,17 +3767,17 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         traits='Auto 6',
         robotMount=WeaponSize.Vehicle,
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2]),        
+        weaponSets=[StockWeaponSet.CSC2]),
 
 
     #  █████                                                █████                   █████
-    # ░░███                                                ░░███                   ░░███ 
-    #  ░███         ██████   █████ ████ ████████    ██████  ░███████    ██████   ███████ 
-    #  ░███        ░░░░░███ ░░███ ░███ ░░███░░███  ███░░███ ░███░░███  ███░░███ ███░░███ 
-    #  ░███         ███████  ░███ ░███  ░███ ░███ ░███ ░░░  ░███ ░███ ░███████ ░███ ░███ 
-    #  ░███      █ ███░░███  ░███ ░███  ░███ ░███ ░███  ███ ░███ ░███ ░███░░░  ░███ ░███ 
+    # ░░███                                                ░░███                   ░░███
+    #  ░███         ██████   █████ ████ ████████    ██████  ░███████    ██████   ███████
+    #  ░███        ░░░░░███ ░░███ ░███ ░░███░░███  ███░░███ ░███░░███  ███░░███ ███░░███
+    #  ░███         ███████  ░███ ░███  ░███ ░███ ░███ ░░░  ░███ ░███ ░███████ ░███ ░███
+    #  ░███      █ ███░░███  ░███ ░███  ░███ ░███ ░███  ███ ░███ ░███ ░███░░░  ░███ ░███
     #  ███████████░░████████ ░░████████ ████ █████░░██████  ████ █████░░██████ ░░████████
-    # ░░░░░░░░░░░  ░░░░░░░░   ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░ 
+    # ░░░░░░░░░░░  ░░░░░░░░   ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░   ░░░░░░░░
 
     # This section is missing some items
 
@@ -3818,7 +3820,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=6000,
         damage='8D',
         magazineCapacity=1,
-        magazineCost=6000,        
+        magazineCost=6000,
         traits='AP 30, One Use, Smart',
         linkable=True,
         weaponSets=[StockWeaponSet.CSC2023]),
@@ -3830,7 +3832,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=200,
         damage='4D',
         magazineCapacity=1,
-        magazineCost=25,        
+        magazineCost=25,
         traits='AP 5',
         linkable=True,
         weaponSets=[StockWeaponSet.CSC2023]),
@@ -3876,7 +3878,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=8000,
         damage='5D',
         magazineCapacity=12,
-        magazineCost=8000,        
+        magazineCost=8000,
         traits='Auto 3, Blast 15',
         weaponSets=_SupplyCatalogueCompatible),
     _StockLaunchedWeaponDescription(
@@ -3887,7 +3889,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=2000,
         damage='5DD',
         magazineCapacity=12,
-        magazineCost=8000,        
+        magazineCost=8000,
         traits='Blast 250, One Use',
         weaponSets=[StockWeaponSet.CSC2023]),
     _StockLaunchedWeaponDescription(
@@ -3913,7 +3915,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=400000,
         traits='AP 20, Auto 3, Blast 15, One Use, Smart',
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),                
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockLaunchedWeaponDescription(
         name='Rocket Pod',
         techLevel=6,
@@ -3938,7 +3940,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         magazineCost=1200,
         traits='Auto 3, Blast 5',
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),         
+        weaponSets=[StockWeaponSet.CSC2023]),
     _StockLaunchedWeaponDescription(
         name='Tac Launcher - Anti-Aircraft',
         techLevel=10,
@@ -4024,7 +4026,7 @@ _WeaponDescriptions: typing.List[_StockWeaponDescription] = [
         range=100,
         magazineCapacity=10,
         linkable=True,
-        weaponSets=[StockWeaponSet.CSC2023]),         
+        weaponSets=[StockWeaponSet.CSC2023]),
 ]
 
 _WeaponDescriptionMap = {
@@ -4049,13 +4051,13 @@ def enumerateStockWeapons(
     weaponMap = _WeaponDescriptionMap.get(weaponSet)
     if not weaponMap:
         return []
-    
+
     weapons = []
     for weapon in weaponMap.values():
         if minTL != None and weapon.techLevel() < minTL:
             continue
         if maxTL != None and weapon.techLevel() > maxTL:
-            continue        
+            continue
         if category != None and weapon.category() != category:
             continue
         if skill != None and weapon.skill() != skill:

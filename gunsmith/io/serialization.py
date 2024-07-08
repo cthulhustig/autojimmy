@@ -75,7 +75,7 @@ def deserialiseComponents(
     # Create a list of common components and their options.
     commonComponents = construction.deserialiseComponentList(
         components=commonDataList)
-    
+
     weapon.loadComponents(
         sequenceComponents=sequenceComponentMap,
         commonComponents=commonComponents)

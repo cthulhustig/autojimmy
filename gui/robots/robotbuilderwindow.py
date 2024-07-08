@@ -93,7 +93,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
         self._includeManifestTableCheckBox.setChecked(True)
 
         self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
-        self._applySkillModifiersCheckBox.setChecked(False)        
+        self._applySkillModifiersCheckBox.setChecked(False)
 
         self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')
         self._blackAndWhiteCheckBox.setChecked(False)
@@ -129,9 +129,9 @@ class _RobotPDFExportDialog(gui.DialogEx):
 
     def isIncludeManifestTableChecked(self) -> bool:
         return self._includeManifestTableCheckBox.isChecked()
-    
+
     def isApplySkillModifiersChecked(self) -> bool:
-        return self._applySkillModifiersCheckBox.isChecked()            
+        return self._applySkillModifiersCheckBox.isChecked()
 
     def isBlackAndWhiteChecked(self) -> bool:
         return self._blackAndWhiteCheckBox.isChecked()
@@ -140,7 +140,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
     def loadSettings(self) -> None:
         super().loadSettings()
 
-        self._settings.beginGroup(self._configSection)          
+        self._settings.beginGroup(self._configSection)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -161,7 +161,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
             key='ApplySkillModifiers',
             type=QtCore.QByteArray)
         if storedValue:
-            self._applySkillModifiersCheckBox.restoreState(storedValue)                
+            self._applySkillModifiersCheckBox.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -211,7 +211,7 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
             stream.writeRawData(baseState.data())
 
         return state
-    
+
     def restoreState(self, state: QtCore.QByteArray) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
@@ -229,8 +229,8 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
         if not super().restoreState(baseState):
             return False
 
-        return True           
-        
+        return True
+
     def createConstructable(
             self,
             name: str
@@ -239,7 +239,7 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
             name=name,
             techLevel=_RobotManagerWidget._DefaultTechLevel,
             weaponSet=_RobotManagerWidget._DefaultWeaponSet)
-    
+
     def importConstructable(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             parent=self,
@@ -349,7 +349,7 @@ class _RobotManagerWidget(gui.ConstructableManagerWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _exportFinished(
             self,
             filePath: str,
@@ -377,7 +377,7 @@ class RobotBuilderWindow(gui.WindowWidget):
             title='Robot Builder',
             configSection='RobotBuilder')
 
-        self._unnamedIndex = 1        
+        self._unnamedIndex = 1
 
         self._setupRobotListControls()
         self._setupCurrentRobotControls()
@@ -464,7 +464,7 @@ class RobotBuilderWindow(gui.WindowWidget):
             key='InfoWidgetState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._infoWidget.restoreState(storedValue)            
+            self._infoWidget.restoreState(storedValue)
 
         self._settings.endGroup()
 
@@ -614,7 +614,7 @@ class RobotBuilderWindow(gui.WindowWidget):
         palette.setColor(
             QtGui.QPalette.ColorRole.WindowText,
             bandwidthColour)
-        self._usedBandwidthLabel.setPalette(palette)        
+        self._usedBandwidthLabel.setPalette(palette)
 
         self._manifestTable.setManifest(manifest=robot.manifest())
         self._infoWidget.setRobot(robot=robot)

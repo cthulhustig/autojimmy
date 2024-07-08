@@ -18,10 +18,10 @@ class ComponentInterface(object):
             context: 'construction.ConstructionContext'
             ) -> bool:
         raise RuntimeError(f'{type(self)} is derived from ComponentInterface so must implement isCompatible')
-    
+
     def orderAfter(self) -> typing.List[typing.Type['ComponentInterface']]:
-        return []    
-    
+        return []
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return []
 

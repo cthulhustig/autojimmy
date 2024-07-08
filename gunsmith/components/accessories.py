@@ -20,13 +20,13 @@ _AttachmentOptionDescription = \
 
 class Accessory(gunsmith.WeaponComponentInterface):
     def isDetachable(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isDetachable') 
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isDetachable')
 
     def isAttached(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isAttached') 
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isAttached')
 
     def setAttached(self, attached: bool) -> None:
-        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement setAttached') 
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement setAttached')
 
 # ███████████                                         ████
 #░░███░░░░░███                                       ░░███

@@ -197,7 +197,7 @@ class ExpanderWidget(QtWidgets.QWidget):
 
     def _animationFinished(self) -> None:
         # Hide the content area if the widget has been collapsed. See the note in
-        # _updateState for why this is important        
+        # _updateState for why this is important
         if not self.isExpanded():
             self._contentArea.setHidden(True)
 
@@ -624,7 +624,7 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
                 expanded = storedState
 
         return super()._insertExpandingContent(index, label, content, expanded, stretch, alignment)
-    
+
     def _expansionChanged(
             self,
             expanded: bool,
@@ -633,11 +633,11 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
         super()._expansionChanged(expanded, animated)
 
         expander = self.sender()
-        assert(isinstance(expander, ExpanderWidget))        
+        assert(isinstance(expander, ExpanderWidget))
         self._updateExpansionState(
             content=expander.content(),
             expanded=expanded)
-    
+
     def _silentlyUpdateExpander(
             self,
             expander: ExpanderWidget,
@@ -645,10 +645,10 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
             animated: bool
             ) -> None:
         super()._silentlyUpdateExpander(expander, expanded, animated)
- 
+
         self._updateExpansionState(
             content=expander.content(),
-            expanded=expanded)        
+            expanded=expanded)
 
     def _updateExpansionState(
             self,

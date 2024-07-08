@@ -134,9 +134,9 @@ class ConventionalCalibre(gunsmith.WeaponComponentInterface):
             name='Rocket Accelerated',
             value=False,
             description='Specify if the weapon fires rocket accelerated ammunition.')
-        
+
     def isHighVelocity(self) -> bool:
-        raise RuntimeError(f'{type(self)} is derived from ConventionalCalibre so must implement isHighVelocity') 
+        raise RuntimeError(f'{type(self)} is derived from ConventionalCalibre so must implement isHighVelocity')
 
     def isRocket(self) -> bool:
         return self._isRocketOption.value()

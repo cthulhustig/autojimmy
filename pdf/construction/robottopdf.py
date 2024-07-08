@@ -220,14 +220,14 @@ class RobotToPdf(object):
             robot=robot,
             layout=layout,
             progressCallback=progressCallback)
-            
+
         self._addInfo(
             robot=robot,
             layout=layout,
             includeEditableFields=includeEditableFields,
             applySkillModifiers=applySkillModifiers,
             progressCallback=progressCallback)
-        
+
         if includeManifestTable:
             self._addManifest(
                 robot=robot,
@@ -238,7 +238,7 @@ class RobotToPdf(object):
             self._addTrailingPages(
                 layout=layout,
                 progressCallback=progressCallback)
-                    
+
     def _addTitle(
             self,
             robot: robots.Robot,
@@ -272,7 +272,7 @@ class RobotToPdf(object):
                 listItemStyle=_ListItemStyle,
                 copyHeaderOnSplit=True,
                 horzCellPadding=_CellHorizontalPadding,
-                vertCellPadding=_CellVerticalPadding)            
+                vertCellPadding=_CellVerticalPadding)
             if sheetTable:
                 flowables = [sheetTable]
                 if notesTable:
@@ -283,7 +283,7 @@ class RobotToPdf(object):
                     limitWaste=_MaxWastedSpace))
 
         if progressCallback:
-            progressCallback()          
+            progressCallback()
 
     def _addManifest(
             self,
@@ -340,7 +340,7 @@ class RobotToPdf(object):
                 pdf.ParagraphEx(text='', style=_TableDataNormalStyle)]
             tableData.append(row)
             tableSpans = [((0, 0), (1, 0))]
-            
+
             row = [
                 self._createMultiLineEditBox(
                     name=f'Notes 2',
@@ -351,7 +351,7 @@ class RobotToPdf(object):
                     style=_TableDataNormalStyle,
                     maxHeight=thirdHeight * 2)]
             tableData.append(row)
-            
+
             layout.append(PageBreak())
             layout.append(self._createTable(
                 data=tableData,
@@ -425,7 +425,7 @@ class RobotToPdf(object):
             maxWidth=maxWidth,
             maxHeight=maxHeight,
             multiline=True)
-    
+
     def _createTableStyle(
             self,
             spans: typing.Optional[typing.Iterable[
@@ -453,7 +453,7 @@ class RobotToPdf(object):
                 styles.append(('BACKGROUND', ul, br, colour))
 
         return TableStyle(styles)
-    
+
     def _createTable(
             self,
             data: typing.List[typing.List[typing.Union[str, Flowable]]],
@@ -548,7 +548,7 @@ class RobotToPdf(object):
             spans=tableSpans,
             colWidths=[None] * columnCount,
             copyHeaderOnSplit=False)
-    
+
     def _usablePageSize(self) -> typing.Tuple[float, float]:
         return (
             max(_PageSize[0] - (_LeftMargin + _RightMargin), 0),

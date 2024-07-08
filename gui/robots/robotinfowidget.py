@@ -17,13 +17,13 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
         self._statsSheetWidget = gui.RobotSheetWidget()
         statsLayout = QtWidgets.QHBoxLayout()
-        statsLayout.addWidget(self._statsSheetWidget)    
+        statsLayout.addWidget(self._statsSheetWidget)
         self._statsGroupBox = QtWidgets.QGroupBox('Stats')
-        self._statsGroupBox.setLayout(statsLayout)        
+        self._statsGroupBox.setLayout(statsLayout)
 
         self._notesWidget = gui.NotesWidget()
         notesLayout = QtWidgets.QHBoxLayout()
-        notesLayout.addWidget(self._notesWidget)    
+        notesLayout.addWidget(self._notesWidget)
         self._notesGroupBox = QtWidgets.QGroupBox('Notes')
         self._notesGroupBox.setLayout(notesLayout)
 
@@ -55,7 +55,7 @@ class RobotInfoWidget(QtWidgets.QWidget):
         notesState = self._notesWidget.saveState()
         stream.writeUInt32(notesState.count() if notesState else 0)
         if notesState:
-            stream.writeRawData(notesState.data())            
+            stream.writeRawData(notesState.data())
 
         return state
 
@@ -69,14 +69,14 @@ class RobotInfoWidget(QtWidgets.QWidget):
             # Wrong version so unable to restore state safely
             logging.debug('Failed to restore RobotInfoWidget state (Incorrect version)')
             return False
-        
+
         count = stream.readUInt32()
         if count <= 0:
             return True
         statsState = QtCore.QByteArray(stream.readRawData(count))
         if not self._statsSheetWidget.restoreState(statsState):
             return False
-        
+
         count = stream.readUInt32()
         if count <= 0:
             return True
@@ -86,7 +86,7 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
         return True
 
-    def _configureControls(self) -> None:       
+    def _configureControls(self) -> None:
         self._statsSheetWidget.setRobot(robot=self._robot)
         self._statsGroupBox.setHidden(self._robot == None)
 
@@ -99,4 +99,3 @@ class RobotInfoWidget(QtWidgets.QWidget):
 
         self._statsSheetWidget.clear()
         self._notesWidget.clear()
-

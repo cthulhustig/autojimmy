@@ -13,11 +13,11 @@ class Characteristics(enum.Enum):
     Luck = 'LCK'
     Wealth = 'WLT'
     Moral = 'MRL'
-    Sanity = 'STY'    
+    Sanity = 'STY'
 
 def characteristicDM(level: int) -> int:
     if level <= 0:
-        return  -3
+        return -3
     elif level <= 2:
         return -2
     elif level <= 5:
@@ -25,7 +25,7 @@ def characteristicDM(level: int) -> int:
     elif level <= 8:
         return 0
     elif level <= 11:
-        return  +1
+        return +1
     elif level <= 14:
         return +2
     else: # 15+

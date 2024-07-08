@@ -450,7 +450,7 @@ class WorldTable(gui.FrozenColumnListTable):
                     tableItem.setText('yes' if world.isFuelCache() else 'no' )
                 elif columnType == self.ColumnType.Anomaly:
                     tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setText('yes' if world.isAnomaly() else 'no' )                    
+                    tableItem.setText('yes' if world.isAnomaly() else 'no' )
                 elif columnType == self.ColumnType.Resources:
                     tableItem = QtWidgets.QTableWidgetItem()
                     tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, economics.code(traveller.Economics.Element.Resources))

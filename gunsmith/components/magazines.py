@@ -9,7 +9,7 @@ class MagazineLoaded(gunsmith.WeaponComponentInterface):
 
 class MagazineQuantity(gunsmith.WeaponComponentInterface):
     def createLoadedMagazine(self) -> MagazineLoaded:
-        raise RuntimeError(f'{type(self)} is derived from MagazineQuantity so must implement createLoadedMagazine') 
+        raise RuntimeError(f'{type(self)} is derived from MagazineQuantity so must implement createLoadedMagazine')
 
 
 # ███████████                          ███                     █████     ███  ████

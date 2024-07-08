@@ -113,7 +113,7 @@ def configureAppStyle(application: QtWidgets.QApplication):
         # I don't know of anything 'official' that uses BrightText but I'm
         # miss-using it as an error colour for things like highlighting an
         # invalid regex
-        palette.setColor(QtGui.QPalette.ColorRole.BrightText, QtCore.Qt.GlobalColor.red)        
+        palette.setColor(QtGui.QPalette.ColorRole.BrightText, QtCore.Qt.GlobalColor.red)
     application.setPalette(palette)
 
     style = ''

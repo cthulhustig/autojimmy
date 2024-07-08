@@ -42,7 +42,7 @@ def incrementEnum(
     valueList = list(type(value))
     index = valueList.index(value)
     return valueList[min(index + count, len(valueList) - 1)]
-    
+
 def decrementEnum(
         value: enum.Enum,
         count: int
@@ -85,7 +85,7 @@ def formatNumber(
         else:
             sign = '-'
         format = f'{prefix}{sign}{infix}{{0:{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
-        number=abs(number)
+        number = abs(number)
     else:
         format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
     string = format.format(number)

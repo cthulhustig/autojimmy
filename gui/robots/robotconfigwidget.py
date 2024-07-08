@@ -34,8 +34,8 @@ class RobotConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._techLevelSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self._techLevelSpinBox.installEventFilter(self._noWheelFilter)                 
-        self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)  
+        self._techLevelSpinBox.installEventFilter(self._noWheelFilter)
+        self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)
 
         self._weaponSetComboBox = gui.EnumComboBox(
             type=traveller.StockWeaponSet,
@@ -46,8 +46,8 @@ class RobotConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._weaponSetComboBox.setToolTip(gui.createStringToolTip(RobotConfigWidget._WeaponSetTooltip))
         self._weaponSetComboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self._weaponSetComboBox.installEventFilter(self._noWheelFilter)               
-        self._weaponSetComboBox.currentIndexChanged.connect(self._weaponSetChanged)            
+        self._weaponSetComboBox.installEventFilter(self._noWheelFilter)
+        self._weaponSetComboBox.currentIndexChanged.connect(self._weaponSetChanged)
 
         globalLayout = gui.VBoxLayoutEx()
         globalLayout.addLabelledWidget(
@@ -57,7 +57,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
         globalLayout.addLabelledWidget(
             label='Weapon Set:',
             widget=self._weaponSetComboBox,
-            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)        
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         self._configurationWidget = gui.ExpanderGroupWidgetEx()
         self._configurationWidget.setPersistExpanderStates(True)
@@ -156,7 +156,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
         self._robot.setWeaponSet(
             weaponSet=self._weaponSetComboBox.currentEnum())
         self._synchroniseStages()
-        self.robotModified.emit(self._robot)        
+        self.robotModified.emit(self._robot)
 
     def _configureDynamicWidgets(self) -> None:
         self._removeWidgets()
@@ -215,7 +215,7 @@ class RobotConfigWidget(QtWidgets.QWidget):
                 content=phaseWidget,
                 hidden=phaseWidget.isPointless())
         self._updateTabOrder()
-            
+
     def _updateTabOrder(self) -> None:
         tabOrder = [self._techLevelSpinBox, self._weaponSetComboBox]
         for widget in self._phaseWidgets.values():

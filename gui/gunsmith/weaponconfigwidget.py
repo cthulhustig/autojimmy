@@ -144,7 +144,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._secondaryCountSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self._secondaryCountSpinBox.installEventFilter(self._noWheelFilter)        
+        self._secondaryCountSpinBox.installEventFilter(self._noWheelFilter)
         self._secondaryCountSpinBox.valueChanged.connect(self._secondaryCountChanged)
 
         globalLayout = gui.VBoxLayoutEx()
@@ -364,7 +364,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             expanded=True)
         self._configurationWidget.setContentHidden(
             content=self._commonWidget,
-            hidden=self._commonWidget.isPointless())        
+            hidden=self._commonWidget.isPointless())
 
         self._loadingWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -378,7 +378,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             expanded=True)
         self._configurationWidget.setContentHidden(
             content=self._loadingWidget,
-            hidden=self._loadingWidget.isPointless())          
+            hidden=self._loadingWidget.isPointless())
 
         self._munitionsWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -394,7 +394,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             content=self._munitionsWidget,
             hidden=self._munitionsWidget.isPointless())
 
-        self._updateTabOrder()       
+        self._updateTabOrder()
 
     def _removeWidgets(self) -> None:
         for sequenceWidget in self._sequenceWidgets.values():
@@ -475,13 +475,13 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             self._commonWidget.synchronise()
             self._configurationWidget.setContentHidden(
                 content=self._commonWidget,
-                hidden=self._commonWidget.isPointless())            
+                hidden=self._commonWidget.isPointless())
 
         if self._loadingWidget:
             self._loadingWidget.synchronise()
             self._configurationWidget.setContentHidden(
                 content=self._loadingWidget,
-                hidden=self._loadingWidget.isPointless())               
+                hidden=self._loadingWidget.isPointless())
 
         if self._munitionsWidget:
             self._munitionsWidget.synchronise()
@@ -489,7 +489,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
                 content=self._munitionsWidget,
                 hidden=self._munitionsWidget.isPointless())
 
-        self._updateTabOrder()         
+        self._updateTabOrder()
 
     def _updateTabOrder(self) -> None:
         tabOrder = [self._techLevelSpinBox, self._secondaryCountSpinBox]
@@ -508,4 +508,4 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.setTabOrder(self, lastTabWidget)
         for tabWidget in tabOrder[1:]:
             QtWidgets.QWidget.setTabOrder(lastTabWidget, tabWidget)
-            lastTabWidget = tabWidget        
+            lastTabWidget = tabWidget

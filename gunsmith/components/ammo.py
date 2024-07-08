@@ -8,7 +8,8 @@ class AmmoLoaded(gunsmith.WeaponComponentInterface):
 
 class AmmoQuantity(gunsmith.WeaponComponentInterface):
     def createLoadedAmmo(self) -> AmmoLoaded:
-        raise RuntimeError(f'{type(self)} is derived from AmmoQuantity so must implement createLoadedAmmo') 
+        raise RuntimeError(f'{type(self)} is derived from AmmoQuantity so must implement createLoadedAmmo')
+
 
 _BarrelSpreadValues = {
     gunsmith.MinimalBarrel: common.ScalarCalculation(value=6, name='Minimal Barrel Spread Modifier'),

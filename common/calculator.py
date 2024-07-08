@@ -572,7 +572,7 @@ class Calculator(object):
                 numberString = self._lhs.calculationString(
                     outerBrackets=False,
                     decimalPlaces=decimalPlaces)
-                
+
             digitsString = self._rhs.name(forCalculation=True)
             if not digitsString:
                 digitsString = self._rhs.calculationString(
@@ -582,7 +582,7 @@ class Calculator(object):
             return f'SignificantDigits({numberString}, {digitsString})'
 
         def copy(self) -> 'Calculator.SignificantDigitsFunction':
-            return Calculator.SignificantDigitsFunction(self._lhs.copy(), self._rhs.copy())        
+            return Calculator.SignificantDigitsFunction(self._lhs.copy(), self._rhs.copy())
 
     class MinFunction(TwoParameterFunction):
         def value(self) -> typing.Union[int, float]:
@@ -1238,7 +1238,7 @@ class Calculator(object):
             bestCase=Calculator.CeilFunction(value.bestCaseCalculation()),
             averageCase=Calculator.CeilFunction(value.averageCaseCalculation()),
             name=name)
-    
+
     @typing.overload
     @staticmethod
     def significantDigits(
@@ -1254,14 +1254,14 @@ class Calculator(object):
         digits: ScalarCalculation,
         name: typing.Optional[str] = None,
         ) -> RangeCalculation: ...
-    
+
     @typing.overload
     @staticmethod
     def significantDigits(
         value: RangeCalculation,
         digits: RangeCalculation,
         name: typing.Optional[str] = None,
-        ) -> RangeCalculation: ...    
+        ) -> RangeCalculation: ...
 
     @staticmethod
     def significantDigits(

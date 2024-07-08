@@ -85,7 +85,7 @@ class RobotContext(construction.ConstructionContext):
             componentsType=robots.RobotComponentInterface,
             techLevel=techLevel)
         self._weaponSet = weaponSet
-        
+
     def weaponSet(self) -> traveller.StockWeaponSet:
         return self._weaponSet
 
@@ -96,8 +96,8 @@ class RobotContext(construction.ConstructionContext):
             ) -> None:
         self._weaponSet = weaponSet
         if regenerate:
-            self.regenerate()        
-        
+            self.regenerate()
+
     def baseSlots(
             self,
             sequence: str,
@@ -110,7 +110,7 @@ class RobotContext(construction.ConstructionContext):
                 value=0,
                 name='Base Slots')
         return slots
-        
+
     def baseChassisCredits(
             self,
             sequence: str
@@ -129,8 +129,8 @@ class RobotContext(construction.ConstructionContext):
             costId=robots.RobotCost.Credits)
         return common.Calculator.equals(
             value=slotsUsed,
-            name='Total Cost')         
-    
+            name='Total Cost')
+
     def maxSlots(
             self,
             sequence: str
@@ -144,7 +144,7 @@ class RobotContext(construction.ConstructionContext):
                 name='Max Slots')
         return common.Calculator.equals(
             value=maxSlots,
-            name='Max Slots')  
+            name='Max Slots')
 
     def usedSlots(
             self,
@@ -156,7 +156,7 @@ class RobotContext(construction.ConstructionContext):
         return common.Calculator.equals(
             value=slotsUsed,
             name='Used Slots')
-    
+
     def spareSlots(
             self,
             sequence: str,
@@ -164,7 +164,7 @@ class RobotContext(construction.ConstructionContext):
         return common.Calculator.subtract(
             lhs=self.maxSlots(sequence=sequence),
             rhs=self.usedSlots(sequence=sequence),
-            name='Spare Slots')      
+            name='Spare Slots')
 
     def maxBandwidth(
             self,
@@ -179,8 +179,8 @@ class RobotContext(construction.ConstructionContext):
                 name='Max Bandwidth')
         return common.Calculator.equals(
             value=maxBandwidth,
-            name='Max Bandwidth') 
-    
+            name='Max Bandwidth')
+
     def usedBandwidth(
             self,
             sequence: str,
@@ -190,7 +190,7 @@ class RobotContext(construction.ConstructionContext):
             costId=robots.RobotCost.Bandwidth)
         return common.Calculator.equals(
             value=bandwidthUsed,
-            name='Used Bandwidth')      
+            name='Used Bandwidth')
 
     def spareBandwidth(
             self,
@@ -199,8 +199,8 @@ class RobotContext(construction.ConstructionContext):
         return common.Calculator.subtract(
             lhs=self.maxBandwidth(sequence=sequence),
             rhs=self.usedBandwidth(sequence=sequence),
-            name='Spare Bandwidth') 
-    
+            name='Spare Bandwidth')
+
     def multiPhaseCost(
             self,
             sequence: str,
@@ -221,7 +221,7 @@ class RobotContext(construction.ConstructionContext):
         return common.Calculator.sum(
             values=phaseCosts,
             name=f'Total {costId.value} Cost')
-    
+
 class Robot(construction.ConstructableInterface):
     def __init__(
             self,
@@ -250,16 +250,16 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             sequenceState=sequenceState,
             regenerate=True)
-        
+
     def name(self) -> str:
         return self._name
-    
+
     def setName(self, name: str) -> None:
-        self._name = name    
+        self._name = name
 
     def robotName(self) -> typing.Optional[str]:
         return self._name
-    
+
     def setRobotName(
             self,
             name: typing.Optional[str]
@@ -277,10 +277,10 @@ class Robot(construction.ConstructableInterface):
         self._constructionContext.setTechLevel(
             techLevel=techLevel,
             regenerate=regenerate)
-        
+
     def weaponSet(self) -> traveller.StockWeaponSet:
         return self._constructionContext.weaponSet()
-        
+
     def setWeaponSet(
             self,
             weaponSet: traveller.StockWeaponSet,
@@ -316,14 +316,14 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.findComponents(
             componentType=componentType,
             sequence=self._sequence)
-    
+
     def findFirstComponent(
             self,
             componentType: typing.Type[robots.RobotComponentInterface]
             ) -> typing.Optional[robots.RobotComponentInterface]:
         return self._constructionContext.findFirstComponent(
             componentType=componentType,
-            sequence=self._sequence)    
+            sequence=self._sequence)
 
     def hasComponent(
             self,
@@ -345,7 +345,7 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.findCompatibleComponents(
             stage=stage,
             replaceComponent=replaceComponent)
-    
+
     def loadComponents(
             self,
             components: typing.Iterable[typing.Tuple[ # List of components
@@ -357,7 +357,7 @@ class Robot(construction.ConstructableInterface):
                 ]]
             ) -> None:
         self._constructionContext.loadComponents(
-            commonComponents=components)     
+            commonComponents=components)
 
     def addComponent(
             self,
@@ -434,13 +434,13 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.attributeValue(
             sequence=self._sequence,
             attributeId=attributeId)
-    
+
     def skills(self) -> typing.Iterable[construction.Skill]:
         return self._constructionContext.skills(
-            sequence=self._sequence)    
-    
+            sequence=self._sequence)
+
     # NOTE: A skill is only classed as having a speciality if it has the
-    # speciality at level 1 or higher    
+    # speciality at level 1 or higher
     def hasSkill(
             self,
             skillDef: traveller.SkillDefinition,
@@ -450,7 +450,7 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             skillDef=skillDef,
             speciality=speciality)
-    
+
     def skill(
             self,
             skillDef: traveller.SkillDefinition
@@ -458,7 +458,7 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.skill(
             sequence=self._sequence,
             skillDef=skillDef)
-    
+
     def skillLevel(
             self,
             skillDef: traveller.SkillDefinition,
@@ -467,8 +467,8 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.skillLevel(
             sequence=self._sequence,
             skillDef=skillDef,
-            speciality=speciality)  
-    
+            speciality=speciality)
+
     def steps(
             self,
             component: typing.Optional[robots.RobotComponentInterface] = None,
@@ -488,35 +488,35 @@ class Robot(construction.ConstructableInterface):
             sequence=self._sequence,
             phase=phase,
             costId=costId)
-    
+
     def totalCredits(self) -> common.ScalarCalculation:
         return self._constructionContext.totalCredits(
             sequence=self._sequence)
-    
+
     def maxSlots(self) -> common.ScalarCalculation:
         return self._constructionContext.maxSlots(
-            sequence=self._sequence)     
-    
+            sequence=self._sequence)
+
     def usedSlots(self) -> common.ScalarCalculation:
         return self._constructionContext.usedSlots(
             sequence=self._sequence)
-    
+
     def spareSlots(self) -> common.ScalarCalculation:
         return self._constructionContext.spareSlots(
             sequence=self._sequence)
-    
+
     def maxBandwidth(self) -> common.ScalarCalculation:
         return self._constructionContext.maxBandwidth(
-            sequence=self._sequence)     
-    
+            sequence=self._sequence)
+
     def usedBandwidth(self) -> common.ScalarCalculation:
         return self._constructionContext.usedBandwidth(
             sequence=self._sequence)
-    
+
     def spareBandwidth(self) -> common.ScalarCalculation:
         return self._constructionContext.spareBandwidth(
             sequence=self._sequence)
-    
+
     def manifest(self) -> construction.Manifest:
         sequenceStates = self._constructionContext.state(
             sequence=self._sequence)
@@ -540,7 +540,7 @@ class Robot(construction.ConstructableInterface):
                     factors = []
                     for factor in step.factors():
                         if isinstance(factor, construction.AttributeFactor) and \
-                            factor.attributeId() in robots.InternalAttributeIds:
+                                factor.attributeId() in robots.InternalAttributeIds:
                             # Don't include attribute factors that modify internal
                             # attributes
                             continue
@@ -560,7 +560,7 @@ class Robot(construction.ConstructableInterface):
                         factors=factors)
 
         return manifest
-    
+
     # NOTE: The Finalisation section (p76) says, as well as characteristic DMs,
     # any additional modifiers should be included in the skill levels listed in
     # a robots worksheet. It would only make sense for this to be done for
@@ -691,17 +691,17 @@ class Robot(construction.ConstructableInterface):
                         traits=traits)
                     if isinstance(component, robots.MountedWeapon):
                         weaponInfo += '{separator}Mounted'.format(
-                            separator=', ' if weaponInfo and traits else '')    
+                            separator=', ' if weaponInfo and traits else '')
                         autoloaderCount = component.autoloaderMagazineCount()
                         if autoloaderCount:
                             weaponInfo += '{separator}Autoloader x{count}'.format(
                                 separator=', ' if weaponInfo and traits else '',
-                                count=common.formatNumber(number=autoloaderCount.value()))                                 
+                                count=common.formatNumber(number=autoloaderCount.value()))
                         linkedCount = component.linkedGroupSize()
                         if linkedCount:
                             weaponInfo += '{separator}Linked x{count}'.format(
                                 separator=', ' if weaponInfo and traits else '',
-                                count=common.formatNumber(number=linkedCount.value()))                            
+                                count=common.formatNumber(number=linkedCount.value()))
                         fireControl = component.fireControl()
                         if fireControl:
                             weaponInfo += '{separator}{level} Fire Control'.format(
@@ -709,7 +709,7 @@ class Robot(construction.ConstructableInterface):
                                 level=fireControl.value)
                     elif isinstance(component, robots.HandHeldWeapon):
                         weaponInfo += '{separator}Hand Held'.format(
-                            separator=', ' if weaponInfo and traits else '')  
+                            separator=', ' if weaponInfo and traits else '')
                     weaponString = weaponData.name()
                     if weaponInfo:
                         weaponString += f' ({weaponInfo})'
@@ -717,7 +717,7 @@ class Robot(construction.ConstructableInterface):
                     count = seenWeapons.get(weaponString, 0)
                     seenWeapons[weaponString] = count + 1
 
-                weaponStrings = []                 
+                weaponStrings = []
                 for weaponString, count in seenWeapons.items():
                     if count > 1:
                         weaponString = '{count} x {weapon}'.format(
@@ -737,7 +737,7 @@ class Robot(construction.ConstructableInterface):
                     fireControl = component.fireControl()
                     if manipulator and fireControl:
                         fireControlManipulators[manipulator] = fireControl
-                    
+
                 components = self.findComponents(
                     componentType=robots.Manipulator)
                 seenManipulators: typing.Dict[str, int] = {}
@@ -752,7 +752,7 @@ class Robot(construction.ConstructableInterface):
                     fireControl = fireControlManipulators.get(component)
                     if fireControl:
                         manipulatorString += f', {fireControl.value} Fire Control'
-                    
+
                     count = seenManipulators.get(manipulatorString, 0)
                     seenManipulators[manipulatorString] = count + 1
 
@@ -798,7 +798,7 @@ class Robot(construction.ConstructableInterface):
                             number=round(attributeValue.value()),
                             prefix='VSM: ',
                             suffix=' hours'))
-                        calculations.append(attributeValue) 
+                        calculations.append(attributeValue)
 
                     fieldText = Robot._formatWorksheetListString(enduranceStrings)
             elif field == robots.Worksheet.Field.Traits:
@@ -843,7 +843,7 @@ class Robot(construction.ConstructableInterface):
                 components.extend(self.findComponents(
                     componentType=robots.DefaultSuiteOption))
                 components.extend(self.findComponents(
-                    componentType=robots.SlotOption))                
+                    componentType=robots.SlotOption))
                 for component in components:
                     componentString = component.instanceString()
                     count = options.get(componentString, 0)
@@ -896,7 +896,7 @@ class Robot(construction.ConstructableInterface):
                     calculations=calculations if calculations else None)
 
         return worksheet
-    
+
     def _calcModifierSkillLevel(
             self,
             skill: construction.Skill,
@@ -910,11 +910,11 @@ class Robot(construction.ConstructableInterface):
 
         characteristic = _SkillCharacteristicMap[skill.skillDef()]
         if isinstance(characteristic, dict):
-            characteristic = characteristic.get(speciality)   
+            characteristic = characteristic.get(speciality)
         if not characteristic:
             # There is no applicable robot characteristic for this skill
             return level
-            
+
         if characteristic == traveller.Characteristics.Intellect:
             characteristicValue = self.attributeValue(
                 attributeId=robots.RobotAttributeId.INT)
@@ -941,7 +941,7 @@ class Robot(construction.ConstructableInterface):
             characteristicValue = common.ScalarCalculation(
                 value=highestValue,
                 name=f'Highest Manipulator {characteristic.value}')
-        
+
         characteristicModifier = common.ScalarCalculation(
             value=traveller.CharacteristicDMFunction(
                 characteristic=characteristic,
@@ -958,7 +958,7 @@ class Robot(construction.ConstructableInterface):
         return common.Calculator.add(
             lhs=level,
             rhs=characteristicModifier,
-            name=f'Modified {skill.name(speciality=speciality)} Skill Level')       
+            name=f'Modified {skill.name(speciality=speciality)} Skill Level')
 
     def _createStages(
             self
@@ -974,7 +974,7 @@ class Robot(construction.ConstructableInterface):
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
-        
+
         stages.append(construction.ConstructionStage(
             name='Primary Locomotion',
             sequence=self._sequence,
@@ -983,7 +983,7 @@ class Robot(construction.ConstructableInterface):
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
-        
+
         stages.append(construction.ConstructionStage(
             name='Synthetics',
             sequence=self._sequence,
@@ -991,8 +991,8 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.Synthetic,
             # Optional single component
             minComponents=0,
-            maxComponents=1))        
-        
+            maxComponents=1))
+
         stages.append(construction.ConstructionStage(
             name='Armour Modification',
             sequence=self._sequence,
@@ -1009,7 +1009,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.EnduranceModification,
             # Optional single component
             minComponents=0,
-            maxComponents=1))     
+            maxComponents=1))
 
         stages.append(construction.ConstructionStage(
             name='Resiliency Modification',
@@ -1018,7 +1018,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.ResiliencyModification,
             # Optional single component
             minComponents=0,
-            maxComponents=1))  
+            maxComponents=1))
 
         stages.append(construction.ConstructionStage(
             name='Agility Modification',
@@ -1028,7 +1028,7 @@ class Robot(construction.ConstructableInterface):
             # Optional single component
             minComponents=0,
             maxComponents=1))
-        
+
         # NOTE: It's important that this stage is mandatory in order to force
         # robots with the Aeroplane locomotion type to have the Vehicle Movement
         # Speed component
@@ -1039,8 +1039,8 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.SpeedModification,
             # Mandatory single component
             minComponents=1,
-            maxComponents=1))        
-        
+            maxComponents=1))
+
         # NOTE: I've not seen anything anything in the rules that explicitly
         # says you can only have one secondary locomotion, although it could be
         # the expectation is it's implied by the name. I've decided to make it
@@ -1053,8 +1053,8 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.SecondaryLocomotion,
             # Optional single component
             minComponents=0,
-            maxComponents=1)) 
-        
+            maxComponents=1))
+
         stages.append(construction.ConstructionStage(
             name='Base Manipulators',
             sequence=self._sequence,
@@ -1063,7 +1063,7 @@ class Robot(construction.ConstructableInterface):
             # Mandatory fixed size
             minComponents=2,
             maxComponents=2))
-        
+
         stages.append(construction.ConstructionStage(
             name='Additional Manipulators',
             sequence=self._sequence,
@@ -1072,7 +1072,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Leg Manipulators',
             sequence=self._sequence,
@@ -1080,7 +1080,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.LegManipulator,
             # Optional multi component
             minComponents=None,
-            maxComponents=None)) 
+            maxComponents=None))
 
         stage = construction.ConstructionStage(
             name='Default Suite',
@@ -1097,7 +1097,7 @@ class Robot(construction.ConstructableInterface):
         stage.addComponent(component=robots.WirelessDataLinkDefaultSuiteOption())
         stage.addComponent(component=robots.TransceiverDefaultSuiteOption())
         stages.append(stage)
-        
+
         stages.append(construction.ConstructionStage(
             name='Chassis Options',
             sequence=self._sequence,
@@ -1115,7 +1115,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Medical Options',
             sequence=self._sequence,
@@ -1124,7 +1124,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Miscellaneous Options',
             sequence=self._sequence,
@@ -1133,7 +1133,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Power Options',
             sequence=self._sequence,
@@ -1141,7 +1141,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.PowerSlotOption,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))  
+            maxComponents=None))
 
         stages.append(construction.ConstructionStage(
             name='Sensor Options',
@@ -1150,7 +1150,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.SensorSlotOption,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))  
+            maxComponents=None))
 
         stages.append(construction.ConstructionStage(
             name='Toolkit Options',
@@ -1160,7 +1160,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Servo Mounted Weapons',
             sequence=self._sequence,
@@ -1169,7 +1169,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Manipulator Mounted Weapons',
             sequence=self._sequence,
@@ -1177,7 +1177,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.ManipulatorMountedWeapon,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))        
+            maxComponents=None))
 
         stages.append(construction.ConstructionStage(
             name='Handheld Weapons',
@@ -1186,8 +1186,8 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.HandHeldWeapon,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))        
-        
+            maxComponents=None))
+
         stages.append(construction.ConstructionStage(
             name='Handheld Weapon Fire Control',
             sequence=self._sequence,
@@ -1196,7 +1196,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Magazines',
             sequence=self._sequence,
@@ -1204,8 +1204,8 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.Magazines,
             # Optional multi component
             minComponents=None,
-            maxComponents=None))          
-        
+            maxComponents=None))
+
         stages.append(construction.ConstructionStage(
             name='Brain',
             sequence=self._sequence,
@@ -1214,7 +1214,7 @@ class Robot(construction.ConstructableInterface):
             # Mandatory single component
             minComponents=1,
             maxComponents=1))
-        
+
         stages.append(construction.ConstructionStage(
             name='Skill Package',
             sequence=self._sequence,
@@ -1224,7 +1224,7 @@ class Robot(construction.ConstructableInterface):
             minComponents=0,
             maxComponents=1,
             # Force a component to be selected if there is one
-            forceComponent=True))          
+            forceComponent=True))
 
         stages.append(construction.ConstructionStage(
             name='Skills',
@@ -1234,7 +1234,7 @@ class Robot(construction.ConstructableInterface):
             # Optional multi component
             minComponents=None,
             maxComponents=None))
-        
+
         stages.append(construction.ConstructionStage(
             name='Special Use',
             sequence=self._sequence,
@@ -1242,12 +1242,12 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.PlayerCharacter,
             # Optional single component
             minComponents=0,
-            maxComponents=1))        
-        
+            maxComponents=1))
+
         # NOTE: If I ever change this so the default isn't None then I'll need
         # to handle the fact the label in the UI will always show the max slots
         # as the number of slots as 0. I'd also need a migration step as I
-        # suspect 
+        # suspect
         stages.append(construction.ConstructionStage(
             name='Unused Slot Removal',
             sequence=self._sequence,
@@ -1256,12 +1256,12 @@ class Robot(construction.ConstructableInterface):
             # Optional single component
             minComponents=0,
             maxComponents=1))
-        
+
         # NOTE: This should happen AFTER unused slots are removed. I think the
         # google spreadsheet might be incorrect and is doing it the other way
         # round. I'm basing this on the fact the Mongoose excel spreadsheet
         # removes the slots first (so the saving from removing unused slots is
-        # effectively multiplied).        
+        # effectively multiplied).
         stages.append(construction.ConstructionStage(
             name='Synth Additional Costs',
             sequence=self._sequence,
@@ -1274,7 +1274,7 @@ class Robot(construction.ConstructableInterface):
             # only be compatible components if the robot is a synth
             forceComponent=True,
             isInternal=True))
-        
+
         stages.append(construction.ConstructionStage(
             name='Cost Modification',
             sequence=self._sequence,
@@ -1283,7 +1283,7 @@ class Robot(construction.ConstructableInterface):
             # Optional single component
             minComponents=0,
             maxComponents=1))
-        
+
         # NOTE: It's important that no other costs are added to the robot
         # after this stage
         stages.append(construction.ConstructionStage(
@@ -1293,7 +1293,7 @@ class Robot(construction.ConstructableInterface):
             baseType=robots.SignificantFigureCostRounding,
             # Optional single component
             minComponents=0,
-            maxComponents=1))           
+            maxComponents=1))
 
         # NOTE: This is the final stage of construction it MUST be last,
         # including after other stages in the finalisation phase
@@ -1305,8 +1305,8 @@ class Robot(construction.ConstructableInterface):
             # Mandatory single component
             minComponents=1,
             maxComponents=1,
-            isInternal=True)) 
-        
+            isInternal=True))
+
         return stages
 
     @staticmethod
@@ -1317,4 +1317,3 @@ class Robot(construction.ConstructableInterface):
         if not stringList:
             return emptyText
         return ', '.join(stringList)
- 

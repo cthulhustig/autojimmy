@@ -387,7 +387,7 @@ class Weapon(construction.ConstructableInterface):
     def clearRules(self, regenerate: bool = True) -> None:
         self._constructionContext.clearRules(
             regenerate=regenerate)
-        
+
     def context(self) -> WeaponContext:
         return self._constructionContext
 
@@ -520,7 +520,7 @@ class Weapon(construction.ConstructableInterface):
             ) -> None:
         self._constructionContext.loadComponents(
             sequenceComponents=sequenceComponents,
-            commonComponents=commonComponents)        
+            commonComponents=commonComponents)
 
     def addComponent(
             self,
@@ -842,7 +842,7 @@ class Weapon(construction.ConstructableInterface):
                         # or factors as they clutter up the manifest. This
                         # doesn't apply to steps from other stages as they
                         # (generally) related to something the user has
-                        # specifically selected so should always be included                        
+                        # specifically selected so should always be included
                         continue
 
                     if not manifestSection:
@@ -1087,7 +1087,7 @@ class Weapon(construction.ConstructableInterface):
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Mounting,
             baseType=gunsmith.SecondaryMount,
-            # Optional single component 
+            # Optional single component
             minComponents=0,
             maxComponents=1,
             # Force the stage to have a component if any are compatible

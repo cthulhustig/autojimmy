@@ -6,7 +6,7 @@ import typing
 class ArmourModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Armour Modification'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -20,7 +20,7 @@ class IncreaseArmour(ArmourModification):
     """
     - <ALL>
         - Requirement: Androids and BioRobots can only have up to 2 slots of
-          armour (p86) 
+          armour (p86)
     - TL6-8
         - Max Addition Armour: 20
         - Slot Cost: 1% of Base Slots rounded up for each additional point of
@@ -44,13 +44,13 @@ class IncreaseArmour(ArmourModification):
         - Slot Cost: 0.3% of Base Slots rounded up for each additional point
           of armour (minimum of 1 slot)
         - Max Per Slot: 4
-        - Cost Per Slot: Cr2500   
+        - Cost Per Slot: Cr2500
     - TL18+
         - Max Addition Armour: 60
         - Slot Cost: 0.25% of Base Slots rounded up for each additional point
           of armour (minimum of 1 slot)
         - Max Per Slot: 5
-        - Cost Per Slot: Cr5000    
+        - Cost Per Slot: Cr5000
     """
     # NOTE: Base Protection is handled by the Chassis component
     # NOTE: On p19 the rules say "Each point of additional armour, up to the
@@ -76,10 +76,10 @@ class IncreaseArmour(ArmourModification):
     _SyntheticMaxSlots = common.ScalarCalculation(
         value=2,
         name='Android/BioRobot Max Armours Slots')
-    
+
     def __init__(self) -> None:
         super().__init__()
-        
+
         self._armourPointsOption = construction.IntegerOption(
             id='ArmourPoints',
             name='Armour Points',
@@ -89,11 +89,11 @@ class IncreaseArmour(ArmourModification):
 
     def componentString(self) -> str:
         return 'Armour Increase'
-    
+
     def instanceString(self) -> str:
         return '{component} +{points}'.format(
             component=self.componentString(),
-            points=self._armourPointsOption.value()) 
+            points=self._armourPointsOption.value())
 
     def isCompatible(
             self,
@@ -102,15 +102,15 @@ class IncreaseArmour(ArmourModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         if context.techLevel() < IncreaseArmour._MinTechLevel:
             return False
-        
+
         maxArmour = self._calculateMaxArmour(
             sequence=sequence,
             context=context)
         return maxArmour and maxArmour.value() >= 1
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._armourPointsOption]
 
@@ -124,7 +124,7 @@ class IncreaseArmour(ArmourModification):
             context=context)
         if maxArmour and maxArmour.value() <= 1:
             maxArmour = None
-        
+
         self._armourPointsOption.setMin(value=1 if maxArmour != None else 0)
         self._armourPointsOption.setMax(value=maxArmour.value() if maxArmour != None else 0)
 
@@ -136,7 +136,7 @@ class IncreaseArmour(ArmourModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         currentTL = context.techLevel()
         foundDetails = False
         for minTL, maxTL, _, slotPercent, maxPerSlot, costPerSlot in IncreaseArmour._ArmourTypeDetails:
@@ -170,7 +170,7 @@ class IncreaseArmour(ArmourModification):
                 value=baseSlots,
                 percentage=totalSlotPercent),
             name=f'{tlRangeString} Armour Slot Required For {armourPoints.value()} Points')
-        
+
         minSlots = common.Calculator.ceil(
             value=common.Calculator.divideFloat(
                 lhs=armourPoints,
@@ -185,18 +185,18 @@ class IncreaseArmour(ArmourModification):
             lhs=costPerSlot,
             rhs=requiredSlots,
             name=f'{tlRangeString} Armour Cost For {requiredSlots.value()} Slots')
-        
+
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
         step.setSlots(slots=construction.ConstantModifier(value=requiredSlots))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Protection,
-            modifier=construction.ConstantModifier(value=armourPoints)))        
-                        
+            modifier=construction.ConstantModifier(value=armourPoints)))
+
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
     def _calculateMaxArmour(
             self,
             sequence: str,
@@ -210,7 +210,7 @@ class IncreaseArmour(ArmourModification):
                 break
         if not foundDetails:
             return None
-        
+
         tlRangeString = f'TL{minTL}-{maxTL}' if maxTL != None else f'TL{minTL}+'
 
         maxArmour = common.ScalarCalculation(
@@ -218,17 +218,17 @@ class IncreaseArmour(ArmourModification):
             name=f'{tlRangeString} Max Armour')
 
         if not context.hasComponent(
-            componentType=robots.Synthetic,
-            sequence=sequence):
+                componentType=robots.Synthetic,
+                sequence=sequence):
             return maxArmour
-        
+
         slotPercentage = common.ScalarCalculation(
             value=slotPercentage,
             name=f'{tlRangeString} Armour Base Slot Percentage Per Point')
         maxPerSlot = common.ScalarCalculation(
             value=maxPerSlot,
             name=f'{tlRangeString} Armour Max Points Per Slot')
-            
+
         baseSlots = context.baseSlots(sequence=sequence)
         maxSlotPercentage = common.Calculator.multiply(
             lhs=common.Calculator.divideFloat(
@@ -241,12 +241,12 @@ class IncreaseArmour(ArmourModification):
                 lhs=maxSlotPercentage,
                 rhs=slotPercentage),
             name='Android/BioRobot Slot Percentage Limited Max Armour')
-        
+
         maxArmourBySlotMax = common.Calculator.multiply(
             lhs=maxPerSlot,
             rhs=IncreaseArmour._SyntheticMaxSlots,
             name='Android/BioRobot Max Per Slot Limited Max Armour')
-        
+
         maxArmour = common.Calculator.min(
             lhs=common.Calculator.min(
                 lhs=maxArmourByPercentage,
@@ -255,7 +255,7 @@ class IncreaseArmour(ArmourModification):
             name=f'Android/BioRobot {tlRangeString} Max Armour')
 
         return maxArmour
-            
+
 class DecreaseArmour(ArmourModification):
     """
     - Cost: -10% of Base Chassis Cost per point removed
@@ -276,7 +276,7 @@ class DecreaseArmour(ArmourModification):
 
     def __init__(self) -> None:
         super().__init__()
-        
+
         self._armourPointsOption = construction.IntegerOption(
             id='ArmourPoints',
             name='Armour Points',
@@ -286,11 +286,11 @@ class DecreaseArmour(ArmourModification):
 
     def componentString(self) -> str:
         return 'Armour Decrease'
-    
+
     def instanceString(self) -> str:
         return '{component} -{points}'.format(
             component=self.componentString(),
-            points=self._armourPointsOption.value()) 
+            points=self._armourPointsOption.value())
 
     def isCompatible(
             self,
@@ -334,7 +334,7 @@ class DecreaseArmour(ArmourModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         armourPoints = common.ScalarCalculation(
             value=-self._armourPointsOption.value(), # NOTE: This is negated
             name='Specified Armour Reduction')
@@ -346,13 +346,13 @@ class DecreaseArmour(ArmourModification):
                 lhs=DecreaseArmour._CostReductionPercent,
                 rhs=common.Calculator.absolute(armourPoints)),
             name=f'Armour Decrease Cost Saving For {armourPoints.value()} Points')
-        
+
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Protection,
             modifier=construction.ConstantModifier(value=armourPoints)))
-                        
+
         context.applyStep(
             sequence=sequence,
             step=step)

@@ -260,7 +260,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
             stream.writeRawData(baseState.data())
 
         return state
-    
+
     def restoreState(self, state: QtCore.QByteArray) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
@@ -279,7 +279,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
             return False
 
         return True
-        
+
     def createConstructable(
             self,
             name: str
@@ -288,7 +288,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
             name=name,
             techLevel=_WeaponManagerWidget._DefaultTechLevel,
             weaponType=_WeaponManagerWidget._DefaultWeaponType)
-    
+
     def importConstructable(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             parent=self,
@@ -405,7 +405,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _exportFinished(
             self,
             filePath: str,
@@ -424,7 +424,7 @@ class _WeaponManagerWidget(gui.ConstructableManagerWidget):
 
         self._exportJob = None
         self._progressDlg = None
-         
+
 class GunsmithWindow(gui.WindowWidget):
     _ConfigurationBottomSpacing = 300
 
@@ -502,7 +502,7 @@ class GunsmithWindow(gui.WindowWidget):
             key='ConfigurationScrollAreaState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._configurationScrollArea.restoreState(storedValue)            
+            self._configurationScrollArea.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,

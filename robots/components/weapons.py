@@ -27,12 +27,12 @@ class _WeaponImpl(object):
             Melee or Gun Combat skills or an explosive of up to six kilograms
         - Heavy
             - Slots: 10
-            - Cost: 5000       
+            - Cost: 5000
             - Note: A heavy mount may hold any weapon usable with Heavy
             Weapons (portable)
         - Vehicle
             - Slots: 15
-            - Cost: 10000        
+            - Cost: 10000
             - Note: A vehicle mount may hold any weapon of mass 250 kilograms or
             less that requires Heavy Weapons (vehicle).
     - Option: Weapon
@@ -46,7 +46,7 @@ class _WeaponImpl(object):
     - Option: Linked Weapons
         - Requirement: Up to 4 weapons OF THE SAME TYPE can be linked to fire as
         a single attack. If the attack succeeds, only one damage roll is made
-        and +1 PER DAMAGE DICE is added for each additional weapon (p61)  
+        and +1 PER DAMAGE DICE is added for each additional weapon (p61)
         - Requirement: Linked weapons require a Fire Control System (clarified
         by Geir)
         - Requirement: Hand held weapons can't be linked (clarified by Geir)
@@ -66,15 +66,15 @@ class _WeaponImpl(object):
         - Improved
             - Min TL: 8
             - Cost: 25000
-            - Weapon Skill DM: +2       
+            - Weapon Skill DM: +2
         - Enhanced
             - Min TL: 10
             - Cost: 50000
-            - Weapon Skill DM: +3  
+            - Weapon Skill DM: +3
         - Advanced
             - Min TL: 12
             - Cost: 100000
-            - Weapon Skill DM: +4     
+            - Weapon Skill DM: +4
     """
     # NOTE: The rules around Fire Control Systems and linked weapons are
     # confusing. I got a chance to put some questions to Geir Lanesskog (the
@@ -123,7 +123,7 @@ class _WeaponImpl(object):
     # Clarification 6: Weapons held by a manipulator (rather than mounted to a
     # manipulator) can't be linked. This is a logical side effect of
     # Clarification 5 as it wouldn't make sense for one manipulator to hold
-    # multiple weapons.    
+    # multiple weapons.
     # NOTE: The note about which weapons a mount of a given size can use is
     # handled in finalisation
 
@@ -134,7 +134,7 @@ class _WeaponImpl(object):
         traveller.WeaponSize.Heavy: (5000, 10),
         traveller.WeaponSize.Vehicle: (10000, 15)
     }
-    
+
     _AutoloaderMinTL = common.ScalarCalculation(
         value=6,
         name='Autoloader Min TL')
@@ -144,13 +144,13 @@ class _WeaponImpl(object):
     _AutoloaderMinManipulatorSizeModifier = common.ScalarCalculation(
         value=1,
         name='Autoloader Minimum Manipulator Size Modifier')
-    
+
     _MultiLinkMaxGroupSize = 4
 
     _MultiLinkAttackKnownDiceNote = 'When the {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and an additional +{modifier} damage is added to the result. (p61)'
     _MultiLinkAttackUnknownDiceNote = 'When the {count} linked weapons are fired as a group, only a single attack is made. If a hit occurs, a single damage roll is made and  an additional +{modifier} damage is added to the result of each damage dice. (p61)'
 
-     # Data Structure: Min TL, Cost, Weapon Skill DM
+    # Data Structure: Min TL, Cost, Weapon Skill DM
     _FireControlDataMap = {
         FireControlLevel.Basic: (6, 10000, +1),
         FireControlLevel.Improved: (8, 25000, +2),
@@ -178,7 +178,7 @@ class _WeaponImpl(object):
             name='Weapon Category',
             type=traveller.WeaponCategory,
             description='Specify the category of weapon.')
-        
+
         self._weaponOption = construction.StringOption(
             id='Weapon',
             name='Weapon',
@@ -186,7 +186,7 @@ class _WeaponImpl(object):
             choices=['default'], # This will be replaced when updateOptions is called
             isEditable=False,
             description='Specify the weapon that is mounted.')
-        
+
         self._autoLoaderOption = construction.IntegerOption(
             id='Autoloader',
             name='Autoloader Magazines',
@@ -195,7 +195,7 @@ class _WeaponImpl(object):
             maxValue=10,
             isOptional=True,
             description='Specify if the mount is equipped with an Autoloader and, if so, how many magazines it contains.')
-        
+
         self._linkedCountOption = construction.IntegerOption(
             id='LinkedCount',
             name='Linked Weapons',
@@ -204,17 +204,17 @@ class _WeaponImpl(object):
             maxValue=_WeaponImpl._MultiLinkMaxGroupSize,
             isOptional=True,
             description='Specify the number of weapons to link so they fire as a single action.')
-        
+
         self._fireControlOption = construction.EnumOption(
             id='FireControl',
             name='Fire Control',
             type=FireControlLevel,
             isOptional=True,
             description='Specify Fire Control System level.')
-    
+
     def weaponCategory(self) -> typing.Optional[traveller.WeaponCategory]:
         return self._weaponCategoryOption.value() if self._weaponCategoryOption.isEnabled() else None
-    
+
     def weaponName(self) -> typing.Optional[str]:
         return self._weaponOption.value() if self._weaponOption.isEnabled() else None
 
@@ -228,7 +228,7 @@ class _WeaponImpl(object):
         return traveller.lookupStockWeapon(
             name=weaponName,
             weaponSet=weaponSet)
-    
+
     def linkedGroupSize(self) -> typing.Optional[common.ScalarCalculation]:
         if not self._linkedCountOption.isEnabled():
             return None
@@ -237,30 +237,30 @@ class _WeaponImpl(object):
             return None
         return common.ScalarCalculation(
             value=linkCount,
-            name='Specified Linked Weapon Group Size')            
-        
+            name='Specified Linked Weapon Group Size')
+
     def autoloaderMagazineCount(self) -> typing.Optional[common.ScalarCalculation]:
         if not self._autoLoaderOption.isEnabled() or not self._autoLoaderOption.value():
             return None
         return common.ScalarCalculation(
             value=self._autoLoaderOption.value(),
             name='Specified Autoloader Magazine Count')
-    
+
     def fireControl(self) -> typing.Optional[FireControlLevel]:
         if not self._fireControlOption.isEnabled():
             return None
-        return self._fireControlOption.value()     
-    
+        return self._fireControlOption.value()
+
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
-        
+
         # NOTE: Don't call _allowedWeapons as it may rely on the value that
         # options are set to and updateOptions might not have been called yet
         weapons = traveller.enumerateStockWeapons(
@@ -271,8 +271,8 @@ class _WeaponImpl(object):
             if weapon.robotMount():
                 foundUsableWeapon = True
                 break
-        return foundUsableWeapon        
-    
+        return foundUsableWeapon
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._weaponCategoryOption.isEnabled():
@@ -286,7 +286,7 @@ class _WeaponImpl(object):
         if self._fireControlOption.isEnabled():
             options.append(self._fireControlOption)
         return options
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -299,7 +299,7 @@ class _WeaponImpl(object):
             self._weaponCategoryOption.setChoices(choices=weaponCategoryOptions)
         self._weaponCategoryOption.setEnabled(
             enabled=len(weaponCategoryOptions) > 0)
-        
+
         weaponOptions = self._allowedWeapons(
             sequence=sequence,
             context=context)
@@ -313,17 +313,17 @@ class _WeaponImpl(object):
 
         self._linkedCountOption.setEnabled(
             enabled=self._allowedLinkedWeapons(sequence=sequence, context=context))
-        
+
         fireControlOptions = self._allowedFireControls(
             sequence=sequence,
-            context=context)        
+            context=context)
         if fireControlOptions:
-            self._fireControlOption.setChoices(choices=fireControlOptions)        
+            self._fireControlOption.setChoices(choices=fireControlOptions)
             self._fireControlOption.setOptional(
                 isOptional=not self._linkedCountOption.value()) # Mandatory if linked
         self._fireControlOption.setEnabled(
             enabled=len(fireControlOptions) > 0)
-        
+
     def createSteps(
             self,
             typeString: str,
@@ -333,30 +333,30 @@ class _WeaponImpl(object):
         step = self._createWeaponStep(
             typeString=typeString,
             sequence=sequence,
-            context=context)            
+            context=context)
         if step:
             context.applyStep(
                 sequence=sequence,
                 step=step)
-            
+
         step = self._createMountStep(
             typeString=typeString,
             sequence=sequence,
-            context=context)            
-        if step:
-            context.applyStep(
-                sequence=sequence,
-                step=step)            
-            
-        step = self._createAutoloaderStep(
-            typeString=typeString,
-            sequence=sequence,
-            context=context)            
+            context=context)
         if step:
             context.applyStep(
                 sequence=sequence,
                 step=step)
-    
+
+        step = self._createAutoloaderStep(
+            typeString=typeString,
+            sequence=sequence,
+            context=context)
+        if step:
+            context.applyStep(
+                sequence=sequence,
+                step=step)
+
         step = self._createFireControlStep(
             typeString=typeString,
             sequence=sequence,
@@ -365,17 +365,17 @@ class _WeaponImpl(object):
             context.applyStep(
                 sequence=sequence,
                 step=step)
-        
+
     def _createWeaponStep(
             self,
             typeString: str,
             sequence: str,
             context: robots.RobotContext
-            ) -> typing.Optional[robots.RobotStep]:       
+            ) -> typing.Optional[robots.RobotStep]:
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData:
             return None
-        
+
         stepName = weaponData.name()
         linkedGroupSize = self.linkedGroupSize()
         if linkedGroupSize:
@@ -384,13 +384,13 @@ class _WeaponImpl(object):
         step = robots.RobotStep(
             name=stepName,
             type=typeString)
-            
+
         weaponCost = weaponData.cost()
         if weaponCost:
             weaponCost = common.ScalarCalculation(
                 value=weaponCost,
                 name=f'{weaponData.name()} Cost')
-        
+
         if weaponCost and linkedGroupSize:
             weaponCost = common.Calculator.multiply(
                 lhs=weaponCost,
@@ -404,17 +404,17 @@ class _WeaponImpl(object):
         if weaponDamage:
             step.addFactor(factor=construction.StringFactor(
                 string=f'Weapon Base Damage = {weaponDamage}'))
-            
+
         weaponRange = weaponData.range()
         if weaponRange:
             step.addFactor(factor=construction.StringFactor(
-                string=f'Weapon Range = {weaponRange}m'))        
+                string=f'Weapon Range = {weaponRange}m'))
 
         weaponTraits = weaponData.traits()
         if weaponTraits:
             step.addFactor(factor=construction.StringFactor(
                 string=f'Weapon Traits = {weaponTraits}'))
-            
+
         magazineCapacity = weaponData.magazineCapacity()
         magazineCost = weaponData.magazineCost()
 
@@ -428,9 +428,9 @@ class _WeaponImpl(object):
         if weaponTraits:
             weaponStats.append(f'Traits: {weaponTraits}')
         if magazineCapacity:
-            weaponStats.append(f'Magazine Capacity: {magazineCapacity}')    
+            weaponStats.append(f'Magazine Capacity: {magazineCapacity}')
         if magazineCost:
-            weaponStats.append(f'Magazine Cost: Cr{magazineCost}')        
+            weaponStats.append(f'Magazine Cost: Cr{magazineCost}')
         step.addNote(note='\n'.join(weaponStats))
 
         linkedGroupSize = self.linkedGroupSize()
@@ -451,21 +451,21 @@ class _WeaponImpl(object):
                     modifier=linkedGroupSize.value() - 1))
 
         return step
-    
+
     def _createMountStep(
             self,
             typeString: str,
             sequence: str,
             context: robots.RobotContext
-            ) -> typing.Optional[robots.RobotStep]:       
+            ) -> typing.Optional[robots.RobotStep]:
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData:
             return None
-        
+
         mountSize = weaponData.robotMount()
         if not mountSize:
             return None
-        
+
         stepName = f'Mounting ({mountSize.value})'
         linkedGroupSize = self.linkedGroupSize()
         if linkedGroupSize:
@@ -475,14 +475,14 @@ class _WeaponImpl(object):
             name=stepName,
             type=typeString)
 
-        mountCost, mountSlots = _WeaponImpl._MountSizeData[mountSize]        
+        mountCost, mountSlots = _WeaponImpl._MountSizeData[mountSize]
         mountCost = common.ScalarCalculation(
             value=mountCost,
             name=f'{mountSize.value} Mount Cost')
         mountSlots = common.ScalarCalculation(
             value=mountSlots,
             name=f'{mountSize.value} Mount Required Slots')
-        
+
         if linkedGroupSize:
             mountCost = common.Calculator.multiply(
                 lhs=mountCost,
@@ -491,7 +491,7 @@ class _WeaponImpl(object):
             mountSlots = common.Calculator.multiply(
                 lhs=mountSlots,
                 rhs=linkedGroupSize,
-                name=f'Linked {mountSlots.name()}')  
+                name=f'Linked {mountSlots.name()}')
 
         step.setCredits(credits=construction.ConstantModifier(value=mountCost))
         step.setSlots(slots=construction.ConstantModifier(value=mountSlots))
@@ -503,7 +503,7 @@ class _WeaponImpl(object):
             typeString: str,
             sequence: str,
             context: robots.RobotContext
-            ) -> typing.Optional[robots.RobotStep]:      
+            ) -> typing.Optional[robots.RobotStep]:
         autoloaderMagazineCount = self.autoloaderMagazineCount()
         if not autoloaderMagazineCount:
             return None
@@ -511,10 +511,10 @@ class _WeaponImpl(object):
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData:
             return None
-                
+
         magazineCost = weaponData.magazineCost()
         if not magazineCost:
-            return None          
+            return None
 
         mountSize = weaponData.robotMount()
         if not mountSize:
@@ -527,7 +527,7 @@ class _WeaponImpl(object):
 
         step = robots.RobotStep(
             name=stepName,
-            type=typeString)                       
+            type=typeString)
 
         magazineCost = common.ScalarCalculation(
             value=magazineCost,
@@ -538,12 +538,12 @@ class _WeaponImpl(object):
                 rhs=autoloaderMagazineCount),
             rhs=_WeaponImpl._AutoloaderMagazineCostMultiplier,
             name='Autoloader Cost')
-        
+
         _, mountSlots = _WeaponImpl._MountSizeData[mountSize]
         autoloaderSlots = common.ScalarCalculation(
             value=mountSlots,
-            name='Autoloader Required Slots')            
-        
+            name='Autoloader Required Slots')
+
         if linkedGroupSize:
             autoloaderCost = common.Calculator.multiply(
                 lhs=autoloaderCost,
@@ -552,7 +552,7 @@ class _WeaponImpl(object):
             autoloaderSlots = common.Calculator.multiply(
                 lhs=autoloaderSlots,
                 rhs=linkedGroupSize,
-                name=f'Linked {autoloaderSlots.name()}')  
+                name=f'Linked {autoloaderSlots.name()}')
 
         step.setCredits(credits=construction.ConstantModifier(value=autoloaderCost))
         step.setSlots(slots=construction.ConstantModifier(value=autoloaderSlots))
@@ -569,7 +569,7 @@ class _WeaponImpl(object):
         if not fireControl:
             return None
         assert(isinstance(fireControl, FireControlLevel))
-       
+
         stepName = f'Fire Control System ({fireControl.value})'
         step = robots.RobotStep(
             name=stepName,
@@ -577,7 +577,7 @@ class _WeaponImpl(object):
 
         _, fireControlCost, weaponSkillDM = \
             _WeaponImpl._FireControlDataMap[fireControl]
-        
+
         fireControlCost = common.ScalarCalculation(
             value=fireControlCost,
             name=f'{fireControl.value} Fire Control System Cost')
@@ -586,7 +586,7 @@ class _WeaponImpl(object):
 
         step.setSlots(slots=construction.ConstantModifier(
             value=_WeaponImpl._FireControlRequiredSlots))
-        
+
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if weaponData:
             skill = weaponData.skill()
@@ -597,19 +597,19 @@ class _WeaponImpl(object):
             modifier=common.formatNumber(number=weaponSkillDM, alwaysIncludeSign=True),
             skill=skillName))
 
-        step.addNote(note=_WeaponImpl._FireControlScopeNote)      
+        step.addNote(note=_WeaponImpl._FireControlScopeNote)
 
         hasLaserDesignator = False
         for componentType in _WeaponImpl._FireControlLaserDesignatorComponents:
             if context.hasComponent(
-                componentType=componentType,
-                sequence=sequence):
+                    componentType=componentType,
+                    sequence=sequence):
                 hasLaserDesignator = True
                 break
         if hasLaserDesignator:
             step.addNote(note=_WeaponImpl._FireControlLaserDesignatorNote)
 
-        return step       
+        return step
 
     def _allowedMountSizes(
             self,
@@ -617,7 +617,7 @@ class _WeaponImpl(object):
             context: robots.RobotContext
             ) -> typing.Iterable[traveller.WeaponSize]:
         return traveller.WeaponSize # All sizes are allowed by default
-    
+
     def _allowedAutoloader(
             self,
             sequence: str,
@@ -625,7 +625,7 @@ class _WeaponImpl(object):
             ) -> bool:
         if context.techLevel() < _WeaponImpl._AutoloaderMinTL.value():
             return False
-                
+
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         return weaponData and weaponData.magazineCost() != None
 
@@ -646,7 +646,7 @@ class _WeaponImpl(object):
                 continue
             allowed.append(category)
         return allowed
-    
+
     def _allowedWeapons(
             self,
             sequence: str,
@@ -661,8 +661,8 @@ class _WeaponImpl(object):
             if not weapon.robotMount():
                 continue
             allowed.append(weapon.name())
-        return allowed  
-    
+        return allowed
+
     def _allowedLinkedWeapons(
             self,
             sequence: str,
@@ -673,7 +673,7 @@ class _WeaponImpl(object):
             return False
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         return weaponData and weaponData.linkable()
-    
+
     def _allowedFireControls(
             self,
             sequence: str,
@@ -693,7 +693,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
     - Requirement: Only compatible with robots that have manipulators
     - Option: Manipulator
         - Requirement: The ability to select which manipulator the weapon is
-        mounted to    
+        mounted to
     - Option: Mount Size
         - Small
             - Requirement: Only compatible with manipulators of size >= 3
@@ -704,7 +704,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         - Vehicle
             - Requirement: Not compatible with manipulator mounts
     - Option: Autoloader
-        - Requirement: The minimum manipulator size is increased by 1 
+        - Requirement: The minimum manipulator size is increased by 1
     - Option: Multi-Link
         - Requirement: All weapons must be mounted to the same manipulator
         in order to be linked (clarified by Geir)
@@ -713,7 +713,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
     # manipulator size for Vehicle sized weapons is because the can't
     # be mounted on manipulators
     # NOTE: The fact the Autoloader increases the Min Manipulator Size for
-    # the mount by 1 complicates things. The manipulator is the first 
+    # the mount by 1 complicates things. The manipulator is the first
     # thing the user selects. You could either have autoloader selection
     # next and, if selected, it effectively _reduces_ the size of the
     # manipulator when it comes to determining which mount sizes are possible
@@ -741,7 +741,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         traveller.WeaponSize.Medium: 5,
         traveller.WeaponSize.Heavy: 7,
         traveller.WeaponSize.Vehicle: None # Not compatible with manipulator mounts
-    }        
+    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -752,10 +752,10 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             isEditable=False,
             choices=[''], # This will be replaced by updateOptions
             description='Specify which manipulator the weapon is mounted on')
-        
+
     def manipulatorString(self) -> typing.Optional[str]:
         return self._manipulatorOption.value() if self._manipulatorOption.isEnabled() else None
-    
+
     def manipulator(
             self,
             sequence: str,
@@ -767,8 +767,8 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         manipulators = self._enumerateRobotManipulators(
             sequence=sequence,
             context=context)
-        return manipulators.get(manipulatorString)    
-        
+        return manipulators.get(manipulatorString)
+
     def isCompatible(
             self,
             sequence: str,
@@ -776,17 +776,17 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-                
+
         manipulators = self._enumerateRobotManipulators(
-            sequence=sequence, 
+            sequence=sequence,
             context=context)
         return len(manipulators) > 0
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.insert(0, self._manipulatorOption)
         return options
-    
+
     def updateOptions(
             self,
             sequence: str,
@@ -812,7 +812,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             context=context)
         if not step:
             return None
-        
+
         manipulatorString = self.manipulatorString()
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         mountSize = weaponData.robotMount() if isinstance(weaponData, traveller.StockWeapon) else None
@@ -825,7 +825,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             costs=step.costs(),
             factors=step.factors(),
             notes=step.notes())
-    
+
     def _addManipulatorFactor(
             self,
             step: robots.RobotStep
@@ -833,8 +833,8 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         manipulatorString = self.manipulatorString()
         if manipulatorString:
             step.addFactor(factor=construction.StringFactor(
-                string=f'Manipulator = {manipulatorString}'))        
-    
+                string=f'Manipulator = {manipulatorString}'))
+
     def _allowedMountSizes(
             self,
             sequence: str,
@@ -850,7 +850,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             context=context)
         if not manipulator:
             return []
-        
+
         filtered = []
         for mountSize in allowed:
             minSize = _ManipulatorMountedWeaponImpl._MinManipulatorSizeData[mountSize]
@@ -861,7 +861,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             if manipulator.size() >= minSize:
                 filtered.append(mountSize)
         return filtered
-    
+
     def _allowedAutoloader(
             self,
             sequence: str,
@@ -870,7 +870,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         # NOTE: Intentionally don't call base impl
         if context.techLevel() < _ManipulatorWeaponImpl._AutoloaderMinTL.value():
             return False
-                
+
         weaponData = self.weaponData(weaponSet=context.weaponSet())
         if not weaponData or weaponData.magazineCost() == None:
             return False
@@ -878,7 +878,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
         mountSize = weaponData.robotMount()
         if not mountSize:
             return False
-        
+
         manipulator = self.manipulator(
             sequence=sequence,
             context=context)
@@ -890,7 +890,7 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             return False # Vehicle weapons don't support autoloading
         minSize += _ManipulatorWeaponImpl._AutoloaderMinManipulatorSizeModifier.value()
         return manipulator.size() >= minSize
-    
+
     # NOTE: The names generated by this function MUST remain consistent between
     # versions otherwise it will break robots saved with previous versions. For
     # this reason it shouldn't use things like the components instance string.
@@ -910,11 +910,11 @@ class _ManipulatorWeaponImpl(_WeaponImpl):
             assert(isinstance(manipulator, robots.Manipulator))
             results[f'Manipulator #{index + 1}'] = manipulator
 
-        return results    
-    
+        return results
+
 class _ServoMountedWeaponImpl(_WeaponImpl):
     pass
-    
+
 class _ManipulatorMountedWeaponImpl(_ManipulatorWeaponImpl):
     def isCompatible(
             self,
@@ -923,10 +923,10 @@ class _ManipulatorMountedWeaponImpl(_ManipulatorWeaponImpl):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         manipulators = self._enumerateRobotManipulators(
-            sequence=sequence, 
-            context=context)        
+            sequence=sequence,
+            context=context)
         minUsableSize = _ManipulatorMountedWeaponImpl._MinManipulatorSizeData[traveller.WeaponSize.Small]
         hasRequiredManipulator = False
         for manipulator in manipulators.values():
@@ -934,7 +934,7 @@ class _ManipulatorMountedWeaponImpl(_ManipulatorWeaponImpl):
                 hasRequiredManipulator = True
                 break
         return hasRequiredManipulator
-    
+
 class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
     def isCompatible(self, sequence: str, context: robots.RobotContext) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
@@ -962,21 +962,21 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             context: robots.RobotContext
             ) -> typing.Iterable[str]:
         return []
-    
+
     def _allowedMountSizes(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> typing.Iterable[traveller.WeaponSize]:
         return []
-    
+
     def _allowedAutoloader(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         return False
-    
+
     def _allowedLinkedWeapons(
             self,
             sequence: str,
@@ -999,7 +999,7 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
         return None
-    
+
     def _createAutoloaderStep(
             self,
             typeString: str,
@@ -1007,7 +1007,7 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
         return None
-    
+
     def _createFireControlStep(
             self,
             typeString: str,
@@ -1020,21 +1020,21 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             context=context)
         if not step:
             return None
-        
+
         manipulatorString = self.manipulatorString()
         fireControl = self.fireControl()
         if not manipulatorString or not fireControl:
             return step
-                
+
         return robots.RobotStep(
             name=f'{manipulatorString} ({fireControl.value})',
             type=step.type(),
             costs=step.costs(),
             factors=step.factors(),
             notes=step.notes())
-    
+
 class _HandHeldWeaponImpl(_WeaponImpl):
-    # NOTE: Unlike with manipulator mounted weapons, this implementation 
+    # NOTE: Unlike with manipulator mounted weapons, this implementation
     # intentionally doesn't limit the selectable mount size by the min
     # manipulator size. If the user wants to purchase a weapon the robot
     # can't use effectively then it's on them
@@ -1045,7 +1045,7 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         manipulators = context.findComponents(
             componentType=robots.Manipulator,
             sequence=sequence)
@@ -1063,14 +1063,14 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             context: robots.RobotContext
             ) -> bool:
         return False
-    
+
     def _allowedLinkedWeapons(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         return False
-    
+
     def _allowedFireControls(
             self,
             sequence: str,
@@ -1085,7 +1085,7 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
         return None
-    
+
     def _createAutoloaderStep(
             self,
             typeString: str,
@@ -1093,7 +1093,7 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
         return None
-    
+
     def _createFireControlStep(
             self,
             typeString: str,
@@ -1101,7 +1101,7 @@ class _HandHeldWeaponImpl(_WeaponImpl):
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
         return None
-    
+
 class Weapon(robots.RobotComponentInterface):
     def weaponName(self) -> str:
         raise RuntimeError(f'{type(self)} is derived from Weapon so must implement weaponName')
@@ -1111,7 +1111,7 @@ class Weapon(robots.RobotComponentInterface):
             weaponSet: traveller.StockWeaponSet
             ) -> typing.Optional[traveller.StockWeapon]:
         raise RuntimeError(f'{type(self)} is derived from Weapon so must implement weaponData')
-    
+
 class MountedWeapon(Weapon):
     def __init__(
             self,
@@ -1119,7 +1119,7 @@ class MountedWeapon(Weapon):
             ) -> None:
         super().__init__()
         self._impl = impl
-    
+
     def weaponName(self) -> str:
         return self._impl.weaponName()
 
@@ -1128,16 +1128,16 @@ class MountedWeapon(Weapon):
             weaponSet: traveller.StockWeaponSet
             ) -> typing.Optional[traveller.StockWeapon]:
         return self._impl.weaponData(weaponSet=weaponSet)
-    
+
     def linkedGroupSize(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._impl.linkedGroupSize()        
-        
+        return self._impl.linkedGroupSize()
+
     def autoloaderMagazineCount(self) -> typing.Optional[common.ScalarCalculation]:
         return self._impl.autoloaderMagazineCount()
-    
+
     def fireControl(self) -> typing.Optional[FireControlLevel]:
-        return self._impl.fireControl()          
-    
+        return self._impl.fireControl()
+
     def isCompatible(
             self,
             sequence: str,
@@ -1146,10 +1146,10 @@ class MountedWeapon(Weapon):
         return self._impl.isCompatible(
             sequence=sequence,
             context=context)
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -1158,7 +1158,7 @@ class MountedWeapon(Weapon):
         self._impl.updateOptions(
             sequence=sequence,
             context=context)
-        
+
     def createSteps(
             self,
             sequence: str,
@@ -1177,24 +1177,24 @@ class MountedWeapon(Weapon):
             typeString=typeString,
             sequence=sequence,
             context=context)
-        
+
 class ServoMountedWeapon(MountedWeapon):
     def __init__(self) -> None:
         super().__init__(impl=_ServoMountedWeaponImpl())
 
     def componentString(self) -> str:
         return 'Servo Mount'
-    
+
     def typeString(self) -> str:
         return 'Servo Mount'
-    
+
 class ManipulatorMountedWeapon(MountedWeapon):
     def __init__(self) -> None:
         super().__init__(impl=_ManipulatorMountedWeaponImpl())
 
     def componentString(self) -> str:
         return 'Manipulator Mount'
-    
+
     def typeString(self) -> str:
         return 'Manipulator Mount'
 
@@ -1210,14 +1210,14 @@ class HandHeldWeapon(Weapon):
             self,
             weaponSet: traveller.StockWeaponSet
             ) -> typing.Optional[traveller.StockWeapon]:
-        return self._impl.weaponData(weaponSet=weaponSet)            
+        return self._impl.weaponData(weaponSet=weaponSet)
 
     def componentString(self) -> str:
         return 'Handheld Weapon'
 
     def typeString(self) -> str:
-        return 'Handheld Weapon'            
-    
+        return 'Handheld Weapon'
+
     def isCompatible(
             self,
             sequence: str,
@@ -1226,10 +1226,10 @@ class HandHeldWeapon(Weapon):
         return self._impl.isCompatible(
             sequence=sequence,
             context=context)
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -1238,7 +1238,7 @@ class HandHeldWeapon(Weapon):
         self._impl.updateOptions(
             sequence=sequence,
             context=context)
-        
+
     def createSteps(
             self,
             sequence: str,
@@ -1247,7 +1247,7 @@ class HandHeldWeapon(Weapon):
         self._impl.createSteps(
             typeString=self.typeString(),
             sequence=sequence,
-            context=context)    
+            context=context)
 
 class HandHeldFireControl(robots.RobotComponentInterface):
     def __init__(self) -> None:
@@ -1260,7 +1260,7 @@ class HandHeldFireControl(robots.RobotComponentInterface):
             context: robots.RobotContext
             ) -> typing.Optional[robots.Manipulator]:
         return self._impl.manipulator(sequence=sequence, context=context)
-    
+
     def fireControl(self) -> FireControlLevel:
         return self._impl.fireControl()
 
@@ -1269,7 +1269,7 @@ class HandHeldFireControl(robots.RobotComponentInterface):
 
     def typeString(self) -> str:
         return 'Handheld Fire Control'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -1277,11 +1277,11 @@ class HandHeldFireControl(robots.RobotComponentInterface):
             ) -> bool:
         return self._impl.isCompatible(
             sequence=sequence,
-            context=context)            
-    
+            context=context)
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return self._impl.options()
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -1290,7 +1290,7 @@ class HandHeldFireControl(robots.RobotComponentInterface):
         self._impl.updateOptions(
             sequence=sequence,
             context=context)
-        
+
     def createSteps(
             self,
             sequence: str,
@@ -1321,7 +1321,7 @@ class Magazines(robots.RobotComponentInterface):
             minValue=1,
             maxValue=100000,
             description='The number of "magazines" to purchase for the selected weapon.')
-        
+
     def weaponName(self) -> str:
         return self._weaponOption.value()
 
@@ -1335,18 +1335,18 @@ class Magazines(robots.RobotComponentInterface):
         return traveller.lookupStockWeapon(
             name=weaponName,
             weaponSet=weaponSet)
-    
+
     def magazineCount(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
             value=self._countOption.value(),
             name='Specified Magazine Count')
-    
+
     def componentString(self) -> str:
         return 'Magazines'
 
     def typeString(self) -> str:
-        return 'Magazines'            
-    
+        return 'Magazines'
+
     def isCompatible(
             self,
             sequence: str,
@@ -1354,10 +1354,10 @@ class Magazines(robots.RobotComponentInterface):
             ) -> bool:
         allowedWeapons = self._allowedWeapons(sequence=sequence, context=context)
         return len(allowedWeapons) > 0
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._weaponOption, self._countOption]
-        
+
     def updateOptions(
             self,
             sequence: str,
@@ -1365,7 +1365,7 @@ class Magazines(robots.RobotComponentInterface):
             ) -> None:
         self._weaponOption.setChoices(
             choices=self._allowedWeapons(sequence=sequence, context=context))
-        
+
     def createSteps(
             self,
             sequence: str,
@@ -1374,7 +1374,7 @@ class Magazines(robots.RobotComponentInterface):
         weaponData = self.weaponData(context.weaponSet())
         if not weaponData:
             return None
-        
+
         magazineCost = weaponData.magazineCost()
         if magazineCost == None:
             return None
@@ -1387,7 +1387,7 @@ class Magazines(robots.RobotComponentInterface):
         stepName = f'{weaponData.name()} Magazine'
         if magazineCount.value() > 1:
             stepName += f' x{magazineCount.value()}'
-        
+
         step = robots.RobotStep(
             name=stepName,
             type=self.typeString())
@@ -1397,11 +1397,11 @@ class Magazines(robots.RobotComponentInterface):
             rhs=magazineCount,
             name='Total Magazine Cost')
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
-        
+
         context.applyStep(
             sequence=sequence,
             step=step)
-    
+
     def _allowedWeapons(
             self,
             sequence: str,
@@ -1409,14 +1409,14 @@ class Magazines(robots.RobotComponentInterface):
             ) -> typing.Iterable[str]:
         weapons = self._enumerateRobotWeapons(sequence=sequence, context=context)
         return [weapon.name() for weapon in weapons if weapon.magazineCost() != None]
-    
+
     def _enumerateRobotWeapons(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> typing.Iterable[traveller.StockWeapon]:
         weapons = []
-        
+
         mounts = context.findComponents(
             componentType=MountedWeapon,
             sequence=sequence)
@@ -1435,6 +1435,6 @@ class Magazines(robots.RobotComponentInterface):
             weaponData = handheld.weaponData(context.weaponSet())
             assert(weaponData == None or isinstance(weaponData, traveller.StockWeapon))
             if weaponData and weaponData not in weapons:
-                weapons.append(weaponData)   
-        
-        return weapons    
+                weapons.append(weaponData)
+
+        return weapons

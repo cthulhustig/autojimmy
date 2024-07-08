@@ -48,7 +48,7 @@ class NonModifyingFactor(FactorInterface):
 
 class AttributeFactor(FactorInterface):
     def attributeId(self) -> construction.ConstructionAttributeId:
-        raise RuntimeError(f'{type(self)} is derived from AttributeFactor so must implement attributeId') 
+        raise RuntimeError(f'{type(self)} is derived from AttributeFactor so must implement attributeId')
 
     def applyTo(
             self,
@@ -155,14 +155,14 @@ class DeleteAttributeFactor(AttributeFactor):
 
 class SkillFactor(FactorInterface):
     def skillDef(self) -> traveller.SkillDefinition:
-        raise RuntimeError(f'{type(self)} is derived from SkillFactor so must implement skillDef') 
+        raise RuntimeError(f'{type(self)} is derived from SkillFactor so must implement skillDef')
 
     def applyTo(
             self,
             skillGroup: construction.SkillGroup
             ) -> None:
         raise RuntimeError(f'{type(self)} is derived from SkillFactor so must implement applyTo')
-    
+
 class SetSkillFactor(SkillFactor):
     def __init__(
             self,

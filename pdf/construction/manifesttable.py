@@ -24,7 +24,7 @@ def createManifestTable(
         ) -> typing.Optional[Table]:
     if manifest.isEmpty():
         return None
-    
+
     # Copy table style as it will be updated to add change the
     # background colour on total rows to highlight them
     tableStyle = TableStyle(parent=tableStyle)
@@ -33,7 +33,7 @@ def createManifestTable(
     header = [pdf.ParagraphEx(
         text='Component',
         style=headerStyle)]
-    
+
     for costId in costType:
         header.append(pdf.ParagraphEx(
             text=costId.value,
@@ -73,12 +73,12 @@ def createManifestTable(
         tableStyle=tableStyle,
         decimalPlaces=decimalPlaces,
         costUnits=costUnits))
-    
+
     cellStyles = pdf.createTableCellStyles(
         tableData=tableData,
         horzCellPadding=horzCellPadding,
         vertCellPadding=vertCellPadding)
-    
+
     colWidths = ['*'] + ([None] * (len(header) - 2)) + ['*']
 
     return Table(
@@ -101,7 +101,7 @@ def _createManifestEntryRow(
     elements = [pdf.ParagraphEx(
         text=entry.component(),
         style=contentStyle)]
-    
+
     for costId in costType:
         cost = entry.cost(costId=costId)
         if cost:
@@ -112,7 +112,7 @@ def _createManifestEntryRow(
                     units, prefix = costUnits[costId]
                 # NOTE: This actually uses infix instead of prefix as the only
                 # 'prefixed' numerical values displayed in a manifest are
-                # credit amounts                    
+                # credit amounts
                 costString = common.formatNumber(
                     number=cost.numeric(),
                     decimalPlaces=decimalPlaces,
@@ -120,7 +120,7 @@ def _createManifestEntryRow(
                     suffix=units if not prefix else None)
             else:
                 costString = cost.displayString(
-                    decimalPlaces=decimalPlaces)          
+                    decimalPlaces=decimalPlaces)
         else:
             costString = '-'
         elements.append(pdf.ParagraphEx(
@@ -153,12 +153,12 @@ def _createManifestSectionTotalRow(
         costUnits: typing.Optional[typing.Mapping[
             construction.ConstructionCost,
             typing.Tuple[str, bool] # unit string, is prefix
-            ]],        
+            ]],
         ) -> typing.List[typing.Union[str, Flowable]]:
     elements = [pdf.ParagraphEx(
         text=f'{section.name()} Total',
         style=contentStyle)]
-    
+
     for costId in costType:
         cost = section.totalCost(costId=costId)
         if cost and cost.value() != 0:
@@ -184,7 +184,7 @@ def _createManifestSectionTotalRow(
     elements.append(pdf.ParagraphEx(
         text='-',
         style=contentStyle))
-    
+
     # Highlight total row
     if tableStyle and contentStyle and hasattr(contentStyle, 'backColor'):
         tableStyle.add('BACKGROUND', (0, row), (len(elements) - 1, row), contentStyle.backColor)
@@ -201,12 +201,12 @@ def _createManifestTotalRow(
         costUnits: typing.Optional[typing.Mapping[
             construction.ConstructionCost,
             typing.Tuple[str, bool] # unit string, is prefix
-            ]],            
+            ]],
         ) -> typing.List[typing.Union[str, Flowable]]:
     elements = [pdf.ParagraphEx(
         text='Total',
         style=contentStyle)]
-    
+
     for costId in costType:
         cost = manifest.totalCost(costId=costId)
         if cost and cost.value() != 0:
@@ -216,7 +216,7 @@ def _createManifestTotalRow(
                 units, prefix = costUnits[costId]
             # NOTE: This actually uses infix instead of prefix as the only
             # 'prefixed' numerical values displayed in a manifest are
-            # credit amounts                
+            # credit amounts
             costString = common.formatNumber(
                 number=cost.value(),
                 decimalPlaces=decimalPlaces,
@@ -226,15 +226,15 @@ def _createManifestTotalRow(
             costString = '-'
         elements.append(pdf.ParagraphEx(
             text=costString,
-            style=contentStyle))  
+            style=contentStyle))
 
     # Total rows have no factors
     elements.append(pdf.ParagraphEx(
         text='-',
         style=contentStyle))
-    
+
     # Highlight total row
     if tableStyle and contentStyle and hasattr(contentStyle, 'backColor'):
-        tableStyle.add('BACKGROUND', (0, row), (len(elements) - 1, row), contentStyle.backColor)  
+        tableStyle.add('BACKGROUND', (0, row), (len(elements) - 1, row), contentStyle.backColor)
 
     return elements

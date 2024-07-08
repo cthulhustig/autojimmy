@@ -7,4 +7,4 @@ RobotVehicleSkillDefinition = traveller.SkillDefinition(
 
 RobotWeaponSkillDefinition = traveller.SkillDefinition(
     skillName='Weapon',
-    skillType=traveller.SkillDefinition.SkillType.Simple) 
+    skillType=traveller.SkillDefinition.SkillType.Simple)

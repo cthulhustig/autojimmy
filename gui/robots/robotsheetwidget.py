@@ -16,7 +16,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         robots.Worksheet.Field.Speed,
         robots.Worksheet.Field.TL,
         robots.Worksheet.Field.Cost
-    ]    
+    ]
 
     _ApplySkillModifiersToolTip = \
         """
@@ -86,10 +86,9 @@ class RobotSheetWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed)
         itemDelegate = gui.TableViewSpannedWordWrapFixDelegate()
         itemDelegate.setHighlightCurrentItem(enabled=False)
-        self._table.setItemDelegate(itemDelegate)        
-        self._table.installEventFilter(self)      
+        self._table.setItemDelegate(itemDelegate)
+        self._table.installEventFilter(self)
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
-
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -121,7 +120,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             self._table.horizontalHeader().setMaximumSectionSize(maxWidth)
             self._table.resizeRowsToContents()
         return super().resizeEvent(event)
-    
+
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self._table:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -131,7 +130,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                     event.accept()
                     return True
 
-        return super().eventFilter(object, event)    
+        return super().eventFilter(object, event)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -194,7 +193,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 continue
             item = RobotSheetWidget._createDataItem(
                 value=worksheet.value(field=field),
-                calculations=worksheet.calculations(field=field))       
+                calculations=worksheet.calculations(field=field))
             self._table.setItem(1, columnIndex, item)
             columnIndex += 1
 
@@ -206,7 +205,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
             rowIndex = self._table.rowCount()
             self._table.insertRow(rowIndex)
-            self._table.setSpan(rowIndex, 1, 1, columnCount - 1)            
+            self._table.setSpan(rowIndex, 1, 1, columnCount - 1)
 
             item = RobotSheetWidget._createHeaderItem(field)
             self._table.setItem(rowIndex, 0, item)
@@ -215,7 +214,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
                 value=worksheet.value(field=field),
                 calculations=worksheet.calculations(field=field))
             self._table.setItem(rowIndex, 1, item)
-  
+
         self._table.resizeRowsToContents()
 
     def _applySkillModifiersChanged(self) -> None:
@@ -225,20 +224,20 @@ class RobotSheetWidget(QtWidgets.QWidget):
         clipboard = QtWidgets.QApplication.clipboard()
         if not clipboard:
             return
-                
+
         content = ''
 
         for columnIndex in range(self._table.columnCount()):
             headerItem = self._table.item(0, columnIndex)
             dataItem = self._table.item(1, columnIndex)
             if headerItem and dataItem:
-                content += f'{headerItem.text()} -- {dataItem.text()}\n'            
+                content += f'{headerItem.text()} -- {dataItem.text()}\n'
 
         for rowIndex in range(2, self._table.rowCount()):
             headerItem = self._table.item(rowIndex, 0)
             dataItem = self._table.item(rowIndex, 1)
             if headerItem and dataItem:
-                content += f'{headerItem.text()} -- {dataItem.text()}\n'                  
+                content += f'{headerItem.text()} -- {dataItem.text()}\n'
 
         if content:
             clipboard.setText(content)
@@ -250,7 +249,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         item = self._table.itemAt(position)
         if not item:
             return
-        
+
         calculations = item.data(QtCore.Qt.ItemDataRole.UserRole)
         menuItems = [
             gui.MenuItem(
@@ -279,7 +278,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)            
+                exception=ex)
 
     @staticmethod
     def _createHeaderItem(field: robots.Worksheet.Field) -> QtWidgets.QTableWidgetItem:
@@ -288,7 +287,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         item.setTextAlignment(
             int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
         return item
-    
+
     @staticmethod
     def _createDataItem(
             value: str,
@@ -299,5 +298,5 @@ class RobotSheetWidget(QtWidgets.QWidget):
             int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
         item.setData(
             QtCore.Qt.ItemDataRole.UserRole,
-            calculations)        
+            calculations)
         return item

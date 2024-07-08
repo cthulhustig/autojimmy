@@ -8,8 +8,8 @@ class AgilityEnhancement(robots.RobotComponentInterface):
     """
     - Requirement: Not compatible with no locomotion for primary locomotion
     type (p22)
-    - Requirement: Not compatible with Tactical Speed Reduction (p22) 
-    """    
+    - Requirement: Not compatible with Tactical Speed Reduction (p22)
+    """
     # NOTE: The requirement that this component isn't compatible with Tactile
     # Speed Reduction is handled by that component as it occurs later in
     # construction
@@ -38,7 +38,7 @@ class AgilityEnhancement(robots.RobotComponentInterface):
         self._componentString = f'Agility +{agilityModifier}'
         self._agilityModifier = common.ScalarCalculation(
             value=agilityModifier,
-            name=f'{self._componentString} Agility Modifier')  
+            name=f'{self._componentString} Agility Modifier')
         self._costPercent = common.ScalarCalculation(
             value=costPercent,
             name=f'{self._componentString} Cost Percentage')
@@ -58,8 +58,8 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             context: robots.RobotContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
 
         # Not compatible with no primary locomotion
@@ -75,7 +75,7 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             ) -> None:
         step = robots.RobotStep(
             name=self.instanceString(),
-            type=self.typeString())        
+            type=self.typeString())
 
         cost = common.Calculator.takePercentage(
             value=context.baseChassisCredits(sequence=sequence),
@@ -83,21 +83,21 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             name=f'{self._componentString} Cost')
         step.setCredits(
             credits=construction.ConstantModifier(value=cost))
-        
+
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Agility,
-            modifier=construction.ConstantModifier(self._agilityModifier)))        
+            modifier=construction.ConstantModifier(self._agilityModifier)))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(self._agilityModifier)))
-        
+
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Dexterity,
             levels=self._agilityModifier,
             flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier | \
-                construction.SkillFlags.ApplyNegativeCharacteristicModifier))
+            construction.SkillFlags.ApplyNegativeCharacteristicModifier))
 
         context.applyStep(
             sequence=sequence,
@@ -108,20 +108,22 @@ class Plus1Agility(AgilityEnhancement):
     - Agility: +1
     - Speed: +1
     - Skill: Athletics (dexterity) 1
-    - Cost: 100% of Base Chassis Cost   
+    - Cost: 100% of Base Chassis Cost
     """
+
     def __init__(self) -> None:
         super().__init__(
             agilityModifier=1,
             costPercent=100)
-        
+
 class Plus2Agility(AgilityEnhancement):
     """
     - Agility: +2
     - Speed: +2
     - Skill Athletics (dexterity) 2
-    - Cost: 200% of Base Chassis Cost  
-    """    
+    - Cost: 200% of Base Chassis Cost
+    """
+
     def __init__(self) -> None:
         super().__init__(
             agilityModifier=2,
@@ -132,20 +134,22 @@ class Plus3Agility(AgilityEnhancement):
     - Agility: +3
     - Speed: +3
     - Skill Athletics (dexterity) 3
-    - Cost: 400% of Base Chassis Cost 
+    - Cost: 400% of Base Chassis Cost
     """
+
     def __init__(self) -> None:
         super().__init__(
             agilityModifier=3,
             costPercent=400)
-        
+
 class Plus4Agility(AgilityEnhancement):
     """
     - Agility: +4
     - Speed: +4
     - Skill Athletics (dexterity) 4
-    - Cost: 800% of Base Chassis Cost       
+    - Cost: 800% of Base Chassis Cost
     """
+
     def __init__(self) -> None:
         super().__init__(
             agilityModifier=4,

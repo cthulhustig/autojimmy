@@ -64,7 +64,7 @@ class RobotStore(object):
             robot: robots.Robot
             ) -> bool:
         return RobotStore._store.isReadOnly(constructable=robot)
-    
+
     def findRobot(
             self,
             robotName: str
@@ -81,7 +81,7 @@ class RobotStore(object):
             self,
             robotName: str,
             techLevel: int,
-            weaponSet: traveller.StockWeaponSet,            
+            weaponSet: traveller.StockWeaponSet,
             ) -> robots.Robot:
         robot = robots.Robot(
             name=robotName,

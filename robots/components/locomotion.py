@@ -3,17 +3,17 @@ import construction
 import robots
 import typing
 
-#  █████                           ████ 
-# ░░███                           ░░███ 
-#  ░███  █████████████   ████████  ░███ 
-#  ░███ ░░███░░███░░███ ░░███░░███ ░███ 
-#  ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
-#  ░███  ░███ ░███ ░███  ░███ ░███ ░███ 
+#  █████                           ████
+# ░░███                           ░░███
+#  ░███  █████████████   ████████  ░███
+#  ░███ ░░███░░███░░███ ░░███░░███ ░███
+#  ░███  ░███ ░███ ░███  ░███ ░███ ░███
+#  ░███  ░███ ░███ ░███  ░███ ░███ ░███
 #  █████ █████░███ █████ ░███████  █████
-# ░░░░░ ░░░░░ ░░░ ░░░░░  ░███░░░  ░░░░░ 
-#                        ░███           
-#                        █████          
-#                       ░░░░░          
+# ░░░░░ ░░░░░ ░░░ ░░░░░  ░███░░░  ░░░░░
+#                        ░███
+#                        █████
+#                       ░░░░░
 
 class _LocomotionImpl(object):
     """
@@ -68,25 +68,25 @@ class _LocomotionImpl(object):
     _TL15EnduranceIncreasePercent = common.ScalarCalculation(
         value=100,
         name='TL15 Locomotion Endurance Increase')
-    
+
     _BaseSpeed = common.ScalarCalculation(
         value=5,
         name='Base Meters Per Minor Action')
-    
+
     _SecondaryLocomotionSlotPercent = common.ScalarCalculation(
         value=25,
         name='Secondary Locomotion Slot Usage')
     _SecondaryLocomotionBaseCost = common.ScalarCalculation(
         value=500,
         name='Secondary Locomotion Base Cost Per Slot')
-    
+
     _ImprovedComponentsIncreasePercent = common.ScalarCalculation(
         value=100,
         name='Improved Components Endurance Increase Percentage')
 
     _PowerPackIncreasePercent = common.ScalarCalculation(
         value=100,
-        name='Power Pack Endurance Increase Percentage')        
+        name='Power Pack Endurance Increase Percentage')
 
     def __init__(
             self,
@@ -105,13 +105,13 @@ class _LocomotionImpl(object):
         self._componentString = componentString
         self._minTechLevel = common.ScalarCalculation(
             value=minTechLevel,
-            name=f'{componentString} Locomotion Minimum Tech Level')        
+            name=f'{componentString} Locomotion Minimum Tech Level')
         self._baseEndurance = common.ScalarCalculation(
             value=baseEndurance,
             name=f'{componentString} Locomotion Base Endurance')
         self._costMultiplier = common.ScalarCalculation(
             value=costMultiplier,
-                name=f'{componentString} Locomotion Cost Multiplier')
+            name=f'{componentString} Locomotion Cost Multiplier')
         self._isNatural = isNatural
         self._baseAgility = None
         if baseAgility != None:
@@ -124,13 +124,13 @@ class _LocomotionImpl(object):
 
     def isNatural(self) -> bool:
         return self._isNatural
-    
+
     def instanceString(self) -> str:
         return self._componentString
 
     def componentString(self) -> str:
         return self._componentString
-    
+
     def costMultiplier(self) -> common.ScalarCalculation:
         return self._costMultiplier
 
@@ -161,7 +161,7 @@ class _LocomotionImpl(object):
             sequence: str,
             context: robots.RobotContext,
             step: robots.RobotStep
-            ) -> None:   
+            ) -> None:
         if not self._primaryEquivType:
             # Primary Locomotion
             step.setCredits(
@@ -172,12 +172,12 @@ class _LocomotionImpl(object):
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Endurance,
                 value=endurance))
-            
+
             if self._baseAgility:
                 step.addFactor(factor=construction.SetAttributeFactor(
                     attributeId=robots.RobotAttributeId.Agility,
                     value=self._baseAgility))
-                
+
                 speed = common.Calculator.add(
                     lhs=_LocomotionImpl._BaseSpeed,
                     rhs=self._baseAgility,
@@ -193,7 +193,7 @@ class _LocomotionImpl(object):
                     value=baseSlots,
                     percentage=_LocomotionImpl._SecondaryLocomotionSlotPercent),
                 name=f'Secondary {self._componentString} Required Slots')
-            
+
             slotCost = common.Calculator.multiply(
                 lhs=_LocomotionImpl._SecondaryLocomotionBaseCost,
                 rhs=self._costMultiplier,
@@ -207,7 +207,7 @@ class _LocomotionImpl(object):
                 credits=construction.ConstantModifier(value=totalCost))
             step.setSlots(
                 slots=construction.ConstantModifier(value=requiredSlots))
-            
+
             sameAsPrimary = context.hasComponent(
                 componentType=self._primaryEquivType,
                 sequence=sequence)
@@ -222,7 +222,7 @@ class _LocomotionImpl(object):
                     step.addFactor(factor=construction.SetAttributeFactor(
                         attributeId=robots.RobotAttributeId.SecondaryEndurance,
                         value=endurance))
-                    
+
                 # NOTE: The secondary agility doesn't have any Agility Increase
                 # modifiers applied as it's a locomotion modification and the
                 # book says locomotion modification only apply to primary
@@ -230,15 +230,15 @@ class _LocomotionImpl(object):
                 if self._baseAgility:
                     step.addFactor(factor=construction.SetAttributeFactor(
                         attributeId=robots.RobotAttributeId.SecondaryAgility,
-                        value=self._baseAgility))                    
-                   
+                        value=self._baseAgility))
+
                     speed = common.Calculator.add(
                         lhs=_LocomotionImpl._BaseSpeed,
                         rhs=self._baseAgility,
                         name=f'{self._componentString} Base Speed')
                     step.addFactor(factor=construction.SetAttributeFactor(
                         attributeId=robots.RobotAttributeId.SecondarySpeed,
-                        value=speed))                        
+                        value=speed))
 
         if self._flagTrait:
             step.addFactor(factor=construction.SetAttributeFactor(
@@ -279,7 +279,7 @@ class _LocomotionImpl(object):
         # future. This looks broken because IncreasedEndurance appears
         # in a stage after locomotion, but remember that this branch in
         # the code is used for secondary locomotion which is in a stage
-        # after the one IncreaseEndurance appears in.        
+        # after the one IncreaseEndurance appears in.
         enduranceIncrease = context.findFirstComponent(
             componentType=robots.IncreaseEndurance,
             sequence=sequence)
@@ -323,7 +323,7 @@ class _NoLocomotionImpl(_LocomotionImpl):
             baseEndurance=216,
             costMultiplier=1,
             isNatural=True)
-        
+
     def updateStep(
             self,
             sequence: str,
@@ -334,13 +334,13 @@ class _NoLocomotionImpl(_LocomotionImpl):
             sequence=sequence,
             context=context,
             step=step)
-       
+
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxSlots,
             modifier=construction.PercentageModifier(
                 value=_NoLocomotionImpl._MaxSlotIncreasePercent,
                 roundDown=True)))
- 
+
 class _WheelsLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
@@ -350,6 +350,7 @@ class _WheelsLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x2
     - Options: Number of axles
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -361,7 +362,7 @@ class _WheelsLocomotionImpl(_LocomotionImpl):
             baseEndurance=72,
             costMultiplier=2,
             isNatural=False,
-            primaryEquivType=primaryEquivType)  
+            primaryEquivType=primaryEquivType)
 
 class _WheelsATVLocomotionImpl(_LocomotionImpl):
     """
@@ -372,6 +373,7 @@ class _WheelsATVLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x3
     - Options: Number of axles
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -385,7 +387,7 @@ class _WheelsATVLocomotionImpl(_LocomotionImpl):
             costMultiplier=3,
             isNatural=False,
             primaryEquivType=primaryEquivType)
-        
+
 class _TracksLocomotionImpl(_LocomotionImpl):
     """
     - TL: 5
@@ -395,6 +397,7 @@ class _TracksLocomotionImpl(_LocomotionImpl):
     - Cost Multiplier: x2
     - Options: Number of tracks
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -408,11 +411,12 @@ class _TracksLocomotionImpl(_LocomotionImpl):
             costMultiplier=2,
             isNatural=False,
             primaryEquivType=primaryEquivType)
-        
+
 class _FlyerLocomotionImpl(_LocomotionImpl):
     """
     - Trait: Flyer (Idle) (p17)
     """
+
     def __init__(
             self,
             componentString: str,
@@ -433,7 +437,7 @@ class _FlyerLocomotionImpl(_LocomotionImpl):
             notes=notes,
             isNatural=isNatural,
             primaryEquivType=primaryEquivType)
-        
+
     def updateStep(
             self,
             sequence: str,
@@ -444,11 +448,11 @@ class _FlyerLocomotionImpl(_LocomotionImpl):
             sequence=sequence,
             context=context,
             step=step)
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Flyer,
             value=robots.SpeedBand.Idle))
-        
+
 class _GravLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 9
@@ -457,6 +461,7 @@ class _GravLocomotionImpl(_FlyerLocomotionImpl):
     - Base Endurance: 24 hours
     - Cost Multiplier: x20
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -469,7 +474,7 @@ class _GravLocomotionImpl(_FlyerLocomotionImpl):
             costMultiplier=20,
             isNatural=False,
             primaryEquivType=primaryEquivType)
-        
+
 class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 5
@@ -517,7 +522,7 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             notes=None, # Notes handled locally
             isNatural=True,
             primaryEquivType=primaryEquivType)
-        
+
     def updateStep(
             self,
             sequence: str,
@@ -528,15 +533,15 @@ class _AeroplaneLocomotionImpl(_FlyerLocomotionImpl):
             sequence=sequence,
             context=context,
             step=step)
-        
+
         if context.hasComponent(componentType=robots.Size1Chassis) or \
-            context.hasComponent(componentType=robots.Size2Chassis) or \
-            context.hasComponent(componentType=robots.Size3Chassis):
+                context.hasComponent(componentType=robots.Size2Chassis) or \
+                context.hasComponent(componentType=robots.Size3Chassis):
             step.addNote(note=_AeroplaneLocomotionImpl._SmallAeroplaneNote)
 
         for note in _AeroplaneLocomotionImpl._CommonAeroplaneNotes:
             step.addNote(note=note)
-        
+
 class _AquaticLocomotionImpl(_LocomotionImpl):
     """
     - TL: 6
@@ -545,6 +550,7 @@ class _AquaticLocomotionImpl(_LocomotionImpl):
     - Base Endurance: 72 hours
     - Cost Multiplier: x4
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -558,7 +564,7 @@ class _AquaticLocomotionImpl(_LocomotionImpl):
             costMultiplier=4,
             isNatural=True,
             primaryEquivType=primaryEquivType)
-        
+
 class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
     """
     - TL: 7
@@ -569,6 +575,7 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
     - Note: Requires a secondary locomotion type to move across the ground (p17)
     - Note: Agility -1 in thin atmosphere (p17)
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -584,7 +591,7 @@ class _VTOLLocomotionImpl(_FlyerLocomotionImpl):
                 'Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17)',
                 'Requires a secondary locomotion type to move across the ground. (p17)'],
             primaryEquivType=primaryEquivType)
-        
+
 class _WalkerLocomotionImpl(_LocomotionImpl):
     """
     - TL: 8
@@ -598,6 +605,7 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
     # handling of leg manipulators later in construction. It makes logical
     # sense for it to specified here and it also makes the later implementation
     # simpler as the number of legs is known up front.
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -611,26 +619,26 @@ class _WalkerLocomotionImpl(_LocomotionImpl):
             costMultiplier=10,
             isNatural=True,
             primaryEquivType=primaryEquivType)
-        
+
         self._legCountOption = construction.IntegerOption(
             id='LegCount',
             name='Leg Count',
             value=2,
             minValue=2,
-            description='Specify the number of legs the robot has.')        
-        
+            description='Specify the number of legs the robot has.')
+
     def legCount(self) -> int:
         return self._legCountOption.value()
-    
+
     def instanceString(self) -> str:
         legCount = self.legCount()
         if legCount:
             return f'{self._componentString} (Legs: {legCount})'
-        return super().instanceString()      
-    
+        return super().instanceString()
+
     def options(self) -> typing.List[construction.ComponentOption]:
-        return [self._legCountOption]    
-        
+        return [self._legCountOption]
+
 class _HovercraftLocomotionImpl(_LocomotionImpl):
     """
     - TL: 7
@@ -638,8 +646,9 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
     - Traits: ACV
     - Base Endurance: 24 hours
     - Cost Multiplier: x10
-    - Note: Agility -1 in thin atmosphere (p17)       
+    - Note: Agility -1 in thin atmosphere (p17)
     """
+
     def __init__(
             self,
             primaryEquivType: typing.Optional[robots.RobotComponentInterface] = None # Only set for secondary locomotions
@@ -654,7 +663,7 @@ class _HovercraftLocomotionImpl(_LocomotionImpl):
             isNatural=False,
             notes=['Agility -1 in thin atmosphere. Although it\'s not explicitly stated, the implication of this is that the robot also suffers Speed -1. (p16/17).'],
             primaryEquivType=primaryEquivType)
-        
+
 class _ThrusterLocomotionImpl(_LocomotionImpl):
     """
     - TL: 7
@@ -689,7 +698,7 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
             costMultiplier=20,
             isNatural=False,
             primaryEquivType=primaryEquivType)
-        
+
     def updateStep(
             self,
             sequence: str,
@@ -700,7 +709,7 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
             sequence=sequence,
             context=context,
             step=step)
-        
+
         thrust = robots.ThrustGForce.Thrust0p1G
         if not self._isPrimary():
             # Only check for missile thrusters on secondary locomotion. I think
@@ -723,7 +732,7 @@ class _ThrusterLocomotionImpl(_LocomotionImpl):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Thruster,
             value=thrust))
-    
+
 class Locomotion(robots.RobotComponentInterface):
     def __init__(
             self,
@@ -740,7 +749,7 @@ class Locomotion(robots.RobotComponentInterface):
 
     def componentString(self) -> str:
         return self._impl.componentString()
-    
+
     def costMultiplier(self) -> common.ScalarCalculation:
         return self._impl.costMultiplier()
 
@@ -779,18 +788,18 @@ class Locomotion(robots.RobotComponentInterface):
             sequence=sequence,
             step=step)
 
-        
-#  ███████████             ███                                                
-# ░░███░░░░░███           ░░░                                                 
+
+#  ███████████             ███
+# ░░███░░░░░███           ░░░
 #  ░███    ░███ ████████  ████  █████████████    ██████   ████████  █████ ████
-#  ░██████████ ░░███░░███░░███ ░░███░░███░░███  ░░░░░███ ░░███░░███░░███ ░███ 
-#  ░███░░░░░░   ░███ ░░░  ░███  ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███ 
-#  ░███         ░███      ░███  ░███ ░███ ░███  ███░░███  ░███      ░███ ░███ 
-#  █████        █████     █████ █████░███ █████░░████████ █████     ░░███████ 
-# ░░░░░        ░░░░░     ░░░░░ ░░░░░ ░░░ ░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███ 
-#                                                                    ███ ░███ 
-#                                                                   ░░██████  
-#                                                                    ░░░░░░  
+#  ░██████████ ░░███░░███░░███ ░░███░░███░░███  ░░░░░███ ░░███░░███░░███ ░███
+#  ░███░░░░░░   ░███ ░░░  ░███  ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███
+#  ░███         ░███      ░███  ░███ ░███ ░███  ███░░███  ░███      ░███ ░███
+#  █████        █████     █████ █████░███ █████░░████████ █████     ░░███████
+# ░░░░░        ░░░░░     ░░░░░ ░░░░░ ░░░ ░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███
+#                                                                    ███ ░███
+#                                                                   ░░██████
+#                                                                    ░░░░░░
 
 class PrimaryLocomotion(Locomotion):
     def __init__(
@@ -801,7 +810,7 @@ class PrimaryLocomotion(Locomotion):
 
     def typeString(self) -> str:
         return 'Locomotion'
-                
+
 class NoPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_NoLocomotionImpl())
@@ -812,11 +821,11 @@ class WheelsPrimaryLocomotion(PrimaryLocomotion):
 
 class WheelsATVPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_WheelsATVLocomotionImpl())  
+        super().__init__(impl=_WheelsATVLocomotionImpl())
 
 class TracksPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
-        super().__init__(impl=_TracksLocomotionImpl())     
+        super().__init__(impl=_TracksLocomotionImpl())
 
 class GravPrimaryLocomotion(PrimaryLocomotion):
     def __init__(self) -> None:
@@ -861,18 +870,17 @@ class ThrusterPrimaryLocomotion(PrimaryLocomotion):
         super().__init__(impl=_ThrusterLocomotionImpl())
 
 
-
-#   █████████                                            █████                               
-#  ███░░░░░███                                          ░░███                                
+#   █████████                                            █████
+#  ███░░░░░███                                          ░░███
 # ░███    ░░░   ██████   ██████   ██████  ████████    ███████   ██████   ████████  █████ ████
-# ░░█████████  ███░░███ ███░░███ ███░░███░░███░░███  ███░░███  ░░░░░███ ░░███░░███░░███ ░███ 
-#  ░░░░░░░░███░███████ ░███ ░░░ ░███ ░███ ░███ ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███ 
-#  ███    ░███░███░░░  ░███  ███░███ ░███ ░███ ░███ ░███ ░███  ███░░███  ░███      ░███ ░███ 
-# ░░█████████ ░░██████ ░░██████ ░░██████  ████ █████░░████████░░████████ █████     ░░███████ 
-#  ░░░░░░░░░   ░░░░░░   ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███ 
-#                                                                                   ███ ░███ 
-#                                                                                  ░░██████  
-#                                                                                   ░░░░░░  
+# ░░█████████  ███░░███ ███░░███ ███░░███░░███░░███  ███░░███  ░░░░░███ ░░███░░███░░███ ░███
+#  ░░░░░░░░███░███████ ░███ ░░░ ░███ ░███ ░███ ░███ ░███ ░███   ███████  ░███ ░░░  ░███ ░███
+#  ███    ░███░███░░░  ░███  ███░███ ░███ ░███ ░███ ░███ ░███  ███░░███  ░███      ░███ ░███
+# ░░█████████ ░░██████ ░░██████ ░░██████  ████ █████░░████████░░████████ █████     ░░███████
+#  ░░░░░░░░░   ░░░░░░   ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░  ░░░░░░░░ ░░░░░       ░░░░░███
+#                                                                                   ███ ░███
+#                                                                                  ░░██████
+#                                                                                   ░░░░░░
 
 class SecondaryLocomotion(Locomotion):
     """
@@ -899,8 +907,8 @@ class SecondaryLocomotion(Locomotion):
             context: robots.RobotContext
             ) -> bool:
         if not super().isCompatible(
-            sequence=sequence,
-            context=context):
+                sequence=sequence,
+                context=context):
             return False
 
         # NOTE: If I ever add anything here it won't be applied for
@@ -911,12 +919,12 @@ class SecondaryLocomotion(Locomotion):
         if not primaryLocomotion:
             return False
         assert(isinstance(primaryLocomotion, PrimaryLocomotion))
-        
+
         # Cost multiplier of primary locomotion must be greater or equal to the
         # cost multiplier of the secondary locomotion
         primaryMultiplier = primaryLocomotion.costMultiplier()
         return self._impl.costMultiplier().value() <= primaryMultiplier.value()
-        
+
 class WheelsSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
         super().__init__(impl=_WheelsLocomotionImpl(
@@ -954,7 +962,7 @@ class WalkerSecondaryLocomotion(SecondaryLocomotion):
 
     def legCount(self) -> int:
         assert(isinstance(self._impl, _WalkerLocomotionImpl))
-        return self._impl.legCount()            
+        return self._impl.legCount()
 
 class HovercraftSecondaryLocomotion(SecondaryLocomotion):
     def __init__(self) -> None:
@@ -966,6 +974,7 @@ class ThrusterSecondaryLocomotion(SecondaryLocomotion):
     - Requirement: Secondary Locomotion Thruster are a special case and can be
     used with a primary locomotion that has a lower cost multiplier
     """
+
     def __init__(self) -> None:
         super().__init__(impl=_ThrusterLocomotionImpl(
             primaryEquivType=ThrusterPrimaryLocomotion))

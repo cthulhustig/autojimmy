@@ -47,7 +47,7 @@ class ConstructionStage(object):
             # The stage base type has no subclasses. This is expected for
             # stages that only ever have one compatible component type (that
             # being the base type its self)
-            self._componentTypes = [self._baseType]    
+            self._componentTypes = [self._baseType]
 
     def name(self) -> str:
         return self._name
@@ -61,7 +61,7 @@ class ConstructionStage(object):
 
     def baseType(self) -> typing.Type[construction.ComponentInterface]:
         return self._baseType
-    
+
     def componentTypes(self) -> typing.Iterable[construction.ComponentInterface]:
         return iter(self._componentTypes)
 
@@ -70,10 +70,10 @@ class ConstructionStage(object):
 
     def minComponents(self) -> typing.Optional[int]:
         return self._minComponents
-    
+
     def maxComponents(self) -> typing.Optional[int]:
         return self._maxComponents
-    
+
     def isInternal(self) -> bool:
         return self._isInternal
 
@@ -84,7 +84,7 @@ class ConstructionStage(object):
             return ConstructionStage.RequirementLevel.Desirable
         else:
             return ConstructionStage.RequirementLevel.Optional
-    
+
     def matchesComponent(
             self,
             component: typing.Type[construction.ComponentInterface]
@@ -93,10 +93,10 @@ class ConstructionStage(object):
             component = type(component)
 
         return issubclass(component, self._baseType)
-    
+
     def componentCount(self) -> int:
         return len(self._components)
-    
+
     def hasFreeCapacity(
             self,
             requiredCapacity: int = 1
@@ -111,7 +111,7 @@ class ConstructionStage(object):
             ) -> typing.Collection[construction.ComponentInterface]:
         if not dependencyOrder:
             return self._components
-    
+
         dependencyMap = {}
         for component in self._components:
             dependencies = component.orderAfter()
@@ -195,7 +195,7 @@ class ConstructionStage(object):
             return -1
         self._components.pop(index)
         return index
-    
+
     def removeComponentAt(
             self,
             index: int

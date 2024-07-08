@@ -41,7 +41,7 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
             ) -> None:
         if element != QtWidgets.QStyle.ControlElement.CE_HeaderLabel:
             return super().drawControl(element, option, painter, widget)
-        
+
         icon = None
         alignment = None
 
@@ -420,7 +420,7 @@ class ListTable(gui.TableWidgetEx):
             item: QtWidgets.QTableWidgetItem
             ) -> typing.Optional[str]:
         return None
-    
+
     def _moveSelection(
             self,
             moveUp: bool
@@ -447,7 +447,7 @@ class ListTable(gui.TableWidgetEx):
             swappedRows.append((currentRow, swapRow))
 
         return swappedRows
-    
+
     def _checkRowFiltering(
             self,
             row: int
@@ -737,7 +737,7 @@ class FrozenColumnListTable(ListTable):
 
     def showColumn(self, column: int) -> None:
         self._frozenColumnWidget.showColumn(column)
-        return super().showColumn(column)        
+        return super().showColumn(column)
 
     def setRowHidden(self, row: int, hide: bool) -> None:
         self._frozenColumnWidget.setRowHidden(row, hide)

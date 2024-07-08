@@ -44,7 +44,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             return self._value.value()
 
         return self._value
-    
+
     def setValue(
             self,
             value: typing.Optional[typing.Union[int, float, common.ScalarCalculation]]
@@ -71,7 +71,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
                 infix=self._infix,
                 suffix=self._suffix,
                 infinityString='∞')
-        self.setText(stringValue)             
+        self.setText(stringValue)
 
     def setConfig(
             self,
@@ -82,7 +82,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             removeTrailingZeros: bool = True, # Only applies for float values
             prefix: str = '',
             infix: str = '', # Infix (my own term) goes before number but after any sign
-            suffix: str = '',            
+            suffix: str = '',
             ) -> None:
         self._thousandsSeparator = thousandsSeparator
         self._alwaysIncludeSign = alwaysIncludeSign

@@ -86,13 +86,13 @@ class StringOption(ComponentOption):
         self._choices = list(choices) if choices != None else []
         self._isEditable = isEditable
         self._isOptional = isOptional
-        self._checkAndUpdateValue(value=self._value)        
+        self._checkAndUpdateValue(value=self._value)
 
     def setValue(
             self,
             value: typing.Optional[str]
             ) -> None:
-        self._checkAndUpdateValue(value=value)   
+        self._checkAndUpdateValue(value=value)
 
     def choices(self) -> typing.Iterable[str]:
         return self._choices
@@ -104,7 +104,7 @@ class StringOption(ComponentOption):
         self._choices = list(choices) if choices != None else []
         if self._isEditable:
             return # Nothing more to check
-        
+
         if self._isOptional:
             if (self._value != None) and (self._value not in choices):
                 self._value = None
@@ -114,7 +114,7 @@ class StringOption(ComponentOption):
 
     def isEditable(self) -> bool:
         return self._isEditable
-    
+
     def setEditable(
             self,
             editable: bool
@@ -125,14 +125,14 @@ class StringOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
-    
+
     def setOptional(self, optional: bool) -> None:
         self._isOptional = optional
         if not self._isOptional and self._value == None:
             if self._isEditable:
                 self._value = ''
             elif self._choices:
-                self._value = self._choices[0]    
+                self._value = self._choices[0]
 
     def _checkAndUpdateValue(
             self,
@@ -201,7 +201,7 @@ class IntegerOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
-    
+
     def setOptional(self, isOptional: bool) -> None:
         self._isOptional = isOptional
         if not self._isOptional and self._value == None:
@@ -284,7 +284,7 @@ class FloatOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
-    
+
     def setOptional(self, isOptional: bool) -> None:
         self._isOptional = isOptional
         if not self._isOptional and self._value == None:
@@ -365,7 +365,7 @@ class EnumOption(ComponentOption):
 
     def isOptional(self) -> bool:
         return self._isOptional
-    
+
     def setOptional(self, isOptional: bool) -> None:
         self._isOptional = isOptional
         if not self._isOptional and self._value == None:
@@ -404,13 +404,13 @@ class MultiSelectOption(ComponentOption):
             enabled=enabled)
         self._choices = list(choices)
         self._unselectable = list(unselectable) if unselectable else []
-        self._checkAndUpdateValue(value=self._value)        
+        self._checkAndUpdateValue(value=self._value)
 
     def setValue(
             self,
             value: typing.Iterable[str]
             ) -> None:
-        self._checkAndUpdateValue(value=value)   
+        self._checkAndUpdateValue(value=value)
 
     def choices(self) -> typing.Iterable[str]:
         return self._choices
@@ -427,7 +427,7 @@ class MultiSelectOption(ComponentOption):
 
     def unselectable(self) -> typing.Iterable[str]:
         return self._unselectable
-    
+
     def setUnselectable(
             self,
             unselectable: typing.Optional[typing.Iterable[str]]
@@ -435,7 +435,7 @@ class MultiSelectOption(ComponentOption):
         if not unselectable:
             self._unselectable.clear()
             return
-        
+
         self._unselectable = list(unselectable)
         for selected in list(self._value):
             if selected in self._unselectable:

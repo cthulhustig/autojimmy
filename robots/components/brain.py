@@ -27,13 +27,13 @@ class Brain(robots.RobotComponentInterface):
 
         self._minTL = common.ScalarCalculation(
             value=minTL,
-            name=f'{self._componentString} Brain Minimum TL') 
-        
+            name=f'{self._componentString} Brain Minimum TL')
+
     def componentString(self) -> str:
         return self._componentString
-    
+
     def typeString(self) -> str:
-        return 'Brain'        
+        return 'Brain'
 
     def isCompatible(
             self,
@@ -45,7 +45,7 @@ class Brain(robots.RobotComponentInterface):
 
         return context.hasComponent(
             componentType=robots.Chassis,
-            sequence=sequence)        
+            sequence=sequence)
 
 class RobotBrain(Brain):
     """
@@ -112,7 +112,7 @@ class RobotBrain(Brain):
         - Conscious +50
             - Min TL: 19
             - Cost: Cr5000000
-            - Trait: Bandwidth +50 
+            - Trait: Bandwidth +50
     - Brain Intellect Upgrade
         - <ALL>
             - Cost: Multiplied by 2 if INT is 12+
@@ -122,11 +122,11 @@ class RobotBrain(Brain):
             - Trait: Bandwidth -1
         - INT+2
             - Cost: (Current INT+1) x (Current INT+2) x Cr1000
-                - Multiplied by 2 if final INT is 12+    
+                - Multiplied by 2 if final INT is 12+
             - Trait: Bandwidth -3
         - INT+3
             - Cost: (Current INT+1) x (Current INT+2) x (Current INT+3) x Cr1000
-                - Multiplied by 2 if final INT is 12+          
+                - Multiplied by 2 if final INT is 12+
             - Trait: Bandwidth -6
     - Brain Hardening
         - Min TL: 8
@@ -174,18 +174,18 @@ class RobotBrain(Brain):
     _HighRelativeBrainSizeSlotCost = common.ScalarCalculation(
         value=1,
         name='High Relative Brain Size Required Slots')
-    
+
     _RetrotechPerTLCostScale = common.ScalarCalculation(
         value=0.5,
         name='Retrotech Per TL Cost Scale')
-    
+
     _HardenedMinTL = common.ScalarCalculation(
         value=8,
         name='Brain Hardening Min TL')
     _HardenedCostPercent = common.ScalarCalculation(
         value=50,
         name='Brain Hardening Cost Percentage')
-    
+
     # Data Structure: Min TL, Cost, Bandwidth Modifier, Compatible Brain Types
     _BandwidthUpgradeData = {
         _BandwidthUpgrade.BasicHunterKillerPlus1: (8, 5000, +1),
@@ -209,38 +209,38 @@ class RobotBrain(Brain):
         ],
         Brain._BrainType.HunterKiller: [
             _BandwidthUpgrade.BasicHunterKillerPlus1
-        ], 
+        ],
         Brain._BrainType.Advanced: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
             _BandwidthUpgrade.AdvancedPlus4
-        ],                
+        ],
         Brain._BrainType.VeryAdvanced: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
-            _BandwidthUpgrade.AdvancedPlus4,            
+            _BandwidthUpgrade.AdvancedPlus4,
             _BandwidthUpgrade.VeryAdvancedPlus6,
             _BandwidthUpgrade.VeryAdvancedPlus8
-        ], 
+        ],
         Brain._BrainType.SelfAware: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
-            _BandwidthUpgrade.AdvancedPlus4,            
+            _BandwidthUpgrade.AdvancedPlus4,
             _BandwidthUpgrade.VeryAdvancedPlus6,
-            _BandwidthUpgrade.VeryAdvancedPlus8,            
+            _BandwidthUpgrade.VeryAdvancedPlus8,
             _BandwidthUpgrade.SelfAwarePlus10,
             _BandwidthUpgrade.SelfAwarePlus15,
             _BandwidthUpgrade.SelfAwarePlus20,
             _BandwidthUpgrade.SelfAwarePlus25
-        ],       
+        ],
         Brain._BrainType.Conscious: [
             _BandwidthUpgrade.BasicHunterKillerPlus1,
             _BandwidthUpgrade.AdvancedPlus2,
             _BandwidthUpgrade.AdvancedPlus3,
-            _BandwidthUpgrade.AdvancedPlus4,            
+            _BandwidthUpgrade.AdvancedPlus4,
             _BandwidthUpgrade.VeryAdvancedPlus6,
             _BandwidthUpgrade.VeryAdvancedPlus8,
             _BandwidthUpgrade.SelfAwarePlus10,
@@ -278,7 +278,7 @@ class RobotBrain(Brain):
         name='Intellect Upgrade High INT Threshold')
     _IntellectUpgradeHighIntMultiplier = common.ScalarCalculation(
         value=2,
-        name='Intellect Upgrade High INT Multiplier')    
+        name='Intellect Upgrade High INT Multiplier')
 
     def __init__(
             self,
@@ -290,15 +290,15 @@ class RobotBrain(Brain):
             notes: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         super().__init__(brainType=brainType, minTL=minTL)
-            
+
         self._cost = common.ScalarCalculation(
             value=cost,
-            name=f'{self._componentString} Brain Cost') 
-            
+            name=f'{self._componentString} Brain Cost')
+
         self._intelligence = common.ScalarCalculation(
             value=intelligence,
-            name=f'{self._componentString} Brain INT Characteristic')             
-            
+            name=f'{self._componentString} Brain INT Characteristic')
+
         self._inherentBandwidth = common.ScalarCalculation(
             value=inherentBandwidth,
             name=f'{self._componentString} Brain Inherent Bandwidth')
@@ -317,19 +317,19 @@ class RobotBrain(Brain):
             type=RobotBrain._BandwidthUpgrade,
             isOptional=True,
             description='Optionally upgrade the Bandwidth of the Brain.')
-        
+
         self._intellectUpgradeOption = construction.EnumOption(
             id='IntellectUpgrade',
             name='Intellect Upgrade',
             type=RobotBrain._IntellectUpgrade,
             isOptional=True,
-            description='Optionally upgrade the Brains INT characteristic.')        
+            description='Optionally upgrade the Brains INT characteristic.')
 
     def instanceString(self) -> str:
         if self._isHardened():
             return 'Hardened ' + self._componentString
         return self._componentString
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._hardenedOption.isEnabled():
@@ -355,7 +355,7 @@ class RobotBrain(Brain):
             enabled=len(bandwidthUpgrades) > 0)
         self._bandwidthUpgradeOption.setChoices(
             choices=bandwidthUpgrades)
-        
+
         intellectUpgrades = self._allowedIntellectUpgrades(
             sequence=sequence,
             context=context)
@@ -363,7 +363,7 @@ class RobotBrain(Brain):
             enabled=len(intellectUpgrades) > 0)
         self._intellectUpgradeOption.setChoices(
             choices=intellectUpgrades)
-        
+
     def createSteps(
             self,
             sequence: str,
@@ -374,7 +374,7 @@ class RobotBrain(Brain):
             step=self._createPrimaryStep(
                 sequence=sequence,
                 context=context))
-        
+
         bandwidthStep = self._createBandwidthUpgradeStep(
             sequence=sequence,
             context=context)
@@ -382,18 +382,18 @@ class RobotBrain(Brain):
             context.applyStep(
                 sequence=sequence,
                 step=bandwidthStep)
-            
+
         intellectStep = self._createIntellectUpgradeStep(
             sequence=sequence,
             context=context)
         if intellectStep:
             context.applyStep(
                 sequence=sequence,
-                step=intellectStep) 
+                step=intellectStep)
 
     def _isHardened(self) -> bool:
         return self._hardenedOption.value() if self._hardenedOption.isEnabled() else False
-        
+
     def _allowedBandwidthUpgrades(
             self,
             sequence: str,
@@ -410,12 +410,12 @@ class RobotBrain(Brain):
             if robotTL >= minTL:
                 allowed.append(upgrade)
         return allowed
-    
+
     def _selectedBandwidthUpgrade(self) -> typing.Optional[_BandwidthUpgrade]:
         return self._bandwidthUpgradeOption.value() \
             if self._bandwidthUpgradeOption.isEnabled() else \
             None
-    
+
     def _allowedIntellectUpgrades(
             self,
             sequence: str,
@@ -426,7 +426,7 @@ class RobotBrain(Brain):
         if bandwidthUpgrade:
             _, _, bandwidthIncrease = RobotBrain._BandwidthUpgradeData[bandwidthUpgrade]
             maxBandwidth += bandwidthIncrease
-            
+
         allowed = []
         for upgrade in RobotBrain._IntellectUpgrade:
             _, requiredBandwidth = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
@@ -447,11 +447,11 @@ class RobotBrain(Brain):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         robotTL = common.ScalarCalculation(
             value=context.techLevel(),
             name='Robot TL')
-        
+
         robotSize = context.attributeValue(
             attributeId=robots.RobotAttributeId.Size,
             sequence=sequence)
@@ -462,7 +462,7 @@ class RobotBrain(Brain):
             rhs=self._minTL,
             name=f'Tech Levels Since {self.componentString()} Introduction')
         assert(deltaTL.value() >= 0)
-        
+
         # A brain requires no slots if it's Size is greater than or equal the
         # threshold below, otherwise it requires 1 slot
         # (Computer/X - (RobotTL - BrainMinTL))
@@ -473,7 +473,7 @@ class RobotBrain(Brain):
         if robotSize.value() < brainSizeThreshold.value():
             step.setSlots(slots=construction.ConstantModifier(
                 value=RobotBrain._HighRelativeBrainSizeSlotCost))
-        
+
         # The cost of brains of Very Advanced construction or later drops by
         # 50% for every TL after it was introduced
         cost = self._cost
@@ -490,28 +490,28 @@ class RobotBrain(Brain):
                 percentage=RobotBrain._HardenedCostPercent,
                 name=f'Hardened {cost.name()}')
             step.addFactor(factor=construction.SetAttributeFactor(
-                attributeId=robots.RobotAttributeId.Hardened))         
+                attributeId=robots.RobotAttributeId.Hardened))
         step.setCredits(credits=construction.ConstantModifier(value=cost))
 
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.INT,
             value=self._intelligence))
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.InherentBandwidth,
             value=self._inherentBandwidth))
-        
+
         # NOTE: Initialise current max bandwidth to the inherent bandwidth
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             value=self._inherentBandwidth))
-        
+
         if self._notes:
             for note in self._notes:
                 step.addNote(note=note)
-        
+
         return step
-    
+
     def _createBandwidthUpgradeStep(
             self,
             sequence: str,
@@ -521,7 +521,7 @@ class RobotBrain(Brain):
         if not upgrade:
             return None# Nothing to do
         assert(isinstance(upgrade, RobotBrain._BandwidthUpgrade))
-        
+
         _, cost, bandwidthIncrease = RobotBrain._BandwidthUpgradeData[upgrade]
         cost = common.ScalarCalculation(
             value=cost,
@@ -529,7 +529,7 @@ class RobotBrain(Brain):
         bandwidthIncrease = common.ScalarCalculation(
             value=bandwidthIncrease,
             name=f'{upgrade.value} Bandwidth Increase')
-        
+
         stepName = f'Bandwidth Upgrade ({upgrade.value})'
         if self._isHardened():
             stepName = 'Hardened ' + stepName
@@ -541,7 +541,7 @@ class RobotBrain(Brain):
         step = robots.RobotStep(
             name=stepName,
             type=self.typeString())
-        
+
         step.setCredits(credits=construction.ConstantModifier(value=cost))
         step.setSlots(slots=construction.ConstantModifier(
             value=RobotBrain._BandwidthUpgradeSlots))
@@ -551,7 +551,7 @@ class RobotBrain(Brain):
             attributeId=robots.RobotAttributeId.MaxBandwidth,
             modifier=construction.ConstantModifier(value=bandwidthIncrease)))
 
-        return step   
+        return step
 
     def _createIntellectUpgradeStep(
             self,
@@ -565,7 +565,7 @@ class RobotBrain(Brain):
 
         step = robots.RobotStep(
             name=f'Intellect Upgrade ({upgrade.value})',
-            type=self.typeString())        
+            type=self.typeString())
 
         intelligenceIncrease, requiredBandwidth = RobotBrain._IntellectUpgradeBandwidthUsage[upgrade]
         intelligenceIncrease = common.ScalarCalculation(
@@ -598,7 +598,7 @@ class RobotBrain(Brain):
                     rhs=common.Calculator.add(
                         lhs=oldIntelligence,
                         rhs=common.ScalarCalculation(value=3)))
-        
+
         newIntelligence = common.Calculator.add(
             lhs=oldIntelligence,
             rhs=intelligenceIncrease,
@@ -607,7 +607,7 @@ class RobotBrain(Brain):
             multiplier = common.Calculator.multiply(
                 lhs=multiplier,
                 rhs=RobotBrain._IntellectUpgradeHighIntMultiplier)
-            
+
         multiplier = common.Calculator.rename(
             value=multiplier,
             name=f'{upgrade.value} Intellect Upgrade Cost Multiplier')
@@ -621,23 +621,23 @@ class RobotBrain(Brain):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.INT,
             modifier=construction.ConstantModifier(value=intelligenceIncrease)))
-        
+
         # NOTE: Update max bandwidth NOT inherent bandwidth
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.MaxBandwidth,
-            modifier=construction.ConstantModifier(value=maxBandwidthModifier)))        
+            modifier=construction.ConstantModifier(value=maxBandwidthModifier)))
 
-        return step      
-    
+        return step
+
 class PrimitiveBrain(RobotBrain):
     """
     - Trait: INT 1
     - Trait: Computer/0
-    - Trait: Inherent Bandwidth 0    
+    - Trait: Inherent Bandwidth 0
     - Note: Programmable
-    - Requirement: I don't think this is compatible with additional skills  
+    - Requirement: I don't think this is compatible with additional skills
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -650,7 +650,7 @@ class PrimitiveBrain(RobotBrain):
             intelligence=1,
             inherentBandwidth=0,
             notes=['Programmable, Computer/0. (p66)'])
-        
+
 class PrimitiveTL7Brain(PrimitiveBrain):
     """
     - Min TL: 7
@@ -660,12 +660,12 @@ class PrimitiveTL7Brain(PrimitiveBrain):
     - Trait: Inherent Bandwidth 0
     - Note: Programmable
     """
-      
+
     def __init__(self) -> None:
         super().__init__(
             minTL=7,
             cost=10000)
-        
+
 class PrimitiveTL8Brain(PrimitiveBrain):
     """
     - Min TL: 8
@@ -675,20 +675,20 @@ class PrimitiveTL8Brain(PrimitiveBrain):
     - Trait: Inherent Bandwidth 0
     - Note: Programmable
     """
-      
+
     def __init__(self) -> None:
         super().__init__(
             minTL=8,
             cost=100)
- 
+
 class BasicBrain(RobotBrain):
     """
     - Trait: Computer/1
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
-    - Requirement: I don't think this is compatible with additional skills  
+    - Requirement: I don't think this is compatible with additional skills
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -702,7 +702,7 @@ class BasicBrain(RobotBrain):
             intelligence=intelligence,
             inherentBandwidth=1,
             notes=['Limited Language, Security/0, Computer/1. (p66)'])
-                
+
 class BasicTL8Brain(BasicBrain):
     """
     - Min TL: 8
@@ -712,12 +712,13 @@ class BasicTL8Brain(BasicBrain):
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=8,
             cost=20000,
             intelligence=3)
-        
+
 class BasicTL10Brain(BasicBrain):
     """
     - Min TL: 10
@@ -727,23 +728,24 @@ class BasicTL10Brain(BasicBrain):
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=10,
             cost=4000,
-            intelligence=4) 
-        
+            intelligence=4)
+
 class HunterKillerBrain(RobotBrain):
     """
     - Trait: Computer/1
     - Skill: Recon 0
     - Trait: Inherent Bandwidth 1
-    - Note: Limited Fried or Foe, Security/1    
+    - Note: Limited Fried or Foe, Security/1
     """
     # NOTE: The Recon 0 mentioned in the description of the brain (p65) is
     # handled by the Hunter/Killer Skill Package. As far as I can tell you
     # have to take a skill package and both variants give Recon 0.
-      
+
     def __init__(
             self,
             minTL: int,
@@ -757,7 +759,7 @@ class HunterKillerBrain(RobotBrain):
             intelligence=intelligence,
             inherentBandwidth=1,
             notes=['Limited Fried or Foe, Security/1, Computer/1. (p66)'])
-                
+
 class HunterKillerTL8Brain(HunterKillerBrain):
     """
     - Min TL: 8
@@ -768,12 +770,13 @@ class HunterKillerTL8Brain(HunterKillerBrain):
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=8,
             cost=30000,
             intelligence=3)
-        
+
 class HunterKillerTL10Brain(HunterKillerBrain):
     """
     - Min TL: 10
@@ -784,6 +787,7 @@ class HunterKillerTL10Brain(HunterKillerBrain):
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=10,
@@ -791,7 +795,7 @@ class HunterKillerTL10Brain(HunterKillerBrain):
             intelligence=4)
 
 # This class only exists so other components can easily check if a robot has
-# a brain that can skills (rather than a skill package) 
+# a brain that can skills (rather than a skill package)
 class SkilledRobotBrain(RobotBrain):
     def __init__(
             self,
@@ -808,8 +812,8 @@ class SkilledRobotBrain(RobotBrain):
             cost=cost,
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
-            notes=notes)     
-        
+            notes=notes)
+
 class AdvancedBrain(SkilledRobotBrain):
     """
     - Trait: Computer/2
@@ -817,7 +821,7 @@ class AdvancedBrain(SkilledRobotBrain):
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -832,7 +836,7 @@ class AdvancedBrain(SkilledRobotBrain):
             inherentBandwidth=2,
             notes=['Intelligent Interface, Expert/1, Security/1, Computer/2. (p66)',
                    'The robot can only attempt tasks up to Difficult (10+). (p65)'])
-                
+
 class AdvancedTL10Brain(AdvancedBrain):
     """
     - Min TL: 10
@@ -841,14 +845,15 @@ class AdvancedTL10Brain(AdvancedBrain):
     - Trait: Computer/2
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
-    - Note: Advanced brains can only attempt tasks up to Difficult (10+)  
+    - Note: Advanced brains can only attempt tasks up to Difficult (10+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=10,
             cost=100000,
             intelligence=6)
-        
+
 class AdvancedTL11Brain(AdvancedBrain):
     """
     - Min TL: 11
@@ -857,14 +862,15 @@ class AdvancedTL11Brain(AdvancedBrain):
     - Trait: Computer/2
     - Trait: Inherent Bandwidth 2
     - Note: Intelligent Interface, Expert/1, Security/1
-    - Note: Advanced brains can only attempt tasks up to Difficult (10+) 
+    - Note: Advanced brains can only attempt tasks up to Difficult (10+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=11,
             cost=50000,
-            intelligence=7) 
-        
+            intelligence=7)
+
 class AdvancedTL12Brain(AdvancedBrain):
     """
     - Min TL: 12
@@ -875,18 +881,19 @@ class AdvancedTL12Brain(AdvancedBrain):
     - Note: Intelligent Interface, Expert/1, Security/1
     - Note: Advanced brains can only attempt tasks up to Difficult (10+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=12,
             cost=10000,
-            intelligence=8) 
+            intelligence=8)
 
 class VeryAdvancedBrain(SkilledRobotBrain):
     """
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -902,7 +909,7 @@ class VeryAdvancedBrain(SkilledRobotBrain):
             inherentBandwidth=inherentBandwidth,
             notes=[f'Intellect Interface, Expert/2, Security/2, Computer/{inherentBandwidth}. (p66)',
                    'The robot can only attempt tasks up to Very Difficult (12+). (p65)'])
-                
+
 class VeryAdvancedTL12Brain(VeryAdvancedBrain):
     """
     - Min TL: 12
@@ -913,13 +920,14 @@ class VeryAdvancedTL12Brain(VeryAdvancedBrain):
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=12,
             cost=500000,
             intelligence=9,
             inherentBandwidth=3)
-        
+
 class VeryAdvancedTL13Brain(VeryAdvancedBrain):
     """
     - Min TL: 13
@@ -928,15 +936,16 @@ class VeryAdvancedTL13Brain(VeryAdvancedBrain):
     - Trait: Computer/4
     - Trait: Inherent Bandwidth 4
     - Note: Intellect Interface, Expert/2, Security/2
-    - Note: Advanced brains can only attempt tasks up to Very Difficult (12+) 
+    - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=13,
             cost=500000,
             intelligence=10,
             inherentBandwidth=4)
-        
+
 class VeryAdvancedTL14Brain(VeryAdvancedBrain):
     """
     - Min TL: 14
@@ -947,6 +956,7 @@ class VeryAdvancedTL14Brain(VeryAdvancedBrain):
     - Note: Intellect Interface, Expert/2, Security/2
     - Note: Advanced brains can only attempt tasks up to Very Difficult (12+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=14,
@@ -959,7 +969,7 @@ class SelfAwareBrain(SkilledRobotBrain):
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -975,7 +985,7 @@ class SelfAwareBrain(SkilledRobotBrain):
             inherentBandwidth=inherentBandwidth,
             notes=[f'Near sentient, Expert/3, Security/3, Computer/{inherentBandwidth}. (p66)',
                    'The robot can only attempt tasks up to Formidable (14+). (p65/66)'])
-                
+
 class SelfAwareTL15Brain(SelfAwareBrain):
     """
     - Min TL: 15
@@ -986,13 +996,14 @@ class SelfAwareTL15Brain(SelfAwareBrain):
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=15,
             cost=1000000,
             intelligence=12,
             inherentBandwidth=10)
-        
+
 class SelfAwareTL16Brain(SelfAwareBrain):
     """
     - Min TL: 16
@@ -1003,6 +1014,7 @@ class SelfAwareTL16Brain(SelfAwareBrain):
     - Note: Near sentient, Expert/3, Security/3
     - Note: Advanced brains can only attempt tasks up to Formidable (14+)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=16,
@@ -1012,9 +1024,9 @@ class SelfAwareTL16Brain(SelfAwareBrain):
 
 class ConsciousBrain(SkilledRobotBrain):
     """
-    - Note: Conscious Intelligence, Security/3   
+    - Note: Conscious Intelligence, Security/3
     """
-      
+
     def __init__(
             self,
             minTL: int,
@@ -1029,7 +1041,7 @@ class ConsciousBrain(SkilledRobotBrain):
             intelligence=intelligence,
             inherentBandwidth=inherentBandwidth,
             notes=[f'Conscious Intelligence, Security/3, Computer/{inherentBandwidth}. (p66)'])
-                
+
 class ConsciousTL17Brain(ConsciousBrain):
     """
     - Min TL: 17
@@ -1039,13 +1051,14 @@ class ConsciousTL17Brain(ConsciousBrain):
     - Trait: Inherent Bandwidth 20
     - Note: Conscious Intelligence, Security/3
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=17,
             cost=5000000,
             intelligence=15,
             inherentBandwidth=20)
-        
+
 class ConsciousTL18Brain(ConsciousBrain):
     """
     - Min TL: 18
@@ -1055,13 +1068,14 @@ class ConsciousTL18Brain(ConsciousBrain):
     - Trait: Inherent Bandwidth 30
     - Note: Conscious Intelligence, Security/3
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=18,
             cost=1000000,
             intelligence=15,
             inherentBandwidth=30)
-        
+
 # NOTE: This is inherits from Brain not RobotBrain
 class BrainInAJarBrain(Brain):
     """
@@ -1091,15 +1105,15 @@ class BrainInAJarBrain(Brain):
         super().__init__(
             brainType=Brain._BrainType.BrainInAJar,
             minTL=minTL)
-        
+
         self._cost = common.ScalarCalculation(
             value=cost,
             name=f'{self._componentString} Cost')
-        
+
         self._slots = common.ScalarCalculation(
             value=slots,
             name=f'{self._componentString} Required Slots')
-        
+
         self._notes = notes
 
         self._characteristicOptions: typing.Dict[robots.RobotAttributeId, construction.IntegerOption] = {}
@@ -1122,12 +1136,12 @@ class BrainInAJarBrain(Brain):
             ) -> bool:
         if not super().isCompatible(sequence, context):
             return False
-        
+
         chassisSize = context.attributeValue(
             attributeId=robots.RobotAttributeId.Size,
             sequence=sequence)
         return chassisSize and chassisSize.value() >= BrainInAJarBrain._MinChassisSize
-        
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         for option in self._characteristicOptions.values():
@@ -1143,12 +1157,12 @@ class BrainInAJarBrain(Brain):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         step.setCredits(
             credits=construction.ConstantModifier(value=self._cost))
         step.setSlots(
             slots=construction.ConstantModifier(value=self._slots))
-        
+
         characteristicNotes = []
         for characteristic, option in self._characteristicOptions.items():
             if option.isEnabled() and option.value() != None:
@@ -1169,22 +1183,23 @@ class BrainInAJarBrain(Brain):
 
         context.applyStep(
             sequence=sequence,
-            step=step) 
-        
+            step=step)
+
 class BrainInAJarTL12Brain(BrainInAJarBrain):
     """
     - Min TL: 12
     - Slots: 3
     - Cost: 1000000
-    - Note: Monthly INT 4+ Degradation Checks (p93)    
+    - Note: Monthly INT 4+ Degradation Checks (p93)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=12,
             cost=1000000,
             slots=3,
             notes=['INT 4+ Degradation Checks must be made monthly. (p93)'])
-        
+
 class BrainInAJarTL14Brain(BrainInAJarBrain):
     """
     - Min TL: 14
@@ -1192,12 +1207,13 @@ class BrainInAJarTL14Brain(BrainInAJarBrain):
     - Cost: 2000000
     - Note: Annual INT 5+ Degradation Checks (p93)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=14,
             cost=2000000,
             slots=2,
-            notes=['INT 5+ Degradation Checks must be made annually. (p93)'])     
+            notes=['INT 5+ Degradation Checks must be made annually. (p93)'])
 
 class BrainInAJarTL16Brain(BrainInAJarBrain):
     """
@@ -1206,6 +1222,7 @@ class BrainInAJarTL16Brain(BrainInAJarBrain):
     - Cost: 5000000
     - Note: Annual INT 3+ Degradation Checks (p93)
     """
+
     def __init__(self) -> None:
         super().__init__(
             minTL=16,

@@ -38,7 +38,7 @@ class NotesWidget(QtWidgets.QWidget):
                 common.StringFilterType.Wildcard])
         self._filterTypeComboBox.activated.connect(self._updateFilter)
 
-        self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case")  
+        self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case")
         self._filterIgnoreCaseCheckBox.setChecked(True)
         self._filterIgnoreCaseCheckBox.stateChanged.connect(self._updateFilter)
 
@@ -50,7 +50,7 @@ class NotesWidget(QtWidgets.QWidget):
         controlsLayout.addWidget(self._filterTypeComboBox)
         controlsLayout.addWidget(self._filterIgnoreCaseCheckBox)
         controlsLayout.addStretch()
-        
+
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
         # Having the table automatically adjust to the content size can cause
@@ -76,7 +76,7 @@ class NotesWidget(QtWidgets.QWidget):
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
-        
+
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(controlsLayout)
@@ -84,7 +84,7 @@ class NotesWidget(QtWidgets.QWidget):
         layout.addStretch(1)
 
         self.setLayout(layout)
-        
+
     def isEmpty(self) -> bool:
         return self._table.isEmpty()
 
@@ -105,7 +105,7 @@ class NotesWidget(QtWidgets.QWidget):
                     item = QtWidgets.QTableWidgetItem(source)
                     item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
                     self._table.setItem(row, 0, item)
-                    
+
                     item = QtWidgets.QTableWidgetItem(note)
                     item.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
                     self._table.setItem(row, 1, item)
@@ -119,12 +119,12 @@ class NotesWidget(QtWidgets.QWidget):
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         self._resizeTableToContents()
         return super().resizeEvent(event)
-    
+
     def copySelectionToClipboard(self):
         clipboard = QtWidgets.QApplication.clipboard()
         if not clipboard:
             return
-        
+
         content = ''
         for row in self._table.selectedRows():
             item = self._table.item(row, 0)
@@ -135,7 +135,7 @@ class NotesWidget(QtWidgets.QWidget):
                 content += f'{source} -- {note}\n'
         if content:
             clipboard.setText(content)
-            
+
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self._table:
             if event.type() == QtCore.QEvent.Type.KeyPress:
@@ -146,7 +146,7 @@ class NotesWidget(QtWidgets.QWidget):
                     return True
 
         return super().eventFilter(object, event)
-    
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -165,7 +165,7 @@ class NotesWidget(QtWidgets.QWidget):
         caseState = self._filterIgnoreCaseCheckBox.saveState()
         stream.writeUInt32(caseState.count() if caseState else 0)
         if caseState:
-            stream.writeRawData(caseState.data())  
+            stream.writeRawData(caseState.data())
 
         return state
 
@@ -188,7 +188,7 @@ class NotesWidget(QtWidgets.QWidget):
             with gui.SignalBlocker(widget=self._filterLineEdit):
                 if not self._filterLineEdit.restoreState(filterState):
                     return False
-            
+
             count = stream.readUInt32()
             if count <= 0:
                 return True
@@ -196,7 +196,7 @@ class NotesWidget(QtWidgets.QWidget):
             with gui.SignalBlocker(widget=self._filterTypeComboBox):
                 if not self._filterTypeComboBox.restoreState(typeState):
                     return False
-            
+
             count = stream.readUInt32()
             if count <= 0:
                 return True
@@ -209,8 +209,8 @@ class NotesWidget(QtWidgets.QWidget):
             # or whatever part of the filter config we managed to load.
             self._updateFilter()
 
-        return True    
-    
+        return True
+
     def _updateFilter(self) -> None:
         filterString = self._filterLineEdit.text()
         filterType = common.StringFilterType.NoFilter
@@ -231,7 +231,7 @@ class NotesWidget(QtWidgets.QWidget):
             # a regex. Just disable filtering until the user corrects it
             self._table.setRowFilter(
                 filterType=common.StringFilterType.NoFilter)
-        
+
         self._resizeTableToContents()
 
         palette = self._filterLineEdit.palette()
@@ -244,7 +244,7 @@ class NotesWidget(QtWidgets.QWidget):
             if isValidFilter else
             palette.color(QtGui.QPalette.ColorRole.BrightText))
         self._filterLineEdit.setPalette(palette)
-    
+
     def _clearFilter(self) -> None:
         self._filterLineEdit.clear()
         self._updateFilter()
@@ -264,9 +264,3 @@ class NotesWidget(QtWidgets.QWidget):
             if height > 0:
                 totalHeight += height + 3
         self._table.setMinimumHeight(totalHeight)
-
-
-    
-
-
-        

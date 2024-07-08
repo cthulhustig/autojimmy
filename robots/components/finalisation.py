@@ -7,17 +7,17 @@ import traveller
 import typing
 
 
-#  ███████████  ████                                               █████████  █████                                              █████                      
-# ░░███░░░░░███░░███                                              ███░░░░░███░░███                                              ░░███                       
-#  ░███    ░███ ░███   ██████   █████ ████  ██████  ████████     ███     ░░░  ░███████    ██████   ████████   ██████    ██████  ███████    ██████  ████████ 
+#  ███████████  ████                                               █████████  █████                                              █████
+# ░░███░░░░░███░░███                                              ███░░░░░███░░███                                              ░░███
+#  ░███    ░███ ░███   ██████   █████ ████  ██████  ████████     ███     ░░░  ░███████    ██████   ████████   ██████    ██████  ███████    ██████  ████████
 #  ░██████████  ░███  ░░░░░███ ░░███ ░███  ███░░███░░███░░███   ░███          ░███░░███  ░░░░░███ ░░███░░███ ░░░░░███  ███░░███░░░███░    ███░░███░░███░░███
-#  ░███░░░░░░   ░███   ███████  ░███ ░███ ░███████  ░███ ░░░    ░███          ░███ ░███   ███████  ░███ ░░░   ███████ ░███ ░░░   ░███    ░███████  ░███ ░░░ 
-#  ░███         ░███  ███░░███  ░███ ░███ ░███░░░   ░███        ░░███     ███ ░███ ░███  ███░░███  ░███      ███░░███ ░███  ███  ░███ ███░███░░░   ░███     
-#  █████        █████░░████████ ░░███████ ░░██████  █████        ░░█████████  ████ █████░░████████ █████    ░░████████░░██████   ░░█████ ░░██████  █████    
-# ░░░░░        ░░░░░  ░░░░░░░░   ░░░░░███  ░░░░░░  ░░░░░          ░░░░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░      ░░░░░░░░  ░░░░░░     ░░░░░   ░░░░░░  ░░░░░     
-#                                ███ ░███                                                                                                                   
-#                               ░░██████                                                                                                                    
-#                                ░░░░░░   
+#  ░███░░░░░░   ░███   ███████  ░███ ░███ ░███████  ░███ ░░░    ░███          ░███ ░███   ███████  ░███ ░░░   ███████ ░███ ░░░   ░███    ░███████  ░███ ░░░
+#  ░███         ░███  ███░░███  ░███ ░███ ░███░░░   ░███        ░░███     ███ ░███ ░███  ███░░███  ░███      ███░░███ ░███  ███  ░███ ███░███░░░   ░███
+#  █████        █████░░████████ ░░███████ ░░██████  █████        ░░█████████  ████ █████░░████████ █████    ░░████████░░██████   ░░█████ ░░██████  █████
+# ░░░░░        ░░░░░  ░░░░░░░░   ░░░░░███  ░░░░░░  ░░░░░          ░░░░░░░░░  ░░░░ ░░░░░  ░░░░░░░░ ░░░░░      ░░░░░░░░  ░░░░░░     ░░░░░   ░░░░░░  ░░░░░
+#                                ███ ░███
+#                               ░░██████
+#                                ░░░░░░
 
 class PlayerCharacter(robots.RobotComponentInterface):
     """
@@ -52,14 +52,14 @@ class PlayerCharacter(robots.RobotComponentInterface):
         robots.ConsciousBrain,
         robots.BrainInAJarBrain,
     ]
-    
+
     _NoManipulatorStrength = common.ScalarCalculation(
         value=0,
         name='Player Character No Manipulator STR')
     _NoManipulatorDexterity = common.ScalarCalculation(
         value=0,
         name='Player Character No Manipulator DEX')
-    
+
     _MinEndurance = common.ScalarCalculation(
         value=6,
         name='Player Character Min END')
@@ -80,7 +80,7 @@ class PlayerCharacter(robots.RobotComponentInterface):
     _RtgEndurance = common.ScalarCalculation(
         value=15,
         name='Player CharacterRTG Power Source END')
-    
+
     _StrengthAndDexterityNote = 'For STR or DEX based checks that are reliant on the use of a robots manipulator(s), the STR/DEX characteristic of the manipulator should be used rather than robots general STR/DEX characteristic. (p115)'
 
     _EducationNote = 'For EDU based checks that don\'t use one of the robots skills, the robots EDU characteristic is {maxBandwidth}. (p115)'
@@ -99,14 +99,14 @@ class PlayerCharacter(robots.RobotComponentInterface):
                 maxValue=99, # This is pretty arbitrary but having a max makes the UI scale the control better
                 value=None if isOptional else 0,
                 description=f'Specify the {characteristic.value} characteristics of the robot.')
-            self._characteristicOptions[characteristic] = option    
+            self._characteristicOptions[characteristic] = option
 
     def componentString(self) -> str:
         return 'Player Character'
 
     def typeString(self) -> str:
         return 'Special Use'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -119,14 +119,14 @@ class PlayerCharacter(robots.RobotComponentInterface):
             if isinstance(brain, brainType):
                 return True
         return False
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         for option in self._characteristicOptions.values():
             if option.isEnabled():
                 options.append(option)
         return options
-    
+
     def updateOptions(
             self,
             sequence: str,
@@ -182,9 +182,9 @@ class PlayerCharacter(robots.RobotComponentInterface):
             value=robotStr))
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.DEX,
-            value=robotDex))        
+            value=robotDex))
         step.addNote(note=PlayerCharacter._StrengthAndDexterityNote)
-                 
+
         agilityEnhancement = context.findFirstComponent(
             componentType=robots.AgilityEnhancement,
             sequence=sequence)
@@ -192,7 +192,7 @@ class PlayerCharacter(robots.RobotComponentInterface):
             robotDex = common.Calculator.add(
                 lhs=robotDex,
                 rhs=agilityEnhancement.agilityModifier())
-        
+
         chassis = context.findFirstComponent(
             componentType=robots.Chassis,
             sequence=sequence)
@@ -200,7 +200,7 @@ class PlayerCharacter(robots.RobotComponentInterface):
         robotEnd = common.Calculator.max(
             lhs=chassis.size(),
             rhs=PlayerCharacter._MinEndurance)
-        
+
         hasRtg = context.hasComponent(
             componentType=robots.RTGSlotOption,
             sequence=sequence)
@@ -223,14 +223,14 @@ class PlayerCharacter(robots.RobotComponentInterface):
                     robotEnd = common.Calculator.add(
                         lhs=robotEnd,
                         rhs=PlayerCharacter._EnhancedComponentsEnduranceModifier)
-                    
+
         robotEnd = common.Calculator.equals(
             value=robotEnd,
             name='Player Character Robot END')
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.END,
-            value=robotEnd))                
-        
+            value=robotEnd))
+
         if not isBrainInAJar:
             robotEdu = context.attributeValue(
                 attributeId=robots.RobotAttributeId.INT,
@@ -238,7 +238,7 @@ class PlayerCharacter(robots.RobotComponentInterface):
             assert(isinstance(robotEdu, common.ScalarCalculation))
             robotEnd = common.Calculator.equals(
                 value=robotEnd,
-                name='Player Character Robot EDU') 
+                name='Player Character Robot EDU')
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.EDU,
                 value=robotEdu))
@@ -254,20 +254,20 @@ class PlayerCharacter(robots.RobotComponentInterface):
                     step.addFactor(factor=construction.SetAttributeFactor(
                         attributeId=characteristic,
                         value=value))
-        
+
         context.applyStep(
             sequence=sequence,
             step=step)
 
 
-#   █████████  ████            █████       ███████████                                                           ████ 
-#  ███░░░░░███░░███           ░░███       ░░███░░░░░███                                                         ░░███ 
-# ░███    ░░░  ░███   ██████  ███████      ░███    ░███   ██████  █████████████    ██████  █████ █████  ██████   ░███ 
-# ░░█████████  ░███  ███░░███░░░███░       ░██████████   ███░░███░░███░░███░░███  ███░░███░░███ ░░███  ░░░░░███  ░███ 
-#  ░░░░░░░░███ ░███ ░███ ░███  ░███        ░███░░░░░███ ░███████  ░███ ░███ ░███ ░███ ░███ ░███  ░███   ███████  ░███ 
-#  ███    ░███ ░███ ░███ ░███  ░███ ███    ░███    ░███ ░███░░░   ░███ ░███ ░███ ░███ ░███ ░░███ ███   ███░░███  ░███ 
+#   █████████  ████            █████       ███████████                                                           ████
+#  ███░░░░░███░░███           ░░███       ░░███░░░░░███                                                         ░░███
+# ░███    ░░░  ░███   ██████  ███████      ░███    ░███   ██████  █████████████    ██████  █████ █████  ██████   ░███
+# ░░█████████  ░███  ███░░███░░░███░       ░██████████   ███░░███░░███░░███░░███  ███░░███░░███ ░░███  ░░░░░███  ░███
+#  ░░░░░░░░███ ░███ ░███ ░███  ░███        ░███░░░░░███ ░███████  ░███ ░███ ░███ ░███ ░███ ░███  ░███   ███████  ░███
+#  ███    ░███ ░███ ░███ ░███  ░███ ███    ░███    ░███ ░███░░░   ░███ ░███ ░███ ░███ ░███ ░░███ ███   ███░░███  ░███
 # ░░█████████  █████░░██████   ░░█████     █████   █████░░██████  █████░███ █████░░██████   ░░█████   ░░████████ █████
-#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░     ░░░░░   ░░░░░  ░░░░░░  ░░░░░ ░░░ ░░░░░  ░░░░░░     ░░░░░     ░░░░░░░░ ░░░░░ 
+#  ░░░░░░░░░  ░░░░░  ░░░░░░     ░░░░░     ░░░░░   ░░░░░  ░░░░░░  ░░░░░ ░░░ ░░░░░  ░░░░░░     ░░░░░     ░░░░░░░░ ░░░░░
 
 # This is based on the min manipulator size for different mounts (p61)
 def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[traveller.WeaponSize]:
@@ -282,7 +282,7 @@ def _manipulatorSizeToWeaponSize(manipulatorSize: int) -> typing.Optional[travel
 class UnusedSlotRemoval(robots.RobotComponentInterface):
     """
     - Cost Saving: Cr100 per slot removed
-    """    
+    """
     # NOTE: The fact this component doesn't check if there are any slots to
     # remove is important as we don't want the component to be removed if
     # the user temporarily adds a new component that takes the robot over
@@ -290,14 +290,14 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
     # will be selected (as it would be compatible) and then when the
     # temporary component is removed it it will remain as None as the
     # default component logic won't get applied (as there is a component)
-    
+
     _PerSlotCostSaving = common.ScalarCalculation(
         value=-100,
         name='Unused Slot Removal Per Slot Cost Saving')
-    
+
     def typeString(self) -> str:
         return 'Unused Slot Removal'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -311,7 +311,7 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
             self,
             sequence: str,
             context: robots.RobotContext
-            ) -> None:   
+            ) -> None:
         slots = self._slotCount()
         if not slots: # None indicates remove all slots
             slots = self._calculateUnusedSlots(
@@ -319,10 +319,10 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
                 context=context)
         if slots.value() <= 0:
             return # No slots to remove so no step to create
-            
+
         step = robots.RobotStep(
             name=self.instanceString(),
-            type=self.typeString())               
+            type=self.typeString())
 
         # NOTE: This assumes that the saving is a negative value
         cost = common.Calculator.multiply(
@@ -335,8 +335,8 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
 
         context.applyStep(
             sequence=sequence,
-            step=step)    
-    
+            step=step)
+
     def _calculateUnusedSlots(
             self,
             sequence: str,
@@ -360,17 +360,17 @@ class UnusedSlotRemoval(robots.RobotComponentInterface):
                 rhs=usedSlots),
             rhs=common.ScalarCalculation(value=0),
             name='Unused Slots')
-    
+
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
-        raise RuntimeError(f'{type(self)} is derived from UnusedSlotRemoval so must implement _slotCount')    
+        raise RuntimeError(f'{type(self)} is derived from UnusedSlotRemoval so must implement _slotCount')
 
 class AllSlotRemoval(UnusedSlotRemoval):
     def __init__(self) -> None:
         super().__init__()
-        
+
     def componentString(self) -> str:
         return 'Remove All'
-        
+
     def _slotCount(self) -> typing.Optional[common.ScalarCalculation]:
         return None # Remove all
 
@@ -384,13 +384,13 @@ class CustomSlotRemoval(UnusedSlotRemoval):
             value=1,
             minValue=1,
             description='Specify the number of slots to remove')
-        
+
     def instanceString(self) -> str:
         slots = self._slotCount()
-        if slots:      
-            return f'{self.componentString()} (x{slots.value()})'      
+        if slots:
+            return f'{self.componentString()} (x{slots.value()})'
         return super().instanceString()
-        
+
     def componentString(self) -> str:
         return 'Remove Custom'
 
@@ -416,20 +416,19 @@ class CustomSlotRemoval(UnusedSlotRemoval):
         return common.ScalarCalculation(
             value=self._slotCountOption.value() if self._slotCountOption.isEnabled() else 0,
             name='Specified Custom Slot Count')
-    
 
 
-#   █████████                         █████    █████           █████████                    █████           
-#  ███░░░░░███                       ░░███    ░░███           ███░░░░░███                  ░░███            
-# ░███    ░░░  █████ ████ ████████   ███████   ░███████      ███     ░░░   ██████   █████  ███████    █████ 
-# ░░█████████ ░░███ ░███ ░░███░░███ ░░░███░    ░███░░███    ░███          ███░░███ ███░░  ░░░███░    ███░░  
-#  ░░░░░░░░███ ░███ ░███  ░███ ░███   ░███     ░███ ░███    ░███         ░███ ░███░░█████   ░███    ░░█████ 
+#   █████████                         █████    █████           █████████                    █████
+#  ███░░░░░███                       ░░███    ░░███           ███░░░░░███                  ░░███
+# ░███    ░░░  █████ ████ ████████   ███████   ░███████      ███     ░░░   ██████   █████  ███████    █████
+# ░░█████████ ░░███ ░███ ░░███░░███ ░░░███░    ░███░░███    ░███          ███░░███ ███░░  ░░░███░    ███░░
+#  ░░░░░░░░███ ░███ ░███  ░███ ░███   ░███     ░███ ░███    ░███         ░███ ░███░░█████   ░███    ░░█████
 #  ███    ░███ ░███ ░███  ░███ ░███   ░███ ███ ░███ ░███    ░░███     ███░███ ░███ ░░░░███  ░███ ███ ░░░░███
-# ░░█████████  ░░███████  ████ █████  ░░█████  ████ █████    ░░█████████ ░░██████  ██████   ░░█████  ██████ 
-#  ░░░░░░░░░    ░░░░░███ ░░░░ ░░░░░    ░░░░░  ░░░░ ░░░░░      ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░  ░░░░░░  
-#               ███ ░███                                                                                    
-#              ░░██████                                                                                     
-#               ░░░░░░  
+# ░░█████████  ░░███████  ████ █████  ░░█████  ████ █████    ░░█████████ ░░██████  ██████   ░░█████  ██████
+#  ░░░░░░░░░    ░░░░░███ ░░░░ ░░░░░    ░░░░░  ░░░░ ░░░░░      ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░  ░░░░░░
+#               ███ ░███
+#              ░░██████
+#               ░░░░░░
 
 class SynthAdditionalCosts(robots.RobotComponentInterface):
     # NOTE: This multiplier is applied to all costs except the cost for skills.
@@ -444,7 +443,7 @@ class SynthAdditionalCosts(robots.RobotComponentInterface):
 
     def typeString(self) -> str:
         return 'Synth Additional Costs'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -458,14 +457,14 @@ class SynthAdditionalCosts(robots.RobotComponentInterface):
             self,
             sequence: str,
             context: robots.RobotContext
-            ) -> None:   
+            ) -> None:
         synthetic = context.findFirstComponent(
             componentType=robots.Synthetic,
             sequence=sequence)
         if not synthetic:
             return
         assert(isinstance(synthetic, robots.Synthetic))
-            
+
         standardCost = context.multiPhaseCost(
             sequence=sequence,
             costId=robots.RobotCost.Credits,
@@ -482,7 +481,7 @@ class SynthAdditionalCosts(robots.RobotComponentInterface):
                 lhs=SynthAdditionalCosts._SyntheticsAdditionalCostMultiplier,
                 rhs=common.ScalarCalculation(value=1)),
             name='Synthetic Robot Additional Cost')
-        
+
         step = robots.RobotStep(
             name=f'Additional Cost',
             type=synthetic.componentString())
@@ -491,36 +490,34 @@ class SynthAdditionalCosts(robots.RobotComponentInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
 
 
-
-#    █████████                    █████       ██████   ██████              █████  ███     ██████   ███                      █████     ███                     
-#   ███░░░░░███                  ░░███       ░░██████ ██████              ░░███  ░░░     ███░░███ ░░░                      ░░███     ░░░                      
-#  ███     ░░░   ██████   █████  ███████      ░███░█████░███   ██████   ███████  ████   ░███ ░░░  ████   ██████   ██████   ███████   ████   ██████  ████████  
-# ░███          ███░░███ ███░░  ░░░███░       ░███░░███ ░███  ███░░███ ███░░███ ░░███  ███████   ░░███  ███░░███ ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███ 
-# ░███         ░███ ░███░░█████   ░███        ░███ ░░░  ░███ ░███ ░███░███ ░███  ░███ ░░░███░     ░███ ░███ ░░░   ███████   ░███     ░███ ░███ ░███ ░███ ░███ 
-# ░░███     ███░███ ░███ ░░░░███  ░███ ███    ░███      ░███ ░███ ░███░███ ░███  ░███   ░███      ░███ ░███  ███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███ 
+#    █████████                    █████       ██████   ██████              █████  ███     ██████   ███                      █████     ███
+#   ███░░░░░███                  ░░███       ░░██████ ██████              ░░███  ░░░     ███░░███ ░░░                      ░░███     ░░░
+#  ███     ░░░   ██████   █████  ███████      ░███░█████░███   ██████   ███████  ████   ░███ ░░░  ████   ██████   ██████   ███████   ████   ██████  ████████
+# ░███          ███░░███ ███░░  ░░░███░       ░███░░███ ░███  ███░░███ ███░░███ ░░███  ███████   ░░███  ███░░███ ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███
+# ░███         ░███ ░███░░█████   ░███        ░███ ░░░  ░███ ░███ ░███░███ ░███  ░███ ░░░███░     ░███ ░███ ░░░   ███████   ░███     ░███ ░███ ░███ ░███ ░███
+# ░░███     ███░███ ░███ ░░░░███  ░███ ███    ░███      ░███ ░███ ░███░███ ░███  ░███   ░███      ░███ ░███  ███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███
 #  ░░█████████ ░░██████  ██████   ░░█████     █████     █████░░██████ ░░████████ █████  █████     █████░░██████ ░░████████  ░░█████  █████░░██████  ████ █████
-#   ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░     ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ 
+#   ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░     ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░ ░░░░░  ░░░░░     ░░░░░  ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░
 
 class CostModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Cost Modification'
-    
+
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
-        
+
         totalCost = context.totalCredits(sequence=sequence)
         return totalCost.value() > 0
-    
+
 class FixedCostModifier(CostModification):
     def __init__(self):
         super().__init__()
@@ -530,15 +527,15 @@ class FixedCostModifier(CostModification):
             name='Cost Modifier',
             value=0,
             description='The number of credits to add to or remove from the final cost of the robot')
-        
+
     def fixedModifier(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
             value=self._creditsOption.value(),
             name='Specified Fixed Cost Modifier')
-    
+
     def componentString(self) -> str:
         return 'Fixed Cost Modifier'
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._creditsOption]
 
@@ -571,7 +568,7 @@ class FixedCostModifier(CostModification):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
 class PercentageCostModifier(CostModification):
     def __init__(self):
         super().__init__()
@@ -582,15 +579,15 @@ class PercentageCostModifier(CostModification):
             value=0,
             minValue=-100,
             description='The percentage to add to or remove from the final cost of the robot')
-        
+
     def percentModifier(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
             value=self._creditsOption.value(),
             name='Specified Percentage Cost Modifier')
-    
+
     def componentString(self) -> str:
         return 'Percentage Cost Modifier'
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._creditsOption]
 
@@ -623,9 +620,8 @@ class PercentageCostModifier(CostModification):
             step=step)
 
 
-
-#    █████████                    █████       ███████████                                      █████  ███                     
-#   ███░░░░░███                  ░░███       ░░███░░░░░███                                    ░░███  ░░░                      
+#    █████████                    █████       ███████████                                      █████  ███
+#   ███░░░░░███                  ░░███       ░░███░░░░░███                                    ░░███  ░░░
 #  ███     ░░░   ██████   █████  ███████      ░███    ░███   ██████  █████ ████ ████████    ███████  ████  ████████    ███████
 # ░███          ███░░███ ███░░  ░░░███░       ░██████████   ███░░███░░███ ░███ ░░███░░███  ███░░███ ░░███ ░░███░░███  ███░░███
 # ░███         ░███ ░███░░█████   ░███        ░███░░░░░███ ░███ ░███ ░███ ░███  ░███ ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███
@@ -633,26 +629,26 @@ class PercentageCostModifier(CostModification):
 #  ░░█████████ ░░██████  ██████   ░░█████     █████   █████░░██████  ░░████████ ████ █████░░████████ █████ ████ █████░░███████
 #   ░░░░░░░░░   ░░░░░░  ░░░░░░     ░░░░░     ░░░░░   ░░░░░  ░░░░░░    ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░ ░░░░░  ░░░░░███
 #                                                                                                                     ███ ░███
-#                                                                                                                    ░░██████ 
-#                                                                                                                     ░░░░░░  
+#                                                                                                                    ░░██████
+#                                                                                                                     ░░░░░░
 
 class CostRounding(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Cost Rounding'
-    
+
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
-        
+
         totalCost = context.totalCredits(sequence=sequence)
-        return totalCost.value() > 0        
-        
+        return totalCost.value() > 0
+
 class SignificantFigureCostRounding(CostRounding):
     def __init__(self):
         super().__init__()
@@ -663,15 +659,15 @@ class SignificantFigureCostRounding(CostRounding):
             value=1,
             minValue=1,
             description='The number of significant figures to round the final robot cost to.')
-        
+
     def significantFigures(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
             value=self._creditsOption.value(),
             name='Specified Significant Figures')
-    
+
     def componentString(self) -> str:
         return 'Significant Figures'
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._creditsOption]
 
@@ -700,16 +696,14 @@ class SignificantFigureCostRounding(CostRounding):
             step=step)
 
 
-
-
-#  ███████████  ███                       ████   ███                     █████     ███                     
-# ░░███░░░░░░█ ░░░                       ░░███  ░░░                     ░░███     ░░░                      
-#  ░███   █ ░  ████  ████████    ██████   ░███  ████   █████   ██████   ███████   ████   ██████  ████████  
-#  ░███████   ░░███ ░░███░░███  ░░░░░███  ░███ ░░███  ███░░   ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███ 
-#  ░███░░░█    ░███  ░███ ░███   ███████  ░███  ░███ ░░█████   ███████   ░███     ░███ ░███ ░███ ░███ ░███ 
-#  ░███  ░     ░███  ░███ ░███  ███░░███  ░███  ░███  ░░░░███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███ 
+#  ███████████  ███                       ████   ███                     █████     ███
+# ░░███░░░░░░█ ░░░                       ░░███  ░░░                     ░░███     ░░░
+#  ░███   █ ░  ████  ████████    ██████   ░███  ████   █████   ██████   ███████   ████   ██████  ████████
+#  ░███████   ░░███ ░░███░░███  ░░░░░███  ░███ ░░███  ███░░   ░░░░░███ ░░░███░   ░░███  ███░░███░░███░░███
+#  ░███░░░█    ░███  ░███ ░███   ███████  ░███  ░███ ░░█████   ███████   ░███     ░███ ░███ ░███ ░███ ░███
+#  ░███  ░     ░███  ░███ ░███  ███░░███  ░███  ░███  ░░░░███ ███░░███   ░███ ███ ░███ ░███ ░███ ░███ ░███
 #  █████       █████ ████ █████░░████████ █████ █████ ██████ ░░████████  ░░█████  █████░░██████  ████ █████
-# ░░░░░       ░░░░░ ░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░░ ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░ 
+# ░░░░░       ░░░░░ ░░░░ ░░░░░  ░░░░░░░░ ░░░░░ ░░░░░ ░░░░░░   ░░░░░░░░    ░░░░░  ░░░░░  ░░░░░░  ░░░░ ░░░░░
 
 class Finalisation(robots.RobotComponentInterface):
     _AtmosphereFlyerLocomotions = [
@@ -763,7 +757,7 @@ class Finalisation(robots.RobotComponentInterface):
             [robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
         robots.BasicBioRobotSynthetic: (
             "Basic (x) or Hunter/Killer",
-            [robots.BasicBrain, robots.HunterKillerBrain, robots.SkilledRobotBrain, robots.BrainInAJarBrain]), 
+            [robots.BasicBrain, robots.HunterKillerBrain, robots.SkilledRobotBrain, robots.BrainInAJarBrain]),
         robots.ImprovedBioRobotSynthetic: (
             "Advanced",
             [robots.AdvancedBrain,  robots.VeryAdvancedBrain, robots.SelfAwareBrain, robots.ConsciousBrain, robots.BrainInAJarBrain]),
@@ -778,7 +772,7 @@ class Finalisation(robots.RobotComponentInterface):
 
     _InoperableNote = 'When a robot\'s Hits reach 0, it\'s inoperable and cannot be easily repaired. If the robot sustains {doubleHits} cumulative damage, the robot is destroyed and can\'t be repaired. (p13)'
     _DefaultMaintenanceNote = 'The robot requires maintenance once a year. If the maintenance schedule is not followed, a Malfunction check must be made every month. (p108)'
-    
+
     _AutopilotNote = 'The DM for the robot\'s Autopilot rating and its vehicle skills don\'t stack, the higher of the two values should be used. (p49)'
 
     _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog, Robot Handbook author)'
@@ -804,7 +798,7 @@ class Finalisation(robots.RobotComponentInterface):
         robots.HostileEnvironmentProtectionDefaultSuiteOption,
         robots.HostileEnvironmentProtectionSlotOption
     ]
- 
+
     _SkilledSensorNote = 'WARNING: The robot doesn\'t have the Electronics (Sensors) 0 skill required to operate its {component}'
 
     def componentString(self) -> str:
@@ -852,11 +846,11 @@ class Finalisation(robots.RobotComponentInterface):
             sequence=sequence)
         if not protection:
             return # Nothing to do
-        
+
         armour = common.Calculator.equals(
             value=protection,
             name='Armour Trait Value')
-        
+
         step = robots.RobotStep(
             name=f'Protection ({protection.value()})',
             type='Trait')
@@ -951,22 +945,22 @@ class Finalisation(robots.RobotComponentInterface):
                 needsAtmosphere = False
                 for locomotion in Finalisation._AtmosphereFlyerLocomotions:
                     if context.hasComponent(
-                        componentType=locomotion,
-                        sequence=sequence):
+                            componentType=locomotion,
+                            sequence=sequence):
                         needsAtmosphere = True
                         break
                 if needsAtmosphere:
-                    notes.append(f'Aeroplane or VTOL Flyer robots need a minimum of a thin atmosphere to fly. (p17)')    
-            
+                    notes.append(f'Aeroplane or VTOL Flyer robots need a minimum of a thin atmosphere to fly. (p17)')
+
                 needsGrav = False
                 for locomotion in Finalisation._GraveFlyerLocomotions:
                     if context.hasComponent(
-                        componentType=locomotion,
-                        sequence=sequence):
+                            componentType=locomotion,
+                            sequence=sequence):
                         needsGrav = True
                         break
                 if needsGrav:
-                    notes.append(f'Grav Flyer robots require at a gravitational field to operate. (p17)')    
+                    notes.append(f'Grav Flyer robots require at a gravitational field to operate. (p17)')
 
             if notes:
                 step = robots.RobotStep(
@@ -1008,11 +1002,11 @@ class Finalisation(robots.RobotComponentInterface):
             sequence=sequence)
         if noInternalPower:
             return
-        
+
         hasQuickCharger = context.hasComponent(
             componentType=robots.QuickChargerSlotOption,
             sequence=sequence)
-        
+
         if hasQuickCharger:
             rechargeNote = 'It takes 8 hours to fully recharge the robot when not using an external power supply capable of quick charging. (p57)'
         else:
@@ -1024,7 +1018,7 @@ class Finalisation(robots.RobotComponentInterface):
         step.addNote(note=rechargeNote)
         context.applyStep(
             sequence=sequence,
-            step=step)                          
+            step=step)
 
     def _createMaintenanceStep(
             self,
@@ -1033,8 +1027,8 @@ class Finalisation(robots.RobotComponentInterface):
             ) -> None:
         for component in Finalisation._ImprovedMaintenanceOptions:
             if context.hasComponent(
-                componentType=component,
-                sequence=sequence):
+                    componentType=component,
+                    sequence=sequence):
                 # Nothing to do, the note only applies if the robot doesn't have
                 # improved maintenance
                 return
@@ -1046,7 +1040,7 @@ class Finalisation(robots.RobotComponentInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
     def _createAutopilotStep(
             self,
             sequence: str,
@@ -1057,7 +1051,7 @@ class Finalisation(robots.RobotComponentInterface):
             sequence=sequence)
         if not autopilot:
             return
-        
+
         hasVehicleSkill = False
         for skill in Finalisation._AutopilotVehicleSkills:
             if context.hasSkill(skillDef=skill, sequence=sequence):
@@ -1066,7 +1060,7 @@ class Finalisation(robots.RobotComponentInterface):
 
         if not hasVehicleSkill:
             return
-            
+
         step = robots.RobotStep(
             name='Autopilot',
             type='Skills',
@@ -1074,7 +1068,7 @@ class Finalisation(robots.RobotComponentInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
     # NOTE: This covers the Manipulator Athletics Skill Requirements (p26)
     # NOTE: The Athletics levels given by the manipulators stacks with software
     # Athletics skills. This was clarified by Geir.
@@ -1101,7 +1095,7 @@ class Finalisation(robots.RobotComponentInterface):
             assert(isinstance(manipulator, robots.Manipulator))
             if isinstance(manipulator, robots.RemoveBaseManipulator):
                 continue
-            
+
             dexterity = manipulator.dexterity()
             dexterityModifier = traveller.characteristicDM(level=dexterity)
             if dexterityModifier > 0:
@@ -1116,7 +1110,7 @@ class Finalisation(robots.RobotComponentInterface):
             skill = f'{traveller.AthleticsSkillDefinition.name()} ({traveller.AthleticsSkillSpecialities.Dexterity.value})'
             step = robots.RobotStep(
                 name=skill,
-                type='Skills')            
+                type='Skills')
             step.addNote(Finalisation._ManipulatorAthleticsNote.format(
                 characteristic='DEX',
                 characteristicLevel=dexterity,
@@ -1125,7 +1119,7 @@ class Finalisation(robots.RobotComponentInterface):
             context.applyStep(
                 sequence=sequence,
                 step=step)
-            
+
         for strength, modifier in strengthModifierMap.items():
             skill = f'{traveller.AthleticsSkillDefinition.name()} ({traveller.AthleticsSkillSpecialities.Strength.value})'
             step = robots.RobotStep(
@@ -1174,13 +1168,13 @@ class Finalisation(robots.RobotComponentInterface):
             context.applyStep(
                 sequence=sequence,
                 step=step)
-            
+
         # Cover what happens if a manipulator holds a weapon that would require
         # a larger mount that the manipulator can handle
         if hasManipulator:
             step = robots.RobotStep(
                 name='Weapon Size',
-                type='Combat')            
+                type='Combat')
             sizingMap: typing.Dict[traveller.WeaponSize, typing.Iterable[str]] = {}
             for manipulatorSize in allManipulatorSizes:
                 weaponSize = _manipulatorSizeToWeaponSize(
@@ -1209,18 +1203,18 @@ class Finalisation(robots.RobotComponentInterface):
             ) -> None:
         for componentType in Finalisation._VacuumProtectionComponents:
             if context.hasComponent(
-                componentType=componentType,
-                sequence=sequence):
+                    componentType=componentType,
+                    sequence=sequence):
                 return
-            
+
         if context.hasComponent(componentType=robots.BioRobotSynthetic):
             note = Finalisation._VacuumOperationBiologicalNote
         else:
             malfunctionInterval = 1
             for componentType in Finalisation._VacuumIncreaseComponents:
                 if context.hasComponent(
-                    componentType=componentType,
-                    sequence=sequence):
+                        componentType=componentType,
+                        sequence=sequence):
                     malfunctionInterval = 2
                     break
 
@@ -1241,7 +1235,7 @@ class Finalisation(robots.RobotComponentInterface):
         step.addNote(note=note)
         context.applyStep(
             sequence=sequence,
-            step=step)  
+            step=step)
 
     def _createSynthBrainStep(
             self,
@@ -1258,7 +1252,7 @@ class Finalisation(robots.RobotComponentInterface):
             sequence=sequence)
         if not brain:
             return
-        
+
         minBrain, supportedBrains = self._SyntheticMinBrainMap.get(
             type(synthetic),
             (None, None))
@@ -1270,7 +1264,7 @@ class Finalisation(robots.RobotComponentInterface):
                     break
         if isBrainSupported:
             return
-        
+
         step = robots.RobotStep(
             name='Minimum Brain',
             type=synthetic.componentString())
@@ -1278,7 +1272,7 @@ class Finalisation(robots.RobotComponentInterface):
             brain=minBrain))
         context.applyStep(
             sequence=sequence,
-            step=step)         
+            step=step)
 
     def _createSkilledSensorsSteps(
             self,
@@ -1288,8 +1282,8 @@ class Finalisation(robots.RobotComponentInterface):
         # NOTE: The rules say that Electronics (sensors) 0 is required to use these
         # sensors. This is just base Electronics so no need to check speciality
         if context.hasSkill(
-            skillDef=traveller.ElectronicsSkillDefinition,
-            sequence=sequence):
+                skillDef=traveller.ElectronicsSkillDefinition,
+                sequence=sequence):
             return
 
         for componentType in Finalisation._SkilledSensorSlotOptions:
@@ -1308,7 +1302,7 @@ class Finalisation(robots.RobotComponentInterface):
             context.applyStep(
                 sequence=sequence,
                 step=step)
-        
+
     def _createSlotUsageStep(
             self,
             sequence: str,
@@ -1324,11 +1318,11 @@ class Finalisation(robots.RobotComponentInterface):
         if usedSlots.value() == maxSlots.value():
             # Nothing to do, all available slots used
             return
-        
+
         step = robots.RobotStep(
             name='Slots',
             type='Usage')
-        
+
         if usedSlots.value() < maxSlots.value():
             step.addFactor(factor=construction.StringFactor(
                 string=f'Unused Slots = {maxSlots.value() - usedSlots.value()}'))
@@ -1341,15 +1335,15 @@ class Finalisation(robots.RobotComponentInterface):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
     def _createBandwidthUsageStep(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> None:
         if context.hasComponent(
-            componentType=robots.BrainInAJarBrain,
-            sequence=sequence):
+                componentType=robots.BrainInAJarBrain,
+                sequence=sequence):
             # There is no bandwidth limitation when using a brain in a jar
             return
 
@@ -1363,7 +1357,7 @@ class Finalisation(robots.RobotComponentInterface):
         if usedBandwidth.value() == maxBandwidth.value():
             # Nothing to do, all available bandwidth used
             return
-        
+
         step = robots.RobotStep(
             name='Bandwidth',
             type='Usage')
@@ -1373,7 +1367,7 @@ class Finalisation(robots.RobotComponentInterface):
                 string=f'Unused Bandwidth = {maxBandwidth.value() - usedBandwidth.value()}'))
         else:
             # NOTE: The max slots can be a float as some components add/remove a
-            # percentage of the slots (e.g. None locomotion adds 25%)        
+            # percentage of the slots (e.g. None locomotion adds 25%)
             step.addNote('WARNING: {used} bandwidth has been used but the robot has a max of {max}'.format(
                 used=usedBandwidth.value(),
                 max=math.floor(maxBandwidth.value())))

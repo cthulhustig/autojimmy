@@ -278,11 +278,11 @@ class SectionList(QtWidgets.QWidget):
         if treeRect.contains(scrollRect):
             # item is already fully visible so nothing to do
             return
-        
+
         scrollBar = self._treeWidget.verticalScrollBar()
         if not scrollBar:
             return
-                
+
         targetPos = scrollRect.center().y()
 
         currentPos = scrollBar.value()

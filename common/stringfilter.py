@@ -22,7 +22,7 @@ class StringFilter(object):
             filterType=filterType,
             filterString=filterString,
             ignoreCase=ignoreCase)
-            
+
     def setFilter(
             self,
             filterType: StringFilterType,
@@ -58,6 +58,3 @@ class StringFilter(object):
             # Filtering is disabled so all strings match
             return True
         return self._filterRegex.match(string) != None
-
-    
-

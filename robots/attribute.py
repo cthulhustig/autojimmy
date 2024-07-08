@@ -59,7 +59,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # This attribute is a hack to allow zero slot options to track how many zero
     # slot options have been added to know if they should start consuming a slot.
     # This attribute shouldn't be included in the manifest
-    ZeroSlotCount = 'Zero Slot Count'    
+    ZeroSlotCount = 'Zero Slot Count'
 
     #
     # Brain Attributes
@@ -96,7 +96,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     #
     # Robot Flag Traits
     #
-    ACV = 'ACV' # (p17)    
+    ACV = 'ACV' # (p17)
     Alarm = 'Alarm' # (p7)
     Amphibious = 'Amphibious' # (p7)
     ATV = 'ATV' # (p8 & 17)
@@ -147,6 +147,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     Flyer = 'Flyer' # SpeedBand (p8 & p17)
     Thruster = 'Thruster' # Acceleration G-Force (p17)
 
+
 InternalAttributeIds = [
     RobotAttributeId.BaseProtection,
     RobotAttributeId.ZeroSlotCount,
@@ -165,19 +166,19 @@ StandardAttributeIds = [
     RobotAttributeId.INT,
 ]
 
-PhysicalCharacteristicAttributeIds =[
+PhysicalCharacteristicAttributeIds = [
     RobotAttributeId.STR,
     RobotAttributeId.DEX,
     RobotAttributeId.END
 ]
 
-MentalCharacteristicAttributeIds =[
+MentalCharacteristicAttributeIds = [
     RobotAttributeId.INT,
     RobotAttributeId.EDU,
     RobotAttributeId.SOC
 ]
 
-OptionalCharacteristicAttributeIds =[
+OptionalCharacteristicAttributeIds = [
     RobotAttributeId.PSI,
     RobotAttributeId.LCK,
     RobotAttributeId.WLT,
@@ -195,7 +196,7 @@ TraitAttributeIds = [
     RobotAttributeId.Alarm,
     RobotAttributeId.Amphibious,
     RobotAttributeId.ATV,
-    RobotAttributeId.Autopilot,    
+    RobotAttributeId.Autopilot,
     RobotAttributeId.Hardened,
     RobotAttributeId.HeightenedSenses,
     RobotAttributeId.Invisible,

@@ -192,7 +192,7 @@ def _snapshotUpdateCheck(
     if isStartup:
         answer = gui.AutoSelectMessageBox.question(
             text='<html>New universe data is available. Do you want to update?<br>' \
-                'Custom sectors will not be affected<br></html>',
+            'Custom sectors will not be affected<br></html>',
             stateKey='DownloadUniverseAtStartup')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             # User chose not to install update so just continue loading the app with the
@@ -509,10 +509,10 @@ def main() -> None:
         gunsmith.WeaponStore.setWeaponDirs(
             userDir=os.path.join(appDir, 'weapons'),
             exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
-        
+
         robots.RobotStore.setRobotDirs(
             userDir=os.path.join(appDir, 'robots'),
-            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))        
+            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))
 
         gui.configureAppStyle(application)
 

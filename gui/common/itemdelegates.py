@@ -47,7 +47,7 @@ class TableViewSpannedWordWrapFixDelegate(TableViewItemDelegateEx):
         if itemSpan <= 1:
             # No span so just return base size hint
             return super().sizeHint(option, index)
-                
+
         column = 0
         while column < index.column():
             span = table.columnSpan(index.row(), column)

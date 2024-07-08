@@ -14,7 +14,7 @@ def createNotesTable(
         listItemStyle: typing.Optional[ParagraphStyle] = None,
         copyHeaderOnSplit: bool = True,
         horzCellPadding: float = 5,
-        vertCellPadding: float = 3,        
+        vertCellPadding: float = 3,
         ) -> typing.Optional[Table]:
     tableData = [[
         pdf.ParagraphEx(
@@ -24,7 +24,7 @@ def createNotesTable(
             text='Notes',
             style=headerStyle),
         ]]
-    
+
     stepNotesMap = dict()
     for step in steps:
         stepNotes = step.notes()
@@ -50,11 +50,11 @@ def createNotesTable(
             _createNotesList(
                 notes=stepNotes,
                 listStyle=listStyle,
-                itemStyle=listItemStyle)])        
+                itemStyle=listItemStyle)])
 
     if len(tableData) <= 1:
         return None # No notes added (only header) so no point creating a table
-    
+
     cellStyles = pdf.createTableCellStyles(
         tableData=tableData,
         horzCellPadding=horzCellPadding,

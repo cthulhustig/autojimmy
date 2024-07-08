@@ -6,7 +6,7 @@ import typing
 class Synthetic(robots.RobotComponentInterface):
     """
     - Protection: 0 (p19 & p86)
-    - Requirement: Can only add up to 2 slots of armour (p86)    
+    - Requirement: Can only add up to 2 slots of armour (p86)
     - Requirement: The min brain is only the min to successfully preform
     basic emulation of the living creature it's trying to mimic, if lower
     level brains are used the robot receives an additional  DM-2 to social
@@ -29,7 +29,7 @@ class Synthetic(robots.RobotComponentInterface):
 
     _BaseProtection = common.ScalarCalculation(
         value=0,
-        name='Android Base Protection')    
+        name='Android Base Protection')
 
     def __init__(
             self,
@@ -46,22 +46,22 @@ class Synthetic(robots.RobotComponentInterface):
         self._minTL = common.ScalarCalculation(
             value=minTL,
             name=f'{self._componentString} Minimum TL')
-        
+
         self._slotPercentage = common.ScalarCalculation(
             value=slotPercentage,
             name=f'{self._componentString} Required Base Slot Percentage')
-        
+
         self._perBaseSlotCost = common.ScalarCalculation(
             value=perBaseSlotCost,
             name=f'{self._componentString} Per Slot Cost')
-        
+
         self._notes = notes
-        
+
     def componentString(self) -> str:
         return self._componentString
-    
+
     def typeString(self) -> str:
-        return 'Synthetic'        
+        return 'Synthetic'
 
     def isCompatible(
             self,
@@ -73,7 +73,7 @@ class Synthetic(robots.RobotComponentInterface):
 
         return context.hasComponent(
             componentType=robots.Chassis,
-            sequence=sequence) 
+            sequence=sequence)
 
     def createSteps(
             self,
@@ -110,21 +110,22 @@ class Synthetic(robots.RobotComponentInterface):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.BaseProtection,
             value=AndroidSynthetic._BaseProtection))
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Protection,
-            value=AndroidSynthetic._BaseProtection))                
+            value=AndroidSynthetic._BaseProtection))
 
         if self._notes:
             for note in self._notes:
                 step.addNote(note=note)
 
         return step
-    
+
 class AndroidSynthetic(Synthetic):
     """
     - Slots: 50% of Base Slots
     """
+
     def __init__(
             self,
             componentString: str,
@@ -138,35 +139,37 @@ class AndroidSynthetic(Synthetic):
             slotPercentage=50,
             perBaseSlotCost=perSlotCost,
             notes=notes)
-            
+
 class BasicAndroidSynthetic(AndroidSynthetic):
     """
     - Min TL: 8
     - Cost: Cr1000 Per Base Slot
     - Minimum Brain: Basic (X) or Hunter/Killer
-    - Note: Barely emulating. DM-2 on all social interactions from the uncanny valley effect.    
+    - Note: Barely emulating. DM-2 on all social interactions from the uncanny valley effect.
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Basic Android',
             minTL=8,
             perSlotCost=1000,
             notes=['All social interaction receive a DM-2 due to the uncanny valley effect. (p87)'])
-            
+
 class ImprovedAndroidSynthetic(AndroidSynthetic):
     """
     - Min TL: 10
     - Cost: Cr2000 Per Slot
     - Minimum Brain: Advanced
-    - Note: Natural-looking. Passes at a distance but triggers the uncanny valley DM-2 within 5 metres.  
+    - Note: Natural-looking. Passes at a distance but triggers the uncanny valley DM-2 within 5 metres.
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Improved Android',
             minTL=10,
             perSlotCost=2000,
             notes=['Natural-looking. (p87)',
-                   'Social interactions with others within 5m of the robot receive a DM-2 due to the uncanny valley effect. (p87)']) 
+                   'Social interactions with others within 5m of the robot receive a DM-2 due to the uncanny valley effect. (p87)'])
 
 class EnhancedAndroidSynthetic(AndroidSynthetic):
     """
@@ -175,6 +178,7 @@ class EnhancedAndroidSynthetic(AndroidSynthetic):
     - Minimum Brain: Very Advanced
     - Note: Natural-looking; Invisitech. Passes in close interaction, but on a roll of a natural 2 the uncanny valley sets in.
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Enhanced Android',
@@ -191,13 +195,14 @@ class AdvancedAndroidSynthetic(AndroidSynthetic):
     - Note: Natural-looking; Invisitech; Self-repairing. Can pass as a
     biological being unless scanned.
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Advanced Android',
             minTL=14,
             perSlotCost=10000,
             notes=['Natural-looking, Invisitech, Self-repairing. (p87 & p93)',
-                   'Scanning is required to distinguish the robot from the species it\'s designed to imitate. (p87)'])      
+                   'Scanning is required to distinguish the robot from the species it\'s designed to imitate. (p87)'])
 
 class SuperiorAndroidSynthetic(AndroidSynthetic):
     """
@@ -207,13 +212,14 @@ class SuperiorAndroidSynthetic(AndroidSynthetic):
     - Note: Natural-looking; Invisitech; Self-repairing. Can pass even after
       most scans.
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Superior Android',
             minTL=16,
             perSlotCost=20000,
             notes=['Natural-looking, Invisitech, Self-repairing. (p87 & p93)',
-                   'Most scanners are unable to distinguish the robot from the species it\'s designed to imitate. (p87)']) 
+                   'Most scanners are unable to distinguish the robot from the species it\'s designed to imitate. (p87)'])
 
 class BioRobotSynthetic(Synthetic):
     """
@@ -224,7 +230,7 @@ class BioRobotSynthetic(Synthetic):
       have to eat, drink & breath (p88)
     - Requirement: A Biological Robot can use any of the body augments from the
       Central Supply Catalogue or Robot Handbook (p88)
-    """    
+    """
     # NOTE: I've handled the locomotion requirement by making BioRobots only
     # compatible with None, Aeroplane, Aquatic, VTOL & Walker locomotions. This
     # list is based on the spreadsheet. It also has Lighter than Air as a
@@ -258,7 +264,7 @@ class BioRobotSynthetic(Synthetic):
             slotPercentage=75,
             perBaseSlotCost=perSlotCost,
             notes=newNotes)
-        
+
     def isCompatible(
             self,
             sequence: str,
@@ -266,7 +272,7 @@ class BioRobotSynthetic(Synthetic):
             ) -> bool:
         if not super().isCompatible(sequence, context):
             return False
-        
+
         locomotions = context.findComponents(
             componentType=robots.Locomotion,
             sequence=sequence)
@@ -275,7 +281,7 @@ class BioRobotSynthetic(Synthetic):
             if not locomotion.isNatural():
                 return False
         return True
-    
+
     def _createStep(
             self,
             sequence: str,
@@ -289,7 +295,7 @@ class BioRobotSynthetic(Synthetic):
         # its presence to avoid applying Endurance modifiers
         # NOTE: Can't delete SecondaryEndurance here as it's not been set yet
         step.addFactor(factor=construction.DeleteAttributeFactor(
-            attributeId=robots.RobotAttributeId.Endurance))     
+            attributeId=robots.RobotAttributeId.Endurance))
 
         return step
 
@@ -302,21 +308,23 @@ class BasicBioRobotSynthetic(BioRobotSynthetic):
       interfaces are detectable by attuned scanners and by any psionic life
       detection. (p88)
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Basic Bio-Robot',
             minTL=11,
             perSlotCost=2000,
             notes=['Only scanners and psionic life detection can differentiate the robot from the species it\'s designed to imitate. (p88)',
-                   'DM-2 on all healing checks. (p88)'])  
+                   'DM-2 on all healing checks. (p88)'])
 
 class ImprovedBioRobotSynthetic(BioRobotSynthetic):
     """
     - Min TL: 13
     - Cost: Cr5000
     - Minimum Brain: Advanced
-    - Note: Treat detection of an artificial brain as DM-2 on any scanner check, including psionic life detection. (p88)    
+    - Note: Treat detection of an artificial brain as DM-2 on any scanner check, including psionic life detection. (p88)
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Improved Bio-Robot',
@@ -329,8 +337,9 @@ class EnhancedBioRobotSynthetic(BioRobotSynthetic):
     - Min TL: 15
     - Cost: Cr10000
     - Minimum Brain: Very Advanced
-    - Note: DM+2 on all healing checks. DM-4 on any scanner check, including psionic life detection. (p88)  
+    - Note: DM+2 on all healing checks. DM-4 on any scanner check, including psionic life detection. (p88)
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Enhanced Bio-Robot',
@@ -344,12 +353,13 @@ class AdvancedBioRobotSynthetic(BioRobotSynthetic):
     - Min TL: 17
     - Cost: Cr20000
     - Minimum Brain: Self-Aware
-    - Note: DM+4 on all healing checks. Indistinguishable from a fully biological being, even psionically. (p88)    
+    - Note: DM+4 on all healing checks. Indistinguishable from a fully biological being, even psionically. (p88)
     """
+
     def __init__(self) -> None:
         super().__init__(
             componentString='Advanced Bio-Robot',
             minTL=17,
             perSlotCost=20000,
             notes=['The robot is biologically indistinguishable from the species it\'s designed to imitate, even psionically. (p88)',
-                   'DM+4 on all healing checks. (p88)'])    
+                   'DM+4 on all healing checks. (p88)'])

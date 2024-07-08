@@ -56,7 +56,7 @@ class _CustomListWidgetItem(QtWidgets.QListWidgetItem):
     def __lt__(self, other: QtWidgets.QListWidgetItem) -> bool:
         try:
             if isinstance(other, _CustomListWidgetItem) and \
-                (self.isUnnamed() != other.isUnnamed()):
+                    (self.isUnnamed() != other.isUnnamed()):
                 return self.isUnnamed()
 
             lhs = common.naturalSortKey(
@@ -166,19 +166,19 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             name: str
             ) -> construction.ConstructableInterface:
         raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement createNew')
-    
+
     def importConstructable(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement importConstructable')
 
     def exportConstructable(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement exportConstructable')
-    
+
     def current(self) -> typing.Optional[construction.ConstructableInterface]:
         item = self._sectionList.currentItem()
         if not isinstance(item, _CustomListWidgetItem):
             return None
         return item.constructable()
-    
+
     def isUnnamed(
             self,
             constructable: construction.ConstructableInterface
@@ -188,12 +188,12 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         if not isinstance(item, _CustomListWidgetItem):
             return False
         return item.isUnnamed()
-    
+
     def isCurrentUnnamed(self) -> bool:
         item = self._sectionList.currentItem()
         if not isinstance(item, _CustomListWidgetItem):
             return False
-        return item.isUnnamed()   
+        return item.isUnnamed()
 
     def isStored(
             self,
@@ -204,7 +204,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             return False
         return self._constructableStore.isStored(
             constructable=item.constructable())
-    
+
     def isCurrentStored(self) -> bool:
         current = self.current()
         if not current:
@@ -222,7 +222,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             return False
         return self._constructableStore.isReadOnly(
             constructable=item.constructable())
-    
+
     def isCurrentReadOnly(self) -> bool:
         current = self.current()
         if not current:
@@ -306,8 +306,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                     sortList=False) # Only sort once at end
                 sortList = True
                 section, item = self._findItemByConstructable(
-                    constructable=constructable) 
-                wasRenamed = True               
+                    constructable=constructable)
+                wasRenamed = True
             elif unnamed:
                 # The constructable is unnamed so rename it before saving
                 assert(newName)
@@ -335,14 +335,14 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
         if sortList:
             self._sortList()
 
         if wasRenamed:
             self._handleCurrentChanged(ensureVisible=True)
 
-        return True # User didn't cancel    
+        return True # User didn't cancel
 
     def promptSaveModified(
             self,
@@ -362,8 +362,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 parent=self,
                 text=f'The {self._constructableStore.typeString()} \'{constructable.name()}\' has been modified, do you want to save it?',
                 buttons=QtWidgets.QMessageBox.StandardButton.Yes | \
-                    QtWidgets.QMessageBox.StandardButton.No | \
-                    QtWidgets.QMessageBox.StandardButton.Cancel)
+                QtWidgets.QMessageBox.StandardButton.No | \
+                QtWidgets.QMessageBox.StandardButton.Cancel)
             if answer == QtWidgets.QMessageBox.StandardButton.Cancel:
                 return False # User cancelled
 
@@ -451,7 +451,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             _, item = self._findItemByName(constructableName=constructableName)
             if not item:
                 logging.debug(f'Failed to restore ConstructableManagerWidget state (Unknown {self._constructableStore.typeString()} "{constructableName}")')
-                return False                
+                return False
             self._makeItemCurrent(item=item)
 
         return True
@@ -485,7 +485,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 if constructable.name() == constructableName:
                     return (section, item)
         return (None, None)
-    
+
     def _makeItemCurrent(
             self,
             item: QtWidgets.QListWidgetItem
@@ -493,7 +493,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._sectionList.setCurrentItem(
             item,
             QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect |
-                QtCore.QItemSelectionModel.SelectionFlag.Current)
+            QtCore.QItemSelectionModel.SelectionFlag.Current)
 
     def _sortList(self) -> None:
         self._sectionList.sortSections(QtCore.Qt.SortOrder.AscendingOrder)
@@ -516,8 +516,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         if not currentItem:
             return
         currentItem.setSelected(True)
-        self._makeItemCurrent(item=currentItem)  
-        
+        self._makeItemCurrent(item=currentItem)
+
     def _copySelected(
             self,
             makeSelected: bool = True
@@ -570,8 +570,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
 
         self._sortList()
 
-        return constructablesMap        
-        
+        return constructablesMap
+
     def _deleteSelected(self) -> None:
         selectionCount = self._sectionList.sectionItemCount(self._userSection)
         if not selectionCount:
@@ -585,7 +585,6 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 self._constructableStore.delete(
                     constructable=item.constructable())
                 self._sectionList.takeItem(self._userSection, row)
-
 
             self._internalDefault()
             self._forceSelection()
@@ -601,7 +600,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 if self._constructableStore.isStored(constructable=item.constructable()):
                     continue
                 self._sectionList.removeItem(section=section, row=row)
-        self._forceSelection()        
+        self._forceSelection()
 
     def _synchronise(self) -> None:
         newConstructables = self._constructableStore.constructables()
@@ -754,8 +753,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
-        self._handleCurrentChanged(ensureVisible=True)            
+
+        self._handleCurrentChanged(ensureVisible=True)
 
     def _revertClicked(self) -> None:
         selectionCount = self._sectionList.selectedItemCount()
@@ -847,7 +846,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)          
+                exception=ex)
 
     def _importClicked(self) -> None:
         try:
@@ -858,13 +857,13 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)        
+                exception=ex)
 
     #
     # NOTE: The following functions are intended to push requested changes to
     # the construable store and UI. They intentionally do not explicitly
     # generate the constructable changed notification but they may generate it
-    # indirectly by causing the currently selected constructable to change. 
+    # indirectly by causing the currently selected constructable to change.
     # The intention is these simple operations will make up more complex logic
     # and that logic should be responsible for generating the signal if needed.
     # If there is a possibility that the current item may indirectly be changed
@@ -884,7 +883,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
 
         self._internalNew(
             makeCurrent=True,
-            sortList=False) # This is the first item so nothing to sort    
+            sortList=False) # This is the first item so nothing to sort
         return True
 
     def _internalNew(
@@ -910,7 +909,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             writeToDisk=False,
             makeCurrent=makeCurrent,
             sortList=sortList)
-        
+
     def _internalAdd(
             self,
             constructable: construction.ConstructableInterface,
@@ -921,7 +920,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             ) -> _CustomListWidgetItem:
         self._constructableStore.add(constructable=constructable)
         if writeToDisk:
-            self._constructableStore.save(constructable=constructable)                
+            self._constructableStore.save(constructable=constructable)
 
         item = _CustomListWidgetItem(
             constructable=constructable,
@@ -930,7 +929,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._sectionList.addItem(
             section=self._userSection, # New constructables are always added to the user section
             item=item)
-        
+
         if sortList:
             self._sortList()
 
@@ -979,7 +978,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             sortList: bool
             ) -> None:
         if not self._constructableStore.isStored(
-            constructable=item.constructable()):
+                constructable=item.constructable()):
             return # Constructable isn't saved so nothing to revert
 
         self._constructableStore.revert(constructable=item.constructable())
@@ -989,4 +988,3 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
 
         if sortList:
             self._sortList()
-

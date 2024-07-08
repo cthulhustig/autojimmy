@@ -54,7 +54,7 @@ def deserialiseRobot(
         except Exception:
             logging.warning(f'Ignoring unknown weapon set \'{weaponSet}\' when loading robot \'{robot.robotName()}\'')
     if not weaponSet:
-        weaponSet = traveller.StockWeaponSet.CSC2023    
+        weaponSet = traveller.StockWeaponSet.CSC2023
 
     if inPlace:
         inPlace.setRobotName(name=robotName)

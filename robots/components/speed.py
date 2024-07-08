@@ -6,7 +6,7 @@ import typing
 class SpeedModification(robots.RobotComponentInterface):
     """
     - Requirement: Not compatible with no locomotion for primary locomotion
-    type (p22)    
+    type (p22)
     """
     # NOTE: The rules say "Locomotion modifications alter the performance
     # characteristics of a robot’s primary form of locomotion". Based on this
@@ -24,26 +24,25 @@ class SpeedModification(robots.RobotComponentInterface):
     # the rules say a BioBot can have coatings but only if they're part of the
     # robots genome.
 
-        
     def typeString(self) -> str:
         return 'Speed Modification'
-    
+
     def isCompatible(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
-                
+
         # Not compatible with no primary locomotion
         locomotion = context.findFirstComponent(
             componentType=robots.NoPrimaryLocomotion,
             sequence=sequence)
-        return locomotion == None 
-    
+        return locomotion == None
+
 class NoSpeedModification(SpeedModification):
     """
     - Requirement: Not compatible with Aeroplane primary locomotion
@@ -52,6 +51,7 @@ class NoSpeedModification(SpeedModification):
     # locomotion type to take Vehicle Speed Movement. The construction stage
     # is made mandatory and all SpeedModification derived components other than
     # VehicleSpeedMovement are made incompatible with Aeroplane locomotion.
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -70,7 +70,7 @@ class NoSpeedModification(SpeedModification):
         locomotion = context.findFirstComponent(
             componentType=robots.AeroplanePrimaryLocomotion,
             sequence=sequence)
-        return locomotion == None 
+        return locomotion == None
 
     def createSteps(
             self,
@@ -79,7 +79,7 @@ class NoSpeedModification(SpeedModification):
             ) -> None:
         # NOTE: Don't create a step as we don't want this hacky component to be
         # shown in manifests
-        pass       
+        pass
 
 class TacticalSpeedEnhancement(SpeedModification):
     """
@@ -88,7 +88,7 @@ class TacticalSpeedEnhancement(SpeedModification):
     - Requirement: Not compatible with Tactical Speed Reduction
     - Requirement: Not compatible with Vehicle Speed Movement locomotion
     modification
-    - Requirement: Not compatible with Aeroplane primary locomotion  
+    - Requirement: Not compatible with Aeroplane primary locomotion
     - Requirement: Tactical speed enhancement cannot increase a robot’s
     tactical movement rate beyond 12 metres per Minor Action
     - Requirement: At most 9 levels can be taken as any more than that will
@@ -119,7 +119,7 @@ class TacticalSpeedEnhancement(SpeedModification):
         name='Tactical Speed Enhancement Per Meter Cost Percentage')
     _PerMeterEndurancePercent = common.ScalarCalculation(
         value=-10,
-        name='Tactical Speed Enhancement Per Meter Endurance Reduction Percentage')    
+        name='Tactical Speed Enhancement Per Meter Endurance Reduction Percentage')
 
     _MaxAllowedSpeed = 12
     _MaxAllowedIncrease = 9
@@ -132,15 +132,15 @@ class TacticalSpeedEnhancement(SpeedModification):
             name='Speed Increase',
             value=1,
             minValue=1,
-            description='Specify the speed increase in meters.') 
+            description='Specify the speed increase in meters.')
 
     def componentString(self) -> str:
-        return 'Tactical Speed Enhancement'         
+        return 'Tactical Speed Enhancement'
 
     def instanceString(self) -> str:
         return '{component} +{increase}m'.format(
             component=self.componentString(),
-            increase=self._speedIncreaseOption.value())      
+            increase=self._speedIncreaseOption.value())
 
     def isCompatible(
             self,
@@ -149,19 +149,19 @@ class TacticalSpeedEnhancement(SpeedModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         # Not compatible if no increase is possible
         maxIncrease = self._calcMaxIncrease(
             sequence=sequence,
             context=context)
         if not maxIncrease:
-            return False        
-        
+            return False
+
         # Not compatible with Aeroplane primary locomotion
         locomotion = context.findFirstComponent(
             componentType=robots.AeroplanePrimaryLocomotion,
             sequence=sequence)
-        return locomotion == None     
+        return locomotion == None
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._speedIncreaseOption]
@@ -189,7 +189,7 @@ class TacticalSpeedEnhancement(SpeedModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         levelsTaken = common.ScalarCalculation(
             value=self._speedIncreaseOption.value(),
             name='Requested Speed Increase')
@@ -211,10 +211,10 @@ class TacticalSpeedEnhancement(SpeedModification):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(speedModifier)))
-        
+
         if context.hasAttribute(
-            attributeId=robots.RobotAttributeId.Endurance,
-            sequence=sequence):
+                attributeId=robots.RobotAttributeId.Endurance,
+                sequence=sequence):
             totalEndurancePercent = common.Calculator.multiply(
                 lhs=TacticalSpeedEnhancement._PerMeterEndurancePercent,
                 rhs=levelsTaken,
@@ -243,15 +243,15 @@ class TacticalSpeedEnhancement(SpeedModification):
             value=TacticalSpeedEnhancement._MaxAllowedSpeed - speed.value(),
             minValue=0,
             maxValue=TacticalSpeedEnhancement._MaxAllowedIncrease)
-        
+
 class TacticalSpeedReduction(SpeedModification):
     """
     - Cost Saving: 10% of Base Chassis Cost per meter reduced
     - Endurance: +10% per meter reduced
     - Requirement: Not compatible with Agile locomotion modification
-    - Requirement: Not compatible with Tactical Speed Enhancement    
+    - Requirement: Not compatible with Tactical Speed Enhancement
     - Requirement: Not compatible with Vehicle Speed Movement locomotion modification
-    - Requirement: Not compatible with Aeroplane primary locomotion  
+    - Requirement: Not compatible with Aeroplane primary locomotion
     - Requirement: Can't reduce robot speed below 1
     """
     # NOTE: Not being compatible with Tactical Speed Reduction and Vehicle
@@ -265,8 +265,8 @@ class TacticalSpeedReduction(SpeedModification):
         name='Tactical Speed Reduction Per Meter Cost Saving Percentage')
     _PerMeterEndurancePercent = common.ScalarCalculation(
         value=10,
-        name='Tactical Speed Reduction Per Meter Endurance Increase Percentage')   
-        
+        name='Tactical Speed Reduction Per Meter Endurance Increase Percentage')
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -275,10 +275,10 @@ class TacticalSpeedReduction(SpeedModification):
             name='Speed Decrease',
             value=1,
             minValue=1,
-            description='Specify the speed decrease in meters.')         
+            description='Specify the speed decrease in meters.')
 
     def componentString(self) -> str:
-        return 'Tactical Speed Reduction'        
+        return 'Tactical Speed Reduction'
 
     def isCompatible(
             self,
@@ -287,7 +287,7 @@ class TacticalSpeedReduction(SpeedModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         # Not compatible with Agility Enhancement
         agility = context.findFirstComponent(
             componentType=robots.AgilityEnhancement,
@@ -299,7 +299,7 @@ class TacticalSpeedReduction(SpeedModification):
         locomotion = context.findFirstComponent(
             componentType=robots.AeroplanePrimaryLocomotion,
             sequence=sequence)
-        return locomotion == None    
+        return locomotion == None
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._speedReductionOption]
@@ -317,7 +317,7 @@ class TacticalSpeedReduction(SpeedModification):
             self._speedReductionOption.setMax(maxDecrease)
         else:
             self._speedReductionOption.setMin(0)
-            self._speedReductionOption.setMax(0)    
+            self._speedReductionOption.setMax(0)
 
     def createSteps(
             self,
@@ -327,7 +327,7 @@ class TacticalSpeedReduction(SpeedModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         levelsTaken = common.ScalarCalculation(
             value=self._speedReductionOption.value(),
             name='Tactical Speed Reduction Levels Requested')
@@ -349,10 +349,10 @@ class TacticalSpeedReduction(SpeedModification):
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Speed,
             modifier=construction.ConstantModifier(speedModifier)))
-        
+
         if context.hasAttribute(
-            attributeId=robots.RobotAttributeId.Endurance,
-            sequence=sequence):        
+                attributeId=robots.RobotAttributeId.Endurance,
+                sequence=sequence):
             totalEndurancePercent = common.Calculator.multiply(
                 lhs=TacticalSpeedReduction._PerMeterEndurancePercent,
                 rhs=levelsTaken,
@@ -364,7 +364,7 @@ class TacticalSpeedReduction(SpeedModification):
 
         context.applyStep(
             sequence=sequence,
-            step=step)    
+            step=step)
 
     def _calcMaxDecrease(
             self,
@@ -440,7 +440,7 @@ class VehicleSpeedMovement(SpeedModification):
     # in brackets that the Final Endurance section suggests (p23)
     # NOTE: The fact Aeroplane have a base Speed Band of Medium and Thrusters
     # have a base Speed Band of Hypersonic was clarified by Geir in this thread.
-    # He also 
+    # He also
     # https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/
 
     _BaseSlotPercent = common.ScalarCalculation(
@@ -492,11 +492,11 @@ class VehicleSpeedMovement(SpeedModification):
             value=0,
             minValue=0,
             maxValue=3,
-            description='Specify additional speed and increases.')        
+            description='Specify additional speed and increases.')
 
     def componentString(self) -> str:
         return 'Vehicle Speed Movement'
-    
+
     def instanceString(self) -> str:
         increase = self._additionalIncreaseOption.value()
         if increase <= 0:
@@ -512,7 +512,7 @@ class VehicleSpeedMovement(SpeedModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-        
+
         return self._calcBaseSpeedBand(
             sequence=sequence,
             context=context) != None
@@ -542,11 +542,11 @@ class VehicleSpeedMovement(SpeedModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         additionalIncrease = common.ScalarCalculation(
             value=self._additionalIncreaseOption.value(),
             name='Additional Speed Band Increase Requested')
-        
+
         totalCost = common.Calculator.equals(
             value=context.baseChassisCredits(sequence=sequence),
             name='Vehicle Speed Movement Base Cost')
@@ -556,7 +556,7 @@ class VehicleSpeedMovement(SpeedModification):
                 rhs=common.ScalarCalculation(value=2),
                 name=f'Increase {index + 1} Vehicle Speed Movement Cost')
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
-        
+
         totalSlotsPercent = common.Calculator.add(
             lhs=VehicleSpeedMovement._BaseSlotPercent,
             rhs=common.Calculator.multiply(
@@ -569,7 +569,7 @@ class VehicleSpeedMovement(SpeedModification):
                 percentage=totalSlotsPercent),
             name='Total Vehicle Speed Movement Cost')
         step.setSlots(slots=construction.ConstantModifier(value=totalSlots))
-              
+
         speedBand = self._calcBaseSpeedBand(
             sequence=sequence,
             context=context)
@@ -581,7 +581,7 @@ class VehicleSpeedMovement(SpeedModification):
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.VehicleSpeed,
             value=speedBand))
-        
+
         # If the primary locomotion gives the robot the Flyer trait then set it
         # to the speed band. This doesn't just check for the existence of the
         # Flyer trait as it should only apply if the primary locomotion gave the
@@ -589,15 +589,15 @@ class VehicleSpeedMovement(SpeedModification):
         hasFlyerPrimary = False
         for locomotionType in VehicleSpeedMovement._FlyerPrimaryLocomotions:
             if context.hasComponent(
-                componentType=locomotionType,
-                sequence=sequence):
+                    componentType=locomotionType,
+                    sequence=sequence):
                 hasFlyerPrimary = True
                 break
         if hasFlyerPrimary:
             step.addFactor(factor=construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.Flyer,
                 value=speedBand))
-        
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Autopilot,
             value=VehicleSpeedMovement._AutopilotRating))
@@ -619,7 +619,7 @@ class VehicleSpeedMovement(SpeedModification):
             step.addFactor(construction.SetAttributeFactor(
                 attributeId=robots.RobotAttributeId.VehicleEndurance,
                 value=vehicleEndurance))
-        
+
         isGrav = context.findFirstComponent(
             componentType=robots.GravPrimaryLocomotion,
             sequence=sequence) != None
@@ -635,7 +635,7 @@ class VehicleSpeedMovement(SpeedModification):
         context.applyStep(
             sequence=sequence,
             step=step)
-        
+
     def _calcBaseSpeedBand(
             self,
             sequence: str,
@@ -658,7 +658,7 @@ class VehicleSpeedMovement(SpeedModification):
             context=context)
         if not baseSpeed:
             return 0
-        
+
         baseIndex = common.enumToIndex(value=baseSpeed)
         maxIndex = len(robots.SpeedBand) - 1
         return min(maxIndex - baseIndex, 3)

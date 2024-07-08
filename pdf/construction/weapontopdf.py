@@ -795,7 +795,7 @@ class WeaponToPdf(object):
             alwaysSignNumbers=alwaysSignNumbers,
             useDashForNoValue=useDashForNoValue)
         return pdf.ParagraphEx(text=text, style=style)
-    
+
     def _createTableStyle(
             self,
             spans: typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]] = None,
@@ -810,7 +810,7 @@ class WeaponToPdf(object):
                 styles.append(('SPAN', ul, br))
 
         return TableStyle(styles)
-    
+
     def _createTable(
             self,
             data: typing.List[typing.List[typing.Union[str, Flowable]]],

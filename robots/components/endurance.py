@@ -15,17 +15,17 @@ class EnduranceModification(robots.RobotComponentInterface):
 
     def typeString(self) -> str:
         return 'Endurance Modification'
-    
+
     def isCompatible(
             self,
             sequence: str,
             context: construction.ConstructionContext
             ) -> bool:
         if not context.hasComponent(
-            componentType=robots.Chassis,
-            sequence=sequence):
+                componentType=robots.Chassis,
+                sequence=sequence):
             return False
-        
+
         return not context.hasComponent(
             componentType=robots.BioRobotSynthetic,
             sequence=sequence)
@@ -40,7 +40,7 @@ class IncreaseEndurance(EnduranceModification):
     - Slots: 10% of Base Slots (rounded up)
     - Cost: Cr500 per slot
     - Skill: Athletics (Power Pack Count)
-    - Option: Number of power packs (max 3)    
+    - Option: Number of power packs (max 3)
     """
     # NOTE: The free Endurance increases at TL12/15 are handled by Locomotion
     # NOTE: Order is important, the rules say Improved Components is applied
@@ -72,18 +72,17 @@ class IncreaseEndurance(EnduranceModification):
         value=500,
         name='Power Pack Per Slot Cost'
     )
-    _PowerPackMinTechLevel = 8 
-
+    _PowerPackMinTechLevel = 8
 
     def __init__(self) -> None:
         super().__init__()
-        
+
         self._improvedComponentsOption = construction.BooleanOption(
             id='ImprovedComponents',
             name='Improved Components',
             value=False,
             description='Specify if improved components are used to improve efficiency.')
-        
+
         self._powerPacksOption = construction.IntegerOption(
             id='PowerPacks',
             name='Additional Power Packs',
@@ -94,12 +93,12 @@ class IncreaseEndurance(EnduranceModification):
 
     def improvedComponents(self) -> bool:
         return self._improvedComponentsOption.value() if self._improvedComponentsOption.isEnabled() else False
-    
+
     def powerPackCount(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
             value=self._powerPacksOption.value() if self._powerPacksOption.isEnabled() else 0,
             name='Power Pack Count')
-        
+
     def componentString(self) -> str:
         return 'Endurance Increase'
 
@@ -112,8 +111,8 @@ class IncreaseEndurance(EnduranceModification):
             return False
 
         return context.techLevel() >= IncreaseEndurance._ImprovedComponentMinTechLevel or \
-            context.techLevel() >= IncreaseEndurance._PowerPackMinTechLevel  
-    
+            context.techLevel() >= IncreaseEndurance._PowerPackMinTechLevel
+
     def options(self) -> typing.List[construction.ComponentOption]:
         options = []
         if self._improvedComponentsOption.isEnabled():
@@ -141,12 +140,12 @@ class IncreaseEndurance(EnduranceModification):
             self.createImprovedComponentsStep(
                 sequence=sequence,
                 context=context)
-            
+
         if self.powerPackCount().value() > 0:
             self.createPowerPackStep(
                 sequence=sequence,
-                context=context)                
-        
+                context=context)
+
     def createImprovedComponentsStep(
             self,
             sequence: str,
@@ -155,7 +154,7 @@ class IncreaseEndurance(EnduranceModification):
         step = robots.RobotStep(
             name='Improved Components',
             type=self.typeString())
-        
+
         baseChassisCost = context.baseChassisCredits(sequence=sequence)
         cost = common.Calculator.takePercentage(
             value=baseChassisCost,
@@ -167,7 +166,7 @@ class IncreaseEndurance(EnduranceModification):
             attributeId=robots.RobotAttributeId.Endurance,
             modifier=construction.PercentageModifier(
                 value=IncreaseEndurance._ImprovedComponentsIncreasePercent)))
-                        
+
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -177,12 +176,12 @@ class IncreaseEndurance(EnduranceModification):
             sequence: str,
             context: robots.RobotContext
             ) -> None:
-        packCount = self.powerPackCount() 
+        packCount = self.powerPackCount()
 
         step = robots.RobotStep(
             name=f'Power Packs x {packCount.value()}',
             type=self.typeString())
-        
+
         baseSlots = context.baseSlots(sequence=sequence)
         perPackSlots = common.Calculator.ceil(
             value=common.Calculator.takePercentage(
@@ -192,7 +191,7 @@ class IncreaseEndurance(EnduranceModification):
             lhs=perPackSlots,
             rhs=packCount,
             name='Total Power Pack Slots Required')
-        step.setSlots(slots=construction.ConstantModifier(value=totalSlots))        
+        step.setSlots(slots=construction.ConstantModifier(value=totalSlots))
 
         totalCost = common.Calculator.multiply(
             lhs=IncreaseEndurance._PowerPackPerSlotCost,
@@ -208,7 +207,7 @@ class IncreaseEndurance(EnduranceModification):
             attributeId=robots.RobotAttributeId.Endurance,
             modifier=construction.PercentageModifier(
                 value=totalIncreasePercent)))
-        
+
         enduranceSkill = common.Calculator.equals(
             value=packCount,
             name='Power Pack Athletics (Endurance) Skill Level')
@@ -217,7 +216,7 @@ class IncreaseEndurance(EnduranceModification):
             speciality=traveller.AthleticsSkillSpecialities.Endurance,
             levels=enduranceSkill,
             flags=construction.SkillFlags(0)))
-                        
+
         context.applyStep(
             sequence=sequence,
             step=step)

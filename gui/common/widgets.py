@@ -169,7 +169,7 @@ class CheckBoxEx(QtWidgets.QCheckBox):
 
         self.setChecked(stream.readBool())
         return True
-    
+
 class ToolButtonEx(QtWidgets.QToolButton):
     # When replicating the sizing of a QPushButton the calculated size returned
     # by sizeFromContents is 1 pixel larger in height than the default QPushButton
@@ -229,7 +229,7 @@ class ToolButtonEx(QtWidgets.QToolButton):
             opt,
             QtCore.QSize(w, max(h + ToolButtonEx._SizeHintHeightModifier, 0)),
             self)
-        return baseHint.expandedTo(pushSize); 
+        return baseHint.expandedTo(pushSize);
 
 class RadioButtonEx(QtWidgets.QRadioButton):
     _StateVersion = 'RadioButtonEx_v1'
@@ -353,25 +353,25 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
     def isChecked(self) -> bool:
         return self._checkBox.isChecked()
-    
+
     def setChecked(self, checked: bool) -> None:
-        self._checkBox.setChecked(checked)        
+        self._checkBox.setChecked(checked)
 
     def value(self) -> typing.Optional[typing.Union[int, float]]:
         return self._spinBox.value() if self._checkBox.isChecked() else None
-    
+
     def setValue(self, value: typing.Optional[typing.Union[int, float]]) -> None:
         currentValue = self.value()
         if value == currentValue:
             return # Nothing to do
-        
+
         with gui.SignalBlocker(widget=self._checkBox):
             self._checkBox.setChecked(value != None)
 
         with gui.SignalBlocker(widget=self._spinBox):
             if value != None:
                 self._spinBox.setValue(value)
-            self._spinBox.setEnabled(value != None)            
+            self._spinBox.setEnabled(value != None)
 
         self._emitValueChanged()
 
@@ -596,7 +596,7 @@ class LineEditEx(QtWidgets.QLineEdit):
     # Return compiled regex if regex checking is enabled
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
-    
+
     def enableDelayedTextEdited(
             self,
             msecs: int
@@ -884,7 +884,7 @@ class ComboBoxEx(QtWidgets.QComboBox):
         if self._delayedUserEditedTimer:
             lineEdit = self.lineEdit()
             if lineEdit:
-                lineEdit.textEdited.connect(self._userEdited)            
+                lineEdit.textEdited.connect(self._userEdited)
 
     def addItemAlphabetically(
             self,
@@ -932,7 +932,7 @@ class ComboBoxEx(QtWidgets.QComboBox):
         if self._delayedUserEditedTimer:
             self._delayedUserEditedTimer.start()
 
-    def _delayedUserEditedFired(self) -> None: 
+    def _delayedUserEditedFired(self) -> None:
         self.delayedUserEdited.emit(self.currentText())
 
 class TableWidgetEx(QtWidgets.QTableWidget):
@@ -961,7 +961,7 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         styleSheet = TableWidgetEx._FocusRectRegex.sub(self.styleSheet(), '')
         styleSheet.strip()
         self.setStyleSheet(styleSheet)
-            
+
     def setStyleSheet(self, styleSheet: str) -> None:
         if self._showFocusRect and not TableWidgetEx._FocusRectRegex.match(styleSheet):
             palette = self.palette()
@@ -1008,7 +1008,7 @@ class ScrollAreaEx(QtWidgets.QScrollArea):
         if scrollBar:
             scrollBar.setValue(stream.readInt())
 
-        return True        
+        return True
 
 # NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
 # doesn't make logical sense to save scrollbar state for an auto

@@ -48,7 +48,7 @@ class _MultiSelectOptionWidget(gui.ListWidgetEx):
 
         while self.count() > len(content):
             self.removeRow(self.count() - 1)
-        
+
         # NOTE: This call will fit the control to the content but can't take
         # the horizontal scroll bar into account if its being used as it might
         # not have been shown yet.
@@ -60,12 +60,12 @@ class _MultiSelectOptionWidget(gui.ListWidgetEx):
             # to its content
             self._fitToContent()
         return super().eventFilter(object, event)
-    
+
     def _fitToContent(self) -> None:
         contentHeight = self.frameWidth() * 2
         for row in range(self.count()):
             contentHeight += self.sizeHintForRow(row)
-        
+
         scrollbar = self.horizontalScrollBar()
         if scrollbar and scrollbar.isVisible():
             contentHeight += scrollbar.sizeHint().height()
@@ -81,7 +81,6 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
     _NonePlaceholder = 'None'
 
     _TextEditSignalDelayMsecs = 500
-
 
     def __init__(
             self,
@@ -220,7 +219,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 gui.tabWidgetSearch(
                     widget=widget,
                     tabWidgets=tabWidgets)
-    
+
     def _updateOptionControls(self) -> None:
         component = self.currentComponent()
         options = component.options() if component else []
@@ -280,7 +279,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.enableDelayedTextEdited(
                     msecs=_ComponentConfigWidget._TextEditSignalDelayMsecs)
                 connection = widget.delayedTextEdited.connect(
-                    lambda: self._textEditChanged(widget, option))                
+                    lambda: self._textEditChanged(widget, option))
             else:
                 # There are pre-defined strings the user can select from so use
                 # an editable combo box
@@ -291,8 +290,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.setSizePolicy(
                     # If the option is editable give the user as much space as
                     # possible
-                    QtWidgets.QSizePolicy.Policy.Expanding 
-                    if option.isEditable() else 
+                    QtWidgets.QSizePolicy.Policy.Expanding
+                    if option.isEditable() else
                     QtWidgets.QSizePolicy.Policy.Fixed,
                     QtWidgets.QSizePolicy.Policy.Fixed)
                 if option.isOptional() and not option.isEditable():
@@ -466,11 +465,11 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     widget.setSizePolicy(
                         # If the option is editable give the user as much space as
                         # possible
-                        QtWidgets.QSizePolicy.Policy.Expanding 
-                        if option.isEditable() else 
+                        QtWidgets.QSizePolicy.Policy.Expanding
+                        if option.isEditable() else
                         QtWidgets.QSizePolicy.Policy.Fixed,
                         QtWidgets.QSizePolicy.Policy.Fixed)
-                                    
+
                     stringOptions = option.choices()
                     updateList = False
                     if len(stringOptions) == widget.count():
@@ -536,7 +535,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                     content=option.choices(),
                     selected=option.value(),
                     unselectable=option.unselectable())
-                
+
     # Disable wheel focus and events to avoid the scroll wheel
     # changing control values when the user is scrolling the
     # scroll area that contain the widgets. This is done
@@ -572,7 +571,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _textEditChanged(
             self,
             widget: gui.LineEditEx,
@@ -646,7 +645,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _multiSelectChanged(
             self,
             widget: gui.ListWidgetEx,
@@ -667,7 +666,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)                  
+                exception=ex)
 
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()
@@ -692,9 +691,9 @@ class _StageWidget(QtWidgets.QWidget):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent=parent)
-        
+
         self._context = context
-        self._stage = stage        
+        self._stage = stage
 
         minComponents = self._stage.minComponents()
         maxComponents = self._stage.maxComponents()
@@ -702,7 +701,7 @@ class _StageWidget(QtWidgets.QWidget):
             (maxComponents > 1 and minComponents < maxComponents)
 
         self._currentComponents: typing.Dict[_ComponentConfigWidget, construction.ComponentInterface] = {}
-        
+
         self._addButton = None
         self._addMenu = None
         self._removeAllButton = None
@@ -733,7 +732,7 @@ class _StageWidget(QtWidgets.QWidget):
             buttonLayout.addWidget(self._addButton)
             buttonLayout.addWidget(self._removeAllButton)
             buttonLayout.addStretch()
-            self._layout.addLayout(buttonLayout)            
+            self._layout.addLayout(buttonLayout)
 
         self.setLayout(self._layout)
 
@@ -814,7 +813,7 @@ class _StageWidget(QtWidgets.QWidget):
             # the user a choice in which component to select _and_ none of them
             # have any options
             return not hasChoice
-        
+
     def gatherTabOrder(
             self,
             tabWidgets: typing.List[QtWidgets.QWidget]
@@ -853,12 +852,12 @@ class _StageWidget(QtWidgets.QWidget):
         if self._dynamic:
             if not compatibleComponents:
                 return None
-            
+
             if not component:
-                component = compatibleComponents[0]            
+                component = compatibleComponents[0]
 
             # Mandatory in the sense, if you add a component you must select what type it is. It's
-            # only the adding of a component in the first place is optional            
+            # only the adding of a component in the first place is optional
             requirement = construction.ConstructionStage.RequirementLevel.Mandatory
         else:
             requirement = self._stage.requirement()
@@ -915,7 +914,7 @@ class _StageWidget(QtWidgets.QWidget):
         for widget in list(self._currentComponents.keys()):
             if widget == skipWidget:
                 continue
-            
+
             # If the component for this widget was dynamically added and is no
             # longer part of the stage, then the widget should be removed rather
             # than updated. Updating would cause a component the user didn't
@@ -961,7 +960,7 @@ class _StageWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
-            
+
     def _clearConstruction(self) -> None:
         try:
             self._context.clearStage(
@@ -973,7 +972,7 @@ class _StageWidget(QtWidgets.QWidget):
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
-                exception=ex)        
+                exception=ex)
 
     def _addButtonClicked(self) -> None:
         widget = self._addComponentWidget()
@@ -988,7 +987,7 @@ class _StageWidget(QtWidgets.QWidget):
 
     def _addMenuSetup(self) -> None:
         for action in self._addMenu.actions():
-            action.triggered.disconnect()        
+            action.triggered.disconnect()
         self._addMenu.clear()
 
         components = self._context.findCompatibleComponents(stage=self._stage)
@@ -1062,7 +1061,7 @@ class _StageWidget(QtWidgets.QWidget):
             text=f'Are you sure you want to remove all {self._stage.name()} components?',
             stateKey=_StageWidget._RemoveAllConfirmationNoShowStateKey)
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return        
+            return
 
         for widget in list(self._currentComponents):
             self._removeComponentWidget(widget=widget)
@@ -1191,13 +1190,13 @@ class StageGroupWidget(QtWidgets.QWidget):
                 expander.setExpanded(
                     expanded=expansionMap[expander.label()],
                     animated=animated)
-                
+
     def isPointless(self) -> bool:
         for widget in self._stageWidgets.values():
             if not widget.isPointless():
                 return False
         return True
-                
+
     def generateSequencePrefix(
             self,
             sequence: str,
@@ -1220,7 +1219,7 @@ class StageGroupWidget(QtWidgets.QWidget):
             return 'Secondary '
         else:
             return f'Secondary {sequenceIndex} '
-        
+
     def gatherTabOrder(
             self,
             tabWidgets: typing.List[QtWidgets.QWidget]
@@ -1255,7 +1254,7 @@ class StageGroupWidget(QtWidgets.QWidget):
         self._configurationWidget.setContentHidden(
             content=stageWidget,
             hidden=stageWidget.isPointless())
-        
+
 class SinglePhaseStageWidget(StageGroupWidget):
     def __init__(
             self,

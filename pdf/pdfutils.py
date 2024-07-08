@@ -24,7 +24,7 @@ class ParagraphEx(Paragraph):
             frags,
             caseSensitive,
             encoding)
-        
+
 class VerticalSpacer(Spacer):
     def __init__(
             self,
@@ -39,7 +39,7 @@ class HorizontalSpacer(Spacer):
             width: float,
             isGlue: bool = False
             ) -> None:
-        super().__init__(width, 0, isGlue)        
+        super().__init__(width, 0, isGlue)
 
 # Based on https://gist.github.com/waylan/36535feae946810bcdce5dfb8c6bdcf8
 class TextFormField(Flowable):

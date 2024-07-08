@@ -6,7 +6,7 @@ import typing
 class ResiliencyModification(robots.RobotComponentInterface):
     def typeString(self) -> str:
         return 'Resiliency Modification'
-    
+
     def isCompatible(
             self,
             sequence: str,
@@ -38,7 +38,7 @@ class IncreaseResiliency(ResiliencyModification):
 
     def __init__(self) -> None:
         super().__init__()
-        
+
         self._hitsIncreaseOption = construction.IntegerOption(
             id='HitsIncrease',
             name='Hits Increase',
@@ -48,12 +48,12 @@ class IncreaseResiliency(ResiliencyModification):
 
     def componentString(self) -> str:
         return 'Resiliency Increase'
-    
+
     def instanceString(self) -> str:
         return '{component} +{increase} Hits'.format(
             component=self.componentString(),
-            increase=self._hitsIncreaseOption.value()) 
-    
+            increase=self._hitsIncreaseOption.value())
+
     def isCompatible(
             self,
             sequence: str,
@@ -65,7 +65,7 @@ class IncreaseResiliency(ResiliencyModification):
         # Not compatible with robots that only have one slot
         baseSlots = context.baseSlots(sequence=sequence)
         return baseSlots.value() > 1
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._hitsIncreaseOption]
 
@@ -76,7 +76,7 @@ class IncreaseResiliency(ResiliencyModification):
             ) -> None:
         baseSlots = context.baseSlots(sequence=sequence)
         maxIncrease = int(baseSlots.value() *
-            (IncreaseResiliency._MaxIncreaseSlotPercent / 100))
+                          (IncreaseResiliency._MaxIncreaseSlotPercent / 100))
         self._hitsIncreaseOption.setMax(
             value=maxIncrease)
 
@@ -88,11 +88,11 @@ class IncreaseResiliency(ResiliencyModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         hitsIncrease = common.ScalarCalculation(
             value=self._hitsIncreaseOption.value(),
             name='Specified Hits Increase')
-        
+
         totalCostPercent = common.Calculator.multiply(
             lhs=IncreaseResiliency._PerSlotCostPercent,
             rhs=hitsIncrease,
@@ -101,14 +101,14 @@ class IncreaseResiliency(ResiliencyModification):
             value=context.baseChassisCredits(sequence=sequence),
             percentage=totalCostPercent,
             name='Total Resiliency Increase Cost')
-        
+
         step.setCredits(credits=construction.ConstantModifier(value=totalCost))
         step.setSlots(slots=construction.ConstantModifier(value=hitsIncrease))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Hits,
-            modifier=construction.ConstantModifier(value=hitsIncrease)))        
-                        
+            modifier=construction.ConstantModifier(value=hitsIncrease)))
+
         context.applyStep(
             sequence=sequence,
             step=step)
@@ -116,8 +116,8 @@ class IncreaseResiliency(ResiliencyModification):
 class DecreaseResiliency(ResiliencyModification):
     """
     - Cost Saving: Cr50 * Locomotion Multiplier for each Hit reduced
-    - Requirement: Only 50% of the robot's Base Hits can be removed  
-    - Requirement: Not compatible with robots that only have one hit  
+    - Requirement: Only 50% of the robot's Base Hits can be removed
+    - Requirement: Not compatible with robots that only have one hit
     """
     # NOTE: The facts that at most 50% of the robot's hits can be reduced
     # _and_ we deal in whole hits imply that robots with only one hit
@@ -131,7 +131,7 @@ class DecreaseResiliency(ResiliencyModification):
 
     def __init__(self) -> None:
         super().__init__()
-        
+
         self._hitsDecreaseOption = construction.IntegerOption(
             id='HitsDecrease',
             name='Hits Decrease',
@@ -141,12 +141,12 @@ class DecreaseResiliency(ResiliencyModification):
 
     def componentString(self) -> str:
         return 'Resiliency Decrease'
-    
+
     def instanceString(self) -> str:
         return '{component} -{increase} Hits'.format(
             component=self.componentString(),
-            increase=self._hitsDecreaseOption.value()) 
-    
+            increase=self._hitsDecreaseOption.value())
+
     def isCompatible(
             self,
             sequence: str,
@@ -154,7 +154,7 @@ class DecreaseResiliency(ResiliencyModification):
             ) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
-                
+
         # Not compatible with robots that only have one hit
         hits = context.attributeValue(
             attributeId=robots.RobotAttributeId.Hits,
@@ -162,7 +162,7 @@ class DecreaseResiliency(ResiliencyModification):
         if not hits:
             return False
         return hits.value() > 1
-    
+
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._hitsDecreaseOption]
 
@@ -175,7 +175,7 @@ class DecreaseResiliency(ResiliencyModification):
             attributeId=robots.RobotAttributeId.Hits,
             sequence=sequence)
         maxDecrease = int(hits.value() *
-            (DecreaseResiliency._MaxDecreaseHitPercent / 100))
+                          (DecreaseResiliency._MaxDecreaseHitPercent / 100))
         self._hitsDecreaseOption.setMax(
             value=maxDecrease)
 
@@ -187,11 +187,11 @@ class DecreaseResiliency(ResiliencyModification):
         step = robots.RobotStep(
             name=self.instanceString(),
             type=self.typeString())
-        
+
         hitsDecrease = common.ScalarCalculation(
             value=-self._hitsDecreaseOption.value(), # NOTE: negated
             name='Specified Hits Decrease')
-        
+
         perHitSaving = DecreaseResiliency._BasePerHitSaving
         locomotion = context.findFirstComponent(
             componentType=robots.PrimaryLocomotion,
@@ -201,23 +201,23 @@ class DecreaseResiliency(ResiliencyModification):
                 lhs=perHitSaving,
                 rhs=locomotion.costMultiplier(),
                 name='Resiliency Decrease Saving Per Hit Decrease')
-        
+
         totalCostSaving = common.Calculator.multiply(
             lhs=perHitSaving,
             rhs=common.Calculator.absolute(value=hitsDecrease),
             name='Total Resiliency Decrease Cost Saving')
-        
+
         totalCostDecrease = common.Calculator.negate(
             value=totalCostSaving,
             name='Total Resiliency Decrease Cost')
-        
+
         step.setCredits(credits=construction.ConstantModifier(
             value=totalCostDecrease))
 
         step.addFactor(factor=construction.ModifyAttributeFactor(
             attributeId=robots.RobotAttributeId.Hits,
-            modifier=construction.ConstantModifier(value=hitsDecrease)))        
-                        
+            modifier=construction.ConstantModifier(value=hitsDecrease)))
+
         context.applyStep(
             sequence=sequence,
             step=step)

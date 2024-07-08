@@ -6,6 +6,8 @@ import typing
 class SkillFlags(enum.IntFlag):
     ApplyNegativeCharacteristicModifier = enum.auto()
     ApplyPositiveCharacteristicModifier = enum.auto()
+
+
 SkillFlagsCharacteristicModifierMask = SkillFlags.ApplyPositiveCharacteristicModifier | \
     SkillFlags.ApplyNegativeCharacteristicModifier
 
@@ -33,13 +35,13 @@ class Skill(object):
 
     def skillDef(self) -> traveller.SkillDefinition:
         return self._skillDef
-    
+
     def name(
             self,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> str:
         return self._skillDef.name(speciality=speciality)
-    
+
     def level(
             self,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
@@ -60,7 +62,7 @@ class Skill(object):
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
             flags: typing.Optional[SkillFlags] = None,
             stacks: bool = True,
-           ) -> bool: # True if skill is still trained otherwise False
+            ) -> bool: # True if skill is still trained otherwise False
         if self._skillDef.isSimple():
             if speciality != None:
                 raise AttributeError(
@@ -73,10 +75,10 @@ class Skill(object):
             if speciality != None and not isinstance(speciality, str):
                 raise AttributeError(
                     f'Unable to use speciality type {type(speciality)} to set custom speciality skill {self._skillDef.name()}')
-            
+
         if not speciality and not self._skillDef.isSimple() and levels.value() != 0:
             raise AttributeError(
-                f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')             
+                f'Unable to set base level of a speciality skill {self._skillDef.name()} to a non-zero value')
 
         if speciality and speciality in self._levels:
             currentLevel, _ = self._levels[speciality]
@@ -113,10 +115,10 @@ class Skill(object):
             speciality: typing.Union[enum.Enum, str]
             ) -> bool:
         return speciality and speciality in self._levels
-    
+
     def specialities(self) -> typing.Iterable[typing.Union[enum.Enum, str]]:
         return [s for s in self._levels.keys() if s != None]
-    
+
     def flags(
             self,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
@@ -155,7 +157,7 @@ class SkillGroup(object):
         if not speciality:
             return True
         return skill.hasSpeciality(speciality=speciality)
-    
+
     def skill(
             self,
             skillDef: traveller.SkillDefinition
@@ -170,7 +172,7 @@ class SkillGroup(object):
         skill = self._skills.get(skillDef)
         if skill:
             return skill.level(speciality=speciality)
-        
+
         untrainedSkill = SkillGroup._UntrainedSkillLevel
         jackSkill = self._skills.get(traveller.JackOfAllTradesSkillDefinition)
         if jackSkill:
@@ -209,11 +211,10 @@ class SkillGroup(object):
             if not isTrained:
                 # Skill isn't trained so don't add it. Really this should never
                 # happen as the UI should prevent it
-                return 
+                return
 
             # Only add if setting the skill succeeded
             self._skills[skillDef] = skill
 
     def clear(self) -> None:
-        self._skills.clear()            
-        
+        self._skills.clear()
