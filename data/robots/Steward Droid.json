@@ -211,6 +211,28 @@
                     "value": 0
                 }
             ]
+        },
+        {
+            "type": "PercentageCostModifier",
+            "options": [
+                {
+                    "id": "CostModifier",
+                    "value": -10
+                }
+            ]
+        },
+        {
+            "type": "SignificantFigureCostRounding",
+            "options": [
+                {
+                    "id": "SignificantFigures",
+                    "value": 2
+                },
+                {
+                    "id": "Rounding",
+                    "value": "Down"
+                }
+            ]
         }
     ],
     "notes": "\"\""

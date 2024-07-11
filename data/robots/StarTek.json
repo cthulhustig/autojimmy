@@ -307,7 +307,20 @@
                     "value": 0
                 }
             ]
+        },
+        {
+            "type": "SignificantFigureCostRounding",
+            "options": [
+                {
+                    "id": "SignificantFigures",
+                    "value": 2
+                },
+                {
+                    "id": "Rounding",
+                    "value": "Down"
+                }
+            ]
         }
     ],
-    "notes": "\"\""
+    "notes": "\"If you're comparing the Auto-Jimmy worksheet for this robot with the one from the Robot Handbook (p78), it's worth noting the following\\n- By default Auto-Jimmy doesn't include characteristic DMs in the displayed skills whereas the book does.\\n- The book says the robot has Athletics (strength) 2, however this is not actually the case when using the robot's smaller manipulator. To avoid confusion, Auto-Jimmy lists the base skill in the worksheet and adds auto-generated notes that give details of which allow an additional DM+2.\""
 }

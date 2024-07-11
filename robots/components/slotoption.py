@@ -5272,6 +5272,17 @@ class _StorageCompartmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
 
     def isZeroSlot(self) -> bool:
         return False
+    
+    def instanceString(self) -> str:
+        selectedType = self._enumOption.value()
+        if isinstance(selectedType, _StorageCompartmentSlotOptionImpl._CompartmentType):
+            slotCount = self._slotsOption.value()
+            return '{component} ({slots} {wording} {type})'.format(
+                component=self.componentString(),
+                slots=slotCount,
+                wording='Slot' if slotCount == 1 else 'Slots',
+                type=selectedType.value)
+        return super().instanceString()
 
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
@@ -6808,7 +6819,7 @@ class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
             incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
             ) -> None:
         super().__init__(
-            componentString='Starship Engineering',
+            componentString='Starship Engineering Toolkit',
             enumType=_OptionLevel,
             optionId='Type',
             optionName='Type',

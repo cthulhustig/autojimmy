@@ -650,37 +650,62 @@ class CostRounding(robots.RobotComponentInterface):
         return totalCost.value() > 0
 
 class SignificantFigureCostRounding(CostRounding):
+    class Rounding(enum.Enum):
+        Nearest = 'Nearest'
+        Down = 'Down'
+        Up = 'Up'
+
     def __init__(self):
         super().__init__()
 
-        self._creditsOption = construction.IntegerOption(
+        self._figuresOption = construction.IntegerOption(
             id='SignificantFigures',
             name='Significant Figures',
             value=1,
             minValue=1,
             description='The number of significant figures to round the final robot cost to.')
+        
+        self._roundingOption = construction.EnumOption(
+            id='Rounding',
+            name='Rounding',
+            type=SignificantFigureCostRounding.Rounding,
+            value=SignificantFigureCostRounding.Rounding.Nearest,
+            description='The type of rounding to perform.')
 
     def significantFigures(self) -> common.ScalarCalculation:
         return common.ScalarCalculation(
-            value=self._creditsOption.value(),
+            value=self._figuresOption.value(),
             name='Specified Significant Figures')
 
     def componentString(self) -> str:
         return 'Significant Figures'
 
     def options(self) -> typing.List[construction.ComponentOption]:
-        return [self._creditsOption]
+        return [self._figuresOption, self._roundingOption]
 
     def createSteps(
             self,
             sequence: str,
             context: robots.RobotContext
             ) -> None:
+        rounding = self._roundingOption.value()
+        assert(isinstance(rounding, SignificantFigureCostRounding.Rounding))
         totalCost = context.totalCredits(sequence=sequence)
-        roundedCost = common.Calculator.significantDigits(
-            value=totalCost,
-            digits=self.significantFigures(),
-            name='Rounded Total Cost')
+        if rounding == SignificantFigureCostRounding.Rounding.Nearest:
+            roundedCost = common.Calculator.significantDigits(
+                value=totalCost,
+                digits=self.significantFigures(),
+                name='Rounded Total Cost')
+        elif rounding == SignificantFigureCostRounding.Rounding.Down:
+            roundedCost = common.Calculator.floorDigits(
+                value=totalCost,
+                digits=self.significantFigures(),
+                name='Rounded Total Cost')
+        elif rounding == SignificantFigureCostRounding.Rounding.Up:
+            roundedCost = common.Calculator.ceilDigits(
+                value=totalCost,
+                digits=self.significantFigures(),
+                name='Rounded Total Cost')
         costModifier = common.Calculator.subtract(
             lhs=roundedCost,
             rhs=totalCost,
