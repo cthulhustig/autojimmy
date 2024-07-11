@@ -12,7 +12,6 @@ class RobotManifestTable(gui.ManifestTable):
         super().__init__(
             costsType=robots.RobotCost,
             parent=parent)
-        self._weapon = None
 
     def formatCost(
             self,

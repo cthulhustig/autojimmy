@@ -54,7 +54,7 @@ class NotesWidget(QtWidgets.QWidget):
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
         # Having the table automatically adjust to the content size can cause
-        # odd draw issues if the NotesWidget inside another widget such as a
+        # odd draw issues if the NotesWidget is inside another widget such as a
         # group box or expander. If you type a sequence of the same character
         # into the filter edit so that no notes are mated, then hold delete
         # to delete the string quickly character by character, occasionally

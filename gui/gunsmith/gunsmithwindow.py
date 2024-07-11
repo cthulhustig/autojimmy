@@ -12,8 +12,8 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 _WelcomeMessage = """
     <html>
     <p>The Gunsmith window allows you to generate weapons using the rules from the Mongoose 2e
-    Field Catalogue. It's aimed to aid in the creation of weapons and is not intended to be a
-    substitute for the rules book.</p>
+    Field Catalogue. It's aimed to aid in the creation of weapons and their use in game, it is not
+    intended to be a substitute for the rules book.</p>
     <p>Before going any further, I have to mention the number of contradictions and ambiguities in
     the Field Catalogue. I'm not taking a pop at Mongoose, the Field Catalogue is by far my
     favourite of their books, however, it directly affects how the Gunsmith tool is used. Efforts

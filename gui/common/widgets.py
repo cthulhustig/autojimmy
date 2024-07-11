@@ -282,8 +282,9 @@ class SpinBoxEx(QtWidgets.QSpinBox):
 class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     _StateVersion = 'DoubleSpinBoxEx_v1'
 
-    # Update the number of decimal places the spin box allows so they accommodate
-    # the max and min values
+    # Set the number of decimal places to the minimum number needed to represent
+    # the supplied value, with the number of decimal places clamped to the
+    # supplied range before it is set.
     def setDecimalsForValue(
             self,
             value: float,

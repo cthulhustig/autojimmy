@@ -14,46 +14,54 @@ _WelcomeMessage = """
     <html>
     <p>The Robot Builder window allows you to create robots using the rules
     from the Mongoose 2e Robot Handbook. It's aimed to aid in the creation of
-    robots and is not intended to be a substitute for the rules book.</p>
-    <p>A big thanks goes out to Geir Lanesskog, the book's author, for his help
-    clarifying some of the rules. You can find the discussion we had around
-    these clarifications in the thread below.<br>
+    robots and their use in game, it is not intended to be a substitute for
+    the rules book.</p>
+    <p>A big thanks goes out to Geir Lanesskog, the author of the Robot
+    Handbook, for his help clarifying some of the rules. You can find the
+    discussion on these topics in the thread below.<br>
     <a href='https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/'>https://forum.mongoosepublishing.com/threads/robot-handbook-rule-clarifications.124669/</a>
     </p>
     <p>Another big thanks goes to Technetium 98 on the Mongoose forum for
     creating the Google worksheet implementation of the Robot Handbook rules.
-    It was an indispensable reference when it came to me implementing the Robot
-    Builder.<br>
+    It was an indispensable reference when it came to me implementing and
+    testing the Robot Builder.<br>
     <a href='https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/'>https://forum.mongoosepublishing.com/threads/google-sheets-worksheets.123753/</a>
     </p>
     <p>Unlike the robots in the Robots Handbook, by default, {name} does not
-    include characteristic DMs when displaying final skill levels. This is
-    done to avoid ambiguities and unnecessary complexities when dealing with
-    robots that have manipulators with different characteristics or in cases
-    where the 'standard' characteristic isn't the one that is appropriate one to
-    use with the skill in the situation at hand. In game, this change means
-    making skill checks for a robot is effectively identical to the process used
-    when making skill checks for a meatbag traveller, the characteristic DM and
-    any other situational DMs are added to the skill level to get the final DM.
-    The only difference when dealing with robots is, in general, skills that
-    would usually be paired with EDU or SOC characteristics, instead use the
-    robots INT characteristic.</p>
+    include the DM for the characteristic that is most commonly used with a
+    skill in the skill levels that it shows in the robot's worksheet. Not
+    including the characteristic DM is done to avoid any ambiguities and
+    unnecessary complexities that pre-calculated values can cause when dealing
+    with anything other than simple robots and encounters, for example a robot
+    that has manipulators with different characteristics or making a skill
+    check where the standard characteristic isn't the one that is appropriate
+    for the situation at hand (e.g. using Gun Combat to try and identify an
+    obscure model of pistol would use INT or EDU rather than DEX). This
+    approach also means the process for determining the final DM for a given
+    skill check when dealing with a robot is effectively identical to the
+    process for a meatsack traveller. It's just a case of adding the DM
+    for the characteristic that is appropriate in the situation (along with
+    any other situation specific DMs) to the level the robot has in the skill.
+    The only difference when dealing with a robot is, the INT characteristic
+    DM is generally used in situations a meatsack traveller would use EDU or
+    SOC (unless you're dealing with a robot type that specifically has those
+    characteristics).</p>
     <p>If you try to recreate the robots from the Robots Handbook in {name},
-    you may find there are some differences. Common reasons for this are:
+    you may find there are some differences in the values you see in the
+    robot worksheet {name} displays compared to the book. Common reasons for
+    this are:
     <ul style="margin-left:15px; -qt-list-indent:0;">
     <li>As mentioned above, the Robots Handbook includes characteristic DMs
-    in final skill levels it gives for a robot whereas Auto-Jimmy doesn't do
-    this by default.</li>
-    <li>The Robots Handbook includes some information in a robot's worksheet
-    that is actually situationally dependant. For example, the StarTek example
+    in the final skill levels it shows for a robot, whereas Auto-Jimmy doesn't
+    do this by default.</li>
+    <li>The Robots Handbook doesn't make it clear when information in a robot's
+    worksheet is situationally dependant. For example, the StarTek example
     robot is shown to have Athletics (Strength) 2 (p78), which appears to come
     from the Manipulator Athletics Skill Requirements rules (p26). The problem
     with just listing this with the rest of the robot's skills is that it
-    doesn't apply when the robot is using its smaller manipulator, this fact
-    would be very easy to miss from just looking at the robot's worksheet. To
-    avoid this sort of confusion, instead of listing situationally dependant
-    stats in the robots worksheet, {name} instead generates notes that cover
-    how the robots base stats change in different situations.</li>
+    doesn't apply when the robot is using its smaller manipulator. To avoid
+    this sort of confusion, {name} just shows base stats in the worksheet and
+    adds notes that explain how different situations affect the robot.</li>
     <li>The worksheets from the Robots Handbook don't give a complete list of
     the components that make up the robot, so there can be different component
     configurations that give the same stats but with different costs or
@@ -69,8 +77,8 @@ _WelcomeMessage = """
     </ul></p>
     <p>Unfortunately, the Gunsmith and Robot Builder are not integrated at this
     time, which means it's not possible to select a custom weapon when arming
-    a robot. Integrating custom weapons would be a surprisingly large amount of
-    work, so it will have to wait for some future version. Your Terminators will
+    a robot. To integrate them well would require a surprisingly large amount of
+    work so it will have to wait for some future version. Your terminators will
     need to make do with the weapons from the core rules and supply catalogues
     for now.</p>
     </html>

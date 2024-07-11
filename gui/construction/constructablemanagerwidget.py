@@ -165,7 +165,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self,
             name: str
             ) -> construction.ConstructableInterface:
-        raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement createNew')
+        raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement createConstructable')
 
     def importConstructable(self) -> None:
         raise RuntimeError(f'{type(self)} is derived from ConstructableManagerWidget so must implement importConstructable')

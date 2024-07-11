@@ -775,8 +775,8 @@ class Finalisation(robots.RobotComponentInterface):
 
     _AutopilotNote = 'The DM for the robot\'s Autopilot rating and its vehicle skills don\'t stack, the higher of the two values should be used. (p49)'
 
-    _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog, Robot Handbook author)'
-    _CombatNonManipulatorCharacteristicsNote = 'Attack rolls for weapons not mounted to or held by a manipulator do not receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog, Robot Handbook author)'
+    _CombatManipulatorCharacteristicsNote = 'Attacks rolls for weapons mounted to or held by a manipulator receive the STR/DEX characteristic DM for the manipulator in the same way as players receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog)'
+    _CombatNonManipulatorCharacteristicsNote = 'Attack rolls for weapons not mounted to or held by a manipulator do not receive a STR/DEX characteristic DM. (clarified by Geir Lanesskog)'
     _CombatManipulatorUndersizedNote = 'Manipulators of Size {sizes} are too small to hold weapons and use them effectively. Attacks rolls do not get the manipulators DEX or STR bonus. (p61)'
     _CombatManipulatorWeaponSizeNote = 'Manipulators of Size {sizes} can hold and effectively use {examples}. If weapons larger than this are being held, attack rolls do not get the manipulators STR or DEX bonus. (p61)'
     _CombatWeaponSizeExamples = {
@@ -785,7 +785,7 @@ class Finalisation(robots.RobotComponentInterface):
         traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
     }
 
-    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel}, they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware. (clarified by Geir Lanesskog, Robot Handbook author)'
+    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel}, they give the robot {skill} {skillLevel}, but it doesn\'t get a DM+{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware. (clarified by Geir Lanesskog)'
 
     _VacuumOperationWithEnduranceNote = 'When operating in a vacuum, the robot\'s Endurance is halved to {halfEndurance} hour(s) and it must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
     _VacuumOperationNoEnduranceNote = 'When operating in a vacuum, the robot must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'

@@ -2264,7 +2264,7 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
     robot (p41)
     - Note: When Active Camouflage is enabled effectively gives the robot
     Stealth 4 vs Recon checks. This stacks with any other Stealth skill the
-    robot has (clarified by Geir Lanesskog, Robot Handbook author).
+    robot has (clarified by Geir Lanesskog).
     """
     # NOTE: Geir clarified that this does give the Stealth trait but, because
     # it gives sensor and visual camouflage, it effectively gives the Stealth
@@ -2280,7 +2280,7 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=4,
         name='Active Camouflage Stealth Trait')
 
-    _StealthSkillNote = 'When active camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has. (clarified by Geir Lanesskog, Robot Handbook author)'
+    _StealthSkillNote = 'When active camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has. (clarified by Geir Lanesskog)'
 
     def __init__(
             self,

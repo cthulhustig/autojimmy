@@ -117,7 +117,7 @@ class _AttributeLineEdit(_CalculationLineEdit):
         return self._attribute.calculations()
 
 class WeaponInfoWidget(QtWidgets.QWidget):
-    _StateVersion = 'WeaponInfoWidget_v1'
+    _StateVersion = 'WeaponInfoWidget_v2'
 
     def __init__(
             self,

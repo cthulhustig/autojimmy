@@ -266,6 +266,9 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             # is first added so updates it's state won't cause the type of
             # widget used to change. I'm not doing anything about it at the
             # moment as it's not an issue with any of the current use cases.
+            # If I'm doing something about this there is a similar issue if
+            # an IntegerOption or FloatOption switched to/from being optional.
+
             stringOptions = option.choices()
             if not stringOptions:
                 # There are no pre-defined strings the user can select from so
@@ -922,7 +925,7 @@ class _StageWidget(QtWidgets.QWidget):
             # Components being removed like this can happen if they become
             # incompatible due to a change in another component in the same
             # stage. It only happens with components in the same stage as
-            # changes to components a previous stage cause synchronise to be
+            # changes to components in a previous stage cause synchronise to be
             # called which handles removal of components that are no longer part
             # of the stage.
             # An example would be a robot Satellite Uplink which requires a

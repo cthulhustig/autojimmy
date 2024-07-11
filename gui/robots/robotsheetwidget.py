@@ -20,32 +20,22 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
     _ApplySkillModifiersToolTip = \
         """
-        <p>Choose if the displayed skill values include the the characteristic
-        DM as they do in the Robot Handbook.<p>
+        <p>Choose if the skill levels displayed include the DM for the
+        characteristic most commonly used with the skill.</p>
         <p>The skill values listed for robots in the Robot Handbook have the
-        characteristic DMs included in the values as described in the Inherent
-        Skill DMs and Finalisation sections (p73 & p76). This can result in
-        confusion due to it being different to how skills are handled for
-        player/NPC character sheets. It also makes it far harder to work out
-        modifiers for robots with manipulators of different sizes or for
-        situations where the 'standard' characteristic may not be the most
-        suitable for the check being made.</p>
-        <p>By default, {name} will only display the base skill level. This is
-        done in an effort to make dealing with robots in game more straight
-        forward. By doing this it means calculating the final DM is handled in
-        the same way as for a meat sack traveller. When making a check, the DM
-        for the appropriate characteristic is added to the skill level along
-        with any situation specific DMs. The only difference is, unless your
-        dealing with a robot that specifically has a SOC/EDU characteristic,
-        the robots INT characteristic is used in their place as described in
-        the Inherent Skill DMs section (p73).</p>
-        <p>Alternatively, when this option is enabled, {name} will include
-        characteristic DMs in the displayed skill values. However, displaying
-        skills like this is <b>not recommended</b>.</p>
+        DM for the characteristic that is most commonly used with that skill
+        pre-applied. This can result in ambiguities and unnecessary complexities
+        when dealing with anything other than simple robots and encounters, for
+        example robots that have manipulators with different characteristics or
+        making skill check where the standard characteristic isn't the one that
+        is appropriate for the situation at hand (e.g. using Gun Combat to try
+        and identify an obscure model of pistol would use INT or EDU rather than
+        DEX). To avoid these potential issues, by default, {name} will only
+        display the base skill level without characteristic DMs included.</p>
         <p><b>When characteristic DMs are being included in the displayed skill
         values, the list of automatically generated notes will still contain
-        notes covering the modifiers that have been applied. It's up to the user
-        to not double count them.</b></p>
+        notes covering the modifiers that have been pre-applied. It's up to the
+        user to not double count them.</p>
         """.format(name=app.AppName)
 
     def __init__(

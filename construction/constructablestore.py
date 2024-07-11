@@ -28,7 +28,7 @@ class ConstructableStore(object):
             typeString: str,
             readFileFn: typing.Callable[[
                 str, # Input: Path of file to read from
-                typing.Optional[construction.ConstructableInterface] # Input: Optional In place constructable ro read into
+                typing.Optional[construction.ConstructableInterface] # Input: Optional In place constructable to read into
                 ],
                 construction.ConstructableInterface], # Output: Constructable
             writeFileFn: typing.Callable[[
