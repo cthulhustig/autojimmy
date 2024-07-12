@@ -5272,7 +5272,7 @@ class _StorageCompartmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
 
     def isZeroSlot(self) -> bool:
         return False
-    
+
     def instanceString(self) -> str:
         selectedType = self._enumOption.value()
         if isinstance(selectedType, _StorageCompartmentSlotOptionImpl._CompartmentType):

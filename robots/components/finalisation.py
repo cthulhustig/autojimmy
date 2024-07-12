@@ -664,7 +664,7 @@ class SignificantFigureCostRounding(CostRounding):
             value=1,
             minValue=1,
             description='The number of significant figures to round the final robot cost to.')
-        
+
         self._roundingOption = construction.EnumOption(
             id='Rounding',
             name='Rounding',

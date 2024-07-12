@@ -616,7 +616,7 @@ class Calculator(object):
                 lhs=self._lhs.copy(),
                 rhs=self._rhs.copy(),
                 rounding=self._rounding)
-        
+
     class MinFunction(TwoParameterFunction):
         def value(self) -> typing.Union[int, float]:
             return min(self._lhs.value(), self._rhs.value())
@@ -1314,7 +1314,7 @@ class Calculator(object):
             bestCase=Calculator.SignificantDigitsFunction(value.bestCaseCalculation(), digits.bestCaseCalculation()),
             averageCase=Calculator.SignificantDigitsFunction(value.averageCaseCalculation(), digits.averageCaseCalculation()),
             name=name)
-    
+
     @typing.overload
     @staticmethod
     def floorDigits(
@@ -1369,7 +1369,7 @@ class Calculator(object):
                 rhs=digits.averageCaseCalculation(),
                 rounding=Calculator.SignificantDigitsFunction.Rounding.Floor),
             name=name)
-    
+
     @typing.overload
     @staticmethod
     def ceilDigits(
