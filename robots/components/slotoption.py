@@ -6813,7 +6813,7 @@ class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     }
 
     _MaxSkillNote = 'Electronics, Engineering and Mechanic skills are limited to {max} when using the toolkit. (p60)'
-    _CuttingTorchNote = 'A cutting torch is included in the starship engineering toolkit. (p58)'
+    _CuttingTorchNote = 'A cutting torch is included in the starship engineering toolkit. (p60 & p58)'
 
     def __init__(
             self,
