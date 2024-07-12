@@ -3333,8 +3333,8 @@ class _TightbeamCommunicatorSlotOptionImpl(_SingleStepSlotOptionImpl):
     # it means the note may be inaccurate while the robot is being loaded but
     # will be correct at the point it's fully loaded.
 
-    _StandardRangeNote = 'Range is 5,000km'
-    _SatelliteRangeNote = 'Range is 5,000km or 500,000km if using the robot\'s satellite uplink'
+    _StandardRangeNote = 'Range is 5,000km. (p46)'
+    _SatelliteRangeNote = 'Range is 5,000km or 500,000km if using the robot\'s satellite uplink. (p46)'
 
     def __init__(
             self,
@@ -4529,7 +4529,7 @@ class _ConstructionEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
 
-        step.addNote(f'Can process {speed} cubic meters per hour')
+        step.addNote(f'Can process {speed} cubic meters per hour. (p50)')
 
 class _FabricationChamberSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -4807,7 +4807,7 @@ class _MiningEquipmentSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
 
-        step.addNote(f'Can mine {speed} cubic meters per hour')
+        step.addNote(f'Can mine {speed} cubic meters per hour. (p52)')
 
 class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
     """
@@ -6177,7 +6177,7 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         _OptionLevel.Advanced: (20000, 1, 3)
     }
 
-    _ReconNote = 'Recon skill checks made using the Recon Sensor don\'t receive an INT DM modifier.'
+    _ReconNote = 'Recon skill checks made using the Recon Sensor don\'t receive an INT DM modifier. (p58)'
 
     def __init__(
             self,

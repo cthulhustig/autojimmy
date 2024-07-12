@@ -42,7 +42,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
 
     SecondaryEndurance = 'Secondary Endurance'
     SecondaryAgility = 'Secondary Agility'
-    SecondarySpeed = 'Secondary Speed'
+    SecondarySpeed = 'Secondary Speed' # In meters per minor action
 
     # This is the speed of the vehicle when using Vehicle Speed Movement (p23).
     # When not using Vehicle Speed Movement my assumption is the Speed attribute
@@ -54,7 +54,7 @@ class RobotAttributeId(construction.ConstructionAttributeId):
     # Movement (p23). It's done so the value can be displayed along with the
     # standard Endurance. In the Finale Endurance section (p23) the rules suggest
     # having the vehicle speed endurance in brackets after the standard endurance.
-    VehicleEndurance = 'Vehicle Endurance'
+    VehicleEndurance = 'Vehicle Endurance' # In hours
 
     # This attribute is a hack to allow zero slot options to track how many zero
     # slot options have been added to know if they should start consuming a slot.
