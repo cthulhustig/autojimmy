@@ -25,3 +25,9 @@ Gunsmith window showing manifest for Jimmy's rifle
 
 Gunsmith window showing attributes and automatically generated notes for Jimmy's rifle
 ![Gunsmith Info](./screenshots/gunsmith_info.png)
+
+Robot Builder window showing manifest for example Steward Droid
+![Robot Builder Manifest](./screenshots/robot_manifest.png)
+
+Gunsmith window showing attributes and automatically generated notes for example Steward Droid
+![Gunsmith Info](./screenshots/robot_info.png)

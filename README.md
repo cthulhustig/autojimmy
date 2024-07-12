@@ -19,6 +19,10 @@ Python and can be run on Windows, Linux and macOS.
     * Automatically generated notes listing the more complex rules that apply to a weapon, when
     they apply and what their effect are
     * Export of weapons to PDF
+* Automation of robot creation using the Mongoose 2e Robot Handbook rules
+    * Support for robots as NPCs and player characters
+    * Automatically generated notes listing situationally dependant modifiers and rules
+    * Export of robot to PDF
 * Referee aids Mongoose Speculative Trading & Smuggling rules
     * Dice rollers for purchase and sale process
     * Support for local brokers
