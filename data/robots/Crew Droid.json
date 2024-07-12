@@ -1,0 +1,324 @@
+{
+    "name": "Crew Droid",
+    "techLevel": 12,
+    "weaponSet": "CSC2023",
+    "components": [
+        {
+            "type": "Size5Chassis",
+            "options": []
+        },
+        {
+            "type": "WalkerPrimaryLocomotion",
+            "options": [
+                {
+                    "id": "LegCount",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "IncreaseEndurance",
+            "options": [
+                {
+                    "id": "ImprovedComponents",
+                    "value": false
+                },
+                {
+                    "id": "PowerPacks",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "TacticalSpeedEnhancement",
+            "options": [
+                {
+                    "id": "SpeedIncrease",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 5
+                },
+                {
+                    "id": "Strength",
+                    "value": 9
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 5
+                },
+                {
+                    "id": "Strength",
+                    "value": 9
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "LegManipulator",
+            "options": [
+                {
+                    "id": "Strength",
+                    "value": 9
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "LegManipulator",
+            "options": [
+                {
+                    "id": "Strength",
+                    "value": 9
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "PRISSensorDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "VoderSpeakerDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "BroadSpectrum"
+                }
+            ]
+        },
+        {
+            "type": "AuditorySensorDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "BroadSpectrum"
+                }
+            ]
+        },
+        {
+            "type": "WirelessDataLinkDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "TransceiverDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced500km"
+                }
+            ]
+        },
+        {
+            "type": "SolarCoatingSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Advanced"
+                }
+            ]
+        },
+        {
+            "type": "VacuumEnvironmentProtectionSlotOption",
+            "options": []
+        },
+        {
+            "type": "SelfRepairingChassisSlotOption",
+            "options": []
+        },
+        {
+            "type": "DroneInterfaceSlotOption",
+            "options": []
+        },
+        {
+            "type": "MedkitSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "GeckoGrippersSlotOption",
+            "options": []
+        },
+        {
+            "type": "StorageCompartmentSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Refrigerated"
+                },
+                {
+                    "id": "Slots",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "AtmosphericSensorSlotOption",
+            "options": []
+        },
+        {
+            "type": "OlfactorySensorSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Improved"
+                }
+            ]
+        },
+        {
+            "type": "ReconSensorSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "FireExtinguisherSlotOption",
+            "options": []
+        },
+        {
+            "type": "StarshipEngineeringToolkitSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "AdvancedTL12Brain",
+            "options": [
+                {
+                    "id": "Hardened",
+                    "value": false
+                },
+                {
+                    "id": "BandwidthUpgrade",
+                    "value": "AdvancedPlus4"
+                },
+                {
+                    "id": "IntellectUpgrade",
+                    "value": "IntelligencePlus1"
+                }
+            ]
+        },
+        {
+            "type": "AdminSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "AdvocateSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "ElectronicsSkill",
+            "options": [
+                {
+                    "id": "CommsLevel",
+                    "value": 0
+                },
+                {
+                    "id": "ComputersLevel",
+                    "value": 0
+                },
+                {
+                    "id": "RemoteOpsLevel",
+                    "value": 0
+                },
+                {
+                    "id": "SensorsLevel",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "EngineerSkill",
+            "options": [
+                {
+                    "id": "JDriveLevel",
+                    "value": 0
+                },
+                {
+                    "id": "LifeSupportLevel",
+                    "value": 0
+                },
+                {
+                    "id": "MDriveLevel",
+                    "value": 0
+                },
+                {
+                    "id": "PowerPlantLevel",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "MechanicSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "MedicSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "StewardSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 1
+                }
+            ]
+        }
+    ],
+    "notes": "\"This is an attempt to replicate the Crew Droid from the Robot Handbook (p153). This is also the robot that is used in Seth Skorkowsky's review of the Robot Handbook\\nhttps://www.youtube.com/watch?v=YCFJTUZ_CeI\\n\""
+}

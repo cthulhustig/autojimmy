@@ -6813,6 +6813,7 @@ class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
     }
 
     _MaxSkillNote = 'Electronics, Engineering and Mechanic skills are limited to {max} when using the toolkit. (p60)'
+    _CuttingTorchNote = 'A cutting torch is included in the starship engineering toolkit. (p58)'
 
     def __init__(
             self,
@@ -6859,8 +6860,9 @@ class _StarshipEngineeringToolkitSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.setSlots(
             slots=construction.ConstantModifier(value=slots))
 
-        step.addNote(_StarshipEngineeringToolkitSlotOptionImpl._MaxSkillNote.format(
+        step.addNote(note=_StarshipEngineeringToolkitSlotOptionImpl._MaxSkillNote.format(
             max=maxSkill))
+        step.addNote(note=_StarshipEngineeringToolkitSlotOptionImpl._CuttingTorchNote)
 
 class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
     """
