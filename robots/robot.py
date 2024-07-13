@@ -753,12 +753,16 @@ class Robot(construction.ConstructableInterface):
                     if fireControl:
                         manipulatorString += f', {fireControl.value} Fire Control'
 
+                    manipulatorString = f'({manipulatorString})'
+                    if isinstance(component, robots.LegManipulator):
+                        manipulatorString = f'Leg Manipulator {manipulatorString}'
+
                     count = seenManipulators.get(manipulatorString, 0)
                     seenManipulators[manipulatorString] = count + 1
 
                 manipulatorStrings = []
                 for manipulatorString, count in seenManipulators.items():
-                    manipulatorStrings.append('{count} x ({manipulator})'.format(
+                    manipulatorStrings.append('{count} x {manipulator}'.format(
                         count=common.formatNumber(number=count),
                         manipulator=manipulatorString))
                 fieldText = Robot._formatWorksheetListString(manipulatorStrings)
