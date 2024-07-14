@@ -203,6 +203,15 @@
             ]
         },
         {
+            "type": "CuttingTorchSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Improved"
+                }
+            ]
+        },        
+        {
             "type": "FireExtinguisherSlotOption",
             "options": []
         },
