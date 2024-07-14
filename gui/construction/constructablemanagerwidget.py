@@ -340,6 +340,9 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._sortList()
 
         if wasRenamed:
+            # Handling the current item changing MUST be done after sorting to
+            # ensure the view is moved to the correct location to ensure the
+            # current item is visible
             self._handleCurrentChanged(ensureVisible=True)
 
         return True # User didn't cancel
@@ -390,6 +393,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         if revertUnsaved:
             current = self.current()
             sortList = False
+            updateCurrent = False
             for constructable in allConstructables:
                 _, item = self._findItemByConstructable(constructable=constructable)
                 if item == None or not item.isModified():
@@ -401,16 +405,20 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 sortList = True
 
                 if constructable == current:
-                    # The current constructable was reverted so notify listeners that
-                    # it was modified
-                    self._handleCurrentChanged(ensureVisible=True)
+                    updateCurrent = True
 
             # Remove any unsaved constructables for the same reason the modified
             # constructables were removed
             self._deleteUnsaved()
 
-        if sortList:
-            self._sortList()
+            if sortList:
+                self._sortList()
+
+            if updateCurrent:
+                # Handling the current item changing MUST be done after sorting to
+                # ensure the view is moved to the correct location to ensure the
+                # current item is visible                
+                self._handleCurrentChanged(ensureVisible=True)
 
         return True # The user didn't cancel
 
@@ -564,11 +572,14 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 if makeSelected and originalItem == oldCurrentItem:
                     newCurrentItem = copyItem
 
+            self._sortList()
+
             if makeSelected and newCurrentItem:
                 self._sectionList.setCurrentItem(newCurrentItem)
+                # Handling the current item changing MUST be done after sorting to
+                # ensure the view is moved to the correct location to ensure the
+                # current item is visible
                 self._handleCurrentChanged(ensureVisible=True)
-
-        self._sortList()
 
         return constructablesMap
 
@@ -589,7 +600,10 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._internalDefault()
             self._forceSelection()
 
-        self._handleCurrentChanged(ensureVisible=True)
+        # No need to keep the current item visible when deleting as its just
+        # which ever item that became current after the old current item was
+        # deleted.
+        self._handleCurrentChanged(ensureVisible=False)
 
     def _deleteUnsaved(self) -> None:
         for section in range(self._sectionList.sectionCount()):
@@ -687,7 +701,6 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             self._internalNew(
                 makeCurrent=True,
                 sortList=True)
-            self._handleCurrentChanged(ensureVisible=True)
         except Exception as ex:
             message = f'Failed to create new {self._constructableStore.typeString()}'
             logging.error(message, exc_info=ex)
@@ -695,6 +708,8 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+        self._handleCurrentChanged(ensureVisible=True)
 
     def _saveClicked(self) -> None:
         constructable = self.current()
@@ -790,6 +805,9 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
                 exception=ex)
 
         self._sortList() # Sort list as names may have changed
+        # Handling the current item changing MUST be done after sorting to
+        # ensure the view is moved to the correct location to ensure the
+        # current item is visible
         self._handleCurrentChanged(ensureVisible=True)
 
     def _copyClicked(self) -> None:
