@@ -210,12 +210,19 @@ class _SingleStepSlotOptionImpl(_SlotOptionImpl):
                 sequence=sequence,
                 context=context)
 
-            # Increment the zero-slot count, if this is the first zero-slot option
-            # it will be set to 1
-            step.addFactor(factor=construction.ModifyAttributeFactor(
-                attributeId=robots.RobotAttributeId.ZeroSlotCount,
-                modifier=construction.ConstantModifier(
-                    value=SlotOption._ZeroSlotCountIncrement)))
+            # If no slots are required then it means the limit hasn't been
+            # reached so increment the zero-slot count, if this is the first
+            # zero-slot option it will be set to 1. From a construction point
+            # of view it doesn't matter if this continues to be incremented
+            # after the limit has been reached (i.e. slots is not None) but
+            # from the point of view of displaying the number of zero slot
+            # options used, it's better if it doesn't get incremented past
+            # the max.
+            if not slots:
+                step.addFactor(factor=construction.ModifyAttributeFactor(
+                    attributeId=robots.RobotAttributeId.ZeroSlotCount,
+                    modifier=construction.ConstantModifier(
+                        value=SlotOption._ZeroSlotCountIncrement)))
         elif self._percentBaseSlots:
             slots = common.Calculator.takePercentage(
                 value=context.baseSlots(sequence=sequence),

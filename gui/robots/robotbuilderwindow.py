@@ -549,14 +549,22 @@ class RobotBuilderWindow(gui.WindowWidget):
         self._currentRobotGroupBox.setLayout(layout)
 
     def _setupResultsControls(self) -> None:
+        self._usedZeroSlotsLabel = QtWidgets.QLabel()
         self._usedSlotsLabel = QtWidgets.QLabel()
+        self._usedZeroBandwidthLabel = QtWidgets.QLabel()
         self._usedBandwidthLabel = QtWidgets.QLabel()
 
         labelLayout = QtWidgets.QHBoxLayout()
         labelLayout.setContentsMargins(0, 0, 0, 0)
         labelLayout.addLayout(gui.createLabelledWidgetLayout(
+            text='Zero Slot Options: ',
+            widget=self._usedZeroSlotsLabel))
+        labelLayout.addLayout(gui.createLabelledWidgetLayout(
             text='Used Slots: ',
             widget=self._usedSlotsLabel))
+        labelLayout.addLayout(gui.createLabelledWidgetLayout(
+            text='Zero Bandwidth Skills: ',
+            widget=self._usedZeroBandwidthLabel))
         labelLayout.addLayout(gui.createLabelledWidgetLayout(
             text='Used Bandwidth: ',
             widget=self._usedBandwidthLabel))
@@ -593,39 +601,48 @@ class RobotBuilderWindow(gui.WindowWidget):
     def _updateResults(self) -> None:
         robot = self._configurationWidget.robot()
 
-        defaultTextColour = QtWidgets.QApplication.palette().color(
-            QtGui.QPalette.ColorRole.WindowText)
-
-        usedSlots = robot.usedSlots().value()
-        maxSlots = robot.maxSlots().value()
-        slotsText = f'{usedSlots}/{maxSlots}'
-        slotsColour = defaultTextColour
-        if usedSlots > maxSlots:
-            slotsText += ' - Limit Exceeded!'
-            slotsColour = QtCore.Qt.GlobalColor.red
-        self._usedSlotsLabel.setText(slotsText)
-        palette = self._usedSlotsLabel.palette()
-        palette.setColor(
-            QtGui.QPalette.ColorRole.WindowText,
-            slotsColour)
-        self._usedSlotsLabel.setPalette(palette)
-
-        usedBandwidth = robot.usedBandwidth().value()
-        maxBandwidth = robot.maxBandwidth().value()
-        bandwidthText = f'{usedBandwidth}/{maxBandwidth}'
-        bandwidthColour = defaultTextColour
-        if usedBandwidth > maxBandwidth:
-            bandwidthText += ' - Limit Exceeded!'
-            bandwidthColour = QtCore.Qt.GlobalColor.red
-        self._usedBandwidthLabel.setText(bandwidthText)
-        palette = self._usedBandwidthLabel.palette()
-        palette.setColor(
-            QtGui.QPalette.ColorRole.WindowText,
-            bandwidthColour)
-        self._usedBandwidthLabel.setPalette(palette)
+        self._setUsageLabelText(
+            currentUsed=robot.usedZeroSlots(),
+            maxAllowed=robot.maxZeroSlots(),
+            label=self._usedZeroSlotsLabel)
+        self._setUsageLabelText(
+            currentUsed=robot.usedSlots(),
+            maxAllowed=robot.maxSlots(),
+            label=self._usedSlotsLabel)
+        self._setUsageLabelText(
+            currentUsed=robot.usedZeroBandwidth(),
+            maxAllowed=robot.maxZeroBandwidth(),
+            label=self._usedZeroBandwidthLabel)
+        self._setUsageLabelText(
+            currentUsed=robot.usedBandwidth(),
+            maxAllowed=robot.maxBandwidth(),
+            label=self._usedBandwidthLabel)
 
         self._manifestTable.setManifest(manifest=robot.manifest())
         self._infoWidget.setRobot(robot=robot)
+
+    def _setUsageLabelText(
+            self,
+            currentUsed: common.ScalarCalculation,
+            maxAllowed: common.ScalarCalculation,
+            label: QtWidgets.QLabel
+            ) -> None:
+        defaultTextColour = QtWidgets.QApplication.palette().color(
+            QtGui.QPalette.ColorRole.WindowText)
+
+        currentUsed = currentUsed.value()
+        maxAllowed = maxAllowed.value()
+        text = f'{currentUsed}/{maxAllowed}'
+        colour = defaultTextColour
+        if currentUsed > maxAllowed:
+            text += ' - Limit Exceeded!'
+            colour = QtCore.Qt.GlobalColor.red
+        label.setText(text)
+        palette = label.palette()
+        palette.setColor(
+            QtGui.QPalette.ColorRole.WindowText,
+            colour)
+        label.setPalette(palette)
 
     def _selectedRobotChanged(self) -> None:
         robot = self._robotManagementWidget.current()

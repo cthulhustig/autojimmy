@@ -75,6 +75,10 @@ class _RobotSequenceState(construction.SequenceState):
             stages=stages)
 
 class RobotContext(construction.ConstructionContext):
+    _DefaultSuiteComponentCount = common.ScalarCalculation(
+        value=5,
+        name='Default Suite Zero Slot Count')
+
     def __init__(
             self,
             techLevel: int,
@@ -166,6 +170,53 @@ class RobotContext(construction.ConstructionContext):
             rhs=self.usedSlots(sequence=sequence),
             name='Spare Slots')
 
+    def maxZeroSlots(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        size = self.attributeValue(
+            attributeId=robots.RobotAttributeId.Size,
+            sequence=sequence)
+        if not isinstance(size, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Max Zero Slot Count')
+
+        values = [
+            size,
+            common.ScalarCalculation(
+                value=self.techLevel(),
+                name='Robot TL'),
+            RobotContext._DefaultSuiteComponentCount
+        ]
+        return common.Calculator.sum(
+            values=values,
+            name='Max Zero Slot Count')
+
+    def usedZeroSlots(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        zeroSlots = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.ZeroSlotCount)
+        if not isinstance(zeroSlots, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Used Zero Slot Count')
+        return common.Calculator.equals(
+            value=zeroSlots,
+            name='Used Zero Slot Count')
+
+    def spareZeroSlots(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        return common.Calculator.subtract(
+            lhs=self.maxZeroSlots(sequence=sequence),
+            rhs=self.usedZeroSlots(sequence=sequence),
+            name='Spare Zero Slot Count')
+
     def maxBandwidth(
             self,
             sequence: str
@@ -200,6 +251,45 @@ class RobotContext(construction.ConstructionContext):
             lhs=self.maxBandwidth(sequence=sequence),
             rhs=self.usedBandwidth(sequence=sequence),
             name='Spare Bandwidth')
+
+    def maxZeroBandwidth(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        zeroBandwidth = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.InherentBandwidth)
+        if not isinstance(zeroBandwidth, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Max Zero Bandwidth Skill Count')
+        return common.Calculator.equals(
+            value=zeroBandwidth,
+            name='Max Zero Bandwidth Skill Count')
+
+    def usedZeroBandwidth(
+            self,
+            sequence: str
+            ) -> common.ScalarCalculation:
+        zeroBandwidth = self.attributeValue(
+            sequence=sequence,
+            attributeId=robots.RobotAttributeId.ZeroBandwidthSkillCount)
+        if not isinstance(zeroBandwidth, common.ScalarCalculation):
+            return common.ScalarCalculation(
+                value=0,
+                name='Used Zero Bandwidth Skill Count')
+        return common.Calculator.equals(
+            value=zeroBandwidth,
+            name='Used Zero Bandwidth Skill Count')
+
+    def spareZeroBandwidth(
+            self,
+            sequence: str,
+            ) -> common.ScalarCalculation:
+        return common.Calculator.subtract(
+            lhs=self.maxZeroBandwidth(sequence=sequence),
+            rhs=self.usedZeroBandwidth(sequence=sequence),
+            name='Spare Zero Bandwidth Skill Count')
 
     def multiPhaseCost(
             self,
@@ -505,6 +595,18 @@ class Robot(construction.ConstructableInterface):
         return self._constructionContext.spareSlots(
             sequence=self._sequence)
 
+    def maxZeroSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.maxZeroSlots(
+            sequence=self._sequence)
+
+    def usedZeroSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.usedZeroSlots(
+            sequence=self._sequence)
+
+    def spareZeroSlots(self) -> common.ScalarCalculation:
+        return self._constructionContext.spareZeroSlots(
+            sequence=self._sequence)
+
     def maxBandwidth(self) -> common.ScalarCalculation:
         return self._constructionContext.maxBandwidth(
             sequence=self._sequence)
@@ -515,6 +617,18 @@ class Robot(construction.ConstructableInterface):
 
     def spareBandwidth(self) -> common.ScalarCalculation:
         return self._constructionContext.spareBandwidth(
+            sequence=self._sequence)
+
+    def maxZeroBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.maxZeroBandwidth(
+            sequence=self._sequence)
+
+    def usedZeroBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.usedZeroBandwidth(
+            sequence=self._sequence)
+
+    def spareZeroBandwidth(self) -> common.ScalarCalculation:
+        return self._constructionContext.spareZeroBandwidth(
             sequence=self._sequence)
 
     def manifest(self) -> construction.Manifest:
