@@ -76,6 +76,7 @@ class NotesWidget(QtWidgets.QWidget):
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._table.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)

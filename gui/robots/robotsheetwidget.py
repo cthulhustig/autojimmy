@@ -74,6 +74,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._table.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
         itemDelegate = gui.TableViewSpannedWordWrapFixDelegate()
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self._table.setItemDelegate(itemDelegate)
