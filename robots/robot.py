@@ -804,7 +804,30 @@ class Robot(construction.ConstructableInterface):
                             suffix=' hours'))
                         calculations.append(attributeValue)
 
-                    fieldText = Robot._formatWorksheetListString(enduranceStrings)
+                    fieldText = Robot._formatWorksheetListString(
+                        stringList=enduranceStrings,
+                        # No placeholder as need to take other power sources into account
+                        emptyText='')
+
+                    powerTypes = (
+                        robots.SolarCoatingDefaultSuiteOption,
+                        robots.SolarCoatingSlotOption,
+                        robots.SolarPowerUnitSlotOption,
+                        robots.RTGSlotOption)
+                    powerSources = {}
+                    for componentType in powerTypes:
+                        powerComponents = self.findComponents(componentType=componentType)
+                        for component in powerComponents:
+                            powerString = component.instanceString()
+                            count = powerSources.get(powerString, 0)
+                            powerSources[powerString] = count + 1
+                    if powerSources:
+                        for powerSource, count in powerSources.items():
+                            if count > 1:
+                                powerSource = f'{count} x {powerSource}'
+                            if fieldText:
+                                fieldText += ' + '
+                            fieldText += powerSource
             elif field == robots.Worksheet.Field.Traits:
                 traitStrings = []
                 for trait in robots.TraitAttributeIds:
@@ -1316,7 +1339,7 @@ class Robot(construction.ConstructableInterface):
     @staticmethod
     def _formatWorksheetListString(
             stringList: typing.Iterable[str],
-            emptyText: str = 'None'
+            emptyText: str = '-'
             ) -> str:
         if not stringList:
             return emptyText
