@@ -69,8 +69,6 @@ class RobotSheetWidget(QtWidgets.QWidget):
             QtWidgets.QHeaderView.ResizeMode.Fixed)
         self._table.horizontalHeader().sectionResized.connect(
             self._table.resizeRowsToContents)
-        self._table.setContextMenuPolicy(
-            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._table.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
@@ -79,6 +77,8 @@ class RobotSheetWidget(QtWidgets.QWidget):
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self._table.setItemDelegate(itemDelegate)
         self._table.installEventFilter(self)
+        self._table.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._table.customContextMenuRequested.connect(self._tableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
@@ -117,7 +117,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboardBitmap()
+                    self._copyToClipboardHtml()
                     event.accept()
                     return True
 
@@ -211,7 +211,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _applySkillModifiersChanged(self) -> None:
         self._updateTable()
 
-    def _copyToClipboardHTML(self) -> None:
+    def _copyToClipboardHtml(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()
         if not clipboard:
             return
@@ -235,14 +235,15 @@ class RobotSheetWidget(QtWidgets.QWidget):
             ) -> None:
         menuItems = [
             gui.MenuItem(
-                text='Copy to Bitmap',
-                callback=lambda: self._copyToClipboardBitmap()),
-            gui.MenuItem(
-                text='Copy to HTML',
-                callback=lambda: self._copyToClipboardHTML()),
-            gui.MenuItem(
                 text='Calculation...',
-                callback=lambda: self._showCalculations())
+                callback=self._showCalculations),
+            None,
+            gui.MenuItem(
+                text='Copy as Bitmap',
+                callback=self._copyToClipboardBitmap),
+            gui.MenuItem(
+                text='Copy as HTML',
+                callback=self._copyToClipboardHtml)
         ]
 
         gui.displayMenu(

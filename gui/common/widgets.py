@@ -1000,6 +1000,9 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         if hasHorzHeader:
             content += '<tr>\n'
             for column in range(model.columnCount()):
+                if self.isColumnHidden(column):
+                    continue
+
                 tableHeader = TableWidgetEx._formatTableHeader(
                     model=model,
                     index=column,
@@ -1010,10 +1013,13 @@ class TableWidgetEx(QtWidgets.QTableWidget):
         rowSpans = [0] * self.columnCount()
         row = 0
         while row < self.rowCount():
-            content += '<tr>\n'
+            rowHidden = self.isRowHidden(row)
             column = 0
 
-            if hasVertHeader:
+            if not rowHidden:
+                content += '<tr>\n'
+
+            if hasVertHeader and not rowHidden:
                 tableHeader = TableWidgetEx._formatTableHeader(
                     model=model,
                     index=column,
@@ -1026,24 +1032,26 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                     rowSpans[column] = rowSpan - 1
                     continue
 
-                item = self.item(row, column)
-                itemText = html.escape(item.text()) if item else ''
-                itemAlignment = item.textAlignment() if item else 0
-                itemFont = item.font() if item else None
                 columnSpan = self.columnSpan(row, column)
+                assert(columnSpan > 0)
                 rowSpan = self.rowSpan(row, column)
+                assert(rowSpan > 0)
+                if not rowHidden and not self.isColumnHidden(column):
+                    item = self.item(row, column)
+                    itemText = item.text() if item else ''
+                    itemAlignment = item.textAlignment() if item else None
+                    itemFont = item.font() if item else None
 
-                alignmentStyle = gui.alignmentToHtmlStyle(alignment=itemAlignment)
-                if itemFont:
-                    itemText = gui.fontToHtmlTags(itemText, itemFont)
+                    itemText = gui.textToHtmlContent(text=itemText, font=itemFont)
+                    itemAlignment = gui.alignmentToHtmlStyle(alignment=itemAlignment)
 
-                content += '<td{style}{columnSpan}{rowSpan}>{itemText}</td>\n'.format(
-                    style=f' style="{alignmentStyle}"' if alignmentStyle else '',
-                    columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
-                    rowSpan=f' rowspan="{rowSpan}"' if rowSpan > 1 else '',
-                    itemText=itemText)
+                    content += '<td{style}{columnSpan}{rowSpan}>{itemText}</td>\n'.format(
+                        style=f' style="{itemAlignment}"' if itemAlignment else '',
+                        columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
+                        rowSpan=f' rowspan="{rowSpan}"' if rowSpan > 1 else '',
+                        itemText=itemText)
 
-                if rowSpan:
+                if rowSpan > 1:
                     columnSpanEnd = column + columnSpan
                     while column < columnSpanEnd:
                         rowSpans[column] = rowSpan - 1
@@ -1051,7 +1059,8 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 else:
                     column += columnSpan
 
-            content += '</tr>\n'
+            if not rowHidden:
+                content += '</tr>\n'
             row += 1
 
         content += '</table>\n'
@@ -1066,10 +1075,10 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             index: int,
             orientation: QtCore.Qt.Orientation
             ) -> str:
-        headerText = html.escape(model.headerData(
+        headerText = model.headerData(
             index,
             orientation,
-            QtCore.Qt.ItemDataRole.DisplayRole))
+            QtCore.Qt.ItemDataRole.DisplayRole)
         headerAlignment = model.headerData(
             index,
             orientation,
@@ -1079,12 +1088,11 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             orientation,
             QtCore.Qt.ItemDataRole.FontRole)
 
-        alignmentStyle = gui.alignmentToHtmlStyle(alignment=headerAlignment)
-        if headerFont:
-            headerText = gui.fontToHtmlTags(headerText, headerFont)
+        headerText = gui.textToHtmlContent(text=headerText, font=headerFont)
+        headerAlignment = gui.alignmentToHtmlStyle(alignment=headerAlignment)
 
         return '<th{style}>{headerText}</th>\n'.format(
-            style=f' style="{alignmentStyle}"' if alignmentStyle else '',
+            style=f' style="{headerAlignment}"' if headerAlignment else '',
             headerText=headerText)
 
 class ScrollAreaEx(QtWidgets.QScrollArea):

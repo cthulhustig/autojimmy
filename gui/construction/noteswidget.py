@@ -53,6 +53,8 @@ class NotesWidget(QtWidgets.QWidget):
 
         self._table = gui.ListTable()
         self._table.setColumnHeaders(NotesWidget._ColumnNames)
+        self._table.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         # Having the table automatically adjust to the content size can cause
         # odd draw issues if the NotesWidget is inside another widget such as a
         # group box or expander. If you type a sequence of the same character
@@ -77,6 +79,9 @@ class NotesWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._table.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
+        self._table.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._table.customContextMenuRequested.connect(self._tableContextMenu)
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -121,28 +126,12 @@ class NotesWidget(QtWidgets.QWidget):
         self._resizeTableToContents()
         return super().resizeEvent(event)
 
-    def copySelectionToClipboard(self):
-        clipboard = QtWidgets.QApplication.clipboard()
-        if not clipboard:
-            return
-
-        content = ''
-        for row in self._table.selectedRows():
-            item = self._table.item(row, 0)
-            source = item.text() if item else None
-            item = self._table.item(row, 1)
-            note = item.text() if item else None
-            if source and note:
-                content += f'{source} -- {note}\n'
-        if content:
-            clipboard.setText(content)
-
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self._table:
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self.copySelectionToClipboard()
+                    self._copyToClipboard()
                     event.accept()
                     return True
 
@@ -245,6 +234,30 @@ class NotesWidget(QtWidgets.QWidget):
             if isValidFilter else
             palette.color(QtGui.QPalette.ColorRole.BrightText))
         self._filterLineEdit.setPalette(palette)
+
+    def _tableContextMenu(
+            self,
+            position: QtCore.QPoint
+            ) -> None:
+        menuItems = [
+            gui.MenuItem(
+                text='Copy as HTML',
+                callback=self._copyToClipboard)
+        ]
+
+        gui.displayMenu(
+            self,
+            menuItems,
+            self._table.viewport().mapToGlobal(position))
+
+    def _copyToClipboard(self):
+        clipboard = QtWidgets.QApplication.clipboard()
+        if not clipboard:
+            return
+
+        content = self._table.contentToHtml()
+        if content:
+            clipboard.setText(content)
 
     def _clearFilter(self) -> None:
         self._filterLineEdit.clear()

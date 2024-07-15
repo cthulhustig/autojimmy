@@ -1,3 +1,4 @@
+import html
 import logging
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -168,7 +169,9 @@ def tabWidgetSearch(
     for child in widget.children():
         tabWidgetSearch(widget=child, tabWidgets=tabWidgets)
 
-def alignmentToHtmlStyle(alignment: int) -> str:
+def alignmentToHtmlStyle(alignment: typing.Optional[int]) -> str:
+    if not alignment:
+        return ''
     styles = []
     if alignment & QtCore.Qt.AlignmentFlag.AlignLeft:
         styles.append('text-align: left;')
@@ -187,9 +190,12 @@ def alignmentToHtmlStyle(alignment: int) -> str:
         styles.append('vertical-align: middle;')
     return ' '.join(styles)
 
-def fontToHtmlTags(text: str, font: QtGui.QFont) -> str:
-    if font.bold():
-        text = f'<b>{text}</b>'
-    if font.italic():
-        text = f'<i>{text}</i>'
+def textToHtmlContent(text: str, font: typing.Optional[QtGui.QFont]) -> str:
+    text = html.escape(text)
+    text = text.replace('\n', '<br>')
+    if font:
+        if font.bold():
+            text = f'<b>{text}</b>'
+        if font.italic():
+            text = f'<i>{text}</i>'
     return text
