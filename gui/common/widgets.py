@@ -974,6 +974,68 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 colour=gui.colourToString(focusColour, includeAlpha=False))
         super().setStyleSheet(styleSheet)
 
+    # NOTE: This doesn't support row spans
+    def contentToHtml(self) -> str:
+        content = '<table>\n'
+        header = self.horizontalHeader()
+        model = header.model() if header and not header.isHidden() else None
+        if model:
+            content += '  <tr>\n'
+            for column in range(model.columnCount()):
+                headerText = model.headerData(
+                    column,
+                    QtCore.Qt.Orientation.Horizontal,
+                    QtCore.Qt.ItemDataRole.DisplayRole)
+                headerAlignment = model.headerData(
+                    column,
+                    QtCore.Qt.Orientation.Horizontal,
+                    QtCore.Qt.ItemDataRole.TextAlignmentRole)
+
+                styles = ['padding: 2px;']
+                alignmentStyle = gui.alignmentToHtmlStyle(alignment=headerAlignment)
+                if alignmentStyle:
+                    styles.append(alignmentStyle)
+
+                if itemFont:
+                    headerText = gui.fontToHtmlTags(headerText, itemFont)
+
+                content += '    <th style={style}>{headerText}</th>\n'.format(
+                    style=' '.join(styles),
+                    headerText=headerText)
+            content += '  </tr>\n'
+
+        row = 0
+        while row < self.rowCount():
+            content += '  <tr>\n'
+            column = 0
+            while column < self.columnCount():
+                item = self.item(row, column)
+                itemText = item.text() if item else ''
+                itemFont = item.font() if item else None
+                columnSpan = self.columnSpan(row, column)
+
+                # Row spans aren't currently supported
+                assert(self.rowSpan(row, column) <= 1)
+
+                styles = ['padding: 2px;']
+                alignmentStyle = gui.alignmentToHtmlStyle(alignment=item.textAlignment())
+                if alignmentStyle:
+                    styles.append(alignmentStyle)
+
+                if itemFont:
+                    itemText = gui.fontToHtmlTags(itemText, itemFont)
+
+                content += '    <td style="{style}"{columnSpan}>{itemText}</td>\n'.format(
+                    style=' '.join(styles),
+                    columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
+                    itemText=itemText)
+                column += columnSpan
+            content += '  </tr>\n'
+            row += 1
+        content += '</table>\n'
+
+        return content
+
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'
 

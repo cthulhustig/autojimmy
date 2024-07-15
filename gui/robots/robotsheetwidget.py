@@ -216,20 +216,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if not clipboard:
             return
 
-        content = ''
-
-        for columnIndex in range(self._table.columnCount()):
-            headerItem = self._table.item(0, columnIndex)
-            dataItem = self._table.item(1, columnIndex)
-            if headerItem and dataItem:
-                content += f'{headerItem.text()} -- {dataItem.text()}\n'
-
-        for rowIndex in range(2, self._table.rowCount()):
-            headerItem = self._table.item(rowIndex, 0)
-            dataItem = self._table.item(rowIndex, 1)
-            if headerItem and dataItem:
-                content += f'{headerItem.text()} -- {dataItem.text()}\n'
-
+        content = self._table.contentToHtml()
         if content:
             clipboard.setText(content)
 
@@ -237,16 +224,13 @@ class RobotSheetWidget(QtWidgets.QWidget):
             self,
             position: QtCore.QPoint
             ) -> None:
-        item = self._table.itemAt(position)
-        if not item:
-            return
-
-        calculations = item.data(QtCore.Qt.ItemDataRole.UserRole)
         menuItems = [
             gui.MenuItem(
+                text='Copy',
+                callback=lambda: self._copyToClipboard()),
+            gui.MenuItem(
                 text='Calculation...',
-                callback=lambda: self._showCalculations(calculations=calculations),
-                enabled=calculations != None and len(calculations) > 0)
+                callback=lambda: self._showCalculations())
         ]
 
         gui.displayMenu(
@@ -254,11 +238,16 @@ class RobotSheetWidget(QtWidgets.QWidget):
             menuItems,
             self._table.viewport().mapToGlobal(position))
 
-    def _showCalculations(
-            self,
-            calculations: typing.Iterable[common.ScalarCalculation]
-            ) -> None:
+    def _showCalculations(self) -> None:
         try:
+            calculations = []
+            for row in range(self._table.rowCount()):
+                for column in range(self._table.columnCount()):
+                    item = self._table.item(row, column)
+                    data = item.data(QtCore.Qt.ItemDataRole.UserRole) if item else None
+                    if data:
+                        calculations.extend(data)
+
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculations(
                 calculations=calculations,

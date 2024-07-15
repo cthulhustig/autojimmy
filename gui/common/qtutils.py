@@ -167,3 +167,29 @@ def tabWidgetSearch(
             return
     for child in widget.children():
         tabWidgetSearch(widget=child, tabWidgets=tabWidgets)
+
+def alignmentToHtmlStyle(alignment: int) -> str:
+    styles = []
+    if alignment & QtCore.Qt.AlignmentFlag.AlignLeft:
+        styles.append('text-align: left;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignRight:
+        styles.append('text-align: right;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignHCenter:
+        styles.append('text-align: center;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignJustify:
+        styles.append('text-align: justify;')
+
+    if alignment & QtCore.Qt.AlignmentFlag.AlignTop:
+        styles.append('vertical-align: top;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignBottom:
+        styles.append('vertical-align: bottom;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignVCenter:
+        styles.append('vertical-align: middle;')
+    return ' '.join(styles)
+
+def fontToHtmlTags(text: str, font: QtGui.QFont) -> str:
+    if font.bold():
+        text = f'<b>{text}</b>'
+    if font.italic():
+        text = f'<i>{text}</i>'
+    return text

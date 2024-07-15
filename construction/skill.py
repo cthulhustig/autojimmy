@@ -89,7 +89,7 @@ class Skill(object):
             levels = common.Calculator.add(
                 lhs=currentLevel,
                 rhs=levels,
-                name=f'Stacked {self.name(speciality=speciality)} Level')
+                name=f'Stacked {self.name(speciality=speciality)} Skill Level')
 
         if speciality:
             if levels.value() >= 1:
