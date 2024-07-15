@@ -1,5 +1,6 @@
 import app
 import common
+import html
 import gui
 import logging
 import math
@@ -974,67 +975,117 @@ class TableWidgetEx(QtWidgets.QTableWidget):
                 colour=gui.colourToString(focusColour, includeAlpha=False))
         super().setStyleSheet(styleSheet)
 
-    # NOTE: This doesn't support row spans
     def contentToHtml(self) -> str:
-        content = '<table>\n'
-        header = self.horizontalHeader()
-        model = header.model() if header and not header.isHidden() else None
-        if model:
-            content += '  <tr>\n'
+        horzHeader = self.horizontalHeader()
+        vertHeader = self.verticalHeader()
+        hasHorzHeader = horzHeader and not horzHeader.isHidden()
+        hasVertHeader = vertHeader and not vertHeader.isHidden()
+        model = self.model()
+
+        content = '<html>\n'
+        content += '<head>\n'
+        content += '<style>\n'
+        content += 'table, th, td {\n'
+        content += 'border: 1px solid black;\n'
+        content += 'border-collapse: collapse;\n'
+        content += '}\n'
+        content += 'th, td {\n'
+        content += 'padding: 2px;\n'
+        content += '}\n'
+        content += '</style>\n'
+        content += '</head>\n'
+        content += '<body>\n'
+        content += '<table style="border: 1px solid black; border-collapse: collapse;">\n'
+
+        if hasHorzHeader:
+            content += '<tr>\n'
             for column in range(model.columnCount()):
-                headerText = model.headerData(
-                    column,
-                    QtCore.Qt.Orientation.Horizontal,
-                    QtCore.Qt.ItemDataRole.DisplayRole)
-                headerAlignment = model.headerData(
-                    column,
-                    QtCore.Qt.Orientation.Horizontal,
-                    QtCore.Qt.ItemDataRole.TextAlignmentRole)
+                tableHeader = TableWidgetEx._formatTableHeader(
+                    model=model,
+                    index=column,
+                    orientation=QtCore.Qt.Orientation.Horizontal)
+                content += f'{tableHeader}\n'
+            content += '</tr>\n'
 
-                styles = ['padding: 2px;']
-                alignmentStyle = gui.alignmentToHtmlStyle(alignment=headerAlignment)
-                if alignmentStyle:
-                    styles.append(alignmentStyle)
-
-                if itemFont:
-                    headerText = gui.fontToHtmlTags(headerText, itemFont)
-
-                content += '    <th style={style}>{headerText}</th>\n'.format(
-                    style=' '.join(styles),
-                    headerText=headerText)
-            content += '  </tr>\n'
-
+        rowSpans = [0] * self.columnCount()
         row = 0
         while row < self.rowCount():
-            content += '  <tr>\n'
+            content += '<tr>\n'
             column = 0
+
+            if hasVertHeader:
+                tableHeader = TableWidgetEx._formatTableHeader(
+                    model=model,
+                    index=column,
+                    orientation=QtCore.Qt.Orientation.Vertical)
+                content += f'{tableHeader}\n'
+
             while column < self.columnCount():
+                rowSpan = rowSpans[column]
+                if rowSpan > 0:
+                    rowSpans[column] = rowSpan - 1
+                    continue
+
                 item = self.item(row, column)
-                itemText = item.text() if item else ''
+                itemText = html.escape(item.text()) if item else ''
+                itemAlignment = item.textAlignment() if item else 0
                 itemFont = item.font() if item else None
                 columnSpan = self.columnSpan(row, column)
+                rowSpan = self.rowSpan(row, column)
 
-                # Row spans aren't currently supported
-                assert(self.rowSpan(row, column) <= 1)
-
-                styles = ['padding: 2px;']
-                alignmentStyle = gui.alignmentToHtmlStyle(alignment=item.textAlignment())
-                if alignmentStyle:
-                    styles.append(alignmentStyle)
-
+                alignmentStyle = gui.alignmentToHtmlStyle(alignment=itemAlignment)
                 if itemFont:
                     itemText = gui.fontToHtmlTags(itemText, itemFont)
 
-                content += '    <td style="{style}"{columnSpan}>{itemText}</td>\n'.format(
-                    style=' '.join(styles),
+                content += '<td{style}{columnSpan}{rowSpan}>{itemText}</td>\n'.format(
+                    style=f' style="{alignmentStyle}"' if alignmentStyle else '',
                     columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
+                    rowSpan=f' rowspan="{rowSpan}"' if rowSpan > 1 else '',
                     itemText=itemText)
-                column += columnSpan
-            content += '  </tr>\n'
+
+                if rowSpan:
+                    columnSpanEnd = column + columnSpan
+                    while column < columnSpanEnd:
+                        rowSpans[column] = rowSpan - 1
+                        column += 1
+                else:
+                    column += columnSpan
+
+            content += '</tr>\n'
             row += 1
+
         content += '</table>\n'
+        content += '</body>\n'
+        content += '</html>\n'
 
         return content
+
+    @staticmethod
+    def _formatTableHeader(
+            model: QtCore.QAbstractItemModel,
+            index: int,
+            orientation: QtCore.Qt.Orientation
+            ) -> str:
+        headerText = html.escape(model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.DisplayRole))
+        headerAlignment = model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.TextAlignmentRole)
+        headerFont = model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.FontRole)
+
+        alignmentStyle = gui.alignmentToHtmlStyle(alignment=headerAlignment)
+        if headerFont:
+            headerText = gui.fontToHtmlTags(headerText, headerFont)
+
+        return '<th{style}>{headerText}</th>\n'.format(
+            style=f' style="{alignmentStyle}"' if alignmentStyle else '',
+            headerText=headerText)
 
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'

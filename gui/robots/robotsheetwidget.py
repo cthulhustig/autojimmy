@@ -117,7 +117,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             if event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Copy):
-                    self._copyToClipboard()
+                    self._copyToClipboardBitmap()
                     event.accept()
                     return True
 
@@ -211,7 +211,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
     def _applySkillModifiersChanged(self) -> None:
         self._updateTable()
 
-    def _copyToClipboard(self) -> None:
+    def _copyToClipboardHTML(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()
         if not clipboard:
             return
@@ -220,14 +220,26 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if content:
             clipboard.setText(content)
 
+    def _copyToClipboardBitmap(self) -> None:
+        clipboard = QtWidgets.QApplication.clipboard()
+        if not clipboard:
+            return
+
+        pixmap = self._table.grab()
+        if pixmap:
+            clipboard.setImage(pixmap.toImage())
+
     def _tableContextMenu(
             self,
             position: QtCore.QPoint
             ) -> None:
         menuItems = [
             gui.MenuItem(
-                text='Copy',
-                callback=lambda: self._copyToClipboard()),
+                text='Copy to Bitmap',
+                callback=lambda: self._copyToClipboardBitmap()),
+            gui.MenuItem(
+                text='Copy to HTML',
+                callback=lambda: self._copyToClipboardHTML()),
             gui.MenuItem(
                 text='Calculation...',
                 callback=lambda: self._showCalculations())
