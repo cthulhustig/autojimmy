@@ -1440,9 +1440,7 @@ class DataStore(object):
         timestamp = datetime.datetime.strptime(
             DataStore._bytesToString(data),
             DataStore._TimestampFormat)
-        return datetime.datetime.fromtimestamp(
-            timestamp.timestamp(),
-            tz=datetime.timezone.utc)
+        return timestamp.replace(tzinfo=datetime.timezone.utc)
 
     @staticmethod
     def _formatTimestamp(timestamp: datetime.datetime) -> bytes:
