@@ -44,9 +44,7 @@ def stringToDbTimestamp(string: str) -> datetime.datetime:
     timestamp = datetime.datetime.strptime(
         string,
         _DatabaseTimestampFormat)
-    return datetime.datetime.fromtimestamp(
-        timestamp.timestamp(),
-        tz=datetime.timezone.utc)
+    return timestamp.replace(tzinfo=datetime.timezone.utc)
 
 def dbTimestampToString(timestamp: datetime.datetime) -> str:
     return timestamp.strftime(_DatabaseTimestampFormat)
