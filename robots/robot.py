@@ -796,37 +796,34 @@ class Robot(construction.ConstructableInterface):
                         weaponSet=self.weaponSet())
                     if not weaponData:
                         continue
+                    infoStrings = []
                     damage = weaponData.damage()
+                    if damage:
+                        infoStrings.append(damage)
                     traits = weaponData.traits()
+                    if traits:
+                        infoStrings.append(traits)
 
-                    weaponInfo = '{damage}{separator}{traits}'.format(
-                        damage=weaponData.damage(),
-                        separator=', ' if damage and traits else '',
-                        traits=traits)
                     if isinstance(component, robots.MountedWeapon):
-                        weaponInfo += '{separator}Mounted'.format(
-                            separator=', ' if weaponInfo and traits else '')
+                        infoStrings.append('Mounted')
                         autoloaderCount = component.autoloaderMagazineCount()
                         if autoloaderCount:
-                            weaponInfo += '{separator}Autoloader x{count}'.format(
-                                separator=', ' if weaponInfo and traits else '',
-                                count=common.formatNumber(number=autoloaderCount.value()))
+                            infoStrings.append('Autoloader x{count}'.format(
+                                count=common.formatNumber(number=autoloaderCount.value())))
                         linkedCount = component.linkedGroupSize()
                         if linkedCount:
-                            weaponInfo += '{separator}Linked x{count}'.format(
-                                separator=', ' if weaponInfo and traits else '',
-                                count=common.formatNumber(number=linkedCount.value()))
+                            infoStrings.append('Linked x{count}'.format(
+                                count=common.formatNumber(number=linkedCount.value())))
                         fireControl = component.fireControl()
                         if fireControl:
-                            weaponInfo += '{separator}{level} Fire Control'.format(
-                                separator=', ' if weaponInfo and traits else '',
-                                level=fireControl.value)
+                            infoStrings.append('{level} Fire Control'.format(
+                                level=fireControl.value))
                     elif isinstance(component, robots.HandHeldWeapon):
-                        weaponInfo += '{separator}Hand Held'.format(
-                            separator=', ' if weaponInfo and traits else '')
+                        infoStrings.append('Hand Held')
                     weaponString = weaponData.name()
-                    if weaponInfo:
-                        weaponString += f' ({weaponInfo})'
+                    if infoStrings:
+                        weaponString += ' ({info})'.format(
+                            info=', '.join(infoStrings))
 
                     count = seenWeapons.get(weaponString, 0)
                     seenWeapons[weaponString] = count + 1
