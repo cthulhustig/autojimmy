@@ -14,7 +14,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 _WelcomeMessage = """
     <html>
     <p>The Trade Simulator is an <b>incredibly basic</b> simulation of a trader travelling the
-    universe, following the Mongoose 2e rules to buy and sell goods. It was initially created
+    universe, following the Mongoose rules to buy and sell goods. It was initially created
     as a hack to prove that, at least in theory, the results from the trading engine could be used
     to make a profit. I mainly left it in the app as I couldn't bring myself to delete it.</p>
     <p>You can pick a start world and configure various starting parameters, set it going then lean
