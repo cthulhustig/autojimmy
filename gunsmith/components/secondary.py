@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class SecondaryMount(gunsmith.SecondaryMountInterface):
+class SecondaryMount(gunsmith.WeaponComponentInterface):
     """
     - Cost: 10% of secondary weapon cost
     - Weight: 10% of secondary weapon weight
@@ -74,13 +74,6 @@ class SecondaryMount(gunsmith.SecondaryMountInterface):
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._quickdrawModifierOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

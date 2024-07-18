@@ -18,6 +18,15 @@ _AttachmentOptionDescription = \
     '<li><b>Detached</b> - The accessory is currently detached from the weapon and will have no affect on it.</li>' \
     '</ul>'
 
+class Accessory(gunsmith.WeaponComponentInterface):
+    def isDetachable(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isDetachable')
+
+    def isAttached(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement isAttached')
+
+    def setAttached(self, attached: bool) -> None:
+        raise RuntimeError(f'{type(self)} is derived from Accessory so must implement setAttached')
 
 # ███████████                                         ████
 #░░███░░░░░███                                       ░░███
@@ -28,7 +37,7 @@ _AttachmentOptionDescription = \
 # ███████████ ░░████████ █████     █████    ░░██████  █████
 #░░░░░░░░░░░   ░░░░░░░░ ░░░░░     ░░░░░      ░░░░░░  ░░░░░
 
-class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
+class BarrelAccessory(Accessory):
     _AttachmentOptionDescription = \
         '<p>Specify how the accessory is attached to the weapon.</p>' \
         '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">' \
@@ -73,7 +82,7 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
 
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -87,13 +96,6 @@ class BarrelAccessory(gunsmith.BarrelAccessoryInterface):
         if self._attachedOption.isEnabled():
             options.append(self._attachedOption)
         return options
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def isDetachable(self) -> bool:
         # Accessory is detachable if the option to attach it exists and the user hasn't set it
@@ -471,7 +473,7 @@ class CupDischargerAccessory(BarrelAccessory):
 #                                        █████
 #                                       ░░░░░
 
-class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
+class WeaponAccessory(Accessory):
     def __init__(
             self,
             componentString: str,
@@ -509,7 +511,7 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
         # Only compatible with weapons that have a receiver. A whole weapon search is used as
         # this is a common component so it can be any of the weapon sequences
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=None):
             return False
 
@@ -524,13 +526,6 @@ class WeaponAccessory(gunsmith.WeaponAccessoryInterface):
         if self._attachedOption.isEnabled():
             options.append(self._attachedOption)
         return options
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def isDetachable(self) -> bool:
         # Accessory is detachable if the option to attach it exists and the user hasn't set it

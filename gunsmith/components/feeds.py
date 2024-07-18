@@ -8,7 +8,7 @@ class FeedAssist(enum.Enum):
     Powered = 'Powered'
     VRF = 'VRF'
 
-class Feed(gunsmith.FeedInterface):
+class Feed(gunsmith.WeaponComponentInterface):
     """
     - Powered Feed Assist
         - Receiver Cost: x3
@@ -121,7 +121,7 @@ class Feed(gunsmith.FeedInterface):
             type=gunsmith.WeaponAttributeId,
             value=None,
             isOptional=True,
-            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
+            choices=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=Feed._PoweredFeedAssistBulkLevelOptionDescription,
             enabled=False) # Optional, enabled if supported in updateOptions
 

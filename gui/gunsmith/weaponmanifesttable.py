@@ -19,15 +19,11 @@ class WeaponManifestTable(gui.ManifestTable):
             costId: gunsmith.WeaponCost,
             cost: common.ScalarCalculation
             ) -> str:
-        text = common.formatNumber(
+        return common.formatNumber(
             number=cost.value(),
-            decimalPlaces=self.decimalPlaces())
-        if costId == gunsmith.WeaponCost.Credits:
-            return 'Cr' + text
-        elif costId == gunsmith.WeaponCost.Weight:
-            return text + 'kg'
-
-        return '????' # Should never happen
+            decimalPlaces=self.decimalPlaces(),
+            infix='Cr' if costId == gunsmith.WeaponCost.Credits else '',
+            suffix='kg' if costId == gunsmith.WeaponCost.Weight else '')
 
     def decimalPlaces(self) -> int:
         return gunsmith.ConstructionDecimalPlaces

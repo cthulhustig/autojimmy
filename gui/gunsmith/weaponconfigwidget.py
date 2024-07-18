@@ -22,11 +22,14 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
             sequence=sequence,
             sequences=weapon.sequences())
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
         self._weaponTypeComboBox = gui.EnumComboBox(type=gunsmith.WeaponType)
         self._weaponTypeComboBox.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
         self._weaponTypeComboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._weaponTypeComboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._weaponTypeComboBox.installEventFilter(self._noWheelFilter)
         self._weaponTypeComboBox.currentIndexChanged.connect(self._weaponTypeChanged)
 
         self._configurationWidget.addExpandingContent(
@@ -77,6 +80,13 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
 
         super().synchronise()
 
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        tabWidgets.append(self._weaponTypeComboBox)
+        return super().gatherTabOrder(tabWidgets)
+
     def _weaponTypeChanged(self, index: int) -> None:
         self._weapon.setWeaponType(
             sequence=self._sequence,
@@ -92,7 +102,7 @@ class _SequenceStagesWidget(gui.StageGroupWidget):
         return self._prefix + baseText
 
 class WeaponConfigWidget(QtWidgets.QWidget):
-    weaponChanged = QtCore.pyqtSignal(gunsmith.Weapon)
+    weaponModified = QtCore.pyqtSignal(gunsmith.Weapon)
 
     _StateVersion = 'WeaponConfigWidget_v1'
 
@@ -115,12 +125,16 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         self._munitionsWidget = None
         self._stageExpansionMap: typing.Dict[str, bool] = {}
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._techLevelSpinBox = gui.SpinBoxEx()
         self._techLevelSpinBox.setMinimum(0)
         self._techLevelSpinBox.setValue(weapon.techLevel())
         self._techLevelSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._techLevelSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._techLevelSpinBox.installEventFilter(self._noWheelFilter)
         self._techLevelSpinBox.valueChanged.connect(self._techLevelChanged)
 
         self._secondaryCountSpinBox = gui.SpinBoxEx()
@@ -129,17 +143,19 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         self._secondaryCountSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._secondaryCountSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._secondaryCountSpinBox.installEventFilter(self._noWheelFilter)
         self._secondaryCountSpinBox.valueChanged.connect(self._secondaryCountChanged)
 
         globalLayout = gui.VBoxLayoutEx()
         globalLayout.addLabelledWidget(
             label='Tech Level:',
             widget=self._techLevelSpinBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
         globalLayout.addLabelledWidget(
             label='Secondary Weapon Count:',
             widget=self._secondaryCountSpinBox,
-            alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+            widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
 
         for rule in gunsmith.RuleId:
             ruleCheckBox = gui.CheckBoxEx()
@@ -150,7 +166,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             globalLayout.addLabelledWidget(
                 label=rule.value + ':',
                 widget=ruleCheckBox,
-                alignment=QtCore.Qt.AlignmentFlag.AlignLeft)
+                widgetAlignment=QtCore.Qt.AlignmentFlag.AlignLeft)
             self._ruleWidgets[rule] = ruleCheckBox
 
         self._configurationWidget = gui.ExpanderGroupWidgetEx()
@@ -195,7 +211,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
         self._configureDynamicWidgets()
 
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -268,7 +284,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
     def _techLevelChanged(self, techLevel: int) -> None:
         self._weapon.setTechLevel(techLevel=techLevel)
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _secondaryCountChanged(self, count: int) -> None:
         requiredCount = count + 1 # Add 1 for primary weapon
@@ -290,7 +306,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         if modified:
             self._weapon.regenerate()
             self._configureDynamicWidgets()
-            self.weaponChanged.emit(self._weapon)
+            self.weaponModified.emit(self._weapon)
 
     def _ruleStateChanged(
             self,
@@ -303,7 +319,7 @@ class WeaponConfigWidget(QtWidgets.QWidget):
         else:
             self._weapon.disableRule(rule=rule)
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _configureDynamicWidgets(self) -> None:
         self._removeWidgets()
@@ -332,6 +348,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
                 label=sectionName,
                 content=sequenceWidget,
                 expanded=True)
+            self._configurationWidget.setContentHidden(
+                content=sequenceWidget,
+                hidden=sequenceWidget.isPointless())
 
         self._commonWidget = gui.MultiPhaseStagesWidget(
             context=self._weapon.context(),
@@ -343,6 +362,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Furniture',
             content=self._commonWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._commonWidget,
+            hidden=self._commonWidget.isPointless())
 
         self._loadingWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -354,6 +376,9 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Loading',
             content=self._loadingWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._loadingWidget,
+            hidden=self._loadingWidget.isPointless())
 
         self._munitionsWidget = gui.SinglePhaseStageWidget(
             context=self._weapon.context(),
@@ -365,6 +390,11 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             label='Munitions',
             content=self._munitionsWidget,
             expanded=True)
+        self._configurationWidget.setContentHidden(
+            content=self._munitionsWidget,
+            hidden=self._munitionsWidget.isPointless())
+
+        self._updateTabOrder()
 
     def _removeWidgets(self) -> None:
         for sequenceWidget in self._sequenceWidgets.values():
@@ -407,14 +437,14 @@ class WeaponConfigWidget(QtWidgets.QWidget):
 
     def _weaponTypeChanged(self, sequence: str) -> None:
         self._synchroniseStages(sequence=sequence)
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _stageChanged(
             self,
             stage: construction.ConstructionStage
             ) -> None:
         self._synchroniseStages()
-        self.weaponChanged.emit(self._weapon)
+        self.weaponModified.emit(self._weapon)
 
     def _expansionChanged(
             self,
@@ -431,14 +461,51 @@ class WeaponConfigWidget(QtWidgets.QWidget):
             sequenceWidget = self._sequenceWidgets.get(sequence)
             if sequenceWidget:
                 sequenceWidget.synchronise()
-        for sequenceWidget in self._sequenceWidgets.values():
-            sequenceWidget.synchronise()
+                self._configurationWidget.setContentHidden(
+                    content=sequenceWidget,
+                    hidden=sequenceWidget.isPointless())
+        else:
+            for sequenceWidget in self._sequenceWidgets.values():
+                sequenceWidget.synchronise()
+                self._configurationWidget.setContentHidden(
+                    content=sequenceWidget,
+                    hidden=sequenceWidget.isPointless())
 
         if self._commonWidget:
             self._commonWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._commonWidget,
+                hidden=self._commonWidget.isPointless())
 
         if self._loadingWidget:
             self._loadingWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._loadingWidget,
+                hidden=self._loadingWidget.isPointless())
 
         if self._munitionsWidget:
             self._munitionsWidget.synchronise()
+            self._configurationWidget.setContentHidden(
+                content=self._munitionsWidget,
+                hidden=self._munitionsWidget.isPointless())
+
+        self._updateTabOrder()
+
+    def _updateTabOrder(self) -> None:
+        tabOrder = [self._techLevelSpinBox, self._secondaryCountSpinBox]
+        tabOrder.extend(self._ruleWidgets.values())
+        for widget in self._sequenceWidgets.values():
+            if widget.isEnabled():
+                widget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._commonWidget and self._commonWidget.isEnabled():
+            self._commonWidget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._loadingWidget and self._loadingWidget.isEnabled():
+            self._loadingWidget.gatherTabOrder(tabWidgets=tabOrder)
+        if self._munitionsWidget and self._munitionsWidget.isEnabled():
+            self._munitionsWidget.gatherTabOrder(tabWidgets=tabOrder)
+
+        lastTabWidget = tabOrder[0]
+        QtWidgets.QWidget.setTabOrder(self, lastTabWidget)
+        for tabWidget in tabOrder[1:]:
+            QtWidgets.QWidget.setTabOrder(lastTabWidget, tabWidget)
+            lastTabWidget = tabWidget

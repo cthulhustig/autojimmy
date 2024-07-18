@@ -1,10 +1,45 @@
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Flowable, KeepTogether
+from reportlab.platypus import BaseDocTemplate, CellStyle, Flowable, Frame, KeepTogether, PageTemplate, Paragraph, Spacer
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 import typing
+
+class ParagraphEx(Paragraph):
+    def __init__(
+            self,
+            text: str,
+            style: typing.Optional[ParagraphStyle] = None,
+            bulletText: typing.Optional[str] = None,
+            frags: typing.Optional[typing.List[typing.Any]] = None,
+            caseSensitive: int = 1,
+            encoding: str = 'utf8'
+            ) -> None:
+        super().__init__(
+            text.replace('\n', '<br />') if text else text,
+            style,
+            bulletText,
+            frags,
+            caseSensitive,
+            encoding)
+
+class VerticalSpacer(Spacer):
+    def __init__(
+            self,
+            height: float,
+            isGlue: bool = False
+            ) -> None:
+        super().__init__(0, height, isGlue)
+
+class HorizontalSpacer(Spacer):
+    def __init__(
+            self,
+            width: float,
+            isGlue: bool = False
+            ) -> None:
+        super().__init__(width, 0, isGlue)
 
 # Based on https://gist.github.com/waylan/36535feae946810bcdce5dfb8c6bdcf8
 class TextFormField(Flowable):
@@ -44,7 +79,11 @@ class TextFormField(Flowable):
         if self._fixedHeight != None:
             self._height = self._fixedHeight
 
-    def wrap(self, availWidth: float, availHeight: float) -> None:
+    def wrap(
+            self,
+            availWidth: float,
+            availHeight: float
+            ) -> typing.Tuple[float, float]:
         if self._fixedWidth == None:
             self.width = availWidth
             if (self._maxWidth != None) and (self.width > self._maxWidth):
@@ -61,7 +100,7 @@ class TextFormField(Flowable):
 
         return (self.width, self.height)
 
-    def draw(self):
+    def draw(self) -> None:
         assert(isinstance(self.canv, canvas.Canvas))
         self.canv.saveState()
 
@@ -87,7 +126,8 @@ class KeepTogetherEx(KeepTogether):
             self,
             flowables,
             limitWaste: typing.Optional[float] = None,
-            maxHeight: typing.Optional[float] = None):
+            maxHeight: typing.Optional[float] = None
+            ) -> typing.Iterable[Flowable]:
         super().__init__(
             flowables,
             maxHeight)
@@ -120,7 +160,8 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             pageNumberTextColour: str = '#000000',
             pageNumberHMargin: int = 10,
             pageNumberVMargin: int = 10,
-            **kwargs):
+            **kwargs
+            ) -> None:
         super().__init__(filePath, pagesize=pagesize, _pageBreakQuick=0, **kwargs)
 
         self._pageColour = pageColour
@@ -166,16 +207,17 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        # Draw polygon to set background colour
-        canvas.setFillColor(self._pageColour)
-        path = canvas.beginPath()
-        path.moveTo(0 * cm, 0 * cm)
-        path.lineTo(0 * cm, 30 * cm)
-        path.lineTo(25 * cm, 30 * cm)
-        path.lineTo(25 * cm, 0 * cm)
-        canvas.drawPath(path, True, True)
-
-        canvas.restoreState()
+        try:
+            # Draw polygon to set background colour
+            canvas.setFillColor(self._pageColour)
+            path = canvas.beginPath()
+            path.moveTo(0 * cm, 0 * cm)
+            path.lineTo(0 * cm, self.pagesize[1])
+            path.lineTo(self.pagesize[0], self.pagesize[1])
+            path.lineTo(self.pagesize[0], 0 * cm)
+            canvas.drawPath(path, True, True)
+        finally:
+            canvas.restoreState()
 
     def _drawFooter(
             self,
@@ -184,16 +226,17 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        canvas.setFont(
-            psfontname=self._footerFontName,
-            size=self._footerFontSize)
-        canvas.setFillColor(self._footerTextColour)
-        canvas.drawCentredString(
-            text=self._footerText,
-            x=doc.leftMargin + (doc.width / 2),
-            y=self._footerVMargin + (self._footerFontSize / 2))
-
-        canvas.restoreState()
+        try:
+            canvas.setFont(
+                psfontname=self._footerFontName,
+                size=self._footerFontSize)
+            canvas.setFillColor(self._footerTextColour)
+            canvas.drawCentredString(
+                text=self._footerText,
+                x=doc.leftMargin + (doc.width / 2),
+                y=self._footerVMargin + (self._footerFontSize / 2))
+        finally:
+            canvas.restoreState()
 
     def _drawPageNumber(
             self,
@@ -202,21 +245,40 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
             ) -> None:
         canvas.saveState()
 
-        pageWidth = doc.width + (doc.leftMargin * 2)
+        try:
+            pageWidth = doc.width + (doc.leftMargin * 2)
 
-        text = str(self._pageNumber)
-        width = stringWidth(
-            text=text,
-            fontName=self._pageNumberFontName,
-            fontSize=self._pageNumberFontSize)
-        indent = self._pageNumberHMargin + (width / 2)
-        canvas.setFont(
-            psfontname=self._pageNumberFontName,
-            size=self._pageNumberFontSize)
-        canvas.setFillColor(self._pageNumberTextColour)
-        canvas.drawCentredString(
-            text=str(self._pageNumber),
-            x=pageWidth - indent if self._pageNumber % 2 else indent,
-            y=self._pageNumberVMargin + (self._pageNumberFontSize / 2))
+            text = str(self._pageNumber)
+            width = stringWidth(
+                text=text,
+                fontName=self._pageNumberFontName,
+                fontSize=self._pageNumberFontSize)
+            indent = self._pageNumberHMargin + (width / 2)
+            canvas.setFont(
+                psfontname=self._pageNumberFontName,
+                size=self._pageNumberFontSize)
+            canvas.setFillColor(self._pageNumberTextColour)
+            canvas.drawCentredString(
+                text=str(self._pageNumber),
+                x=pageWidth - indent if self._pageNumber % 2 else indent,
+                y=self._pageNumberVMargin + (self._pageNumberFontSize / 2))
+        finally:
+            canvas.restoreState()
 
-        canvas.restoreState()
+def createTableCellStyles(
+        tableData: typing.Iterable[typing.Iterable[Paragraph]],
+        horzCellPadding: float = 5,
+        vertCellPadding: float = 3,
+        ) -> typing.Iterable[typing.Iterable[CellStyle]]:
+    cellStyles = []
+    for row in range(len(tableData)):
+        rowStyles = []
+        for column in range(len(tableData[row])):
+            style = CellStyle(repr((row, column)))
+            style.topPadding = vertCellPadding
+            style.bottomPadding = vertCellPadding
+            style.leftPadding = horzCellPadding
+            style.rightPadding = horzCellPadding
+            rowStyles.append(style)
+        cellStyles.append(rowStyles)
+    return cellStyles

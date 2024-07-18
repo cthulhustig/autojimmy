@@ -22,6 +22,35 @@ def extendEnum(
 
     return enum.Enum(baseEnum.__name__, dict(zip(names, values)))
 
+def enumFromIndex(
+        enumType: typing.Type[enum.Enum],
+        index: int
+        ) -> typing.Optional[enum.Enum]:
+    valueList = list(enumType)
+    if index < 0 or index >= len(valueList):
+        return None
+    return valueList[index]
+
+def enumToIndex(value: enum.Enum) -> int:
+    valueList = list(type(value))
+    return valueList.index(value)
+
+def incrementEnum(
+        value: enum.Enum,
+        count: int
+        ) -> enum.Enum:
+    valueList = list(type(value))
+    index = valueList.index(value)
+    return valueList[min(index + count, len(valueList) - 1)]
+
+def decrementEnum(
+        value: enum.Enum,
+        count: int
+        ) -> enum.Enum:
+    valueList = list(type(value))
+    index = valueList.index(value)
+    return valueList[max(index - count, 0)]
+
 def isWindows() -> bool:
     return platform.system() == 'Windows'
 
@@ -37,14 +66,28 @@ def formatNumber(
         alwaysIncludeSign: bool = False,
         decimalPlaces: int = 2, # Only applies for float values
         removeTrailingZeros: bool = True, # Only applies for float values
-        infinityString: str = 'inf' # Only applies for float values
+        infinityString: str = 'inf', # Only applies for float values,
+        prefix: str = '',
+        infix: str = '', # Infix (my own term) goes before number but after any sign (used for money)
+        suffix: str = ''
         ) -> str:
     if number == float('inf'):
-        return '+' + infinityString if alwaysIncludeSign else infinityString
+        if alwaysIncludeSign:
+            return prefix + '+' + infix + infinityString
+        else:
+            return prefix + infix + infinityString
     elif number == float('-inf'):
-        return '-' + infinityString
+        return prefix + '-' + infix + infinityString
 
-    format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
+    if prefix or infix:
+        if number >= 0:
+            sign = '+' if alwaysIncludeSign else ''
+        else:
+            sign = '-'
+        format = f'{prefix}{sign}{infix}{{0:{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
+        number = abs(number)
+    else:
+        format = f'{{0:{"+" if alwaysIncludeSign else ""}{"," if thousandsSeparator else ""}.{decimalPlaces}f}}'
     string = format.format(number)
     if decimalPlaces and removeTrailingZeros:
         # Strip trailing zeros (and decimal point if needed)
@@ -63,6 +106,10 @@ def formatNumber(
             decimalPoint = '.'
 
         string = string.rstrip(decimalPoint)
+
+    if suffix:
+        string += suffix
+
     return string
 
 def clamp(

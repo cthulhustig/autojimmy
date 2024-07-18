@@ -96,7 +96,10 @@ def configureAppStyle(application: QtWidgets.QApplication):
         palette.setColor(QtGui.QPalette.ColorRole.Button, QtGui.QColor(53, 53, 53))
         palette.setColor(QtGui.QPalette.ColorRole.ButtonText, textColour)
         palette.setColor(QtGui.QPalette.ColorGroup.Disabled, QtGui.QPalette.ColorRole.ButtonText, QtGui.QColor(127, 127, 127))
-        palette.setColor(QtGui.QPalette.ColorRole.BrightText, QtCore.Qt.GlobalColor.red) # Don't know of anything that actually uses this
+        # I don't know of anything 'official' that uses BrightText but I'm
+        # miss-using it as an error colour for things like highlighting an
+        # invalid regex
+        palette.setColor(QtGui.QPalette.ColorRole.BrightText, QtGui.QColor(100, 0, 0))
         palette.setColor(QtGui.QPalette.ColorRole.Link, QtGui.QColor(42, 130, 218))
         palette.setColor(QtGui.QPalette.ColorRole.Highlight, QtGui.QColor(12, 106, 210, 127)) # Use transparency for highlight
         palette.setColor(QtGui.QPalette.ColorGroup.Disabled, QtGui.QPalette.ColorRole.Highlight, QtGui.QColor(80, 80, 80))
@@ -107,6 +110,10 @@ def configureAppStyle(application: QtWidgets.QApplication):
         # uses a horrible yellowish colour by default
         palette.setColor(QtGui.QPalette.ColorRole.ToolTipBase, QtCore.Qt.GlobalColor.white)
         palette.setColor(QtGui.QPalette.ColorRole.ToolTipText, QtCore.Qt.GlobalColor.black)
+        # I don't know of anything 'official' that uses BrightText but I'm
+        # miss-using it as an error colour for things like highlighting an
+        # invalid regex
+        palette.setColor(QtGui.QPalette.ColorRole.BrightText, QtCore.Qt.GlobalColor.red)
     application.setPalette(palette)
 
     style = ''

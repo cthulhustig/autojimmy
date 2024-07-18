@@ -334,7 +334,7 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
         version = stream.readQString()
         if version != _StartFinishWorldsSelectWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore _StartFinishWorldSelectWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore _StartFinishWorldsSelectWidget state (Incorrect version)')
             return False
 
         count = stream.readUInt32()
@@ -1687,9 +1687,15 @@ class JumpRouteWindow(gui.WindowWidget):
                     jumpRoute=self._jumpRoute,
                     pitStops=self._routeLogistics.refuellingPlan())
                 routeCost = self._routeLogistics.totalCosts()
-                self._avgRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.averageCaseValue()))
-                self._minRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.bestCaseValue()))
-                self._maxRouteCostLabel.setText('Cr' + common.formatNumber(routeCost.worstCaseValue()))
+                self._avgRouteCostLabel.setText(common.formatNumber(
+                    number=routeCost.averageCaseValue(),
+                    infix='Cr'))
+                self._minRouteCostLabel.setText(common.formatNumber(
+                    number=routeCost.bestCaseValue(),
+                    infix='Cr'))
+                self._maxRouteCostLabel.setText(common.formatNumber(
+                    number=routeCost.worstCaseValue(),
+                    infix='Cr'))
 
         self._updateTravellerMapOverlays()
 

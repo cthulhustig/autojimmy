@@ -3,6 +3,14 @@ import construction
 import gunsmith
 import typing
 
+class AmmoLoaded(gunsmith.WeaponComponentInterface):
+    pass
+
+class AmmoQuantity(gunsmith.WeaponComponentInterface):
+    def createLoadedAmmo(self) -> AmmoLoaded:
+        raise RuntimeError(f'{type(self)} is derived from AmmoQuantity so must implement createLoadedAmmo')
+
+
 _BarrelSpreadValues = {
     gunsmith.MinimalBarrel: common.ScalarCalculation(value=6, name='Minimal Barrel Spread Modifier'),
     gunsmith.ShortBarrel: common.ScalarCalculation(value=5, name='Short Barrel Spread Modifier'),
@@ -390,7 +398,7 @@ class _DistractionAmmoImpl(_AmmoImpl):
             name='Distraction Type',
             type=gunsmith.Distraction,
             value=distractionType if distractionType != None else gunsmith.Distraction.Minor, # Small distraction has such a low modifier it's effectively pointless
-            options=[gunsmith.Distraction.Small, gunsmith.Distraction.Minor],
+            choices=[gunsmith.Distraction.Small, gunsmith.Distraction.Minor],
             isOptional=False,
             description=_DistractionAmmoImpl._DistractionOptionDescription)
 
@@ -1028,7 +1036,7 @@ class _PelletAmmoImpl(_AmmoImpl):
                 factor = construction.NonModifyingFactor(factor=factor)
             step.addFactor(factor=factor)
 
-class ConventionalAmmoLoaded(gunsmith.AmmoLoadedInterface):
+class ConventionalAmmoLoaded(AmmoLoaded):
     """
     Requirement: Weapons with a removable magazine must have one loaded
     """
@@ -1226,7 +1234,7 @@ class PelletConventionalAmmoLoaded(ConventionalAmmoLoaded):
             isSmart=isSmart,
             isStealth=isStealth))
 
-class ConventionalAmmoQuantity(gunsmith.AmmoQuantityInterface):
+class ConventionalAmmoQuantity(AmmoQuantity):
     def __init__(
             self,
             impl: _AmmoImpl
@@ -1297,7 +1305,7 @@ class BallConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_BallAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return BallConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1306,7 +1314,7 @@ class ArmourPiercingConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_ArmourPiercingAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return ArmourPiercingConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1315,7 +1323,7 @@ class AdvancedArmourPiercingConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_AdvancedArmourPiercingAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return AdvancedArmourPiercingConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1324,7 +1332,7 @@ class DistractionConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_DistractionAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         assert(isinstance(self._impl, _DistractionAmmoImpl))
         return DistractionConventionalAmmoLoaded(
             distractionType=self._impl.distractionType(),
@@ -1335,7 +1343,7 @@ class EnhancedWoundingConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_EnhancedWoundingAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return EnhancedWoundingConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1344,7 +1352,7 @@ class ExplosiveConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_ExplosiveAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return ExplosiveConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1353,7 +1361,7 @@ class FlechetteConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FlechetteAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return FlechetteConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1362,7 +1370,7 @@ class GasConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_GasAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return GasConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1371,7 +1379,7 @@ class HEAPConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_HEAPAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return HEAPConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1380,7 +1388,7 @@ class IncendiaryConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_IncendiaryAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return IncendiaryConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())
@@ -1389,7 +1397,7 @@ class LowPenetrationConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_LowPenetrationAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         assert(isinstance(self._impl, _LowPenetrationAmmoImpl))
         return LowPenetrationConventionalAmmoLoaded(
             penetration=self._impl.penetration(),
@@ -1400,7 +1408,7 @@ class PelletConventionalAmmoQuantity(ConventionalAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_PelletAmmoImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> AmmoLoaded:
         return PelletConventionalAmmoLoaded(
             isSmart=self._impl.isSmart(),
             isStealth=self._impl.isStealth())

@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class LoaderQuantity(gunsmith.LoaderQuantityInterface):
+class LoaderQuantity(gunsmith.WeaponComponentInterface):
     """
     - Note: Requires 2 minor actions to load contents into weapon
     - Requirement: Only compatible with Fixed Magazine Feed
@@ -48,7 +48,7 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -61,13 +61,6 @@ class LoaderQuantity(gunsmith.LoaderQuantityInterface):
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._numberOfLoadersOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

@@ -43,7 +43,9 @@ class PurchaseCargoDialog(gui.DialogEx):
 
         self._availableFundsLabel = gui.PrefixLabel(
             prefix='Funds: ',
-            text=f'Cr{common.formatNumber(number=self._availableFunds.value())}')
+            text=common.formatNumber(
+                number=self._availableFunds.value(),
+                infix='Cr'))
 
         self._availableCargoTable = gui.CargoRecordTable(columns=PurchaseCargoDialog._CargoRecordColumns)
         self._availableCargoTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
@@ -59,7 +61,9 @@ class PurchaseCargoDialog(gui.DialogEx):
 
         self._totalCostLabel = gui.PrefixLabel(
             prefix='Total: ',
-            text=f'Cr{common.formatNumber(number=self._totalCost.value())}')
+            text=common.formatNumber(
+                number=self._totalCost.value(),
+                infix='Cr'))
 
         self._purchaseCargoTable = gui.CargoRecordTable(columns=PurchaseCargoDialog._CargoRecordColumns)
         self._purchaseCargoTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
@@ -245,5 +249,9 @@ class PurchaseCargoDialog(gui.DialogEx):
                 rhs=selectedQuantity,
                 name=self._freeCargoCapacity.name())
 
-        self._availableFundsLabel.setText(f'Cr{common.formatNumber(number=self._availableFunds.value())}')
-        self._totalCostLabel.setText(f'Cr{common.formatNumber(number=self._totalCost.value())}')
+        self._availableFundsLabel.setText(common.formatNumber(
+            number=self._availableFunds.value(),
+            infix='Cr'))
+        self._totalCostLabel.setText(common.formatNumber(
+            number=self._totalCost.value(),
+            infix='Cr'))

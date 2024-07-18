@@ -1,4 +1,5 @@
 import common
+import enum
 import typing
 import math
 
@@ -555,6 +556,66 @@ class Calculator(object):
 
         def copy(self) -> 'Calculator.CeilFunction':
             return Calculator.CeilFunction(self._value.copy())
+
+    # https://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
+    class SignificantDigitsFunction(TwoParameterFunction):
+        class Rounding(enum.Enum):
+            Nearest = 'Nearest'
+            Floor = 'Floor'
+            Ceil = 'Ceil'
+
+        def __init__(
+                self,
+                lhs: ScalarCalculation,
+                rhs: ScalarCalculation,
+                rounding: Rounding = Rounding.Nearest
+                ) -> None:
+            self._lhs = lhs
+            self._rhs = rhs
+            self._rounding = rounding
+
+        def value(self) -> typing.Union[int, float]:
+            value = self._lhs.value()
+            if value == 0:
+                return 0
+            absValue = abs(value)
+            if absValue < 1:
+                return 0
+            digits = self._rhs.value() - int(math.floor(math.log10(absValue))) - 1
+
+            if self._rounding != Calculator.SignificantDigitsFunction.Rounding.Nearest:
+                fudge = math.pow(10, -digits) / 2
+                if self._rounding == Calculator.SignificantDigitsFunction.Rounding.Floor:
+                    value -= fudge
+                elif self._rounding == Calculator.SignificantDigitsFunction.Rounding.Ceil:
+                    value += fudge
+
+            return round(value, digits)
+
+        def calculationString(
+                self,
+                outerBrackets: bool,
+                decimalPlaces: int = 2
+                ) -> str:
+            numberString = self._lhs.name(forCalculation=True)
+            if not numberString:
+                numberString = self._lhs.calculationString(
+                    outerBrackets=False,
+                    decimalPlaces=decimalPlaces)
+
+            digitsString = self._rhs.name(forCalculation=True)
+            if not digitsString:
+                digitsString = self._rhs.calculationString(
+                    outerBrackets=False,
+                    decimalPlaces=decimalPlaces)
+
+            return f'{self._rounding.value}SignificantDigits({numberString}, {digitsString})'
+
+        def copy(self) -> 'Calculator.SignificantDigitsFunction':
+            return Calculator.SignificantDigitsFunction(
+                lhs=self._lhs.copy(),
+                rhs=self._rhs.copy(),
+                rounding=self._rounding)
 
     class MinFunction(TwoParameterFunction):
         def value(self) -> typing.Union[int, float]:
@@ -1209,6 +1270,159 @@ class Calculator(object):
             worstCase=Calculator.CeilFunction(value.worstCaseCalculation()),
             bestCase=Calculator.CeilFunction(value.bestCaseCalculation()),
             averageCase=Calculator.CeilFunction(value.averageCaseCalculation()),
+            name=name)
+
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: ScalarCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> ScalarCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: RangeCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def significantDigits(
+        value: RangeCalculation,
+        digits: RangeCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @staticmethod
+    def significantDigits(
+            value: typing.Union[ScalarCalculation, RangeCalculation],
+            digits: typing.Union[ScalarCalculation, RangeCalculation],
+            name: typing.Optional[str] = None,
+            ) -> typing.Union[ScalarCalculation, RangeCalculation]:
+        if isinstance(value, ScalarCalculation) and isinstance(digits, ScalarCalculation):
+            return ScalarCalculation(
+                value=Calculator.SignificantDigitsFunction(value, digits),
+                name=name)
+        assert(isinstance(value, ScalarCalculation) or isinstance(value, RangeCalculation))
+        assert(isinstance(digits, ScalarCalculation) or isinstance(digits, RangeCalculation))
+
+        return RangeCalculation(
+            worstCase=Calculator.SignificantDigitsFunction(value.worstCaseCalculation(), digits.worstCaseCalculation()),
+            bestCase=Calculator.SignificantDigitsFunction(value.bestCaseCalculation(), digits.bestCaseCalculation()),
+            averageCase=Calculator.SignificantDigitsFunction(value.averageCaseCalculation(), digits.averageCaseCalculation()),
+            name=name)
+
+    @typing.overload
+    @staticmethod
+    def floorDigits(
+        value: ScalarCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> ScalarCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def floorDigits(
+        value: RangeCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def floorDigits(
+        value: RangeCalculation,
+        digits: RangeCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @staticmethod
+    def floorDigits(
+            value: typing.Union[ScalarCalculation, RangeCalculation],
+            digits: typing.Union[ScalarCalculation, RangeCalculation],
+            name: typing.Optional[str] = None,
+            ) -> typing.Union[ScalarCalculation, RangeCalculation]:
+        if isinstance(value, ScalarCalculation) and isinstance(digits, ScalarCalculation):
+            return ScalarCalculation(
+                value=Calculator.SignificantDigitsFunction(
+                    lhs=value,
+                    rhs=digits,
+                    rounding=Calculator.SignificantDigitsFunction.Rounding.Floor),
+                name=name)
+        assert(isinstance(value, ScalarCalculation) or isinstance(value, RangeCalculation))
+        assert(isinstance(digits, ScalarCalculation) or isinstance(digits, RangeCalculation))
+
+        return RangeCalculation(
+            worstCase=Calculator.SignificantDigitsFunction(
+                lhs=value.worstCaseCalculation(),
+                rhs=digits.worstCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Floor),
+            bestCase=Calculator.SignificantDigitsFunction(
+                lhs=value.bestCaseCalculation(),
+                rhs=digits.bestCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Floor),
+            averageCase=Calculator.SignificantDigitsFunction(
+                lhs=value.averageCaseCalculation(),
+                rhs=digits.averageCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Floor),
+            name=name)
+
+    @typing.overload
+    @staticmethod
+    def ceilDigits(
+        value: ScalarCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> ScalarCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def ceilDigits(
+        value: RangeCalculation,
+        digits: ScalarCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @typing.overload
+    @staticmethod
+    def ceilDigits(
+        value: RangeCalculation,
+        digits: RangeCalculation,
+        name: typing.Optional[str] = None,
+        ) -> RangeCalculation: ...
+
+    @staticmethod
+    def ceilDigits(
+            value: typing.Union[ScalarCalculation, RangeCalculation],
+            digits: typing.Union[ScalarCalculation, RangeCalculation],
+            name: typing.Optional[str] = None,
+            ) -> typing.Union[ScalarCalculation, RangeCalculation]:
+        if isinstance(value, ScalarCalculation) and isinstance(digits, ScalarCalculation):
+            return ScalarCalculation(
+                value=Calculator.SignificantDigitsFunction(
+                    lhs=value,
+                    rhs=digits,
+                    rounding=Calculator.SignificantDigitsFunction.Rounding.Ceil),
+                name=name)
+        assert(isinstance(value, ScalarCalculation) or isinstance(value, RangeCalculation))
+        assert(isinstance(digits, ScalarCalculation) or isinstance(digits, RangeCalculation))
+
+        return RangeCalculation(
+            worstCase=Calculator.SignificantDigitsFunction(
+                lhs=value.worstCaseCalculation(),
+                rhs=digits.worstCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Ceil),
+            bestCase=Calculator.SignificantDigitsFunction(
+                lhs=value.bestCaseCalculation(),
+                rhs=digits.bestCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Ceil),
+            averageCase=Calculator.SignificantDigitsFunction(
+                lhs=value.averageCaseCalculation(),
+                rhs=digits.averageCaseCalculation(),
+                rounding=Calculator.SignificantDigitsFunction.Rounding.Ceil),
             name=name)
 
     @typing.overload

@@ -1,14 +1,86 @@
+import app
 import construction
+import functools
 import gui
 import logging
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
+
+class _MultiSelectOptionWidget(gui.ListWidgetEx):
+    _MaxHeight = 500
+
+    def __init__(
+            self,
+            content: typing.Iterable[str],
+            selected: typing.Iterable[str],
+            unselectable: typing.Iterable[str],
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self.installEventFilter(self)
+
+        self.synchronise(
+            content=content,
+            selected=selected,
+            unselectable=unselectable)
+
+    def synchronise(
+            self,
+            content: typing.Iterable[str],
+            selected: typing.Iterable[str],
+            unselectable: typing.Iterable[str]
+            ) -> None:
+        for row, text in enumerate(content):
+            existingItem = self.item(row)
+            item = existingItem if existingItem else QtWidgets.QListWidgetItem()
+            item.setText(text)
+            item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(
+                QtCore.Qt.CheckState.Checked
+                if text in selected else
+                QtCore.Qt.CheckState.Unchecked)
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEnabled
+                          if text in unselectable else
+                          item.flags() | QtCore.Qt.ItemFlag.ItemIsEnabled)
+            if not existingItem:
+                self.addItem(item)
+
+        while self.count() > len(content):
+            self.removeRow(self.count() - 1)
+
+        # NOTE: This call will fit the control to the content but can't take
+        # the horizontal scroll bar into account if its being used as it might
+        # not have been shown yet.
+        self._fitToContent()
+
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if object == self and event.type() == QtCore.QEvent.Type.LayoutRequest:
+            # NOTE: If the scroll bars are displayed this will re-fit the control
+            # to its content
+            self._fitToContent()
+        return super().eventFilter(object, event)
+
+    def _fitToContent(self) -> None:
+        contentHeight = self.frameWidth() * 2
+        for row in range(self.count()):
+            contentHeight += self.sizeHintForRow(row)
+
+        scrollbar = self.horizontalScrollBar()
+        if scrollbar and scrollbar.isVisible():
+            contentHeight += scrollbar.sizeHint().height()
+
+        self.setFixedHeight(min(contentHeight, _MultiSelectOptionWidget._MaxHeight))
 
 class _ComponentConfigWidget(QtWidgets.QWidget):
     componentChanged = QtCore.pyqtSignal()
     deleteClicked = QtCore.pyqtSignal()
 
     _OptionsLayoutIndent = 10
+
+    _NonePlaceholder = 'None'
+
+    _TextEditSignalDelayMsecs = 500
 
     def __init__(
             self,
@@ -20,6 +92,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent=parent)
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._requirement = requirement
         self._currentOptions: typing.Dict[QtWidgets.QWidget, construction.ComponentOption] = {}
         self._widgetConnections: typing.Dict[QtWidgets.QWidget, QtCore.QMetaObject.Connection] = {}
@@ -29,6 +103,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         self._comboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._comboBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._comboBox.installEventFilter(self._noWheelFilter)
         self._comboBox.currentIndexChanged.connect(self._selectionChanged)
 
         comboLayout = QtWidgets.QHBoxLayout()
@@ -109,7 +185,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 includeNone = not components
 
             if includeNone:
-                self._comboBox.addItem('<None>', None)
+                self._comboBox.addItem(_ComponentConfigWidget._NonePlaceholder, None)
             if components:
                 for component in components:
                     self._comboBox.addItem(component.componentString(), component)
@@ -123,6 +199,26 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         # the specified one couldn't be selected for whatever reason
         if self.currentComponent() != oldCurrent:
             self.componentChanged.emit()
+
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        tabWidgets.append(self._comboBox)
+        if self._deleteButton and self._deleteButton.isEnabled():
+            tabWidgets.append(self._deleteButton)
+        for widget in self._currentOptions.keys():
+            if not widget.isEnabled():
+                continue
+            focusPolicy = widget.focusPolicy()
+            if focusPolicy & QtCore.Qt.FocusPolicy.TabFocus:
+                tabWidgets.append(widget)
+            else:
+                gui.tabWidgetSearch(
+                    widget=widget,
+                    tabWidgets=tabWidgets)
 
     def _updateOptionControls(self) -> None:
         component = self.currentComponent()
@@ -151,24 +247,74 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         widget = None
         connection = None
         fullRow = False
-        alignment = QtCore.Qt.AlignmentFlag(0)
+        widgetAlignment = QtCore.Qt.AlignmentFlag(0)
+        labelAlignment = QtCore.Qt.AlignmentFlag.AlignVCenter | \
+            QtCore.Qt.AlignmentFlag.AlignRight
         if isinstance(option, construction.BooleanOption):
             widget = gui.CheckBoxEx()
             widget.setChecked(option.value())
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.stateChanged.connect(lambda: self._checkBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            connection = widget.stateChanged.connect(
+                lambda: self._checkBoxChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         if isinstance(option, construction.StringOption):
-            widget = gui.LineEditEx()
-            widget.setText(option.value())
-            widget.setSizePolicy(
-                QtWidgets.QSizePolicy.Policy.Expanding, # give user as much space to type as possible
-                QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.textChanged.connect(lambda: self._textEditChanged(widget, option))
+            # TODO: There is a potential bug here if an option ever changes
+            # if there are choices after the widget for the object has been
+            # created. The problem is this code is only run when an option
+            # is first added so updates it's state won't cause the type of
+            # widget used to change. I'm not doing anything about it at the
+            # moment as it's not an issue with any of the current use cases.
+            # If I'm doing something about this there is a similar issue if
+            # an IntegerOption or FloatOption switched to/from being optional.
+
+            stringOptions = option.choices()
+            if not stringOptions:
+                # There are no pre-defined strings the user can select from so
+                # just use a line edit
+                widget = gui.LineEditEx()
+                widget.setText(option.value())
+                widget.setSizePolicy(
+                    # give user as much horizontal space to type as possible
+                    QtWidgets.QSizePolicy.Policy.Expanding,
+                    QtWidgets.QSizePolicy.Policy.Fixed)
+                widget.enableDelayedTextEdited(
+                    msecs=_ComponentConfigWidget._TextEditSignalDelayMsecs)
+                connection = widget.delayedTextEdited.connect(
+                    lambda: self._textEditChanged(widget, option))
+            else:
+                # There are pre-defined strings the user can select from so use
+                # an editable combo box
+                widget = gui.ComboBoxEx()
+                widget.setEditable(option.isEditable())
+                widget.setSizeAdjustPolicy(
+                    QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
+                widget.setSizePolicy(
+                    # If the option is editable give the user as much space as
+                    # possible
+                    QtWidgets.QSizePolicy.Policy.Expanding
+                    if option.isEditable() else
+                    QtWidgets.QSizePolicy.Policy.Fixed,
+                    QtWidgets.QSizePolicy.Policy.Fixed)
+                if option.isOptional() and not option.isEditable():
+                    widget.addItem(_ComponentConfigWidget._NonePlaceholder)
+                for stringOption in stringOptions:
+                    widget.addItem(stringOption)
+                # Set current text AFTER adding items as the first item added
+                # will be auto selected
+                widget.setCurrentText(option.value())
+                widget.enableDelayedUserEdited(
+                    msecs=_ComponentConfigWidget._TextEditSignalDelayMsecs
+                    if option.isEditable() else 0)
+                connection = widget.delayedUserEdited.connect(
+                    lambda: self._textComboChanged(widget, option))
+                if not option.isEditable():
+                    widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.IntegerOption):
-            widget = gui.OptionalSpinBox() if option.isOptional() else gui.SpinBoxEx()
+            widget = gui.OptionalSpinBox() \
+                if option.isOptional() else \
+                gui.SpinBoxEx()
 
             if option.min() != None:
                 widget.setMinimum(option.min())
@@ -184,11 +330,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            connection = widget.valueChanged.connect(
+                lambda: self._spinBoxChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.FloatOption):
-            widget = gui.OptionalDoubleSpinBox() if option.isOptional() else gui.DoubleSpinBoxEx()
-
+            widget = gui.OptionalDoubleSpinBox() \
+                if option.isOptional() else \
+                gui.DoubleSpinBoxEx()
             if option.min() != None:
                 widget.setDecimalsForValue(option.min())
                 widget.setMinimum(option.min())
@@ -205,25 +353,42 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.valueChanged.connect(lambda: self._spinBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            connection = widget.valueChanged.connect(
+                lambda: self._spinBoxChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
         elif isinstance(option, construction.EnumOption):
             widget = gui.EnumComboBox(
                 type=option.type(),
                 value=option.value(),
-                options=option.options(),
+                options=option.choices(),
                 isOptional=option.isOptional())
-            widget.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
+            widget.setSizeAdjustPolicy(
+                QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
             widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Fixed,
                 QtWidgets.QSizePolicy.Policy.Fixed)
-            connection = widget.currentIndexChanged.connect(lambda: self._comboBoxChanged(widget, option))
-            alignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            connection = widget.currentIndexChanged.connect(
+                lambda: self._enumComboChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
+        elif isinstance(option, construction.MultiSelectOption):
+            widget = _MultiSelectOptionWidget(
+                content=option.choices(),
+                selected=option.value(),
+                unselectable=option.unselectable())
+            connection = widget.itemChanged.connect(
+                lambda: self._multiSelectChanged(widget, option))
+            widgetAlignment = QtCore.Qt.AlignmentFlag.AlignLeft
+            labelAlignment = QtCore.Qt.AlignmentFlag.AlignTop | \
+                QtCore.Qt.AlignmentFlag.AlignRight
 
         if widget:
+            self._installNoWheelFilter(object=widget)
+
             description = option.description()
             if description:
-                widget.setToolTip(gui.createStringToolTip(description, escape=False))
+                widget.setToolTip(gui.createStringToolTip(
+                    string=description,
+                    escape=False))
 
             self._currentOptions[widget] = option
             self._widgetConnections[widget] = connection
@@ -231,13 +396,14 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 self._optionsLayout.insertWidget(
                     index,
                     widget,
-                    alignment=alignment)
+                    alignment=widgetAlignment)
             else:
                 self._optionsLayout.insertLabelledWidget(
                     index,
                     option.name() + ':',
                     widget,
-                    alignment=alignment)
+                    widgetAlignment=widgetAlignment,
+                    labelAlignment=labelAlignment)
 
     def _removeOptionWidget(
             self,
@@ -252,8 +418,10 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
         if connection:
             if isinstance(widget, gui.CheckBoxEx):
                 widget.stateChanged.disconnect(connection)
-            if isinstance(widget, gui.LineEditEx):
-                widget.textChanged.disconnect(connection)
+            elif isinstance(widget, gui.LineEditEx):
+                widget.delayedTextEdited.disconnect(connection)
+            elif isinstance(widget, gui.ComboBoxEx):
+                widget.delayedUserEdited.disconnect(connection)
             elif isinstance(widget, gui.SpinBoxEx):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.OptionalSpinBox):
@@ -264,6 +432,8 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 widget.valueChanged.disconnect(connection)
             elif isinstance(widget, gui.EnumComboBox):
                 widget.currentIndexChanged.disconnect(connection)
+            elif isinstance(widget, _MultiSelectOptionWidget):
+                widget.itemChanged.disconnect(connection)
 
         widget.setParent(None)
         widget.setHidden(True)
@@ -278,47 +448,111 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             assert(False) # Shouldn't happen
             return
 
-        if isinstance(option, construction.BooleanOption):
-            assert(isinstance(widget, gui.CheckBoxEx))
-            widget.setChecked(option.value())
-        if isinstance(option, construction.StringOption):
-            assert(isinstance(widget, gui.LineEditEx))
-            widget.setText(option.value())
-        elif isinstance(option, construction.IntegerOption):
-            assert(isinstance(widget, gui.SpinBoxEx))
-            if option.min() != None:
-                widget.setMinimum(option.min())
-            else:
-                widget.setMinimum(-2147483648)
+        # NOTE: Block signals when syncing controls to option. This prevents
+        # current control values being pushed to the option due to events that
+        # are generated while part way through. For example updating the max/min
+        # of a spin box can cause a value changed event which causes which ever
+        # value the control has clamped it's value to being pushed back to the
+        # option when the option has already been clamped to a different value.
+        with gui.SignalBlocker(widget=widget):
+            if isinstance(option, construction.BooleanOption):
+                assert(isinstance(widget, gui.CheckBoxEx))
+                widget.setChecked(option.value())
+            if isinstance(option, construction.StringOption):
+                assert(isinstance(widget, gui.LineEditEx) or \
+                       isinstance(widget, gui.ComboBoxEx))
+                if isinstance(widget, gui.LineEditEx):
+                    widget.setText(option.value())
+                else:
+                    widget.setEditable(option.isEditable())
+                    widget.setSizePolicy(
+                        # If the option is editable give the user as much space as
+                        # possible
+                        QtWidgets.QSizePolicy.Policy.Expanding
+                        if option.isEditable() else
+                        QtWidgets.QSizePolicy.Policy.Fixed,
+                        QtWidgets.QSizePolicy.Policy.Fixed)
 
-            if option.max() != None:
-                widget.setMaximum(option.max())
-            else:
-                widget.setMaximum(2147483647)
+                    stringOptions = option.choices()
+                    updateList = False
+                    if len(stringOptions) == widget.count():
+                        for index in range(widget.count()):
+                            itemText = widget.itemText(index)
+                            if itemText != stringOptions[index]:
+                                updateList = True
+                                break
+                    else:
+                        updateList = True
 
-            widget.setValue(option.value())
-        elif isinstance(option, construction.FloatOption):
-            assert(isinstance(widget, gui.DoubleSpinBoxEx))
-            if option.min() != None:
-                widget.setDecimalsForValue(option.min())
-                widget.setMinimum(option.min())
-            else:
-                widget.setMinimum(-2147483648)
+                    # Only update the list and text if needed. This is done to
+                    # avoid clearing the auto complete highlighting if this
+                    # widget triggered the update
+                    if updateList:
+                        widget.clear()
+                        if option.isOptional() and not option.isEditable():
+                            widget.addItem(_ComponentConfigWidget._NonePlaceholder)
+                        for stringOption in stringOptions:
+                            widget.addItem(stringOption)
+                    if widget.currentText() != option.value():
+                        widget.setCurrentText(option.value())
+            elif isinstance(option, construction.IntegerOption):
+                assert(isinstance(widget, gui.SpinBoxEx) or \
+                       isinstance(widget, gui.OptionalSpinBox))
+                if option.min() != None:
+                    widget.setMinimum(option.min())
+                else:
+                    widget.setMinimum(-2147483648)
 
-            if option.max() != None:
-                widget.setDecimalsForValue(option.max())
-                widget.setMaximum(option.max())
-            else:
-                widget.setMaximum(2147483647)
+                if option.max() != None:
+                    widget.setMaximum(option.max())
+                else:
+                    widget.setMaximum(2147483647)
 
-            widget.setValue(option.value())
-        elif isinstance(option, construction.EnumOption):
-            assert(isinstance(widget, gui.EnumComboBox))
-            widget.setEnumType(
-                type=option.type(),
-                options=option.options(),
-                isOptional=option.isOptional())
-            widget.setCurrentEnum(value=option.value())
+                widget.setValue(option.value())
+            elif isinstance(option, construction.FloatOption):
+                assert(isinstance(widget, gui.DoubleSpinBoxEx) or \
+                       isinstance(widget, gui.OptionalDoubleSpinBox))
+                if option.min() != None:
+                    widget.setDecimalsForValue(option.min())
+                    widget.setMinimum(option.min())
+                else:
+                    widget.setMinimum(-2147483648)
+
+                if option.max() != None:
+                    widget.setDecimalsForValue(option.max())
+                    widget.setMaximum(option.max())
+                else:
+                    widget.setMaximum(2147483647)
+
+                widget.setValue(option.value())
+            elif isinstance(option, construction.EnumOption):
+                assert(isinstance(widget, gui.EnumComboBox))
+                widget.setEnumType(
+                    type=option.type(),
+                    options=option.choices(),
+                    isOptional=option.isOptional())
+                widget.setCurrentEnum(value=option.value())
+            elif isinstance(option, construction.MultiSelectOption):
+                assert(isinstance(widget, _MultiSelectOptionWidget))
+                widget.synchronise(
+                    content=option.choices(),
+                    selected=option.value(),
+                    unselectable=option.unselectable())
+
+    # Disable wheel focus and events to avoid the scroll wheel
+    # changing control values when the user is scrolling the
+    # scroll area that contain the widgets. This is done
+    # recursively to account for widgets that are made up of
+    # a number of child widgets (e.g. OptionalSpinBox)
+    def _installNoWheelFilter(
+            self,
+            object: QtCore.QObject
+            ) -> None:
+        if isinstance(object, QtWidgets.QWidget):
+            object.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+            object.installEventFilter(self._noWheelFilter)
+        for child in object.children():
+            self._installNoWheelFilter(object=child)
 
     def _selectionChanged(self) -> None:
         self._updateOptionControls()
@@ -343,11 +577,31 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
 
     def _textEditChanged(
             self,
-            widget: QtWidgets.QLineEdit,
+            widget: gui.LineEditEx,
             option: construction.StringOption
             ) -> None:
         try:
             option.setValue(value=widget.text())
+            self.componentChanged.emit()
+            self._updateOptionControls()
+        except Exception as ex:
+            message = f'Failed to update {option.name()}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _textComboChanged(
+            self,
+            widget: gui.ComboBoxEx,
+            option: construction.StringOption
+            ) -> None:
+        try:
+            value = widget.currentText()
+            if option.isOptional() and value == _ComponentConfigWidget._NonePlaceholder:
+                value = None
+            option.setValue(value=value)
             self.componentChanged.emit()
             self._updateOptionControls()
         except Exception as ex:
@@ -375,7 +629,7 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
-    def _comboBoxChanged(
+    def _enumComboChanged(
             self,
             widget: QtWidgets.QComboBox,
             option: construction.EnumOption
@@ -395,11 +649,43 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
+    def _multiSelectChanged(
+            self,
+            widget: gui.ListWidgetEx,
+            option: construction.MultiSelectOption
+            ) -> None:
+        try:
+            selection = []
+            for row in range(widget.count()):
+                item = widget.item(row)
+                if item and item.checkState() == QtCore.Qt.CheckState.Checked:
+                    selection.append(item.text())
+            option.setValue(value=selection)
+            self.componentChanged.emit()
+            self._updateOptionControls()
+        except Exception as ex:
+            message = f'Failed to update {option.name()}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
     def _deleteButtonClicked(self) -> None:
         self.deleteClicked.emit()
 
 class _StageWidget(QtWidgets.QWidget):
     stageChanged = QtCore.pyqtSignal(construction.ConstructionStage)
+
+    _RowSpacing = 10
+
+    # This is the count of static widgets/layouts that are always present and
+    # should be kept at the bottom of the main layout, below the the dynamic
+    # component widgets. Currently this is just the layout containing the
+    # add/remove all buttons which just takes up a single row
+    _DynamicModeStaticRowCount = 1
+
+    _RemoveAllConfirmationNoShowStateKey = 'RemoveAllComponentsConfirmation'
 
     def __init__(
             self,
@@ -407,9 +693,53 @@ class _StageWidget(QtWidgets.QWidget):
             stage: construction.ConstructionStage,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__(parent)
+        super().__init__(parent=parent)
+
         self._context = context
         self._stage = stage
+
+        minComponents = self._stage.minComponents()
+        maxComponents = self._stage.maxComponents()
+        self._dynamic = (minComponents == None or maxComponents == None) or \
+            (maxComponents > 1 and minComponents < maxComponents)
+
+        self._currentComponents: typing.Dict[_ComponentConfigWidget, construction.ComponentInterface] = {}
+
+        self._addButton = None
+        self._addMenu = None
+        self._removeAllButton = None
+        if self._dynamic:
+            self._addMenu = QtWidgets.QMenu()
+            self._addMenu.aboutToShow.connect(self._addMenuSetup)
+
+            self._addButton = gui.ToolButtonEx(
+                text='Add',
+                isPushButton=True)
+            self._addButton.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Fixed,
+                QtWidgets.QSizePolicy.Policy.Fixed)
+            self._addButton.setPopupMode(
+                QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+            self._addButton.setMenu(self._addMenu)
+            self._addButton.clicked.connect(self._addButtonClicked)
+
+            self._removeAllButton = QtWidgets.QPushButton('Remove All')
+            self._removeAllButton.clicked.connect(self._removeAllButtonClicked)
+
+        self._layout = QtWidgets.QVBoxLayout()
+        self._layout.setSpacing(
+            int(_StageWidget._RowSpacing * app.Config.instance().interfaceScale()))
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        if self._dynamic:
+            buttonLayout = QtWidgets.QHBoxLayout()
+            buttonLayout.addWidget(self._addButton)
+            buttonLayout.addWidget(self._removeAllButton)
+            buttonLayout.addStretch()
+            self._layout.addLayout(buttonLayout)
+
+        self.setLayout(self._layout)
+
+        self.synchronise()
 
     def context(self) -> construction.ConstructionContext:
         return self._context
@@ -418,129 +748,12 @@ class _StageWidget(QtWidgets.QWidget):
         return self._stage
 
     def teardown(self) -> None:
-        raise RuntimeError('The teardown method must be implemented by classes derived from _StageWidget')
-
-    def synchronise(self) -> None:
-        raise RuntimeError('The synchronise method must be implemented by classes derived from _StageWidget')
-
-    def isPointless(self) -> bool:
-        raise RuntimeError('The isPointless method must be implemented by classes derived from _StageWidget')
-
-class _SingleSelectStageWidget(_StageWidget):
-    def __init__(
-            self,
-            context: construction.ConstructionContext,
-            stage: construction.ConstructionStage,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(
-            context=context,
-            stage=stage,
-            parent=parent)
-
-        self._currentComponent = None
-
-        self._componentWidget = _ComponentConfigWidget(
-            requirement=self._stage.requirement())
-        self._componentWidget.componentChanged.connect(self._componentChanged)
-
-        self._layout = QtWidgets.QVBoxLayout()
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addWidget(self._componentWidget)
-
-        self.setLayout(self._layout)
-
-        self.synchronise()
-
-    def teardown(self) -> None:
-        self._componentWidget.componentChanged.disconnect(self._componentChanged)
-        self._componentWidget.teardown()
-
-    def synchronise(self) -> None:
-        currentComponents = self._stage.components()
-        self._currentComponent = currentComponents[0] if currentComponents else None
-        compatibleComponents = self._context.findCompatibleComponents(
-            stage=self._stage,
-            replaceComponent=self._currentComponent)
-
-        # Block signals while new state is pushed to component widget
-        with gui.SignalBlocker(widget=self._componentWidget):
-            self._componentWidget.setComponents(
-                components=compatibleComponents,
-                current=self._currentComponent)
-
-    def isPointless(self) -> bool:
-        if self._componentWidget.componentCount() <= 0:
-            return True # Single select widgets with no options to select are always pointless
-        if self._componentWidget.optionCount() > 0:
-            return False # Single select widgets aren't pointless if the current component has options
-        # Single select widgets are pointless if there is only one entry for the user to select (and
-        # it has no options)
-        return self._componentWidget.componentCount() <= 1
-
-    def _updateConstruction(self) -> None:
-        component = self._componentWidget.currentComponent()
-        try:
-            if component != self._currentComponent:
-                # The component has changed so replace the current component with the new one. Note
-                # that either the current component or the new component may be None (indicating there
-                # is no component). In those cases this will have the effect of adding the new component
-                # or removing the old component respectively
-                self._context.replaceComponent(
-                    stage=self._stage,
-                    oldComponent=self._currentComponent,
-                    newComponent=component,
-                    regenerate=True)
-                self._currentComponent = component
-            else:
-                # It's the same component instance but the options may have changed so regenerate
-                # the context
-                self._context.regenerate()
-        except Exception as ex:
-            message = 'Failed to update context'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-
-    def _componentChanged(self) -> None:
-        self._updateConstruction()
-        self.stageChanged.emit(self._stage)
-
-class _MultiSelectStageWidget(_StageWidget):
-    _RowSpacing = 20
-
-    def __init__(
-            self,
-            context: construction.ConstructionContext,
-            stage: construction.ConstructionStage,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(
-            context=context,
-            stage=stage,
-            parent=parent)
-
-        self._currentComponents: typing.Dict[_ComponentConfigWidget, construction.ComponentInterface] = {}
-
-        self._addButton = QtWidgets.QPushButton('Add Component')
-        self._addButton.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._addButton.clicked.connect(self._addClicked)
-
-        self._layout = QtWidgets.QVBoxLayout()
-        self._layout.setSpacing(_MultiSelectStageWidget._RowSpacing)
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.addWidget(self._addButton)
-
-        self.setLayout(self._layout)
-
-        self.synchronise()
-
-    def teardown(self) -> None:
-        self._addButton.clicked.disconnect(self._addClicked)
+        if self._addMenu:
+            for action in self._addMenu.actions():
+                action.triggered.disconnect()
+            self._addMenu.aboutToShow.disconnect(self._addMenuSetup)
+        if self._addButton:
+            self._addButton.clicked.disconnect(self._addButtonClicked)
         for widget in list(self._currentComponents.keys()):
             self._removeComponentWidget(widget)
 
@@ -565,19 +778,69 @@ class _MultiSelectStageWidget(_StageWidget):
                 with gui.SignalBlocker(widget=widget):
                     self._updateComponentWidget(widget=widget)
 
+        if not self._dynamic:
+            maxComponents = self._stage.maxComponents()
+            if maxComponents:
+                while len(self._currentComponents) < maxComponents:
+                    if not self._addComponentWidget():
+                        # No widget added for whatever reason, bail to avoid an
+                        # infinite loop
+                        break
+
+        if self._removeAllButton:
+            self._removeAllButton.setEnabled(len(self._currentComponents) > 0)
+
     def isPointless(self) -> bool:
-        if len(self._currentComponents) > 0:
-            return False # Multi-select widgets that have components aren't pointless
-        # Multi-select widgets are pointless if there are no options for the
-        # user to select
-        return not self._context.findCompatibleComponents(stage=self._stage)
+        if self._dynamic:
+            if len(self._currentComponents) > 0:
+                # Dynamic widgets that have components aren't pointless
+                return False
+            # Dynamic widgets are pointless if there are no components for the
+            # user to select
+            return not self._context.findCompatibleComponents(stage=self._stage)
+        else:
+            hasChoice = False
+            for widget in self._currentComponents:
+                if widget.componentCount() > 1:
+                    # This widget has more than one component to select so the
+                    # user has a choice in their selection
+                    hasChoice = True
+                    break
+
+                if widget.optionCount() > 0:
+                    # Fixed widgets are never pointless if any of the component
+                    # widgets have options
+                    return False
+
+            # Fixed widgets are pointless if none of the component widgets give
+            # the user a choice in which component to select _and_ none of them
+            # have any options
+            return not hasChoice
+
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        for component in self._currentComponents.keys():
+            if component.isEnabled():
+                component.gatherTabOrder(tabWidgets=tabWidgets)
+        if self._addButton and self._addButton.isEnabled():
+            tabWidgets.append(self._addButton)
+        if self._removeAllButton and self._removeAllButton.isEnabled():
+            tabWidgets.append(self._removeAllButton)
 
     def _addComponentWidget(
             self,
             component: typing.Optional[construction.ComponentInterface] = None
             ) -> _ComponentConfigWidget:
+        row = self._layout.count()
+        if self._dynamic:
+            row -= _StageWidget._DynamicModeStaticRowCount
+
         return self._insertComponentWidget(
-            row=self._layout.count() - 1,
+            row=row,
             component=component)
 
     def _insertComponentWidget(
@@ -588,19 +851,27 @@ class _MultiSelectStageWidget(_StageWidget):
         compatibleComponents = self._context.findCompatibleComponents(
             stage=self._stage,
             replaceComponent=component)
-        if not compatibleComponents:
-            return None
-        if not component:
-            component = compatibleComponents[0]
+
+        if self._dynamic:
+            if not compatibleComponents:
+                return None
+
+            if not component:
+                component = compatibleComponents[0]
+
+            # Mandatory in the sense, if you add a component you must select what type it is. It's
+            # only the adding of a component in the first place is optional
+            requirement = construction.ConstructionStage.RequirementLevel.Mandatory
+        else:
+            requirement = self._stage.requirement()
+
         componentWidget = _ComponentConfigWidget(
             components=compatibleComponents,
             current=component,
-            # Mandatory in the sense, if you add a component you must select what type it is. It's
-            # only the adding of a component in the first place is optional
-            requirement=construction.ConstructionStage.RequirementLevel.Mandatory,
-            deletable=True)
+            requirement=requirement,
+            deletable=self._dynamic)
         componentWidget.componentChanged.connect(self._componentChanged)
-        componentWidget.deleteClicked.connect(self._deleteClicked)
+        componentWidget.deleteClicked.connect(self._deleteComponentClicked)
 
         self._layout.insertWidget(row, componentWidget)
         self._currentComponents[componentWidget] = component
@@ -615,7 +886,7 @@ class _MultiSelectStageWidget(_StageWidget):
         del self._currentComponents[widget]
 
         widget.componentChanged.disconnect(self._componentChanged)
-        widget.deleteClicked.disconnect(self._deleteClicked)
+        widget.deleteClicked.disconnect(self._deleteComponentClicked)
 
         widget.teardown()
         widget.setParent(None)
@@ -627,6 +898,9 @@ class _MultiSelectStageWidget(_StageWidget):
             widget: _ComponentConfigWidget
             ) -> None:
         currentComponent = widget.currentComponent()
+        # Generate the list of components to allow the user to select from. This
+        # is the list of all components that would be compatible if the currently
+        # selected component was to be removed.
         compatibleComponents = self._context.findCompatibleComponents(
             stage=self._stage,
             replaceComponent=currentComponent)
@@ -638,9 +912,34 @@ class _MultiSelectStageWidget(_StageWidget):
             self,
             skipWidget: typing.Optional[_ComponentConfigWidget] = None
             ) -> None:
-        for widget in self._currentComponents.keys():
+        # NOTE: It's important to make a copy of the list of keys as entries
+        # may be removed from the map as we iterate
+        for widget in list(self._currentComponents.keys()):
             if widget == skipWidget:
                 continue
+
+            # If the component for this widget was dynamically added and is no
+            # longer part of the stage, then the widget should be removed rather
+            # than updated. Updating would cause a component the user didn't
+            # select to be chosen which most likely won't be what they want.
+            # Components being removed like this can happen if they become
+            # incompatible due to a change in another component in the same
+            # stage. It only happens with components in the same stage as
+            # changes to components in a previous stage cause synchronise to be
+            # called which handles removal of components that are no longer part
+            # of the stage.
+            # An example would be a robot Satellite Uplink which requires a
+            # Transceiver with a specific range. If the Transceiver is removed
+            # _or_ has it's range reduced below the required value, it will
+            # cause the uplink component to be removed.
+            if self._dynamic:
+                component = self._currentComponents[widget]
+                if not component or not self._stage.containsComponent(component=component):
+                    self._removeComponentWidget(widget=widget)
+                    continue
+
+            # Update the widget. If the component is no longer part of the stage
+            # a new compatible component will be selected.
             self._updateComponentWidget(widget=widget)
 
     def _updateConstruction(
@@ -649,11 +948,14 @@ class _MultiSelectStageWidget(_StageWidget):
             addComponent: typing.Optional[construction.ComponentInterface] = None
             ) -> None:
         try:
-            self._context.replaceComponent(
-                stage=self._stage,
-                oldComponent=removeComponent,
-                newComponent=addComponent,
-                regenerate=True)
+            if removeComponent != addComponent:
+                self._context.replaceComponent(
+                    stage=self._stage,
+                    oldComponent=removeComponent,
+                    newComponent=addComponent,
+                    regenerate=True)
+            else:
+                self._context.regenerate()
         except Exception as ex:
             message = 'Failed to replace component'
             logging.error(message, exc_info=ex)
@@ -662,7 +964,20 @@ class _MultiSelectStageWidget(_StageWidget):
                 text=message,
                 exception=ex)
 
-    def _addClicked(self) -> None:
+    def _clearConstruction(self) -> None:
+        try:
+            self._context.clearStage(
+                stage=self._stage,
+                regenerate=True)
+        except Exception as ex:
+            message = 'Failed to remove all components'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+
+    def _addButtonClicked(self) -> None:
         widget = self._addComponentWidget()
         if not widget:
             gui.MessageBoxEx.information(
@@ -673,7 +988,53 @@ class _MultiSelectStageWidget(_StageWidget):
         self._updateAllComponentWidgets(skipWidget=widget)
         self.stageChanged.emit(self._stage)
 
-    def _deleteClicked(self) -> None:
+    def _addMenuSetup(self) -> None:
+        for action in self._addMenu.actions():
+            action.triggered.disconnect()
+        self._addMenu.clear()
+
+        components = self._context.findCompatibleComponents(stage=self._stage)
+        if components:
+            for component in components:
+                action = self._addMenu.addAction(component.componentString())
+                action.triggered.connect(functools.partial(self._addMenuClicked, component))
+        else:
+            action = self._addMenu.addAction(f'No Components')
+            action.setEnabled(False)
+
+    def _addMenuClicked(
+            self,
+            component: construction.ComponentInterface
+            ) -> None:
+        try:
+            self._context.addComponent(
+                stage=self._stage,
+                component=component)
+        except Exception as ex:
+            message = 'Failed to add component'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message)
+            return
+
+        widget = self._addComponentWidget(component=component)
+        self._updateConstruction(addComponent=widget.currentComponent())
+        self._updateAllComponentWidgets(skipWidget=widget)
+        self.stageChanged.emit(self._stage)
+
+    def _deleteComponentClicked(self) -> None:
+        # NOTE: This is a major bodge to prevent the ui jumping around when
+        # components are deleted. As far as I can tell it's caused by the fact
+        # the delete button will have focus (as it was clicked) and the ui will
+        # automatically switch focus to the next widget in the focus chain if
+        # the in focus widget is deleted. When this happens, If this widget is
+        # embedded in something like a QScrollArea, then it will autoscroll to
+        # have the next widget in view
+        focusWidget = QtWidgets.QApplication.focusWidget()
+        if focusWidget:
+            focusWidget.clearFocus()
+
         widget = self.sender()
         assert(isinstance(widget, _ComponentConfigWidget))
         self._removeComponentWidget(widget=widget)
@@ -692,6 +1053,23 @@ class _MultiSelectStageWidget(_StageWidget):
         self._currentComponents[widget] = newComponent
 
         self._updateAllComponentWidgets(skipWidget=widget)
+        self.stageChanged.emit(self._stage)
+
+    def _removeAllButtonClicked(self) -> None:
+        if not self._currentComponents:
+            return # Nothing to do
+
+        answer = gui.AutoSelectMessageBox.question(
+            parent=self,
+            text=f'Are you sure you want to remove all {self._stage.name()} components?',
+            stateKey=_StageWidget._RemoveAllConfirmationNoShowStateKey)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+
+        for widget in list(self._currentComponents):
+            self._removeComponentWidget(widget=widget)
+        self._clearConstruction()
+        self._removeAllButton.setEnabled(False)
         self.stageChanged.emit(self._stage)
 
 class StageGroupWidget(QtWidgets.QWidget):
@@ -745,16 +1123,10 @@ class StageGroupWidget(QtWidgets.QWidget):
             stage: construction.ConstructionStage,
             stageName: typing.Optional[str] = None
             ) -> None:
-        if stage.singular():
-            widget = _SingleSelectStageWidget(
-                context=self._context,
-                stage=stage)
-            widget.stageChanged.connect(self._stageStateChanged)
-        else:
-            widget = _MultiSelectStageWidget(
-                context=self._context,
-                stage=stage)
-            widget.stageChanged.connect(self._stageStateChanged)
+        widget = _StageWidget(
+            context=self._context,
+            stage=stage)
+        widget.stageChanged.connect(self._stageStateChanged)
 
         self._stageOrder.insert(index, stage)
         self._stageWidgets[stage] = widget
@@ -821,7 +1193,13 @@ class StageGroupWidget(QtWidgets.QWidget):
                 expander.setExpanded(
                     expanded=expansionMap[expander.label()],
                     animated=animated)
-                
+
+    def isPointless(self) -> bool:
+        for widget in self._stageWidgets.values():
+            if not widget.isPointless():
+                return False
+        return True
+
     def generateSequencePrefix(
             self,
             sequence: str,
@@ -843,7 +1221,17 @@ class StageGroupWidget(QtWidgets.QWidget):
         elif len(sequences) == 2:
             return 'Secondary '
         else:
-            return f'Secondary {sequenceIndex} '                
+            return f'Secondary {sequenceIndex} '
+
+    def gatherTabOrder(
+            self,
+            tabWidgets: typing.List[QtWidgets.QWidget]
+            ) -> None:
+        if not self.isEnabled():
+            return
+        for widget in self._stageWidgets.values():
+            if widget.isEnabled():
+                widget.gatherTabOrder(tabWidgets=tabWidgets)
 
     def _stageStateChanged(
             self,
@@ -869,7 +1257,7 @@ class StageGroupWidget(QtWidgets.QWidget):
         self._configurationWidget.setContentHidden(
             content=stageWidget,
             hidden=stageWidget.isPointless())
-        
+
 class SinglePhaseStageWidget(StageGroupWidget):
     def __init__(
             self,

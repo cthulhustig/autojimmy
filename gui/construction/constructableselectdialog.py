@@ -1,21 +1,22 @@
+import construction
 import gui
-import gunsmith
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-class WeaponSelectDialog(gui.DialogEx):
+class ConstructableSelectDialog(gui.DialogEx):
     def __init__(
             self,
             title: str,
-            weapons: typing.Collection[gunsmith.Weapon],
+            constructables: typing.Collection[construction.ConstructableInterface],
             text: typing.Optional[str] = None,
             defaultState: QtCore.Qt.CheckState = QtCore.Qt.CheckState.Unchecked,
             showYesNoCancel: bool = False,
+            configSection: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
             title=title,
-            configSection='WeaponSelectDialog',
+            configSection=configSection,
             parent=parent)
 
         self._noClicked = False
@@ -23,10 +24,10 @@ class WeaponSelectDialog(gui.DialogEx):
         label = QtWidgets.QLabel(text) if text else None
 
         self._list = gui.ListWidgetEx()
-        for weapon in weapons:
+        for constructable in constructables:
             item = gui.NaturalSortListWidgetItem()
-            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, weapon.weaponName())
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, weapon)
+            item.setData(QtCore.Qt.ItemDataRole.DisplayRole, constructable.name())
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, constructable)
             item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(defaultState)
             self._list.addItem(item)
@@ -62,18 +63,18 @@ class WeaponSelectDialog(gui.DialogEx):
 
         self.setLayout(dialogLayout)
 
-    def selectedWeapons(self) -> typing.Collection[gunsmith.Weapon]:
+    def selected(self) -> typing.Collection[construction.ConstructableInterface]:
         if self._noClicked:
             return []
 
-        weapons = []
+        constructables = []
         for row in range(self._list.count()):
             item = self._list.item(row)
             if not item or item.checkState() != QtCore.Qt.CheckState.Checked:
                 continue
-            weapon = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            weapons.append(weapon)
-        return weapons
+            constructable = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            constructables.append(constructable)
+        return constructables
 
     def _yesButtonClicked(self) -> None:
         self._noClicked = False

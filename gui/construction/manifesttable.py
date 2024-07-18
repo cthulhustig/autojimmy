@@ -40,6 +40,8 @@ class ManifestTable(gui.ListTable):
         # Disable sorting as manifests should be kept in the order the occurred in
         self.setSortingEnabled(False)
 
+        self.installEventFilter(self)
+
     def setManifest(
             self,
             manifest: typing.Optional[construction.Manifest]
@@ -89,6 +91,17 @@ class ManifestTable(gui.ListTable):
     # number of decimal places values should be displayed to
     def decimalPlaces(self) -> int:
         return 2
+
+    def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        if object == self:
+            if event.type() == QtCore.QEvent.Type.KeyPress:
+                assert(isinstance(event, QtGui.QKeyEvent))
+                if event.matches(QtGui.QKeySequence.StandardKey.Copy):
+                    self._copyToClipboard()
+                    event.accept()
+                    return True
+
+        return super().eventFilter(object, event)
 
     def _fillManifestEntryRow(
             self,
@@ -174,9 +187,12 @@ class ManifestTable(gui.ListTable):
                 tableItem = QtWidgets.QTableWidgetItem(f'Total')
             elif isinstance(columnType, self._costType):
                 cost = self._manifest.totalCost(costId=columnType)
-                text = self.formatCost(
-                    costId=columnType,
-                    cost=cost)
+                if cost.value():
+                    text = self.formatCost(
+                        costId=columnType,
+                        cost=cost)
+                else:
+                    text = '-'
                 tableItem = QtWidgets.QTableWidgetItem(text)
             elif columnType == ManifestTable.StdColumnType.Factors:
                 tableItem = QtWidgets.QTableWidgetItem('-')
@@ -194,37 +210,40 @@ class ManifestTable(gui.ListTable):
             position: QtCore.QPoint
             ) -> None:
         item = self.itemAt(position)
-        if not item:
-            return # Nothing to do
-        column = self.columnHeader(column=item.column())
-
-        rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
         calculations = []
+        if item:
+            column = self.columnHeader(column=item.column())
+            rowObject = item.data(QtCore.Qt.ItemDataRole.UserRole)
 
-        for costId in self._costType:
-            if column != costId and column != ManifestTable.StdColumnType.Component:
-                continue
+            for costId in self._costType:
+                if column != costId and column != ManifestTable.StdColumnType.Component:
+                    continue
 
-            if isinstance(rowObject, construction.ManifestEntry):
-                costModifier = rowObject.cost(costId=costId)
-                if costModifier:
-                    calculations.append(costModifier.numericModifier())
-            elif isinstance(rowObject, construction.ManifestSection):
-                calculations.append(rowObject.totalCost(costId=costId))
-            elif isinstance(rowObject, construction.Manifest):
-                calculations.append(rowObject.totalCost(costId=costId))
+                if isinstance(rowObject, construction.ManifestEntry):
+                    costModifier = rowObject.cost(costId=costId)
+                    if costModifier:
+                        calculations.append(costModifier.numericModifier())
+                elif isinstance(rowObject, construction.ManifestSection):
+                    calculations.append(rowObject.totalCost(costId=costId))
+                elif isinstance(rowObject, construction.Manifest):
+                    calculations.append(rowObject.totalCost(costId=costId))
 
-        if column == ManifestTable.StdColumnType.Factors or \
-                column == ManifestTable.StdColumnType.Component:
-            if isinstance(rowObject, construction.ManifestEntry):
-                for factor in rowObject.factors():
-                    calculations.extend(factor.calculations())
+            if column == ManifestTable.StdColumnType.Factors or \
+                    column == ManifestTable.StdColumnType.Component:
+                if isinstance(rowObject, construction.ManifestEntry):
+                    for factor in rowObject.factors():
+                        calculations.extend(factor.calculations())
 
         menuItems = [
             gui.MenuItem(
                 text='Calculation...',
                 callback=lambda: self._showCalculations(calculations=calculations),
                 enabled=len(calculations) > 0
+            ),
+            None,
+            gui.MenuItem(
+                text='Copy as HTML',
+                callback=self._copyToClipboard,
             )
         ]
 
@@ -249,3 +268,12 @@ class ManifestTable(gui.ListTable):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _copyToClipboard(self) -> None:
+        clipboard = QtWidgets.QApplication.clipboard()
+        if not clipboard:
+            return
+
+        content = self.contentToHtml()
+        if content:
+            clipboard.setText(content)

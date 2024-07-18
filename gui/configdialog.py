@@ -38,28 +38,28 @@ _RestartRequiredParagraph = \
 
 _StarPortFuelToolTip = gui.createStringToolTip(
     """
-    <p>This lets you specify what types of fuel are available at different 
+    <p>This lets you specify what types of fuel are available at different
     classes of starport based on your interpretation of the rules.</p>
-    <p>In the Mongoose rules there is some ambiguity around what types of fuel 
-    are available at different classes of starport. The 1e, 2e & 2022 core 
-    rules all have tables that state refined fuel is available at class A/B 
-    starports and unrefined fuel is available at C/D starports. They makes no 
-    mention of if unrefined fuel is also available at class A/B starports. The 
-    2e Traveller Companion (p125) muddies the water further by stating that 
-    refined and unrefined fuel is available at class A starports, making no 
-    mention of what fuel is available at class B starports but then stating 
-    that unrefined _and_ refined fuel is usually available at class C 
+    <p>In the Mongoose rules there is some ambiguity around what types of fuel
+    are available at different classes of starport. The 1e, 2e & 2022 core
+    rules all have tables that state refined fuel is available at class A/B
+    starports and unrefined fuel is available at C/D starports. They makes no
+    mention of if unrefined fuel is also available at class A/B starports. The
+    2e Traveller Companion (p125) muddies the water further by stating that
+    refined and unrefined fuel is available at class A starports, making no
+    mention of what fuel is available at class B starports but then stating
+    that unrefined _and_ refined fuel is usually available at class C
     starports.</p>
-    <p>T5 core rules are much clearer, explicitly stating that class A/B 
-    starports sell refined and unrefined fuel and class C/D only sell unrefined 
+    <p>T5 core rules are much clearer, explicitly stating that class A/B
+    starports sell refined and unrefined fuel and class C/D only sell unrefined
     fuel (p267).</p>
-    <p>The 1982 CT rules are a little less clear, however, the descriptions of 
-    the starport types (p84) state "Only unrefined fuel available." for class 
-    C/D starports but "Refined fuel available." for class A/B. The fact the 
-    class A/B description does\'t say "<i>Only</i> refined fuel available." 
-    would imply that unrefined fuel is also available. This seems to be backed 
-    up by the description of Alell Down Starport in the example adventure 
-    (p141), where it\'s stated to be a class B starport and to sell refined and 
+    <p>The 1982 CT rules are a little less clear, however, the descriptions of
+    the starport types (p84) state "Only unrefined fuel available." for class
+    C/D starports but "Refined fuel available." for class A/B. The fact the
+    class A/B description does\'t say "<i>Only</i> refined fuel available."
+    would imply that unrefined fuel is also available. This seems to be backed
+    up by the description of Alell Down Starport in the example adventure
+    (p141), where it\'s stated to be a class B starport and to sell refined and
     unrefined fuel.</p>
     """ + _RestartRequiredParagraph,
     escape=False)

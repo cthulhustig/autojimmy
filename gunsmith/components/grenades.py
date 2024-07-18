@@ -1334,7 +1334,7 @@ class _FullStunGrenadeImpl(_FullGrenadeImpl):
 # ███████████░░████████ ░░████████ ████ █████░░██████  ████ █████░░██████  █████
 #░░░░░░░░░░░  ░░░░░░░░   ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░  ░░░░ ░░░░░  ░░░░░░  ░░░░░
 
-class LauncherAmmoLoaded(gunsmith.AmmoLoadedInterface):
+class LauncherAmmoLoaded(gunsmith.AmmoLoaded):
     """
     Requirement: Weapons with a removable magazine must have one loaded
     """
@@ -1742,7 +1742,7 @@ class FullStunLauncherAmmoLoaded(LauncherAmmoLoaded):
             isAdvancedFusing=isAdvancedFusing,
             isRAM=isRAM))
 
-class LauncherAmmoQuantity(gunsmith.AmmoQuantityInterface):
+class LauncherAmmoQuantity(gunsmith.AmmoQuantity):
     def __init__(
             self,
             impl: _GrenadeImpl
@@ -1813,7 +1813,7 @@ class MiniAntilaserAerosolLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniAntilaserAerosolGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniAntilaserAerosolLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1821,7 +1821,7 @@ class FullAntilaserAerosolLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullAntilaserAerosolGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullAntilaserAerosolLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1830,7 +1830,7 @@ class FullCorrosiveAerosolLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullCorrosiveAerosolGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullCorrosiveAerosolLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1839,7 +1839,7 @@ class FullAntiArmourLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullAntiArmourGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullAntiArmourLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1848,7 +1848,7 @@ class MiniBatonLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniBatonGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniBatonLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1856,7 +1856,7 @@ class FullBatonLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullBatonGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullBatonLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1865,7 +1865,7 @@ class MiniBattlechemLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniBattlechemGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniBattlechemLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1873,7 +1873,7 @@ class FullBattlechemLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullBattlechemGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullBattlechemLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1882,7 +1882,7 @@ class MiniBreacherLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniBreacherGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniBreacherLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1890,7 +1890,7 @@ class FullBreacherLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullBreacherGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullBreacherLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1899,7 +1899,7 @@ class FullCorrosiveLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullCorrosiveGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullCorrosiveLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1908,7 +1908,7 @@ class FullCryogenicLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullCryogenicGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullCryogenicLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1917,7 +1917,7 @@ class MiniDistractionLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniDistractionGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniDistractionLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1925,7 +1925,7 @@ class FullDistractionLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullDistractionGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullDistractionLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1934,7 +1934,7 @@ class FullEMPLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullEMPGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullEMPLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1943,7 +1943,7 @@ class FullAdvancedEMPLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullAdvancedEMPGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullAdvancedEMPLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1952,7 +1952,7 @@ class MiniFireSuppressionLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniFireSuppressionGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniFireSuppressionLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1960,7 +1960,7 @@ class FullFireSuppressionLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullFireSuppressionGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullFireSuppressionLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1969,7 +1969,7 @@ class MiniFragmentationLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniFragmentationGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniFragmentationLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -1977,7 +1977,7 @@ class FullFragmentationLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullFragmentationGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullFragmentationLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1986,7 +1986,7 @@ class FullIncapacitantGasLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullIncapacitantGasGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullIncapacitantGasLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -1995,7 +1995,7 @@ class FullToxinGasLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullToxinGasGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullToxinGasLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2004,7 +2004,7 @@ class FullAntipersonnelIncendiaryLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullAntipersonnelIncendiaryGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullAntipersonnelIncendiaryLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2013,7 +2013,7 @@ class MiniDemolitionIncendiaryLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniDemolitionIncendiaryGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniDemolitionIncendiaryLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -2021,7 +2021,7 @@ class FullDemolitionIncendiaryLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullDemolitionIncendiaryGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullDemolitionIncendiaryLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2030,7 +2030,7 @@ class FullMicrogrenadeLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullMicrogrenadeGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullMicrogrenadeLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2039,7 +2039,7 @@ class MiniMultipleProjectileLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_MiniMultipleProjectileGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return MiniMultipleProjectileLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing())
 
@@ -2047,7 +2047,7 @@ class FullMultipleProjectileLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullMultipleProjectileGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullMultipleProjectileLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2056,7 +2056,7 @@ class FullPlasmaLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullPlasmaGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullPlasmaLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2065,7 +2065,7 @@ class FullAntiArmourPlasmaLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullAntiArmourPlasmaGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullAntiArmourPlasmaLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2074,7 +2074,7 @@ class FullSmokeLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullSmokeGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullSmokeLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2083,7 +2083,7 @@ class FullStunLauncherAmmoQuantity(LauncherAmmoQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_FullStunGrenadeImpl(isLauncherGrenade=True))
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return FullStunLauncherAmmoLoaded(
             isAdvancedFusing=self._impl.isAdvancedFusing(),
             isRAM=self._impl.isRAM())
@@ -2098,7 +2098,13 @@ class FullStunLauncherAmmoQuantity(LauncherAmmoQuantity):
 # █████   █████░░████████ ████ █████░░████████
 #░░░░░   ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░░░
 
-class HandGrenadeQuantity(gunsmith.HandGrenadeQuantityInterface):
+# NOTE: HandGrenadeQuantity isn't currently used due to the complexity of
+# including it. It would make sense for it to be part of the munitions
+# phase, however that phase is per-sequence and purchasing hand grenades
+# would only make sense as common as logically it's not tied to a particular
+# sequence. I've left the implementation here in case I figure out a way to
+# to it that's worth the effort.
+class HandGrenadeQuantity(gunsmith.WeaponComponentInterface):
     def __init__(
             self,
             impl: _GrenadeImpl

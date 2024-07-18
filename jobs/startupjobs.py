@@ -1,6 +1,7 @@
 import gunsmith
 import traveller
 import proxy
+import robots
 import typing
 from PyQt5 import QtCore
 
@@ -48,6 +49,11 @@ class StartupJobBase(QtCore.QThread):
 class LoadSectorsJob(StartupJobBase):
     def executeJob(self) -> None:
         traveller.WorldManager.instance().loadSectors(
+            progressCallback=self._handleProgressUpdate)
+
+class LoadRobotsJob(StartupJobBase):
+    def executeJob(self) -> None:
+        robots.RobotStore.instance().loadRobots(
             progressCallback=self._handleProgressUpdate)
 
 class LoadWeaponsJob(StartupJobBase):

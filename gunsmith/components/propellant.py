@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class PropellantType(gunsmith.PropellantTypeInterface):
+class PropellantType(gunsmith.WeaponComponentInterface):
     def __init__(
             self,
             componentString: str,
@@ -52,16 +52,6 @@ class PropellantType(gunsmith.PropellantTypeInterface):
         return context.hasComponent(
             componentType=gunsmith.ProjectorReceiver,
             sequence=sequence)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -181,7 +171,7 @@ class GeneratedGasPropellantType(PropellantType):
 
         return step
 
-class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
+class PropellantQuantity(gunsmith.WeaponComponentInterface):
     def __init__(
             self,
             componentString: str,
@@ -222,13 +212,6 @@ class PropellantQuantity(gunsmith.ProjectorPropellantQuantityInterface):
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._propellantWeightOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

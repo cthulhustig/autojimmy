@@ -15,6 +15,7 @@ import os
 import pathlib
 import proxy
 import qasync
+import robots
 import socket
 import sys
 import traveller
@@ -38,7 +39,8 @@ _WelcomeMessage = """
     images in tool tips (see Configuration dialog).<p>
     <p>{name} is not endorsed by the wonderful people at Traveller Map, Mongoose Publishing or Far
     Future Enterprises. However, a great deal of thanks goes to Joshua Bell from Traveller Map for
-    his help with the integration.</p>
+    his help with the integration and Geir Lanesskog for his clarification of rules from the
+    Mongoose Robots Handbook.</p>
     <p>{name} is released under the GPLv3. Further information can be found in the About dialog.</p>
     </html>
 """.format(name=app.AppName, version=app.AppVersion)
@@ -188,12 +190,9 @@ def _snapshotUpdateCheck(
     # run at startup. If the user requested the check then it implies they want
     # it installed
     if isStartup:
-        # TODO: At some point in the future I can remove the note about it being
-        #  faster
         answer = gui.AutoSelectMessageBox.question(
             text='<html>New universe data is available. Do you want to update?<br>' \
-            'Custom sectors will not be affected<br><br>' \
-            'Don\'t worry, updating is a LOT faster than it used to be.</html>',
+            'Custom sectors will not be affected<br></html>',
             stateKey='DownloadUniverseAtStartup')
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             # User chose not to install update so just continue loading the app with the
@@ -306,6 +305,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._gunsmithButton = QtWidgets.QPushButton('Gunsmith...', self)
         self._gunsmithButton.clicked.connect(gui.WindowManager.instance().showGunsmithWindow)
 
+        self._robotBuilderButton = QtWidgets.QPushButton('Robot Builder...', self)
+        self._robotBuilderButton.clicked.connect(gui.WindowManager.instance().showRobotBuilderWindow)
+
         generalLayout = QtWidgets.QVBoxLayout()
         generalLayout.addWidget(self._compareWorldsButton)
         generalLayout.addWidget(self._searchWorldsButton)
@@ -314,6 +316,7 @@ class MainWindow(QtWidgets.QMainWindow):
         generalLayout.addWidget(self._multiWorldTradeOptionsButton)
         generalLayout.addWidget(self._simulatorButton)
         generalLayout.addWidget(self._gunsmithButton)
+        generalLayout.addWidget(self._robotBuilderButton)
         generalGroupBox = QtWidgets.QGroupBox('General Tools')
         generalGroupBox.setLayout(generalLayout)
 
@@ -504,8 +507,12 @@ def main() -> None:
         traveller.WorldManager.setMilieu(milieu=app.Config.instance().milieu())
 
         gunsmith.WeaponStore.setWeaponDirs(
-            userWeaponDir=os.path.join(appDir, 'weapons'),
-            exampleWeaponDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
+            userDir=os.path.join(appDir, 'weapons'),
+            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'weapons'))
+
+        robots.RobotStore.setRobotDirs(
+            userDir=os.path.join(appDir, 'robots'),
+            exampleDir=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'robots'))
 
         gui.configureAppStyle(application)
 

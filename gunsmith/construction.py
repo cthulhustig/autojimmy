@@ -10,7 +10,7 @@ class WeaponType(enum.Enum):
     EnergyCartridgeWeapon = 'Energy Cartridge'
     ProjectorWeapon = 'Projector'
 
-# The order of this enum determines construction order
+# The order of this enum determines basic construction order
 class WeaponPhase(construction.ConstructionPhase):
     Initialisation = 'Initialisation'
     Receiver = 'Receiver'
@@ -46,12 +46,6 @@ CommonConstructionPhases = [
 AncillaryConstructionPhases = [
     WeaponPhase.Loading,
     WeaponPhase.Munitions
-]
-
-# Internal phases
-InternalConstructionPhases = [
-    WeaponPhase.Initialisation,
-    WeaponPhase.Finalisation,
 ]
 
 # Phases that make up the base weapon. Conceptually these phases get the weapon to the

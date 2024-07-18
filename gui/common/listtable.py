@@ -1,17 +1,10 @@
+import common
 import enum
 import gui
 import logging
 import math
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
-
-# Delegate that draws items without the cell focus highlight
-class _NoFocusDelegate(QtWidgets.QStyledItemDelegate):
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex) -> None:
-        itemOption = QtWidgets.QStyleOptionViewItem(option)
-        if option.state & QtWidgets.QStyle.StateFlag.State_HasFocus:
-            itemOption.state = itemOption.state ^ QtWidgets.QStyle.StateFlag.State_HasFocus
-        super().paint(painter, itemOption, index)
 
 # This QProxyStyle is intended to work around what appears to be a bug in Qt that means the icon
 # size set for the table isn't applied to the header
@@ -49,13 +42,24 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
         if element != QtWidgets.QStyle.ControlElement.CE_HeaderLabel:
             return super().drawControl(element, option, painter, widget)
 
-        assert(isinstance(option, QtWidgets.QStyleOptionHeader))
+        icon = None
+        alignment = None
 
-        if option.icon == None:
+        # NOTE: On macOS the header is using QStyleOptionViewItem but on Windows
+        # and Linux it's using QStyleOptionHeader. I've not looked into why, the
+        # simplest thing is to just handle both.
+        if isinstance(option, QtWidgets.QStyleOptionHeader):
+            icon = option.icon
+            alignment = option.textAlignment
+        elif isinstance(option, QtWidgets.QStyleOptionViewItem):
+            icon = option.icon
+            alignment = option.displayAlignment
+
+        if not icon or not alignment:
             return super().drawControl(element, option, painter, widget)
 
-        assert(isinstance(option.icon, QtGui.QIcon))
-        pixmap = option.icon.pixmap(self._iconSize, QtGui.QIcon.Mode.Normal)
+        assert(isinstance(icon, QtGui.QIcon))
+        pixmap = icon.pixmap(self._iconSize, QtGui.QIcon.Mode.Normal)
         if not pixmap:
             return super().drawControl(element, option, painter, widget)
 
@@ -71,10 +75,10 @@ class _SizeableIconHeaderStyle(QtWidgets.QProxyStyle):
         painter.drawPixmap(iconRect, pixmap)
         painter.drawText(
             textRect,
-            int(option.textAlignment), # Older versions of PyQt require explicit cast
+            int(alignment), # Older versions of PyQt require explicit cast
             option.text)
 
-class ListTable(QtWidgets.QTableWidget):
+class ListTable(gui.TableWidgetEx):
     keyPressed = QtCore.pyqtSignal(int)
     iconClicked = QtCore.pyqtSignal(int)
 
@@ -88,6 +92,7 @@ class ListTable(QtWidgets.QTableWidget):
         self._columnWidths = {}
         self._headerIconClickIndex = None
         self._headerStyle = _SizeableIconHeaderStyle(iconSize=self.iconSize())
+        self._rowFilter = None
 
         header = self.horizontalHeader()
         header.setStyle(self._headerStyle)
@@ -106,7 +111,9 @@ class ListTable(QtWidgets.QTableWidget):
         self.installEventFilter(self)
         self.resizeRowsToContents()
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.setItemDelegate(_NoFocusDelegate())
+        itemDelegate = gui.TableViewItemDelegateEx()
+        itemDelegate.setHighlightCurrentItem(enabled=False)
+        self.setItemDelegate(itemDelegate)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -281,6 +288,46 @@ class ListTable(QtWidgets.QTableWidget):
         self._headerStyle.setBaseStyle(style)
         super().setStyle(style)
 
+    def setItem(
+            self,
+            row: int,
+            column: int,
+            item: QtWidgets.QTableWidgetItem
+            ) -> None:
+        super().setItem(row, column, item)
+        self._checkRowFiltering(row=row)
+
+    def takeItem(
+            self,
+            row: int,
+            column: int
+            ) -> QtWidgets.QTableWidgetItem:
+        item = super().takeItem(row, column)
+        self._checkRowFiltering(row=row)
+        return item
+
+    def setRowFilter(
+            self,
+            filterType: common.StringFilterType,
+            filterString: typing.Optional[str] = None,
+            ignoreCase: bool = True
+            ) -> None:
+        if filterType == common.StringFilterType.NoFilter:
+            if self._rowFilter:
+                self._rowFilter = None
+                self.itemChanged.disconnect(self._filterWhenItemChanged)
+        else:
+            if not self._rowFilter:
+                self._rowFilter = common.StringFilter()
+                self.itemChanged.connect(self._filterWhenItemChanged)
+            self._rowFilter.setFilter(
+                filterType=filterType,
+                filterString=filterString,
+                ignoreCase=ignoreCase)
+
+        for row in range(self.rowCount()):
+            self._checkRowFiltering(row=row)
+
     def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
         if object == self:
             if event.type() == QtCore.QEvent.Type.ToolTip:
@@ -400,6 +447,27 @@ class ListTable(QtWidgets.QTableWidget):
             swappedRows.append((currentRow, swapRow))
 
         return swappedRows
+
+    def _checkRowFiltering(
+            self,
+            row: int
+            ) -> None:
+        hideRow = False
+        if self._rowFilter:
+            matches = False
+            for column in range(self.columnCount()):
+                item = self.item(row, column)
+                if item and self._rowFilter.matches(string=item.text()):
+                    matches = True
+                    break
+            hideRow = not matches
+        self.setRowHidden(row, hideRow)
+
+    def _filterWhenItemChanged(
+            self,
+            item: QtWidgets.QTableWidgetItem
+            ) -> None:
+        self._checkRowFiltering(row=item.row())
 
     def _checkForHeaderIconClick(self, pos: QtCore.QPoint) -> int:
         header = self.horizontalHeader()
@@ -662,6 +730,26 @@ class FrozenColumnListTable(ListTable):
     def setColumnHidden(self, column: int, hide: bool) -> None:
         self._frozenColumnWidget.setColumnHidden(column, hide)
         return super().setColumnHidden(column, hide)
+
+    def hideColumn(self, column: int) -> None:
+        self._frozenColumnWidget.hideColumn(column)
+        return super().hideColumn(column)
+
+    def showColumn(self, column: int) -> None:
+        self._frozenColumnWidget.showColumn(column)
+        return super().showColumn(column)
+
+    def setRowHidden(self, row: int, hide: bool) -> None:
+        self._frozenColumnWidget.setRowHidden(row, hide)
+        return super().setRowHidden(row, hide)
+
+    def hideRow(self, row: int) -> None:
+        self._frozenColumnWidget.hideRow(row)
+        return super().hideRow(row)
+
+    def showRow(self, row: int) -> None:
+        self._frozenColumnWidget.showRow(row)
+        super().showRow(row)
 
     def resizeColumnsToContents(self) -> None:
         self._frozenColumnWidget.resizeColumnsToContents()

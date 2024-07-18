@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class ConventionalCalibre(gunsmith.CalibreInterface):
+class ConventionalCalibre(gunsmith.WeaponComponentInterface):
     """
     For Rocket Propelled
     - Receiver Weight: -50% (Field Catalog p38)
@@ -135,6 +135,12 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
             value=False,
             description='Specify if the weapon fires rocket accelerated ammunition.')
 
+    def isHighVelocity(self) -> bool:
+        raise RuntimeError(f'{type(self)} is derived from ConventionalCalibre so must implement isHighVelocity')
+
+    def isRocket(self) -> bool:
+        return self._isRocketOption.value()
+
     def componentString(self) -> str:
         return self._componentString
 
@@ -161,13 +167,6 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._isRocketOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -305,9 +304,6 @@ class ConventionalCalibre(gunsmith.CalibreInterface):
                 value=recoilModifier)))
 
         return step
-
-    def isRocket(self) -> bool:
-        return self._isRocketOption.value()
 
 class HandgunCalibre(ConventionalCalibre):
     """

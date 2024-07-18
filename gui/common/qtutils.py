@@ -1,3 +1,4 @@
+import html
 import logging
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -153,3 +154,48 @@ def getMonospaceFont() -> QtGui.QFont:
 
     _cachedMonospaceFont = font
     return font
+
+def tabWidgetSearch(
+        widget: typing.Union[QtWidgets.QWidget, QtWidgets.QLayout],
+        tabWidgets: typing.List[QtWidgets.QWidget]
+        ) -> None:
+    if not widget.isEnabled():
+        return
+    if isinstance(widget, QtWidgets.QWidget):
+        focusPolicy = widget.focusPolicy()
+        if focusPolicy & QtCore.Qt.FocusPolicy.TabFocus:
+            tabWidgets.append(widget)
+            return
+    for child in widget.children():
+        tabWidgetSearch(widget=child, tabWidgets=tabWidgets)
+
+def alignmentToHtmlStyle(alignment: typing.Optional[int]) -> str:
+    if not alignment:
+        return ''
+    styles = []
+    if alignment & QtCore.Qt.AlignmentFlag.AlignLeft:
+        styles.append('text-align: left;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignRight:
+        styles.append('text-align: right;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignHCenter:
+        styles.append('text-align: center;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignJustify:
+        styles.append('text-align: justify;')
+
+    if alignment & QtCore.Qt.AlignmentFlag.AlignTop:
+        styles.append('vertical-align: top;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignBottom:
+        styles.append('vertical-align: bottom;')
+    elif alignment & QtCore.Qt.AlignmentFlag.AlignVCenter:
+        styles.append('vertical-align: middle;')
+    return ' '.join(styles)
+
+def textToHtmlContent(text: str, font: typing.Optional[QtGui.QFont]) -> str:
+    text = html.escape(text)
+    text = text.replace('\n', '<br>')
+    if font:
+        if font.bold():
+            text = f'<b>{text}</b>'
+        if font.italic():
+            text = f'<i>{text}</i>'
+    return text

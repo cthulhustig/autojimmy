@@ -1,5 +1,6 @@
 import copy
 import gunsmith
+import pdf
 import time
 import typing
 from PyQt5 import QtCore
@@ -44,7 +45,7 @@ class ExportWeaponJob(QtCore.QThread):
 
     def run(self) -> None:
         try:
-            exporter = gunsmith.PdfExporter()
+            exporter = pdf.WeaponToPdf()
             exporter.export(
                 weapon=self._weapon,
                 filePath=self._filePath,

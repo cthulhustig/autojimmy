@@ -4,7 +4,7 @@ import enum
 import gunsmith
 import typing
 
-class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
+class ReceiverFeature(gunsmith.WeaponComponentInterface):
     def __init__(
             self,
             componentString: str,
@@ -51,7 +51,7 @@ class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
 
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -59,16 +59,6 @@ class ReceiverFeature(gunsmith.ReceiverFeatureInterface):
         return not context.hasComponent(
             componentType=type(self),
             sequence=sequence)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -2343,7 +2333,7 @@ class InternalPowerPackFeature(EnergyWeaponFeature):
 #                                        █████
 #                                       ░░░░░
 
-class WeaponFeature(gunsmith.WeaponFeatureInterface):
+class WeaponFeature(gunsmith.WeaponComponentInterface):
     """
     - Requirement: Only compatible with primary weapon
     """
@@ -2378,7 +2368,7 @@ class WeaponFeature(gunsmith.WeaponFeatureInterface):
         # Only compatible with weapons that have a receiver. A whole weapon search is used as
         # it can be any of the weapon sequences.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=None):
             return False
 
@@ -2386,16 +2376,6 @@ class WeaponFeature(gunsmith.WeaponFeatureInterface):
         return not context.hasComponent(
             componentType=type(self),
             sequence=None) # Whole weapon search
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
 class IntelligentWeaponFeature(WeaponFeature):
     """

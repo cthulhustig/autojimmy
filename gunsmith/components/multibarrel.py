@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class MultiBarrel(gunsmith.MultiBarrelInterface):
+class MultiBarrel(gunsmith.WeaponComponentInterface):
     """
     - Heat Dissipation: +1 for each additional barrel (table on p14 of Field Catalogue)
     - Requirement: Not compatible with projectors
@@ -18,7 +18,7 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
     _BarrelCountOptionDescription = \
         '<p>Specify the number of barrels the weapon has.</p>' \
         '<p>Note that this is for a receiver with multiple barrels such as double barrel ' \
-        'shotguns or rotary barrel weapons. Cases where each barrel has a it\'s own receiver ' \
+        'shotguns or rotary barrel weapons. Cases where each barrel has its own receiver ' \
         'should be handled as a secondary weapon.</p>'
 
     def __init__(
@@ -58,18 +58,11 @@ class MultiBarrel(gunsmith.MultiBarrelInterface):
 
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._barrelCountOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

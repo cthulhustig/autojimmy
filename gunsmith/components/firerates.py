@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class FireRate(gunsmith.FireRateInterface):
+class FireRate(gunsmith.WeaponComponentInterface):
     def typeString(self) -> str:
         return 'Fire Rate'
 
@@ -14,18 +14,8 @@ class FireRate(gunsmith.FireRateInterface):
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=sequence)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
 # I've created the standard fire rate to allow the HeatGeneration attribute to be set
 # for non-RF/VRF weapons
@@ -454,7 +444,7 @@ class VRFFireRate(AdvancedFireRate):
             type=gunsmith.WeaponAttributeId,
             value=gunsmith.WeaponAttributeId.Bulky, # Default to Bulky as that's what the RF capability gives
             isOptional=True,
-            options=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
+            choices=[gunsmith.WeaponAttributeId.Bulky, gunsmith.WeaponAttributeId.VeryBulky],
             description=VRFFireRate._BulkLevelOptionDescription)
 
     def options(self) -> typing.List[construction.ComponentOption]:

@@ -19,13 +19,17 @@ Python and can be run on Windows, Linux and macOS.
     * Automatically generated notes listing the more complex rules that apply to a weapon, when
     they apply and what their effect are
     * Export of weapons to PDF
+* Automation of robot creation using the Mongoose 2e Robot Handbook rules
+    * Support for robots as NPCs and player characters
+    * Automatically generated notes listing situationally dependant modifiers and rules
+    * Export of robot to PDF
 * Referee aids Mongoose Speculative Trading & Smuggling rules
     * Dice rollers for purchase and sale process
     * Support for local brokers
 * Experimental player aids for Mongoose Speculative Trading & Smuggling rules
     * Options to see how each variable in the trading process would affect a trade
     * Estimation of profits for trading between worlds if the player was to make average, worst
-    and best case dice roles at each point in the trading process
+    and best case dice rolls at each point in the trading process
 * Import of custom sectors
     * Custom sector data integrated into all tools
     * Posters of custom sectors automatically generated and overlaid onto Traveller Map views
@@ -150,5 +154,6 @@ files are the copyright of their creators.
 
 Auto-Jimmy is not endorsed by the wonderful people at Traveller Map, Mongoose Publishing or Far
 Future Enterprises. However, a great deal of thanks goes to Joshua Bell from Traveller Map for
-his help with the integration.
+his help with the integration and Geir Lanesskog for his clarification of rules from the
+Mongoose Robots Handbook.
 

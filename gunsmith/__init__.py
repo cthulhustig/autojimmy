@@ -5,7 +5,7 @@ from .step import *
 from .component import *
 from .weapon import *
 from .malfunction import *
-from .components.Initialisation import *
+from .components.initialisation import *
 from .components.finalisation import *
 from .components.receivers import *
 from .components.calibres import *
@@ -30,5 +30,4 @@ from .components.cartridges import *
 from .components.powerpack import *
 from .io.serialization import *
 from .io.weaponstore import *
-from .io.exportpdf import *
 from .io.exportcsv import *

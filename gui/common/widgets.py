@@ -1,4 +1,6 @@
+import app
 import common
+import html
 import gui
 import logging
 import math
@@ -169,13 +171,74 @@ class CheckBoxEx(QtWidgets.QCheckBox):
         self.setChecked(stream.readBool())
         return True
 
+class ToolButtonEx(QtWidgets.QToolButton):
+    # When replicating the sizing of a QPushButton the calculated size returned
+    # by sizeFromContents is 1 pixel larger in height than the default QPushButton
+    # sizeHint implementation. This modifier is applied to account for it.
+    # Interestingly when I tried the same thing from a QPushButton derived class
+    # sizeFromContents also returned a size 1 pixel larger than height than its
+    # default sizeHint implementation generated so I'm not sure what is going on.
+    _SizeHintHeightModifier = -1
+
+    def __init__(
+            self,
+            text: typing.Optional[str] = None,
+            isPushButton: bool = False,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._isPushButton = isPushButton
+        if text != None:
+            self.setText(text)
+
+    # By default a QToolButton will appear significantly smaller than a
+    # QPushButton with the same text due to the two controls using different
+    # padding. This code modifies sizeHint to replicate the QPushButton sizing
+    # behaviour.
+    # https://forum.qt.io/topic/84657/qtoolbutton-as-big-as-qpushbutton/5
+    def sizeHint(self) -> QtCore.QSize:
+        baseHint = super().sizeHint()
+        if not self._isPushButton:
+            return baseHint
+
+        btnOpt = QtWidgets.QStyleOptionToolButton()
+        self.initStyleOption(btnOpt)
+        h = max(0, btnOpt.iconSize.height())
+        w = btnOpt.iconSize.width() + 4
+        fntSize = self.fontMetrics().size(
+            QtCore.Qt.TextFlag.TextShowMnemonic,
+            btnOpt.text)
+        w += fntSize.width()
+        h = max(h, fntSize.height())
+
+        opt = QtWidgets.QStyleOptionButton()
+        opt.direction = btnOpt.direction
+        opt.features = QtWidgets.QStyleOptionButton.ButtonFeature.None_
+        if btnOpt.features & QtWidgets.QStyleOptionToolButton.ToolButtonFeature.Menu:
+            opt.features |= QtWidgets.QStyleOptionButton.ButtonFeature.HasMenu
+        opt.fontMetrics = btnOpt.fontMetrics
+        opt.icon = btnOpt.icon
+        opt.iconSize = btnOpt.iconSize
+        opt.palette = btnOpt.palette
+        opt.rect = btnOpt.rect
+        opt.state = btnOpt.state
+        opt.styleObject = btnOpt.styleObject
+        opt.text = btnOpt.text
+        pushSize = self.style().sizeFromContents(
+            QtWidgets.QStyle.ContentsType.CT_PushButton,
+            opt,
+            QtCore.QSize(w, max(h + ToolButtonEx._SizeHintHeightModifier, 0)),
+            self)
+        return baseHint.expandedTo(pushSize);
+
 class RadioButtonEx(QtWidgets.QRadioButton):
     _StateVersion = 'RadioButtonEx_v1'
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(CheckBoxEx._StateVersion)
+        stream.writeQString(RadioButtonEx._StateVersion)
         stream.writeBool(self.isChecked())
         return state
 
@@ -185,7 +248,7 @@ class RadioButtonEx(QtWidgets.QRadioButton):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != CheckBoxEx._StateVersion:
+        if version != RadioButtonEx._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore RadioButtonEx state (Incorrect version)')
             return False
@@ -220,8 +283,9 @@ class SpinBoxEx(QtWidgets.QSpinBox):
 class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     _StateVersion = 'DoubleSpinBoxEx_v1'
 
-    # Update the number of decimal places the spin box allows so they accommodate
-    # the max and min values
+    # Set the number of decimal places to the minimum number needed to represent
+    # the supplied value, with the number of decimal places clamped to the
+    # supplied range before it is set.
     def setDecimalsForValue(
             self,
             value: float,
@@ -245,7 +309,7 @@ class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(SpinBoxEx._StateVersion)
+        stream.writeQString(DoubleSpinBoxEx._StateVersion)
         stream.writeDouble(self.value())
         return state
 
@@ -255,7 +319,7 @@ class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != SpinBoxEx._StateVersion:
+        if version != DoubleSpinBoxEx._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore DoubleSpinBoxEx state (Incorrect version)')
             return False
@@ -283,32 +347,35 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
         self._spinBox.valueChanged.connect(self._spinBoxChanged)
 
         layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._checkBox)
         layout.addWidget(self._spinBox)
 
         self.setLayout(layout)
 
+    def isChecked(self) -> bool:
+        return self._checkBox.isChecked()
+
+    def setChecked(self, checked: bool) -> None:
+        self._checkBox.setChecked(checked)
+
     def value(self) -> typing.Optional[typing.Union[int, float]]:
         return self._spinBox.value() if self._checkBox.isChecked() else None
 
     def setValue(self, value: typing.Optional[typing.Union[int, float]]) -> None:
-        if value != None:
-            # Order is important here to prevent double notifications without disabling signals.
-            # The spin box is updated first, this will only trigger this classes valueChanged event
-            # if the check box is currently ticked and the value has changed. The check box is then
-            # checked if it's not already, this will cause this classes valueChanged event to be
-            # triggered if the spin widget is going from disabled to enabled (regardless of if the
-            # value stored in the spin box has actually changed)
-            self._spinBox.setValue(value)
+        currentValue = self.value()
+        if value == currentValue:
+            return # Nothing to do
 
-            if not self._checkBox.isChecked():
-                self._checkBox.setChecked(False)
-        else:
-            if self._checkBox.isChecked():
-                self._checkBox.setChecked(False)
+        with gui.SignalBlocker(widget=self._checkBox):
+            self._checkBox.setChecked(value != None)
 
-    def isEnabled(self) -> bool:
-        return self._checkBox.isChecked()
+        with gui.SignalBlocker(widget=self._spinBox):
+            if value != None:
+                self._spinBox.setValue(value)
+            self._spinBox.setEnabled(value != None)
+
+        self._emitValueChanged()
 
     def setRange(self, min: typing.Union[int, float], max: typing.Union[int, float]) -> None:
         self._spinBox.setRange(min, max)
@@ -394,11 +461,11 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
         return True
 
     def _checkBoxChanged(self) -> None:
-        self._spinBox.setEnabled(self.isEnabled())
+        self._spinBox.setEnabled(self.isChecked())
         self._emitValueChanged()
 
     def _spinBoxChanged(self) -> None:
-        if self.isEnabled():
+        if self.isChecked():
             self._emitValueChanged()
 
     def _emitValueChanged(self) -> None:
@@ -487,8 +554,7 @@ class TextEditEx(QtWidgets.QTextEdit):
 
 class LineEditEx(QtWidgets.QLineEdit):
     regexValidityChanged = QtCore.pyqtSignal(bool)
-
-    _darkModeInvalidRegexHighlight = QtGui.QColor(100, 0, 0)
+    delayedTextEdited = QtCore.pyqtSignal(str)
 
     _StateVersion = 'LineEditEx_v1'
 
@@ -503,6 +569,7 @@ class LineEditEx(QtWidgets.QLineEdit):
         self._regexCheckingEnabled = False
         self._regexPattern = None
         self._cachedBaseColour = None
+        self._delayedTextEditedTimer = None
 
         # Always connect the signal, even though regex checking might not be enabled. This
         # is VERY important as signals are executed in the order they're connected and we
@@ -531,6 +598,24 @@ class LineEditEx(QtWidgets.QLineEdit):
     # Return compiled regex if regex checking is enabled
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
+
+    def enableDelayedTextEdited(
+            self,
+            msecs: int
+            ) -> None:
+        if not self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer = QtCore.QTimer()
+            self._delayedTextEditedTimer.setSingleShot(True)
+            self._delayedTextEditedTimer.timeout.connect(self._delayedTextEditedFired)
+            self.textEdited.connect(self._primeDelayedTextEdited)
+        self._delayedTextEditedTimer.setInterval(msecs)
+
+    def disableDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+            del self._delayedTextEditedTimer
+            self._delayedTextEditedTimer = None
+        self.textEdited.disconnect(self._primeDelayedTextEdited)
 
     def setPalette(self, palette: QtGui.QPalette) -> None:
         if self._regexCheckingEnabled:
@@ -578,6 +663,13 @@ class LineEditEx(QtWidgets.QLineEdit):
         if self._regexCheckingEnabled:
             self._checkRegex()
 
+    def _primeDelayedTextEdited(self) -> None:
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.start()
+
+    def _delayedTextEditedFired(self) -> None:
+        self.delayedTextEdited.emit(self.text())
+
     def _checkRegex(
             self,
             forceSignal: bool = False
@@ -592,11 +684,12 @@ class LineEditEx(QtWidgets.QLineEdit):
         except:
             self._regexPattern = None
 
+        palette = self.palette()
+
         colour = self._cachedBaseColour
         if not self._regexPattern:
-            colour = self._darkModeInvalidRegexHighlight if gui.isDarkModeEnabled() else QtCore.Qt.GlobalColor.red
+            colour = palette.color(QtGui.QPalette.ColorRole.BrightText)
 
-        palette = self.palette()
         palette.setColor(QtGui.QPalette.ColorRole.Base, colour)
         super().setPalette(palette) # Call base to prevent updating valid colour
 
@@ -726,6 +819,75 @@ class FloatLineEdit(QtWidgets.QLineEdit):
         return True
 
 class ComboBoxEx(QtWidgets.QComboBox):
+    userEdited = QtCore.pyqtSignal(str)
+    delayedUserEdited = QtCore.pyqtSignal(str)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+        self._delayedUserEditedTimer = None
+
+    def enableDelayedUserEdited(
+            self,
+            msecs: int
+            ) -> None:
+        if not self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer = QtCore.QTimer()
+            self._delayedUserEditedTimer.setSingleShot(True)
+            self._delayedUserEditedTimer.timeout.connect(
+                self._delayedUserEditedFired)
+
+            # Subscribe to the combo box's activated even to get notification
+            # when the user selects a new item from the drop down. Subscribe
+            # to the line edit's textEdited event to get notification when the
+            # user changes the text in an editable combo box.
+            self.activated.connect(self._userEdited)
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)
+        self._delayedUserEditedTimer.setInterval(msecs)
+
+    def disableDelayedUserEdited(self) -> None:
+        if self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer.stop()
+            del self._delayedUserEditedTimer
+            self._delayedUserEditedTimer = None
+        self.activated.disconnect(self._userEdited)
+        lineEdit = self.lineEdit()
+        if lineEdit:
+            lineEdit.textEdited.disconnect(self._userEdited)
+
+    def setEditable(
+            self,
+            editable: bool
+            ) -> None:
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.disconnect(self._userEdited)
+
+        super().setEditable(editable)
+
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)
+
+    def setLineEdit(
+            self,
+            edit: QtWidgets.QLineEdit
+            ) -> None:
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.disconnect(self._userEdited)
+
+        super().setLineEdit(edit)
+
+        if self._delayedUserEditedTimer:
+            lineEdit = self.lineEdit()
+            if lineEdit:
+                lineEdit.textEdited.connect(self._userEdited)
+
     def addItemAlphabetically(
             self,
             text: str,
@@ -767,7 +929,213 @@ class ComboBoxEx(QtWidgets.QComboBox):
     def selectAll(self) -> None:
         self.lineEdit().selectAll()
 
+    def _userEdited(self) -> None:
+        self.userEdited.emit(self.currentText())
+        if self._delayedUserEditedTimer:
+            self._delayedUserEditedTimer.start()
+
+    def _delayedUserEditedFired(self) -> None:
+        self.delayedUserEdited.emit(self.currentText())
+
+class TableWidgetEx(QtWidgets.QTableWidget):
+    _FocusRectStyle = 'QTableWidget:focus{{border:{width}px solid {colour};}}'
+    _FocusRectRegex = re.compile(r'QTableWidget:focus\s*{.*?}')
+    _FocusRectWidth = 4
+
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, rows: int, columns: int, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+
+    def __init__(
+            self,
+            *args,
+            **kwargs
+            ) -> None:
+        super().__init__(*args, **kwargs)
+        self._showFocusRect = False
+
+    def showFocusRect(self) -> bool:
+        return self._showFocusRect
+
+    def setShowFocusRect(self, enabled: bool) -> None:
+        self._showFocusRect = enabled
+        styleSheet = TableWidgetEx._FocusRectRegex.sub(self.styleSheet(), '')
+        styleSheet.strip()
+        self.setStyleSheet(styleSheet)
+
+    def setStyleSheet(self, styleSheet: str) -> None:
+        if self._showFocusRect and not TableWidgetEx._FocusRectRegex.match(styleSheet):
+            palette = self.palette()
+            focusColour = palette.color(QtGui.QPalette.ColorRole.Highlight)
+            if styleSheet:
+                styleSheet += ' '
+            styleSheet += TableWidgetEx._FocusRectStyle.format(
+                width=int(TableWidgetEx._FocusRectWidth * app.Config.instance().interfaceScale()),
+                colour=gui.colourToString(focusColour, includeAlpha=False))
+        super().setStyleSheet(styleSheet)
+
+    def contentToHtml(self) -> str:
+        horzHeader = self.horizontalHeader()
+        vertHeader = self.verticalHeader()
+        hasHorzHeader = horzHeader and not horzHeader.isHidden()
+        hasVertHeader = vertHeader and not vertHeader.isHidden()
+        model = self.model()
+
+        content = '<html>\n'
+        content += '<head>\n'
+        content += '<style>\n'
+        content += 'table, th, td {\n'
+        content += 'border: 1px solid black;\n'
+        content += 'border-collapse: collapse;\n'
+        content += '}\n'
+        content += 'th, td {\n'
+        content += 'padding: 2px;\n'
+        content += '}\n'
+        content += '</style>\n'
+        content += '</head>\n'
+        content += '<body>\n'
+        content += '<table style="border: 1px solid black; border-collapse: collapse;">\n'
+
+        if hasHorzHeader:
+            content += '<tr>\n'
+            for column in range(model.columnCount()):
+                if self.isColumnHidden(column):
+                    continue
+
+                tableHeader = TableWidgetEx._formatTableHeader(
+                    model=model,
+                    index=column,
+                    orientation=QtCore.Qt.Orientation.Horizontal)
+                content += f'{tableHeader}\n'
+            content += '</tr>\n'
+
+        rowSpans = [0] * self.columnCount()
+        row = 0
+        while row < self.rowCount():
+            rowHidden = self.isRowHidden(row)
+            column = 0
+
+            if not rowHidden:
+                content += '<tr>\n'
+
+            if hasVertHeader and not rowHidden:
+                tableHeader = TableWidgetEx._formatTableHeader(
+                    model=model,
+                    index=column,
+                    orientation=QtCore.Qt.Orientation.Vertical)
+                content += f'{tableHeader}\n'
+
+            while column < self.columnCount():
+                rowSpan = rowSpans[column]
+                if rowSpan > 0:
+                    rowSpans[column] = rowSpan - 1
+                    continue
+
+                columnSpan = self.columnSpan(row, column)
+                assert(columnSpan > 0)
+                rowSpan = self.rowSpan(row, column)
+                assert(rowSpan > 0)
+                if not rowHidden and not self.isColumnHidden(column):
+                    item = self.item(row, column)
+                    itemText = item.text() if item else ''
+                    itemAlignment = item.textAlignment() if item else None
+                    itemFont = item.font() if item else None
+
+                    itemText = gui.textToHtmlContent(text=itemText, font=itemFont)
+                    itemAlignment = gui.alignmentToHtmlStyle(alignment=itemAlignment)
+
+                    content += '<td{style}{columnSpan}{rowSpan}>{itemText}</td>\n'.format(
+                        style=f' style="{itemAlignment}"' if itemAlignment else '',
+                        columnSpan=f' colspan="{columnSpan}"' if columnSpan > 1 else '',
+                        rowSpan=f' rowspan="{rowSpan}"' if rowSpan > 1 else '',
+                        itemText=itemText)
+
+                if rowSpan > 1:
+                    columnSpanEnd = column + columnSpan
+                    while column < columnSpanEnd:
+                        rowSpans[column] = rowSpan - 1
+                        column += 1
+                else:
+                    column += columnSpan
+
+            if not rowHidden:
+                content += '</tr>\n'
+            row += 1
+
+        content += '</table>\n'
+        content += '</body>\n'
+        content += '</html>\n'
+
+        return content
+
+    @staticmethod
+    def _formatTableHeader(
+            model: QtCore.QAbstractItemModel,
+            index: int,
+            orientation: QtCore.Qt.Orientation
+            ) -> str:
+        headerText = model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.DisplayRole)
+        headerAlignment = model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.TextAlignmentRole)
+        headerFont = model.headerData(
+            index,
+            orientation,
+            QtCore.Qt.ItemDataRole.FontRole)
+
+        headerText = gui.textToHtmlContent(text=headerText, font=headerFont)
+        headerAlignment = gui.alignmentToHtmlStyle(alignment=headerAlignment)
+
+        return '<th{style}>{headerText}</th>\n'.format(
+            style=f' style="{headerAlignment}"' if headerAlignment else '',
+            headerText=headerText)
+
 class ScrollAreaEx(QtWidgets.QScrollArea):
+    _StateVersion = 'ScrollAreaEx_v1'
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(ScrollAreaEx._StateVersion)
+
+        scrollBar = self.horizontalScrollBar()
+        stream.writeInt(scrollBar.value() if scrollBar else 0)
+
+        scrollBar = self.verticalScrollBar()
+        stream.writeInt(scrollBar.value() if scrollBar else 0)
+
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != ScrollAreaEx._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore ScrollAreaEx state (Incorrect version)')
+            return False
+
+        scrollBar = self.horizontalScrollBar()
+        if scrollBar:
+            scrollBar.setValue(stream.readInt())
+
+        scrollBar = self.verticalScrollBar()
+        if scrollBar:
+            scrollBar.setValue(stream.readInt())
+
+        return True
+
+# NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
+# doesn't make logical sense to save scrollbar state for an auto
+# scrolling widget.
+class AutoScrollArea(QtWidgets.QScrollArea):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -895,40 +1263,46 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             self,
             label: str,
             layout: QtWidgets.QLayout,
-            stretch: int = 0
+            stretch: int = 0,
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=self.count(),
             object=layout,
             label=label,
-            stretch=stretch)
+            stretch=stretch,
+            labelAlignment=labelAlignment)
 
     def addLabelledWidget(
             self,
             label: str,
             widget: QtWidgets.QWidget,
             stretch: int = 0,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            widgetAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=self.count(),
             object=widget,
             label=label,
             stretch=stretch,
-            alignment=alignment)
+            objectAlignment=widgetAlignment,
+            labelAlignment=labelAlignment)
 
     def insertLabelledLayout(
             self,
             index: int,
             label: str,
             layout: QtWidgets.QLayout,
-            stretch: int = 0
+            stretch: int = 0,
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=index,
             object=layout,
             label=label,
-            stretch=stretch)
+            stretch=stretch,
+            labelAlignment=labelAlignment)
 
     def insertLabelledWidget(
             self,
@@ -936,14 +1310,16 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             label: str,
             widget: QtWidgets.QWidget,
             stretch: int = 0,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            widgetAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         self._insertLabelledObject(
             index=index,
             object=widget,
             label=label,
             stretch=stretch,
-            alignment=alignment)
+            objectAlignment=widgetAlignment,
+            labelAlignment=labelAlignment)
 
     def removeWidget(self, widget: QtWidgets.QWidget) -> None:
         wrapper = self._labelledObjectLayoutMap.get(widget)
@@ -963,14 +1339,17 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
             object: typing.Union[QtWidgets.QWidget, QtWidgets.QLayout],
             label: str,
             stretch: int,
-            alignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0)
+            objectAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag(0),
+            labelAlignment: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignRight
             ) -> None:
         # When adding this wrapper layout a stretch isn't added. Instead the alignment should be
         # used. I've done this as I was finding the stretch meant line edits that were set to
         # expand to use as much space as is available weren't doing so.
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(QtWidgets.QLabel(label))
+        label = QtWidgets.QLabel(label)
+        label.setAlignment(labelAlignment)
+        layout.addWidget(label)
         if isinstance(object, QtWidgets.QWidget):
             layout.addWidget(object)
         elif isinstance(object, QtWidgets.QLayout):
@@ -981,7 +1360,7 @@ class VBoxLayoutEx(QtWidgets.QVBoxLayout):
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
 
-        super().insertWidget(index, widget, stretch, alignment)
+        super().insertWidget(index, widget, stretch, objectAlignment)
         self._labelledObjectLayoutMap[object] = widget
 
 # Implementation of a TextEdit that automatically resizes to fit its contents

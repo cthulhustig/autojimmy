@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class CapacityModification(gunsmith.CapacityModificationInterface):
+class CapacityModification(gunsmith.WeaponComponentInterface):
     """
     - Requirement: Not compatible with Single Shot Mechanisms
     - Requirement: Not compatible with Projectors or Power Pack Energy weapons
@@ -24,7 +24,7 @@ class CapacityModification(gunsmith.CapacityModificationInterface):
             ) -> bool:
         # Only compatible with weapons that have a receiver.
         if not context.hasComponent(
-                componentType=gunsmith.ReceiverInterface,
+                componentType=gunsmith.Receiver,
                 sequence=sequence):
             return False
 
@@ -43,16 +43,6 @@ class CapacityModification(gunsmith.CapacityModificationInterface):
             and not context.hasComponent(
                 componentType=gunsmith.StandardSingleShotLauncherReceiver,
                 sequence=sequence)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
 class DesiredCapacityModification(CapacityModification):
     """

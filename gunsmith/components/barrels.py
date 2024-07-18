@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class Barrel(gunsmith.BarrelInterface):
+class Barrel(gunsmith.WeaponComponentInterface):
     """
     All Barrels
     - Quickdraw: Base barrel Quickdraw modifier is not applied to Secondary Weapons (but modifier for a Heavy Barrel is)
@@ -152,18 +152,11 @@ class Barrel(gunsmith.BarrelInterface):
 
         # Only compatible with weapons that have a receiver.
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=sequence)
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._isHeavyOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,

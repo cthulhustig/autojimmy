@@ -1,0 +1,239 @@
+{
+    "name": "Steward Droid",
+    "techLevel": 12,
+    "weaponSet": "CSC2023",
+    "components": [
+        {
+            "type": "Size4Chassis",
+            "options": []
+        },
+        {
+            "type": "WalkerPrimaryLocomotion",
+            "options": [
+                {
+                    "id": "LegCount",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "DecreaseResiliency",
+            "options": [
+                {
+                    "id": "HitsDecrease",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "TacticalSpeedEnhancement",
+            "options": [
+                {
+                    "id": "SpeedIncrease",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 4
+                },
+                {
+                    "id": "Strength",
+                    "value": 7
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "InstalledBaseManipulator",
+            "options": [
+                {
+                    "id": "Size",
+                    "value": 4
+                },
+                {
+                    "id": "Strength",
+                    "value": 7
+                },
+                {
+                    "id": "Dexterity",
+                    "value": 7
+                }
+            ]
+        },
+        {
+            "type": "VisualSpectrumSensorDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "VoderSpeakerDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Standard"
+                }
+            ]
+        },
+        {
+            "type": "AuditorySensorDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Standard"
+                }
+            ]
+        },
+        {
+            "type": "WirelessDataLinkDefaultSuiteOption",
+            "options": []
+        },
+        {
+            "type": "TransceiverDefaultSuiteOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Improved5km"
+                }
+            ]
+        },
+        {
+            "type": "MedkitSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Basic"
+                }
+            ]
+        },
+        {
+            "type": "AutobarSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "AutochefSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Enhanced"
+                }
+            ]
+        },
+        {
+            "type": "StorageCompartmentSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Refrigerated"
+                },
+                {
+                    "id": "Slots",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "OlfactorySensorSlotOption",
+            "options": [
+                {
+                    "id": "Type",
+                    "value": "Improved"
+                }
+            ]
+        },
+        {
+            "type": "AdvancedTL12Brain",
+            "options": [
+                {
+                    "id": "Hardened",
+                    "value": false
+                },
+                {
+                    "id": "BandwidthUpgrade",
+                    "value": null
+                },
+                {
+                    "id": "IntellectUpgrade",
+                    "value": null
+                }
+            ]
+        },
+        {
+            "type": "StewardSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 2
+                }
+            ]
+        },
+        {
+            "type": "MedicSkill",
+            "options": [
+                {
+                    "id": "Level",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "FlyerSkill",
+            "options": [
+                {
+                    "id": "AirshipLevel",
+                    "value": 0
+                },
+                {
+                    "id": "GravLevel",
+                    "value": 0
+                },
+                {
+                    "id": "OrnithopterLevel",
+                    "value": 0
+                },
+                {
+                    "id": "RotorLevel",
+                    "value": 0
+                },
+                {
+                    "id": "WingLevel",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "type": "PercentageCostModifier",
+            "options": [
+                {
+                    "id": "CostModifier",
+                    "value": -10
+                }
+            ]
+        },
+        {
+            "type": "SignificantFigureCostRounding",
+            "options": [
+                {
+                    "id": "SignificantFigures",
+                    "value": 2
+                },
+                {
+                    "id": "Rounding",
+                    "value": "Down"
+                }
+            ]
+        }
+    ],
+    "notes": "\"\""
+}

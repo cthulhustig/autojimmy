@@ -259,7 +259,7 @@ class _HeavyEnergyCartridgeImpl(_EnergyCartridgeImpl):
             cartridgeCost=15,
             powerOutput=8)
 
-class EnergyCartridgeLoaded(gunsmith.AmmoLoadedInterface):
+class EnergyCartridgeLoaded(gunsmith.AmmoLoaded):
     def __init__(
             self,
             impl: _EnergyCartridgeImpl
@@ -446,7 +446,7 @@ class HeavyEnergyCartridgeLoaded(EnergyCartridgeLoaded):
         assert(isinstance(loadedMagazine, gunsmith.EnergyCartridgeMagazineLoaded))
         return loadedMagazine.cartridgeType() == gunsmith.EnergyCartridgeType.Heavy
 
-class EnergyCartridgeQuantity(gunsmith.AmmoQuantityInterface):
+class EnergyCartridgeQuantity(gunsmith.AmmoQuantity):
     def __init__(
             self,
             impl: _EnergyCartridgeImpl
@@ -517,26 +517,26 @@ class WeakEnergyCartridgeQuantity(EnergyCartridgeQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_WeakEnergyCartridgeImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return WeakEnergyCartridgeLoaded()
 
 class LightEnergyCartridgeQuantity(EnergyCartridgeQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_LightEnergyCartridgeImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return LightEnergyCartridgeLoaded()
 
 class StandardEnergyCartridgeQuantity(EnergyCartridgeQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_StandardEnergyCartridgeImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return StandardEnergyCartridgeLoaded()
 
 class HeavyEnergyCartridgeQuantity(EnergyCartridgeQuantity):
     def __init__(self) -> None:
         super().__init__(impl=_HeavyEnergyCartridgeImpl())
 
-    def createLoadedAmmo(self) -> gunsmith.AmmoLoadedInterface:
+    def createLoadedAmmo(self) -> gunsmith.AmmoLoaded:
         return HeavyEnergyCartridgeLoaded()

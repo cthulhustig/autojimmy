@@ -142,6 +142,12 @@ _TableDataBoldStyle = ParagraphStyle(
     parent=_TableDataNormalStyle,
     fontName=_FontName + '-Bold')
 
+_TableDataBoldHighlightedStyle = ParagraphStyle(
+    name='TableDataBold',
+    parent=_TableDataNormalStyle,
+    fontName=_FontName + '-Bold',
+    backColor='#AAAAAA')
+
 _ListItemStyle = ParagraphStyle(
     name='ListItem',
     parent=_NormalStyle,
@@ -171,7 +177,7 @@ class _Notifier(object):
         self._count += 1
         self._callback(self._count, self._total)
 
-class PdfExporter(object):
+class WeaponToPdf(object):
     def __init__(self) -> None:
         self._colour = True
 
@@ -288,8 +294,8 @@ class PdfExporter(object):
             progressCallback: typing.Optional[typing.Callable[[], None]] = None,
             ) -> None:
         if layout != None:
-            layout.append(self._createParagraph(text=weapon.weaponName(), style=_TitleStyle))
-            layout.append(self._createVerticalSpacer(spacing=_TitleSpacing))
+            layout.append(pdf.ParagraphEx(text=weapon.name(), style=_TitleStyle))
+            layout.append(pdf.VerticalSpacer(height=_TitleSpacing))
         if progressCallback:
             progressCallback()
 
@@ -301,9 +307,9 @@ class PdfExporter(object):
             ) -> None:
         if layout != None:
             flowables = [
-                self._createVerticalSpacer(spacing=_SectionSpacing),
-                self._createParagraph(text='Current Details', style=_HeadingStyle),
-                self._createVerticalSpacer(spacing=_HeadingElementSpacing),
+                pdf.VerticalSpacer(height=_SectionSpacing),
+                pdf.ParagraphEx(text='Current Details', style=_HeadingStyle),
+                pdf.VerticalSpacer(height=_HeadingElementSpacing),
                 self._createCurrentDetails(weapon=weapon)
             ]
             layout.append(pdf.KeepTogetherEx(
@@ -320,15 +326,29 @@ class PdfExporter(object):
             progressCallback: typing.Optional[typing.Callable[[], None]] = None,
             ) -> None:
         if layout != None:
-            flowables = [
-                self._createVerticalSpacer(spacing=_SectionSpacing),
-                self._createParagraph(text='Manifest', style=_HeadingStyle),
-                self._createVerticalSpacer(spacing=_HeadingElementSpacing),
-                self._createManifestTable(weapon=weapon)
-            ]
-            layout.append(pdf.KeepTogetherEx(
-                flowables=flowables,
-                limitWaste=_MaxWastedSpace))
+            manifestTable = pdf.createManifestTable(
+                manifest=weapon.manifest(),
+                tableStyle=self._createTableStyle(),
+                headerStyle=_TableHeaderNormalStyle,
+                contentStyle=_TableDataNormalStyle,
+                totalStyle=_TableDataBoldHighlightedStyle if self._colour else _TableDataBoldStyle,
+                copyHeaderOnSplit=True,
+                horzCellPadding=5,
+                vertCellPadding=3,
+                decimalPlaces=gunsmith.ConstructionDecimalPlaces,
+                costUnits={
+                    gunsmith.WeaponCost.Credits: ('Cr', True), # Prefix
+                    gunsmith.WeaponCost.Weight: ('kg', False)}) # Suffix
+            if manifestTable:
+                flowables = [
+                    pdf.VerticalSpacer(height=_SectionSpacing),
+                    pdf.ParagraphEx(text='Manifest', style=_HeadingStyle),
+                    pdf.VerticalSpacer(height=_HeadingElementSpacing),
+                    manifestTable
+                ]
+                layout.append(pdf.KeepTogetherEx(
+                    flowables=flowables,
+                    limitWaste=_MaxWastedSpace))
 
         if progressCallback:
             progressCallback()
@@ -394,15 +414,15 @@ class PdfExporter(object):
             ) -> None:
         if layout != None:
             flowables = [
-                self._createVerticalSpacer(spacing=_SectionSpacing),
-                self._createParagraph(
+                pdf.VerticalSpacer(height=_SectionSpacing),
+                pdf.ParagraphEx(
                     text=self._prefixText(prefix=prefix, text='Basic Configuration'),
                     style=_HeadingStyle),
-                self._createVerticalSpacer(spacing=_HeadingElementSpacing),
-                self._createParagraph(
+                pdf.VerticalSpacer(height=_HeadingElementSpacing),
+                pdf.ParagraphEx(
                     text=_BaseDetailsSectionText,
                     style=_NormalStyle),
-                self._createVerticalSpacer(spacing=_HeadingElementSpacing),
+                pdf.VerticalSpacer(height=_HeadingElementSpacing),
                 self._createWeaponTable(weapon=weapon, sequence=sequence)
             ]
             layout.append(pdf.KeepTogetherEx(
@@ -415,10 +435,18 @@ class PdfExporter(object):
         # Create a table for the base weapon. This doesn't include notes for
         # detachable accessories or loaded magazine & ammo
         if layout != None:
-            notesTable = self._createNotesTable(weapon=weapon, sequence=sequence)
+            notesTable = pdf.createNotesTable(
+                steps=weapon.steps(sequence=sequence),
+                tableStyle=self._createTableStyle(),
+                headerStyle=_TableHeaderNormalStyle,
+                contentStyle=_TableDataNormalStyle,
+                listItemStyle=_ListItemStyle,
+                copyHeaderOnSplit=True,
+                horzCellPadding=_CellHorizontalPadding,
+                vertCellPadding=_CellVerticalPadding)
             if notesTable:
                 flowables = [
-                    self._createVerticalSpacer(spacing=_ElementSpacing),
+                    pdf.VerticalSpacer(height=_ElementSpacing),
                     notesTable
                 ]
                 layout.append(pdf.KeepTogetherEx(
@@ -440,15 +468,15 @@ class PdfExporter(object):
             accessoriesTable = self._createAccessoriesTable(weapon=weapon, sequence=sequence)
             if accessoriesTable:
                 flowables = [
-                    self._createVerticalSpacer(spacing=_SectionSpacing),
-                    self._createParagraph(
+                    pdf.VerticalSpacer(height=_SectionSpacing),
+                    pdf.ParagraphEx(
                         text=self._prefixText(prefix=prefix, text='Removable Accessories'),
                         style=_HeadingStyle),
-                    self._createVerticalSpacer(spacing=_HeadingElementSpacing),
-                    self._createParagraph(
+                    pdf.VerticalSpacer(height=_HeadingElementSpacing),
+                    pdf.ParagraphEx(
                         text=_AccessoriesSectionText,
                         style=_NormalStyle),
-                    self._createVerticalSpacer(spacing=_HeadingElementSpacing),
+                    pdf.VerticalSpacer(height=_HeadingElementSpacing),
                     accessoriesTable
                 ]
                 layout.append(pdf.KeepTogetherEx(
@@ -481,15 +509,15 @@ class PdfExporter(object):
                 baseText = 'Magazines & Ammunition' if hasRemovableMagazine else 'Ammunition'
 
                 flowables = [
-                    self._createVerticalSpacer(spacing=_SectionSpacing),
-                    self._createParagraph(
+                    pdf.VerticalSpacer(height=_SectionSpacing),
+                    pdf.ParagraphEx(
                         text=self._prefixText(prefix=prefix, text=baseText),
                         style=_HeadingStyle),
-                    self._createVerticalSpacer(spacing=_HeadingElementSpacing),
-                    self._createParagraph(
+                    pdf.VerticalSpacer(height=_HeadingElementSpacing),
+                    pdf.ParagraphEx(
                         text=_AmmoSectionText,
                         style=_NormalStyle),
-                    self._createVerticalSpacer(spacing=_HeadingElementSpacing),
+                    pdf.VerticalSpacer(height=_HeadingElementSpacing),
                     ammoTable
                 ]
                 layout.append(pdf.KeepTogetherEx(
@@ -618,7 +646,18 @@ class PdfExporter(object):
 
             notes = step.notes()
             if notes:
-                results[f'{step.type()}: {step.name()}'] = list(notes)
+                rule = f'{step.type()}: {step.name()}'
+                cumulative = results.get(rule)
+                if not cumulative:
+                    cumulative = list(notes)
+                    results[rule] = cumulative
+                else:
+                    # NOTE: Duplicate notes are removed if there are multiple
+                    # instances of a component
+                    assert(isinstance(cumulative, list))
+                    for note in notes:
+                        if note not in cumulative:
+                            cumulative.append(note)
         return results
 
     def _diffConstructionNotes(
@@ -656,12 +695,21 @@ class PdfExporter(object):
             if not hasChanged:
                 continue # Nothing more to do for this stage
 
-            # Create a copy of the list of notes that can be added to the results
-            current = list(current)
             if not current:
                 # There are no current notes but there were previously
-                current.append('Notes listed for this rule in the Base Configuration section no longer apply.')
-            results[rule] = current
+                current = ['Notes listed for this rule in the Base Configuration section no longer apply.']
+
+            cumulative = results.get(rule)
+            if not cumulative:
+                cumulative = list(current)
+                results[rule] = cumulative
+            else:
+                # NOTE: Duplicates are removed if there are multiple instances
+                # of a component
+                assert(isinstance(cumulative, list))
+                for note in current:
+                    if note not in cumulative:
+                        cumulative.append(note)
 
         # Check for rules that are no-longer present
         for rule in originalNotes.keys():
@@ -669,15 +717,6 @@ class PdfExporter(object):
                 results[rule] = ['Notes listed for this rule in the Base Configuration section no longer apply.']
 
         return results
-
-    def _createParagraph(
-            self,
-            text: str,
-            style: ParagraphStyle
-            ) -> Paragraph:
-        return Paragraph(
-            text=text.replace('\n', '<br />\n'),
-            style=style)
 
     def _createEditBox(
             self,
@@ -748,27 +787,18 @@ class PdfExporter(object):
             useDashForNoValue: bool = False
             ) -> Paragraph:
         if not attribute:
-            return self._createParagraph(text='-', style=style)
+            return pdf.ParagraphEx(text='-', style=style)
 
         text = self._formatAttributeString(
             attribute=attribute,
             includeName=includeName,
             alwaysSignNumbers=alwaysSignNumbers,
             useDashForNoValue=useDashForNoValue)
-        return self._createParagraph(text=text, style=style)
+        return pdf.ParagraphEx(text=text, style=style)
 
-    def _createVerticalSpacer(
+    def _createTableStyle(
             self,
-            spacing: float
-            ) -> Spacer:
-        return Spacer(width=0, height=spacing)
-
-    def _createTable(
-            self,
-            data: typing.List[typing.List[typing.Union[str, Flowable]]],
             spans: typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]] = None,
-            colWidths: typing.Optional[typing.List[typing.Optional[typing.Union[str, int]]]] = None,
-            copyHeaderOnSplit: bool = True
             ) -> Table:
         gridColour = _TableGridColour if self._colour else '#000000'
         styles = [
@@ -779,22 +809,26 @@ class PdfExporter(object):
             for ul, br in spans:
                 styles.append(('SPAN', ul, br))
 
-        cellStyles = []
-        for row in range(len(data)):
-            rowStyles = []
-            for column in range(len(data[row])):
-                style = CellStyle(repr((row, column)))
-                style.topPadding = _CellVerticalPadding
-                style.bottomPadding = _CellVerticalPadding
-                style.leftPadding = _CellHorizontalPadding
-                style.rightPadding = _CellHorizontalPadding
-                rowStyles.append(style)
-            cellStyles.append(rowStyles)
+        return TableStyle(styles)
+
+    def _createTable(
+            self,
+            data: typing.List[typing.List[typing.Union[str, Flowable]]],
+            spans: typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]] = None,
+            colWidths: typing.Optional[typing.List[typing.Optional[typing.Union[str, int]]]] = None,
+            copyHeaderOnSplit: bool = True
+            ) -> Table:
+        tableStyle = self._createTableStyle(spans=spans)
+
+        cellStyles = pdf.createTableCellStyles(
+            tableData=data,
+            horzCellPadding=_CellHorizontalPadding,
+            vertCellPadding=_CellVerticalPadding)
 
         return Table(
             data=data,
             repeatRows=1 if copyHeaderOnSplit else 0,
-            style=TableStyle(styles),
+            style=tableStyle,
             colWidths=colWidths,
             cellStyles=cellStyles)
 
@@ -818,7 +852,7 @@ class PdfExporter(object):
             if not nameText:
                 nameText = attribute.name()
 
-            keyParagraphs.append(self._createParagraph(
+            keyParagraphs.append(pdf.ParagraphEx(
                 text=nameText,
                 style=_TableHeaderCenterStyle))
             valueParagraphs.append(self._createAttributeParagraph(
@@ -852,30 +886,9 @@ class PdfExporter(object):
         if not traitsText:
             traitsText = '-'
 
-        return self._createParagraph(
+        return pdf.ParagraphEx(
             text=traitsText,
             style=_TableDataNormalStyle)
-
-    def _createNotesList(
-            self,
-            notes: typing.Iterable[str]
-            ) -> typing.Optional[Flowable]:
-        if not notes:
-            return None
-
-        listItems = []
-        for note in notes:
-            listItems.append(self._createParagraph(
-                text=note,
-                style=_ListItemStyle))
-
-        return ListFlowable(
-            listItems,
-            bulletType='bullet',
-            start='',
-            bulletFontSize=0,
-            leftIndent=0
-            )
 
     def _createCurrentDetails(
             self,
@@ -910,7 +923,7 @@ class PdfExporter(object):
 
         headerRow = []
         for text in columnHeaders:
-            headerRow.append(self._createParagraph(text=text, style=_TableHeaderNormalStyle))
+            headerRow.append(pdf.ParagraphEx(text=text, style=_TableHeaderNormalStyle))
         tableData: typing.List[typing.List[Paragraph]] = [headerRow]
         tableSpans = []
 
@@ -918,7 +931,7 @@ class PdfExporter(object):
         for row, rowName in enumerate(rows):
             rowData = []
             if rowName:
-                rowData.append(self._createParagraph(
+                rowData.append(pdf.ParagraphEx(
                     text=rowName,
                     style=_TableDataNormalStyle))
             else:
@@ -944,7 +957,7 @@ class PdfExporter(object):
                         style=_TableDataNormalStyle,
                         fixedHeight=spanHeight))
                 else:
-                    rowData.append(self._createParagraph(
+                    rowData.append(pdf.ParagraphEx(
                         text='',
                         style=_TableDataNormalStyle))
 
@@ -960,7 +973,7 @@ class PdfExporter(object):
                         style=_TableDataNormalStyle,
                         fixedHeight=_StandardLayoutNotesHeight))
                 else:
-                    rowData.append(self._createParagraph(
+                    rowData.append(pdf.ParagraphEx(
                         text='',
                         style=_TableDataNormalStyle))
             tableData.append(rowData)
@@ -973,146 +986,6 @@ class PdfExporter(object):
             data=tableData,
             spans=tableSpans,
             colWidths=colWidths) # Expand last column
-
-    def _createManifestTable(
-            self,
-            weapon: gunsmith.Weapon
-            ) -> Table:
-        manifest = weapon.manifest()
-        tableData = [[
-            self._createParagraph(text='Component', style=_TableHeaderNormalStyle),
-            self._createParagraph(text='Cost', style=_TableHeaderNormalStyle),
-            self._createParagraph(text='Weight', style=_TableHeaderNormalStyle),
-            self._createParagraph(text='Other Factors', style=_TableHeaderNormalStyle),
-        ]]
-        for section in manifest.sections():
-            entries = section.entries()
-            if not entries:
-                continue
-
-            for entry in entries:
-                tableData.append(self._createManifestEntryRow(entry=entry))
-
-            tableData.append(self._createManifestSectionTotalRow(section=section))
-
-        tableData.append(self._createManifestTotalRow(manifest=manifest))
-
-        return self._createTable(
-            data=tableData,
-            colWidths=['*', None, None, '*'])
-
-    def _createManifestEntryRow(
-            self,
-            entry: construction.ManifestEntry
-            ) -> typing.List[typing.Union[str, Flowable]]:
-        componentElement = self._createParagraph(
-            text=entry.component(),
-            style=_TableDataNormalStyle)
-
-        cost = entry.cost(costId=gunsmith.WeaponCost.Credits)
-        if cost:
-            costString = cost.displayString(
-                decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-            if isinstance(cost, construction.ConstantModifier):
-                costString = costString.strip('+')
-                costString = 'Cr' + costString
-        else:
-            costString = '-'
-        costElement = self._createParagraph(
-            text=costString,
-            style=_TableDataNormalStyle)
-
-        weight = entry.cost(costId=gunsmith.WeaponCost.Weight)
-        if weight:
-            weightString = weight.displayString(
-                decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-            if isinstance(weight, construction.ConstantModifier):
-                weightString = weightString.strip('+')
-                weightString += 'kg'
-        else:
-            weightString = '-'
-        weightElement = self._createParagraph(
-            text=weightString,
-            style=_TableDataNormalStyle)
-
-        factors = entry.factors()
-        if factors:
-            factorList = sorted([factor.displayString() for factor in factors])
-            factorsString = ''
-            for factor in factorList:
-                if factorsString:
-                    factorsString += '\n'
-                factorsString += factor
-        else:
-            factorsString = '-'
-        factorsElement = self._createParagraph(
-            text=factorsString,
-            style=_TableDataNormalStyle)
-
-        return [
-            componentElement,
-            costElement,
-            weightElement,
-            factorsElement
-        ]
-
-    def _createManifestSectionTotalRow(
-            self,
-            section: construction.ManifestSection
-            ) -> typing.List[typing.Union[str, Flowable]]:
-        componentElement = self._createParagraph(
-            text=f'{section.name()} Total',
-            style=_TableDataBoldStyle)
-
-        cost = section.totalCost(costId=gunsmith.WeaponCost.Credits).value()
-        costElement = self._createParagraph(
-            text=f'Cr{common.formatNumber(number=cost, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}' if cost else '-',
-            style=_TableDataBoldStyle)
-
-        weight = section.totalCost(costId=gunsmith.WeaponCost.Weight).value()
-        weightElement = self._createParagraph(
-            text=f'{common.formatNumber(number=weight, decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg' if weight else '-',
-            style=_TableDataBoldStyle)
-
-        factorsElement = self._createParagraph(
-            text='-',
-            style=_TableDataBoldStyle)
-
-        return [
-            componentElement,
-            costElement,
-            weightElement,
-            factorsElement
-        ]
-
-    def _createManifestTotalRow(
-            self,
-            manifest: construction.Manifest
-            ) -> typing.List[typing.Union[str, Flowable]]:
-        componentElement = self._createParagraph(
-            text='Total',
-            style=_TableDataBoldStyle)
-
-        cost = manifest.totalCost(costId=gunsmith.WeaponCost.Credits)
-        costElement = self._createParagraph(
-            text=f'Cr{common.formatNumber(number=cost.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}',
-            style=_TableDataBoldStyle)
-
-        weight = manifest.totalCost(costId=gunsmith.WeaponCost.Weight)
-        weightElement = self._createParagraph(
-            text=f'{common.formatNumber(number=weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)}kg',
-            style=_TableDataBoldStyle)
-
-        factorsElement = self._createParagraph(
-            text='-',
-            style=_TableDataBoldStyle)
-
-        return [
-            componentElement,
-            costElement,
-            weightElement,
-            factorsElement
-        ]
 
     def _createWeaponTable(
             self,
@@ -1152,18 +1025,18 @@ class PdfExporter(object):
         # primary weapon weight (which includes both weapons) includes the weight for
         # the secondary weapon
         weaponHeaders = [
-            self._createParagraph(
+            pdf.ParagraphEx(
                 text='TL',
                 style=_TableHeaderCenterStyle),
-            self._createParagraph(
+            pdf.ParagraphEx(
                 text=weightHeader,
                 style=_TableHeaderCenterStyle)
         ] + weaponHeaders
         weaponValues = [
-            self._createParagraph(
+            pdf.ParagraphEx(
                 text=str(weapon.techLevel()),
                 style=_TableDataNormalStyle),
-            self._createParagraph(
+            pdf.ParagraphEx(
                 text=common.formatNumber(
                     number=weapon.totalWeight().value(),
                     decimalPlaces=gunsmith.ConstructionDecimalPlaces),
@@ -1178,7 +1051,7 @@ class PdfExporter(object):
             reliabilityHeaders.append('')
             reliabilityValues.append('')
 
-        weaponHeaders.append(self._createParagraph(
+        weaponHeaders.append(pdf.ParagraphEx(
             text='Traits',
             style=_TableHeaderNormalStyle))
         weaponValues.append(self._createTraitsParagraph(
@@ -1202,51 +1075,16 @@ class PdfExporter(object):
             colWidths=[None] * (tableColumns - 1) + ['*'], # Expand last column
             copyHeaderOnSplit=False)
 
-    def _createNotesTable(
-            self,
-            weapon: gunsmith.Weapon,
-            sequence: str
-            ) -> typing.Optional[Table]:
-        tableData = [[
-            self._createParagraph(
-                text='Rule',
-                style=_TableHeaderNormalStyle),
-            self._createParagraph(
-                text='Notes',
-                style=_TableHeaderNormalStyle),
-            ]]
-
-        for step in weapon.steps(sequence=sequence):
-            assert(isinstance(step, gunsmith.WeaponStep))
-
-            notes = step.notes()
-            if not notes:
-                continue
-
-            tableData.append([
-                self._createParagraph(
-                    text=f'{step.type()}: {step.name()}',
-                    style=_TableDataNormalStyle),
-                self._createNotesList(notes=notes)
-            ])
-
-        if len(tableData) <= 1:
-            return None # No notes added (only header) so no point creating a table
-
-        return self._createTable(
-            data=tableData,
-            colWidths=['*', '*']) # Don't expand any columns as long notes cause the left column to be compressed
-
     def _createAccessoriesTable(
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
             ) -> typing.Optional[Table]:
-        # Find all components derived from AccessoryInterface in order to find barrel and weapon
+        # Find all components derived from Accessory in order to find barrel and weapon
         # accessories
         accessories = weapon.findComponents(
             sequence=sequence,
-            componentType=gunsmith.AccessoryInterface)
+            componentType=gunsmith.Accessory)
 
         # Detach all accessories, they'll be re-attached one by one as the table is generated.
         weapon.setAccessorAttachment(sequence=sequence, attach=False, regenerate=True)
@@ -1258,21 +1096,21 @@ class PdfExporter(object):
         baseNotes = self._collectConstructionNotes(weapon=weapon, sequence=sequence)
 
         headerRow = [
-            self._createParagraph(text='Type', style=_TableHeaderNormalStyle),
-            self._createParagraph(text='Range', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Damage', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Weapon\nWeight', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Ammo\nCapacity', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Accessory\nWeight', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Quickdraw', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Malfunction\nTable DM', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Traits', style=_TableHeaderNormalStyle)
+            pdf.ParagraphEx(text='Type', style=_TableHeaderNormalStyle),
+            pdf.ParagraphEx(text='Range', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Damage', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Weapon\nWeight', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Ammo\nCapacity', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Accessory\nWeight', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Quickdraw', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Malfunction\nTable DM', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Traits', style=_TableHeaderNormalStyle)
         ]
         tableData = [headerRow]
         tableSpans = []
 
         for accessory in accessories:
-            assert(isinstance(accessory, gunsmith.AccessoryInterface))
+            assert(isinstance(accessory, gunsmith.Accessory))
             if not accessory.isDetachable():
                 continue # Not interested in fixed accessories
 
@@ -1321,7 +1159,7 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
-            accessory: gunsmith.AccessoryInterface,
+            accessory: gunsmith.Accessory,
             weight: common.ScalarCalculation,
             accessoryNotes: typing.Mapping[str, typing.Collection[str]],
             baseRowIndex: int
@@ -1329,7 +1167,7 @@ class PdfExporter(object):
             typing.List[typing.List[typing.Union[Flowable, typing.List[Flowable]]]], # List of rows
             typing.Optional[typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]]] # Optional list of spans
             ]:
-        typeElement = self._createParagraph(
+        typeElement = pdf.ParagraphEx(
             text=accessory.instanceString(),
             style=_TableDataNormalStyle)
 
@@ -1347,7 +1185,7 @@ class PdfExporter(object):
 
         weaponWeight = weapon.combatWeight()
         weaponWeight = weaponWeight.value()
-        weaponWeightElement = self._createParagraph(
+        weaponWeightElement = pdf.ParagraphEx(
             text=common.formatNumber(number=weaponWeight, decimalPlaces=gunsmith.ConstructionDecimalPlaces),
             style=_TableDataNormalStyle)
 
@@ -1361,7 +1199,7 @@ class PdfExporter(object):
             '-' \
             if math.isclose(weight.value(), 0.0) else \
             common.formatNumber(number=weight.value(), decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-        accessoryWeightElement = self._createParagraph(
+        accessoryWeightElement = pdf.ParagraphEx(
             text=accessoryWeightString,
             style=_TableDataNormalStyle)
 
@@ -1398,11 +1236,11 @@ class PdfExporter(object):
         notesList = []
         for rule, notes in accessoryNotes.items():
             for note in notes:
-                notesList.append(self._createParagraph(
+                notesList.append(pdf.ParagraphEx(
                     text=f'{rule} - {note}',
                     style=_ListItemStyle))
-        notesRow = [self._createParagraph(text='', style=_TableDataNormalStyle), notesList] + \
-            ([self._createParagraph(text='', style=_TableDataNormalStyle)] * (len(mainRow) - 2))
+        notesRow = [pdf.ParagraphEx(text='', style=_TableDataNormalStyle), notesList] + \
+            ([pdf.ParagraphEx(text='', style=_TableDataNormalStyle)] * (len(mainRow) - 2))
         rows.append(notesRow)
 
         spans = [
@@ -1436,7 +1274,7 @@ class PdfExporter(object):
         if removableFeeds:
             stages = weapon.stages(
                 sequence=sequence,
-                componentType=gunsmith.MagazineLoadedInterface)
+                componentType=gunsmith.MagazineLoaded)
             for stage in stages:
                 magazineLoadingStage = stage
                 break
@@ -1444,14 +1282,14 @@ class PdfExporter(object):
             # loading a magazine
             assert(magazineLoadingStage)
 
-            magazines: typing.List[gunsmith.MagazineLoadedInterface] = []
+            magazines: typing.List[gunsmith.MagazineLoaded] = []
             if usePurchasedMagazines:
                 # Create loaded magazines for each of the purchased magazines
                 purchasedMagazines = weapon.findComponents(
                     sequence=sequence,
-                    componentType=gunsmith.MagazineQuantityInterface)
+                    componentType=gunsmith.MagazineQuantity)
                 for purchasedMagazine in purchasedMagazines:
-                    assert(isinstance(purchasedMagazine, gunsmith.MagazineQuantityInterface))
+                    assert(isinstance(purchasedMagazine, gunsmith.MagazineQuantity))
                     magazines.append(purchasedMagazine.createLoadedMagazine())
             elif weapon.weaponType(sequence=sequence) == gunsmith.WeaponType.EnergyCartridgeWeapon:
                 # Treat cartridge energy weapons as a special case :(. The type of cartridge is
@@ -1476,14 +1314,14 @@ class PdfExporter(object):
         ammoLoadingStages = weapon.stages(
             sequence=sequence,
             phase=gunsmith.WeaponPhase.Loading)
-        ammoLoadingStages = list(filter(lambda stage: issubclass(stage.baseType(), gunsmith.AmmoLoadedInterface), ammoLoadingStages))
+        ammoLoadingStages = list(filter(lambda stage: issubclass(stage.baseType(), gunsmith.AmmoLoaded), ammoLoadingStages))
         # All weapons should have at least one ammo loading stage, power pack energy weapons can have two
         assert(ammoLoadingStages)
 
         combinations: typing.List[typing.Tuple[
             construction.ConstructionStage,
-            gunsmith.AmmoLoadedInterface,
-            typing.Optional[gunsmith.MagazineLoadedInterface]]] = []
+            gunsmith.AmmoLoaded,
+            typing.Optional[gunsmith.MagazineLoaded]]] = []
 
         for magazine in magazines:
             # Load the magazine if there is one, fixed magazine weapons won't have one
@@ -1496,9 +1334,9 @@ class PdfExporter(object):
             if usePurchasedAmmo:
                 ammoQuantities = weapon.findComponents(
                     sequence=sequence,
-                    componentType=gunsmith.AmmoQuantityInterface)
+                    componentType=gunsmith.AmmoQuantity)
                 for quantity in ammoQuantities:
-                    assert(isinstance(quantity, gunsmith.AmmoQuantityInterface))
+                    assert(isinstance(quantity, gunsmith.AmmoQuantity))
                     ammo = quantity.createLoadedAmmo()
 
                     for stage in ammoLoadingStages:
@@ -1508,7 +1346,7 @@ class PdfExporter(object):
                                 stage=stage,
                                 component=ammo,
                                 regenerate=False) # No need to regenerate to check for compatibility
-                        except gunsmith.CompatibilityException:
+                        except construction.CompatibilityException:
                             continue
 
                         weapon.removeComponent(
@@ -1523,7 +1361,7 @@ class PdfExporter(object):
                 # external power pack of default weight for each of the types
                 ammoLoadingStages = weapon.stages(
                     sequence=sequence,
-                    componentType=gunsmith.ExternalPowerPackLoadedInterface)
+                    componentType=gunsmith.ExternalPowerPackLoaded)
                 for stage in ammoLoadingStages:
                     compatibleAmmo = weapon.findCompatibleComponents(stage=stage)
                     for ammo in compatibleAmmo:
@@ -1539,16 +1377,16 @@ class PdfExporter(object):
             return # Nothing to do
 
         headerRow = [
-            self._createParagraph(text='Type', style=_TableHeaderNormalStyle),
-            self._createParagraph(text='Range', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Damage', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Loaded\nWeapon\nWeight', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Ammo\nCapacity', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Loaded\nMagazine\nCost', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Loaded\nMagazine\nWeight', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Quickdraw', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Malfunction\nTable DM', style=_TableHeaderCenterStyle),
-            self._createParagraph(text='Traits', style=_TableHeaderNormalStyle)
+            pdf.ParagraphEx(text='Type', style=_TableHeaderNormalStyle),
+            pdf.ParagraphEx(text='Range', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Damage', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Loaded\nWeapon\nWeight', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Ammo\nCapacity', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Loaded\nMagazine\nCost', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Loaded\nMagazine\nWeight', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Quickdraw', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Malfunction\nTable DM', style=_TableHeaderCenterStyle),
+            pdf.ParagraphEx(text='Traits', style=_TableHeaderNormalStyle)
         ]
         tableData = [headerRow]
         tableSpans = []
@@ -1641,8 +1479,8 @@ class PdfExporter(object):
             self,
             weapon: gunsmith.Weapon,
             sequence: str,
-            ammo: gunsmith.AmmoLoadedInterface,
-            magazine: typing.Optional[gunsmith.MagazineLoadedInterface],
+            ammo: gunsmith.AmmoLoaded,
+            magazine: typing.Optional[gunsmith.MagazineLoaded],
             ammoNotes: typing.Mapping[str, typing.Collection[str]],
             baseRowIndex: int
             ) -> typing.Tuple[
@@ -1665,7 +1503,7 @@ class PdfExporter(object):
 
         if magazine:
             typeText = f'Magazine: {magazine.instanceString()}\n{typeText}'
-        typeElement = self._createParagraph(
+        typeElement = pdf.ParagraphEx(
             text=typeText,
             style=_TableDataNormalStyle)
 
@@ -1683,7 +1521,7 @@ class PdfExporter(object):
 
         weaponWeight = weapon.combatWeight()
         weaponWeight = weaponWeight.value()
-        weaponWeightElement = self._createParagraph(
+        weaponWeightElement = pdf.ParagraphEx(
             text=common.formatNumber(number=weaponWeight, decimalPlaces=gunsmith.ConstructionDecimalPlaces),
             style=_TableDataNormalStyle)
 
@@ -1699,7 +1537,7 @@ class PdfExporter(object):
             '-' \
             if math.isclose(magazineCost, 0.0) else \
             common.formatNumber(number=magazineCost, decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-        magazineCostElement = self._createParagraph(
+        magazineCostElement = pdf.ParagraphEx(
             text=magazineCostString,
             style=_TableDataNormalStyle)
 
@@ -1709,7 +1547,7 @@ class PdfExporter(object):
             '-' \
             if math.isclose(magazineWeight, 0.0) else \
             common.formatNumber(number=magazineWeight, decimalPlaces=gunsmith.ConstructionDecimalPlaces)
-        magazineWeightElement = self._createParagraph(
+        magazineWeightElement = pdf.ParagraphEx(
             text=magazineWeightString,
             style=_TableDataNormalStyle)
 
@@ -1747,11 +1585,11 @@ class PdfExporter(object):
         notesList = []
         for rule, notes in ammoNotes.items():
             for note in notes:
-                notesList.append(self._createParagraph(
+                notesList.append(pdf.ParagraphEx(
                     text=f'{rule} - {note}',
                     style=_ListItemStyle))
-        notesRow = [self._createParagraph(text='', style=_TableDataNormalStyle), notesList] + \
-            ([self._createParagraph(text='', style=_TableDataNormalStyle)] * (len(mainRow) - 2))
+        notesRow = [pdf.ParagraphEx(text='', style=_TableDataNormalStyle), notesList] + \
+            ([pdf.ParagraphEx(text='', style=_TableDataNormalStyle)] * (len(mainRow) - 2))
         rows.append(notesRow)
 
         spans = [

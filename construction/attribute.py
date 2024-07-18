@@ -50,7 +50,7 @@ class FlagAttribute(AttributeInterface):
         return None
 
     def calculations(self) -> typing.Iterable[common.ScalarCalculation]:
-        return None
+        return []
 
     def applyModifier(
             self,
@@ -69,7 +69,7 @@ class NumericAttribute(AttributeInterface):
         self._attributeId = attributeId
         self._value = common.Calculator.equals(
             value=value,
-            name=f'{self._attributeId.value} Value')
+            name=f'{self._attributeId.value} Numeric Attribute Value')
 
     def id(self) -> ConstructionAttributeId:
         return self._attributeId
@@ -89,7 +89,7 @@ class NumericAttribute(AttributeInterface):
             ) -> None:
         self._value = common.Calculator.rename(
             value=modifier.applyTo(baseValue=self._value),
-            name=f'{self._attributeId.value} Value')
+            name=f'{self._attributeId.value} Numeric Attribute Value')
 
 class EnumAttribute(AttributeInterface):
     def __init__(
@@ -115,7 +115,7 @@ class EnumAttribute(AttributeInterface):
         valueIndex = self._order.index(value)
         self._numericValue = common.ScalarCalculation(
             value=valueIndex,
-            name=f'{attributeId.value} Value')
+            name=f'{attributeId.value} Enum Attribute Numeric Value')
 
     def id(self) -> ConstructionAttributeId:
         return self._attributeId
@@ -140,7 +140,7 @@ class EnumAttribute(AttributeInterface):
         if isinstance(modifier, construction.ConstantModifier):
             self._numericValue = common.Calculator.rename(
                 value=modifier.applyTo(baseValue=self._numericValue),
-                name=f'{self._attributeId.value} Value')
+                name=f'{self._attributeId.value} Enum Attribute Numeric Value')
         elif isinstance(modifier, construction.PercentageModifier):
             raise RuntimeError(f'Unable to add percentage modifier to Enum attribute {self._attributeId.name}')
         elif isinstance(modifier, construction.MultiplierModifier):
@@ -161,11 +161,11 @@ class DiceRollAttribute(AttributeInterface):
         self._roll = common.DiceRoll(
             count=common.Calculator.equals(
                 value=roll.dieCount(),
-                name=f'{attributeId.value} Die Count'),
+                name=f'{attributeId.value} Dice Roll Attribute Dice Count'),
             type=roll.dieType(),
             constant=common.Calculator.equals(
                 value=roll.constant(),
-                name=f'{attributeId.value} Constant'))
+                name=f'{attributeId.value} Dice Roll Attribute Constant'))
 
     def id(self) -> ConstructionAttributeId:
         return self._attributeId
@@ -206,7 +206,7 @@ class AttributesGroup(object):
     def attribute(
             self,
             attributeId: ConstructionAttributeId
-            ) -> typing.Optional[typing.Union[common.ScalarCalculation, common.DiceRoll, enum.Enum]]:
+            ) -> typing.Optional[AttributeInterface]:
         assert(isinstance(attributeId, ConstructionAttributeId))
         return self._attributes.get(attributeId)
 

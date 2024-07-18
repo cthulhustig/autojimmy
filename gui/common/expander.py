@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import typing
@@ -8,6 +9,11 @@ from PyQt5 import QtWidgets, QtCore
 
 class ExpanderWidget(QtWidgets.QWidget):
     expansionChanged = QtCore.pyqtSignal([bool, bool])
+
+    _LeftContentMargin = 20
+    _RightContentMargin = 5
+    _TopContentMargin = 5
+    _BottomContentMargin = 5
 
     def __init__(
             self,
@@ -51,6 +57,7 @@ class ExpanderWidget(QtWidgets.QWidget):
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'minimumHeight'))
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self, b'maximumHeight'))
         self._toggleAnimation.addAnimation(QtCore.QPropertyAnimation(self._contentArea, b'maximumHeight'))
+        self._toggleAnimation.finished.connect(self._animationFinished)
 
         # don't waste space
         self._mainLayout = QtWidgets.QGridLayout()
@@ -85,6 +92,12 @@ class ExpanderWidget(QtWidgets.QWidget):
         if isinstance(content, QtWidgets.QWidget):
             # This layout intentionally keeps the default padding to indent the widget a little
             layout = QtWidgets.QVBoxLayout()
+            interfaceScale = app.Config.instance().interfaceScale()
+            layout.setContentsMargins(
+                int(ExpanderWidget._LeftContentMargin * interfaceScale),
+                int(ExpanderWidget._TopContentMargin * interfaceScale),
+                int(ExpanderWidget._RightContentMargin * interfaceScale),
+                int(ExpanderWidget._BottomContentMargin * interfaceScale))
             layout.addWidget(content)
         elif isinstance(content, QtWidgets.QLayout):
             layout = content
@@ -151,6 +164,10 @@ class ExpanderWidget(QtWidgets.QWidget):
             self.setMaximumHeight(requiredHeight)
             self.setMinimumHeight(requiredHeight)
             self._contentArea.setMaximumHeight(contentHeight)
+            # Hide the content area (and therefore the content) if the widget is
+            # being collapsed. This is important as it makes tab order
+            # automatically skip any widgets that have been collapsed.
+            self._contentArea.setHidden(not expanded)
 
     def _startAnimation(
             self,
@@ -172,6 +189,17 @@ class ExpanderWidget(QtWidgets.QWidget):
         self._toggleAnimation.setDirection(
             QtCore.QAbstractAnimation.Direction.Forward if expanding else QtCore.QAbstractAnimation.Direction.Backward)
         self._toggleAnimation.start()
+
+        # Show the content area if the widget is being expanded. See the note in
+        # _updateState for why this is important
+        if expanding:
+            self._contentArea.setHidden(False)
+
+    def _animationFinished(self) -> None:
+        # Hide the content area if the widget has been collapsed. See the note in
+        # _updateState for why this is important
+        if not self.isExpanded():
+            self._contentArea.setHidden(True)
 
     def _updateContentHeight(self) -> None:
         # The content height has changed. If the expander is expanded then update its height to
@@ -596,7 +624,7 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
                 expanded = storedState
 
         return super()._insertExpandingContent(index, label, content, expanded, stretch, alignment)
-    
+
     def _expansionChanged(
             self,
             expanded: bool,
@@ -605,11 +633,11 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
         super()._expansionChanged(expanded, animated)
 
         expander = self.sender()
-        assert(isinstance(expander, ExpanderWidget))        
+        assert(isinstance(expander, ExpanderWidget))
         self._updateExpansionState(
             content=expander.content(),
             expanded=expanded)
-    
+
     def _silentlyUpdateExpander(
             self,
             expander: ExpanderWidget,
@@ -617,10 +645,10 @@ class ExpanderGroupWidgetEx(ExpanderGroupWidget):
             animated: bool
             ) -> None:
         super()._silentlyUpdateExpander(expander, expanded, animated)
- 
+
         self._updateExpansionState(
             content=expander.content(),
-            expanded=expanded)        
+            expanded=expanded)
 
     def _updateExpansionState(
             self,

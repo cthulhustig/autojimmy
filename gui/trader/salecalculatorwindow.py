@@ -433,7 +433,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         total = 0
         for salePrice in self._salePricesTable.cargoRecords():
             total += salePrice.totalPrice().value()
-        self._totalSalePriceLabel.setText('Cr' + common.formatNumber(number=total))
+        self._totalSalePriceLabel.setText(common.formatNumber(number=total, infix='Cr'))
 
     def _loadCargoRecordsPrompt(self) -> typing.Optional[typing.Iterable[logic.CargoRecord]]:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(

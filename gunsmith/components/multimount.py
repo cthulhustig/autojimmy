@@ -3,7 +3,7 @@ import construction
 import gunsmith
 import typing
 
-class MultiMount(gunsmith.MultiMountInterface):
+class MultiMount(gunsmith.WeaponComponentInterface):
     """
     Multi-Mount
     - Quickdraw: -1 per barrel
@@ -136,18 +136,11 @@ class MultiMount(gunsmith.MultiMountInterface):
         # Only compatible with weapons that have a receiver. All sequences are checked as it
         # should be enabled if any weapon has one
         return context.hasComponent(
-            componentType=gunsmith.ReceiverInterface,
+            componentType=gunsmith.Receiver,
             sequence=None)
 
     def options(self) -> typing.List[construction.ComponentOption]:
         return [self._weaponCountOption, self._quickdrawModifierOption]
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
 
     def createSteps(
             self,
@@ -310,7 +303,7 @@ class MultiMount(gunsmith.MultiMountInterface):
             sequence=sequence,
             step=step)
 
-class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
+class MultiMountLoaded(gunsmith.WeaponComponentInterface):
     # NOTE: This component is a hack used to multiply the cost of the loaded magazine/ammo cost and
     # weight by the number of multi-mounted weapons
     def __init__(self) -> None:
@@ -333,21 +326,11 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
         # Only compatible with weapons that have an magazine or ammunition loaded
         return context.hasComponent(
             sequence=sequence,
-            componentType=gunsmith.MagazineLoadedInterface) \
+            componentType=gunsmith.MagazineLoaded) \
             or \
             context.hasComponent(
                 sequence=sequence,
-                componentType=gunsmith.AmmoLoadedInterface)
-
-    def options(self) -> typing.List[construction.ComponentOption]:
-        return []
-
-    def updateOptions(
-            self,
-            sequence: str,
-            context: gunsmith.WeaponContext
-            ) -> None:
-        pass
+                componentType=gunsmith.AmmoLoaded)
 
     def createSteps(
             self,
@@ -356,8 +339,8 @@ class MultiMountLoaded(gunsmith.MultiMountLoadedInterface):
             ) -> None:
         multiMount = context.findFirstComponent(
             sequence=sequence,
-            componentType=gunsmith.MultiMountInterface)
-        assert(isinstance(multiMount, gunsmith.MultiMountInterface))
+            componentType=gunsmith.MultiMount)
+        assert(isinstance(multiMount, gunsmith.MultiMount))
         weaponCount = common.ScalarCalculation(
             value=multiMount.weaponCount(),
             name='Multi-Mount Weapon Count')
