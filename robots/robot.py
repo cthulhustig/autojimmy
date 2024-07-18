@@ -7,62 +7,6 @@ import traveller
 import typing
 import uuid
 
-# NOTE: This maps skills to the characteristic that gives the DM
-# modifier. The values come from the table on p74
-_SkillCharacteristicMap = {
-    traveller.AdminSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.AdvocateSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.AnimalsSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.ArtSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.AstrogationSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.AthleticsSkillDefinition: {
-        traveller.AthleticsSkillSpecialities.Dexterity: traveller.Characteristics.Dexterity,
-        traveller.AthleticsSkillSpecialities.Endurance: None, # No characteristic modifier for Endurance
-        traveller.AthleticsSkillSpecialities.Strength: traveller.Characteristics.Strength,
-    },
-    traveller.BrokerSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.CarouseSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.DeceptionSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.DiplomatSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.DriveSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.ElectronicsSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.EngineerSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.ExplosivesSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.FlyerSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.GamblerSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.GunCombatSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.GunnerSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.HeavyWeaponsSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.InvestigateSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.JackOfAllTradesSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.LanguageSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.LeadershipSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.MechanicSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.MedicSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.MeleeSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.NavigationSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.PersuadeSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.PilotSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.ProfessionSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.ReconSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.ScienceSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.SeafarerSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.StealthSkillDefinition: traveller.Characteristics.Dexterity,
-    traveller.StewardSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.StreetwiseSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.SurvivalSkillDefinition: traveller.Characteristics.Intellect,
-    traveller.TacticsSkillDefinition: traveller.Characteristics.Intellect,
-    # Vacc Suit isn't included in the list of skills on p74. The fact it
-    # uses Intellect is based on the fact the example use of the skill in
-    # the core rules use EDU which is INT for a robot
-    traveller.VaccSuitSkillDefinition: traveller.Characteristics.Intellect,
-    # Jack of all trades is needed for Brain in a Jar
-    traveller.JackOfAllTradesSkillDefinition: None,
-    # Non-standard skills added for robot construction
-    robots.RobotVehicleSkillDefinition: traveller.Characteristics.Dexterity,
-    robots.RobotWeaponSkillDefinition: traveller.Characteristics.Dexterity,
-}
-
 class _RobotSequenceState(construction.SequenceState):
     def __init__(
             self,
@@ -1046,14 +990,14 @@ class Robot(construction.ConstructableInterface):
             # Characteristic modifiers aren't applied for this skill
             return level
 
-        characteristic = _SkillCharacteristicMap[skill.skillDef()]
-        if isinstance(characteristic, dict):
-            characteristic = characteristic.get(speciality)
+        characteristic = robots.skillToCharacteristic(
+            skillDef=skill.skillDef(),
+            speciality=speciality)
         if not characteristic:
             # There is no applicable robot characteristic for this skill
             return level
 
-        if characteristic == traveller.Characteristics.Intellect:
+        if characteristic == traveller.Characteristic.Intellect:
             characteristicValue = self.attributeValue(
                 attributeId=robots.RobotAttributeId.INT)
             if not characteristicValue:
@@ -1066,7 +1010,7 @@ class Robot(construction.ConstructableInterface):
                 if isinstance(manipulator, robots.RemoveBaseManipulator):
                     continue
                 assert(isinstance(manipulator, robots.Manipulator))
-                if characteristic == traveller.Characteristics.Strength:
+                if characteristic == traveller.Characteristic.Strength:
                     manipulatorValue = manipulator.strength()
                 else:
                     manipulatorValue = manipulator.dexterity()

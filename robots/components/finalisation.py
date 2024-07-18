@@ -747,7 +747,8 @@ class Finalisation(robots.RobotComponentInterface):
     _AutopilotVehicleSkills = [
         traveller.DriveSkillDefinition,
         traveller.FlyerSkillDefinition,
-        robots.RobotVehicleSkillDefinition
+        traveller.SeafarerSkillDefinition,
+        traveller.PilotSkillDefinition
     ]
 
     # These are the sensor components that require an Electronics skill
@@ -1088,7 +1089,7 @@ class Finalisation(robots.RobotComponentInterface):
 
         step = robots.RobotStep(
             name='Autopilot',
-            type='Skills',
+            type='Trait',
             notes=[Finalisation._AutopilotNote])
         context.applyStep(
             sequence=sequence,

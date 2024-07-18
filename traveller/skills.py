@@ -11,7 +11,7 @@ class SkillDefinition(object):
             self,
             skillName: str,
             skillType: SkillType,
-            fixedSpecialities: typing.Optional[enum.Enum] = None,
+            fixedSpecialities: typing.Optional[typing.Type[enum.Enum]] = None,
             customSpecialities: typing.Optional[typing.Iterable[str]] = None
             ) -> None:
         self._skillName = skillName
@@ -49,7 +49,7 @@ class SkillDefinition(object):
     def isCustomSpeciality(self) -> bool:
         return self._skillType == SkillDefinition.SkillType.CustomSpeciality
 
-    def fixedSpecialities(self) -> enum.Enum:
+    def fixedSpecialities(self) -> typing.Type[enum.Enum]:
         return self._fixedSpecialities
 
     def customSpecialities(self) -> typing.Iterable[str]:

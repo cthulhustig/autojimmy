@@ -51,7 +51,7 @@ _WelcomeMessage = """
     robot worksheet {name} displays compared to the book. Common reasons for
     this are:
     <ul style="margin-left:15px; -qt-list-indent:0;">
-    <li>As mentioned above, the Robots Handbook includes characteristic DMs
+    <li>As previously stated, the Robots Handbook includes characteristic DMs
     in the final skill levels it shows for a robot, whereas Auto-Jimmy doesn't
     do this by default.</li>
     <li>The Robots Handbook doesn't make it clear when information in a robot's
@@ -70,6 +70,13 @@ _WelcomeMessage = """
     Robots Handbook doesn't, an example of this is showing speeds and endurance
     values for primary & secondary locomotions and vehicle speed movement if the
     robot has them.</li>
+    <li>As mentioned above, some of the rules have been clarified by the Robot
+    Handbooks author. {name} is implemented based on these clarifications so
+    some of the rules it uses might not match exactly with how they appear in
+    the book.</li>
+    <li>For some skills granted by hardware, the rules explicitly state that
+    characteristic DMs don't apply. An example of this would be the Recon skill
+    granted by the Recon (p58).</li>
     <li>Some of the robots in the Robot Handbook don't seem to follow the rules
     as written. For example, Ultra (p258) has Camouflage: Visual Concealment
     (p31) and Solar Coating (p33) but the rules say those components are

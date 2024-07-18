@@ -2,7 +2,7 @@ import common
 import enum
 import typing
 
-class Characteristics(enum.Enum):
+class Characteristic(enum.Enum):
     Strength = 'STR'
     Dexterity = 'DEX'
     Endurance = 'END'
@@ -34,7 +34,7 @@ def characteristicDM(level: int) -> int:
 class CharacteristicDMFunction(common.CalculatorFunction):
     def __init__(
             self,
-            characteristic: Characteristics,
+            characteristic: Characteristic,
             level: common.ScalarCalculation
             ) -> None:
         self._characteristic = characteristic

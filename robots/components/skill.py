@@ -50,9 +50,6 @@ class _SkillData(object):
     - Requirement: A robot can't have a skill that requires more bandwidth than
     its Inherent Bandwidth (p67)
     """
-    # NOTE: This assumes that the robot at least meets the TL and bandwidth
-    # requirements for the skill at level 0. This should be enforced by the
-    # skill components
     # NOTE: This shouldn't be used for Brain in a Jar as it has no max skill
     # level
     # NOTE: Inherent bandwidth is optional as it's not obvious that it applies
@@ -60,12 +57,13 @@ class _SkillData(object):
     # rules just say you can install a package up to level 1 (p71). It does
     # say the skill is subject to the limitations of the brain but that seems
     # to be talking about modifiers to skill checks not compatibility.
-
     def calculateMaxSkillLevel(
             self,
             robotTL: common.ScalarCalculation,
             inherentBandwidth: typing.Optional[common.ScalarCalculation] = None
-            ) -> common.ScalarCalculation:
+            ) -> typing.Optional[common.ScalarCalculation]:
+        if robotTL.value() < self._minTL.value():
+            return None
         maxLevel = common.Calculator.subtract(
             lhs=robotTL,
             rhs=self._minTL,
@@ -161,6 +159,36 @@ def _stacksWithHardware(
         speciality: typing.Optional[str] = None
         ) -> bool:
     return  skillDef != traveller.NavigationSkillDefinition
+
+def _calculateMaxSkillLevels(
+        context: robots.RobotContext,
+        sequence: str,
+        skills: typing.Optional[typing.Iterable[traveller.SkillDefinition]] = None
+        ) -> typing.Mapping[traveller.SkillDefinition, common.ScalarCalculation]:
+    robotTL = common.ScalarCalculation(
+        value=context.techLevel(),
+        name='Robot TL')
+    inherentBandwidth = context.attributeValue(
+        attributeId=robots.RobotAttributeId.InherentBandwidth,
+        sequence=sequence)
+    if isinstance(inherentBandwidth, common.ScalarCalculation):
+        return {}
+
+    if not skills:
+        skills = _SkillDefDataMap.keys()
+    skillMap = {}
+    for skillDef in skills:
+        assert(isinstance(skillDef, traveller.SkillDefinition))
+        skillData = _SkillDefDataMap.get(skillDef)
+        if not skillData:
+            continue
+        maxSkillLevel = skillData.calculateMaxSkillLevel(
+            robotTL=robotTL,
+            inherentBandwidth=inherentBandwidth)
+        if maxSkillLevel:
+            skillMap[skillDef] = maxSkillLevel
+
+    return skillMap
 
 
 #  ███████████                     █████
@@ -354,14 +382,119 @@ class HomingPrimitiveSkillPackage(PrimitiveSkillPackage):
     - Skill: Weapon 1
     - Option: Need something to select which Weapon skill this gives
     """
+    # NOTE: The rules aren't clear what it means for a robot to have the Weapon
+    # skill. I think the intention it's intended to have a single mounted
+    # weapon, or at least mounted weapons all of the same basic class. With the
+    # package giving the robot the skill needed to use that class of weapon.
+    # This is a little ambiguous for robots with weapons of different types but
+    # but I suspect in practice such a robot is unlikely to exist as there would
+    # be no way of giving it the skills to use two classes of weapon. I've gone
+    # with the approach that the user can select what weapon skill they want the
+    # robot to have as it gives the most flexibility.
+
+    _WeaponSkills = [
+        traveller.GunCombatSkillDefinition,
+        traveller.HeavyWeaponsSkillDefinition,
+        traveller.MeleeSkillDefinition
+        ]
+
     _WeaponSkillLevel = common.ScalarCalculation(
         value=1,
-        name='Primitive Homing Package Weapon Skill Level')
+        name='Primitive (Homing) Skill Package Weapon Skill Level')
 
     def __init__(self) -> None:
-        super().__init__(
-            componentName='Homing',
-            skills=[(robots.RobotWeaponSkillDefinition, None, 1)])
+        super().__init__(componentName='Homing')
+
+        self._combatSkillOption = construction.StringOption(
+            id='WeaponSkill',
+            name='Weapon Skill',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon skill granted by the skill package')
+
+        self._specialityOption = construction.StringOption(
+            id='WeaponSpeciality',
+            name='Speciality',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon skill speciality granted by the skill package')
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._combatSkillOption)
+        options.append(self._specialityOption)
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        self._combatSkillOption.setChoices(
+            choices=[s.name() for s in HomingPrimitiveSkillPackage._WeaponSkills])
+
+        skillData = self._selectedSkill()
+        specialityChoices = []
+        if skillData:
+            skillDef = skillData.skillDef()
+            if skillDef.isFixedSpeciality():
+                specialityChoices = [s.value for s in skillDef.fixedSpecialities()]
+            elif skillDef.isCustomSpeciality():
+                specialityChoices = skillDef.customSpecialities()
+        self._specialityOption.setChoices(choices=specialityChoices)
+        self._specialityOption.setEnabled(len(specialityChoices) > 0)
+
+    def _createStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> robots.RobotStep:
+        step = super()._createStep(sequence=sequence, context=context)
+
+        skillData = self._selectedSkill()
+        if skillData:
+            skillDef = skillData.skillDef()
+            speciality = self._selectedSpeciality()
+
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=skillDef,
+                speciality=speciality,
+                levels=HomingPrimitiveSkillPackage._WeaponSkillLevel,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
+
+        return step
+
+    def _selectedSkill(self) -> typing.Optional[_SkillData]:
+        skillName = self._combatSkillOption.value() if self._combatSkillOption.isEnabled() else None
+        if not skillName:
+            return None
+        return _SkillNameMap.get(skillName)
+
+    def _selectedSpeciality(self) -> typing.Optional[typing.Union[enum.Enum, str]]:
+        specialityName = self._specialityOption.value() if self._specialityOption.isEnabled() else None
+        if not specialityName:
+            return None
+        assert(isinstance(specialityName, str))
+
+        skillData = self._selectedSkill()
+        if not skillData:
+            return None
+        skillDef = skillData.skillDef()
+        if skillDef.isFixedSpeciality():
+            for speciality in skillDef.fixedSpecialities():
+                assert(isinstance(speciality, enum.Enum))
+                if specialityName == speciality.value:
+                    return speciality
+        elif skillDef.isCustomSpeciality():
+            return specialityName
+
+        return None
 
 class BasicSkillPackage(SkillPackage):
     """
@@ -564,6 +697,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
         for isPrimary in [True, False]:
             skillData = self._selectedSkill(isPrimary=isPrimary)
             if skillData:
+                skillDef = skillData.skillDef()
                 speciality = self._selectedSpeciality(isPrimary=isPrimary)
                 level = self._selectedLevel(isPrimary=isPrimary)
                 hasSkill = True
@@ -571,7 +705,16 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                 bandwidths.append(
                     skillData.calculateBandwidthForLevel(level=level))
 
-                skillDef = skillData.skillDef()
+                # The rules say that, for the skills installed on a basic none
+                # brain, negative characteristic DMs should be applied for INT
+                # based skills but not DEX (and I assume STR) based ones (p71).
+                characteristic = robots.skillToCharacteristic(
+                    skillDef=skillDef,
+                    speciality=speciality)
+                flags = construction.SkillFlags.ApplyPositiveCharacteristicModifier
+                if characteristic == traveller.Characteristic.Intellect:
+                    flags |= construction.SkillFlags.ApplyNegativeCharacteristicModifier
+
                 stacks = _stacksWithHardware(
                     skillDef=skillDef,
                     speciality=speciality)
@@ -579,6 +722,7 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                     skillDef=skillDef,
                     speciality=speciality,
                     levels=level,
+                    flags=flags,
                     stacks=stacks))
 
         totalBandwidth = common.Calculator.sum(
@@ -711,8 +855,30 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
     Autopilot and Vehicle Skill don't stack (p49)
     - Requirement: Requires some form of locomotion
     """
+    # NOTE: The rules are a bit confusing when a robot can take the locomotion
+    # skill package and what skills they can get from it. They say the the
+    # package is usually installed on robots with VSM, but they don't say that
+    # has to be the case (p70). The also say it gives the robot a skill in it's
+    # vehicle class (p71). For this later point I assume this is intended to be
+    # based on its primary locomotion, however that seems ambiguous for some
+    # forms of locomotion. It's pretty obvious for Wheels, Tracks, Grav, Walker,
+    # Aeroplane & Hovercraft as they have either exact or very obvious mappings
+    # to skill specialities. VTOL and Aquatic are ambiguous as pretty much any
+    # of the Flyer/Seafarer specialities could be applicable. Thruster's is just
+    # a complete odd ball as it's not obvious any of the standard skills would
+    # be applicable, my best guess would be one of the Flyer or Pilot skills but
+    # it would really depend on how the thrust was actually being used to propel
+    # the robot. As it's so ambiguous I've chosen to just give the user free
+    # choice from all the vehicle related skills for all locomotion types.
     # NOTE: The note about Autopilot and vehicle skills not stacking is handled
     # by a note added in finalisation
+
+    _VehicleSkills = [
+        traveller.DriveSkillDefinition,
+        traveller.FlyerSkillDefinition,
+        traveller.SeafarerSkillDefinition,
+        traveller.PilotSkillDefinition
+        ]
 
     _DefaultAgilityModifier = common.ScalarCalculation(
         value=0,
@@ -722,6 +888,22 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
 
     def __init__(self) -> None:
         super().__init__(componentName='Locomotion')
+
+        self._vehicleSkillOption = construction.StringOption(
+            id='VehicleSkill',
+            name='Vehicle Skill',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the vehicle skill granted by the skill package')
+
+        self._specialityOption = construction.StringOption(
+            id='VehicleSpeciality',
+            name='Speciality',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the vehicle skill speciality granted by the skill package')
 
     def isCompatible(
             self,
@@ -741,6 +923,34 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
                 break
         return hasCompatibleLocomotion
 
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._vehicleSkillOption)
+        if self._specialityOption.isEnabled():
+            options.append(self._specialityOption)
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        self._vehicleSkillOption.setChoices(
+            choices=[s.name() for s in LocomotionBasicSkillPackage._VehicleSkills])
+
+        skillData = self._selectedSkill()
+        specialityChoices = []
+        if skillData:
+            skillDef = skillData.skillDef()
+            if skillDef.isFixedSpeciality():
+                specialityChoices = [s.value for s in skillDef.fixedSpecialities()]
+            elif skillDef.isCustomSpeciality():
+                specialityChoices = skillDef.customSpecialities()
+        self._specialityOption.setChoices(choices=specialityChoices)
+        self._specialityOption.setEnabled(len(specialityChoices) > 0)
+
     def _createStep(
             self,
             sequence: str,
@@ -757,18 +967,53 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
         else:
             agilityModifier = LocomotionBasicSkillPackage._DefaultAgilityModifier
 
-        step.addFactor(factor=construction.SetSkillFactor(
-            skillDef=robots.RobotVehicleSkillDefinition,
-            levels=agilityModifier,
-            # Set flags for no negative modifiers
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
-            stacks=_stacksWithHardware(skillDef=robots.RobotVehicleSkillDefinition)))
+        skillData = self._selectedSkill()
+        if skillData:
+            skillDef = skillData.skillDef()
+            speciality = self._selectedSpeciality()
+            skillLevel = common.Calculator.equals(
+                value=agilityModifier,
+                name=f'{self.componentString()} Vehicle Skill Level')
+
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=skillDef,
+                speciality=speciality,
+                levels=skillLevel,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
         if agilityModifier.value() != 0:
             step.addNote(note=LocomotionBasicSkillPackage._AthleticsNote.format(
                 agility=agilityModifier.value()))
 
         return step
+
+    def _selectedSkill(self) -> typing.Optional[_SkillData]:
+        skillName = self._vehicleSkillOption.value() if self._vehicleSkillOption.isEnabled() else None
+        if not skillName:
+            return None
+        return _SkillNameMap.get(skillName)
+
+    def _selectedSpeciality(self) -> typing.Optional[typing.Union[enum.Enum, str]]:
+        specialityName = self._specialityOption.value() if self._specialityOption.isEnabled() else None
+        if not specialityName:
+            return None
+        assert(isinstance(specialityName, str))
+
+        skillData = self._selectedSkill()
+        if not skillData:
+            return None
+        skillDef = skillData.skillDef()
+        if skillDef.isFixedSpeciality():
+            for speciality in skillDef.fixedSpecialities():
+                assert(isinstance(speciality, enum.Enum))
+                if specialityName == speciality.value:
+                    return speciality
+        elif skillDef.isCustomSpeciality():
+            return specialityName
+
+        return None
 
 class ReconBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
@@ -787,18 +1032,66 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
     - Trait: Alarm
     - Option: Need something to select which Weapon skill this gives
     """
+    # NOTE: See note on HomingPrimitiveSkillPackage for details on now the
+    # Weapon skill is handled
+
+    _WeaponSkills = [
+        traveller.GunCombatSkillDefinition,
+        traveller.HeavyWeaponsSkillDefinition,
+        traveller.MeleeSkillDefinition
+        ]
+
     _WeaponSkillLevel = common.ScalarCalculation(
         value=1,
-        name='Primitive Homing Package Weapon Skill Level')
-    _TacticsSkillLevel = common.ScalarCalculation(
-        value=1,
-        name='Primitive Homing Package Tactics (Military) Skill Level')
+        name='Security (Basic) Skill Package Weapon Skill Level')
 
     def __init__(self) -> None:
         super().__init__(
             componentName='Security',
-            skills=[(robots.RobotWeaponSkillDefinition, None, 1),
-                    (traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
+            skills=[(traveller.TacticsSkillDefinition, traveller.TacticsSkillSpecialities.Military, 1)])
+
+        self._combatSkillOption = construction.StringOption(
+            id='WeaponSkill',
+            name='Weapon Skill',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon skill granted by the skill package')
+
+        self._specialityOption = construction.StringOption(
+            id='WeaponSpeciality',
+            name='Speciality',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon skill speciality granted by the skill package')
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._combatSkillOption)
+        options.append(self._specialityOption)
+        return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        self._combatSkillOption.setChoices(
+            choices=[s.name() for s in SecurityBasicSkillPackage._WeaponSkills])
+
+        skillData = self._selectedSkill()
+        specialityChoices = []
+        if skillData:
+            skillDef = skillData.skillDef()
+            if skillDef.isFixedSpeciality():
+                specialityChoices = [s.value for s in skillDef.fixedSpecialities()]
+            elif skillDef.isCustomSpeciality():
+                specialityChoices = skillDef.customSpecialities()
+        self._specialityOption.setChoices(choices=specialityChoices)
+        self._specialityOption.setEnabled(len(specialityChoices) > 0)
 
     def _createStep(
             self,
@@ -807,10 +1100,49 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
             ) -> robots.RobotStep:
         step = super()._createStep(sequence=sequence, context=context)
 
+        skillData = self._selectedSkill()
+        if skillData:
+            skillDef = skillData.skillDef()
+            speciality = self._selectedSpeciality()
+
+            step.addFactor(factor=construction.SetSkillFactor(
+                skillDef=skillDef,
+                speciality=speciality,
+                levels=SecurityBasicSkillPackage._WeaponSkillLevel,
+                # Set flags for no negative modifiers
+                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
+
         step.addFactor(factor=construction.SetAttributeFactor(
             attributeId=robots.RobotAttributeId.Alarm))
 
         return step
+
+    def _selectedSkill(self) -> typing.Optional[_SkillData]:
+        skillName = self._combatSkillOption.value() if self._combatSkillOption.isEnabled() else None
+        if not skillName:
+            return None
+        return _SkillNameMap.get(skillName)
+
+    def _selectedSpeciality(self) -> typing.Optional[typing.Union[enum.Enum, str]]:
+        specialityName = self._specialityOption.value() if self._specialityOption.isEnabled() else None
+        if not specialityName:
+            return None
+        assert(isinstance(specialityName, str))
+
+        skillData = self._selectedSkill()
+        if not skillData:
+            return None
+        skillDef = skillData.skillDef()
+        if skillDef.isFixedSpeciality():
+            for speciality in skillDef.fixedSpecialities():
+                assert(isinstance(speciality, enum.Enum))
+                if specialityName == speciality.value:
+                    return speciality
+        elif skillDef.isCustomSpeciality():
+            return specialityName
+
+        return None
 
 class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
@@ -884,34 +1216,72 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
     """
     # NOTE: The table on p70 doesn't have Recon 0 but the description on
     # p72 does
+    # NOTE: See note on HomingPrimitiveSkillPackage for details on now the
+    # Weapon skill is handled
 
-    class _CombatSkills(enum.Enum):
-        Explosives = 'Explosives'
-        Weapon = 'Weapon'
+    _CombatSkills = [
+        traveller.ExplosivesSkillDefinition,
+        traveller.GunCombatSkillDefinition,
+        traveller.HeavyWeaponsSkillDefinition,
+        traveller.MeleeSkillDefinition
+        ]
 
     _CombatSkillLevel = common.ScalarCalculation(
         value=1,
-        name='Target Basic Skill Package Combat Skill Level')
+        name='Basic (Target) Skill Package Combat Skill Level')
 
     _SelfDestructExplosivesSkillLevel = common.ScalarCalculation(
         value=0,
-        name='Target Basic Skill Package Self Destruct Explosives Skill')
+        name='Basic (Target) Skill Package Self Destruct Explosives Skill')
 
     def __init__(self) -> None:
         super().__init__(
             componentName='Target',
             skills=[(traveller.ReconSkillDefinition, None, 0)])
 
-        self._combatSkillOption = construction.EnumOption(
+        self._combatSkillOption = construction.StringOption(
             id='CombatSkill',
             name='Combat Skill',
-            type=TargetBasicSkillPackage._CombatSkills,
-            description='Specify the combat skill granted by the Target Basic Skill Package')
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the combat skill granted by the skill package')
+
+        self._specialityOption = construction.StringOption(
+            id='CombatSpeciality',
+            name='Speciality',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the combat skill speciality granted by the skill package')
 
     def options(self) -> typing.List[construction.ComponentOption]:
         options = super().options()
         options.append(self._combatSkillOption)
+        if self._specialityOption.isEnabled():
+            options.append(self._specialityOption)
         return options
+
+    def updateOptions(
+            self,
+            sequence: str,
+            context: construction.ConstructionContext
+            ) -> None:
+        super().updateOptions(sequence, context)
+
+        self._combatSkillOption.setChoices(
+            choices=[s.name() for s in TargetBasicSkillPackage._CombatSkills])
+
+        skillData = self._selectedSkill()
+        specialityChoices = []
+        if skillData:
+            skillDef = skillData.skillDef()
+            if skillDef.isFixedSpeciality():
+                specialityChoices = [s.value for s in skillDef.fixedSpecialities()]
+            elif skillDef.isCustomSpeciality():
+                specialityChoices = skillDef.customSpecialities()
+        self._specialityOption.setChoices(choices=specialityChoices)
+        self._specialityOption.setEnabled(len(specialityChoices) > 0)
 
     def _createStep(
             self,
@@ -920,35 +1290,58 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
             ) -> robots.RobotStep:
         step = super()._createStep(sequence=sequence, context=context)
 
-        combatSkill = self._combatSkillOption.value()
-        assert(isinstance(combatSkill, TargetBasicSkillPackage._CombatSkills))
+        skillData = self._selectedSkill()
+        if skillData:
+            skillDef = skillData.skillDef()
+            speciality = self._selectedSpeciality()
 
-        if combatSkill == TargetBasicSkillPackage._CombatSkills.Explosives:
             step.addFactor(factor=construction.SetSkillFactor(
-                skillDef=traveller.ExplosivesSkillDefinition,
+                skillDef=skillDef,
+                speciality=speciality,
                 levels=TargetBasicSkillPackage._CombatSkillLevel,
                 # Set flags for no negative modifiers
                 flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
-                stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
-        elif combatSkill == TargetBasicSkillPackage._CombatSkills.Weapon:
-            step.addFactor(factor=construction.SetSkillFactor(
-                skillDef=robots.RobotWeaponSkillDefinition,
-                levels=TargetBasicSkillPackage._CombatSkillLevel,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
-                stacks=_stacksWithHardware(skillDef=robots.RobotWeaponSkillDefinition)))
+                stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
-            if context.hasComponent(
+            if skillDef != traveller.ExplosivesSkillDefinition:
+                hasSelfDestruct = context.hasComponent(
                     componentType=robots.SelfDestructSystemSlotOption,
-                    sequence=sequence):
-                step.addFactor(factor=construction.SetSkillFactor(
-                    skillDef=traveller.ExplosivesSkillDefinition,
-                    levels=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
-                    # Set flags for no negative modifiers
-                    flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
-                    stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
+                    sequence=sequence)
+                if hasSelfDestruct:
+                    step.addFactor(factor=construction.SetSkillFactor(
+                        skillDef=traveller.ExplosivesSkillDefinition,
+                        levels=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
+                        # Set flags for no negative modifiers
+                        flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                        stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
 
         return step
+
+    def _selectedSkill(self) -> typing.Optional[_SkillData]:
+        skillName = self._combatSkillOption.value() if self._combatSkillOption.isEnabled() else None
+        if not skillName:
+            return None
+        return _SkillNameMap.get(skillName)
+
+    def _selectedSpeciality(self) -> typing.Optional[typing.Union[enum.Enum, str]]:
+        specialityName = self._specialityOption.value() if self._specialityOption.isEnabled() else None
+        if not specialityName:
+            return None
+        assert(isinstance(specialityName, str))
+
+        skillData = self._selectedSkill()
+        if not skillData:
+            return None
+        skillDef = skillData.skillDef()
+        if skillDef.isFixedSpeciality():
+            for speciality in skillDef.fixedSpecialities():
+                assert(isinstance(speciality, enum.Enum))
+                if specialityName == speciality.value:
+                    return speciality
+        elif skillDef.isCustomSpeciality():
+            return specialityName
+
+        return None
 
 class HunterKillerSkillPackage(SkillPackage):
     """
