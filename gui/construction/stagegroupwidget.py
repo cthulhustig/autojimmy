@@ -564,9 +564,11 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.BooleanOption
             ) -> None:
         try:
-            option.setValue(value=widget.isChecked())
-            self.componentChanged.emit()
-            self._updateOptionControls()
+            newValue = widget.isChecked()
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
@@ -581,9 +583,11 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.StringOption
             ) -> None:
         try:
-            option.setValue(value=widget.text())
-            self.componentChanged.emit()
-            self._updateOptionControls()
+            newValue = widget.text()
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
@@ -598,12 +602,13 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.StringOption
             ) -> None:
         try:
-            value = widget.currentText()
-            if option.isOptional() and value == _ComponentConfigWidget._NonePlaceholder:
-                value = None
-            option.setValue(value=value)
-            self.componentChanged.emit()
-            self._updateOptionControls()
+            newValue = widget.currentText()
+            if option.isOptional() and newValue == _ComponentConfigWidget._NonePlaceholder:
+                newValue = None
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
@@ -618,9 +623,11 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.IntegerOption
             ) -> None:
         try:
-            option.setValue(value=widget.value())
-            self.componentChanged.emit()
-            self._updateOptionControls()
+            newValue = widget.value()
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
@@ -638,9 +645,11 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             if widget.currentIndex() < 0:
                 return # There is no current selection so nothing to do
 
-            option.setValue(value=widget.currentData(QtCore.Qt.ItemDataRole.UserRole))
-            self.componentChanged.emit()
-            self._updateOptionControls()
+            newValue = widget.currentData(QtCore.Qt.ItemDataRole.UserRole)
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
@@ -655,14 +664,15 @@ class _ComponentConfigWidget(QtWidgets.QWidget):
             option: construction.MultiSelectOption
             ) -> None:
         try:
-            selection = []
+            newValue = []
             for row in range(widget.count()):
                 item = widget.item(row)
                 if item and item.checkState() == QtCore.Qt.CheckState.Checked:
-                    selection.append(item.text())
-            option.setValue(value=selection)
-            self.componentChanged.emit()
-            self._updateOptionControls()
+                    newValue.append(item.text())
+            if newValue != option.value():
+                option.setValue(value=newValue)
+                self.componentChanged.emit()
+                self._updateOptionControls()
         except Exception as ex:
             message = f'Failed to update {option.name()}'
             logging.error(message, exc_info=ex)
