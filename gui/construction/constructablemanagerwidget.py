@@ -417,7 +417,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
             if updateCurrent:
                 # Handling the current item changing MUST be done after sorting to
                 # ensure the view is moved to the correct location to ensure the
-                # current item is visible                
+                # current item is visible
                 self._handleCurrentChanged(ensureVisible=True)
 
         return True # The user didn't cancel

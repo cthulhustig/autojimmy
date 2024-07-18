@@ -57,6 +57,7 @@ class _SkillData(object):
     # rules just say you can install a package up to level 1 (p71). It does
     # say the skill is subject to the limitations of the brain but that seems
     # to be talking about modifiers to skill checks not compatibility.
+
     def calculateMaxSkillLevel(
             self,
             robotTL: common.ScalarCalculation,
