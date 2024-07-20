@@ -169,11 +169,11 @@ class _CustomScrollArea(QtWidgets.QScrollArea):
 
         verticalScrollbar = self.verticalScrollBar()
         if verticalScrollbar.isVisible():
-            expandWidth = verticalScrollbar.sizeHint().width()
+            expandWidth += verticalScrollbar.sizeHint().width()
 
         horizontalScrollbar = self.horizontalScrollBar()
         if horizontalScrollbar.isVisible():
-            expandHeight = horizontalScrollbar.sizeHint().height()
+            expandHeight += horizontalScrollbar.sizeHint().height()
 
         return QtCore.QSize(
             contentSize.width() + expandWidth,
