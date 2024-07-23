@@ -495,7 +495,7 @@ class SharedFuelPerParsecSpinBox(_SharedTogglableDoubleSpinBox):
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(
             updaterType=SharedFuelPerParsecSpinBox._SettingUpdater,
-            minValue=1.0,
+            minValue=0.1,
             maxValue=app.MaxPossibleShipTonnage,
             toolTip=gui.ShipFuelPerParsecToolTip,
             parent=parent)
