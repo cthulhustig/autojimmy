@@ -1,6 +1,7 @@
 import common
 import construction
 import gunsmith
+import math
 import typing
 
 _SecondaryWeaponBaseQuickdraw = common.ScalarCalculation(
@@ -1907,7 +1908,7 @@ class ProjectorReceiver(Receiver):
                 value=baseDisasterHeaHeatThreshold))
 
         loadWeight = propellantWeight.value() + fuelWeight.value()
-        unwieldyMultiples = loadWeight // self._unwieldyThreshold.value()
+        unwieldyMultiples = math.floor(loadWeight / self._unwieldyThreshold.value())
         if unwieldyMultiples > 0:
             unwieldyModifier = unwieldyMultiples * self._UnwieldyModifier.value()
             step.addNote(

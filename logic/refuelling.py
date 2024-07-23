@@ -3,6 +3,7 @@ import common
 import enum
 import itertools
 import logic
+import math
 import traveller
 import travellermap
 import typing
@@ -586,7 +587,7 @@ def calculateRefuellingPlan(
             f'With a fuel capacity of {shipFuelCapacity} tons your ship can\'t carry ' + \
             f'the {shipFuelPerParsec} tons required to jump')
 
-    parsecsWithoutRefuelling = int(shipFuelCapacity // shipFuelPerParsec)
+    parsecsWithoutRefuelling = math.floor(shipFuelCapacity / shipFuelPerParsec)
     assert(parsecsWithoutRefuelling > 0)
 
     calculationContext = _processRoute(

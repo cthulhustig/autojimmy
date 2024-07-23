@@ -386,8 +386,13 @@ class Calculator(object):
 
     class DivideFloorFunction(TwoParameterFunction):
         def value(self) -> typing.Union[int, float]:
-            # Returning an int here is consistent with the ceil and floor implementations
-            return int(self._lhs.value() // self._rhs.value())
+            # I swapped out the old implementation after I found some odd behaviour
+            # with // compared to dividing and flooring. An example of this would be
+            # math.floor(26/2.6) == 10 however 26//2.6 == 9.0. I could imagine there
+            # being some floating point rounding error but I don't understand why
+            # floor and // wouldn't both show the same rounding errors.
+            #return int(self._lhs.value() // self._rhs.value())
+            return math.floor(self._lhs.value() / self._rhs.value())
 
         def calculationString(
                 self,

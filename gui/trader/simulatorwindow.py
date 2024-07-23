@@ -597,13 +597,15 @@ class SimulatorWindow(gui.WindowWidget):
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
             jumpCostCalculator = logic.ShortestDistanceCostCalculator()
         elif routeOptimisation == logic.RouteOptimisation.ShortestTime:
-            jumpCostCalculator = logic.ShortestTimeCostCalculator()
+            jumpCostCalculator = logic.ShortestTimeCostCalculator(
+                shipJumpRating=self._shipJumpRatingSpinBox.value())
         elif routeOptimisation == logic.RouteOptimisation.LowestCost:
             jumpCostCalculator = logic.CheapestRouteCostCalculator(
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
                 shipCurrentFuel=0, # Simulator doesn't support starting fuel
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 pitCostCalculator=pitCostCalculator,
                 perJumpOverheads=self._perJumpOverheadsSpinBox.value())
         else:

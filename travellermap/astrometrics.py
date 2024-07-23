@@ -241,6 +241,41 @@ def absoluteRadiusHexes(
                 hexes.append((x, y))
     return hexes
 
+def yieldAbsoluteRadiusHexes(
+        centerX: int,
+        centerY: int,
+        radius: int
+        ) -> typing.Generator[typing.Tuple[int, int], None, None]:
+    if radius == 0:
+        yield (centerX, centerY)
+        return
+
+    current = (centerX, centerY + radius)
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.UpperRight)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.Upper)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.UpperLeft)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.LowerLeft)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.Lower)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourAbsoluteHex(current, NeighbourDirs.LowerRight)
+        yield current
+
 def relativeRadiusHexes(
         centerSectorX: int,
         centerSectorY: int,
@@ -266,3 +301,46 @@ def relativeRadiusHexes(
             absoluteY=absoluteY))
 
     return relativeHexes
+
+def yieldRelativeRadiusHexes(
+        centerSectorX: int,
+        centerSectorY: int,
+        centerHexX: int,
+        centerHexY: int,
+        radius: int
+        ) -> typing.Generator[typing.Tuple[int, int, int, int], None, None]:
+    if radius == 0:
+        yield (centerSectorX, centerSectorY, centerHexX, centerHexY)
+        return
+
+    startSectorY = centerSectorY
+    startHexY = centerHexY + radius
+    if startHexY > SectorHeight:
+        startSectorY += int(startHexY / SectorHeight)
+        startHexY = int(startHexY // SectorHeight)
+
+    current = (centerSectorX, startSectorY, centerHexX, startHexY)
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.UpperRight)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.Upper)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.UpperLeft)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.LowerLeft)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.Lower)
+        yield current
+
+    for _ in range(radius):
+        current = neighbourRelativeHex(current, NeighbourDirs.LowerRight)
+        yield current
