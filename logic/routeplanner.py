@@ -70,21 +70,32 @@ class _RouteNode(object):
 
 class JumpCostCalculatorInterface(object):
     def initialise(
+            self,
             startWorld: traveller.World
             ) -> typing.Any:
-        raise RuntimeError('The initialise method should be overridden by classes derived from JumpCostCalculator')
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement initialise')
 
+    # Calculate the cost of the jump from the current world to the next world
     def calculate(
+            self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            targetWorld: traveller.World,
             jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[
-                typing.Optional[float], # Cost from current to next world
-                typing.Optional[float], # Estimate of cost from next world to target
+                typing.Optional[float], # Cost from current to next world, None
+                                        # means it's not possible to reach it
                 typing.Any]: # New cost context
-        raise RuntimeError('The calculate method should be overridden by classes derived from JumpCostCalculator')
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement calculate')
+
+    # Estimate the cost of travelling remaining distance to the target. For
+    # the algorithm to work it's important that the estimated cost never
+    # exceeds the actual cost
+    def estimate(
+            self,
+            parsecsToTarget: int
+            ) -> float:
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement estimate')
 
 class RoutePlanner(object):
     def calculateDirectRoute(
@@ -246,7 +257,10 @@ class RoutePlanner(object):
         targetStates: typing.List[
             typing.Tuple[
                 typing.Set[traveller.World], # Closed worlds
-                typing.Dict[traveller.World, typing.Tuple[float, int]] # Best values for worlds
+                typing.Dict[traveller.World, typing.Tuple[
+                    float, # Best gScore for a route reaching this world
+                    int, # Best remaining fuel for a route reaching this world
+                    int]] # Parsecs from world to target (note target not necessarily finish)
                 ]] = []
         excludedWorlds: typing.Set[traveller.World] = set()
 
@@ -265,7 +279,14 @@ class RoutePlanner(object):
             costContext=jumpCostCalculator.initialise(startWorld=startWorld),
             parent=None)
         heapq.heappush(openQueue, startNode)
-        targetStates[1][1][startWorld] = (0, fuelParsecs) # Best gScore, Best Max Jump Parsecs
+
+        targetWorld = worldSequence[1]
+        currentToTargetParsecs = travellermap.hexDistance(
+            absoluteX1=startWorld.absoluteX(),
+            absoluteY1=startWorld.absoluteY(),
+            absoluteX2=targetWorld.absoluteX(),
+            absoluteY2=targetWorld.absoluteY())
+        targetStates[1][1][startWorld] = (0, fuelParsecs, currentToTargetParsecs)
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
         worldManager = traveller.WorldManager.instance()
@@ -285,8 +306,8 @@ class RoutePlanner(object):
             targetIndex = currentNode.targetIndex()
             targetWorld = worldSequence[targetIndex]
 
-            closedForTarget, bestValuesForTarget = targetStates[targetIndex]
-            closedForTarget.add(currentWorld)
+            targetClosedSet, targetWorldData = targetStates[targetIndex]
+            targetClosedSet.add(currentWorld)
 
             # if current node = goal node then path complete
             if currentWorld == targetWorld:
@@ -321,17 +342,27 @@ class RoutePlanner(object):
 
                 # Update the best scores for entry for the current world
                 # NOTE: It's important to get the state for the new target
-                closedForTarget, bestValuesForTarget = targetStates[targetIndex]
-                currentWorldBestScore, currentWorldBestFuelParsecs = \
-                    bestValuesForTarget.get(currentWorld, (None, None))
+                targetClosedSet, targetWorldData = targetStates[targetIndex]
+                currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs = \
+                    targetWorldData.get(currentWorld, (None, None, None))
+
                 currentWorldBestScore = currentNode.gScore() \
                     if currentWorldBestScore == None else \
                     min(currentNode.gScore(), currentWorldBestScore)
+
                 currentWorldBestFuelParsecs = currentNode.fuelParsecs() \
                     if currentWorldBestFuelParsecs == None else \
                     max(currentNode.fuelParsecs(), currentWorldBestFuelParsecs)
-                bestValuesForTarget[currentWorld] = \
-                    (currentWorldBestScore, currentWorldBestFuelParsecs)
+
+                if currentToTargetParsecs == None:
+                    currentToTargetParsecs = travellermap.hexDistance(
+                        absoluteX1=currentWorld.absoluteX(),
+                        absoluteY1=currentWorld.absoluteY(),
+                        absoluteX2=targetWorld.absoluteX(),
+                        absoluteY2=targetWorld.absoluteY())
+
+                targetWorldData[currentWorld] = \
+                    (currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs)
 
             if progressCallback:
                 progressCallback(progressCount, False) # Search isn't finished
@@ -376,7 +407,6 @@ class RoutePlanner(object):
                     searchRadius=searchRadius)
 
             for adjacentWorld in adjacentIterator:
-                # TODO: It's probably worth caching world to target distances
                 adjacentParsecs = travellermap.hexDistance(
                     absoluteX1=currentWorld.absoluteX(),
                     absoluteY1=currentWorld.absoluteY(),
@@ -410,8 +440,8 @@ class RoutePlanner(object):
                     # must be set to something
                     fuelParsecs = shipJumpRating
 
-                adjacentWorldBestScore, adjacentWorldBestFuelParsecs = \
-                    bestValuesForTarget.get(adjacentWorld, (None, None))
+                adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetParsecs = \
+                    targetWorldData.get(adjacentWorld, (None, None, None))
 
                 # Skip worlds that have already been reached with a BETTER cost unless they this
                 # route means the ship will have have more fuel for the onward journey. If the
@@ -426,7 +456,7 @@ class RoutePlanner(object):
                 # worlds set will always be checked.
                 if (adjacentWorldBestFuelParsecs != None) and \
                     (fuelParsecs <= adjacentWorldBestFuelParsecs) and \
-                    (adjacentWorld in closedForTarget):
+                    (adjacentWorld in targetClosedSet):
                     continue
 
                 # If the adjacent world isn't the current target world, check if it's been excluded
@@ -441,12 +471,9 @@ class RoutePlanner(object):
                         continue
 
                 # Calculate the cost of jumping to the adjacent world
-                # TODO: The estimate isn't needed to know if this is better so
-                # could be calculated only when needed
-                jumpCost, remainingEstimate, costContext = jumpCostCalculator.calculate(
+                jumpCost, costContext = jumpCostCalculator.calculate(
                     currentWorld,
                     adjacentWorld,
-                    targetWorld,
                     adjacentParsecs,
                     currentNode.costContext())
                 if jumpCost == None:
@@ -461,12 +488,23 @@ class RoutePlanner(object):
                     adjacentWorldBestScore = tentativeScore \
                         if adjacentWorldBestScore == None else \
                         min(tentativeScore, adjacentWorldBestScore)
+
                     adjacentWorldBestFuelParsecs = fuelParsecs \
                         if adjacentWorldBestFuelParsecs == None else \
                         max(fuelParsecs, adjacentWorldBestFuelParsecs)
 
-                    bestValuesForTarget[adjacentWorld] = \
-                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs)
+                    if adjacentToTargetParsecs == None:
+                        adjacentToTargetParsecs = travellermap.hexDistance(
+                            absoluteX1=adjacentWorld.absoluteX(),
+                            absoluteY1=adjacentWorld.absoluteY(),
+                            absoluteX2=targetWorld.absoluteX(),
+                            absoluteY2=targetWorld.absoluteY())
+
+                    targetWorldData[adjacentWorld] = \
+                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetParsecs)
+
+                    remainingEstimate = jumpCostCalculator.estimate(
+                        parsecsToTarget=adjacentToTargetParsecs)
 
                     newNode = _RouteNode(
                         targetIndex=targetIndex,

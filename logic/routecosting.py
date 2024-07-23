@@ -30,19 +30,18 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            targetWorld: traveller.World,
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
                 typing.Optional[float], # Cost from current to next world
-                typing.Optional[float], # Estimate of cost from next world to target
                 typing.Any]: # New cost context
-        estimate = travellermap.hexDistance(
-            absoluteX1=nextWorld.absoluteX(),
-            absoluteY1=nextWorld.absoluteY(),
-            absoluteX2=targetWorld.absoluteX(),
-            absoluteY2=targetWorld.absoluteY()) / self._shipJumpRating
-        return (1, estimate, None)
+        return (1, None)
+
+    def estimate(
+            self,
+            parsecsToTarget: int
+            ) -> float:
+        return parsecsToTarget / self._shipJumpRating
 
 # This cost function finds the route that covers the shortest distance but not necessarily the
 # fewest number of jumps. The shortest distance route is important as uses the least fuel (although
@@ -67,16 +66,16 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            targetWorld: traveller.World,
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        estimate = travellermap.hexDistance(
-            absoluteX1=nextWorld.absoluteX(),
-            absoluteY1=nextWorld.absoluteY(),
-            absoluteX2=targetWorld.absoluteX(),
-            absoluteY2=targetWorld.absoluteY())
-        return (jumpParsecs + self._PerJumpConstant, estimate, None)
+        return (jumpParsecs + self._PerJumpConstant, None)
+
+    def estimate(
+            self,
+            parsecsToTarget: int
+            ) -> float:
+        return parsecsToTarget
 
 # This cost function finds the route with the lowest cost. It tracks the amount of fuel in the ship
 # and the last world that fuel could have been taken on.
@@ -168,7 +167,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            targetWorld: traveller.World,
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[typing.Optional[float], typing.Any]:
@@ -183,16 +181,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
 
-        remainingEstimate = travellermap.hexDistance(
-            absoluteX1=nextWorld.absoluteX(),
-            absoluteY1=nextWorld.absoluteY(),
-            absoluteX2=targetWorld.absoluteX(),
-            absoluteY2=targetWorld.absoluteY()) / self._shipJumpRating
-        remainingEstimate *= self._perJumpOverheads
-
         if not self._pitCostCalculator:
             # Fuel based route calculation is disabled
-            return (jumpCost, remainingEstimate, None)
+            return (jumpCost, None)
 
         # Cheapest route should always have a cost context
         assert(isinstance(costContext, CheapestRouteCostCalculator._CostContext))
@@ -251,4 +242,11 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             lastFuelCost=fuelCostPerTon,
             lastBerthingCost=berthingCost)
 
-        return (jumpCost, remainingEstimate, newCostContext)
+        return (jumpCost, newCostContext)
+
+    def estimate(
+            self,
+            parsecsToTarget: int
+            ) -> float:
+        return (parsecsToTarget / self._shipJumpRating) * self._perJumpOverheads
+
