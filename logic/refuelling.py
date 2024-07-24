@@ -417,7 +417,7 @@ class _WorldContext(object):
     def fuelToFinish(self) -> float:
         return self._fuelToFinish
 
-    def bestFinalCost(self) -> typing.Optional[float]:
+    def finalCost(self) -> typing.Optional[float]:
         return self._bestFinalCost
 
     def isViableOption(
@@ -705,8 +705,29 @@ def _processWorld(
     # sequences are more likely to be cheaper as they require less berthing and are more likely to
     # skip over expensive worlds.
     bestFinalCost = None
+    fromThreshold = fromWorldContext.estimateRefuellingCosts(tonsOfFuel=1)
+    toThreshold = None
     for (toWorldIndex, fuelBetweenWorlds) in reversed(fromWorldContext.reachableWorlds()):
         toWorldContext = calculationContext.worldContext(worldIndex=toWorldIndex)
+
+        if not toWorldContext.isFinishWorld():
+            # If the cost of fuel (including any berthing costs) on the to world
+            # is not less than the best cost seen for previously processed
+            # worlds (i.e. worlds further along the jump route) _or_ less than
+            # the from world fuel cost, then there is no point considering the
+            # to world as a refuelling world as it can't possibly result in a
+            # lower final cost.
+            # This is an important optimisation for long routes for ships that
+            # can make large numbers of jumps without refuelling and therefore
+            # each node has a large reachable world count (e.g. ships with
+            # custom fuel per parsec values or more advanced jump drives).
+            costCheck = toWorldContext.estimateRefuellingCosts(tonsOfFuel=1)
+            if (toThreshold == None) or (costCheck < toThreshold):
+                toThreshold = costCheck
+            elif costCheck >= fromThreshold:
+                continue
+            # If we get to here then to world cost is better than either the
+            # from world or previous to world costs
 
         if fromWorldCost != None:
             if not toWorldContext.isFinishWorld():
@@ -763,7 +784,7 @@ def _processWorld(
                     costSoFar=nextCost,
                     fuelSoFar=nextFuel)
 
-        finalCost = toWorldContext.bestFinalCost()
+        finalCost = toWorldContext.finalCost()
         if (finalCost != None) and ((bestFinalCost == None) or (finalCost < bestFinalCost)):
             bestFinalCost = finalCost
 
