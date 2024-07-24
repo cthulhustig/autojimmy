@@ -93,7 +93,7 @@ class JumpCostCalculatorInterface(object):
     # exceeds the actual cost
     def estimate(
             self,
-            parsecsToTarget: int
+            parsecsToFinish: int
             ) -> float:
         raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement estimate')
 
@@ -214,8 +214,9 @@ class RoutePlanner(object):
 
         sequenceLength = len(worldSequence)
         assert(sequenceLength >= 2)
+        finishWorldIndex = sequenceLength - 1
         startWorld = worldSequence[0]
-        finishWorld = worldSequence[-1]
+        finishWorld = worldSequence[finishWorldIndex]
 
         if pitCostCalculator:
             isCurrentFuelWorld = pitCostCalculator.refuellingType(world=startWorld) != None
@@ -260,12 +261,33 @@ class RoutePlanner(object):
                 typing.Dict[traveller.World, typing.Tuple[
                     float, # Best gScore for a route reaching this world
                     int, # Best remaining fuel for a route reaching this world
-                    int]] # Parsecs from world to target (note target not necessarily finish)
+                    int]], # Parsecs from world to target (note target not necessarily finish)
+                int # Min parsecs from target to finish (going via all waypoints)
                 ]] = []
         excludedWorlds: typing.Set[traveller.World] = set()
 
-        for _ in range(sequenceLength + 1):
-            targetStates.append((set(), dict()))
+        minRouteParsecs = 0
+        for index in range(sequenceLength - 1):
+            currentWorld = worldSequence[index]
+            targetWorld = worldSequence[index + 1]
+            minRouteParsecs += travellermap.hexDistance(
+                absoluteX1=currentWorld.absoluteX(),
+                absoluteY1=currentWorld.absoluteY(),
+                absoluteX2=targetWorld.absoluteX(),
+                absoluteY2=targetWorld.absoluteY())
+
+        startToCurrentParsecs = 0
+        for index in range(sequenceLength):
+            targetStates.append((set(), dict(), minRouteParsecs - startToCurrentParsecs))
+
+            if index != finishWorldIndex:
+                currentWorld = worldSequence[index]
+                targetWorld = worldSequence[index + 1]
+                startToCurrentParsecs += travellermap.hexDistance(
+                    absoluteX1=currentWorld.absoluteX(),
+                    absoluteY1=currentWorld.absoluteY(),
+                    absoluteX2=targetWorld.absoluteX(),
+                    absoluteY2=targetWorld.absoluteY())
 
         # Add the starting node to the open list
         fuelParsecs = math.floor(maxStartingFuel / shipFuelPerParsec)
@@ -292,7 +314,6 @@ class RoutePlanner(object):
         worldManager = traveller.WorldManager.instance()
 
         # Process nodes while the open list is not empty
-        finishWorldIndex = sequenceLength - 1
         progressCount = 0
         while openQueue:
             if isCancelledCallback and isCancelledCallback():
@@ -306,7 +327,7 @@ class RoutePlanner(object):
             targetIndex = currentNode.targetIndex()
             targetWorld = worldSequence[targetIndex]
 
-            targetClosedSet, targetWorldData = targetStates[targetIndex]
+            targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
             targetClosedSet.add(currentWorld)
 
             # if current node = goal node then path complete
@@ -342,7 +363,7 @@ class RoutePlanner(object):
 
                 # Update the best scores for entry for the current world
                 # NOTE: It's important to get the state for the new target
-                targetClosedSet, targetWorldData = targetStates[targetIndex]
+                targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
                 currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs = \
                     targetWorldData.get(currentWorld, (None, None, None))
 
@@ -440,7 +461,7 @@ class RoutePlanner(object):
                     # must be set to something
                     fuelParsecs = shipJumpRating
 
-                adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetParsecs = \
+                adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs = \
                     targetWorldData.get(adjacentWorld, (None, None, None))
 
                 # Skip worlds that have already been reached with a BETTER cost unless they this
@@ -493,18 +514,21 @@ class RoutePlanner(object):
                         if adjacentWorldBestFuelParsecs == None else \
                         max(fuelParsecs, adjacentWorldBestFuelParsecs)
 
-                    if adjacentToTargetParsecs == None:
-                        adjacentToTargetParsecs = travellermap.hexDistance(
+                    if adjacentToTargetMinParsecs == None:
+                        adjacentToTargetMinParsecs = travellermap.hexDistance(
                             absoluteX1=adjacentWorld.absoluteX(),
                             absoluteY1=adjacentWorld.absoluteY(),
                             absoluteX2=targetWorld.absoluteX(),
                             absoluteY2=targetWorld.absoluteY())
 
                     targetWorldData[adjacentWorld] = \
-                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetParsecs)
+                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs)
 
+                    # For estimating the cost of the remaining portion of the
+                    # route, use min distance from the adjacent world to the
+                    # finish going via all remaining waypoints
                     remainingEstimate = jumpCostCalculator.estimate(
-                        parsecsToTarget=adjacentToTargetParsecs)
+                        parsecsToFinish=adjacentToTargetMinParsecs + targetToFinishMinParsecs)
 
                     newNode = _RouteNode(
                         targetIndex=targetIndex,

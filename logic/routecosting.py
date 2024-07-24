@@ -39,9 +39,9 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
 
     def estimate(
             self,
-            parsecsToTarget: int
+            parsecsToFinish: int
             ) -> float:
-        return parsecsToTarget / self._shipJumpRating
+        return parsecsToFinish / self._shipJumpRating
 
 # This cost function finds the route that covers the shortest distance but not necessarily the
 # fewest number of jumps. The shortest distance route is important as uses the least fuel (although
@@ -73,9 +73,9 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
 
     def estimate(
             self,
-            parsecsToTarget: int
+            parsecsToFinish: int
             ) -> float:
-        return parsecsToTarget
+        return parsecsToFinish
 
 # This cost function finds the route with the lowest cost. It tracks the amount of fuel in the ship
 # and the last world that fuel could have been taken on.
@@ -176,7 +176,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         # as the optimal route as all potential jumps are skewed by the same amount. A desirable
         # side effect of this is, in the case where there are multiple routes that have the same
         # lowest cost, then the route finder will choose the one with the lowest number of jumps.
-        jumpCost = 1
+        jumpCost = 0.0001
 
         # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
@@ -199,10 +199,8 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             refuellingType = costContext.lastFuelType()
             fuelWorld = costContext.lastFuelWorld()
             fuelCostPerTon = costContext.lastFuelCost()
+            berthingCost = costContext.lastBerthingCost()
             lastFuelParsecs = costContext.lastFuelParsecs()
-            # Berthing cost isn't used as it has already been included for the
-            # last fuel world
-            berthingCost = 0
         else:
             # The current world meets the refuelling requirements so use its
             # details
@@ -225,6 +223,15 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             jumpCost += fuelCostPerTon * fuelDeficit
             currentFuel += fuelDeficit
 
+            # TODO: The way this currently works means, if a fuel world is used to take on fuel for
+            # multiple jumps, the berthing cost will be added to the route cost each time additional
+            # fuel is taken on. This could happen for ships with high parsecs without refuelling
+            # jumping through multiple worlds that don't support the refuelling strategy.
+            # This seems obviously wrong, however, testing has shown that updating it so berthing
+            # costs are only applied once results in noticeably higher cost routes being found over
+            # long routes. In some cases it does generate lower cost routes but the majority of
+            # times they're higher cost. I'm leaving it as is for now until I can work out what is
+            # going on (I need an example of it happen that doesn't involve hundreds of worlds)
             jumpCost += berthingCost
 
         newCostContext = CheapestRouteCostCalculator._CostContext(
@@ -239,7 +246,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def estimate(
             self,
-            parsecsToTarget: int
+            parsecsToFinish: int
             ) -> float:
-        return (parsecsToTarget / self._shipJumpRating) * self._perJumpOverheads
+        return (parsecsToFinish / self._shipJumpRating) * self._perJumpOverheads
 
