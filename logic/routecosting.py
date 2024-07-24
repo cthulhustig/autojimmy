@@ -199,8 +199,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             refuellingType = costContext.lastFuelType()
             fuelWorld = costContext.lastFuelWorld()
             fuelCostPerTon = costContext.lastFuelCost()
-            berthingCost = costContext.lastBerthingCost()
             lastFuelParsecs = costContext.lastFuelParsecs()
+            # Berthing cost isn't used as it has already been included for the
+            # last fuel world
+            berthingCost = 0
         else:
             # The current world meets the refuelling requirements so use its
             # details
@@ -223,15 +225,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             jumpCost += fuelCostPerTon * fuelDeficit
             currentFuel += fuelDeficit
 
-            # TODO: The way this currently works means, if a fuel world is used to take on fuel for
-            # multiple jumps, the berthing cost will be added to the route cost each time additional
-            # fuel is taken on. This could happen for ships with high parsecs without refuelling
-            # jumping through multiple worlds that don't support the refuelling strategy.
-            # This seems obviously wrong, however, testing has shown that updating it so berthing
-            # costs are only applied once results in noticeably higher cost routes being found over
-            # long routes. In some cases it does generate lower cost routes but the majority of
-            # times they're higher cost. I'm leaving it as is for now until I can work out what is
-            # going on (I need an example of it happen that doesn't involve hundreds of worlds)
             jumpCost += berthingCost
 
         newCostContext = CheapestRouteCostCalculator._CostContext(
