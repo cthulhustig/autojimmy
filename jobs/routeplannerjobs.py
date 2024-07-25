@@ -100,10 +100,10 @@ class RoutePlannerJob(QtCore.QThread):
             isFinished: bool
             ) -> None:
         currentTimestamp = time.time()
-
-        if isFinished or \
+        shouldEmit = isFinished or \
             (not self._lastProgressTimestamp) or \
-            ((currentTimestamp - self._lastProgressTimestamp) >= RoutePlannerJob._MinProgressInterval):
+            ((currentTimestamp - self._lastProgressTimestamp) >= RoutePlannerJob._MinProgressInterval)
+        if shouldEmit:
             self._progressSignal.emit(routeCount)
             self._lastProgressTimestamp = currentTimestamp
 

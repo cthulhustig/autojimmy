@@ -256,7 +256,7 @@ class WorldManager(object):
                 finishY -= 1
         else:
             if (searchRadius & 0b1) != 0:
-                 startY += 1
+                startY += 1
             finishY -= 1
         for x in range(startX, finishX + 1):
             if (x & 0b1) != 0:

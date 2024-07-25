@@ -474,9 +474,7 @@ class RoutePlanner(object):
                         # is no way to take on enough fuel to reach the adjacent world
                         continue
 
-                    if (not isAdjacentFuelWorld) and \
-                        (fuelParsecs < 1) and \
-                        (adjacentWorld != finishWorld):
+                    if (not isAdjacentFuelWorld) and (fuelParsecs < 1) and (adjacentWorld != finishWorld):
                         # The adjacent world isn't a fuel world and the ship won't have enough
                         # fuel to jump on so there is no point continuing the route
                         continue
@@ -500,9 +498,8 @@ class RoutePlanner(object):
                 # In the case that fuel based routing is disabled, the new fuel parsecs and best
                 # fuel parsecs will always be the ship jump rating (i.e. the same) so the closed
                 # worlds set will always be checked.
-                if (adjacentWorldBestFuelParsecs != None) and \
-                    (fuelParsecs <= adjacentWorldBestFuelParsecs) and \
-                    (adjacentWorld in targetClosedSet):
+                if (adjacentWorldBestFuelParsecs != None) and (fuelParsecs <= adjacentWorldBestFuelParsecs) and \
+                        (adjacentWorld in targetClosedSet):
                     continue
 
                 # If the adjacent world isn't the current target world, check if it's been excluded

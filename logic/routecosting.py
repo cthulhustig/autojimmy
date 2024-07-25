@@ -249,4 +249,3 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             parsecsToFinish: int
             ) -> float:
         return (parsecsToFinish / self._shipJumpRating) * self._perJumpOverheads
-
