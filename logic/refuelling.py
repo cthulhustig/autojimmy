@@ -23,6 +23,7 @@ class RefuellingStrategy(enum.Enum):
     GasGiantOnly = 'Gas Giant Only'
     WaterOnly = 'Water Only'
     WildernessOnly = 'Wilderness Only'
+    RefinedFuelPreferred = 'Refined Fuel Preferred'
     UnrefinedFuelPreferred = 'Unrefined Fuel Preferred'
     GasGiantPreferred = 'Gas Giant Preferred'
     WaterPreferred = 'Water Preferred'
@@ -157,13 +158,22 @@ class PitStopCostCalculator(object):
         elif self._refuellingStrategy == RefuellingStrategy.WildernessOnly:
             if world.hasWildernessRefuelling():
                 return RefuellingType.Wilderness
+        elif self._refuellingStrategy == RefuellingStrategy.RefinedFuelPreferred:
+            if world.hasStarPortRefuelling(
+                    includeUnrefined=False, # Check for refined fuel
+                    rules=self._rules):
+                return RefuellingType.Refined
+            if world.hasStarPortRefuelling(
+                    includeRefined=False, # Check for unrefined fuel
+                    rules=self._rules):
+                return RefuellingType.Unrefined
         elif self._refuellingStrategy == RefuellingStrategy.UnrefinedFuelPreferred:
             if world.hasStarPortRefuelling(
-                    includeRefined=False,
+                    includeRefined=False, # Check for unrefined fuel
                     rules=self._rules):
                 return RefuellingType.Unrefined
             if world.hasStarPortRefuelling(
-                    includeUnrefined=False,
+                    includeUnrefined=False, # Check for refined fuel
                     rules=self._rules):
                 return RefuellingType.Refined
         elif self._refuellingStrategy == RefuellingStrategy.GasGiantPreferred:
