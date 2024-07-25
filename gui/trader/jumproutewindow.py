@@ -179,9 +179,9 @@ class _RefuellingPlanTable(gui.WorldTable):
         try:
             super()._fillRow(row, world)
 
+            pitStop = self._pitStops[row]
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
-                pitStop = self._pitStops[row]
 
                 tableItem = None
                 if columnType == _RefuellingPlanTableColumnType.RefuellingType:
