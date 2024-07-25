@@ -219,12 +219,14 @@ class RoutePlanner(object):
         finishWorld = worldSequence[finishWorldIndex]
 
         if pitCostCalculator:
-            isCurrentFuelWorld = pitCostCalculator.refuellingType(world=startWorld) != None
+            startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
+            isCurrentFuelWorld = startWorldFuelType != None
             maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
         else:
             # Fuel based route calculation is disabled so use the max capacity as the max starting
             # fuel. The intended effect is to have it possible to jump to any world within jump
             # range (fuel capacity allowing).
+            startWorldFuelType = None
             isCurrentFuelWorld = False
             maxStartingFuel = shipFuelCapacity
 
@@ -234,24 +236,44 @@ class RoutePlanner(object):
             if startWorld == finishWorld:
                 return [startWorld]
 
-            # A _LOT_ of the time we're asked to calculate a route the finish world is actually within
-            # one jump of the start world (as finished worlds tend to come from nearby world searches).
-            # Do a quick check for this case, if it's true we known the shortest distance/shortest time
-            # and lowest cost route is a single direct jump.
-            # This check is only done if the world can be reached with the max starting fuel. This means
-            # either the world meets the refuelling strategy or there is enough fuel in the tank to reach
-            # it. If not, a full route check is performed as it may be possible to find a better route
-            # depending on the costing function (i.e. lowest cost). I suspect there may be some corner
-            # cases where this doesn't hold but until I know they actually exist I'm going to go with the
-            # performance increase
+            # A _LOT_ of the time we're asked to calculate a route the finish
+            # world is actually within one jump of the start world (as finished
+            # worlds tend to come from nearby world searches). Do a quick check
+            # for this case, if it's true we known the shortest lowest cost and
+            # distance/shortest time is a single direct jump.
+            # This optimisation is only done if the world can be reached with
+            # the starting fuel _or_ the start world and refuelling strategy
+            # allow for wilderness refuelling. If non-wilderness fuel needs to
+            # be taken on then a full route check must be performed to
+            # guarantee the optimal route is found. Technically it's only lowest
+            # cost that really needs the full check as it's possible that it may
+            # be better to jump to a world where fuel is cheaper to first,
+            # whereas adding an extra jump will never result in a shorter
+            # distance or time.
             distance = travellermap.hexDistance(
                 startWorld.absoluteX(),
                 startWorld.absoluteY(),
                 finishWorld.absoluteX(),
                 finishWorld.absoluteY())
             if distance <= shipJumpRating:
+                if not pitCostCalculator:
+                    # Fuel based routing is disabled so use ships fuel capacity
+                    # as the 'available fuel'
+                    availableFuel = shipFuelCapacity
+                elif startWorldFuelType == logic.RefuellingType.Wilderness:
+                    # Wilderness refuelling is possible on the start world. The
+                    # best route is always going to be to fill the tank and jump
+                    # straight there.
+                    availableFuel = shipFuelCapacity
+                else:
+                    # It's either not possible to take on fuel on the start
+                    # world or fuel costs money. Either way, we can only bail
+                    # early if the ship can jump straight to the finish world
+                    # with the fuel that's in its tank.
+                    availableFuel = shipCurrentFuel
+
                 fuelToFinish = distance * shipFuelPerParsec
-                if fuelToFinish <= maxStartingFuel:
+                if fuelToFinish <= availableFuel:
                     return [startWorld, finishWorld]
 
         openQueue: typing.List[_RouteNode] = []
