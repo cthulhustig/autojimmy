@@ -143,33 +143,28 @@ class _RefuellingPlanTable(gui.WorldTable):
             ) -> None:
         super().__init__(columns=columns)
         self.setSortingEnabled(False)
-        self._pitStopMap: typing.Dict[int, logic.PitStop] = {}
+        self._pitStops: typing.List[logic.PitStop] = []
 
-    def setRoute(
+    def setPitStops(
             self,
-            jumpRoute: typing.Iterable[traveller.World],
             pitStops: typing.Optional[typing.Iterable[logic.PitStop]]
             ) -> None:
         self.removeAllRows()
-
-        # Add pit stops before worlds so the map can be looked up when inserting rows
         if pitStops:
-            for pitStop in pitStops:
-                self._pitStopMap[pitStop.jumpIndex()] = pitStop
+            self._pitStops = list(pitStops)
+        else:
+            self._pitStops.clear()
 
-        self.addWorlds(worlds=jumpRoute)
+        for pitStop in self._pitStops:
+            self.addWorld(world=pitStop.world())
 
     def pitStopAt(self, position: QtCore.QPoint) -> typing.Optional[logic.PitStop]:
         item = self.itemAt(position)
         if not item:
             return None
-        if item.row() not in self._pitStopMap:
+        if item.row() < 0 or item.row() >= len(self._pitStops):
             return None
-        return self._pitStopMap[item.row()]
-
-    def removeAllRows(self) -> None:
-        super().removeAllRows()
-        self._pitStopMap.clear()
+        return self._pitStops[item.row()]
 
     def _fillRow(
             self,
@@ -186,9 +181,7 @@ class _RefuellingPlanTable(gui.WorldTable):
 
             for column in range(self.columnCount()):
                 columnType = self.columnHeader(column)
-                pitStop = None
-                if row in self._pitStopMap:
-                    pitStop: logic.PitStop = self._pitStopMap[row]
+                pitStop = self._pitStops[row]
 
                 tableItem = None
                 if columnType == _RefuellingPlanTableColumnType.RefuellingType:
@@ -225,14 +218,6 @@ class _RefuellingPlanTable(gui.WorldTable):
         # columns and the table is currently sorted by one of those columns. In this the expectation is
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
-
-    def _createToolTip(self, item: QtWidgets.QTableWidgetItem) -> typing.Optional[str]:
-        columnType = self.columnHeader(item.column())
-        if columnType == _RefuellingPlanTableColumnType.RefuellingType:
-            if item.row() not in self._pitStopMap:
-                return None
-
-        return super()._createToolTip(item=item)
 
 class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
@@ -1685,8 +1670,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     exception=ex)
 
             if self._routeLogistics:
-                self._refuellingPlanTable.setRoute(
-                    jumpRoute=self._jumpRoute,
+                self._refuellingPlanTable.setPitStops(
                     pitStops=self._routeLogistics.refuellingPlan())
                 routeCost = self._routeLogistics.totalCosts()
                 self._avgRouteCostLabel.setText(common.formatNumber(
