@@ -423,6 +423,7 @@ class RoutePlanner(object):
                 # this would actually happen but it should be handled
                 searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
                 if searchRadius <= 0:
+                    closedRoutes += 1
                     continue
             else:
                 # Fuel based route calculation is disabled so always search for the full ship jump
