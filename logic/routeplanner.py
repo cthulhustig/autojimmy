@@ -336,12 +336,10 @@ class RoutePlanner(object):
         worldManager = traveller.WorldManager.instance()
 
         # Process nodes while the open list is not empty
-        progressCount = 0
+        closedRoutes = 0
         while openQueue:
             if isCancelledCallback and isCancelledCallback():
                 return None
-
-            progressCount += 1
 
             # current node = node from open list with the lowest cost
             currentNode: _RouteNode = heapq.heappop(openQueue)
@@ -360,7 +358,7 @@ class RoutePlanner(object):
                     # Process it to generate the final list of route worlds then bail
                     return self._finaliseRoute(
                         finishNode=currentNode,
-                        progressCount=progressCount,
+                        progressCount=closedRoutes + 1, # +1 for this route
                         progressCallback=progressCallback)
 
                 # We've reached the current target for the node but there are still more worlds
@@ -380,7 +378,7 @@ class RoutePlanner(object):
                     if targetIndex >= finishWorldIndex:
                         return self._finaliseRoute(
                             finishNode=currentNode,
-                            progressCount=progressCount,
+                            progressCount=closedRoutes + 1, # +1 for this route
                             progressCallback=progressCallback)
 
                 # Update the best scores for entry for the current world
@@ -408,7 +406,7 @@ class RoutePlanner(object):
                     (currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs)
 
             if progressCallback:
-                progressCallback(progressCount, False) # Search isn't finished
+                progressCallback(closedRoutes, False) # Search isn't finished
 
             if pitCostCalculator:
                 # Set search area based on the max distance we could jump from the current world. If
@@ -449,7 +447,11 @@ class RoutePlanner(object):
                     centerY=currentWorld.absoluteY(),
                     searchRadius=searchRadius)
 
+            possibleRoutes = 0
+            addedRoutes = 0
             for adjacentWorld in adjacentIterator:
+                possibleRoutes += 1
+
                 adjacentParsecs = travellermap.hexDistance(
                     absoluteX1=currentWorld.absoluteX(),
                     absoluteY1=currentWorld.absoluteY(),
@@ -562,6 +564,9 @@ class RoutePlanner(object):
                         costContext=costContext,
                         parent=currentNode)
                     heapq.heappush(openQueue, newNode)
+                    addedRoutes += 1
+
+            closedRoutes += possibleRoutes - addedRoutes
 
         return None # No route found
 

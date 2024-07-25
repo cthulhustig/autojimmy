@@ -758,17 +758,18 @@ class JumpRouteWindow(gui.WindowWidget):
             secondaryText='Cancel')
         self._calculateRouteButton.clicked.connect(self._calculateJumpRoute)
 
-        self._processedWorldLabel = gui.PrefixLabel(prefix='Processed Worlds: ')
+        self._processedRoutesLabel = gui.PrefixLabel(prefix='Processed Routes: ')
         self._jumpCountLabel = gui.PrefixLabel(prefix='Jumps: ')
         self._routeLengthLabel = gui.PrefixLabel(prefix='Parsecs: ')
 
-        self._avgRouteCostLabel = gui.PrefixLabel(prefix='Average Cost: ')
-        self._minRouteCostLabel = gui.PrefixLabel(prefix='Minimum Cost: ')
-        self._maxRouteCostLabel = gui.PrefixLabel(prefix='Maximum Cost: ')
+        self._avgRouteCostLabel = gui.PrefixLabel(prefix='Avg Cost: ')
+        self._minRouteCostLabel = gui.PrefixLabel(prefix='Min Cost: ')
+        self._maxRouteCostLabel = gui.PrefixLabel(prefix='Max Cost: ')
 
         labelLayout = QtWidgets.QHBoxLayout()
         labelLayout.setContentsMargins(0, 0, 0, 0)
-        labelLayout.addWidget(self._processedWorldLabel)
+        labelLayout.setSpacing(int(15 * app.Config.instance().interfaceScale()))
+        labelLayout.addWidget(self._processedRoutesLabel)
         labelLayout.addWidget(self._jumpCountLabel)
         labelLayout.addWidget(self._routeLengthLabel)
         labelLayout.addWidget(self._avgRouteCostLabel)
@@ -833,7 +834,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _clearJumpRoute(self):
         self._jumpRouteTable.removeAllRows()
         self._refuellingPlanTable.removeAllRows()
-        self._processedWorldLabel.clear()
+        self._processedRoutesLabel.clear()
         self._jumpCountLabel.clear()
         self._routeLengthLabel.clear()
         self._avgRouteCostLabel.clear()
@@ -1012,8 +1013,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._calculateRouteButton.showSecondaryText()
         self._enableDisableControls()
 
-    def _jumpRouteJobProgressUpdate(self, worldCount: int) -> None:
-        self._processedWorldLabel.setNum(worldCount)
+    def _jumpRouteJobProgressUpdate(self, routeCount: int) -> None:
+        self._processedRoutesLabel.setNum(routeCount)
 
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):

@@ -12,6 +12,8 @@ class RoutePlannerJob(QtCore.QThread):
     # See comment below as to why this uses a list rather than a JumpRoute
     _finishedSignal = QtCore.pyqtSignal([list], [Exception])
 
+    _MinProgressInterval = 0.5
+
     def __init__(
             self,
             parent: QtCore.QObject,
@@ -25,8 +27,7 @@ class RoutePlannerJob(QtCore.QThread):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator], # This will be called from the worker thread
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None, # This will be called from the worker thread
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
-            finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None,
-            progressInterval: int = 500,
+            finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None
             ) -> None:
         super().__init__(parent=parent)
 
@@ -43,9 +44,9 @@ class RoutePlannerJob(QtCore.QThread):
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
         self._worldFilterCallback = worldFilterCallback
-        self._progressInterval = progressInterval
 
         self._planner = logic.RoutePlanner()
+        self._lastProgressTimestamp = None
 
         if progressCallback:
             self._progressSignal[int].connect(progressCallback)
@@ -95,17 +96,16 @@ class RoutePlannerJob(QtCore.QThread):
 
     def _handleProgress(
             self,
-            worldCount: int,
+            routeCount: int,
             isFinished: bool
             ) -> None:
-        shouldEmit = False
-        if isFinished:
-            shouldEmit = True
-        else:
-            shouldEmit = (worldCount % self._progressInterval) == 0
+        currentTimestamp = time.time()
 
-        if shouldEmit:
-            self._progressSignal.emit(worldCount)
+        if isFinished or \
+            (not self._lastProgressTimestamp) or \
+            ((currentTimestamp - self._lastProgressTimestamp) >= RoutePlannerJob._MinProgressInterval):
+            self._progressSignal.emit(routeCount)
+            self._lastProgressTimestamp = currentTimestamp
 
             # Yield this thread to stop the gui from locking up
             # due to having to process to many events
