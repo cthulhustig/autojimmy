@@ -1,6 +1,7 @@
 import fnmatch
 import re
 import logging
+import math
 import threading
 import traveller
 import travellermap
@@ -31,6 +32,7 @@ class WorldManager(object):
     _alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
+    _absoluteWorldMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -132,6 +134,9 @@ class WorldManager(object):
                         self._subsectorNameMap[subsectorName] = subsectorList
                     subsectorList.append(subsector)
 
+                for world in sector.worlds():
+                    self._absoluteWorldMap[(world.absoluteX(), world.absoluteY())] = world
+
     def sectorName(
             self,
             sectorX: int,
@@ -197,57 +202,58 @@ class WorldManager(object):
 
         return None
 
-    # Reimplementation of code from Traveller Map source code (Sectors in Selector.cs)
-    # NOTE: The results for this are not limited to the sector specified by sectorName. It, when
-    # combined with worldX & worldY just give the center of the search radius. The name and x/y
-    # values are basically sector hex but split out as its more efficient when this is being
-    # called repeatedly as part of the jump route planning
-    # NOTE: For speed the sector name must be the canonical sector name
     def worldsInArea(
             self,
-            sectorName: str,
-            worldX: int,
-            worldY: int,
+            centerX: int,
+            centerY: int,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
-        # Sector name lookup is case insensitive. The sector name map stores sector names in lower
-        # so search name should be converted to lower case before searching
-        sectorName = sectorName.lower()
-        sector = self._canonicalNameMap.get(sectorName)
-        if not sector:
-            raise RuntimeError(f'Unknown sector "{sectorName}"')
+        return list(self.yieldWorldsInArea(
+            centerX=centerX,
+            centerY=centerY,
+            searchRadius=searchRadius,
+            worldFilterCallback=worldFilterCallback))
 
-        sectorX = sector.x()
-        sectorY = sector.y()
+    def yieldWorldsInArea(
+            self,
+            centerX: int,
+            centerY: int,
+            searchRadius: int,
+            worldFilterCallback: typing.Callable[[traveller.World], bool] = None
+            ) -> typing.Generator[traveller.World, None, None]:
+        minLength = searchRadius + 1
+        maxLength = (searchRadius * 2) + 1
+        deltaLength = int(math.floor((maxLength - minLength) / 2))
 
-        centerX, centerY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
-        minX = centerX - (searchRadius + 1)
-        maxX = centerX + (searchRadius + 1)
-        minY = centerY - (searchRadius + 1)
-        maxY = centerY + (searchRadius + 1)
+        startX = centerX - searchRadius
+        finishX = centerX + searchRadius
+        startY = (centerY - searchRadius) + deltaLength
+        finishY = (centerY + searchRadius) - deltaLength
+        if (startX & 0b1) != 0:
+            startY += 1
+            if (searchRadius & 0b1) != 0:
+                finishY -= 1
+        else:
+            if (searchRadius & 0b1) != 0:
+                startY += 1
+            finishY -= 1
+        for x in range(startX, finishX + 1):
+            if (x & 0b1) != 0:
+                if x <= centerX:
+                    startY -= 1
+                else:
+                    finishY -= 1
+            else:
+                if x <= centerX:
+                    finishY += 1
+                else:
+                    startY += 1
 
-        worlds = []
-        for y in range(minY, maxY + 1):
-            for x in range(minX, maxX + 1):
-                if travellermap.hexDistance(centerX, centerY, x, y) > searchRadius:
-                    continue
-
-                sectorX, sectorY, worldX, worldY = travellermap.absoluteHexToRelativeHex(x, y)
-                sector: traveller.Sector = self._sectorPositionMap.get((sectorX, sectorY))
-                if not sector:
-                    # No sector with this position (we've hit the edge of the map)
-                    continue
-
-                world = sector.worldByPosition(worldX, worldY)
-                if world:
-                    if worldFilterCallback and not worldFilterCallback(world):
-                        # Skip the world if it doesn't match the filter
-                        continue
-
-                    worlds.append(world)
-
-        return worlds
+            for y in range(startY, finishY + 1):
+                world = self._absoluteWorldMap.get((x, y))
+                if world and ((not worldFilterCallback) or worldFilterCallback(world)):
+                    yield world
 
     def searchForWorlds(
             self,

@@ -1,6 +1,7 @@
 import common
 import heapq
 import logic
+import math
 import traveller
 import travellermap
 import typing
@@ -41,7 +42,8 @@ class _RouteNode(object):
     def isFuelWorld(self) -> bool:
         return self._isFuelWorld
 
-    # This is the max number of parsecs that can be jumped if this world isn't used for refuelling
+    # This is max number of parsecs worth of fuel the ship can have in its tank when
+    # reaching this world
     def fuelParsecs(self) -> int:
         return self._fuelParsecs
 
@@ -52,8 +54,13 @@ class _RouteNode(object):
         return self._parent
 
     def __lt__(self, other: '_RouteNode') -> bool:
-        # Order by fScore rather than gScore so that, in the case where two system have the same
-        # gScore the system closest to the finish world will be processed first
+        # NOTE: This function is used for ordering of nodes by the potential
+        # it's really a "better than" function rather than a "less than" one.
+        # Ordering here is VERY important for fuel based routing to work. The
+        # fScore (known cost so far + estimated cost remaining) is the primary
+        # key. If they are equal then the max fuel that the ship could have in
+        # it's tank when reaching this world is used. In the case that fScore
+        # and remaining fuel are equal, the nodes have the same priority
         if self._fScore < other._fScore:
             return True
         elif self._fScore > other._fScore:
@@ -63,17 +70,32 @@ class _RouteNode(object):
 
 class JumpCostCalculatorInterface(object):
     def initialise(
+            self,
             startWorld: traveller.World
             ) -> typing.Any:
-        raise RuntimeError('The initialise method should be overridden by classes derived from JumpCostCalculator')
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement initialise')
 
+    # Calculate the cost of the jump from the current world to the next world
     def calculate(
+            self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
             jumpParsecs: int,
             costContext: typing.Any
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]: # (Jump Cost, New Cost Context)
-        raise RuntimeError('The calculate method should be overridden by classes derived from JumpCostCalculator')
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world, None
+                                        # means it's not possible to reach it
+                typing.Any]: # New cost context
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement calculate')
+
+    # Estimate the cost of travelling remaining distance to the target. For
+    # the algorithm to work it's important that the estimated cost never
+    # exceeds the actual cost
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement estimate')
 
 class RoutePlanner(object):
     def calculateDirectRoute(
@@ -186,23 +208,26 @@ class RoutePlanner(object):
         if isinstance(shipFuelPerParsec, common.ScalarCalculation):
             shipFuelPerParsec = shipFuelPerParsec.value()
 
-        shipParsecsWithoutRefuelling = int(shipFuelCapacity // shipFuelPerParsec)
+        shipParsecsWithoutRefuelling = math.floor(shipFuelCapacity / shipFuelPerParsec)
         if shipParsecsWithoutRefuelling < 1:
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
         sequenceLength = len(worldSequence)
         assert(sequenceLength >= 2)
+        finishWorldIndex = sequenceLength - 1
         startWorld = worldSequence[0]
-        finishWorld = worldSequence[-1]
+        finishWorld = worldSequence[finishWorldIndex]
 
         if pitCostCalculator:
-            isFuelWorld = pitCostCalculator.refuellingType(world=startWorld) != None
-            maxStartingFuel = shipFuelCapacity if isFuelWorld else shipCurrentFuel
+            startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
+            isCurrentFuelWorld = startWorldFuelType != None
+            maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
         else:
             # Fuel based route calculation is disabled so use the max capacity as the max starting
             # fuel. The intended effect is to have it possible to jump to any world within jump
             # range (fuel capacity allowing).
-            isFuelWorld = False
+            startWorldFuelType = None
+            isCurrentFuelWorld = False
             maxStartingFuel = shipFuelCapacity
 
         # Handle early outs when dealing with direct world to world routes
@@ -211,64 +236,121 @@ class RoutePlanner(object):
             if startWorld == finishWorld:
                 return [startWorld]
 
-            # A _LOT_ of the time we're asked to calculate a route the finish world is actually within
-            # one jump of the start world (as finished worlds tend to come from nearby world searches).
-            # Do a quick check for this case, if it's true we known the shortest distance/shortest time
-            # and lowest cost route is a single direct jump.
-            # This check is only done if the world can be reached with the max starting fuel. This means
-            # either the world meets the refuelling strategy or there is enough fuel in the tank to reach
-            # it. If not, a full route check is performed as it may be possible to find a better route
-            # depending on the costing function (i.e. lowest cost). I suspect there may be some corner
-            # cases where this doesn't hold but until I know they actually exist I'm going to go with the
-            # performance increase
+            # A _LOT_ of the time we're asked to calculate a route the finish
+            # world is actually within one jump of the start world (as finished
+            # worlds tend to come from nearby world searches). Do a quick check
+            # for this case, if it's true we known the shortest lowest cost and
+            # distance/shortest time is a single direct jump.
+            # This optimisation is only done if the world can be reached with
+            # the starting fuel _or_ the start world and refuelling strategy
+            # allow for wilderness refuelling. If non-wilderness fuel needs to
+            # be taken on then a full route check must be performed to
+            # guarantee the optimal route is found. Technically it's only lowest
+            # cost that really needs the full check as it's possible that it may
+            # be better to jump to a world where fuel is cheaper to first,
+            # whereas adding an extra jump will never result in a shorter
+            # distance or time.
             distance = travellermap.hexDistance(
                 startWorld.absoluteX(),
                 startWorld.absoluteY(),
                 finishWorld.absoluteX(),
                 finishWorld.absoluteY())
             if distance <= shipJumpRating:
+                if not pitCostCalculator:
+                    # Fuel based routing is disabled so use ships fuel capacity
+                    # as the 'available fuel'
+                    availableFuel = shipFuelCapacity
+                elif startWorldFuelType == logic.RefuellingType.Wilderness:
+                    # Wilderness refuelling is possible on the start world. The
+                    # best route is always going to be to fill the tank and jump
+                    # straight there.
+                    availableFuel = shipFuelCapacity
+                else:
+                    # It's either not possible to take on fuel on the start
+                    # world or fuel costs money. Either way, we can only bail
+                    # early if the ship can jump straight to the finish world
+                    # with the fuel that's in its tank.
+                    availableFuel = shipCurrentFuel
+
                 fuelToFinish = distance * shipFuelPerParsec
-                if fuelToFinish <= maxStartingFuel:
+                if fuelToFinish <= availableFuel:
                     return [startWorld, finishWorld]
 
         openQueue: typing.List[_RouteNode] = []
-        bestValues: typing.Dict[int, typing.Dict[traveller.World, typing.Tuple[float, int]]] = {}
+        targetStates: typing.List[
+            typing.Tuple[
+                typing.Set[traveller.World], # Closed worlds
+                typing.Dict[traveller.World, typing.Tuple[
+                    float, # Best gScore for a route reaching this world
+                    int, # Best remaining fuel for a route reaching this world
+                    int]], # Parsecs from world to target (note target not necessarily finish)
+                int # Min parsecs from target to finish (going via all waypoints)
+                ]] = []
         excludedWorlds: typing.Set[traveller.World] = set()
 
+        minRouteParsecs = 0
+        for index in range(sequenceLength - 1):
+            currentWorld = worldSequence[index]
+            targetWorld = worldSequence[index + 1]
+            minRouteParsecs += travellermap.hexDistance(
+                absoluteX1=currentWorld.absoluteX(),
+                absoluteY1=currentWorld.absoluteY(),
+                absoluteX2=targetWorld.absoluteX(),
+                absoluteY2=targetWorld.absoluteY())
+
+        startToCurrentParsecs = 0
+        for index in range(sequenceLength):
+            targetStates.append((set(), dict(), minRouteParsecs - startToCurrentParsecs))
+
+            if index != finishWorldIndex:
+                currentWorld = worldSequence[index]
+                targetWorld = worldSequence[index + 1]
+                startToCurrentParsecs += travellermap.hexDistance(
+                    absoluteX1=currentWorld.absoluteX(),
+                    absoluteY1=currentWorld.absoluteY(),
+                    absoluteX2=targetWorld.absoluteX(),
+                    absoluteY2=targetWorld.absoluteY())
+
         # Add the starting node to the open list
-        fuelParsecs = int(maxStartingFuel // shipFuelPerParsec)
+        fuelParsecs = math.floor(maxStartingFuel / shipFuelPerParsec)
         startNode = _RouteNode(
             targetIndex=1,
             world=startWorld,
             gScore=0,
             fScore=0,
-            isFuelWorld=isFuelWorld,
+            isFuelWorld=isCurrentFuelWorld,
             fuelParsecs=fuelParsecs,
             costContext=jumpCostCalculator.initialise(startWorld=startWorld),
             parent=None)
         heapq.heappush(openQueue, startNode)
-        bestValues[1] = {}
-        bestValues[1][startWorld] = (0, fuelParsecs) # Best gScore, Best Max Jump Parsecs
+
+        targetWorld = worldSequence[1]
+        currentToTargetParsecs = travellermap.hexDistance(
+            absoluteX1=startWorld.absoluteX(),
+            absoluteY1=startWorld.absoluteY(),
+            absoluteX2=targetWorld.absoluteX(),
+            absoluteY2=targetWorld.absoluteY())
+        targetStates[1][1][startWorld] = (0, fuelParsecs, currentToTargetParsecs)
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
         worldManager = traveller.WorldManager.instance()
 
         # Process nodes while the open list is not empty
-        finishWorldIndex = sequenceLength - 1
-        progressCount = 0
+        closedRoutes = 0
         while openQueue:
             if isCancelledCallback and isCancelledCallback():
                 return None
 
-            progressCount += 1
-
             # current node = node from open list with the lowest cost
             currentNode: _RouteNode = heapq.heappop(openQueue)
             currentWorld = currentNode.world()
-
-            # if current node = goal node then path complete
             targetIndex = currentNode.targetIndex()
             targetWorld = worldSequence[targetIndex]
+
+            targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
+            targetClosedSet.add(currentWorld)
+
+            # if current node = goal node then path complete
             if currentWorld == targetWorld:
                 # We've reached the target world for this segment of the jump route
                 if targetIndex == finishWorldIndex:
@@ -276,7 +358,7 @@ class RoutePlanner(object):
                     # Process it to generate the final list of route worlds then bail
                     return self._finaliseRoute(
                         finishNode=currentNode,
-                        progressCount=progressCount,
+                        progressCount=closedRoutes + 1, # +1 for this route
                         progressCallback=progressCallback)
 
                 # We've reached the current target for the node but there are still more worlds
@@ -296,31 +378,35 @@ class RoutePlanner(object):
                     if targetIndex >= finishWorldIndex:
                         return self._finaliseRoute(
                             finishNode=currentNode,
-                            progressCount=progressCount,
+                            progressCount=closedRoutes + 1, # +1 for this route
                             progressCallback=progressCallback)
 
-                # Add a score map for the new target index if one doesn't exist already
-                bestValuesForTarget = bestValues.get(targetIndex)
-                if bestValuesForTarget == None:
-                    bestValuesForTarget = {}
-                    bestValues[targetIndex] = bestValuesForTarget
-
                 # Update the best scores for entry for the current world
-                currentWorldBestScore, currentWorldBestFuelParsecs = \
-                    bestValuesForTarget.get(currentWorld, (None, None))
+                # NOTE: It's important to get the state for the new target
+                targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
+                currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs = \
+                    targetWorldData.get(currentWorld, (None, None, None))
+
                 currentWorldBestScore = currentNode.gScore() \
                     if currentWorldBestScore == None else \
                     min(currentNode.gScore(), currentWorldBestScore)
+
                 currentWorldBestFuelParsecs = currentNode.fuelParsecs() \
                     if currentWorldBestFuelParsecs == None else \
                     max(currentNode.fuelParsecs(), currentWorldBestFuelParsecs)
-                bestValuesForTarget[currentWorld] = \
-                    (currentWorldBestScore, currentWorldBestFuelParsecs)
-            else:
-                bestValuesForTarget = bestValues[targetIndex]
+
+                if currentToTargetParsecs == None:
+                    currentToTargetParsecs = travellermap.hexDistance(
+                        absoluteX1=currentWorld.absoluteX(),
+                        absoluteY1=currentWorld.absoluteY(),
+                        absoluteX2=targetWorld.absoluteX(),
+                        absoluteY2=targetWorld.absoluteY())
+
+                targetWorldData[currentWorld] = \
+                    (currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs)
 
             if progressCallback:
-                progressCallback(progressCount, False) # Search isn't finished
+                progressCallback(closedRoutes, False) # Search isn't finished
 
             if pitCostCalculator:
                 # Set search area based on the max distance we could jump from the current world. If
@@ -337,91 +423,92 @@ class RoutePlanner(object):
                 # this would actually happen but it should be handled
                 searchRadius = min(searchRadius, shipParsecsWithoutRefuelling)
                 if searchRadius <= 0:
+                    closedRoutes += 1
                     continue
             else:
                 # Fuel based route calculation is disabled so always search for the full ship jump
                 # rating
                 searchRadius = shipJumpRating
 
-            # examine each node adjacent to the current node. The world filter isn't passed in
-            # as it's quicker to use the open and closed set to filter out large numbers of
-            # them before calling the more expensive world filter
-            adjacent = worldManager.worldsInArea(
-                sectorName=currentWorld.sectorName(),
-                worldX=currentWorld.x(),
-                worldY=currentWorld.y(),
+            adjacentIterator = worldManager.yieldWorldsInArea(
+                centerX=currentWorld.absoluteX(),
+                centerY=currentWorld.absoluteY(),
                 searchRadius=searchRadius)
-            if not adjacent:
-                continue
+            possibleRoutes = 0
+            addedRoutes = 0
+            for adjacentWorld in adjacentIterator:
+                possibleRoutes += 1
 
-            for adjacentWorld in adjacent:
-                # WorldsInArea always returns the current world in the search area but it shouldn't
-                # be processed as an adjacent world
-                if adjacentWorld == currentWorld:
+                adjacentParsecs = travellermap.hexDistance(
+                    absoluteX1=currentWorld.absoluteX(),
+                    absoluteY1=currentWorld.absoluteY(),
+                    absoluteX2=adjacentWorld.absoluteX(),
+                    absoluteY2=adjacentWorld.absoluteY())
+
+                # Work out the max amount of fuel the ship can have in the tank after completing
+                # the jump from the current world to the adjacent world.
+                if pitCostCalculator:
+                    isAdjacentFuelWorld = pitCostCalculator.refuellingType(
+                        world=adjacentWorld) != None
+                    if currentNode.isFuelWorld():
+                        fuelParsecs = shipParsecsWithoutRefuelling - adjacentParsecs
+                    else:
+                        fuelParsecs = currentNode.fuelParsecs() - adjacentParsecs
+
+                    if fuelParsecs < 0:
+                        # If the fuel parsecs is negative it means, when following this route, there
+                        # is no way to take on enough fuel to reach the adjacent world
+                        continue
+
+                    if (not isAdjacentFuelWorld) and (fuelParsecs < 1) and (adjacentWorld != finishWorld):
+                        # The adjacent world isn't a fuel world and the ship won't have enough
+                        # fuel to jump on so there is no point continuing the route
+                        continue
+                else:
+                    isAdjacentFuelWorld = False
+                    # Fuel based route calculation is disabled. These values have no effect but
+                    # must be set to something
+                    fuelParsecs = shipJumpRating
+
+                adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs = \
+                    targetWorldData.get(adjacentWorld, (None, None, None))
+
+                # Skip worlds that have already been reached with a BETTER cost unless they this
+                # route means the ship will have have more fuel for the onward journey. If the
+                # adjacent world is a previously processed world but we've found a route with
+                # better fuelling potential, the adjacent world will be added to queue with
+                # standard g/f scores. This will mean it will be prioritised lower than the
+                # previous route that had a better cost but worse fuelling potential. This route
+                # will only get further processing if that better cost route fails due to running
+                # out of fuel.
+                # In the case that fuel based routing is disabled, the new fuel parsecs and best
+                # fuel parsecs will always be the ship jump rating (i.e. the same) so the closed
+                # worlds set will always be checked.
+                if (adjacentWorldBestFuelParsecs != None) and (fuelParsecs <= adjacentWorldBestFuelParsecs) and \
+                        (adjacentWorld in targetClosedSet):
                     continue
 
-                # Check if the adjacent world can be used for refuelling
-                if pitCostCalculator:
-                    isFuelWorld = pitCostCalculator.refuellingType(
-                        world=adjacentWorld) != None
-                else:
-                    isFuelWorld = False
-
                 # If the adjacent world isn't the current target world, check if it's been excluded
-                if adjacentWorld != targetWorld:
+                if worldFilterCallback and (adjacentWorld != targetWorld):
                     if adjacentWorld in excludedWorlds:
                         continue # World has already been excluded
 
-                    # When fuel based route calculation is enabled, non-fuel worlds are only considered
-                    # if the ship can travel more parsecs than its jump rating without refuelling. Non-fuel
-                    # worlds are only worth considering when jumping via them could allow the ship to
-                    # reach a fuel (or target) world that it couldn't jump to directly. If the ships tank
-                    # can't hold more fuel than it's jump rating then this will never be possible.
-                    if pitCostCalculator and (not isFuelWorld) and (shipParsecsWithoutRefuelling <= shipJumpRating):
-                        excludedWorlds.add(adjacentWorld)
-                        continue
-
                     # Apply custom world filter. This may be expensive so should be applied after lower
                     # cost filters.
-                    if worldFilterCallback and not worldFilterCallback(adjacentWorld):
+                    if not worldFilterCallback(adjacentWorld):
                         excludedWorlds.add(adjacentWorld)
                         continue
-
-                jumpDistance = travellermap.hexDistance(
-                    currentWorld.absoluteX(),
-                    currentWorld.absoluteY(),
-                    adjacentWorld.absoluteX(),
-                    adjacentWorld.absoluteY())
 
                 # Calculate the cost of jumping to the adjacent world
                 jumpCost, costContext = jumpCostCalculator.calculate(
                     currentWorld,
                     adjacentWorld,
-                    jumpDistance,
+                    adjacentParsecs,
                     currentNode.costContext())
                 if jumpCost == None:
                     continue
 
-                # Work out the max amount of fuel the ship can have in the tank after completing
-                # the jump from the current world to the adjacent world.
-                if pitCostCalculator:
-                    if currentNode.isFuelWorld():
-                        fuelParsecs = shipParsecsWithoutRefuelling - jumpDistance
-                    else:
-                        fuelParsecs = currentNode.fuelParsecs() - jumpDistance
-
-                    if (not isFuelWorld) and (fuelParsecs <= 0) and (adjacentWorld != finishWorld):
-                        # The adjacent world can't be used for refuelling and the ship won't have enough
-                        # fuel to jump on when it gets there so abandon this route early
-                        continue
-                else:
-                    # Fuel based route calculation is disabled. These values have no effect but
-                    # must be set to something
-                    fuelParsecs = shipJumpRating
-
                 tentativeScore = currentNode.gScore() + jumpCost
-                adjacentWorldBestScore, adjacentWorldBestFuelParsecs = \
-                    bestValuesForTarget.get(adjacentWorld, (None, None))
                 isBetter = (adjacentWorldBestScore == None) or \
                     (tentativeScore < adjacentWorldBestScore) or \
                     (fuelParsecs > adjacentWorldBestFuelParsecs)
@@ -430,31 +517,40 @@ class RoutePlanner(object):
                     adjacentWorldBestScore = tentativeScore \
                         if adjacentWorldBestScore == None else \
                         min(tentativeScore, adjacentWorldBestScore)
+
                     adjacentWorldBestFuelParsecs = fuelParsecs \
                         if adjacentWorldBestFuelParsecs == None else \
                         max(fuelParsecs, adjacentWorldBestFuelParsecs)
-                    bestValuesForTarget[adjacentWorld] = \
-                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs)
 
-                    # Use number of jumps between adjacent world and finish world as fScore
-                    # modifier. In the case that two worlds have the same gScore this will cause
-                    # the one that is closer to the finish world to be processed first
-                    fScoreModifier = travellermap.hexDistance(
-                        absoluteX1=adjacentWorld.absoluteX(),
-                        absoluteY1=adjacentWorld.absoluteY(),
-                        absoluteX2=finishWorld.absoluteX(),
-                        absoluteY2=finishWorld.absoluteY()) / shipJumpRating
+                    if adjacentToTargetMinParsecs == None:
+                        adjacentToTargetMinParsecs = travellermap.hexDistance(
+                            absoluteX1=adjacentWorld.absoluteX(),
+                            absoluteY1=adjacentWorld.absoluteY(),
+                            absoluteX2=targetWorld.absoluteX(),
+                            absoluteY2=targetWorld.absoluteY())
+
+                    targetWorldData[adjacentWorld] = \
+                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs)
+
+                    # For estimating the cost of the remaining portion of the
+                    # route, use min distance from the adjacent world to the
+                    # finish going via all remaining waypoints
+                    remainingEstimate = jumpCostCalculator.estimate(
+                        parsecsToFinish=adjacentToTargetMinParsecs + targetToFinishMinParsecs)
 
                     newNode = _RouteNode(
                         targetIndex=targetIndex,
                         world=adjacentWorld,
                         gScore=tentativeScore,
-                        fScore=tentativeScore + fScoreModifier,
-                        isFuelWorld=isFuelWorld,
+                        fScore=tentativeScore + remainingEstimate,
+                        isFuelWorld=isAdjacentFuelWorld,
                         fuelParsecs=fuelParsecs,
                         costContext=costContext,
                         parent=currentNode)
                     heapq.heappush(openQueue, newNode)
+                    addedRoutes += 1
+
+            closedRoutes += possibleRoutes - addedRoutes
 
         return None # No route found
 

@@ -1,6 +1,8 @@
 import enum
 import logic
+import math
 import traveller
+import travellermap
 import typing
 
 class RouteOptimisation(enum.Enum):
@@ -11,6 +13,13 @@ class RouteOptimisation(enum.Enum):
 # This cost function finds the route with fewest jumps but not necessarily the shortest distance.
 # The fewest jumps route is important as it takes the shortest time.
 class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
+    def __init__(
+            self,
+            shipJumpRating: int
+            ) -> None:
+        super().__init__()
+        self._shipJumpRating = shipJumpRating
+
     def initialise(
             self,
             startWorld: traveller.World
@@ -21,10 +30,18 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            jumpParsecs: int,
+            jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
         return (1, None)
+
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        return parsecsToFinish / self._shipJumpRating
 
 # This cost function finds the route that covers the shortest distance but not necessarily the
 # fewest number of jumps. The shortest distance route is important as uses the least fuel (although
@@ -49,10 +66,18 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             self,
             currentWorld: traveller.World,
             nextWorld: traveller.World,
-            jumpParsecs: int,
+            jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
-        return (jumpParsecs + ShortestDistanceCostCalculator._PerJumpConstant, None)
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
+        return (jumpParsecs + self._PerJumpConstant, None)
+
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        return parsecsToFinish
 
 # This cost function finds the route with the lowest cost. It tracks the amount of fuel in the ship
 # and the last world that fuel could have been taken on.
@@ -97,6 +122,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             shipTonnage: int,
             shipFuelCapacity: int,
             shipCurrentFuel: float,
+            shipJumpRating: int,
             perJumpOverheads: int,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None,
             shipFuelPerParsec: typing.Optional[float] = None
@@ -105,6 +131,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         self._shipFuelCapacity = shipFuelCapacity
         self._shipCurrentFuel = shipCurrentFuel
         self._shipFuelPerParsec = shipFuelPerParsec
+        self._shipJumpRating = shipJumpRating
         self._pitCostCalculator = pitCostCalculator
         self._perJumpOverheads = perJumpOverheads
 
@@ -114,7 +141,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
                 shipTonnage=self._shipTonnage)
             self._shipFuelPerParsec = self._shipFuelPerParsec.value()
 
-        self._parsecsWithoutRefuelling = int(self._shipFuelCapacity // self._shipFuelPerParsec)
+        self._parsecsWithoutRefuelling = math.floor(self._shipFuelCapacity / self._shipFuelPerParsec)
 
     def initialise(
             self,
@@ -144,14 +171,16 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
         # For the route finder algorithm to work the cost for a jump can't be 0. To avoid this the
         # jump has a default cost of 1, this is the case even when the calculated cost for the
         # jump wouldn't have been 0. This is done so that it doesn't adversely effect what is seen
         # as the optimal route as all potential jumps are skewed by the same amount. A desirable
         # side effect of this is, in the case where there are multiple routes that have the same
         # lowest cost, then the route finder will choose the one with the lowest number of jumps.
-        jumpCost = 1
+        jumpCost = 0.0001
 
         # Always add per jump overhead (but it may be 0)
         jumpCost += self._perJumpOverheads
@@ -160,6 +189,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             # Fuel based route calculation is disabled
             return (jumpCost, None)
 
+        # Cheapest route should always have a cost context
         assert(isinstance(costContext, CheapestRouteCostCalculator._CostContext))
 
         currentFuel = costContext.currentFuel()
@@ -217,3 +247,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             lastBerthingCost=berthingCost)
 
         return (jumpCost, newCostContext)
+
+    def estimate(
+            self,
+            parsecsToFinish: int
+            ) -> float:
+        return (parsecsToFinish / self._shipJumpRating) * self._perJumpOverheads
