@@ -430,24 +430,10 @@ class RoutePlanner(object):
                 # rating
                 searchRadius = shipJumpRating
 
-            adjacentIterator = None
-            if targetIndex == finishWorldIndex:
-                currentToFinishParsecs = travellermap.hexDistance(
-                    currentWorld.absoluteX(),
-                    currentWorld.absoluteY(),
-                    finishWorld.absoluteX(),
-                    finishWorld.absoluteY())
-                couldJumpToFinish = currentToFinishParsecs <= shipJumpRating
-                canJumpToFinish = couldJumpToFinish and currentNode.fuelParsecs() >= currentToFinishParsecs
-                if canJumpToFinish:
-                    adjacentIterator = [targetWorld]
-
-            if adjacentIterator == None:
-                adjacentIterator = worldManager.yieldWorldsInArea(
-                    centerX=currentWorld.absoluteX(),
-                    centerY=currentWorld.absoluteY(),
-                    searchRadius=searchRadius)
-
+            adjacentIterator = worldManager.yieldWorldsInArea(
+                centerX=currentWorld.absoluteX(),
+                centerY=currentWorld.absoluteY(),
+                searchRadius=searchRadius)
             possibleRoutes = 0
             addedRoutes = 0
             for adjacentWorld in adjacentIterator:
