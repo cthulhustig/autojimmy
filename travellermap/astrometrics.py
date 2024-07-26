@@ -229,22 +229,6 @@ def absoluteRadiusHexes(
         centerX: int,
         centerY: int,
         radius: int
-        ) -> typing.Iterable[typing.Tuple[int, int]]:
-    minX = centerX - (radius + 1)
-    maxX = centerX + (radius + 1)
-    minY = centerY - (radius + 1)
-    maxY = centerY + (radius + 1)
-    hexes = []
-    for y in range(minY, maxY + 1):
-        for x in range(minX, maxX + 1):
-            if hexDistance(centerX, centerY, x, y) == radius:
-                hexes.append((x, y))
-    return hexes
-
-def yieldAbsoluteRadiusHexes(
-        centerX: int,
-        centerY: int,
-        radius: int
         ) -> typing.Generator[typing.Tuple[int, int], None, None]:
     if radius == 0:
         yield (centerX, centerY)
@@ -282,44 +266,19 @@ def relativeRadiusHexes(
         centerHexX: int,
         centerHexY: int,
         radius: int
-        ) -> typing.Iterable[typing.Tuple[int, int, int, int]]:
-    centerX, centerY = relativeHexToAbsoluteHex(
-        sectorX=centerSectorX,
-        sectorY=centerSectorY,
-        worldX=centerHexX,
-        worldY=centerHexY)
-
-    absoluteHexes = absoluteRadiusHexes(
-        centerX=centerX,
-        centerY=centerY,
-        radius=radius)
-
-    relativeHexes = []
-    for absoluteX, absoluteY in absoluteHexes:
-        relativeHexes.append(absoluteHexToRelativeHex(
-            absoluteX=absoluteX,
-            absoluteY=absoluteY))
-
-    return relativeHexes
-
-def yieldRelativeRadiusHexes(
-        centerSectorX: int,
-        centerSectorY: int,
-        centerHexX: int,
-        centerHexY: int,
-        radius: int
         ) -> typing.Generator[typing.Tuple[int, int, int, int], None, None]:
     if radius == 0:
         yield (centerSectorX, centerSectorY, centerHexX, centerHexY)
         return
 
-    startSectorY = centerSectorY
-    startHexY = centerHexY + radius
-    if startHexY > SectorHeight:
-        startSectorY += int(startHexY / SectorHeight)
-        startHexY = int(startHexY // SectorHeight)
-
-    current = (centerSectorX, startSectorY, centerHexX, startHexY)
+    absoluteCenter = relativeHexToAbsoluteHex(
+        sectorX=centerSectorX,
+        sectorY=centerSectorY,
+        worldX=centerHexX,
+        worldY=centerHexY)
+    current = absoluteHexToRelativeHex(
+        absoluteX=absoluteCenter[0],
+        absoluteY=absoluteCenter[1] + radius)
 
     for _ in range(radius):
         current = neighbourRelativeHex(current, NeighbourDirs.UpperRight)
