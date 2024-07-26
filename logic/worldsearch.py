@@ -937,14 +937,13 @@ class WorldSearch(object):
 
     def searchArea(
             self,
-            sectorHex: str,
+            centerX: int,
+            centerY: int,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
-        sectorName, worldX, worldY = traveller.splitSectorHex(sectorHex=sectorHex)
         return traveller.WorldManager.instance().worldsInArea(
-            sectorName=sectorName,
-            worldX=worldX,
-            worldY=worldY,
+            centerX=centerX,
+            centerY=centerY,
             searchRadius=searchRadius,
             worldFilterCallback=self.checkWorld)
 

@@ -202,33 +202,13 @@ class WorldManager(object):
 
         return None
 
-    # Reimplementation of code from Traveller Map source code (Sectors in Selector.cs)
-    # NOTE: The results for this are not limited to the sector specified by sectorName. It, when
-    # combined with worldX & worldY just give the center of the search radius. The name and x/y
-    # values are basically sector hex but split out as its more efficient when this is being
-    # called repeatedly as part of the jump route planning
-    # NOTE: For speed the sector name must be the canonical sector name
     def worldsInArea(
             self,
-            sectorName: str,
-            worldX: int,
-            worldY: int,
+            centerX: int,
+            centerY: int,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
-        # TODO: Looking up by sector name is horribly inefficient
-        # Sector name lookup is case insensitive. The sector name map stores sector names in lower
-        # so search name should be converted to lower case before searching
-        sectorName = sectorName.lower()
-        centerSector = self._canonicalNameMap.get(sectorName)
-        if not centerSector:
-            raise RuntimeError(f'Unknown sector "{sectorName}"')
-        centerX, centerY = travellermap.relativeHexToAbsoluteHex(
-            sectorX=centerSector.x(),
-            sectorY=centerSector.y(),
-            worldX=worldX,
-            worldY=worldY)
-
         return list(self.yieldWorldsInArea(
             centerX=centerX,
             centerY=centerY,
