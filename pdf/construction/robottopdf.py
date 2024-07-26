@@ -6,6 +6,7 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.platypus import PageBreak, Table, TableStyle, Flowable
 
 import app
+import math
 import pdf
 import robots
 import typing
@@ -328,6 +329,7 @@ class RobotToPdf(object):
             tableSpans = []
 
             _, usableHeight = self._usablePageSize()
+            usableHeight -= math.ceil(_HeadingStyle.fontSize)
             usableHeight -= min(_CellVerticalPadding * 2, usableHeight)
             usableHeight -= 20
             thirdHeight = usableHeight / 3
@@ -353,6 +355,7 @@ class RobotToPdf(object):
             tableData.append(row)
 
             layout.append(PageBreak())
+            layout.append(pdf.ParagraphEx(text='Notes', style=_HeadingStyle))
             layout.append(self._createTable(
                 data=tableData,
                 spans=tableSpans,
