@@ -68,7 +68,9 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
         return (jumpParsecs + self._PerJumpConstant, None)
 
     def estimate(
@@ -169,7 +171,9 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             nextWorld: traveller.World,
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
-            ) -> typing.Tuple[typing.Optional[float], typing.Any]:
+            ) -> typing.Tuple[
+                typing.Optional[float], # Cost from current to next world
+                typing.Any]: # New cost context
         # For the route finder algorithm to work the cost for a jump can't be 0. To avoid this the
         # jump has a default cost of 1, this is the case even when the calculated cost for the
         # jump wouldn't have been 0. This is done so that it doesn't adversely effect what is seen
