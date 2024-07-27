@@ -107,7 +107,7 @@ class _RobotPDFExportDialog(gui.DialogEx):
         self._includeManifestTableCheckBox = gui.CheckBoxEx('Include Manifest Table')
         self._includeManifestTableCheckBox.setChecked(True)
 
-        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
+        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include Modifiers in Skill Levels')
         self._applySkillModifiersCheckBox.setChecked(False)
 
         self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')

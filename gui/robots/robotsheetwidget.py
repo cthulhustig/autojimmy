@@ -20,18 +20,19 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
     _ApplySkillModifiersToolTip = \
         """
-        <p>Choose if the skill levels displayed include the DM for the
-        characteristic most commonly used with the skill.</p>
-        <p>The skill values listed for robots in the Robot Handbook have the
-        DM for the characteristic that is most commonly used with that skill
-        pre-applied. This can result in ambiguities and unnecessary complexities
-        when dealing with anything other than simple robots and encounters, for
-        example robots that have manipulators with different characteristics or
-        making skill check where the standard characteristic isn't the one that
-        is appropriate for the situation at hand (e.g. using Gun Combat to try
-        and identify an obscure model of pistol would use INT or EDU rather than
-        DEX). To avoid these potential issues, by default, {name} will only
-        display the base skill level without characteristic DMs included.</p>
+        <p>Choose if the skill levels displayed include the characteristic DMs
+        and other modifiers.</p>
+        <p>The skill values listed for robots in the Robot Handbook have
+        characteristic DMs and some other modifiers (e.g. manipulator athletics
+        skills) pre-applied. This can result in ambiguities and unnecessary
+        complexities when dealing with anything other than simple robots and
+        encounters, for example, robots that have manipulators with different
+        characteristics or making skill check where the standard characteristic
+        isn't the one that is appropriate for the situation at hand (e.g. using
+        Gun Combat to try and identify an obscure model of pistol would use INT
+        or EDU rather than DEX). To avoid these potential issues, by default,
+        {name} will only display the base skill level without characteristic DMs
+        included.</p>
         <p><b>When characteristic DMs are being included in the displayed skill
         values, the list of automatically generated notes will still contain
         notes covering the modifiers that have been pre-applied. It's up to the
@@ -45,12 +46,12 @@ class RobotSheetWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self._robot = None
 
-        self._characteristicsDMCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
-        self._characteristicsDMCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
-        self._characteristicsDMCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
+        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include Modifiers DMs in Skill Levels')
+        self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
 
         controlsLayout = QtWidgets.QVBoxLayout()
-        controlsLayout.addWidget(self._characteristicsDMCheckBox)
+        controlsLayout.addWidget(self._applySkillModifiersCheckBox)
         controlsLayout.addStretch()
 
         self._table = gui.TableWidgetEx()
@@ -128,7 +129,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(self._StateVersion)
 
-        modifiersState = self._characteristicsDMCheckBox.saveState()
+        modifiersState = self._applySkillModifiersCheckBox.saveState()
         stream.writeUInt32(modifiersState.count() if modifiersState else 0)
         if modifiersState:
             stream.writeRawData(modifiersState.data())
@@ -150,14 +151,14 @@ class RobotSheetWidget(QtWidgets.QWidget):
         if count <= 0:
             return True
         modifiersState = QtCore.QByteArray(stream.readRawData(count))
-        if not self._characteristicsDMCheckBox.restoreState(modifiersState):
+        if not self._applySkillModifiersCheckBox.restoreState(modifiersState):
             return False
 
         return True
 
     def _updateTable(self) -> None:
         worksheet = self._robot.worksheet(
-            applySkillModifiers=self._characteristicsDMCheckBox.isChecked())
+            applySkillModifiers=self._applySkillModifiersCheckBox.isChecked())
 
         self._table.clear()
 
