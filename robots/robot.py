@@ -702,23 +702,69 @@ class Robot(construction.ConstructableInterface):
                     infix='Cr')
                 calculations.append(cost)
             elif field == robots.Worksheet.Field.Skills:
-                skillString = []
+                skillMap: typing.Dict[
+                    typing.Tuple[traveller.SkillDefinition, typing.Union[str, enum.Enum]],
+                    typing.Tuple[common.ScalarCalculation, construction.SkillFlags]] = {}
                 for skill in self.skills():
+                    skillDef = skill.skillDef()
                     specialities = skill.specialities()
-                    if not specialities:
-                        specialities = [None]
-                    for speciality in specialities:
-                        if applySkillModifiers:
-                            skillLevel = self._calcModifierSkillLevel(
-                                skill=skill,
-                                speciality=speciality)
-                        else:
-                            skillLevel = skill.level(speciality=speciality)
+                    if specialities:
+                        for speciality in specialities:
+                            skillMap[(skillDef, speciality)] = (
+                                skill.level(speciality=speciality),
+                                skill.flags(speciality=speciality))
+                    else:
+                        skillMap[(skillDef, None)] = (
+                            skill.level(),
+                            skill.flags())
 
-                        skillString.append('{skill} {level}'.format(
-                            skill=skill.name(speciality=speciality),
-                            level=skillLevel.value()))
-                        calculations.append(skillLevel)
+
+                if applySkillModifiers:
+                    weaponSet = self.weaponSet()
+                    fireControlSkills: typing.List[
+                        typing.Tuple[
+                            traveller.SkillDefinition,
+                            typing.Union[str, enum.Enum],
+                            common.ScalarCalculation]] = []
+                    for component in self.findComponents(componentType=robots.MountedWeapon):
+                        assert(isinstance(component, robots.MountedWeapon))
+                        if component.fireControl():
+                            fireControlSkills.append(component.fireControlSkill(weaponSet=weaponSet))
+                    for component in self.findComponents(componentType=robots.HandHeldFireControl):
+                        assert(isinstance(component, robots.HandHeldFireControl))
+                        if component.fireControl():
+                            fireControlSkills.append(component.fireControlSkill(weaponSet=weaponSet))
+
+                    for skillDef, speciality, level in fireControlSkills:
+                        zeroLevelKey = (skillDef, None)
+                        if zeroLevelKey in skillMap:
+                            del skillMap[zeroLevelKey]
+
+                        skillKey = (skillDef, speciality)
+                        currentLevel, _ = skillMap.get(skillKey, (None, None))
+                        if (not currentLevel) or (currentLevel.value() < level.value()):
+                            skillMap[skillKey] = (
+                                level,
+                                construction.SkillFlags.ApplyPositiveCharacteristicModifier |
+                                construction.SkillFlags.ApplyNegativeCharacteristicModifier)
+
+                skillString = []
+                for skillKey, skillData in skillMap.items():
+                    skillDef = skillKey[0]
+                    speciality = skillKey[1]
+                    level = skillData[0]
+                    flags = skillData[1]
+                    if applySkillModifiers:
+                        level = self._calcModifierSkillLevel(
+                            skillDef=skillDef,
+                            speciality=speciality,
+                            level=level,
+                            flags=flags)
+
+                    skillString.append('{skill} {level}'.format(
+                        skill=skillDef.name(speciality=speciality),
+                        level=level.value()))
+                    calculations.append(level)
                 skillString.sort()
 
                 # Add the amount of spare bandwidth, this should always be done at
@@ -981,17 +1027,17 @@ class Robot(construction.ConstructableInterface):
 
     def _calcModifierSkillLevel(
             self,
-            skill: construction.Skill,
+            skillDef: traveller.SkillDefinition,
+            level: common.ScalarCalculation,
+            flags: construction.SkillFlags,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> common.ScalarCalculation:
-        level = skill.level(speciality=speciality)
-        flags = skill.flags(speciality=speciality)
         if (flags & construction.SkillFlagsCharacteristicModifierMask) == 0:
             # Characteristic modifiers aren't applied for this skill
             return level
 
         characteristic = robots.skillToCharacteristic(
-            skillDef=skill.skillDef(),
+            skillDef=skillDef,
             speciality=speciality)
         if not characteristic:
             # There is no applicable robot characteristic for this skill
@@ -1040,7 +1086,7 @@ class Robot(construction.ConstructableInterface):
         return common.Calculator.add(
             lhs=level,
             rhs=characteristicModifier,
-            name=f'Modified {skill.name(speciality=speciality)} Skill Level')
+            name=f'Modified {skillDef.name(speciality=speciality)} Skill Level')
 
     def _createStages(
             self

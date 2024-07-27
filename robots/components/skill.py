@@ -1377,8 +1377,7 @@ class HunterKillerSkillPackage(SkillPackage):
                 traveller.SkillDefinition, # Skill
                 typing.Optional[typing.Union[enum.Enum, str]], # Speciality
                 int # Level
-            ]]] = None,
-            notes: typing.Optional[typing.Iterable[str]] = None
+            ]]] = None
             ) -> None:
         super().__init__(
             componentName=componentName,
