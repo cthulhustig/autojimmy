@@ -718,8 +718,8 @@ class Robot(construction.ConstructableInterface):
                             skill.level(),
                             skill.flags())
 
-
                 if applySkillModifiers:
+                    # Apply fire control to weapon skills
                     weaponSet = self.weaponSet()
                     fireControlSkills: typing.List[
                         typing.Tuple[
@@ -745,22 +745,84 @@ class Robot(construction.ConstructableInterface):
                         if (not currentLevel) or (currentLevel.value() < level.value()):
                             skillMap[skillKey] = (
                                 level,
+                                # Positive and negative characteristics DMs
+                                # should be applied. I can't find anywhere that
+                                # explicitly states this but it seems logical
+                                # based on the clarifications from Geir where he
+                                # said the intention fire control was intended
+                                # to be used instead of the robots weapon skill
+                                # _and_ that combat was meant to work the same
+                                # as for meatsack travellers.
                                 construction.SkillFlags.ApplyPositiveCharacteristicModifier |
                                 construction.SkillFlags.ApplyNegativeCharacteristicModifier)
+
+                    # Apply manipulator DEX/STR to athletics skill
+                    skill = self.skill(skillDef=traveller.AthleticsSkillDefinition)
+                    if skill:
+                        manipulators = self.findComponents(componentType=robots.Manipulator)
+                        baseDexLevel = skill.level(speciality=traveller.AthleticsSkillSpecialities.Dexterity)
+                        baseStrLevel = skill.level(speciality=traveller.AthleticsSkillSpecialities.Strength)
+                        newDexLevel = newStrLevel = None
+                        for index, component in enumerate(manipulators):
+                            if isinstance(component, robots.RemoveBaseManipulator):
+                                continue
+                            assert(isinstance(component, robots.Manipulator))
+                            manipulatorDexDM = traveller.characteristicDM(
+                                level=component.dexterity())
+                            manipulatorDexDM = common.ScalarCalculation(
+                                value=manipulatorDexDM,
+                                name=f'Manipulator #{index} DEX Characteristic DM')
+                            manipulatorDexLevel = common.Calculator.add(
+                                lhs=baseDexLevel,
+                                rhs=manipulatorDexDM,
+                                name=f'Manipulator #{index} Athletics (Dexterity) Skill')
+                            if (newDexLevel == None) or manipulatorDexLevel.value() > newDexLevel.value():
+                                newDexLevel = manipulatorDexLevel
+
+                            manipulatorStrDM = traveller.characteristicDM(
+                                level=component.strength())
+                            manipulatorStrDM = common.ScalarCalculation(
+                                value=manipulatorStrDM,
+                                name=f'Manipulator #{index} STR Characteristic DM')
+                            manipulatorStrLevel = common.Calculator.add(
+                                lhs=baseStrLevel,
+                                rhs=manipulatorStrDM,
+                                name=f'Manipulator #{index} Athletics (Strength) Skill')
+                            if (newStrLevel == None) or manipulatorStrLevel.value() > newStrLevel.value():
+                                newStrLevel = manipulatorStrLevel
+
+                        # NOTE: When athletics skills are from manipulators,
+                        # characteristics DMs shouldn't be applied (p26)
+                        if newDexLevel:
+                            athleticsDexKey = (traveller.AthleticsSkillDefinition,
+                                               traveller.AthleticsSkillSpecialities.Dexterity)
+                            skillMap[athleticsDexKey] = (newDexLevel, 0)
+                        if newStrLevel:
+                            athleticsStrKey = (traveller.AthleticsSkillDefinition,
+                                               traveller.AthleticsSkillSpecialities.Strength)
+                            skillMap[athleticsStrKey] = (newStrLevel, 0)
+
+                        # If a new skill was set remove the level 0 Athletics
+                        # skill if it's set (as the listed specialisations
+                        # will imply Athletics 0)
+                        athleticsZeroKey = (traveller.AthleticsSkillDefinition, None)
+                        if (newDexLevel or newStrLevel) and (athleticsZeroKey in skillMap):
+                            del skillMap[athleticsZeroKey]
+
+                    # Apply characteristics modifiers to skills
+                    for skillKey, skillData in skillMap.items():
+                        level = self._calcModifierSkillLevel(
+                            skillDef=skillKey[0],
+                            speciality=skillKey[1],
+                            level=skillData[0],
+                            flags=skillData[1])
+                        skillMap[skillKey] = (level, skillData[1])
 
                 skillString = []
                 for skillKey, skillData in skillMap.items():
                     skillDef = skillKey[0]
                     speciality = skillKey[1]
                     level = skillData[0]
-                    flags = skillData[1]
-                    if applySkillModifiers:
-                        level = self._calcModifierSkillLevel(
-                            skillDef=skillDef,
-                            speciality=speciality,
-                            level=level,
-                            flags=flags)
-
                     skillString.append('{skill} {level}'.format(
                         skill=skillDef.name(speciality=speciality),
                         level=level.value()))
