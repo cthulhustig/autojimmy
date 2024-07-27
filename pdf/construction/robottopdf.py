@@ -485,7 +485,8 @@ class RobotToPdf(object):
             applySkillModifiers: bool
             ) -> Table:
         worksheet = robot.worksheet(
-            applySkillModifiers=applySkillModifiers)
+            applySkillModifiers=applySkillModifiers,
+            specialityGroupingCount=4) # TODO: Make this configurable
         tableData = []
         tableSpans = []
 

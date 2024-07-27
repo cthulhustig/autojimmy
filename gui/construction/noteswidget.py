@@ -38,7 +38,8 @@ class NotesWidget(QtWidgets.QWidget):
                 common.StringFilterType.Wildcard])
         self._filterTypeComboBox.activated.connect(self._updateFilter)
 
-        self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case")
+        self._filterIgnoreCaseCheckBox = gui.CheckBoxEx("Ignore Case:")
+        self._filterIgnoreCaseCheckBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
         self._filterIgnoreCaseCheckBox.setChecked(True)
         self._filterIgnoreCaseCheckBox.stateChanged.connect(self._updateFilter)
 
