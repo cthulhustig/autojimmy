@@ -832,6 +832,21 @@ class Robot(construction.ConstructableInterface):
                             if None in specialityMap:
                                 del specialityMap[None]
 
+                    # Apply active camouflage stealth skill
+                    component = self.findFirstComponent(
+                        componentType=robots.ActiveCamouflageSlotSlotOption)
+                    if isinstance(component, robots.ActiveCamouflageSlotSlotOption):
+                        specialityMap = skillMap.get(traveller.StealthSkillDefinition)
+                        if not specialityMap:
+                            specialityMap = {}
+                            skillMap[traveller.StealthSkillDefinition] = specialityMap
+                        specialityMap[None] = (component.stealthSkill(),
+                                               # Don't apply characteristics modifiers. This is based
+                                               # on Ultra (p258) as it would have Stealth 7 if it's DEX
+                                               # characteristic DM was being applied
+                                               construction.SkillFlags.NoNegativeCharacteristicModifier |
+                                               construction.SkillFlags.NoPositiveCharacteristicModifier)
+
                     # Apply characteristics modifiers to skills
                     for skillDef, specialityMap in skillMap.items():
                         for speciality, skillData in specialityMap.items():

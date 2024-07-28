@@ -2301,6 +2301,9 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
             constantSlots=1,
             incompatibleTypes=incompatibleTypes)
 
+    def stealthSkill(self) -> common.ScalarCalculation:
+        return _ActiveCamouflageSlotOptionImpl._StealthTrait
+
     def isZeroSlot(self) -> bool:
         return False
 
@@ -7303,6 +7306,10 @@ class ActiveCamouflageSlotSlotOption(ChassisSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ActiveCamouflageSlotOptionImpl())
+
+    def stealthSkill(self) -> common.ScalarCalculation:
+        assert(isinstance(self._impl, _ActiveCamouflageSlotOptionImpl))
+        return self._impl.stealthSkill()
 
 class AudibleConcealmentSlotOption(ChassisSlotOption):
     """
