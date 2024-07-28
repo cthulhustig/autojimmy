@@ -236,7 +236,7 @@ class ManifestTable(gui.ListTable):
 
         menuItems = [
             gui.MenuItem(
-                text='Calculation...',
+                text='Show Calculations...',
                 callback=lambda: self._showCalculations(calculations=calculations),
                 enabled=len(calculations) > 0
             ),

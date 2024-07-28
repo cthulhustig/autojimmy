@@ -273,7 +273,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
             ) -> None:
         menuItems = [
             gui.MenuItem(
-                text='Calculation...',
+                text='Show Calculations...',
                 callback=self._showCalculations),
             None,
             gui.MenuItem(
