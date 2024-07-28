@@ -1997,7 +1997,8 @@ class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ReconSkillDefinition,
             levels=_EnvironmentalProcessorSlotOptionImpl._ReconSkill,
-            flags=construction.SkillFlags(0),
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier,
             stacks=True))
 
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -2287,7 +2288,15 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=4,
         name='Active Camouflage Stealth Trait')
 
-    _StealthSkillNote = 'When active camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has. (clarified by Geir Lanesskog)'
+    _StealthSkillNote = \
+        'When active camouflage is enabled it effectively gives the robot ' \
+        'Stealth 4 vs Recon checks. This stacks with any other Stealth skill ' \
+        'the robot has. (clarified by Geir Lanesskog)\n\n' \
+        'Note that the worksheets for example robots in the Robot Handbook ' \
+        'list the Stealth skill given by active camouflage. It\'s listed as ' \
+        'a normal skill, however, it only applies in relation to using the ' \
+        'abilities of the active camouflage. Auto-Jimmy will also do this ' \
+        'when including DMs in final skill levels is enabled.'
 
     def __init__(
             self,
@@ -2299,6 +2308,9 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
             perBaseSlotCost=10000,
             constantSlots=1,
             incompatibleTypes=incompatibleTypes)
+
+    def stealthSkill(self) -> common.ScalarCalculation:
+        return _ActiveCamouflageSlotOptionImpl._StealthTrait
 
     def isZeroSlot(self) -> bool:
         return False
@@ -4915,7 +4927,8 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.NavigationSkillDefinition,
             levels=navigation,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier))
 
         step.addNote(_NavigationSystemSlotOptionImpl._NavigationNote)
 
@@ -6237,7 +6250,8 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ReconSkillDefinition,
             levels=recon,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier))
 
         step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
 
@@ -7300,6 +7314,10 @@ class ActiveCamouflageSlotSlotOption(ChassisSlotOption):
     def __init__(self) -> None:
         super().__init__(
             impl=_ActiveCamouflageSlotOptionImpl())
+
+    def stealthSkill(self) -> common.ScalarCalculation:
+        assert(isinstance(self._impl, _ActiveCamouflageSlotOptionImpl))
+        return self._impl.stealthSkill()
 
 class AudibleConcealmentSlotOption(ChassisSlotOption):
     """

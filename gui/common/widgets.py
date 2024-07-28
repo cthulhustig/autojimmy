@@ -335,11 +335,14 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
     def __init__(
             self,
             spinBox: typing.Union[SpinBoxEx, DoubleSpinBoxEx],
+            text: str = "",
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        self._checkBox = CheckBoxEx()
+        self._uncheckedValue = None
+
+        self._checkBox = CheckBoxEx(text)
         self._checkBox.stateChanged.connect(self._checkBoxChanged)
 
         self._spinBox = spinBox
@@ -360,7 +363,7 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
         self._checkBox.setChecked(checked)
 
     def value(self) -> typing.Optional[typing.Union[int, float]]:
-        return self._spinBox.value() if self._checkBox.isChecked() else None
+        return self._spinBox.value() if self._checkBox.isChecked() else self._uncheckedValue
 
     def setValue(self, value: typing.Optional[typing.Union[int, float]]) -> None:
         currentValue = self.value()
@@ -376,6 +379,16 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
             self._spinBox.setEnabled(value != None)
 
         self._emitValueChanged()
+
+    def uncheckedValue(self) -> typing.Optional[typing.Union[int, float]]:
+        return self._uncheckedValue
+
+    def setUncheckedValue(self, value: typing.Optional[typing.Union[int, float]]):
+        if value == self._uncheckedValue:
+            return
+        self._uncheckedValue = value
+        if not self.isChecked():
+            self._emitValueChanged()
 
     def setRange(self, min: typing.Union[int, float], max: typing.Union[int, float]) -> None:
         self._spinBox.setRange(min, max)
@@ -409,6 +422,12 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
     def prefix(self) -> str:
         return self._spinBox.prefix()
+
+    def layoutDirection(self) -> QtCore.Qt.LayoutDirection:
+        return self._checkBox.layoutDirection()
+
+    def setLayoutDirection(self, direction: QtCore.Qt.LayoutDirection) -> None:
+        self._checkBox.setLayoutDirection(direction)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -474,9 +493,11 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 class OptionalSpinBox(_BaseOptionalSpinBox):
     def __init__(
             self,
+            text: str = "",
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
+            text=text,
             spinBox=SpinBoxEx(),
             parent=parent)
 
@@ -485,6 +506,15 @@ class OptionalSpinBox(_BaseOptionalSpinBox):
     # union of int & float that the base classes implementation takes
     def value(self) -> typing.Optional[int]:
         return super().value()
+
+    def setValue(self, value: typing.Optional[int]) -> None:
+        super().setValue(value)
+
+    def uncheckedValue(self) -> typing.Optional[int]:
+        return super().uncheckedValue()
+
+    def setUncheckedValue(self, value: typing.Optional[int]):
+        super().setUncheckedValue(value)
 
     def setRange(self, min: int, max: int) -> None:
         super().setRange(min, max)
@@ -504,9 +534,11 @@ class OptionalSpinBox(_BaseOptionalSpinBox):
 class OptionalDoubleSpinBox(_BaseOptionalSpinBox):
     def __init__(
             self,
+            text: str = "",
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
+            text=text,
             spinBox=DoubleSpinBoxEx(),
             parent=parent)
 
@@ -532,6 +564,15 @@ class OptionalDoubleSpinBox(_BaseOptionalSpinBox):
     # union of int & float that the base classes implementation takes
     def value(self) -> typing.Optional[float]:
         return super().value()
+
+    def setValue(self, value: typing.Optional[float]) -> None:
+        super().setValue(value)
+
+    def uncheckedValue(self) -> typing.Optional[float]:
+        return super().uncheckedValue()
+
+    def setUncheckedValue(self, value: typing.Optional[float]):
+        super().setUncheckedValue(value)
 
     def setRange(self, min: float, max: float) -> None:
         super().setRange(min, max)

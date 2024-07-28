@@ -215,7 +215,7 @@ class IncreaseEndurance(EnduranceModification):
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Endurance,
             levels=enduranceSkill,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.SpecialityOnly))
 
         context.applyStep(
             sequence=sequence,

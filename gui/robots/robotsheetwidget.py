@@ -7,7 +7,7 @@ import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class RobotSheetWidget(QtWidgets.QWidget):
-    _StateVersion = 'RobotSheetWidget_v1'
+    _StateVersion = 'RobotSheetWidget_v2'
 
     _WorksheetTopRow = [
         robots.Worksheet.Field.Robot,
@@ -20,23 +20,34 @@ class RobotSheetWidget(QtWidgets.QWidget):
 
     _ApplySkillModifiersToolTip = \
         """
-        <p>Choose if the skill levels displayed include the DM for the
-        characteristic most commonly used with the skill.</p>
-        <p>The skill values listed for robots in the Robot Handbook have the
-        DM for the characteristic that is most commonly used with that skill
-        pre-applied. This can result in ambiguities and unnecessary complexities
-        when dealing with anything other than simple robots and encounters, for
-        example robots that have manipulators with different characteristics or
-        making skill check where the standard characteristic isn't the one that
-        is appropriate for the situation at hand (e.g. using Gun Combat to try
-        and identify an obscure model of pistol would use INT or EDU rather than
-        DEX). To avoid these potential issues, by default, {name} will only
-        display the base skill level without characteristic DMs included.</p>
+        <p>Specify if the skill levels displayed include the characteristic DMs
+        and other modifiers.</p>
+        <p>The skill values listed for robots in the Robot Handbook have
+        characteristic DMs and some other modifiers (e.g. manipulator athletics
+        skills) pre-applied. This can result in ambiguities and unnecessary
+        complexities when dealing with anything other than simple robots and
+        encounters, for example, robots that have manipulators with different
+        characteristics or making skill check where the standard characteristic
+        isn't the one that is appropriate for the situation at hand (e.g. using
+        Gun Combat to try and identify an obscure model of pistol would use INT
+        or EDU rather than DEX). To avoid these potential issues, by default,
+        {name} will only display the base skill level without characteristic DMs
+        included.</p>
         <p><b>When characteristic DMs are being included in the displayed skill
         values, the list of automatically generated notes will still contain
         notes covering the modifiers that have been pre-applied. It's up to the
         user to not double count them.</p>
         """.format(name=app.AppName)
+
+    _GroupSkillSpecialitiesToolTip = \
+        """
+        <p>Specify the number of specialities that must be taken in a skill for
+        the robot to be classes as having all specialities in that skill.</p>
+        <p>The robot handbook suggests that, at the referees discretion, taking
+        a number of specialities in the same skill at the same level can be
+        taken to mean the robot all specialities in that skill (p73). The
+        suggested number of specialities to require is 4.</p>
+        """
 
     def __init__(
             self,
@@ -45,12 +56,23 @@ class RobotSheetWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self._robot = None
 
-        self._characteristicsDMCheckBox = gui.CheckBoxEx('Include Characteristic DMs in Skill Levels')
-        self._characteristicsDMCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
-        self._characteristicsDMCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
+        self._applySkillModifiersCheckBox = gui.CheckBoxEx('Include DMs in Skill Levels:')
+        self._applySkillModifiersCheckBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
+        self._applySkillModifiersCheckBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._applySkillModifiersCheckBox.stateChanged.connect(self._applySkillModifiersChanged)
 
-        controlsLayout = QtWidgets.QVBoxLayout()
-        controlsLayout.addWidget(self._characteristicsDMCheckBox)
+        self._specialityGroupCountSpinBox = gui.OptionalSpinBox('Group Skill Specialities:')
+        self._specialityGroupCountSpinBox.setLayoutDirection(QtCore.Qt.LayoutDirection.RightToLeft)
+        self._specialityGroupCountSpinBox.setRange(3, 10)
+        self._specialityGroupCountSpinBox.setValue(4)
+        self._specialityGroupCountSpinBox.setUncheckedValue(0)
+        self._specialityGroupCountSpinBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._specialityGroupCountSpinBox.valueChanged.connect(self._specialityGroupCountChanged)
+
+        controlsLayout = QtWidgets.QHBoxLayout()
+        controlsLayout.addWidget(self._applySkillModifiersCheckBox)
+        controlsLayout.addSpacing(int(10 * app.Config.instance().interfaceScale()))
+        controlsLayout.addWidget(self._specialityGroupCountSpinBox)
         controlsLayout.addStretch()
 
         self._table = gui.TableWidgetEx()
@@ -128,10 +150,15 @@ class RobotSheetWidget(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(self._StateVersion)
 
-        modifiersState = self._characteristicsDMCheckBox.saveState()
-        stream.writeUInt32(modifiersState.count() if modifiersState else 0)
-        if modifiersState:
-            stream.writeRawData(modifiersState.data())
+        childState = self._applySkillModifiersCheckBox.saveState()
+        stream.writeUInt32(childState.count() if childState else 0)
+        if childState:
+            stream.writeRawData(childState.data())
+
+        childState = self._specialityGroupCountSpinBox.saveState()
+        stream.writeUInt32(childState.count() if childState else 0)
+        if childState:
+            stream.writeRawData(childState.data())
 
         return state
 
@@ -149,15 +176,23 @@ class RobotSheetWidget(QtWidgets.QWidget):
         count = stream.readUInt32()
         if count <= 0:
             return True
-        modifiersState = QtCore.QByteArray(stream.readRawData(count))
-        if not self._characteristicsDMCheckBox.restoreState(modifiersState):
+        childState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._applySkillModifiersCheckBox.restoreState(childState):
+            return False
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        childState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._specialityGroupCountSpinBox.restoreState(childState):
             return False
 
         return True
 
     def _updateTable(self) -> None:
         worksheet = self._robot.worksheet(
-            applySkillModifiers=self._characteristicsDMCheckBox.isChecked())
+            applySkillModifiers=self._applySkillModifiersCheckBox.isChecked(),
+            specialityGroupingCount=self._specialityGroupCountSpinBox.value())
 
         self._table.clear()
 
@@ -209,6 +244,9 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._table.resizeRowsToContents()
 
     def _applySkillModifiersChanged(self) -> None:
+        self._updateTable()
+
+    def _specialityGroupCountChanged(self) -> None:
         self._updateTable()
 
     def _copyToClipboardHtml(self) -> None:

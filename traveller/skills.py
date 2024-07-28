@@ -446,10 +446,6 @@ VaccSuitSkillDefinition = SkillDefinition(
     skillName='Vacc Suit',
     skillType=SkillDefinition.SkillType.Simple)
 
-# NOTE: This list shouldn't be used as custom construction type specific skills
-# can be defined. I've commented it out rather than delete it as it's the best
-# way I can see to prevent myself thinking it's a good idea in the future
-"""
 AllStandardSkills = [
     AdminSkillDefinition,
     AdvocateSkillDefinition,
@@ -490,4 +486,3 @@ AllStandardSkills = [
     SurvivalSkillDefinition,
     TacticsSkillDefinition
 ]
-"""

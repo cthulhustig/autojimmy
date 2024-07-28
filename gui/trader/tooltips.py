@@ -722,7 +722,7 @@ def _createTradeScoreToolTip(
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
 
     if posScores:
-        posScores.sort()
+        posScores.sort(key=str.casefold)
 
         toolTip += '<li>Positive Trade Good Scores:</li>'
         toolTip += f'<ul style="{_IndentListStyle}">'
@@ -733,7 +733,7 @@ def _createTradeScoreToolTip(
         toolTip += '</ul>'
 
     if negScores:
-        negScores.sort()
+        negScores.sort(key=str.casefold)
 
         toolTip += '<li>Negative Trade Good Scores:</li>'
         toolTip += f'<ul style="{_IndentListStyle}">'

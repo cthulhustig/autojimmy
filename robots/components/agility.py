@@ -96,8 +96,7 @@ class AgilityEnhancement(robots.RobotComponentInterface):
             skillDef=traveller.AthleticsSkillDefinition,
             speciality=traveller.AthleticsSkillSpecialities.Dexterity,
             levels=self._agilityModifier,
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier | \
-            construction.SkillFlags.ApplyNegativeCharacteristicModifier))
+            flags=construction.SkillFlags.SpecialityOnly))
 
         context.applyStep(
             sequence=sequence,

@@ -72,7 +72,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         sectorNames = list(traveller.WorldManager.instance().sectorNames())
-        sectorNames.sort()
+        sectorNames.sort(key=str.casefold)
 
         self._sectorComboBox = QtWidgets.QComboBox()
         self._sectorComboBox.addItems(sectorNames)
@@ -131,7 +131,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
             return
 
         subsectorNames = list(sector.subsectorNames())
-        subsectorNames.sort()
+        subsectorNames.sort(key=str.casefold)
         self._subsectorComboBox.addItems(subsectorNames)
 
 class _WorldRadiusSearchWidget(QtWidgets.QWidget):

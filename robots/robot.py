@@ -631,7 +631,8 @@ class Robot(construction.ConstructableInterface):
     # varies for robots with multiple manipulators.
     def worksheet(
             self,
-            applySkillModifiers: bool
+            applySkillModifiers: bool,
+            specialityGroupingCount: int # 0 means don't group
             ) -> robots.Worksheet:
         worksheet = robots.Worksheet()
 
@@ -659,6 +660,10 @@ class Robot(construction.ConstructableInterface):
                     componentString = locomotion.componentString()
                     if componentString not in locomotionStrings:
                         locomotionStrings.append(componentString)
+
+                if self.hasComponent(componentType=robots.VehicleSpeedMovement):
+                    locomotionStrings.append('VSM')
+
                 fieldText = Robot._formatWorksheetListString(
                     locomotionStrings,
                     emptyText='-')
@@ -678,7 +683,6 @@ class Robot(construction.ConstructableInterface):
                 if isinstance(attributeValue, common.ScalarCalculation):
                     speedStrings.append(common.formatNumber(
                         number=attributeValue.value(),
-                        prefix='2ndry: ',
                         suffix='m'))
                     calculations.append(attributeValue)
 
@@ -688,7 +692,7 @@ class Robot(construction.ConstructableInterface):
                 attributeValue = self.attributeValue(
                     attributeId=robots.RobotAttributeId.VehicleSpeed)
                 if isinstance(attributeValue, robots.SpeedBand):
-                    speedStrings.append(f'VSM: {attributeValue.value}')
+                    speedStrings.append(attributeValue.value)
 
                 fieldText = Robot._formatWorksheetListString(
                     speedStrings,
@@ -702,24 +706,191 @@ class Robot(construction.ConstructableInterface):
                     infix='Cr')
                 calculations.append(cost)
             elif field == robots.Worksheet.Field.Skills:
-                skillString = []
+                skillMap: typing.Dict[
+                    traveller.SkillDefinition,
+                    typing.Dict[
+                        typing.Union[str, enum.Enum],
+                        typing.Tuple[common.ScalarCalculation, construction.SkillFlags]]] = {}
                 for skill in self.skills():
+                    skillDef = skill.skillDef()
                     specialities = skill.specialities()
-                    if not specialities:
-                        specialities = [None]
-                    for speciality in specialities:
-                        if applySkillModifiers:
-                            skillLevel = self._calcModifierSkillLevel(
-                                skill=skill,
-                                speciality=speciality)
-                        else:
-                            skillLevel = skill.level(speciality=speciality)
 
+                    specialityMap = {}
+                    skillMap[skillDef] = specialityMap
+                    if specialities:
+                        for speciality in specialities:
+                            specialityMap[speciality] = (
+                                skill.level(speciality=speciality),
+                                skill.flags(speciality=speciality))
+                    else:
+                        specialityMap[None] = (skill.level(), skill.flags())
+
+                if applySkillModifiers:
+                    # Apply fire control to weapon skills
+                    weaponSet = self.weaponSet()
+                    fireControlSkills: typing.List[
+                        typing.Tuple[
+                            traveller.SkillDefinition,
+                            typing.Union[str, enum.Enum],
+                            common.ScalarCalculation]] = []
+                    for component in self.findComponents(componentType=robots.MountedWeapon):
+                        assert(isinstance(component, robots.MountedWeapon))
+                        if component.fireControl():
+                            fireControlSkills.append(component.fireControlSkill(weaponSet=weaponSet))
+                    for component in self.findComponents(componentType=robots.HandHeldFireControl):
+                        assert(isinstance(component, robots.HandHeldFireControl))
+                        if component.fireControl():
+                            fireControlSkills.append(component.fireControlSkill(weaponSet=weaponSet))
+
+                    for skillDef, speciality, level in fireControlSkills:
+                        if skillDef in skillMap and speciality in skillMap[skillDef]:
+                            currentLevel, _ = skillMap[skillDef][speciality]
+                        else:
+                            currentLevel = None
+
+                        if (not currentLevel) or (currentLevel.value() < level.value()):
+                            specialityMap = skillMap.get(skillDef)
+                            if not specialityMap:
+                                specialityMap = {}
+                                skillMap[skillDef] = specialityMap
+
+                            specialityMap[speciality] = (
+                                level,
+                                # Positive and negative characteristics DMs
+                                # should be applied. I can't find anywhere that
+                                # explicitly states this but it seems logical
+                                # based on the clarifications from Geir where he
+                                # said the intention fire control was intended
+                                # to be used instead of the robots weapon skill
+                                # _and_ that combat was meant to work the same
+                                # as for meatsack travellers.
+                                construction.SkillFlags(0))
+
+                            if None in specialityMap:
+                                # Remove zero level skill as it's implied by the
+                                # speciality that was just added
+                                del specialityMap[None]
+
+                    # Apply manipulator DEX/STR to athletics skill
+                    skill = self.skill(skillDef=traveller.AthleticsSkillDefinition)
+                    if skill:
+                        manipulators = self.findComponents(componentType=robots.Manipulator)
+                        baseDexLevel = skill.level(speciality=traveller.AthleticsSkillSpecialities.Dexterity)
+                        baseStrLevel = skill.level(speciality=traveller.AthleticsSkillSpecialities.Strength)
+                        newDexLevel = newStrLevel = None
+                        for index, component in enumerate(manipulators):
+                            if isinstance(component, robots.RemoveBaseManipulator):
+                                continue
+                            assert(isinstance(component, robots.Manipulator))
+
+                            if baseDexLevel:
+                                manipulatorDexDM = traveller.characteristicDM(
+                                    level=component.dexterity())
+                                manipulatorDexDM = common.ScalarCalculation(
+                                    value=manipulatorDexDM,
+                                    name=f'Manipulator #{index} DEX Characteristic DM')
+                                manipulatorDexLevel = common.Calculator.add(
+                                    lhs=baseDexLevel,
+                                    rhs=manipulatorDexDM,
+                                    name=f'Manipulator #{index} Athletics (Dexterity) Skill')
+                                if (newDexLevel == None) or manipulatorDexLevel.value() > newDexLevel.value():
+                                    newDexLevel = manipulatorDexLevel
+
+                            if baseStrLevel:
+                                manipulatorStrDM = traveller.characteristicDM(
+                                    level=component.strength())
+                                manipulatorStrDM = common.ScalarCalculation(
+                                    value=manipulatorStrDM,
+                                    name=f'Manipulator #{index} STR Characteristic DM')
+                                manipulatorStrLevel = common.Calculator.add(
+                                    lhs=baseStrLevel,
+                                    rhs=manipulatorStrDM,
+                                    name=f'Manipulator #{index} Athletics (Strength) Skill')
+                                if (newStrLevel == None) or manipulatorStrLevel.value() > newStrLevel.value():
+                                    newStrLevel = manipulatorStrLevel
+
+                        if newDexLevel or newStrLevel:
+                            specialityMap = skillMap.get(traveller.AthleticsSkillDefinition)
+                            if not specialityMap:
+                                specialityMap = {}
+                                skillMap[skillDef] = specialityMap
+
+                            # NOTE: When athletics skills are from manipulators,
+                            # characteristics DMs shouldn't be applied (p26)
+                            noCharacteristicDMs = construction.SkillFlags.NoNegativeCharacteristicModifier | \
+                                construction.SkillFlags.NoPositiveCharacteristicModifier
+                            if newDexLevel:
+                                specialityMap[traveller.AthleticsSkillSpecialities.Dexterity] = \
+                                    (newDexLevel, noCharacteristicDMs)
+                            if newStrLevel:
+                                specialityMap[traveller.AthleticsSkillSpecialities.Strength] = \
+                                    (newStrLevel, noCharacteristicDMs)
+
+                            # If a new skill was set remove the level 0 Athletics
+                            # skill if it's set (as the listed specialisations
+                            # will imply Athletics 0)
+                            if None in specialityMap:
+                                del specialityMap[None]
+
+                    # Apply active camouflage stealth skill
+                    component = self.findFirstComponent(
+                        componentType=robots.ActiveCamouflageSlotSlotOption)
+                    if isinstance(component, robots.ActiveCamouflageSlotSlotOption):
+                        specialityMap = skillMap.get(traveller.StealthSkillDefinition)
+                        if not specialityMap:
+                            specialityMap = {}
+                            skillMap[traveller.StealthSkillDefinition] = specialityMap
+                        specialityMap[None] = (component.stealthSkill(),
+                                               # Don't apply characteristics modifiers. This is based
+                                               # on Ultra (p258) as it would have Stealth 7 if it's DEX
+                                               # characteristic DM was being applied
+                                               construction.SkillFlags.NoNegativeCharacteristicModifier |
+                                               construction.SkillFlags.NoPositiveCharacteristicModifier)
+
+                    # Apply characteristics modifiers to skills
+                    for skillDef, specialityMap in skillMap.items():
+                        for speciality, skillData in specialityMap.items():
+                            level = skillData[0]
+                            flags = skillData[1]
+                            level = self._calcModifierSkillLevel(
+                                skillDef=skillDef,
+                                speciality=speciality,
+                                level=level,
+                                flags=flags)
+                            skillMap[skillDef][speciality] = (level, flags)
+
+                skillString = []
+                for skillDef, specialityMap in skillMap.items():
+                    if specialityGroupingCount and len(specialityMap) >= specialityGroupingCount:
+                        allSameLevel = True
+                        lastLevel = None
+                        for level, _ in specialityMap.values():
+                            if lastLevel and level.value() != lastLevel.value():
+                                allSameLevel = False
+                                break
+                            lastLevel = level
+
+                        if allSameLevel:
+                            skillString.append('{skill} {level}'.format(
+                                skill=skillDef.name(speciality='all'),
+                                level=lastLevel.value()))
+                            for level, _ in specialityMap.values():
+                                calculations.append(level)
+                            continue
+
+                    for speciality, skillData in specialityMap.items():
+                        level = skillData[0]
+                        if not skillDef.isSimple() and not speciality and level.value() > 0:
+                            # This should only happen if applying modifiers to skills
+                            # is enabled and a level 0 skill has been taken over 0.
+                            # In this situation use a fake speciality of 'all' to make
+                            # things look a bit more like the rule book
+                            speciality = 'all'
                         skillString.append('{skill} {level}'.format(
-                            skill=skill.name(speciality=speciality),
-                            level=skillLevel.value()))
-                        calculations.append(skillLevel)
-                skillString.sort()
+                            skill=skillDef.name(speciality=speciality),
+                            level=level.value()))
+                        calculations.append(level)
+                skillString.sort(key=str.casefold)
 
                 # Add the amount of spare bandwidth, this should always be done at
                 # end of the string (i.e. after sorting)
@@ -831,33 +1002,44 @@ class Robot(construction.ConstructableInterface):
                     fieldText = 'As biological being'
                 else:
                     enduranceStrings = []
-                    attributeValue = self.attributeValue(
-                        attributeId=robots.RobotAttributeId.Endurance)
-                    if isinstance(attributeValue, common.ScalarCalculation):
-                        enduranceStrings.append(common.formatNumber(
-                            number=round(attributeValue.value()),
-                            suffix=' hours'))
-                        calculations.append(attributeValue)
-                    else:
-                        enduranceStrings.append('None')
 
-                    attributeValue = self.attributeValue(
-                        attributeId=robots.RobotAttributeId.SecondaryEndurance)
-                    if isinstance(attributeValue, common.ScalarCalculation):
-                        enduranceStrings.append(common.formatNumber(
-                            number=round(attributeValue.value()),
-                            prefix='2ndry: ',
-                            suffix=' hours'))
-                        calculations.append(attributeValue)
+                    primaryLocomotion = self.findFirstComponent(
+                        componentType=robots.PrimaryLocomotion)
+                    if isinstance(primaryLocomotion, robots.NoPrimaryLocomotion):
+                        primaryLocomotion = None
+                    secondaryLocomotion = self.findFirstComponent(
+                        componentType=robots.SecondaryLocomotion)
 
-                    attributeValue = self.attributeValue(
+                    primaryString = 'None'
+                    if primaryLocomotion:
+                        primaryEndurance = self.attributeValue(
+                            attributeId=robots.RobotAttributeId.Endurance)
+                        if isinstance(primaryEndurance, common.ScalarCalculation):
+                            primaryString = common.formatNumber(
+                                number=round(primaryEndurance.value()),
+                                suffix=' hours')
+                            calculations.append(primaryEndurance)
+
+                    if primaryLocomotion and secondaryLocomotion:
+                        primaryString += f' ({primaryLocomotion.componentString()})'
+                    enduranceStrings.append(primaryString)
+
+                    if secondaryLocomotion:
+                        secondaryEndurance = self.attributeValue(
+                            attributeId=robots.RobotAttributeId.SecondaryEndurance)
+                        if isinstance(secondaryEndurance, common.ScalarCalculation):
+                            enduranceStrings.append(common.formatNumber(
+                                number=round(secondaryEndurance.value()),
+                                suffix=f' hours ({secondaryLocomotion.componentString()})'))
+                            calculations.append(secondaryEndurance)
+
+                    vsmEndurance = self.attributeValue(
                         attributeId=robots.RobotAttributeId.VehicleEndurance)
-                    if isinstance(attributeValue, common.ScalarCalculation):
+                    if isinstance(vsmEndurance, common.ScalarCalculation):
                         enduranceStrings.append(common.formatNumber(
-                            number=round(attributeValue.value()),
-                            prefix='VSM: ',
-                            suffix=' hours'))
-                        calculations.append(attributeValue)
+                            number=round(vsmEndurance.value()),
+                            suffix=' hours (VSM)'))
+                        calculations.append(vsmEndurance)
 
                     fieldText = Robot._formatWorksheetListString(
                         stringList=enduranceStrings,
@@ -904,7 +1086,7 @@ class Robot(construction.ConstructableInterface):
                         traitString += f' ({valueString})'
                     traitStrings.append(traitString)
                     calculations.extend(attribute.calculations())
-                traitStrings.sort()
+                traitStrings.sort(key=str.casefold)
                 fieldText = Robot._formatWorksheetListString(traitStrings)
             elif field == robots.Worksheet.Field.Programming:
                 brain = self.findFirstComponent(
@@ -933,7 +1115,7 @@ class Robot(construction.ConstructableInterface):
 
                 optionStrings = []
                 orderedKeys = list(options.keys())
-                orderedKeys.sort()
+                orderedKeys.sort(key=str.casefold)
                 for componentString in orderedKeys:
                     count = options[componentString]
                     if count > 1:
@@ -981,17 +1163,19 @@ class Robot(construction.ConstructableInterface):
 
     def _calcModifierSkillLevel(
             self,
-            skill: construction.Skill,
+            skillDef: traveller.SkillDefinition,
+            level: common.ScalarCalculation,
+            flags: construction.SkillFlags,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> common.ScalarCalculation:
-        level = skill.level(speciality=speciality)
-        flags = skill.flags(speciality=speciality)
-        if (flags & construction.SkillFlagsCharacteristicModifierMask) == 0:
+        noNegativeModifiers = (flags & construction.SkillFlags.NoNegativeCharacteristicModifier) != 0
+        noPositiveModifiers = (flags & construction.SkillFlags.NoPositiveCharacteristicModifier) != 0
+        if noNegativeModifiers and noPositiveModifiers:
             # Characteristic modifiers aren't applied for this skill
             return level
 
         characteristic = robots.skillToCharacteristic(
-            skillDef=skill.skillDef(),
+            skillDef=skillDef,
             speciality=speciality)
         if not characteristic:
             # There is no applicable robot characteristic for this skill
@@ -1029,10 +1213,10 @@ class Robot(construction.ConstructableInterface):
                 characteristic=characteristic,
                 level=characteristicValue))
         if characteristicModifier.value() > 0:
-            if (flags & construction.SkillFlags.ApplyPositiveCharacteristicModifier) == 0:
+            if noPositiveModifiers:
                 return level
         elif characteristicModifier.value() < 0:
-            if (flags & construction.SkillFlags.ApplyNegativeCharacteristicModifier) == 0:
+            if noNegativeModifiers:
                 return level
         else:
             return level
@@ -1040,7 +1224,7 @@ class Robot(construction.ConstructableInterface):
         return common.Calculator.add(
             lhs=level,
             rhs=characteristicModifier,
-            name=f'Modified {skill.name(speciality=speciality)} Skill Level')
+            name=f'Modified {skillDef.name(speciality=speciality)} Skill Level')
 
     def _createStages(
             self

@@ -11,6 +11,8 @@ class FireControlLevel(enum.Enum):
     Enhanced = 'Enhanced'
     Advanced = 'Advanced'
 
+_SkillNameMap = {skill.name(): skill for skill in traveller.AllStandardSkills}
+
 class _WeaponImpl(object):
     """
     - Option: Mount Size
@@ -164,7 +166,16 @@ class _WeaponImpl(object):
         value=1,
         name='Fire Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait. (p60)'
-    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the fire control system\'s Weapon Skill DM of {modifier} instead of the robot\'s {skill} skill. Note that this is only in place of the skill (p60 and clarified by Geir Lanesskog)'
+    _FireControlWeaponSkillNote = \
+        'When making an attack roll, you can choose to use the fire control ' \
+        'system\'s Weapon Skill DM of {modifier} instead of the robot\'s ' \
+        '{skill} skill. Note that this is only in place of the skill (p60 ' \
+        'and clarified by Geir Lanesskog)\n\n' \
+        'Note that the worksheets for example robots in the Robot Handbook ' \
+        'list the weapon skill given by a fire control system. It\'s listed ' \
+        'as a normal skill, however, it only applies in relation to using  ' \
+        'the abilities of the fire control system. Auto-Jimmy will also do ' \
+        'this when including DMs in final skill levels is enabled.'
     _FireControlLaserDesignatorComponents = [
         robots.LaserDesignatorDefaultSuiteOption,
         robots.LaserDesignatorSlotOption]
@@ -250,6 +261,28 @@ class _WeaponImpl(object):
         if not self._fireControlOption.isEnabled():
             return None
         return self._fireControlOption.value()
+
+    def fireControlSkill(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Tuple[
+                typing.Optional[traveller.SkillDefinition],
+                typing.Optional[typing.Union[str, enum.Enum]], # Speciality
+                typing.Optional[common.ScalarCalculation]]: # Level
+        fireControl = self.fireControl()
+        if not fireControl:
+            return (None, None, None)
+        weaponData = self.weaponData(weaponSet=weaponSet)
+        if not weaponData:
+            return (None, None, None)
+        skillDef = weaponData.skill()
+        speciality = weaponData.specialty()
+
+        _, _, level = _WeaponImpl._FireControlDataMap[fireControl]
+        level = common.ScalarCalculation(
+            value=level,
+            name=f'Fire Control {skillDef.name(speciality=speciality)} Skill')
+        return (skillDef, speciality, level)
 
     def isCompatible(
             self,
@@ -587,10 +620,9 @@ class _WeaponImpl(object):
         step.setSlots(slots=construction.ConstantModifier(
             value=_WeaponImpl._FireControlRequiredSlots))
 
-        weaponData = self.weaponData(weaponSet=context.weaponSet())
-        if weaponData:
-            skill = weaponData.skill()
-            skillName = skill.name(speciality=weaponData.specialty())
+        skill, speciality, _ = self.fireControlSkill(weaponSet=context.weaponSet())
+        if skill:
+            skillName = skill.name(speciality=speciality)
         else:
             skillName = 'weapon'
         step.addNote(note=_WeaponImpl._FireControlWeaponSkillNote.format(
@@ -936,10 +968,63 @@ class _ManipulatorMountedWeaponImpl(_ManipulatorWeaponImpl):
         return hasRequiredManipulator
 
 class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
+    _WeaponSkills = [
+        traveller.GunCombatSkillDefinition,
+        traveller.HeavyWeaponsSkillDefinition,
+        traveller.MeleeSkillDefinition
+        ]
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self._combatSkillOption = construction.StringOption(
+            id='WeaponSkill',
+            name='Weapon Skill',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon skill the fire control is for')
+
+        self._specialityOption = construction.StringOption(
+            id='WeaponSpeciality',
+            name='Speciality',
+            choices=['default'],
+            isEditable=False,
+            isOptional=False,
+            description='Specify the weapon speciality the fire control is for')
+
+    def fireControlSkill(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Tuple[
+                typing.Optional[traveller.SkillDefinition],
+                typing.Optional[typing.Union[str, enum.Enum]], # Speciality
+                typing.Optional[common.ScalarCalculation]]: # Level
+        fireControl = self.fireControl()
+        if not fireControl:
+            return (None, None, None)
+
+        skillDef = self._selectedSkill()
+        if not skillDef:
+            return (None, None, None)
+        speciality = self._selectedSpeciality()
+
+        _, _, level = _WeaponImpl._FireControlDataMap[fireControl]
+        level = common.ScalarCalculation(
+            value=level,
+            name=f'Hand Held Fire Control {skillDef.name(speciality=speciality)} Skill')
+        return (skillDef, speciality, level)
+
     def isCompatible(self, sequence: str, context: robots.RobotContext) -> bool:
         if not super().isCompatible(sequence=sequence, context=context):
             return False
         return context.techLevel() >= _WeaponImpl._FireControlMinTL.value()
+
+    def options(self) -> typing.List[construction.ComponentOption]:
+        options = super().options()
+        options.append(self._combatSkillOption)
+        options.append(self._specialityOption)
+        return options
 
     def updateOptions(
             self,
@@ -947,7 +1032,23 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             context: robots.RobotContext
             ) -> None:
         super().updateOptions(sequence=sequence, context=context)
+
+        # Override control configuration set by base class
         self._fireControlOption.setOptional(False)
+
+        # Update skill speciality
+        self._combatSkillOption.setChoices(
+            choices=[s.name() for s in _HandHeldFireControlImpl._WeaponSkills])
+
+        skill = self._selectedSkill()
+        specialityChoices = []
+        if skill:
+            if skill.isFixedSpeciality():
+                specialityChoices = [s.value for s in skill.fixedSpecialities()]
+            elif skill.isCustomSpeciality():
+                specialityChoices = skill.customSpecialities()
+        self._specialityOption.setChoices(choices=specialityChoices)
+        self._specialityOption.setEnabled(len(specialityChoices) > 0)
 
     def _allowedWeaponCategories(
             self,
@@ -1006,6 +1107,31 @@ class _HandHeldFireControlImpl(_ManipulatorWeaponImpl):
             sequence: str,
             context: robots.RobotContext
             ) -> typing.Optional[robots.RobotStep]:
+        return None
+
+    def _selectedSkill(self) -> typing.Optional[traveller.SkillDefinition]:
+        skillName = self._combatSkillOption.value() if self._combatSkillOption.isEnabled() else None
+        if not skillName:
+            return None
+        return _SkillNameMap.get(skillName)
+
+    def _selectedSpeciality(self) -> typing.Optional[typing.Union[enum.Enum, str]]:
+        specialityName = self._specialityOption.value() if self._specialityOption.isEnabled() else None
+        if not specialityName:
+            return None
+        assert(isinstance(specialityName, str))
+
+        skill = self._selectedSkill()
+        if not skill:
+            return None
+        if skill.isFixedSpeciality():
+            for speciality in skill.fixedSpecialities():
+                assert(isinstance(speciality, enum.Enum))
+                if specialityName == speciality.value:
+                    return speciality
+        elif skill.isCustomSpeciality():
+            return specialityName
+
         return None
 
     def _createFireControlStep(
@@ -1138,6 +1264,15 @@ class MountedWeapon(Weapon):
     def fireControl(self) -> typing.Optional[FireControlLevel]:
         return self._impl.fireControl()
 
+    def fireControlSkill(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Tuple[
+                typing.Optional[traveller.SkillDefinition],
+                typing.Optional[typing.Union[str, enum.Enum]], # Speciality
+                typing.Optional[common.ScalarCalculation]]: # Level
+        return self._impl.fireControlSkill(weaponSet=weaponSet)
+
     def isCompatible(
             self,
             sequence: str,
@@ -1263,6 +1398,15 @@ class HandHeldFireControl(robots.RobotComponentInterface):
 
     def fireControl(self) -> FireControlLevel:
         return self._impl.fireControl()
+
+    def fireControlSkill(
+            self,
+            weaponSet: traveller.StockWeaponSet
+            ) -> typing.Tuple[
+                typing.Optional[traveller.SkillDefinition],
+                typing.Optional[typing.Union[str, enum.Enum]], # Speciality
+                typing.Optional[common.ScalarCalculation]]: # Level
+        return self._impl.fireControlSkill(weaponSet=weaponSet)
 
     def componentString(self) -> str:
         return 'Handheld Fire Control'

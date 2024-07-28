@@ -47,30 +47,29 @@ class _WeaponPDFExportDialog(gui.DialogEx):
             configSection='WeaponPDFExportDialog',
             parent=parent)
 
-        self._includeEditableFieldsCheckBox = gui.CheckBoxEx('Include Editable Fields')
+        self._includeEditableFieldsCheckBox = gui.CheckBoxEx()
         self._includeEditableFieldsCheckBox.setChecked(True)
 
-        self._includeManifestTableCheckBox = gui.CheckBoxEx('Include Manifest Table')
+        self._includeManifestTableCheckBox = gui.CheckBoxEx()
         self._includeManifestTableCheckBox.setChecked(True)
 
-        self._includeAmmoTableCheckBox = gui.CheckBoxEx(
-            'Include Magazine && Ammo Table(s)') # Double & for escaping to prevent interpretation as hotkey char
+        self._includeAmmoTableCheckBox = gui.CheckBoxEx()
         self._includeAmmoTableCheckBox.setChecked(True)
         self._includeAmmoTableCheckBox.stateChanged.connect(self._includeAmmoTableChanged)
 
         self._usePurchasedMagazinesCheckBox = None
         if hasMagazineQuantities:
-            self._usePurchasedMagazinesCheckBox = gui.CheckBoxEx('Use Purchased Magazine Types')
+            self._usePurchasedMagazinesCheckBox = gui.CheckBoxEx()
             self._usePurchasedMagazinesCheckBox.setEnabled(hasMagazineQuantities)
             self._usePurchasedMagazinesCheckBox.setChecked(hasMagazineQuantities)
 
         self._usePurchasedAmmoCheckBox = None
         if hasAmmoQuantities:
-            self._usePurchasedAmmoCheckBox = gui.CheckBoxEx('Use Purchased Ammunition Types')
+            self._usePurchasedAmmoCheckBox = gui.CheckBoxEx()
             self._usePurchasedAmmoCheckBox.setEnabled(hasAmmoQuantities)
             self._usePurchasedAmmoCheckBox.setChecked(hasAmmoQuantities)
 
-        self._blackAndWhiteCheckBox = gui.CheckBoxEx('Black && White')
+        self._blackAndWhiteCheckBox = gui.CheckBoxEx()
         self._blackAndWhiteCheckBox.setChecked(False)
 
         self._okButton = QtWidgets.QPushButton('OK')
@@ -80,6 +79,29 @@ class _WeaponPDFExportDialog(gui.DialogEx):
         self._cancelButton = QtWidgets.QPushButton('Cancel')
         self._cancelButton.clicked.connect(self.reject)
 
+        optionLayout = gui.FormLayoutEx()
+        optionLayout.addRow(
+            'Include Editable Fields',
+            self._includeEditableFieldsCheckBox)
+        optionLayout.addRow(
+            'Include Manifest Table:',
+            self._includeManifestTableCheckBox)
+        optionLayout.addRow(
+            # Double & for escaping to prevent interpretation as hotkey char
+            'Include Magazine && Ammo Table(s):',
+            self._includeAmmoTableCheckBox)
+        if self._usePurchasedMagazinesCheckBox:
+            optionLayout.addRow(
+                'Use Purchased Magazine Types:',
+                self._usePurchasedMagazinesCheckBox)
+        if self._usePurchasedAmmoCheckBox:
+            optionLayout.addRow(
+                'Use Purchased Ammunition Types:',
+                self._usePurchasedAmmoCheckBox)
+        optionLayout.addRow(
+            'Black && White:',
+            self._blackAndWhiteCheckBox)
+
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
@@ -87,14 +109,7 @@ class _WeaponPDFExportDialog(gui.DialogEx):
         buttonLayout.addWidget(self._cancelButton)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._includeEditableFieldsCheckBox)
-        windowLayout.addWidget(self._includeManifestTableCheckBox)
-        windowLayout.addWidget(self._includeAmmoTableCheckBox)
-        if self._usePurchasedMagazinesCheckBox:
-            windowLayout.addWidget(self._usePurchasedMagazinesCheckBox)
-        if self._usePurchasedAmmoCheckBox:
-            windowLayout.addWidget(self._usePurchasedAmmoCheckBox)
-        windowLayout.addWidget(self._blackAndWhiteCheckBox)
+        windowLayout.addLayout(optionLayout)
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
