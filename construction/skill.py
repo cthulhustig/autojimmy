@@ -129,7 +129,7 @@ class Skill(object):
 
         if not speciality:
             self._levels[None] = (level, flags)
-            # Due to previous checks we know the new level must be 0 so the
+            # Due to previous checks we know the new level must be >= 0 so the
             # skill can't have become untrained
             return True
 
@@ -142,8 +142,8 @@ class Skill(object):
             if notSpecialityOnly and (None not in self._levels):
                 self._levels[None] = (Skill._MinTrainedSkillLevel, flags)
         elif speciality in self._levels:
-            # The speciality skill is 0 (or less) so delete the speciality
-            # so the skill reverts to using the base skill level
+            # The speciality skill is <= 0 so delete the speciality so the skill
+            # reverts to using the base skill level (if there is one)
             del self._levels[speciality]
 
         # As long as there is at least one level still specified then the skill
