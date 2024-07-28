@@ -55,6 +55,13 @@ _MaxWastedSpace = 200
 # specified stuff. These row will have both the state name and value as editable fields
 _EditableInfoRows = 4
 
+_ApplySkillModifiersText = \
+    'The skills listed in the worksheet have had characteristic DMs and  ' \
+    'some other modifiers pre-applied to match how worksheets are shown ' \
+    'in the Robot Handbook. These modifiers are also covered in the notes ' \
+    'section so care should be taken to not apply the same modifier ' \
+    'multiple times.'
+
 _NormalStyle = ParagraphStyle(
     name='Normal',
     parent=getSampleStyleSheet()['Normal'],
@@ -140,10 +147,6 @@ class _Notifier(object):
         self._count += 1
         self._callback(self._count, self._total)
 
-# TODO: Need to handle specialisation grouping
-# - As well as handling the basic feature, a text section should be added before
-#   the notes explaining that some modifiers have already been applied in the
-#   worksheet
 class RobotToPdf(object):
     def __init__(self) -> None:
         self._colour = True
@@ -156,6 +159,7 @@ class RobotToPdf(object):
             includeEditableFields: bool = True,
             includeManifestTable: bool = True,
             applySkillModifiers: bool = False,
+            specialityGroupingCount: int = 0,
             progressCallback: typing.Optional[typing.Callable[[int, int], None]] = None
             ) -> None:
         self._colour = colour
@@ -169,6 +173,7 @@ class RobotToPdf(object):
                 includeEditableFields=includeEditableFields,
                 includeManifestTable=includeManifestTable,
                 applySkillModifiers=applySkillModifiers,
+                specialityGroupingCount=specialityGroupingCount,
                 layout=None,
                 progressCallback=counter.increment)
             counter.increment() # Add 1 for the build step
@@ -183,6 +188,7 @@ class RobotToPdf(object):
             includeEditableFields=includeEditableFields,
             includeManifestTable=includeManifestTable,
             applySkillModifiers=applySkillModifiers,
+            specialityGroupingCount=specialityGroupingCount,
             layout=layout,
             progressCallback=notifier.update if notifier else None)
 
@@ -215,6 +221,7 @@ class RobotToPdf(object):
             includeEditableFields: bool,
             includeManifestTable: bool,
             applySkillModifiers: bool,
+            specialityGroupingCount: int,
             layout: typing.Optional[typing.List[Flowable]],
             progressCallback: typing.Optional[typing.Callable[[], None]],
             ) -> None:
@@ -231,6 +238,7 @@ class RobotToPdf(object):
             layout=layout,
             includeEditableFields=includeEditableFields,
             applySkillModifiers=applySkillModifiers,
+            specialityGroupingCount=specialityGroupingCount,
             progressCallback=progressCallback)
 
         if includeManifestTable:
@@ -262,13 +270,15 @@ class RobotToPdf(object):
             layout: typing.Optional[typing.List[Flowable]],
             includeEditableFields: bool,
             applySkillModifiers: bool,
+            specialityGroupingCount: int,
             progressCallback: typing.Optional[typing.Callable[[], None]] = None
             ) -> None:
         if layout != None:
             sheetTable = self._createWorksheetTable(
                 robot=robot,
                 includeEditableFields=includeEditableFields,
-                applySkillModifiers=applySkillModifiers)
+                applySkillModifiers=applySkillModifiers,
+                specialityGroupingCount=specialityGroupingCount)
             notesTable = pdf.createNotesTable(
                 steps=robot.steps(),
                 tableStyle=self._createTableStyle(),
@@ -279,10 +289,20 @@ class RobotToPdf(object):
                 horzCellPadding=_CellHorizontalPadding,
                 vertCellPadding=_CellVerticalPadding)
             if sheetTable:
-                flowables = [sheetTable]
+                flowables = []
+
+                if applySkillModifiers:
+                    flowables.append(pdf.ParagraphEx(
+                        text=_ApplySkillModifiersText,
+                        style=_NormalStyle))
+                    flowables.append(pdf.VerticalSpacer(
+                        height=_ElementSpacing))
+
+                flowables.append(sheetTable)
                 if notesTable:
                     flowables.append(pdf.VerticalSpacer(height=_ElementSpacing))
                     flowables.append(notesTable)
+
                 layout.append(pdf.KeepTogetherEx(
                     flowables=flowables,
                     limitWaste=_MaxWastedSpace))
@@ -486,11 +506,12 @@ class RobotToPdf(object):
             self,
             robot: robots.Robot,
             includeEditableFields: bool,
-            applySkillModifiers: bool
+            applySkillModifiers: bool,
+            specialityGroupingCount: int
             ) -> Table:
         worksheet = robot.worksheet(
             applySkillModifiers=applySkillModifiers,
-            specialityGroupingCount=4) # TODO: Make this configurable
+            specialityGroupingCount=specialityGroupingCount)
         tableData = []
         tableSpans = []
 
