@@ -1997,7 +1997,8 @@ class _EnvironmentalProcessorSlotOptionImpl(_SingleStepSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ReconSkillDefinition,
             levels=_EnvironmentalProcessorSlotOptionImpl._ReconSkill,
-            flags=construction.SkillFlags(0),
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier,
             stacks=True))
 
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -4915,7 +4916,8 @@ class _NavigationSystemSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.NavigationSkillDefinition,
             levels=navigation,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier))
 
         step.addNote(_NavigationSystemSlotOptionImpl._NavigationNote)
 
@@ -6237,7 +6239,8 @@ class _ReconSensorSlotOptionImpl(_EnumSelectSlotOptionImpl):
         step.addFactor(factor=construction.SetSkillFactor(
             skillDef=traveller.ReconSkillDefinition,
             levels=recon,
-            flags=construction.SkillFlags(0)))
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier |
+            construction.SkillFlags.NoPositiveCharacteristicModifier))
 
         step.addNote(_ReconSensorSlotOptionImpl._ReconNote)
 

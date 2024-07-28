@@ -289,8 +289,7 @@ class SkillPackage(robots.RobotComponentInterface):
                 skillDef=skillDef,
                 speciality=speciality,
                 levels=level,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                 stacks=_stacksWithHardware(
                     skillDef=skillDef,
                     speciality=speciality)))
@@ -465,8 +464,7 @@ class HomingPrimitiveSkillPackage(PrimitiveSkillPackage):
                 skillDef=skillDef,
                 speciality=speciality,
                 levels=HomingPrimitiveSkillPackage._WeaponSkillLevel,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
         return step
@@ -712,9 +710,10 @@ class NoneBasicSkillPackage(BasicSkillPackage):
                 characteristic = robots.skillToCharacteristic(
                     skillDef=skillDef,
                     speciality=speciality)
-                flags = construction.SkillFlags.ApplyPositiveCharacteristicModifier
-                if characteristic == traveller.Characteristic.Intellect:
-                    flags |= construction.SkillFlags.ApplyNegativeCharacteristicModifier
+                flags = construction.SkillFlags(0)
+                if (characteristic == traveller.Characteristic.Dexterity) or \
+                    (characteristic == traveller.Characteristic.Strength):
+                    flags |= construction.SkillFlags.NoNegativeCharacteristicModifier
 
                 stacks = _stacksWithHardware(
                     skillDef=skillDef,
@@ -980,8 +979,7 @@ class LocomotionBasicSkillPackage(PreInstalledBasicSkillPackage):
                 skillDef=skillDef,
                 speciality=speciality,
                 levels=skillLevel,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
         if agilityModifier.value() != 0:
@@ -1110,8 +1108,7 @@ class SecurityBasicSkillPackage(PreInstalledBasicSkillPackage):
                 skillDef=skillDef,
                 speciality=speciality,
                 levels=SecurityBasicSkillPackage._WeaponSkillLevel,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
         step.addFactor(factor=construction.SetAttributeFactor(
@@ -1186,8 +1183,7 @@ class ServantBasicSkillPackage(PreInstalledBasicSkillPackage):
             skillDef=traveller.ProfessionSkillDefinition,
             speciality=profession.value,
             levels=ServantBasicSkillPackage._ProfessionSkillLevel,
-            # Set flags for no negative modifiers
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+            flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
             stacks=_stacksWithHardware(
                 skillDef=traveller.ProfessionSkillDefinition,
                 speciality=profession.value)))
@@ -1300,8 +1296,7 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
                 skillDef=skillDef,
                 speciality=speciality,
                 levels=TargetBasicSkillPackage._CombatSkillLevel,
-                # Set flags for no negative modifiers
-                flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                 stacks=_stacksWithHardware(skillDef=skillDef, speciality=speciality)))
 
             if skillDef != traveller.ExplosivesSkillDefinition:
@@ -1312,8 +1307,7 @@ class TargetBasicSkillPackage(PreInstalledBasicSkillPackage):
                     step.addFactor(factor=construction.SetSkillFactor(
                         skillDef=traveller.ExplosivesSkillDefinition,
                         levels=TargetBasicSkillPackage._SelfDestructExplosivesSkillLevel,
-                        # Set flags for no negative modifiers
-                        flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier,
+                        flags=construction.SkillFlags.NoNegativeCharacteristicModifier,
                         stacks=_stacksWithHardware(skillDef=traveller.ExplosivesSkillDefinition)))
 
         return step
@@ -1772,8 +1766,7 @@ class Skill(robots.RobotComponentInterface):
             speciality=speciality,
             levels=level,
             # Set flags for positive and negative characteristics to be applied
-            flags=construction.SkillFlags.ApplyPositiveCharacteristicModifier |
-            construction.SkillFlags.ApplyNegativeCharacteristicModifier,
+            flags=construction.SkillFlags(0),
             stacks=_stacksWithHardware(
                 skillDef=self._skillDef,
                 speciality=speciality)))

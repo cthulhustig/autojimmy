@@ -764,8 +764,7 @@ class Robot(construction.ConstructableInterface):
                                 # to be used instead of the robots weapon skill
                                 # _and_ that combat was meant to work the same
                                 # as for meatsack travellers.
-                                construction.SkillFlags.ApplyPositiveCharacteristicModifier |
-                                construction.SkillFlags.ApplyNegativeCharacteristicModifier)
+                                construction.SkillFlags(0))
 
                             if None in specialityMap:
                                 # Remove zero level skill as it's implied by the
@@ -783,29 +782,32 @@ class Robot(construction.ConstructableInterface):
                             if isinstance(component, robots.RemoveBaseManipulator):
                                 continue
                             assert(isinstance(component, robots.Manipulator))
-                            manipulatorDexDM = traveller.characteristicDM(
-                                level=component.dexterity())
-                            manipulatorDexDM = common.ScalarCalculation(
-                                value=manipulatorDexDM,
-                                name=f'Manipulator #{index} DEX Characteristic DM')
-                            manipulatorDexLevel = common.Calculator.add(
-                                lhs=baseDexLevel,
-                                rhs=manipulatorDexDM,
-                                name=f'Manipulator #{index} Athletics (Dexterity) Skill')
-                            if (newDexLevel == None) or manipulatorDexLevel.value() > newDexLevel.value():
-                                newDexLevel = manipulatorDexLevel
 
-                            manipulatorStrDM = traveller.characteristicDM(
-                                level=component.strength())
-                            manipulatorStrDM = common.ScalarCalculation(
-                                value=manipulatorStrDM,
-                                name=f'Manipulator #{index} STR Characteristic DM')
-                            manipulatorStrLevel = common.Calculator.add(
-                                lhs=baseStrLevel,
-                                rhs=manipulatorStrDM,
-                                name=f'Manipulator #{index} Athletics (Strength) Skill')
-                            if (newStrLevel == None) or manipulatorStrLevel.value() > newStrLevel.value():
-                                newStrLevel = manipulatorStrLevel
+                            if baseDexLevel:
+                                manipulatorDexDM = traveller.characteristicDM(
+                                    level=component.dexterity())
+                                manipulatorDexDM = common.ScalarCalculation(
+                                    value=manipulatorDexDM,
+                                    name=f'Manipulator #{index} DEX Characteristic DM')
+                                manipulatorDexLevel = common.Calculator.add(
+                                    lhs=baseDexLevel,
+                                    rhs=manipulatorDexDM,
+                                    name=f'Manipulator #{index} Athletics (Dexterity) Skill')
+                                if (newDexLevel == None) or manipulatorDexLevel.value() > newDexLevel.value():
+                                    newDexLevel = manipulatorDexLevel
+
+                            if baseStrLevel:
+                                manipulatorStrDM = traveller.characteristicDM(
+                                    level=component.strength())
+                                manipulatorStrDM = common.ScalarCalculation(
+                                    value=manipulatorStrDM,
+                                    name=f'Manipulator #{index} STR Characteristic DM')
+                                manipulatorStrLevel = common.Calculator.add(
+                                    lhs=baseStrLevel,
+                                    rhs=manipulatorStrDM,
+                                    name=f'Manipulator #{index} Athletics (Strength) Skill')
+                                if (newStrLevel == None) or manipulatorStrLevel.value() > newStrLevel.value():
+                                    newStrLevel = manipulatorStrLevel
 
                         if newDexLevel or newStrLevel:
                             specialityMap = skillMap.get(traveller.AthleticsSkillDefinition)
@@ -815,12 +817,14 @@ class Robot(construction.ConstructableInterface):
 
                             # NOTE: When athletics skills are from manipulators,
                             # characteristics DMs shouldn't be applied (p26)
+                            noCharacteristicDMs = construction.SkillFlags.NoNegativeCharacteristicModifier | \
+                                construction.SkillFlags.NoPositiveCharacteristicModifier
                             if newDexLevel:
                                 specialityMap[traveller.AthleticsSkillSpecialities.Dexterity] = \
-                                    (newDexLevel, 0)
+                                    (newDexLevel, noCharacteristicDMs)
                             if newStrLevel:
                                 specialityMap[traveller.AthleticsSkillSpecialities.Strength] = \
-                                    (newStrLevel, 0)
+                                    (newStrLevel, noCharacteristicDMs)
 
                             # If a new skill was set remove the level 0 Athletics
                             # skill if it's set (as the listed specialisations
@@ -1149,7 +1153,9 @@ class Robot(construction.ConstructableInterface):
             flags: construction.SkillFlags,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None
             ) -> common.ScalarCalculation:
-        if (flags & construction.SkillFlagsCharacteristicModifierMask) == 0:
+        noNegativeModifiers = (flags & construction.SkillFlags.NoNegativeCharacteristicModifier) != 0
+        noPositiveModifiers = (flags & construction.SkillFlags.NoPositiveCharacteristicModifier) != 0
+        if noNegativeModifiers and noPositiveModifiers:
             # Characteristic modifiers aren't applied for this skill
             return level
 
@@ -1192,10 +1198,10 @@ class Robot(construction.ConstructableInterface):
                 characteristic=characteristic,
                 level=characteristicValue))
         if characteristicModifier.value() > 0:
-            if (flags & construction.SkillFlags.ApplyPositiveCharacteristicModifier) == 0:
+            if noPositiveModifiers:
                 return level
         elif characteristicModifier.value() < 0:
-            if (flags & construction.SkillFlags.ApplyNegativeCharacteristicModifier) == 0:
+            if noNegativeModifiers:
                 return level
         else:
             return level

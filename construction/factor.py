@@ -169,7 +169,7 @@ class SetSkillFactor(SkillFactor):
             skillDef: traveller.SkillDefinition,
             levels: common.ScalarCalculation,
             speciality: typing.Optional[typing.Union[enum.Enum, str]] = None,
-            flags: typing.Optional[construction.SkillFlags] = None,
+            flags: construction.SkillFlags = construction.SkillFlags(0),
             stacks: bool = True
             ) -> None:
         super().__init__()
@@ -197,7 +197,7 @@ class SetSkillFactor(SkillFactor):
             ) -> None:
         skillGroup.modifyLevel(
             skillDef=self._skillDef,
-            levels=self._levels,
+            modifier=self._levels,
             speciality=self._speciality,
             flags=self._flags,
             stacks=self._stacks)
