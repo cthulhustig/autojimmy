@@ -91,6 +91,12 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+# TODO: Need to add support for specialisation grouping
+# - This and including modifiers should probably be passed in so they can mirror
+#   the main UI (it means the settings wouldn't be saved by this dialog)
+# - Could also update it to use a form layout as well so checkboxes appear in
+#   the standard orientation (text on the left)
+#   - If I do make this change I'll need to update the weapon PDF dialog to mach
 class _RobotPDFExportDialog(gui.DialogEx):
     def __init__(
             self,

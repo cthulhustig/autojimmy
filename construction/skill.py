@@ -41,6 +41,9 @@ class Skill(object):
             modifier: typing.Optional[common.ScalarCalculation] = None
             ) -> typing.Optional[common.ScalarCalculation]:
         if not self._levels:
+            # If there are no levels set then this is either a simple skill
+            # at level 0 or skill that has specialities but none have been
+            # taken. Either way it means the skill is 0
             return Skill._MinTrainedSkillLevel
 
         if self._skillDef.isSimple():

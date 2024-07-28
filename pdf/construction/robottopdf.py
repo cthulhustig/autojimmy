@@ -140,6 +140,10 @@ class _Notifier(object):
         self._count += 1
         self._callback(self._count, self._total)
 
+# TODO: Need to handle specialisation grouping
+# - As well as handling the basic feature, a text section should be added before
+#   the notes explaining that some modifiers have already been applied in the
+#   worksheet
 class RobotToPdf(object):
     def __init__(self) -> None:
         self._colour = True
