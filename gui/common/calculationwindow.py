@@ -13,7 +13,7 @@ class CalculationWindow(gui.WindowWidget):
             self
             ) -> None:
         super().__init__(
-            title='Calculation',
+            title='Calculations',
             configSection='CalculationWindow')
 
         self._calculationTree = gui.CalculationTree()
