@@ -734,7 +734,7 @@ def _processWorld(
             costCheck = toWorldContext.estimateRefuellingCosts(tonsOfFuel=1)
             if (toThreshold == None) or (costCheck < toThreshold):
                 toThreshold = costCheck
-            elif costCheck >= fromThreshold:
+            elif (fromThreshold != None) and (costCheck >= fromThreshold):
                 continue
             # If we get to here then to world cost is better than either the
             # from world or previous to world costs
