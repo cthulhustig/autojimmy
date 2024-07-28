@@ -890,7 +890,7 @@ class Robot(construction.ConstructableInterface):
                             skill=skillDef.name(speciality=speciality),
                             level=level.value()))
                         calculations.append(level)
-                skillString.sort()
+                skillString.sort(key=str.casefold)
 
                 # Add the amount of spare bandwidth, this should always be done at
                 # end of the string (i.e. after sorting)
@@ -1086,7 +1086,7 @@ class Robot(construction.ConstructableInterface):
                         traitString += f' ({valueString})'
                     traitStrings.append(traitString)
                     calculations.extend(attribute.calculations())
-                traitStrings.sort()
+                traitStrings.sort(key=str.casefold)
                 fieldText = Robot._formatWorksheetListString(traitStrings)
             elif field == robots.Worksheet.Field.Programming:
                 brain = self.findFirstComponent(
@@ -1115,7 +1115,7 @@ class Robot(construction.ConstructableInterface):
 
                 optionStrings = []
                 orderedKeys = list(options.keys())
-                orderedKeys.sort()
+                orderedKeys.sort(key=str.casefold)
                 for componentString in orderedKeys:
                     count = options[componentString]
                     if count > 1:
