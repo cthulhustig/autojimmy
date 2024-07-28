@@ -22,9 +22,6 @@ consider it out of beta when I've had confirmation from a wider audience that my
 of the various rules are accurate.
 Issues can be raised on [GitHub](https://github.com/cthulhustig/autojimmy/issues). Log files can
 be found in `%AppData%\Auto-Jimmy\`on Windows and `~/.auto-jimmy/` on Linux and macOS.
-For now at least I'm not taking requests for new features, I want to concentrate on fixing any bugs
-in the existing code. If/when it makes it out of beta I might change that, however I already have a
-long list of stuff I want to add.
 
 ## Are you going to add Mongoose ship construction?
 Maybe, it will most likely come down to a combination of user feedback and my motivation. The
