@@ -1596,7 +1596,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         if not self._currentCargoTable.isEmpty():
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text='This will replace the current cargo.\nDo you want to continue?',
+                text='This will replace the existing current cargo.\nDo you want to continue?',
                 stateKey='WorldTraderReplaceCurrentCargo',
                 # Only remember if the user clicked yes
                 rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
