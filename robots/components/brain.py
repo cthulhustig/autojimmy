@@ -629,13 +629,26 @@ class RobotBrain(Brain):
 
         return step
 
-class PrimitiveBrain(RobotBrain):
+class FixedFunctionRobot(RobotBrain):
+    """
+    - Requirement: Not compatible with avatar controller or receiver (p95)
+    """
+    def isCompatible(self, sequence: str, context: construction.ConstructionContext) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+
+        return not context.hasComponent(
+            componentType=robots.AvatarSlotOption,
+            sequence=sequence)
+
+class PrimitiveBrain(FixedFunctionRobot):
     """
     - Trait: INT 1
     - Trait: Computer/0
     - Trait: Inherent Bandwidth 0
     - Note: Programmable
     - Requirement: I don't think this is compatible with additional skills
+    - Requirement: Not compatible with avatar controller or receiver (p95)
     """
 
     def __init__(
@@ -681,12 +694,13 @@ class PrimitiveTL8Brain(PrimitiveBrain):
             minTL=8,
             cost=100)
 
-class BasicBrain(RobotBrain):
+class BasicBrain(FixedFunctionRobot):
     """
     - Trait: Computer/1
     - Trait: Inherent Bandwidth 1
     - Note: Limited Language, Security/0
     - Requirement: I don't think this is compatible with additional skills
+    - Requirement: Not compatible with avatar controller or receiver (p95)
     """
 
     def __init__(
@@ -735,12 +749,13 @@ class BasicTL10Brain(BasicBrain):
             cost=4000,
             intelligence=4)
 
-class HunterKillerBrain(RobotBrain):
+class HunterKillerBrain(FixedFunctionRobot):
     """
     - Trait: Computer/1
     - Skill: Recon 0
     - Trait: Inherent Bandwidth 1
     - Note: Limited Fried or Foe, Security/1
+    - Requirement: Not compatible with avatar controller or receiver (p95)
     """
     # NOTE: The Recon 0 mentioned in the description of the brain (p65) is
     # handled by the Hunter/Killer Skill Package. As far as I can tell you
@@ -794,25 +809,10 @@ class HunterKillerTL10Brain(HunterKillerBrain):
             cost=6000,
             intelligence=4)
 
-# This class only exists so other components can easily check if a robot has
-# a brain that can skills (rather than a skill package)
 class SkilledRobotBrain(RobotBrain):
-    def __init__(
-            self,
-            brainType: Brain._BrainType,
-            minTL: typing.Union[int, common.ScalarCalculation],
-            cost: typing.Union[int, common.ScalarCalculation],
-            intelligence: typing.Union[int, common.ScalarCalculation],
-            inherentBandwidth: typing.Union[int, common.ScalarCalculation],
-            notes: typing.Optional[typing.Iterable[str]] = None
-            ) -> None:
-        super().__init__(
-            brainType=brainType,
-            minTL=minTL,
-            cost=cost,
-            intelligence=intelligence,
-            inherentBandwidth=inherentBandwidth,
-            notes=notes)
+    # NOTE: This class only exists so other components can easily check if a
+    # robot has a brain that can skills (rather than a skill package)
+    pass
 
 class AdvancedBrain(SkilledRobotBrain):
     """
