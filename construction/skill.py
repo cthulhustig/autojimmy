@@ -169,13 +169,15 @@ class Skill(object):
         if not self._levels:
             return Skill._DefaultFlags
 
+        # See the levels method for a description of this logic
         if self._skillDef.isSimple():
             _, flags = self._levels.get(None, (None, Skill._DefaultFlags))
-            return flags
-
-        if speciality not in self._levels:
-            speciality = None
-        _, flags = self._levels.get(speciality, (None, None))
+        elif speciality in self._levels:
+            _, flags = self._levels[speciality]
+        elif (not speciality) or (None not in self._levels):
+            return None
+        else:
+            _, flags = self._levels[None]
         return flags
 
 class SkillGroup(object):
