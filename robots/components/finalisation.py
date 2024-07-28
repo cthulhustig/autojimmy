@@ -811,7 +811,19 @@ class Finalisation(robots.RobotComponentInterface):
         traveller.WeaponSize.Heavy: 'any weapon usable with Heavy Weapons (portable)'
     }
 
-    _ManipulatorAthleticsNote = 'When using manipulators with {characteristic} {characteristicLevel}, they give the robot {skill} {skillLevel}, but it doesn\'t get a DM{skillLevel} for the {characteristic} characteristic when making {skill} checks (p26). This {skill} {skillLevel} stacks with any additional levels from software skill packages and other hardware. (clarified by Geir Lanesskog)'
+    _ManipulatorAthleticsNote = \
+        'When using manipulators with {characteristic} {characteristicLevel}, ' \
+        'they give the robot {skill} {skillLevel}, but it doesn\'t get a ' \
+        'DM{skillLevel} for the {characteristic} characteristic when making ' \
+        '{skill} checks (p26). This {skill} {skillLevel} stacks with any ' \
+        'additional levels from software skill packages and other hardware. ' \
+        '(clarified by Geir Lanesskog)\n\n' \
+        'Note that the worksheets for example robots in the Robot Handbook ' \
+        'list the {skill} skill for the robot\'s manipulator with the ' \
+        'highest {characteristic} characteristic DM. It\'s listed as a normal ' \
+        'skill, however, it only applies when that manipulator or an ' \
+        'equivalent one. Auto-Jimmy will also do this when including DMs in ' \
+        'final skill levels is enabled.'
 
     _VacuumOperationWithEnduranceNote = 'When operating in a vacuum, the robot\'s Endurance is halved to {halfEndurance} hour(s) and it must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'
     _VacuumOperationNoEnduranceNote = 'When operating in a vacuum, the robot must make a Malfunction check every {interval} hour(s). Malfunction checks are made at DM-2 if operating in temperatures below -100°C or over 100°C. (p34 & p108)'

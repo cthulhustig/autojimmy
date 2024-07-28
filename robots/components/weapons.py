@@ -166,7 +166,16 @@ class _WeaponImpl(object):
         value=1,
         name='Fire Control System Required Slots')
     _FireControlScopeNote = 'The Fire Control System gives the Scope trait. (p60)'
-    _FireControlWeaponSkillNote = 'When making an attack roll, you can choose to use the fire control system\'s Weapon Skill DM of {modifier} instead of the robot\'s {skill} skill. Note that this is only in place of the skill (p60 and clarified by Geir Lanesskog)'
+    _FireControlWeaponSkillNote = \
+        'When making an attack roll, you can choose to use the fire control ' \
+        'system\'s Weapon Skill DM of {modifier} instead of the robot\'s ' \
+        '{skill} skill. Note that this is only in place of the skill (p60 ' \
+        'and clarified by Geir Lanesskog)\n\n' \
+        'Note that the worksheets for example robots in the Robot Handbook ' \
+        'list the weapon skill given by a fire control system. It\'s listed ' \
+        'as a normal skill, however, it only applies in relation to using  ' \
+        'the abilities of the fire control system. Auto-Jimmy will also do ' \
+        'this when including DMs in final skill levels is enabled.'
     _FireControlLaserDesignatorComponents = [
         robots.LaserDesignatorDefaultSuiteOption,
         robots.LaserDesignatorSlotOption]

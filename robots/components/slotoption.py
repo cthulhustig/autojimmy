@@ -2288,7 +2288,15 @@ class _ActiveCamouflageSlotOptionImpl(_SingleStepSlotOptionImpl):
         value=4,
         name='Active Camouflage Stealth Trait')
 
-    _StealthSkillNote = 'When active camouflage is enabled it effectively gives the robot Stealth 4 vs Recon checks. This stacks with any other Stealth skill the robot has. (clarified by Geir Lanesskog)'
+    _StealthSkillNote = \
+        'When active camouflage is enabled it effectively gives the robot ' \
+        'Stealth 4 vs Recon checks. This stacks with any other Stealth skill ' \
+        'the robot has. (clarified by Geir Lanesskog)\n\n' \
+        'Note that the worksheets for example robots in the Robot Handbook ' \
+        'list the Stealth skill given by active camouflage. It\'s listed as ' \
+        'a normal skill, however, it only applies in relation to using the ' \
+        'abilities of the active camouflage. Auto-Jimmy will also do this ' \
+        'when including DMs in final skill levels is enabled.'
 
     def __init__(
             self,
