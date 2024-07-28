@@ -47,19 +47,25 @@ class Skill(object):
             return Skill._MinTrainedSkillLevel
 
         if self._skillDef.isSimple():
+            # Simple skills always result in a level. If there has been a
+            # value explicitly set, use defaults
             level, flags = self._levels.get(None, (Skill._MinTrainedSkillLevel, Skill._DefaultFlags))
         elif speciality in self._levels:
+            # A level has been explicitly set for the requested speciality so
+            # use it. Note that if the speciality is None it will match here
+            # if the base skill value has been explicitly set or there is at
+            # least one speciality that doesn't have the SpecialityOnly flag
+            # set
             level, flags = self._levels[speciality]
         elif (not speciality) or (None not in self._levels):
-            # Either the default skill level was requested _or_ the specified
-            # speciality doesn't have an explicit level, however, all the
-            # specialities that have been taken have the SpecialityOnly flag
-            # so there is no default skill level.
+            # The base skill value hasn't been explicitly set and any
+            # specialities that have been set have the SpecialityOnly flag
+            # so there is no falling back to level 0.
             return None
         else:
             # The skill level for a speciality was requested, however, it
-            # doesn't have an explicit level. Use the default skill level
-            # instead
+            # doesn't have an explicit level. There is a value for the base
+            # skill so use it
             level, flags = self._levels[None]
 
         level = common.Calculator.equals(
