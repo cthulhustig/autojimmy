@@ -6960,6 +6960,168 @@ class _StylistToolkitSlotOptionImpl(_SingleStepSlotOptionImpl):
         step.addNote(_StylistToolkitSlotOptionImpl._SpeciesNote.format(
             species=species))
 
+class _AvatarControllerSlotOptionImpl(_EnumSelectSlotOptionImpl):
+    """
+    - <All>
+        - Requirement: The robot must have an advanced brain
+        - Requirement: The robot must have a transceiver
+    - Basic
+        - Min TL: 11
+        - Slots: 2
+        - Max Avatars: 1
+        - Cost: Cr50000
+    - Improved
+        - Min TL: 13
+        - Slots: 1
+        - Max Avatars: 2
+        - Cost: Cr200000
+    - Enhanced
+        - Min TL: 14
+        - Slots: 1
+        - Max Avatars: 4
+        - Cost: Cr500000
+    - Advanced
+        - Min TL: 16
+        - Slots: 1
+        - Max Avatars: 8
+        - Cost: Cr1000000
+    """
+    # NOTE: This component comes from the Avatar rules (p95) rather than
+    # the main list of slot options. It feels most like a slot option so
+    # I'm treating it as one
+    # NOTE: The requirement of an advanced brain is handled in the brain
+    # implementation as that step occurs after adding slots
+
+    _MinTLMap = {
+        _OptionLevel.Basic: 11,
+        _OptionLevel.Improved: 13,
+        _OptionLevel.Enhanced: 14,
+        _OptionLevel.Advanced: 16
+    }
+
+    # Data Structure: Cost, Slots, Max Avatars
+    _DataMap = {
+        _OptionLevel.Basic: (50000, 2, 1),
+        _OptionLevel.Improved: (200000, 1, 2),
+        _OptionLevel.Enhanced: (500000, 1, 4),
+        _OptionLevel.Advanced: (1000000, 1, 8)
+    }
+
+    _MaxAvatarsNote = 'The robot can control up to {max} avatars simultaneously. (p95)'
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Avatar Controller',
+            enumType=_OptionLevel,
+            optionId='Type',
+            optionName='Type',
+            optionDescription='Specify the type.',
+            optionDefault=_OptionLevel.Basic,
+            minTLMap=_AvatarControllerSlotOptionImpl._MinTLMap,
+            incompatibleTypes=incompatibleTypes)
+
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+
+        if context.findFirstComponent(
+                componentType=TransceiverDefaultSuiteOption,
+                sequence=sequence):
+            return True
+
+        if context.findFirstComponent(
+                componentType=TransceiverSlotOption,
+                sequence=sequence):
+            return True
+
+        return False # No transceiver
+
+    def updateStep(
+            self,
+            sequence: str,
+            context: robots.RobotContext,
+            step: robots.RobotStep
+            ) -> None:
+        super().updateStep(
+            sequence=sequence,
+            context=context,
+            step=step)
+
+        toolkitType = self._enumOption.value()
+        assert(isinstance(toolkitType, _OptionLevel))
+
+        cost, slots, maxAvatars = _AvatarControllerSlotOptionImpl._DataMap[toolkitType]
+
+        cost = common.ScalarCalculation(
+            value=cost,
+            name=f'{self.componentString()} Cost')
+        step.setCredits(
+            credits=construction.ConstantModifier(value=cost))
+
+        slots = common.ScalarCalculation(
+            value=slots,
+            name=f'{self.componentString()} Required Slots')
+        step.setSlots(
+            slots=construction.ConstantModifier(value=slots))
+
+        step.addNote(note=_AvatarControllerSlotOptionImpl._MaxAvatarsNote.format(
+            max=maxAvatars))
+
+class _AvatarReceiverSlotOptionImpl(_SingleStepSlotOptionImpl):
+    """
+    - Min TL: 11
+    - Slots: 1
+    - Cost: Cr10000
+    - Requirement: The robot must have an advanced brain
+    - Requirement: The robot must have a transceiver
+    """
+    # NOTE: This component comes from the Avatar rules (p95) rather than
+    # the main list of slot options. It feels most like a slot option so
+    # I'm treating it as one
+
+    def __init__(
+            self,
+            incompatibleTypes: typing.Optional[typing.Iterable[robots.RobotComponentInterface]] = None
+            ) -> None:
+        super().__init__(
+            componentString='Avatar Receiver',
+            minTL=11,
+            constantCost=10000,
+            constantSlots=1,
+            incompatibleTypes=incompatibleTypes)
+
+    def isZeroSlot(self) -> bool:
+        return False
+
+    def isCompatible(
+            self,
+            sequence: str,
+            context: robots.RobotContext
+            ) -> bool:
+        if not super().isCompatible(sequence, context):
+            return False
+
+        if context.findFirstComponent(
+                componentType=TransceiverDefaultSuiteOption,
+                sequence=sequence):
+            return True
+
+        if context.findFirstComponent(
+                componentType=TransceiverSlotOption,
+                sequence=sequence):
+            return True
+
+        return False # No transceiver
 
 #  ██████████               ██████                       ████   █████        █████████              ███   █████
 # ░░███░░░░███             ███░░███                     ░░███  ░░███        ███░░░░░███            ░░░   ░░███
@@ -7444,6 +7606,24 @@ class VisualConcealmentSlotOption(ChassisSlotOption):
 
 class CommunicationSlotOption(SlotOption):
     pass
+
+class AvatarSlotOption(CommunicationSlotOption):
+    # List component _from this stage_ that should be processed before this
+    # component
+    def orderAfter(self) -> typing.List[typing.Type[construction.ComponentInterface]]:
+        dependencies = super().orderAfter()
+        dependencies.append(TransceiverSlotOption)
+        return dependencies
+
+class AvatarControllerSlotOption(AvatarSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AvatarControllerSlotOptionImpl())
+
+class AvatarReceiverSlotOption(AvatarSlotOption):
+    def __init__(self) -> None:
+        super().__init__(
+            impl=_AvatarReceiverSlotOptionImpl())
 
 class DroneInterfaceSlotOption(CommunicationSlotOption):
     """
