@@ -852,7 +852,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._speculativeCargoTable.customContextMenuRequested.connect(self._showSpeculativeCargoTableContextMenu)
         self._speculativeCargoTable.keyPressed.connect(self._speculativeCargoTableKeyPressed)
 
-        self._addWorldSpeculativeCargoButton = QtWidgets.QPushButton('Add World Options...')
+        self._addWorldSpeculativeCargoButton = QtWidgets.QPushButton('Generate...')
         self._addWorldSpeculativeCargoButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
@@ -1280,21 +1280,17 @@ class WorldTraderWindow(_BaseTraderWindow):
             if answer == QtWidgets.QMessageBox.StandardButton.Yes:
                 self._removeAllAvailableCargo()
 
-        if not self._saleWorldsWidget.isEmpty():
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text='Clear sale worlds?')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._saleWorldsWidget.removeAllWorlds()
-
         # Always clear trade options as they're invalid now the purchase world has changed
         self._tradeOptionsTable.removeAllRows()
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text='This will replace the current speculative cargo.\nDo you ant to continue?')
+                text='This will replace the existing speculative cargo.\nDo you ant to continue?',
+                stateKey='WorldTraderReplaceSpeculativeCargo',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
@@ -1400,9 +1396,12 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _importAvailableCargo(self) -> None:
         if not self._availableCargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text='This will replace the available cargo.\nDo you want to continue?')
+                text='This will replace the existing available cargo.\nDo you want to continue?',
+                stateKey='WorldTraderReplaceAvailableCargo',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
@@ -1595,9 +1594,12 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _importCurrentCargo(self) -> None:
         if not self._currentCargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text='This will replace the current cargo.\nDo you want to continue?')
+                text='This will replace the current cargo.\nDo you want to continue?',
+                stateKey='WorldTraderReplaceCurrentCargo',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
@@ -1800,12 +1802,18 @@ class WorldTraderWindow(_BaseTraderWindow):
         #current fuel
         if not pitCostCalculator.refuellingType(
                 world=self._purchaseWorldWidget.world()):
-            message = f'The purchase world doesn\'t support the selected refuelling strategy. ' \
-                'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
+            message = \
+                'The purchase world doesn\'t support the selected refuelling ' \
+                'strategy. It will only be possibly to generate trade ' \
+                'options for sale worlds where a route can be found with the ' \
+                'fuel currently in the ship.'
 
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text=message + '\n\nDo you want to continue?')
+                text=message + '\n\nDo you want to continue?',
+                stateKey='WorldTraderPurchaseWorldRefuellingStrategy',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 
@@ -2424,14 +2432,17 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         if fuelIssueWorldStrings:
             worldListString = common.humanFriendlyListString(fuelIssueWorldStrings)
             if len(fuelIssueWorldStrings) == 1:
-                message = f'Waypoint {worldListString} doesn\'t support the selected refuelling strategy. '
+                message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
             else:
-                message = f'Waypoints {worldListString} don\'t support the selected refuelling strategy. '
+                message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
             message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
 
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text=message + '\n\nDo you want to continue?')
+                text=message + '\n\nDo you want to continue?',
+                stateKey='MultiTraderPurchaseWorldRefuellingStrategy',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer == QtWidgets.QMessageBox.StandardButton.No:
                 return
 

@@ -307,9 +307,10 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             return
 
         if not worlds:
-            gui.MessageBoxEx.information(
+            gui.AutoSelectMessageBox.information(
                 parent=self,
-                text='No nearby worlds found.')
+                text='No nearby worlds found.',
+                stateKey='WorldTableNoNearbyWorldsFound')
             return
 
         self.addWorlds(worlds=worlds)

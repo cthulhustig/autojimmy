@@ -477,9 +477,12 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
     def _importCargo(self) -> None:
         if not self._cargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
+            answer = gui.AutoSelectMessageBox.question(
                 parent=self,
-                text='This will replace the current cargo.\nDo you want to continue?')
+                text='This will replace the existing cargo.\nDo you want to continue?',
+                stateKey='SaleCalculatorReplaceCargo',
+                # Only remember if the user clicked yes
+                rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
