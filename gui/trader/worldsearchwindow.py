@@ -613,7 +613,7 @@ class WorldSearchWindow(gui.WindowWidget):
         if not foundWorlds:
             gui.AutoSelectMessageBox.information(
                 parent=self,
-                text='No results found for the specified filter',
+                text='No results found for the current search criteria',
                 stateKey='WorldSearchNoResultsFound')
             return
 
