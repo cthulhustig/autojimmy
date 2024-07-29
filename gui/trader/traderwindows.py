@@ -2435,7 +2435,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 message = f'Purchase world {worldListString} doesn\'t support the selected refuelling strategy. '
             else:
                 message = f'Purchase worlds {worldListString} don\'t support the selected refuelling strategy. '
-            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with the specified current fuel amount.'
+            message += 'It will only be possibly to generate trade options for sale worlds where a route can be found with fuel currently in the ship.'
 
             answer = gui.AutoSelectMessageBox.question(
                 parent=self,
