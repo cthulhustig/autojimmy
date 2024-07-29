@@ -715,7 +715,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointWorldTable = gui.WorldBerthingTable()
         self._waypointWorldsWidget = gui.WorldTableManagerWidget(
             worldTable=self._waypointWorldTable,
-            allowWorldCallback=self._allowWaypointWorld,
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
@@ -845,27 +844,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateTravellerMapOverlays()
 
     def _startFinishWorldsChanged(self) -> None:
-        if self._waypointWorldsWidget.worldCount() > 0:
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text='Clear waypoint worlds?')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._waypointWorldsWidget.removeAllWorlds()
-
-        if self._avoidWorldsWidget.worldCount() > 0:
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text='Clear avoid worlds?')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._avoidWorldsWidget.removeAllWorlds()
-            else:
-                # Make sure the start and finish worlds aren't on the avoid list
-                startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
-                if startWorld:
-                    self._avoidWorldsWidget.removeWorld(world=startWorld)
-                if finishWorld:
-                    self._avoidWorldsWidget.removeWorld(world=finishWorld)
-
         # Always clear the current jump route as it's invalid if the finish world changes
         self._clearJumpRoute()
 
@@ -928,16 +906,19 @@ class JumpRouteWindow(gui.WindowWidget):
             # Highlight cases where start world or waypoints don't support the
             # refuelling strategy
             if not pitCostCalculator.refuellingType(world=startWorld):
-                message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy. '
+                message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
-                    message += 'In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
+                    message += ' In order to calculate a route, you must specify the amount of fuel that is currently in the ship.'
                     gui.MessageBoxEx.information(parent=self, text=message)
                     return
 
-                message += 'The ability to generate a route and/or refuelling plan will be limited by the the amount of fuel the ship currently has.\n\nDo you want to continue?'
-                answer = gui.MessageBoxEx.question(
+                message += 'The ability to generate a route and refuelling plan will be limited by the the amount of fuel the ship currently has.\n\nDo you want to continue?'
+                answer = gui.AutoSelectMessageBox.question(
                     parent=self,
-                    text=message)
+                    text=message,
+                    stateKey='JumpRouteStartRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
@@ -954,9 +935,12 @@ class JumpRouteWindow(gui.WindowWidget):
                     message = f'Fuel based route calculation is enabled but waypoints {worldListString} don\'t support the selected refuelling strategy. '
                 message += 'This may prevent the generation of a route and/or refuelling plan.'
 
-                answer = gui.MessageBoxEx.question(
+                answer = gui.AutoSelectMessageBox.question(
                     parent=self,
-                    text=message + '\n\nDo you want to continue?')
+                    text=message + '\n\nDo you want to continue?',
+                    stateKey='JumpRouteWaypointRefuellingStrategy',
+                    # Only remember if the user clicked yes
+                    rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
@@ -1245,9 +1229,6 @@ class JumpRouteWindow(gui.WindowWidget):
         if not hoverWorld:
             return None
 
-        if self._avoidWorldsWidget.containsWorld(hoverWorld):
-            return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
-
         if not self._jumpRoute:
             toolTip = ''
             if hoverWorld == self._startFinishWorldsWidget.startWorld() and \
@@ -1259,6 +1240,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Finish World</nobr>', escape=False)
             elif self._waypointWorldsWidget.containsWorld(hoverWorld):
                 return gui.createStringToolTip('<nobr>Waypoint World</nobr>', escape=False)
+            elif self._avoidWorldsWidget.containsWorld(hoverWorld):
+                return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
             return None
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
@@ -1316,6 +1299,13 @@ class JumpRouteWindow(gui.WindowWidget):
             # Check for waypoints that have been added since the route was last regenerated
             if self._waypointWorldsWidget.containsWorld(hoverWorld):
                 return gui.createStringToolTip('<nobr>Waypoint World</nobr>', escape=False)
+
+            # Check for the world being an avoid world. This is done last as
+            # start/finish/waypoint worlds can be on the avoid list but we
+            # don't want to flag them as such here
+            if self._avoidWorldsWidget.containsWorld(hoverWorld):
+                return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
+
             return None
 
         toolTip = f'<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">{toolTip}</ul>'
@@ -1528,15 +1518,22 @@ class JumpRouteWindow(gui.WindowWidget):
                 colour='#00FF00',
                 radius=0.5)
 
-        self._travellerMapWidget.highlightWorlds(
-            worlds=self._waypointWorldsWidget.worlds(),
-            colour='#0066FF',
-            radius=0.3)
+        waypointWorlds = self._waypointWorldsWidget.worlds()
+        if waypointWorlds:
+            self._travellerMapWidget.highlightWorlds(
+                worlds=waypointWorlds,
+                colour='#0066FF',
+                radius=0.3)
 
-        self._travellerMapWidget.highlightWorlds(
-            worlds=self._avoidWorldsWidget.worlds(),
-            colour='#FF0000',
-            radius=0.3)
+        filteredAvoidWorlds = []
+        for world in self._avoidWorldsWidget.worlds():
+            if (world != startWorld) and (world != finishWorld) and (world not in waypointWorlds):
+                filteredAvoidWorlds.append(world)
+        if filteredAvoidWorlds:
+            self._travellerMapWidget.highlightWorlds(
+                worlds=filteredAvoidWorlds,
+                colour='#FF0000',
+                radius=0.3)
 
         if self._jumpRoute:
             self._travellerMapWidget.showJumpRoute(
@@ -1581,33 +1578,10 @@ class JumpRouteWindow(gui.WindowWidget):
             return None
         return dlg.world()
 
-    def _allowWaypointWorld(self, world: traveller.World) -> bool:
-        if self._avoidWorldsWidget.containsWorld(world):
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{world.name(includeSubsector=True)} can\'t be added as a waypoint as it\'s on the avoid list')
-            return False
-        return True
-
     def _allowAvoidWorld(self, world: traveller.World) -> bool:
         if self._avoidWorldsWidget.containsWorld(world):
             # Silently ignore worlds that are already in the table
             return False
-        if world == self._startFinishWorldsWidget.startWorld():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{world.name(includeSubsector=True)} can\'t be added to the avoid list as it\'s the start world')
-            return False
-        if world == self._startFinishWorldsWidget.finishWorld():
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{world.name(includeSubsector=True)} can\'t be added to the avoid list as it\'s the finish world')
-            return False
-        if self._waypointWorldsWidget.containsWorld(world):
-            gui.MessageBoxEx.information(
-                parent=self,
-                text=f'{world.name(includeSubsector=True)} can\'t be added to the avoid list as it\'s a waypoint')
-            return
         return True
 
     def _setJumpRoute(self, jumpRoute: logic.JumpRoute) -> None:

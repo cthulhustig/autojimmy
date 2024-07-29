@@ -611,15 +611,17 @@ class WorldSearchWindow(gui.WindowWidget):
                 exception=ex)
             return
         if not foundWorlds:
-            gui.MessageBoxEx.information(
+            gui.AutoSelectMessageBox.information(
                 parent=self,
-                text='No results found for the specified filter')
+                text='No results found for the current search criteria',
+                stateKey='WorldSearchNoResultsFound')
             return
 
         if len(foundWorlds) == self._MaxSearchResults:
-            gui.MessageBoxEx.information(
+            gui.AutoSelectMessageBox.information(
                 parent=self,
-                text=f'The number of search results has been limited to {self._MaxSearchResults}')
+                text=f'The number of search results has been limited to {self._MaxSearchResults}',
+                stateKey='WorldSearchResultCountCapped')
 
         self._worldTable.addWorlds(worlds=foundWorlds)
         self._resultsCountLabel.setText(common.formatNumber(len(foundWorlds)))
