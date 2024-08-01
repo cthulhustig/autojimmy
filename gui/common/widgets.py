@@ -230,7 +230,16 @@ class ToolButtonEx(QtWidgets.QToolButton):
             opt,
             QtCore.QSize(w, max(h + ToolButtonEx._SizeHintHeightModifier, 0)),
             self)
-        return baseHint.expandedTo(pushSize);
+        return baseHint.expandedTo(pushSize)
+
+class IconButton(QtWidgets.QPushButton):
+    def __init__(
+            self,
+            icon: QtGui.QIcon,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setIcon(icon)
 
 class RadioButtonEx(QtWidgets.QRadioButton):
     _StateVersion = 'RadioButtonEx_v1'

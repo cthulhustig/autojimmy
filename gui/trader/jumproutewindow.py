@@ -221,43 +221,76 @@ class _RefuellingPlanTable(gui.WorldTable):
 
 class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
+    findWorld = QtCore.pyqtSignal(traveller.World)
 
-    _StateVersion = '_StartFinishWorldsSelectWidget_v1'
+    _StateVersion = '_StartFinishWorldsSelectWidget_v2'
 
     def __init__(self):
         super().__init__()
 
-        self._startWorldWidget = gui.WorldSelectWidget(
-            labelText='Start',
-            noSelectionText='Select a start world to continue')
-        self._startWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._startWorldComboBox = gui.WorldSearchComboBox()
+        self._startWorldComboBox.enableAutoComplete(True)
+        self._startWorldComboBox.worldChanged.connect(self.selectionChanged.emit)
 
-        self._finishWorldWidget = gui.WorldSelectWidget(
-            labelText='Finish',
-            noSelectionText='Select a finish world to continue')
-        self._finishWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._jumpToStartWorldButton = gui.IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Search),
+            parent=self)
+        self._jumpToStartWorldButton.clicked.connect(self._jumpToStartClicked)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._startWorldWidget)
-        layout.addWidget(self._finishWorldWidget)
+        self._showStartInfoButton = gui.IconButton(
+            icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Info)),
+            parent=self)
+        self._showStartInfoButton.clicked.connect(self._showStartInfoClicked)
 
-        self.setLayout(layout)
+        self._finishWorldComboBox = gui.WorldSearchComboBox()
+        self._finishWorldComboBox.enableAutoComplete(True)
+        self._finishWorldComboBox.worldChanged.connect(self.selectionChanged.emit)
+
+        self._jumpToFinishWorldButton = gui.IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Search),
+            parent=self)
+        self._jumpToFinishWorldButton.clicked.connect(self._jumpToFinishClicked)
+
+        self._showFinishInfoButton = gui.IconButton(
+            icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Info)),
+            parent=self)
+        self._showFinishInfoButton.clicked.connect(self._showFinishInfoClicked)
+
+        startLayout = QtWidgets.QHBoxLayout()
+        startLayout.setContentsMargins(0, 0, 0, 0)
+        startLayout.addWidget(QtWidgets.QLabel('Start World:'))
+        startLayout.addWidget(self._startWorldComboBox, 1)
+        startLayout.addWidget(self._jumpToStartWorldButton)
+        startLayout.addWidget(self._showStartInfoButton)
+
+        finishLayout = QtWidgets.QHBoxLayout()
+        finishLayout.setContentsMargins(0, 0, 0, 0)
+        finishLayout.addWidget(QtWidgets.QLabel('Finish World:'))
+        finishLayout.addWidget(self._finishWorldComboBox, 1)
+        finishLayout.addWidget(self._jumpToFinishWorldButton)
+        finishLayout.addWidget(self._showFinishInfoButton)
+
+        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addLayout(startLayout)
+        widgetLayout.addLayout(finishLayout)
+
+        self.setLayout(widgetLayout)
 
     def startWorld(self) -> typing.Optional[traveller.World]:
-        return self._startWorldWidget.world()
+        return self._startWorldComboBox.selectedWorld()
 
     def finishWorld(self) -> typing.Optional[traveller.World]:
-        return self._finishWorldWidget.world()
+        return self._finishWorldComboBox.selectedWorld()
 
     def worlds(self) -> typing.Tuple[typing.Optional[traveller.World], typing.Optional[traveller.World]]:
         return (self.startWorld(), self.finishWorld())
 
     def setStartWorld(self, world: typing.Optional[traveller.World]):
-        self._startWorldWidget.setWorld(world)
+        self._startWorldComboBox.setSelectedWorld(world)
 
     def setFinishWorld(self, world: typing.Optional[traveller.World]):
-        self._finishWorldWidget.setWorld(world)
+        self._finishWorldComboBox.setSelectedWorld(world)
 
     def setStartFinishWorlds(
             self,
@@ -268,28 +301,28 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
 
         # Block signals so we can manually generate a single selection changed event. There is not
         # noting of the current signal blocked state as nothing else should be modifying it
-        self._startWorldWidget.blockSignals(True)
-        self._finishWorldWidget.blockSignals(True)
+        self._startWorldComboBox.blockSignals(True)
+        self._finishWorldComboBox.blockSignals(True)
         try:
-            if startWorld != self._startWorldWidget.world():
-                self._startWorldWidget.setWorld(startWorld)
+            if startWorld != self._startWorldComboBox.selectedWorld():
+                self._startWorldComboBox.setSelectedWorld(startWorld)
                 updated = True
 
-            if finishWorld != self._finishWorldWidget.world():
-                self._finishWorldWidget.setWorld(finishWorld)
+            if finishWorld != self._finishWorldComboBox.selectedWorld():
+                self._finishWorldComboBox.setSelectedWorld(finishWorld)
                 updated = True
         finally:
-            self._startWorldWidget.blockSignals(False)
-            self._finishWorldWidget.blockSignals(False)
+            self._startWorldComboBox.blockSignals(False)
+            self._finishWorldComboBox.blockSignals(False)
 
         if updated:
             self.selectionChanged.emit()
 
     def hasStartWorldSelection(self) -> bool:
-        return self._startWorldWidget.hasSelection()
+        return self._startWorldComboBox.selectedWorld() != None
 
     def hasFinishWorldSelected(self) -> bool:
-        return self._finishWorldWidget.hasSelection()
+        return self._finishWorldComboBox.selectedWorld() != None
 
     def hasStartFinishWorldsSelection(self) -> bool:
         return self.hasStartWorldSelection() and self.hasFinishWorldSelected()
@@ -299,12 +332,12 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_StartFinishWorldsSelectWidget._StateVersion)
 
-        childState = self._startWorldWidget.saveState()
+        childState = self._startWorldComboBox.saveState()
         stream.writeUInt32(childState.count() if childState else 0)
         if childState:
             stream.writeRawData(childState.data())
 
-        childState = self._finishWorldWidget.saveState()
+        childState = self._finishWorldComboBox.saveState()
         stream.writeUInt32(childState.count() if childState else 0)
         if childState:
             stream.writeRawData(childState.data())
@@ -325,16 +358,42 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
         count = stream.readUInt32()
         if count > 0:
             childState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._startWorldWidget.restoreState(childState):
+            if not self._startWorldComboBox.restoreState(childState):
                 return False
 
         count = stream.readUInt32()
         if count > 0:
             childState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._finishWorldWidget.restoreState(childState):
+            if not self._finishWorldComboBox.restoreState(childState):
                 return False
 
         return True
+
+    def _handleFindWorld(self, world: traveller.World) -> None:
+        if world:
+            self.findWorld.emit(world)
+
+    def _jumpToStartClicked(self) -> None:
+        self._handleFindWorld(
+            world=self._startWorldComboBox.selectedWorld())
+
+    def _jumpToFinishClicked(self) -> None:
+        self._handleFindWorld(
+            world=self._finishWorldComboBox.selectedWorld())
+
+    def _handleWorldInfo(self, world: traveller.World) -> None:
+        if not world:
+            return
+        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow.addWorld(world=world)
+
+    def _showStartInfoClicked(self) -> None:
+        self._handleWorldInfo(
+            world=self._startWorldComboBox.selectedWorld())
+
+    def _showFinishInfoClicked(self) -> None:
+        self._handleWorldInfo(
+            world=self._finishWorldComboBox.selectedWorld())
 
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
@@ -618,6 +677,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _setupJumpWorldsControls(self) -> None:
         self._startFinishWorldsWidget = _StartFinishWorldsSelectWidget()
         self._startFinishWorldsWidget.selectionChanged.connect(self._startFinishWorldsChanged)
+        self._startFinishWorldsWidget.findWorld.connect(self._showWorldInTravellerMap)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._startFinishWorldsWidget)

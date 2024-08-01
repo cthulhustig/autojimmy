@@ -122,3 +122,16 @@ def loadIcon(id: Icon) -> QtGui.QIcon:
             colour=_IconColourMap.get(id))
         _IconMap[iconPath] = icon
     return icon
+
+def createOnOffIcon(source: QtGui.QIcon) -> QtGui.QIcon:
+    icon = QtGui.QIcon()
+    for availableSize in source.availableSizes():
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.On)
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off)
+    return icon

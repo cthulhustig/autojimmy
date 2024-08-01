@@ -1,3 +1,4 @@
+import gui
 from PyQt5 import QtCore, QtWidgets
 
 class NoWheelEventFilter(QtCore.QObject):
@@ -17,4 +18,14 @@ class NoWheelEventUnlessFocusedFilter(QtCore.QObject):
         if event.type() == QtCore.QEvent.Type.Wheel:
             if isinstance(object, QtWidgets.QWidget) and not object.hasFocus():
                 return True
+        return super().eventFilter(object, event)
+
+class PrintEventFilter(QtCore.QObject):
+    _EventNameLookup = gui.pyQtEnumMapping(QtCore.QEvent, QtCore.QEvent.Type)
+
+    def eventFilter(self, object: object, event: QtCore.QEvent) -> bool:
+        eventString = PrintEventFilter._EventNameLookup.get(event.type())
+        if not eventString:
+            eventString = f'Unknown Event {event.type()}'
+        print(eventString)
         return super().eventFilter(object, event)
