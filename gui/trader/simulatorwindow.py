@@ -357,9 +357,11 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _setupConfigControls(self) -> None:
         self._startWorldWidget = gui.WorldSelectWidget(
-            labelText='Start',
-            noSelectionText='Select a starting world to continue')
+            text='Start World:')
+        self._startWorldWidget.enableShowWorldButton(True)
+        self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self._startWorldChanged)
+        self._startWorldWidget.showWorld.connect(self._showWorldOnMap)
 
         self._randomSeedWidget = _RandomSeedWidget(
             maxDigits=SimulatorWindow._RandomSeedMaxDigits)
@@ -703,6 +705,23 @@ class SimulatorWindow(gui.WindowWidget):
         self._simulatorJob = None
         self._runSimulationButton.setText('Run simulation')
         self._enableDisableControls()
+
+    def _showWorldOnMap(
+            self,
+            world: traveller.World
+            ) -> None:
+        try:
+            self._mapWidget.centerOnWorld(
+                world=world,
+                clearOverlays=False,
+                highlightWorld=False)
+        except Exception as ex:
+            message = 'Failed to show world(s) in Traveller Map'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

@@ -252,6 +252,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
     def _setupWorldSelectControls(self) -> None:
         self._saleWorldWidget = gui.WorldSelectWidget()
+        self._saleWorldWidget.enableMapSelectButton(True)
+        self._saleWorldWidget.enableShowInfoButton(True)
         self._saleWorldWidget.selectionChanged.connect(self._saleWorldChanged)
 
         layout = QtWidgets.QVBoxLayout()
@@ -466,9 +468,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         return cargoRecords
 
     def _saleWorldChanged(self) -> None:
-        self._salePricesTable.removeAllRows()
-        self._diceRollTable.removeAllRows()
-
         disable = not self._saleWorldWidget.hasSelection()
         self._configurationGroupBox.setDisabled(disable)
         self._cargoGroupBox.setDisabled(disable)

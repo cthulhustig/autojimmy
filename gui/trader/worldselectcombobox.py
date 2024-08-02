@@ -61,7 +61,7 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
-class WorldSearchComboBox(gui.ComboBoxEx):
+class WorldSelectComboBox(gui.ComboBoxEx):
     worldChanged = QtCore.pyqtSignal(object)
 
     # NOTE: This controls the max number of results added to the completer
@@ -95,10 +95,10 @@ class WorldSearchComboBox(gui.ComboBoxEx):
         self.activated.connect(self._dropDownSelected)
         self.customContextMenuRequested.connect(self._showContextMenu)
 
-    def selectedWorld(self) -> typing.Optional[traveller.World]:
+    def currentWorld(self) -> typing.Optional[traveller.World]:
         return self._selectedWorld
 
-    def setSelectedWorld(self, world: typing.Optional[traveller.World]) -> None:
+    def setCurrentWorld(self, world: typing.Optional[traveller.World]) -> None:
         self.setCurrentText(world.name(includeSubsector=True) if world else '')
         self._updateSelectedWorld(world)
 
@@ -158,14 +158,14 @@ class WorldSearchComboBox(gui.ComboBoxEx):
                 # list but it's less obvious if it was the first.
                 assert(isinstance(event, QtGui.QFocusEvent))
                 if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
-                    world = self.selectedWorld()
+                    world = self.currentWorld()
                     if world:
                         worldName = world.name(includeSubsector=True)
                         if worldName != self.currentText():
                             self.setCurrentText(worldName)
                     else:
                         worlds = self._matchedWorlds()
-                        self.setSelectedWorld(world=worlds[0] if worlds else None)
+                        self.setCurrentWorld(world=worlds[0] if worlds else None)
             elif event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Paste):
@@ -189,9 +189,9 @@ class WorldSearchComboBox(gui.ComboBoxEx):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldSearchComboBox._StateVersion)
+        stream.writeQString(WorldSelectComboBox._StateVersion)
 
-        world = self.selectedWorld()
+        world = self.currentWorld()
         stream.writeBool(world != None)
         if world:
             stream.writeInt32(world.absoluteX())
@@ -205,7 +205,7 @@ class WorldSearchComboBox(gui.ComboBoxEx):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldSearchComboBox._StateVersion:
+        if version != WorldSelectComboBox._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore WorldSearchComboBox state (Incorrect version)')
             return False
@@ -222,7 +222,7 @@ class WorldSearchComboBox(gui.ComboBoxEx):
                     'Failed to restore WorldSearchComboBox selected world',
                     exc_info=ex)
                 return False
-            self.setSelectedWorld(world=world)
+            self.setCurrentWorld(world=world)
 
         return True
 
@@ -278,7 +278,7 @@ class WorldSearchComboBox(gui.ComboBoxEx):
         self._completerModel.clear()
         if not worlds:
             return
-        worlds = worlds[:WorldSearchComboBox._MaxCompleterResults]
+        worlds = worlds[:WorldSelectComboBox._MaxCompleterResults]
 
         self._completerModel.setColumnCount(1)
         self._completerModel.setRowCount(len(worlds))

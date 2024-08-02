@@ -17,7 +17,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
         self._searchTimer.setSingleShot(True)
         self._searchTimer.timeout.connect(self._performSearch)
 
-        self._searchComboBox = gui.WorldSearchComboBox()
+        self._searchComboBox = gui.WorldSelectComboBox()
         self._searchComboBox.enableAutoComplete(False)
         self._searchComboBox.installEventFilter(self)
         self._searchComboBox.currentTextChanged.connect(self._primeSearch)
@@ -73,7 +73,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
 
     def setWorld(self, world: typing.Optional[traveller.World]) -> None:
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setSelectedWorld(world)
+            self._searchComboBox.setCurrentWorld(world)
 
         with gui.SignalBlocker(widget=self._worldList):
             self._worldList.clear()
@@ -220,7 +220,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
             for world in worlds:
                 item = self._createListItem(world)
                 self._worldList.addItem(item)
-                if world == self._searchComboBox.selectedWorld():
+                if world == self._searchComboBox.currentWorld():
                     selectItem = item
 
             if selectItem:
@@ -252,7 +252,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
         world = self.world()
 
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setSelectedWorld(world)
+            self._searchComboBox.setCurrentWorld(world)
 
         with gui.SignalBlocker(widget=self._worldList):
             self._worldList.clear()

@@ -24,6 +24,7 @@ class Icon(enum.Enum):
     Settings = 'settings.svg'
     Reload = 'reload.svg'
     Key = 'key.svg'
+    Map = 'map.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

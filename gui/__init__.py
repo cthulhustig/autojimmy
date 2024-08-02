@@ -35,7 +35,7 @@ from .common.licensewidget import *
 from .common.infodialog import *
 from .common.singletonapplication import *
 from .trader.tooltips import *
-from .trader.worldsearchcombobox import *
+from .trader.worldselectcombobox import *
 from .trader.taglevelcombobox import *
 from .trader.probabilitycasecombobox import *
 from .trader.worldlabel import *

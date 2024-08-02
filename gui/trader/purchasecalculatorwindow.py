@@ -18,6 +18,8 @@ _WelcomeMessage = """
     </html>
 """
 
+# TODO: I need to add a vertical splitter or something as the new world select control
+# is drawn way to small
 class PurchaseCalculatorWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -51,6 +53,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
     def _setupWorldSelectControls(self) -> None:
         self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget.enableMapSelectButton(True)
+        self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
 
         layout = QtWidgets.QVBoxLayout()
@@ -284,9 +288,6 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _purchaseWorldChanged(self) -> None:
-        self._cargoTable.removeAllRows()
-        self._diceRollTable.removeAllRows()
-
         disable = not self._purchaseWorldWidget.hasSelection()
         self._configurationGroupBox.setDisabled(disable)
         self._cargoGroupBox.setDisabled(disable)

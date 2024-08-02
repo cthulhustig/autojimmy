@@ -97,7 +97,7 @@ class _MapOptionToggleAction(QtWidgets.QAction):
             option=self._option,
             enabled=self.isChecked())
 
-class _SearchComboBox(gui.WorldSearchComboBox):
+class _SearchComboBox(gui.WorldSelectComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -916,7 +916,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._selectedWorlds.append(world)
 
         with gui.SignalBlocker(widget=self._searchWidget):
-            self._searchWidget.setSelectedWorld(world=world)
+            self._searchWidget.setCurrentWorld(world=world)
 
         self.highlightWorld(world=world)
 
@@ -1345,7 +1345,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 setInfoWorld=False) # Updating info world has already been handled
 
     def _searchButtonClicked(self) -> None:
-        world = self._searchWidget.selectedWorld()
+        world = self._searchWidget.currentWorld()
         if not world:
             worlds = traveller.WorldManager.instance().searchForWorlds(
                 searchString=self._searchWidget.currentText())

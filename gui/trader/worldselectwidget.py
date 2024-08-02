@@ -4,46 +4,89 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: Need to fix tab order, combo box is currently after icons
 class WorldSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
+    showWorld = QtCore.pyqtSignal(traveller.World)
 
     _StateVersion = 'WorldSelectWidget_v1'
 
     def __init__(
             self,
-            labelText: str = 'World',
-            noSelectionText: str = 'Select a world to continue',
+            text: str = 'Select World:',
             world: typing.Optional[traveller.World] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        self._selectButton = QtWidgets.QPushButton('Select...')
-        self._selectButton.clicked.connect(self._selectClicked)
+        self._enableMapSelectButton = False
+        self._enableShowWorldButton = False
+        self._enableShowInfoButton = False
+        self._mapSelectDialog = None
 
-        self._worldLabel = gui.WorldLabel(
-            world=world,
-            prefixText=f'{labelText}: ',
-            noWorldText=noSelectionText)
+        self._worldComboBox = gui.WorldSelectComboBox()
+        if world:
+            self._worldComboBox.setCurrentWorld(world=world)
+        self._worldComboBox.enableAutoComplete(True)
+        self._worldComboBox.worldChanged.connect(self._selectionChanged)
+
+        self._mapSelectButton = gui.IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Map),
+            parent=self)
+        self._mapSelectButton.setToolTip(gui.createStringToolTip(
+            'Select a world using Traveller Map.'))
+        self._mapSelectButton.setHidden(True)
+        self._mapSelectButton.clicked.connect(self._mapSelectClicked)
+
+        self._showWorldButton = gui.IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Search),
+            parent=self)
+        self._showWorldButton.setToolTip(gui.createStringToolTip(
+            'Show world in Traveller Map.'))
+        self._showWorldButton.setHidden(True)
+        self._showWorldButton.clicked.connect(self._showWorldClicked)
+
+        self._showInfoButton = gui.IconButton(
+            icon=gui.loadIcon(id=gui.Icon.Info),
+            parent=self)
+        self._showInfoButton.setToolTip(gui.createStringToolTip(
+            'Show world info.'))
+        self._showInfoButton.setHidden(True)
+        self._showInfoButton.clicked.connect(self._showInfoClicked)
 
         layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(self._selectButton)
-        layout.addWidget(self._worldLabel)
-        layout.addStretch()
         layout.setContentsMargins(0, 0, 0, 0)
+        if text:
+            layout.addWidget(QtWidgets.QLabel(text))
+        layout.addWidget(self._worldComboBox, 1)
+        layout.addWidget(self._mapSelectButton)
+        layout.addWidget(self._showWorldButton)
+        layout.addWidget(self._showInfoButton)
 
         self.setLayout(layout)
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._worldLabel.world()
+        return self._worldComboBox.currentWorld()
 
     def setWorld(self, world: typing.Optional[traveller.World]) -> None:
         if world != self.world():
-            self._worldLabel.setWorld(world)
+            self._worldComboBox.setCurrentWorld(world=world)
             self.selectionChanged.emit()
 
     def hasSelection(self) -> bool:
-        return self._worldLabel.world() != None
+        return self._worldComboBox.currentWorld() != None
+
+    def enableMapSelectButton(self, enable: bool) -> None:
+        self._enableMapSelectButton = enable
+        self._mapSelectButton.setHidden(not self._enableMapSelectButton)
+
+    def enableShowWorldButton(self, enable: bool) -> None:
+        self._enableShowWorldButton = enable
+        self._showWorldButton.setHidden(not self._enableShowWorldButton)
+
+    def enableShowInfoButton(self, enable: bool) -> None:
+        self._enableShowInfoButton = enable
+        self._showInfoButton.setHidden(not self._enableShowInfoButton)
 
     def saveState(self) -> QtCore.QByteArray:
         world = self.world()
@@ -76,12 +119,34 @@ class WorldSelectWidget(QtWidgets.QWidget):
         self.setWorld(world=world)
         return True
 
-    def _selectClicked(self) -> None:
-        dlg = gui.WorldSearchDialog(parent=self)
-        dlg.setWorld(self.world()) # Set initial selection to current world
-        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return None
-        world = dlg.world()
-        if not world:
+    def _selectionChanged(self) -> None:
+        world = self.world()
+        self._showWorldButton.setEnabled(world != None)
+        self._showInfoButton.setEnabled(world != None)
+        self.selectionChanged.emit()
+
+    def _mapSelectClicked(self) -> None:
+        if not self._mapSelectDialog:
+            self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
+            self._mapSelectDialog.setSingleSelect(True)
+
+        currentSelection = [self.world()] if self.hasSelection() else []
+        self._mapSelectDialog.setSelectedWorlds(currentSelection)
+        if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        self.setWorld(world=world)
+        newSelection = self._mapSelectDialog.selectedWorlds()
+        if len(newSelection) != 1:
+            return
+
+        self._worldComboBox.setCurrentWorld(world=newSelection[0])
+
+    def _showWorldClicked(self) -> None:
+        world = self.world()
+        if world:
+            self.showWorld.emit(world)
+
+    def _showInfoClicked(self) -> None:
+        world = self.world()
+        if world:
+            infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+            infoWindow.addWorld(world=world)

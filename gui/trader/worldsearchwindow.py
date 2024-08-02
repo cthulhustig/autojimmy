@@ -137,26 +137,52 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 class _WorldRadiusSearchWidget(QtWidgets.QWidget):
     _StateVersion = '_WorldRadiusSearchWidget_v1'
 
+    _WorldWidgetWidth = 250
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
 
-        self._worldWidget = gui.WorldSelectWidget()
+        self._worldWidget = gui.WorldSelectComboBox()
+        self._worldWidget.enableAutoComplete(True)
+        # Setting this to a fixed size is horrible, but no mater what I try I
+        # can't get this f*cking thing to expand to fill available space. I
+        # suspect it might be something to do with one of layers of widgets or
+        # layouts that contain this widget but I can't for the life of me figure
+        # out what is wrong. My best guess is it's something to do with the fact
+        # this widget ends up being put inside a QGridLayout but my only basis
+        # for this is the fact it's the most obvious difference between what is
+        # happening for this window and what is happening for something like the
+        # jump route planner window where the start/finish world combo boxes do
+        # expand to fil available space.
+        self._worldWidget.setFixedWidth(
+            int(_WorldRadiusSearchWidget._WorldWidgetWidth *
+                app.Config.instance().interfaceScale()))
+        worldLayout = QtWidgets.QHBoxLayout()
+        worldLayout.setContentsMargins(0, 0, 0, 0)
+        worldLayout.addWidget(QtWidgets.QLabel('Origin World:'))
+        worldLayout.addWidget(self._worldWidget, 1)
+        worldLayout.addStretch()
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(1, 32)
+        radiusLayout = QtWidgets.QHBoxLayout()
+        radiusLayout.setContentsMargins(0, 0, 0, 0)
+        radiusLayout.addWidget(QtWidgets.QLabel('Search Radius:'))
+        radiusLayout.addWidget(self._radiusSpinBox)
+        radiusLayout.addStretch()
 
-        layout = gui.FormLayoutEx()
+        layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setWidget(0, QtWidgets.QFormLayout.ItemRole.SpanningRole, self._worldWidget)
-        layout.addRow('Search Radius:', self._radiusSpinBox)
+        layout.addLayout(worldLayout)
+        layout.addLayout(radiusLayout)
 
         self.setLayout(layout)
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._worldWidget.world()
+        return self._worldWidget.currentWorld()
 
     def radius(self) -> int:
         return self._radiusSpinBox.value()
