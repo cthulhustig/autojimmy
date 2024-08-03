@@ -12,6 +12,10 @@ class ManifestTable(gui.ListTable):
         Component = 'Component'
         Factors = 'Other Factors'
 
+    # I've disabled this for now as I'm not sure I like it. I think it makes
+    # the table look uglier and I'm not sure it makes it any more readable
+    _AddSpaceBetweenPhases = False
+
     def __init__(
             self,
             costsType: typing.Type[construction.ConstructionCost],
@@ -71,9 +75,10 @@ class ManifestTable(gui.ListTable):
             self.insertRow(row)
             self._fillManifestSectionTotalRow(row=row, section=section)
 
-            row = self.rowCount()
-            self.insertRow(row)
-            self._fillSpacerRow(row=row)
+            if ManifestTable._AddSpaceBetweenPhases:
+                row = self.rowCount()
+                self.insertRow(row)
+                self._fillSpacerRow(row=row)
 
         row = self.rowCount()
         if row > 0: # Only add total if something has been added to the manifest
