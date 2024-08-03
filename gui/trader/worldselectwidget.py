@@ -86,7 +86,8 @@ class WorldSelectWidget(QtWidgets.QWidget):
     def setWorld(
             self,
             world: typing.Optional[traveller.World],
-            updateRecentWorlds: bool = True) -> None:
+            updateRecentWorlds: bool = True
+            ) -> None:
         if world != self.world():
             self._worldComboBox.setCurrentWorld(
                 world=world,

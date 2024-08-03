@@ -33,6 +33,9 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         world = index.data(QtCore.Qt.ItemDataRole.UserRole)
         if world:
             self._document.setHtml(_formatWorldHtml(world))
+        else:
+            self._document.clear()
+
         options.text = ''
         style.drawControl(QtWidgets.QStyle.ControlElement.CE_ItemViewItem, options, painter)
         context = QtGui.QAbstractTextDocumentLayout.PaintContext()
