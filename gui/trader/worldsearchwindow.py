@@ -137,7 +137,7 @@ class _RegionSelectWidget(QtWidgets.QWidget):
 class _WorldRadiusSearchWidget(QtWidgets.QWidget):
     _StateVersion = '_WorldRadiusSearchWidget_v1'
 
-    _WorldWidgetWidth = 250
+    _MinWorldWidgetWidth = 350
 
     def __init__(
             self,
@@ -145,8 +145,9 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._worldWidget = gui.WorldSelectComboBox()
-        self._worldWidget.enableAutoComplete(True)
+        self._worldWidget = gui.WorldSelectWidget('Origin World:')
+        self._worldWidget.enableMapSelectButton(True)
+        self._worldWidget.enableShowInfoButton(True)
         # Setting this to a fixed size is horrible, but no mater what I try I
         # can't get this f*cking thing to expand to fill available space. I
         # suspect it might be something to do with one of layers of widgets or
@@ -157,14 +158,9 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
         # happening for this window and what is happening for something like the
         # jump route planner window where the start/finish world combo boxes do
         # expand to fil available space.
-        self._worldWidget.setFixedWidth(
-            int(_WorldRadiusSearchWidget._WorldWidgetWidth *
+        self._worldWidget.setMinimumWidth(
+            int(_WorldRadiusSearchWidget._MinWorldWidgetWidth *
                 app.Config.instance().interfaceScale()))
-        worldLayout = QtWidgets.QHBoxLayout()
-        worldLayout.setContentsMargins(0, 0, 0, 0)
-        worldLayout.addWidget(QtWidgets.QLabel('Origin World:'))
-        worldLayout.addWidget(self._worldWidget, 1)
-        worldLayout.addStretch()
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(1, 32)
@@ -176,13 +172,13 @@ class _WorldRadiusSearchWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(worldLayout)
+        layout.addWidget(self._worldWidget)
         layout.addLayout(radiusLayout)
 
         self.setLayout(layout)
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._worldWidget.currentWorld()
+        return self._worldWidget.world()
 
     def radius(self) -> int:
         return self._radiusSpinBox.value()

@@ -1,3 +1,4 @@
+import app
 import gui
 import logging
 import traveller
@@ -10,9 +11,14 @@ class WorldSelectWidget(QtWidgets.QWidget):
 
     _StateVersion = 'WorldSelectWidget_v1'
 
+    # The world select combo box has a minimum width applied to stop it
+    # becoming stupidly small. This min size isn't expected to be big enough
+    # for all world names
+    _MinWoldSelectWidth = 150
+
     def __init__(
             self,
-            text: str = 'Select World:',
+            text: typing.Optional[str] = 'Select World:',
             world: typing.Optional[traveller.World] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
@@ -27,6 +33,9 @@ class WorldSelectWidget(QtWidgets.QWidget):
         if world:
             self._worldComboBox.setCurrentWorld(world=world)
         self._worldComboBox.enableAutoComplete(True)
+        self._worldComboBox.setMinimumWidth(int(
+            WorldSelectWidget._MinWoldSelectWidth *
+            app.Config.instance().interfaceScale()))
         self._worldComboBox.worldChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(

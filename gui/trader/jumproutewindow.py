@@ -228,30 +228,22 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self._startWorldWidget = gui.WorldSelectWidget(text='Start World:')
+        self._startWorldWidget = gui.WorldSelectWidget(text=None)
         self._startWorldWidget.enableShowWorldButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
         self._startWorldWidget.showWorld.connect(self._showStartWorldClicked)
 
-        self._finishWorldWidget = gui.WorldSelectWidget(text='Finish World:')
+        self._finishWorldWidget = gui.WorldSelectWidget(text=None)
         self._finishWorldWidget.enableShowWorldButton(True)
         self._finishWorldWidget.enableShowInfoButton(True)
         self._finishWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
         self._finishWorldWidget.showWorld.connect(self._showFinishWorldClicked)
 
-        startLayout = QtWidgets.QHBoxLayout()
-        startLayout.setContentsMargins(0, 0, 0, 0)
-        startLayout.addWidget(self._startWorldWidget, 1)
-
-        finishLayout = QtWidgets.QHBoxLayout()
-        finishLayout.setContentsMargins(0, 0, 0, 0)
-        finishLayout.addWidget(self._finishWorldWidget, 1)
-
-        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout = gui.FormLayoutEx()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addLayout(startLayout)
-        widgetLayout.addLayout(finishLayout)
+        widgetLayout.addRow('Start World:', self._startWorldWidget)
+        widgetLayout.addRow('Finish World:', self._finishWorldWidget)
 
         self.setLayout(widgetLayout)
 
@@ -297,10 +289,10 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
             self.selectionChanged.emit()
 
     def hasStartWorldSelection(self) -> bool:
-        return self._startWorldWidget.world() != None
+        return self._startWorldWidget.hasSelection()
 
     def hasFinishWorldSelected(self) -> bool:
-        return self._finishWorldWidget.world() != None
+        return self._finishWorldWidget.hasSelection()
 
     def hasStartFinishWorldsSelection(self) -> bool:
         return self.hasStartWorldSelection() and self.hasFinishWorldSelected()
