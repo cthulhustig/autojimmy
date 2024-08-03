@@ -37,7 +37,7 @@
 # Alleg: AsMw: "Aslan Hierate, single multiple-world clan dominates"
 # Alleg: AsSc: "Aslan Hierate, multiple clans split control"
 # Alleg: AsT0: "Aslan Hierate, Tlaukhu control, Yerlyaruiwo (1), Hrawoao (13), Eisohiyw (14), Ferekhearl (19)"
-# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)"
+# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khaukheairl (2), Estoieie' (16), Toaseilwi (22)"
 # Alleg: AsT3: "Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)"
 # Alleg: AsT4: "Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)"
 # Alleg: AsT6: "Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)"
@@ -70,25 +70,25 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0310 Hoa                  C664853-8 Ri Pa Ph (Tlyetrai)         { 0 }  (C78-3) [5825] -    -  - 211 9  NaXX M2 V          
 0406 Campbell             E775000-0 Ba                          { -3 } (200-5) [0000] -    -  - 003 6  NaXX F3 V M2 V     
 0409 Turin                C857643-8 Ag Ni Ga TlyeW              { -1 } (E53-4) [3525] -    -  - 924 11 NaXX F8 V          
-0607 Kelly                D564677-6 Ag Ni Ri                    { -1 } (853-1) [6556] -    -  - 405 14 NaHu G0 V          
+0607 Kelly                D564677-6 Ag Ni Ri Sa                 { -1 } (853-1) [6556] -    -  - 405 14 NaHu G0 V          
 0805 Halo                 E677000-0 Ba                          { -3 } (200-5) [0000] -    -  - 025 10 NaXX K8 V M4 V     
 0906 Razzia               E662000-0 Ba                          { -3 } (200-5) [0000] -    -  - 010 11 NaXX M2 V          
 0909 Balyff               C768845-8 Ri Pa Ph                    { 0 }  (E78-2) [6836] -    -  - 904 8  NaHu K5 V          
 1109 Dirk                 C425685-9 Ni                          { -1 } (853-3) [4537] -    -  - 600 12 NaHu M2 V M8 V     
 1206 Mooney               E768000-0 Ba                          { -3 } (200-5) [0000] -    -  - 023 14 NaXX K4 V M3 V M5 V
 1310 Kieffer              C685589-7 Ag Ni Ga Pr                 { -1 } (743+1) [6468] -    -  - 204 12 NaHu G8 V          
-1404 Storm                E774950-9 Hi In (H'Oskhikhil)         { 1 }  (C8B-3) [4A14] -    -  - 801 5  NaHu A0 III        
+1404 300-207              E300000-0 Ba Va                       { -3 } (200-5) [0000] -    -  - 000 3  NaXX A0 III        
 1406 Angela               E301000-0 Ba Ic Va                    { -3 } (200-5) [0000] -    -  - 010 8  NaXX M5 V M5 V     
 1409 Morristown           C797345-7 Lo                          { -2 } (520-4) [1135] -    -  - 902 12 NaHu M0 V          
 1410 Horacio              D778588-6 Ag Ni                       { -2 } (742-2) [5356] -    -  - 703 11 NaHu M0 V M7 V     
 1508 Linsiber             C897545-5 Ag Ni                       { -1 } (743-3) [3433] -    -  - 300 9  NaHu G0 V          
-1607 Lise                 D4305AA-9 De Ni Po Da                 { -2 } (742+1) [737B] -    -  A 800 8  NaHu M2 V M7 V     
+1607 Lise                 D4305AA-9 De Ni Po Tz Da              { -2 } (742+1) [737B] -    -  A 800 8  NaHu M2 V M7 V     
 1610 Markos               C547545-6 Ag Ni                       { -1 } (743-3) [3434] -    -  - 502 9  NaHu K5 V          
-1705 Sean                 E552000-0 Ba Po                       { -3 } (200-5) [0000] -    -  - 014 10 NaXX F8 V          
-1710 Winnetka             C435577-9 Ni                          { -1 } (A43-1) [5459] -    -  - 803 10 NaHu G5 V          
-1810 Ellerton             D102322-9 Ic Lo Va                    { -2 } (920-5) [1115] -    -  - 213 15 NaHu M8 V          
+1705 Sean                 E552000-0 Ba Po Tz                    { -3 } (200-5) [0000] -    -  - 014 10 NaXX M0 V          
+1710 Winnetka             C435577-9 Ni Sa                       { -1 } (A43-1) [5459] -    -  - 803 10 NaHu G5 V          
+1810 Ellerton             D102322-9 Ic Lo Va Sa                 { -2 } (920-5) [1115] -    -  - 213 15 NaHu M8 V          
 1908 Caere                E656000-0 Ba Ga                       { -3 } (200-5) [0000] -    -  - 001 11 NaXX G0 V M8 V     
-2005 Vichy                E301000-0 Ba Ic Va                    { -3 } (200-5) [0000] -    -  - 000 5  NaXX M5 V          
+2005 Vichy                E301000-0 Ba Ic Va Sa                 { -3 } (200-5) [0000] -    -  - 000 5  NaXX M5 V          
 2110 Iron Angel           C435412-9 Ni                          { -1 } (932-5) [1315] -    -  - 321 12 NaHu G0 V M7 V M9 V
 2203 Beltene              E856000-0 Ba Ga                       { -3 } (200-5) [0000] -    -  - 010 11 NaXX G4 IV         
 2207 Los                  E6667A9-4 Ag Ga Ri                    { 0 }  (966+1) [8765] -    -  - 720 14 NaHu M1 V          
@@ -116,13 +116,13 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0217 Iwioiar              A799769-8 Pi Mr                       { 0 }  (F68+1) [8769] -    M  - 224 17 IsDo M2 V          
 0220 Oakhahyolerl         C797559-8 Ag Ni                       { -1 } (B43+1) [6469] -    -  - 304 13 IsDo F4 V M9 V     
 0317 Khtehkaaoas          B565369-A Lo Mr                       { 2 }  (822+3) [456B] -    KM - 903 11 IsDo M3 V          
-0318 Wihea                E8779B8-7 Hi In AslaW                 { 0 }  (B89+1) [9957] -    -  - 304 11 NaAs K7 V          
+0318 Wihea                E8779B8-7 Hi In                       { 0 }  (B89+1) [9957] -    -  - 304 11 NaAs K7 V          
 0320 Maijarra             CA58ADD-7 Hi Pz                       { 0 }  (C99+4) [EA9B] -    -  A 504 12 IsDo F5 V          
 0414 Drusilla             C6726A7-6 He Ni                       { -2 } (852-2) [6456] -    -  - 105 13 NaHu M1 V          
 0415 Laurence             C737451-9 Ni                          { -1 } (932-5) [1315] -    -  - 403 15 NaHu M2 V M6 V     
 0417 Reynolds             B554645-7 Ag Ni Asla4                 { 0 }  (854-2) [4635] -    -  - 402 7  NaHu K8 V          
-0518 Aosewa               A54297A-A He Hi In Po Asla9           { 5 }  (H8F+5) [BE7C] -    KM - 824 14 NaHu G8 V M0 V     
-0519 Auikali              C568977-8 Hi Pr AslaW                 { 0 }  (H89+1) [9958] -    -  - 715 18 NaAs M0 V          
+0518 Aosewa               A54297A-A He Hi In Po Huma1           { 5 }  (H8F+5) [BE7C] -    KM - 824 14 NaAs G8 V M0 V     
+0519 Auikali              C568977-8 Hi Pr Tz                    { 0 }  (H89+1) [9958] -    -  - 715 18 NaAs M0 V          
 0611 Enicel               D437630-6 Ni                          { -3 } (851-5) [1311] -    -  - 814 11 NaHu M1 V          
 0612 Metzler              C86A122-7 Lo Wa                       { -2 } (300-5) [1113] -    -  - 400 7  NaHu K2 V          
 0616 Yedidah              A546787-9 Ag Pi Asla0                 { 3 }  (96C+3) [7A59] -    KM - 600 6  NaHu F8 V M6 V     
@@ -132,7 +132,7 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0713 Gofannon             C6677A8-4 Ag Ga Ri                    { 1 }  (967+1) [7854] -    -  - 404 10 NaHu F8 V          
 0716 Marie                C313767-7 Ic Na Pi O:0817             { -1 } (967-1) [7657] -    -  - 722 11 NaHu G3 V          
 0717 Tembo                C684566-7 Ag Ni Pr O:0817             { -1 } (743-2) [4446] -    -  - 504 8  NaHu M0 V M5 V     
-0720 Kawa                 C56368C-8 Ni Ri Da                    { -1 } (E53+2) [958B] -    -  A 815 13 NaHu G7 V          
+0720 Kawa                 C56368C-8 Ni Ri Sa Da                 { -1 } (E53+2) [958B] -    -  A 815 13 NaHu G7 V          
 0816 Cyne                 C878662-5 Ag Ni O:0817                { -1 } (853-5) [2511] -    -  - 900 5  NaHu M0 V          
 0817 Khan                 B5219CC-A He Hi In Na Po Pz           { 5 }  (F8F+5) [CE8D] -    KM A 313 13 NaHu K9 V          
 0911 Chenzen              D747557-8 Ag Ni                       { -2 } (742-2) [5358] -    M  - 200 4  NaHu M1 V          
@@ -144,6 +144,7 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1020 Brighton             B6959AC-9 Hi In Pz                    { 3 }  (E8D+5) [CC8C] -    -  A 903 6  NaHu K7 V          
 1113 Shannon              D66869B-3 Ag Ni Ri Da                 { -1 } (853+1) [8575] -    M  A 604 17 CsCa K4 V          
 1117 Gavza                E877453-8 Ni Pa                       { -3 } (931-5) [1125] -    -  - 703 12 NaHu F7 V M5 V     
+1118 Neutron Star         ???????-? {Anomaly}                                         -    -  - ???         NS            
 1211 Kambarage            E5256AB-7 Ni Da                       { -3 } (851-1) [8379] -    -  A 104 13 NaHu G8 V M4 V     
 1213 Rutherglen           B7788CA-A Pa Ph Pi Pz                 { 3 }  (C7C+5) [AB7C] -    KM A 302 10 CaPr M1 V          
 1214 Knoydart             C422624-A He Na Ni Po                 { 0 }  (C54-2) [4638] -    M  - 904 12 CaPr M2 V          
@@ -151,7 +152,7 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1217 Caithness            A666888-B Ga Ri Pa Ph                 { 4 }  (C7E+4) [8C5B] -    KM - 102 8  CaPr G7 V M2 V     
 1218 Rejhappur            B651613-A Ni Po Da (Happrhani)        { 1 }  (A55-2) [3727] -    -  A 211 7  CsCa K6 V M1 V     
 1317 Budwick              C887874-8 Ga Ri Pa Ph                 { 0 }  (B78-2) [6836] -    -  - 601 12 CaPr K5 V          
-1413 Annan                C100653-A Na Ni Va                    { 0 }  (B54-3) [3627] -    M  - 703 9  CaPr M1 V M8 V     
+1413 Annan                C100653-A Na Ni Va Sa                 { 0 }  (B54-3) [3627] -    M  - 703 9  CaPr M1 V M8 V     
 1415 Stirling             A957865-C Pa Ph Mr                    { 3 }  (D7D+1) [6B3A] -    KM - 203 12 CaPr G0 V          
 1417 Culloden             C420354-9 De He Lo Po                 { -1 } (B20-3) [1237] -    M  - 124 12 CaPr M1 V M4 V     
 1420 Arrecife             E000301-9 As Lo Va                    { -2 } (520-5) [1115] -    -  - 300 13 NaHu M4 V          
@@ -162,35 +163,35 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1615 Dunbarton            A886785-B Ag Ga Ri                    { 5 }  (D6F+3) [5C39] -    KM - 813 13 CaPr M2 V          
 1616 Pentland             C413533-8 Ic Ni                       { -2 } (D42-5) [2325] -    S  - 524 13 CaPr K6 V          
 1617 Douglass             AA978CA-C Pa Ph Pi Pz                 { 3 }  (E7D+5) [AB7E] -    KM A 822 12 CaPr G1 V          
-1711 Tsanesi              D653636-6 Ni Po (Yn-tsai)             { -3 } (851-4) [5345] -    -  - 200 3  CsCa K7 V          
+1711 Tsanesi              D653636-6 Ni Po Co Tu (Yn-tsai)       { -3 } (851-4) [5345] -    -  - 200 3  CsCa K7 V          
 1716 Stuart               A668786-B Ag Ri                       { 5 }  (E6F+4) [6C4A] -    KM - 323 13 CaPr K4 V          
 1717 MacBeth              B573733-A Pi                          { 3 }  (D6C+1) [4A27] -    KM - 622 10 CaPr K9 V M3 V     
-1718 Linda                C657510-8 Ag Ni Ga Da                 { -1 } (943-5) [1413] -    -  A 820 8  NaHu K4 V          
+1718 Linda                C657510-8 Ag Ni Ga Ho Tr Da           { -1 } (943-5) [1413] -    -  A 820 8  NaHu K4 V          
 1813 Firth                C52559B-9 Ni Da                       { -1 } (743+1) [747B] -    -  A 200 11 CaPr K7 V          
 1815 Caledon              A8688A5-C Ri Pa Ph Cx                 { 4 }  (E7E+2) [6C3A] -    KM - 913 12 CaPr G2 V          
-1818 Hoffman              D4218A8-8 He Na Po Ph Pi              { -2 } (C76-2) [8658] -    -  - 902 9  NaHu M3 V          
-1912 Glenshiel            DA86543-7 Ag Ni Pr                    { -2 } (742-5) [2324] -    -  - 602 13 CsCa F6 V          
+1818 Hoffman              D4218A8-8 He Na Po Ph Pi Tz Co        { -2 } (C76-2) [8658] -    -  - 902 9  NaHu M3 V          
+1912 Glenshiel            DA86543-7 Ag Ni Pr                    { -2 } (742-5) [2324] -    -  - 402 13 CsCa F6 V          
 1913 Claverse             B7677BB-9 Ag Ga Ri Pz                 { 4 }  (E6D+5) [9B7B] -    KM A 614 17 CaPr K4 V D        
 1914 Grampia              E432520-6 Ni Po                       { -3 } (741-5) [1211] -    -  - 201 9  CaPr M0 V          
 1916 Scotia               B789434-B Ni                          { 1 }  (C34-1) [2539] -    -  - 124 15 CaPr G0 V          
-1917 Rob Roy              B6469BA-B Hi In Pz                    { 5 }  (F8G+5) [BE7D] -    KM A 704 9  CaPr K9 V          
-2014 Fergus               C553304-7 Lo Po An                    { -2 } (520-4) [1135] -    -  - 124 19 NaHu K7 V M6 V     
-2017 Victory              A201766-C Ic Na Va Pi Mr              { 3 }  (E6D+2) [6A4B] -    KM - 914 13 CaPr F7 V M1 V     
+1917 Rob Roy              B6469BA-B Hi In Ho Tr Tz Pz           { 5 }  (F8G+5) [BE7D] -    KM A 704 9  CaPr K9 V          
+2014 Fergus               C453304-7 Lo Po Co An                 { -2 } (520-4) [1135] -    -  - 124 19 NaHu F7 V          
+2017 Victory              A201766-C Ic Na Pi Sa Va Mr           { 3 }  (E6D+2) [6A4B] -    KM - 914 13 CaPr K0 IV         
 2018 Skye                 E799751-5 Pi                          { -2 } (965-5) [3511] -    -  - 312 14 NaHu K8 V M6 V     
 2019 Germaine             A986956-D Hi Pr                       { 4 }  (C8G+3) [8D4C] -    KM - 301 11 NaHu M1 V          
-2111 Lhshami              C577794-8 Ag Pi (Lhshana)             { 0 }  (968-2) [5736] -    -  - 600 5  NaHu G0 V M4 V     
+2111 Lhshami              C577794-8 Ag Pi (Lhshana)             { 0 }  (968-2) [5736] -    -  - 600 5  NaXX G0 V M4 V     
 2116 Gash                 DAF8573-7 Ni                          { -3 } (741-5) [2224] -    -  - 112 10 NaHu M1 V          
-2214 Rock                 B400364-A Lo Va Da O:2313             { 1 }  (621-1) [1438] -    -  A 601 8  NaHu F8 V M8 V     
-2218 Concorde             A999587-E Ni                          { 1 }  (B45+1) [565E] B    N  - 613 10 ImDi G7 V M6 V     
-2311 Loren                C57459C-7 Ag Ni Da BruhW              { -1 } (743+2) [848A] -    S  A 201 7  CsIm M5 V          
-2313 Kolath               B7678CB-A Ga Ri Pa Ph Pz              { 4 }  (G7D+5) [AC7C] -    KM A 424 12 NaHu F3 V M9 V     
-2315 Kurat                CAA7667-8 Fl Ni Da O:2313             { -2 } (C52-2) [6458] -    -  A 613 12 NaHu G5 V          
-2320 Lurammish            C512755-9 Ic Na Pi                    { 0 }  (969-2) [5737] BD   S  - 800 6  ImDi F6 V M5 V     
-2412 Doom                 D400200-7 Lo Va                       { -3 } (410-5) [1112] -    -  - 101 8  NaHu F1 V          
+2214 Rock                 B400364-A Lo Va Sa Da O:2313          { 1 }  (621-1) [1438] -    -  A 601 8  NaHu M3 V          
+2218 Concorde             A999587-E Ni Asla4                    { 1 }  (B45+1) [565E] B    N  - 613 10 ImDi G7 V M6 V     
+2311 Loren                C57459C-7 Ag Ni Tz Da BruhW           { -1 } (743+2) [848A] -    S  A 201 7  CsIm M5 V          
+2313 Kolath               B7678CB-A Ga Ri Pa Ph Pz              { 4 }  (G7D+5) [AC7C] -    KM A 424 12 NaHu G4 V          
+2315 Kurat                CAA7667-8 Fl Ni Co Da O:2313          { -2 } (C52-2) [6458] -    -  A 613 12 NaHu G5 V          
+2320 Lurammish            C512755-9 Ic Na Pi Fr                 { 0 }  (969-2) [5737] BD   S  - 800 6  ImDi M0 V M3 V     
+2412 Doom                 D400200-7 Lo Va Tz Ho Fo              { -3 } (410-5) [1112] -    -  R 101 8  NaHu K0 V          
 2414 Mer                  C79A520-8 Ni Wa                       { -2 } (D42-5) [1313] B    -  - 424 15 ImDi G2 V M9 V     
-2416 Gerim                A888A97-E Hi                          { 3 }  (J9F+3) [AD5E] BE   N  - 224 12 ImDi F4 V M0 V     
-2417 Bryn                 B4268B8-8 Ph Pi                       { 0 }  (F78+1) [8858] BDe  -  - 914 14 ImDi G3 IV M4 V    
-2419 Ikuna                E000410-A As Ni Va                    { -1 } (932-5) [1315] B    -  - 312 10 ImDi K6 V          
+2416 Gerim                A888A97-E Hi                          { 3 }  (J9F+3) [AD5E] BE   N  - 224 12 ImDi G1 V          
+2417 Bryn                 B4268B8-8 Ph Pi Ho                    { 0 }  (F78+1) [8858] BDe  -  - 914 14 ImDi F0 V          
+2419 Ikuna                E000410-A As Ni Va                    { -1 } (932-5) [1315] B    -  - 312 10 ImDi F5 V M0 V     
 2511 Roye                 C79A458-A Ni Wa                       { 0 }  (833+1) [445A] -    -  - 202 11 NaHu M3 V          
 2513 Sheffield            C667575-8 Ag Ni Ga Pr                 { -1 } (C43-3) [3436] BcC  -  - 214 8  ImDi M2 V M4 V     
 2514 Shetland             B54478A-8 Ag Pi                       { 1 }  (E69+3) [987A] BCD  N  - 914 12 ImDi F0 V M8 V     
@@ -202,24 +203,24 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 2720 Merisun              X685679-2 Ag Ni Ga Ri Fo              { -1 } (853+1) [7563] -    -  R 701 9  ImDi G5 V M4 V     
 2812 Ankara               C99947B-9 Ni Da                       { -1 } (832+1) [637B] B    S  A 411 14 ImDi K9 V          
 2813 Vetzeal              E423214-7 Lo Po                       { -3 } (410-5) [1135] B    -  - 310 8  ImDi F7 V          
-2816 Aries                B310444-D Ni                          { 1 }  (B34-1) [253B] B    N  - 214 11 ImDi F1 V          
-2819 Koath                C301453-A Ic Ni Va                    { 0 }  (C33-3) [1427] B    -  - 424 9  ImDi G5 V M9 V     
+2816 Aries                B310444-D Ni Sa                       { 1 }  (B34-1) [253B] B    N  - 214 11 ImDi M1 V          
+2819 Koath                C301453-A Ic Ni Va Sa Ho              { 0 }  (C33-3) [1427] B    -  - 424 9  ImDi G5 V M9 V     
 2912 Veroch               E6B1101-8 Fl He Lo                    { -3 } (700-5) [1114] B    -  - 713 9  ImDi G4 V          
 2916 Mull                 CAC7312-9 Fl Lo                       { -1 } (720-5) [1215] B    -  - 611 15 ImDi F9 V          
 2917 Stonehaven           A9D5422-C Ni                          { 1 }  (B34-3) [1518] B    N  - 914 11 ImDi F2 V          
-2919 Orkney               B5888CB-9 Ri Pa Ph Pz                 { 2 }  (C7B+4) [AA7B] -    -  A 302 13 NaHu M0 V M7 V     
+2919 Orkney               B5888CB-9 Ri Pa Ph Fo                 { 2 }  (C7B+4) [AA7B] -    -  R 302 13 NaHu M0 V M7 V     
 2920 Maiden               X544567-5 Ag Ni Fo O:2919             { -2 } (742-2) [5355] -    -  R 104 10 NaHu K2 V          
 3012 Khishali             C866759-8 Ag Ga Ri                    { 1 }  (E69+2) [8869] BC   -  - 914 10 ImDi G3 V M1 V     
-3019 Khagish              D7649DD-6 Hi Pr Pz                    { -1 } (B87+3) [D89A] BcE  S  A 715 12 ImDi K0 V          
+3019 Khagish              D7649DD-6 Hi Pr Viru1 Pz              { -1 } (B87+3) [D89A] BcE  S  A 715 12 ImDi K0 V          
 3111 815-205              C99A311-9 Lo Wa                       { -1 } (920-5) [1215] B    -  - 204 9  ImDi M1 V          
-3112 Arthur               E566000-0 Ba                          { -3 } (200-5) [0000] -    -  - 003 11 ImDi M1 V          
-3115 Ghost                C685688-5 Ag Ni Ga Ri (Ayansh'i)      { 0 }  (854+1) [6655] BC   -  - 713 13 ImDi F1 V          
-3118 Dundee               B533133-A Lo Po                       { 1 }  (301-2) [1227] B    N  - 700 12 ImDi M0 II M2 V    
+3112 Arthur               E566000-0 Ba Tz                       { -3 } (200-5) [0000] -    -  - 003 11 ImDi M1 V          
+3115 Ghost                C685688-5 Ag Ni Ga Ri (Ayansh'i)      { 0 }  (854+1) [6655] BC   -  - 713 13 ImDi K1 V          
+3118 Dundee               B533133-A Lo Po                       { 1 }  (301-2) [1227] B    N  - 700 12 ImDi M0 III        
 3120 Havant               B542524-B He Ni Po                    { 1 }  (945-1) [3639] B    -  - 702 12 ImDi M3 V M5 V     
 3211 Wells                A786500-9 Ag Ni Ga Pr                 { 1 }  (C45-3) [1614] BcC  -  - 523 13 ImDi G6 V          
 3212 Petzina              B674767-A Ag Pi O:Daib-0114           { 3 }  (F6C+3) [7A5A] BCD  -  - 824 9  ImDi K8 V          
-3220 Khakhan              A988AA8-E Hi                          { 3 }  (F9F+3) [AD5E] BE   N  - 903 9  ImDi F6 V M0 V M9 V
-0124 Esekheali            C400573-9 Ni Va                       { -1 } (B43-4) [2426] -    -  - 504 12 IsDo F4 IV         
+3220 Khakhan              A988AA8-E Hi Viru0                    { 3 }  (F9F+3) [AD5E] BE   N  - 903 9  ImDi F6 V M0 V M9 V
+0124 Esekheali            C400573-9 Ni Va Sa                    { -1 } (B43-4) [2426] -    -  - 504 12 IsDo A1 V          
 0125 Ekhiwua'ea           D898874-6 Pa Ph Pi                    { -2 } (A75-4) [6634] -    -  - 504 13 IsDo K7 V M6 V     
 0127 Khtaao               E593267-7 Lo O:0227                   { -3 } (410-3) [2157] -    -  - 314 12 AsT6 K7 V          
 0129 Khteaouw             E531497-8 Ni Po                       { -3 } (731-3) [4158] -    -  - 301 9  AsT9 F8 V          
@@ -228,36 +229,36 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0230 Oihoiei              A8558A8-C Ga Pa Ph                    { 2 }  (F7C+2) [8A5C] -    R  - 214 17 AsWc F9 V M1 V     
 0324 Oirue'ea             B5648BB-A Ri Pa Ph Pz                 { 3 }  (D7C+5) [AB7C] -    -  A 303 8  IsDo K8 V          
 0328 Kteieaelal           C9897BB-9 Ri Pz                       { 1 }  (E6A+3) [987B] -    -  A 714 11 AsTv K4 V          
-0423 Eihewasei            C310466-9 Ni O:0324                   { -1 } (A32-2) [3348] -    -  - 413 10 IsDo F0 V          
+0423 Eihewasei            C310466-9 Ni Sa O:0324                { -1 } (A32-2) [3348] -    -  - 413 10 IsDo M0 V          
 0424 Yaoueai              E560468-7 De Ni O:0324                { -3 } (631-3) [4157] -    -  - 915 15 IsDo M1 V M2 V     
 0426 Phontramus           C87A341-9 Lo Wa Asla2                 { -1 } (820-5) [1215] -    -  - 203 9  NaHu M0 V M7 V     
-0429 Atiyr                E413774-8 Ic Na Pi                    { -2 } (C66-4) [5536] -    -  - 212 16 AsSc F0 V M0 V     
-0521 Janet                B9995AB-A Ni Da Asla0                 { 2 }  (C46+4) [777C] -    KM A 923 9  NaHu M2 V          
+0429 Atiyr                E413774-8 Ic Na Pi Fr                 { -2 } (C66-4) [5536] -    -  - 212 16 AsSc M0 V          
+0521 Janet                B9995AB-A Ni Tz Da Asla0              { 2 }  (C46+4) [777C] -    KM A 923 9  NaHu M2 V          
 0523 Aerin                C896853-8 Pa Ph Pi Asla3              { -1 } (E77-4) [5725] -    -  - 322 11 NaHu K1 V K4 V     
 0525 Therad               B666854-8 Ga Ri Pa Ph Asla0           { 1 }  (B79-1) [6936] -    -  - 601 6  NaHu M1 V M8 V     
 0530 Hrike                A7888A9-C Ri Pa Ph                    { 3 }  (G7D+4) [9B6D] -    R  - 415 15 AsMw G3 V M0 V     
 0623 Gwalcmai             E543443-5 Ni Po                       { -3 } (631-5) [1122] -    -  - 803 15 NaHu K9 V          
 0624 Asden                D543500-7 Ni Po                       { -3 } (741-5) [1212] -    -  - 322 14 NaHu K7 V          
 0626 Thekar               C553400-9 Ni Po Asla0                 { -1 } (832-5) [1314] -    -  - 702 10 NaHu F9 V          
-0630 Abramo               B200722-B Na Va Pi Asla4              { 3 }  (E6D-1) [3A17] -    KM - 323 11 NaHu G3 V M6 V     
+0630 Abramo               B200722-B Na Va Pi Sa Asla4           { 3 }  (E6D-1) [3A17] -    KM - 323 11 NaHu G3 V M6 V     
 0722 New Covenant         A5579DE-9 Hi Pz                       { 2 }  (F8C+5) [DB9D] -    N  A 413 15 CsIm K5 V          
 0729 Icarus               C759855-5 Ph Asla1                    { -1 } (A76-3) [6733] -    -  - 223 15 NaHu G0 V          
 0827 Tulena               D746300-7 Lo                          { -3 } (520-5) [1112] -    -  - 523 12 NaHu F6 V M6 V     
-0921 Dunmarrow            B544653-A Ag Ni                       { 2 }  (B56-1) [3827] -    S  - 203 14 CsIm G0 V          
-0923 Hrou                 D200579-8 Ni Va Asla9                 { -3 } (C41-2) [6269] -    -  - 314 13 NaHu F3 V          
+0921 Dunmarrow            B544653-A Ag Ni                       { 2 }  (B56-1) [3827] -    S  - 203 14 CsCa G0 V          
+0923 Hrou                 D200579-8 Ni Va Sa Huma1              { -3 } (C41-2) [6269] -    -  - 314 13 NaAs M3 V          
 0926 Lestrow              C798784-8 Ag Pi Pz                    { 0 }  (D68-2) [5736] -    -  A 813 12 GdMh M0 V          
-1024 Laroaetea            E556555-6 Ag Ni Asla8                 { -2 } (742-4) [3334] -    -  - 512 14 NaHu M2 V M5 V     
+1024 Laroaetea            E556555-6 Ag Ni Huma2                 { -2 } (742-4) [3334] -    -  - 512 14 NaAs M2 V M5 V     
 1028 Fask                 C9868AA-8 Ri Pa Ph Pz                 { 0 }  (D78+2) [A87A] -    -  A 321 10 GdMh M1 V M6 V     
 1030 Theodora             B857563-A Ag Ni Ga Da Mr              { 3 }  (B47+1) [2827] -    KM A 104 11 GdMh G9 V M7 V     
 1121 Tearlach             E569749-7 Ri                          { -1 } (967+1) [8668] -    -  - 413 14 NaHu G9 V M4 V     
-1124 Gaajpadje            E667874-4 Ga Ri Pa Ph (J'aadje)6      { -1 } (A75-3) [6732] -    -  - 904 10 NaHu G8 V          
-1125 Earlo                D542102-7 He Lo Po Da Asla7           { -3 } (300-5) [1113] -    -  A 404 13 NaHu F7 V          
+1124 Gaajpadje            E667874-4 Ga Ri Pa Ph (J'aadje)6      { -1 } (A75-3) [6732] -    -  - 904 10 NaXX G8 V          
+1125 Earlo                D542102-7 He Lo Po Tz Da Huma3        { -3 } (300-5) [1113] -    -  A 404 13 NaAs M2 V          
 1127 Mirak                C766763-8 Ag Ga Ri Pz Mr              { 1 }  (B69-2) [4825] -    M  A 702 10 GdMh M1 V          
 1129 Dran                 C551566-9 Ni Po Da O:1230             { -1 } (C43-2) [4448] -    -  A 123 12 GdMh K9 V M5 V     
-1222 Leaa                 E100488-9 Ni Va AslaW                 { -2 } (931-2) [4259] -    -  - 312 13 NaAs G7 V          
+1222 Leaa                 E100488-9 Ni Va Sa                    { -2 } (931-2) [4259] -    -  - 312 13 NaAs G7 V          
 1224 Roakhoi              C969543-5 Ni Pr Asla5                 { -2 } (742-5) [2322] -    -  - 702 8  NaHu F5 V          
-1225 Ea                   C7586AA-7 Ag Ni Da Asla8              { -1 } (853+1) [8579] -    -  A 214 14 NaHu M0 V M1 V     
-1226 Htalrea              E767610-1 Ag Ni Ga Ri (Polyphemes)    { -1 } (853-5) [1511] -    -  - 103 10 NaHu M1 V          
+1225 Ea                   C7586AA-7 Ag Ni Tz Da Asla8           { -1 } (853+1) [8579] -    -  A 214 14 NaHu M0 V M1 V     
+1226 Htalrea              E767610-1 Ag Ni Ga Ri Fo (minor)      { -1 } (853-5) [1511] -    -  R 103 10 NaAs M1 V          
 1230 Marlheim             A5759A8-B Hi In Cx Pz                 { 5 }  (E8G+5) [9E5B] -    KM A 303 14 GdMh G2 V M9 V     
 1321 Shamas               E556305-6 Lo                          { -3 } (520-5) [1134] -    -  - 703 13 NaHu F7 V          
 1327 Vincit               C8987A9-8 Ag Pi                       { 0 }  (C68+1) [8769] -    M  - 403 15 DuCf M1 V          
@@ -269,32 +270,32 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1622 Invermory            B584789-A Ag Ri                       { 5 }  (G6E+5) [8C6B] -    KM - 525 10 DuCf M3 V M5 V     
 1624 Duncinae             A686648-B Ag Ni Ga Ri Cx              { 4 }  (A58+4) [6A5B] -    KM - 502 10 DuCf G0 V          
 1625 Just                 C7487AA-5 Ag Pi Pz                    { 0 }  (967+2) [9777] -    M  A 425 19 DuCf K4 V          
-1721 Lajanjigal           DAB6513-8 Fl Ni Da (Languljigee)      { -3 } (C41-5) [2225] -    -  A 805 14 NaHu G8 V          
+1721 Lajanjigal           DAB6513-8 Fl Ni Co Da (Languljigee)   { -3 } (C41-5) [2225] -    -  A 805 14 NaHu G8 V          
 1723 Coventry             X565733-2 Ag Ri Fo Px                 { 0 }  (965-3) [4721] -    -  R 404 13 NaHu G8 V          
 1727 Traneer              E576679-6 Ag Ni                       { -2 } (852-1) [7467] -    -  - 323 13 NaHu G5 V          
 1821 Dakaar               B425612-B Ni                          { 2 }  (A56-2) [2817] -    KM - 202 6  NaHu K0 V D        
-1826 Drexilthar           B56969D-7 Ni Ri Da (Iltharans)        { 0 }  (854+4) [A69B] -    S  A 914 14 CsIm G4 V          
-1828 Kraan                C501456-8 Ic Ni Va                    { -2 } (B31-3) [3247] -    -  - 223 11 NaHu M3 V          
-1830 Daken                C631233-9 Lo Po                       { -1 } (610-4) [1126] -    -  - 902 7  NaHu M2 V M5 V     
+1826 Drexilthar           B56969D-7 Ni Ri Co Da (Iltharans)     { 0 }  (854+4) [A69B] -    S  A 914 14 CsIm G4 V          
+1828 Kraan                C501456-8 Ic Ni Va Fr                 { -2 } (B31-3) [3247] -    -  - 223 11 NaHu M3 V          
+1830 Daken                C631233-9 Lo Po Tz Ho                 { -1 } (610-4) [1126] -    -  - 902 7  NaHu K2 V          
 1924 Cassandra            B000538-C As Ni Va                    { 1 }  (C45+1) [565C] -    -  - 914 15 NaHu F0 V          
-1926 Outpost              B310442-D Ni                          { 1 }  (A34-3) [1519] -    N  - 413 15 CsIm K7 V M5 V     
-1927 Tashrakaar           D651695-6 Ni Po                       { -3 } (851-5) [4334] -    -  - 213 14 NaHu M2 V          
-2021 Luushakaan           D541513-5 He Ni Po                    { -3 } (741-5) [2222] -    -  - 811 11 NaHu M0 V          
-2027 Dutrissal            CAC5235-9 Fl Lo                       { -1 } (610-3) [1137] -    -  - 802 9  NaHu F4 V M8 V     
-2029 Drellesarr           B310550-A Ni Da                       { 1 }  (945-3) [1615] -    -  A 502 6  NaHu K5 V          
-2030 Drenslaar            D553694-6 Ni Po                       { -3 } (851-5) [4334] -    -  - 313 11 NaHu M2 V M5 V     
+1926 Outpost              B310442-D Ni Lk Sa                    { 1 }  (A34-3) [1519] -    N  - 413 15 CsIm K7 V M5 V     
+1927 Tashrakaar           D651695-6 Ni Po Ho                    { -3 } (851-5) [4334] -    -  - 213 14 NaHu F6 V          
+2021 Luushakaan           D541513-5 He Ni Po Co Tz              { -3 } (741-5) [2222] -    -  - 811 11 NaHu M0 V          
+2027 Dutrissal            CAC5235-9 Fl Lo Co                    { -1 } (610-3) [1137] -    -  - 802 9  NaHu K3 V          
+2029 Drellesarr           B310550-A Ni Tz Da                    { 1 }  (945-3) [1615] -    -  A 502 6  NaHu M3 V M5 V     
+2030 Drenslaar            D553694-6 Ni Po Tz Ho                 { -3 } (851-5) [4334] -    -  - 313 11 NaHu K5 V          
 2127 Grendal              C889855-A Ri Ph                       { 2 }  (E7B+1) [6A38] -    S  - 613 15 CsIm F7 V M6 V     
-2128 Tharrill             C885741-8 Ag Ga Ri                    { 1 }  (D69-3) [3814] -    -  - 722 14 NaHu M0 V M3 V     
-2129 Sarrad               D88A300-8 Lo Wa Da                    { -3 } (A20-5) [1113] -    -  A 823 12 CaAs K8 V M3 V     
-2221 Garrison             A55796B-B Hi Mr                       { 3 }  (E8E+5) [BC7D] BE   N  - 412 10 ImDi F5 V          
-2223 Kaaniir              C688611-6 Ag Ni Ri                    { 0 }  (854-4) [2612] -    S  - 723 12 CsIm F8 V          
-2228 Yarhfahl             C658796-6 Ag                          { 0 }  (967-1) [6745] -    -  - 110 11 NaHu M1 V M4 V     
+2128 Tharrill             C885741-8 Ag Ga Ri                    { 1 }  (D69-3) [3814] -    -  - 722 14 NaHu G0 V          
+2129 Sarrad               D88A663-8 Ni Ri Wa Ho O:2330          { -2 } (A51+1) [4413] -    -  - 323 12 CaAs G4 V          
+2221 Garrison             A55796B-B Hi Sa Mr                    { 3 }  (E8E+5) [BC7D] BE   N  - 412 10 ImDi F5 V          
+2223 Kaaniir              C688611-6 Ag Ni Ri                    { 0 }  (854-4) [2612] -    S  - 723 12 CsIm G1 V          
+2228 Yarhfahl             C658796-6 Ag                          { 0 }  (967-1) [6745] -    -  - 110 11 NaHu K3 V          
 2230 Datinar              B431685-A Na Ni Po                    { 1 }  (B55-1) [4738] -    -  - 303 11 CaAs K0 V          
 2322 Gaargir              B565304-C Lo                          { 2 }  (922+1) [153A] B    NS - 713 7  ImDi K7 V          
-2326 Ildrissar            C995836-7 Pa Ph Pi Pz                 { -1 } (A77-2) [7746] -    -  A 203 14 CaAs M1 V          
-2330 Carrill              A0009AE-E As Hi In Na Va Cx Pz        { 5 }  (F8H+5) [DE9J] -    KM A 613 11 CaAs F4 V          
-2421 Kaanash              B55687A-7 Pa Ph Pz                    { 1 }  (A79+3) [A979] Bce  NS A 414 17 ImDi M1 V M6 V     
-2423 Diablo               B9C7477-9 Fl Ni                       { 0 }  (C33+1) [4459] B    -  - 724 11 ImDi M2 V          
+2326 Ildrissar            C995836-7 Pa Ph Pi Pz                 { -1 } (A77-2) [7746] -    -  A 203 14 CaAs F5 V          
+2330 Carrill              A00099B-E As Hi In Na Va Cx           { 5 }  (F8H+5) [DE9J] -    KM - 613 11 CaAs A5 V          
+2421 Kaanash              B55687A-7 Pa Ph Pz                    { 1 }  (A79+3) [A979] Bce  NS A 414 17 ImDi G5 V          
+2423 Diablo               B9C7477-9 Fl Ni Tz                    { 0 }  (C33+1) [4459] B    -  - 724 11 ImDi M0 V M2 V     
 2429 Lindritar            C5796A7-8 Ni                          { -2 } (A52-2) [6458] -    -  - 211 13 CaAs K7 V          
 2523 Inura                C421312-A He Lo Po                    { 0 }  (820-4) [1316] B    -  - 812 6  ImDi G9 V          
 2526 Hope                 E65778B-4 Ag Ga Pz                    { -1 } (965+1) [9676] BC   -  A 200 8  ImDi F4 V          
@@ -305,9 +306,9 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 2628 Boran                C3135AB-A Ic Ni Da                    { 0 }  (844+2) [757C] -    -  A 301 7  CaAs G2 V          
 2721 Hela                 C431300-9 Lo Po                       { -1 } (820-5) [1214] B    -  - 412 10 ImDi F5 V          
 2724 Virshash             DA86954-6 Hi Pr (Virushi)             { -1 } (B87-3) [7834] BcE  S  - 403 10 ImDi F9 V M4 V     
-2730 Syreon               C54688C-8 Pa Ph Pi Pz                 { -1 } (H77+2) [B78B] -    M  A 325 15 CaAs M0 V          
-2821 Marianne             C6787C9-8 Ag Pi Pz                    { 0 }  (968+1) [8769] BCD  S  A 500 13 ImDi M1 V          
-2824 Sharrik              B664896-9 Ri Pa Ph                    { 2 }  (E7B+1) [7A48] BcCe -  - 804 11 ImDi M1 V M1 V     
+2730 Syreon               C54688C-8 Pa Ph Pi Chir0 Pz           { -1 } (H77+2) [B78B] -    M  A 325 15 CaAs M0 V          
+2821 Marianne             C6787C9-8 Ag Pi Tz Viru7 Pz           { 0 }  (968+1) [8769] BCD  S  A 500 13 ImDi M1 V          
+2824 Sharrik              B664896-9 Ri Pa Ph Tz Viru6           { 2 }  (E7B+1) [7A48] BcCe -  - 804 11 ImDi M1 V M1 V     
 2825 Freehold             E555457-7 Ni Pa                       { -3 } (631-3) [4157] -    -  - 515 14 NaHu G6 V          
 2828 Lyresse              C693651-9 Ni Da                       { -1 } (C53-5) [2515] -    -  A 813 14 CaAs K4 V          
 2829 Rothman              B796855-9 Pa Ph Pi                    { 2 }  (D7B+1) [6A37] -    KM - 403 10 CaAs M1 V M3 V     
@@ -315,30 +316,30 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 2929 New Eden             X5626BC-2 Ni Ri Fo                    { -2 } (852+1) [9485] -    -  R 203 13 NaHu F7 V          
 2930 Herod                C5569CC-A Hi Pz                       { 2 }  (G8C+5) [CB8D] -    -  A 723 10 NaHu M3 V          
 3021 Olympus              A000567-D As Ni Va Mr                 { 1 }  (B45+1) [565D] B    N  - 604 12 ImDi M2 V          
-3023 Urlaqqash            B788777-9 Ag Ri Cp                    { 4 }  (C6D+4) [7B59] BCF  NS - 412 6  ImDi F9 V          
-3025 Ixion                C6A1234-9 Fl He Lo Da (Creature)      { -1 } (810-3) [1137] B    -  A 704 12 ImDi M2 V M2 V     
+3023 Urlaqqash            B788777-9 Ag Ri Viru3 Cp              { 4 }  (C6D+4) [7B59] BCF  NS - 412 6  ImDi F9 V          
+3025 Ixion                C6A1234-9 Fl He Lo Da                 { -1 } (810-3) [1137] B    -  A 704 12 ImDi G7 V          
 3027 Araby                D5709A9-8 De He Hi In                 { 0 }  (F89+1) [A969] -    -  - 704 15 CsIm M0 V          
 3125 Devonia              B566563-A Ag Ni Pr O:3023             { 2 }  (B46-1) [2727] BcC  -  - 213 12 ImDi F5 V M5 V     
-3127 Narisagiir           E100943-8 Hi In Na Va                 { 0 }  (E89-3) [6925] BE   -  - 503 10 ImDi F9 V M0 V M1 V
+3127 Narisagiir           E100943-8 Hi In Na Va Sa Co           { 0 }  (E89-3) [6925] BE   -  - 503 10 ImDi F9 V M0 V M1 V
 3129 Oceanus              B97A788-B Wa Pi                       { 2 }  (D6C+2) [795B] -    -  - 813 8  NaHu G3 V M6 V     
 3130 Mecca                D858668-6 Ag Ni O:3031                { -2 } (852-2) [6456] -    -  - 402 10 NaHu F4 V          
 3223 Kaduggur             C431231-7 Lo Po                       { -2 } (410-5) [1113] B    -  - 804 12 ImDi K1 V          
 3226 Nexus                A3105AA-D Ni Da                       { 1 }  (A45+3) [767F] B    N  A 712 14 ImDi F6 V M9 V     
 0131 Tee'airlakho         A99868B-C Ag Ni                       { 2 }  (C56+4) [887E] -    T  - 504 12 AsT4 K4 V M5 V     
-0135 Ahyolyo              B200697-C Na Ni Va                    { 1 }  (C55+1) [675C] -    -  - 704 11 AsT4 F8 V M6 V     
+0135 Ahyolyo              B200697-C Na Ni Va                    { 1 }  (C55+1) [675C] -    T  - 704 11 AsT4 F8 V M6 V     
 0232 Hesiyha              CA9A547-9 Ni Oc                       { -1 } (C43-1) [5459] -    -  - 623 16 AsMw M0 V M3 V     
 0234 Rau                  A699757-D Pi                          { 2 }  (D6D+2) [795D] -    -  - 513 9  AsMw M4 V M4 V     
-0235 O'eatoaea            D989A99-8 Hi Pz                       { -1 } (H98+1) [B969] -    -  A 614 16 AsT0 K3 V          
+0235 O'eatoaea            D989A99-7 Hi Fo                       { -1 } (C98+1) [B969] -    -  R 614 16 AsT0 K3 V          
 0237 Roaa                 AA67A77-E Hi                          { 4 }  (H9G+4) [AE5E] -    RT - 723 15 AsSc G4 V          
-0240 Khtaoreh             C100436-7 Ni Va                       { -2 } (631-3) [3246] -    R  - 705 12 AsT9 F3 V          
-0332 Khyaleiftaoher       D887776-7 Ag Ga Ri                    { 0 }  (968-1) [6746] -    -  - 913 10 AsSc M0 V M8 V     
-0335 Khaiuiwelra          C7897A8-9 Ri                          { 1 }  (D6A+1) [7859] -    -  - 604 12 AsT1 M1 V          
+0240 Khtaoreh             C100436-7 Ni Va Sa Ho                 { -2 } (631-3) [3246] -    R  - 705 12 AsT9 F3 V          
+0332 Khyaleiftaoher       D887776-7 Ag Ga Ri                    { 0 }  (968-1) [6746] -    T  - 913 10 AsSc M0 V M8 V     
+0335 Khaiuiwelra          C7897A8-9 Ri                          { 1 }  (D6A+1) [7859] -    T  - 604 12 AsT1 M1 V          
 0433 Takhiykhuw           D420742-8 De He Na Po Pi              { -2 } (B66-5) [3514] -    R  - 602 13 AsT3 M0 V M4 V     
 0436 Quentin              E554555-5 Ag Ni                       { -2 } (742-4) [3333] -    -  - 202 9  NaHu M0 V M1 V     
 0437 Vyjiid               B9D7358-A Lo Asla2                    { 2 }  (722+2) [355A] -    KM - 202 8  NaHu G7 V M2 V     
 0440 Angelika             D5556BC-6 Ag Ni Da                    { -2 } (852+1) [9489] -    -  A 903 10 CsIm G6 V          
-0531 Hrealeiwea'          B5759C9-B Hi In Pz                    { 4 }  (E8F+5) [AD6C] -    -  A 603 11 AsT4 M0 V M3 V     
-0534 Lyo                  B889ABC-B Hi Pz Asla8                 { 3 }  (H9E+5) [DD8E] -    -  A 223 13 CsIm M3 V          
+0531 Hrealeiwea'          B5759C9-B Hi In Pz                    { 4 }  (E8F+5) [AD6C] -    T  A 603 11 AsT4 M0 V M3 V     
+0534 Lyo                  B889ABC-B Hi Tz Pz Asla8              { 3 }  (H9E+5) [DD8E] -    -  A 223 13 CsIm M3 V          
 0535 Tolde                E9D9576-5 Ni Huma4 Asla2              { -3 } (741-4) [4244] -    -  - 102 11 UnHa G3 V M5 V     
 0538 Galloway             C684769-7 Ag Ri Huma7 Asla2 O:0737    { 1 }  (969+2) [8868] -    -  - 102 10 UnHa M2 V M9 V     
 0539 Miranda              D5A0766-8 He Huma8 Asla1 O:0737       { -2 } (D66-3) [6547] -    -  - 104 14 UnHa M0 V          
@@ -361,24 +362,24 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1133 Emmaline             E426340-7 Lo Da                       { -3 } (520-5) [1112] -    -  A 903 14 NaHu M3 V M7 V     
 1136 Danelag              E686889-5 Ga Ri Pa Ph                 { -1 } (A76+1) [9766] -    -  - 423 13 NaHu M2 V          
 1137 Paradise             E885858-6 Ga Ri Pa Ph                 { -1 } (A76-1) [8756] -    -  - 614 12 NaHu K8 V M1 V     
-1138 Dirtball             C200453-A Ni Va                       { 0 }  (A33-3) [1427] -    -  - 604 9  NaHu F3 V          
+1138 Dirtball             C200453-A Ni Va Lk Sa                 { 0 }  (A33-3) [1427] -    -  - 604 9  NaHu M3 V          
 1139 Gobi                 D5409B9-8 De He Hi In Po Pz           { 0 }  (D89+1) [A969] -    -  A 102 13 NaHu M3 V          
 1231 Pendang              B8769A7-A Hi In                       { 5 }  (E8F+5) [9E5A] -    KM - 503 11 GdMh F9 V M8 V     
-1235 Eakoi                E8579B9-5 Hi Ga Pz AslaW              { -1 } (B87+1) [A866] -    -  A 704 12 NaAs G1 V          
+1235 Eakoi                E8579B9-5 Hi Ga Pz                    { -1 } (B87+1) [A866] -    -  A 704 12 NaAs G1 V          
 1433 Pagosa               D749220-5 Lo                          { -3 } (410-5) [1111] -    -  - 704 11 NaHu K6 V          
-1434 Ekaftouh             D000686-9 As Na Ni Va Asla6           { -2 } (A52-3) [5448] -    -  - 502 14 NaHu F7 V          
+1434 Ekaftouh             D000686-9 As Na Ni Va Huma4           { -2 } (A52-3) [5448] -    -  - 502 14 NaAs F7 V          
 1531 Kamloops             D54247A-5 He Ni Po                    { -3 } (631-1) [6177] -    -  - 914 10 NaHu F7 V          
 1534 Venice               C55A995-8 Hi Wa                       { 0 }  (G89-2) [7936] -    -  - 714 18 NaHu G9 V M0 V     
-1537 Hihlas               C674504-8 Ag Ni Asla9                 { -1 } (C43-3) [3436] -    -  - 723 9  NaHu M1 V          
+1537 Hihlas               C674504-8 Ag Ni Tz Huma1              { -1 } (C43-3) [3436] -    -  - 723 9  NaAs M1 V          
 1538 Solomon              B897A97-B Hi In                       { 4 }  (E9F+4) [AE5B] -    N  - 302 12 CsIm K4 V          
 1540 Carlisle             B55948B-A Ni Da                       { 1 }  (934+3) [657C] -    -  A 821 14 NaHu M2 V          
-1631 Collins World        B20098C-B Hi In Na Va Pz              { 4 }  (F8F+5) [CD8E] -    N  A 604 10 CsIm M3 V          
+1631 Collins World        B20098C-B Hi In Na Va Sa Pz           { 4 }  (F8F+5) [CD8E] -    N  A 604 10 CsIm M3 V          
 1632 Brandon              C437322-6 Lo                          { -2 } (520-5) [1112] -    -  - 322 13 NaHu M1 V M8 V     
 1634 Aikhiy               C546616-7 Ag Ni Asla4                 { -1 } (853-2) [5546] -    -  - 912 11 NaHu F9 V M7 V     
 1635 Oba                  C646200-9 Lo Da                       { -1 } (810-5) [1114] -    -  A 713 8  NaHu M3 V M8 V     
 1636 Kremmling            E796313-7 Lo                          { -3 } (520-5) [1124] -    -  - 722 15 NaHu K5 V          
 1638 Himalaya             C9A9978-9 Fl Hi In                    { 2 }  (F8C+2) [9B59] -    -  - 304 8  NaHu F2 V          
-1733 Khtearie             C595778-5 Ag Pi Asla6                 { 0 }  (967+1) [7755] -    -  - 614 14 NaHu M2 V          
+1733 Khtearie             C595778-5 Ag Pi Huma4                 { 0 }  (967+1) [7755] -    -  - 614 14 NaAs M2 V          
 1734 Botany Bay           E643569-5 Ni Po Da O:1735             { -3 } (741-2) [6266] -    -  A 312 7  NaHu K5 V M0 V     
 1735 Gralyn               B758899-A Pa Ph                       { 3 }  (C7C+4) [9B6B] -    KM - 111 13 NaHu K5 V          
 1740 Carter               A7589A8-B Hi Cx                       { 4 }  (D8F+4) [9D5B] -    KM - 402 11 CaTe K7 V          
@@ -402,10 +403,10 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 2431 Iskara               B554759-9 Ag                          { 3 }  (C6C+4) [8A6A] -    KM - 421 9  CaAs M1 V          
 2433 Santol               C999563-7 Ni Mr                       { -2 } (742-5) [2324] -    M  - 204 12 CaAs F7 V          
 2438 Nimbus               E691453-8 He Ni                       { -3 } (931-5) [1125] -    -  - 212 8  NaHu K5 V M5 V     
-2440 Purity               B8889DC-A Hi Pr Pz                    { 4 }  (F8E+5) [CD8D] -    KM A 813 11 NaHu M0 V M2 V     
+2440 Purity               B8889DC-A Hi Pr Tz Pz                 { 4 }  (F8E+5) [CD8D] -    KM A 813 11 NaHu M0 V M2 V     
 2532 Istieru              A887786-B Ag Ga Ri                    { 4 }  (D6E+3) [6B4A] -    -  - 804 12 CaAs G4 V M3 V     
 2536 Davighar             D999330-5 Lo                          { -3 } (520-5) [1111] -    -  - 121 10 NaHu K0 V          
-2540 Calcutta             A699896-C Ph Pi                       { 3 }  (D7D+2) [7B4B] -    KM - 103 12 SoCf F5 V M7 V     
+2540 Calcutta             A699896-C Ph Pi Tz                    { 3 }  (D7D+2) [7B4B] -    KM - 103 12 SoCf M0 V M7 V     
 2632 Faranim              A868742-A Ag Ri                       { 4 }  (C6D+1) [3B16] -    -  - 103 13 CaAs G6 V M1 V     
 2633 Astorga              C6B5521-8 Fl Ni                       { -2 } (A42-5) [1314] -    -  - 212 12 CaAs K4 V          
 2639 Hiatt                A855733-A Ag Ga                       { 3 }  (E6C+1) [4A27] -    -  - 414 13 SoCf G7 V          
@@ -423,8 +424,8 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 3034 Sabana               D432388-7 Lo Po                       { -3 } (520-3) [3157] -    -  - 102 10 NaHu F6 V M1 V     
 3036 Cerer                B200688-C Na Ni Va                    { 2 }  (B56+2) [685C] -    KM - 903 9  SoCf K4 V M7 V M3 V
 3037 Jasyn                B314556-A Ic Ni                       { 1 }  (A45+1) [4649] -    -  - 903 7  SoCf M0 V          
-3131 Eilis                C634688-8 Ni                          { -2 } (D52-2) [6458] B    -  - 705 11 ImDi F0 V M3 V     
-3134 Teyl                 C100634-8 Na Ni Va                    { -2 } (B52-4) [4436] -    -  - 403 11 NaHu M1 V          
+3131 Eilis                C634688-8 Ni Sa Px                    { -2 } (D52-2) [6458] B    -  - 705 11 ImDi F0 V M3 V     
+3134 Teyl                 C100634-8 Na Ni Va Sa                 { -2 } (B52-4) [4436] -    -  - 403 11 NaHu M1 V          
 3136 Rosemont             C787796-8 Ag Ga Ri                    { 1 }  (C69+1) [6847] -    -  - 103 10 SoCf K3 V M2 V     
 3232 Mauve                A667833-A Ga Ri Pa Ph                 { 3 }  (C7C+1) [5B27] BcCe N  - 920 9  ImDi M2 V M5 V     
-3238 Avalon               A574988-C Hi In Cp                    { 5 }  (H8G+5) [9E5C] -    KM - 324 12 SoCf F4 V M2 V     
+3238 Avalon               A574988-C Hi In Sa Cp                 { 5 }  (H8G+5) [9E5C] -    KM - 324 12 SoCf K4 V M2 V     

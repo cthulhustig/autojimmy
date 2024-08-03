@@ -189,7 +189,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1620 Fubar                A877920-C Ag Hi In Ri                         - N  - 714   Sa G3 V M2 V     
 1711 Blodi                B435656-B Na Ni Po                            - -  - 804   -- K6 V          
 1712 Aitia                X000000-0 As Ba Lo Ni                         - -  - 010   -- M3 V          
-1716 Razmar               C683554-A Na Lo Ni                            - -  - 624   Hl K3 V F4 V     
+1716 Razmar               C683554-A Na Lo Ni                            - -  - 624   Hl F4 V K3 V     
 1720 Sayardal             A662626-C Na Ni Po                            - N  - 913   Sa M2 V M5 V     
 1813 Kartoonah            A698855-E Ag In Ri                            - -  - 514   -- G2 V          
 1815 Shalandra            B876A55-D Ag Hi In Ri                         - N  - 613   Hl K3 V          
@@ -294,7 +294,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1626 Hirohita             C696575-C Ag Lo Ni                            - -  - 914   De F8 VI         
 1627 Draconia             A967958-F Ag Hi In                            - NS - 425   De G3 V G5 V     
 1628 Toronaga             A857956-E Ag Hi In Ri                         - N  - 202   De F8 V M5 V     
-1721 Mileaki              C454531-C Na Lo Ni                            - -  - 104   Sa G8 V G3 V     
+1721 Mileaki              C454531-C Na Lo Ni                            - -  - 104   Sa G3 V G8 V     
 1726 Brea                 A7A78A7-C Ag In Ri                            - -  - 126   -- G5 V M2 V     
 1821 Myrettia             X754853-C Na Lo Ni                            - -  - 413   Sa M2 V M5 V     
 1824 Haita                X794497-7 Na Lo Ni                            - -  - 204   -- K3 V M6 V     
@@ -348,7 +348,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3027 Sittahr              A548854-C Na Lo Ni                            - N  - 303   -- K3 III        
 3028 Duln                 B6105B9-B Ba Lo Ni                            - S  - 514   -- M1 IV         
 3123 Olybrius             A888959-D Ag Hi In Ri                         - NS - 413   -- F3 V M4 V     
-3124 Barter               B557850-B Ba Lo Ni                            - -  - 723   -- M3 V F9 V     
+3124 Barter               B557850-B Ba Lo Ni                            - -  - 723   -- F9 V M3 V     
 3125 Delta                A8A7653-D Ag In Ri                            - N  - 612   -- F4 V M6 V     
 3126 Kybarak              B2226AE-B Na De Ni Po                         - N  - 503   -- M4 V          
 3127 Hostage              C35066A-B Ba Lo Ni Po                         - -  - 720   -- K3 V          

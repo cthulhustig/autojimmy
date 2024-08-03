@@ -36,57 +36,57 @@
 
 Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B Z PBG W A  Stellar            
 ---- -------------------- --------- -------------------- ---- ---- ---- - - - --- - -- -------------------
-0106                      X334000-0 Ba Lo Ni                            - - - 005   -- K2 V M2 D          
+0106                      X334000-0 Ba Lo Ni                            - - - 005   -- K2 V M2 V          
 0201                      X534000-0 Ba Lo Ni                            - - - 000   -- A5 V               
 0207                      X423000-0 Ba Lo Ni Po                         - - - 002   -- M4 V               
-0301                      X676000-0 Ba Lo Ni                            - - - 004   -- F3 V M6 D          
+0301                      X676000-0 Ba Lo Ni                            - - - 004   -- F3 V M6 V          
 0303                      X140000-0 Ba De Lo Ni Po                      - - - 000   -- F2 V               
 0404                      X532000-0 Ba Lo Ni Po                         - - - 027   -- K1 II G2 V         
 0406                      X577000-0 Ba Lo Ni                            - - - 000   -- F2 V               
-0407                      X000000-0 As Ba Lo Ni                         - - - 002   -- M4 V M8 D          
+0407                      X000000-0 As Ba Lo Ni                         - - - 002   -- M4 V M8 V          
 0507                      X967000-0 Ba Lo Ni                            - - - 023   -- F7 V               
 0605                      X99A000-0 Ba Lo Ni Wa                         - - - 003   -- F9 V               
 0610                      X889000-0 Ba Lo Ni                            - - - 002   -- F8 V               
 0702                      X482000-0 Ba Lo Ni                            - - - 003   -- M3 V               
-0704                      X576000-0 Ba Lo Ni                            - - - 014   -- F5 V M6 D          
-0706                      X200000-0 Ba Lo Ni Va                         - - - 003   -- F0 V M6 D          
+0704                      X576000-0 Ba Lo Ni                            - - - 014   -- F5 V M6 V          
+0706                      X200000-0 Ba Lo Ni Va                         - - - 003   -- F0 V M6 V          
 0708                      X624000-0 Ba Lo Ni                            - - - 004   -- F4 V               
 0806                      X89A000-0 Ba Lo Ni Wa                         - - - 020   -- F7 V               
-1609                      X545000-0 Ba Lo Ni                            - - - 017   -- F5 V M1 D          
-1910                      X677000-0 Ba Lo Ni                            - - - 003   -- F6 V M8 D          
-2104                      X95A000-0 Ba Lo Ni Wa                         - - - 010   -- F3 V M4 D          
-2109                      X432000-0 Ba Lo Ni Po                         - - - 002   -- G5 V M2 D          
+1609                      X545000-0 Ba Lo Ni                            - - - 017   -- F5 V M1 V          
+1910                      X677000-0 Ba Lo Ni                            - - - 003   -- F6 V M8 V          
+2104                      X95A000-0 Ba Lo Ni Wa                         - - - 010   -- F3 V M4 V          
+2109                      X432000-0 Ba Lo Ni Po                         - - - 002   -- G5 V M2 V          
 2703                      X699000-0 Ba Lo Ni                            - - - 002   -- M7 V               
 2710                      X477000-0 Ba Lo Ni                            - - - 003   -- F4 V               
-2907                      X647000-0 Ba Lo Ni                            - - - 007   -- K6 V M0 D          
+2907                      X647000-0 Ba Lo Ni                            - - - 007   -- K6 V M0 V          
 2910                      X200000-0 Ba Lo Ni Va                         - - - 014   -- M6 V               
 3002                      X120000-0 Ba De Lo Ni Po                      - - - 000   -- M6 V               
 3005                      X335000-0 Ba Lo Ni                            - - - 000   -- M4 V               
 3006                      X244000-0 Ba Lo Ni                            - - - 011   -- G1 V               
-3101                      X363000-0 Ba Lo Ni                            - - - 017   -- F7 V M2 D          
-3105                      X000000-0 As Ba Lo Ni                         - - - 004   -- M7 V M8 D M3 D     
-3109                      X997000-0 Ba Lo Ni                            - - - 003   -- F5 V M1 D          
+3101                      X363000-0 Ba Lo Ni                            - - - 017   -- F7 V M2 V          
+3105                      X000000-0 As Ba Lo Ni                         - - - 004   -- M3 V M8 V M7 V     
+3109                      X997000-0 Ba Lo Ni                            - - - 003   -- F5 V M1 V          
 3110                      X688000-0 Ba Lo Ni                            - - - 022   -- K4 V               
-3210                      X777000-0 Ba Lo Ni                            - - - 004   -- F2 V M8 D          
+3210                      X777000-0 Ba Lo Ni                            - - - 004   -- F2 V M8 V          
 0116                      X484000-0 Ba Lo Ni                            - - - 000   -- K8 V               
-0117                      X656000-0 Ba Lo Ni                            - - - 022   -- G1 V M1 D          
+0117                      X656000-0 Ba Lo Ni                            - - - 022   -- G1 V M1 V          
 0214                      X77A000-0 Ba Lo Ni Wa                         - - - 005   -- G8 V               
 0218                      X266000-0 Ba Lo Ni                            - - - 022   -- K0 V               
 0312                      X120000-0 Ba De Lo Ni Po                      - - - 001   -- M8 V               
-0313                      X686000-0 Ba Lo Ni                            - - - 004   -- F9 V M6 D          
-0320                      X274000-0 Ba Lo Ni                            - - - 004   -- F5 V M5 D          
+0313                      X686000-0 Ba Lo Ni                            - - - 004   -- F9 V M6 V          
+0320                      X274000-0 Ba Lo Ni                            - - - 004   -- F5 V M5 V          
 0411                      X85A000-0 Ba Lo Ni Wa                         - - - 003   -- K0 V               
 0413                      X367000-0 Ba Lo Ni                            - - - 000   -- M5 V               
-0414                      X73A000-0 Ba Lo Ni Wa                         - - - 022   -- M4 V M0 D          
+0414                      X73A000-0 Ba Lo Ni Wa                         - - - 022   -- M0 V M4 V          
 0417                      X410000-0 Ba Lo Ni                            - - - 000   -- M1 V               
-0512                      X7B5000-0 Ba Fl Lo Ni                         - - - 007   -- M8 V M6 D          
-0514                      X200000-0 Ba Lo Ni Va                         - - - 004   -- G8 IV G4 D         
-0517                      X200000-0 Ba Lo Ni Va                         - - - 002   -- M0 V M0 D          
+0512                      X7B5000-0 Ba Fl Lo Ni                         - - - 007   -- M6 V M8 V          
+0514                      X200000-0 Ba Lo Ni Va                         - - - 004   -- G8 IV G4 V         
+0517                      X200000-0 Ba Lo Ni Va                         - - - 002   -- M0 V M0 V          
 0519                      X421000-0 Ba Lo Ni Po                         - - - 000   -- M3 V               
 0616                      X633000-0 Ba Lo Ni Po                         - - - 000   -- M2 V               
 0712                      X461000-0 Ba Lo Ni                            - - - 002   -- G2 V               
 0716                      XAB4000-0 Ba Fl Lo Ni                         - - - 004   -- F4 V               
-0717                      X868000-0 Ba Lo Ni                            - - - 014   -- F2 V M3 D          
+0717                      X868000-0 Ba Lo Ni                            - - - 014   -- F2 V M3 V          
 0719                      X526000-0 Ba Lo Ni                            - - - 003   -- M6 V               
 0819                      X477000-0 Ba Lo Ni                            - - - 001   -- K9 V               
 0912                      X779000-0 Ba Lo Ni                            - - - 003   -- F2 V               
@@ -95,42 +95,42 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B Z PB
 1114                      X510000-0 Ba Lo Ni                            - - - 004   -- K2 V M1 V          
 1115                      X585000-0 Ba Lo Ni                            - - - 003   -- G4 V               
 1118                      X224000-0 Ba Lo Ni                            - - - 000   -- M2 V               
-1120                      X000000-0 As Ba Lo Ni                         - - - 013   -- A8 V M4 D          
-1215                      X776000-0 Ba Lo Ni                            - - - 016   -- M1 V M0 D          
-1219                      X76A000-0 Ba Lo Ni Wa                         - - - 003   -- G7 V M1 D          
+1120                      X000000-0 As Ba Lo Ni                         - - - 013   -- A8 V M4 V          
+1215                      X776000-0 Ba Lo Ni                            - - - 016   -- M0 V M1 V          
+1219                      X76A000-0 Ba Lo Ni Wa                         - - - 003   -- G7 V M1 V          
 1220                      X333000-0 Ba Lo Ni Po                         - - - 002   -- M1 V               
 1313                      X646000-0 Ba Lo Ni                            - - - 002   -- F5 V               
-1317                      X654000-0 Ba Lo Ni                            - - - 011   -- F6 V M8 D          
-1319                      X242000-0 Ba Lo Ni Po                         - - - 024   -- F6 V M2 D M1 D     
-1412                      X697000-0 Ba Lo Ni                            - - - 002   -- F8 V M6 D          
+1317                      X654000-0 Ba Lo Ni                            - - - 011   -- F6 V M8 V          
+1319                      X242000-0 Ba Lo Ni Po                         - - - 024   -- F6 V M2 V M1 V     
+1412                      X697000-0 Ba Lo Ni                            - - - 002   -- F8 V M6 V          
 1416                      X300000-0 Ba Lo Ni Va                         - - - 002   -- G2 V               
 1513                      X9B8000-0 Ba Fl Lo Ni                         - - - 020   -- M1 III             
-1514                      X554000-0 Ba Lo Ni                            - - - 002   -- M6 V M1 D          
+1514                      X554000-0 Ba Lo Ni                            - - - 002   -- M1 V M6 V          
 1611                      X895000-0 Ba Lo Ni                            - - - 025   -- F4 V               
-1613                      X538000-0 Ba Lo Ni                            - - - 029   -- A5 III M1 V M5 D   
-1616                      X100000-0 Ba Lo Ni Va                         - - - 000   -- M3 V M5 D          
+1613                      X538000-0 Ba Lo Ni                            - - - 029   -- A5 III M1 V M5 V   
+1616                      X100000-0 Ba Lo Ni Va                         - - - 000   -- M3 V M5 V          
 1818                      X100000-0 Ba Lo Ni Va                         - - - 000   -- M1 V M4 V          
-1912                      X267000-0 Ba Lo Ni                            - - - 003   -- F2 V M4 D          
-1914                      X226000-0 Ba Lo Ni                            - - - 000   -- M1 V M2 D          
+1912                      X267000-0 Ba Lo Ni                            - - - 003   -- F2 V M4 V          
+1914                      X226000-0 Ba Lo Ni                            - - - 000   -- M1 V M2 V          
 1918                      X574000-0 Ba Lo Ni                            - - - 011   -- F1 V               
 2014                      X464000-0 Ba Lo Ni                            - - - 003   -- M8 V               
-2016                      X658000-0 Ba Lo Ni                            - - - 014   -- F4 V M8 D          
+2016                      X658000-0 Ba Lo Ni                            - - - 014   -- F4 V M8 V          
 2019                      X89A000-0 Ba Lo Ni Wa                         - - - 013   -- F1 V               
 2111                      X584000-0 Ba Lo Ni                            - - - 010   -- F4 V               
-2115                      X478000-0 Ba Lo Ni                            - - - 030   -- F8 V M7 D          
-2119                      X150000-0 Ba De Lo Ni Po                      - - - 010   -- F3 V M5 D          
+2115                      X478000-0 Ba Lo Ni                            - - - 030   -- F8 V M7 V          
+2119                      X150000-0 Ba De Lo Ni Po                      - - - 010   -- F3 V M5 V          
 2120                      X673000-0 Ba Lo Ni                            - - - 000   -- F4 V               
 2212                      X658000-0 Ba Lo Ni                            - - - 001   -- F7 V               
-2213                      X769000-0 Ba Lo Ni                            - - - 012   -- K6 V M3 D          
-2217                      X779000-0 Ba Lo Ni                            - - - 000   -- F2 V M7 D          
+2213                      X769000-0 Ba Lo Ni                            - - - 012   -- K6 V M3 V          
+2217                      X779000-0 Ba Lo Ni                            - - - 000   -- F2 V M7 V          
 2314                      X528000-0 Ba Lo Ni                            - - - 020   -- M3 V               
 2413                      X543000-0 Ba Lo Ni Po                         - - - 001   -- M6 V               
 2419                      X887000-0 Ba Lo Ni                            - - - 000   -- F7 V               
 2420                      X110000-0 Ba Lo Ni                            - - - 004   -- M1 V               
-2618                      X763000-0 Ba Lo Ni                            - - - 002   -- K8 V G1 V          
+2618                      X763000-0 Ba Lo Ni                            - - - 002   -- G1 V K8 V          
 2715                      X743000-0 Ba Lo Ni Po                         - - - 004   -- G7 V               
 2716                      X444000-0 Ba Lo Ni                            - - - 012   -- F7 V               
-2717                      X270000-0 Ba De Lo Ni                         - - - 005   -- F9 V M2 D          
+2717                      X270000-0 Ba De Lo Ni                         - - - 005   -- F9 V M2 V          
 2813                      X575000-0 Ba Lo Ni                            - - - 002   -- F4 V               
 2817                      X482000-0 Ba Lo Ni                            - - - 012   -- G1 V               
 2819                      X591000-0 Ba Lo Ni                            - - - 011   -- F5 V               
@@ -138,58 +138,58 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B Z PB
 3012                      X9C5000-0 Ba Fl Lo Ni                         - - - 004   -- M6 V               
 3018                      X241000-0 Ba Lo Ni Po                         - - - 014   -- F0 V               
 3019                      X784000-0 Ba Lo Ni                            - - - 011   -- M1 V               
-3020                      X110000-0 Ba Lo Ni                            - - - 000   -- M7 V M8 D          
+3020                      X110000-0 Ba Lo Ni                            - - - 000   -- M7 V M8 V          
 0121                      X442000-0 Ba Lo Ni Po                         - - - 004   -- F0 V               
 0128                      X7A4000-0 Ba Fl Lo Ni                         - - - 002   -- M8 V               
-0221                      X847000-0 Ba Lo Ni                            - - - 002   -- F5 V M5 D          
+0221                      X847000-0 Ba Lo Ni                            - - - 002   -- F5 V M5 V          
 0321                      X8A3000-0 Ba Fl Lo Ni                         - - - 000   -- M3 V               
 0330                      X000000-0 As Ba Lo Ni                         - - - 000   -- M0 V               
-0424                      X210000-0 Ba Lo Ni                            - - - 002   -- M4 V M7 D          
+0424                      X210000-0 Ba Lo Ni                            - - - 002   -- M4 V M7 V          
 0425                      X8B3000-0 Ba Fl Lo Ni                         - - - 005   -- M8 V               
-0429                      X667000-0 Ba Lo Ni                            - - - 024   -- G0 V M6 D          
-0523                      X300000-0 Ba Lo Ni Va                         - - - 004   -- K3 V F6 V M2 D     
-0625                      X202000-0 Ba Ic Lo Ni Va                      - - - 026   -- M7 V M1 D          
-0724                      X79A000-0 Ba Lo Ni Wa                         - - - 015   -- F6 V M6 D          
+0429                      X667000-0 Ba Lo Ni                            - - - 024   -- G0 V M6 V          
+0523                      X300000-0 Ba Lo Ni Va                         - - - 004   -- F6 V K3 V M2 V     
+0625                      X202000-0 Ba Ic Lo Ni Va                      - - - 026   -- M1 V M7 V          
+0724                      X79A000-0 Ba Lo Ni Wa                         - - - 015   -- F6 V M6 V          
 0725                      X658000-0 Ba Lo Ni                            - - - 002   -- F3 V               
 0827                      X584000-0 Ba Lo Ni                            - - - 001   -- G7 V               
 0828                      X356000-0 Ba Lo Ni                            - - - 004   -- F5 V               
-0922                      X696000-0 Ba Lo Ni                            - - - 010   -- F2 V M4 D          
+0922                      X696000-0 Ba Lo Ni                            - - - 010   -- F2 V M4 V          
 0924                      X242000-0 Ba Lo Ni Po                         - - - 002   -- F8 V               
 1026                      X786000-0 Ba Lo Ni                            - - - 024   -- F4 V               
 1027                      X786000-0 Ba Lo Ni                            - - - 000   -- F8 V               
-1028                      X544000-0 Ba Lo Ni                            - - - 010   -- G0 V M0 D          
+1028                      X544000-0 Ba Lo Ni                            - - - 010   -- G0 V M0 V          
 1029                      X969000-0 Ba Lo Ni                            - - - 010   -- M0 V               
 1125                      X665000-0 Ba Lo Ni                            - - - 002   -- F6 V               
-1224                      X536000-0 Ba Lo Ni                            - - - 002   -- K4 V M3 D          
+1224                      X536000-0 Ba Lo Ni                            - - - 002   -- K4 V M3 V          
 1230                      X210000-0 Ba Lo Ni                            - - - 010   -- M8 V               
-1329                      X210000-0 Ba Lo Ni                            - - - 003   -- M6 V M4 D          
+1329                      X210000-0 Ba Lo Ni                            - - - 003   -- M4 V M6 V          
 1330                      X458000-0 Ba Lo Ni                            - - - 001   -- F3 V               
-1425                      X774000-0 Ba Lo Ni                            - - - 015   -- F3 V M8 D          
+1425                      X774000-0 Ba Lo Ni                            - - - 015   -- F3 V M8 V          
 1525                      X000000-0 As Ba Lo Ni                         - - - 006   -- M1 V M2 V          
 1528                      X000000-0 As Ba Lo Ni                         - - - 001   -- G5 V               
-1624                      X897000-0 Ba Lo Ni                            - - - 020   -- F0 V M4 D          
-1628                      X451000-0 Ba Lo Ni Po                         - - - 010   -- F9 V M2 D          
-1727                      X335000-0 Ba Lo Ni                            - - - 004   -- F0 V M1 D          
-1828                      X794000-0 Ba Lo Ni                            - - - 006   -- F8 V M4 D          
+1624                      X897000-0 Ba Lo Ni                            - - - 020   -- F0 V M4 V          
+1628                      X451000-0 Ba Lo Ni Po                         - - - 010   -- F9 V M2 V          
+1727                      X335000-0 Ba Lo Ni                            - - - 004   -- F0 V M1 V          
+1828                      X794000-0 Ba Lo Ni                            - - - 006   -- F8 V M4 V          
 1829                      X989000-0 Ba Lo Ni                            - - - 013   -- F5 V               
 1922                      X88A000-0 Ba Lo Ni Wa                         - - - 002   -- K5 V               
-1923                      X575000-0 Ba Lo Ni                            - - - 020   -- F4 V M2 D          
-1925                      X689000-0 Ba Lo Ni                            - - - 006   -- F3 V M1 D F5 V M7 D
+1923                      X575000-0 Ba Lo Ni                            - - - 020   -- F4 V M2 V          
+1925                      X689000-0 Ba Lo Ni                            - - - 006   -- F3 V M1 V F5 V M7 V
 1930                      X422000-0 Ba Lo Ni Po                         - - - 020   -- M3 V               
-2025                      X567000-0 Ba Lo Ni                            - - - 007   -- G1 V G0 V          
+2025                      X567000-0 Ba Lo Ni                            - - - 007   -- G0 V G1 V          
 2027                      X9D6000-0 Ba Fl Lo Ni                         - - - 003   -- M7 V               
 2122                      X679000-0 Ba Lo Ni                            - - - 024   -- F3 V               
-2125                      X556000-0 Ba Lo Ni                            - - - 005   -- F5 V M1 D          
+2125                      X556000-0 Ba Lo Ni                            - - - 005   -- F5 V M1 V          
 2126                      X763000-0 Ba Lo Ni                            - - - 020   -- F0 V               
 2127                      X323000-0 Ba Lo Ni Po                         - - - 002   -- M4 V               
 2130                      X589000-0 Ba Lo Ni                            - - - 004   -- M7 V               
-2222                      XAB6000-0 Ba Fl Lo Ni                         - - - 001   -- M6 V M7 D          
-2224                      X343000-0 Ba Lo Ni Po                         - - - 004   -- F7 V F5 V          
-2321                      X673000-0 Ba Lo Ni                            - - - 004   -- F8 V M7 D          
-2325                      X9B6000-0 Ba Fl Lo Ni                         - - - 005   -- M5 V M4 D          
+2222                      XAB6000-0 Ba Fl Lo Ni                         - - - 001   -- M6 V M7 V          
+2224                      X343000-0 Ba Lo Ni Po                         - - - 004   -- F5 V F7 V          
+2321                      X673000-0 Ba Lo Ni                            - - - 004   -- F8 V M7 V          
+2325                      X9B6000-0 Ba Fl Lo Ni                         - - - 005   -- M4 V M5 V          
 2326                      X547000-0 Ba Lo Ni                            - - - 004   -- F1 V               
-2425                      X562000-0 Ba Lo Ni                            - - - 003   -- F5 V F2 V M2 D     
-2427                      X536000-0 Ba Lo Ni                            - - - 000   -- K2 V M5 D          
+2425                      X562000-0 Ba Lo Ni                            - - - 003   -- F2 V F5 V M2 V     
+2427                      X536000-0 Ba Lo Ni                            - - - 000   -- K2 V M5 V          
 2428                      X666000-0 Ba Lo Ni                            - - - 012   -- F6 V               
 2628                      X300000-0 Ba Lo Ni Va                         - - - 002   -- M6 V               
 2825                      X649000-0 Ba Lo Ni                            - - - 020   -- F4 V               
@@ -203,63 +203,63 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B Z PB
 3222                      X535000-0 Ba Lo Ni                            - - - 002   -- M3 V               
 3224                      X565000-0 Ba Lo Ni                            - - - 020   -- F4 V               
 3226                      X96A000-0 Ba Lo Ni Wa                         - - - 000   -- F8 V               
-0137                      X777000-0 Ba Lo Ni                            - - - 001   -- F8 V M0 D          
-0236                      X99A000-0 Ba Lo Ni Wa                         - - - 025   -- F8 V M5 D          
-0237                      X667000-0 Ba Lo Ni                            - - - 001   -- F8 V M3 D          
+0137                      X777000-0 Ba Lo Ni                            - - - 001   -- F8 V M0 V          
+0236                      X99A000-0 Ba Lo Ni Wa                         - - - 025   -- F8 V M5 V          
+0237                      X667000-0 Ba Lo Ni                            - - - 001   -- F8 V M3 V          
 0333                      XA9A000-0 Ba Lo Ni Wa                         - - - 001   -- K4 V               
 0431                      X677000-0 Ba Lo Ni                            - - - 000   -- F5 V               
-0533                      X67A000-0 Ba Lo Ni Wa                         - - - 015   -- F0 V M7 D          
-0536                      X9A8000-0 Ba Fl Lo Ni                         - - - 007   -- K2 V M1 D          
-0538                      X9A6000-0 Ba Fl Lo Ni                         - - - 014   -- G0 V M2 D          
+0533                      X67A000-0 Ba Lo Ni Wa                         - - - 015   -- F0 V M7 V          
+0536                      X9A8000-0 Ba Fl Lo Ni                         - - - 007   -- K2 V M1 V          
+0538                      X9A6000-0 Ba Fl Lo Ni                         - - - 014   -- G0 V M2 V          
 0731                      X7B2000-0 Ba Fl Lo Ni                         - - - 015   -- F7 III             
 0735                      X456000-0 Ba Lo Ni                            - - - 004   -- M1 V               
-0736                      X644000-0 Ba Lo Ni                            - - - 006   -- F2 V M7 D F8 V M2 D
+0736                      X644000-0 Ba Lo Ni                            - - - 006   -- F2 V M7 V F8 V M2 V
 0740                      X000000-0 As Ba Lo Ni                         - - - 002   -- F8 V               
 0840                      X563000-0 Ba Lo Ni                            - - - 010   -- F9 V               
-0933                      X383000-0 Ba Lo Ni                            - - - 020   -- F3 V M3 D          
-0934                      X659000-0 Ba Lo Ni                            - - - 006   -- G5 V M2 D          
+0933                      X383000-0 Ba Lo Ni                            - - - 020   -- F3 V M3 V          
+0934                      X659000-0 Ba Lo Ni                            - - - 006   -- G5 V M2 V          
 0935                      X160000-0 Ba De Lo Ni                         - - - 002   -- G7 V               
-0936                      X336000-0 Ba Lo Ni                            - - - 014   -- F6 V M6 D M2 D     
+0936                      X336000-0 Ba Lo Ni                            - - - 014   -- F6 V M6 V M2 V     
 0940                      X364000-0 Ba Lo Ni                            - - - 002   -- K5 V               
 1039                      X887000-0 Ba Lo Ni                            - - - 000   -- F2 V               
-1131                      X548000-0 Ba Lo Ni                            - - - 005   -- M2 V M6 D          
+1131                      X548000-0 Ba Lo Ni                            - - - 005   -- M2 V M6 V          
 1138                      X210000-0 Ba Lo Ni                            - - - 000   -- G0 III             
 1234                      X9C3000-0 Ba Fl Lo Ni                         - - - 013   -- G5 V               
 1235                      X99A000-0 Ba Lo Ni Wa                         - - - 003   -- F9 V               
 1237                      X454000-0 Ba Lo Ni                            - - - 000   -- M1 V               
-1238                      XA95000-0 Ba Lo Ni                            - - - 004   -- F5 V M4 D          
-1332                      X363000-0 Ba Lo Ni                            - - - 012   -- G3 V M8 D          
+1238                      XA95000-0 Ba Lo Ni                            - - - 004   -- F5 V M4 V          
+1332                      X363000-0 Ba Lo Ni                            - - - 012   -- G3 V M8 V          
 1436                      X425000-0 Ba Lo Ni                            - - - 000   -- M0 V               
-1437                      X320000-0 Ba De Lo Ni Po                      - - - 001   -- F4 V M5 D          
-1439                      X426000-0 Ba Lo Ni                            - - - 002   -- K5 V M0 D K7 V M2 D
+1437                      X320000-0 Ba De Lo Ni Po                      - - - 001   -- F4 V M5 V          
+1439                      X426000-0 Ba Lo Ni                            - - - 002   -- K5 V M0 V K7 V M2 V
 1536                      X8C8000-0 Ba Fl Lo Ni                         - - - 002   -- M5 III             
 1539                      X100000-0 Ba Lo Ni Va                         - - - 000   -- F2 V               
-1635                      X535000-0 Ba Lo Ni                            - - - 015   -- F3 V M3 D          
+1635                      X535000-0 Ba Lo Ni                            - - - 015   -- F3 V M3 V          
 1731                      X330000-0 Ba De Lo Ni Po                      - - - 000   -- M7 V               
-1733                      X436000-0 Ba Lo Ni                            - - - 005   -- M1 V M5 D          
+1733                      X436000-0 Ba Lo Ni                            - - - 005   -- M1 V M5 V          
 1738                      X97A000-0 Ba Lo Ni Wa                         - - - 002   -- F8 V               
 1739                      X99A000-0 Ba Lo Ni Wa                         - - - 002   -- F4 V               
-1740                      X9A4000-0 Ba Fl Lo Ni                         - - - 005   -- K1 V M8 D          
+1740                      X9A4000-0 Ba Fl Lo Ni                         - - - 005   -- K1 V M8 V          
 1835                      X360000-0 Ba De Lo Ni                         - - - 004   -- F9 V               
 1839                      X729000-0 Ba Lo Ni                            - - - 001   -- M6 V               
-1932                      X453000-0 Ba Lo Ni Po                         - - - 014   -- F4 V M8 D          
+1932                      X453000-0 Ba Lo Ni Po                         - - - 014   -- F4 V M8 V          
 1933                      X899000-0 Ba Lo Ni                            - - - 021   -- F1 V               
 1938                      X556000-0 Ba Lo Ni                            - - - 013   -- F8 V               
 2037                      X979000-0 Ba Lo Ni                            - - - 010   -- F0 V               
 2039                      X85A000-0 Ba Lo Ni Wa                         - - - 013   -- M1 V               
-2132                      X698000-0 Ba Lo Ni                            - - - 002   -- G2 V M1 D          
+2132                      X698000-0 Ba Lo Ni                            - - - 002   -- G2 V M1 V          
 2236                      X64A000-0 Ba Lo Ni Wa                         - - - 004   -- F0 V               
 2335                      X276000-0 Ba Lo Ni                            - - - 004   -- F1 V               
 2338                      X100000-0 Ba Lo Ni Va                         - - - 007   -- M5 V M7 V          
-2434                      X200000-0 Ba Lo Ni Va                         - - - 002   -- F7 V M5 D          
+2434                      X200000-0 Ba Lo Ni Va                         - - - 002   -- F7 V M5 V          
 2439                      X455000-0 Ba Lo Ni                            - - - 010   -- F0 V               
 2533                      X9C6000-0 Ba Fl Lo Ni                         - - - 004   -- F3 IV M1 V         
-2535                      X200000-0 Ba Lo Ni Va                         - - - 016   -- M3 V M0 D          
-2635                      X200000-0 Ba Lo Ni Va                         - - - 022   -- G4 V M7 D          
-2638                      X676000-0 Ba Lo Ni                            - - - 000   -- M4 V M7 D          
+2535                      X200000-0 Ba Lo Ni Va                         - - - 016   -- M0 V M3 V          
+2635                      X200000-0 Ba Lo Ni Va                         - - - 022   -- G4 V M7 V          
+2638                      X676000-0 Ba Lo Ni                            - - - 000   -- M4 V M7 V          
 2734                      X000000-0 As Ba Lo Ni                         - - - 002   -- M6 V               
 2833                      X463000-0 Ba Lo Ni                            - - - 003   -- F8 V               
-3133                      X410000-0 Ba Lo Ni                            - - - 004   -- K9 V M5 D          
+3133                      X410000-0 Ba Lo Ni                            - - - 004   -- K9 V M5 V          
 3231                      X565000-0 Ba Lo Ni                            - - - 002   -- F8 V               
 3234                      X77A000-0 Ba Lo Ni Wa                         - - - 010   -- F0 V               
 3239 Oughouzoth           B654244-A Lo Ni                               - - - 804   Va F0 V               

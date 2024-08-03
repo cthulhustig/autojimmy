@@ -15,26 +15,26 @@
 # Source:    explorerbase
 # Ref:       https://explorerbase.wordpress.com/sector-data/
 
-# Subsector A: 
-# Subsector B: 
-# Subsector C: 
-# Subsector D: 
-# Subsector E: 
-# Subsector F: 
-# Subsector G: 
-# Subsector H: 
-# Subsector I: 
-# Subsector J: 
-# Subsector K: 
-# Subsector L: 
-# Subsector M: 
-# Subsector N: 
-# Subsector O: 
-# Subsector P: 
+# Subsector A: Staisirehar
+# Subsector B: Hrekea
+# Subsector C: Ouwoulea
+# Subsector D: Hleiakh
+# Subsector E: Eakhaohtoa
+# Subsector F: Efai
+# Subsector G: Ktiyawaahe
+# Subsector H: Wuirah
+# Subsector I: Eaaoel
+# Subsector J: Teoaoul
+# Subsector K: Ahoiewui
+# Subsector L: Aooalaoftyeo
+# Subsector M: Oihae
+# Subsector N: Aia
+# Subsector O: Iheierealr
+# Subsector P: Oihareiy
 
 # Alleg: A2: "Aslan Hierate, Tlaukhu control, Syoisuis (3)"
 # Alleg: A4: "Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)"
-# Alleg: A8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okunir (29)"
+# Alleg: A8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)"
 # Alleg: A9: "Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)"
 # Alleg: As: "Aslan Hierate"
 # Alleg: Et: "Etra"
@@ -127,12 +127,12 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0417 Thidan               C237924-9 Hi EtraW                            - -  - 911   Et   F0 V      
 0515 Nodtan               B97AA23-C Hi In Wa EtraW                      - KV - 721   Et   M6 V      
 0516 Ogrendgen            B76AA43-8 Hi Wa EtraW                         - MV - 222   Et   F5 V D    
-0613 Upper Oe             A969922-C Hi EtraW                            - K  - 203   Et   G7 V      
+0613 Upper Oe             A969922-C Hi Pr EtraW                         - K  - 203   Et   G7 V      
 0712 Efe                  A355A22-A Hi EtraW                            - -  - 513   Et   F7 V      
 0713 Heror                C412924-9 Hi Ic In Na EtraW                   - V  - 912   Et   G7 V      
 0717 Oue                  BAD8B43-A Hi EtraW                            - KV - 132   Et   K7 V D    
-0718 Sotcere              CAA6A20-B Fl Hi EtraW                         - V  - 212   Et   M4 V      
-0814 Ie                   A000A21-C As Hi In Na EtraW                   - D  - 304   Et   M3 V M4 V 
+0718 Sotcere              CAA6A20-B Fl Hi In EtraW                      - V  - 212   Et   M4 V      
+0814 Ie                   A000A21-C As Hi In Na Va EtraW                - D  - 304   Et   M3 V M4 V 
 0815 Roie                 C510844-8 Na Ph Pi EtraW                      - -  - 202   Et   A4 IV M7 V
 0816 Ei                   B657B23-A Ga Hi EtraW                         - KM - 123   Et   F1 V      
 0817 Bipli                A564912-B Hi Mr Pr EtraW                      - M  - 704   Et   F0 V      
@@ -146,13 +146,13 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1120 Whanthos             C685744-7 Ag Ga Ri                            - V  - 213   NaAs F2 V      
 1213 Oso                  A755A22-D Cx Ga Hi (Etra)                     - KV - 911   Et   M7 V      
 1215 Wheviret             C150821-A De Ph Po EtraW                      - M  - 614   Et   F6 V D D  
-1219 Ifa                  B300843-B Ph Pi Va Etra3                      - M  - 624   NaAs G2 V      
+1219 Ifa                  B300843-B Na Ph Pi Va Etra3                   - M  - 624   NaAs G2 V      
 1220 Ii                   D454A73-9 Hi Etra7                            - -  - 517   NaAs F4 V D    
 1314 Eoa                  C426933-9 Hi In Etra5                         - V  - 800   NaAs M4 V      
 1315 Ciinar               C4348AC-A Ph Po Pz                            - V  A 105   NaHu F8 V D    
 1316 Acha                 B333598-D Ni Po                               - -  - 923   NaAs G1 V D    
 1319 Ae                   B343944-9 Hi In Po Etra6                      - -  - 512   NaAs F0 V D    
-1415 Evetangthost         C5018B9-8 Ic Na Pz Va                         - V  A 202   NaAs K6 V D    
+1415 Evetangthost         C5018B9-8 Ic Na Ph Pi Pz Va                   - V  A 202   NaAs K6 V D    
 1511 Grajen               D200415-6 Ni Va                               - V  - 403   NaAs M1 V M8 V 
 1515 Aa                   A568A22-B Hi Etra9                            - KM - 814   NaAs F6 V      
 1519 Theri                A300546-C Ni Va                               - -  - 800   NaAs G3 V      
@@ -217,13 +217,13 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0429                      ???????-?                                     - -  - ???   XXXX           
 0525                      ???????-?                                     - -  - ???   XXXX           
 0626                      ???????-?                                     - -  - ???   XXXX           
-0629                      ???????-?                                     - -  - ???   Sy             
-0630                      ???????-?                                     - -  - ???   Sy             
+0629 Yaha                 B696798-9 Ag Cx Pi (Yeasaol)9                 - R  - 630   Sy             
+0630 Ahiyeata             C9A2566-7 Fl He Mr Ni Yeas8                   - -  - 221   Sy             
 0721                      ???????-?                                     - -  - ???   XXXX           
 0724                      ???????-?                                     - -  - ???   XXXX           
 0725                      ???????-?                                     - -  - ???   XXXX           
 0826                      ???????-?                                     - -  - ???   XXXX           
-0830                      ???????-?                                     - -  - ???   Sy             
+0830 Ihtaa                E767465-2 Ga Mr Ni Pa YeasW                   - -  - 401   Sy             
 0922                      ???????-?                                     - -  - ???   XXXX           
 0926                      ???????-?                                     - -  - ???   XXXX           
 0930                      ???????-?                                     - -  - ???   XXXX           

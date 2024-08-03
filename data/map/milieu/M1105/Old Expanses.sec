@@ -35,6 +35,7 @@
 # Alleg: CsIm: "Client state, Third Imperium"
 # Alleg: ImDs: "Third Imperium, Domain of Sol"
 # Alleg: NaHu: "Non-Aligned, Human-dominated"
+# Alleg: NaXX: "Non-Aligned, unclaimed"
 # Alleg: SoCf: "Solomani Confederation"
 
 Hex  Name                 UWP       Remarks               {Ix}   (Ex)    [Cx]   N    B  Z PBG W  A    Stellar       
@@ -238,6 +239,7 @@ Hex  Name                 UWP       Remarks               {Ix}   (Ex)    [Cx]   
 2914 Garz                 B8D6358-D Lo                    { 1 }  (A21+1) [345D] B    -  - 114 10 ImDs M0 V M3 V     
 2916 Kalemn               B553543-8 Ni Po                 { -1 } (C43-4) [2425] B    N  - 914 8  ImDs K6 V M4 V     
 2917 Paro                 D9CA613-9 Fl Ni                 { -2 } (B52-5) [3426] B    S  - 703 13 ImDs G1 V          
+2920 The Edge             X769000-0                                             -    -  R 000    NaXX G2 V          
 3012 Quen                 C566366-5 Lo O:2911             { -2 } (520-3) [2144] B    -  - 822 10 ImDs M3 V          
 3015 Yesta                A55795A-C Hi Cp                 { 3 }  (D8E+5) [BC7E] BEF  -  - 502 12 ImDs M0 V          
 3111 Carris               C9D6200-8 Lo                    { -2 } (810-5) [1113] B    S  - 404 11 ImDs M1 V          

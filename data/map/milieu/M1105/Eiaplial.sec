@@ -116,7 +116,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0613 Broshzhensh          B41089A-B Ph Na Pi             { 3 }  (779+3) [8B5D] - KM - 520 9  ZhMe G7 V                        
 0614 Zhdiechplia          C7A6988-9 Fl Hi In             { 2 }  (88E-2) [AB35] - -  - 100 11 ZhMe K1 V K4 V                   
 0616 Plabrkier            C66487C-7 Ph Pa Ri             { 1 }  (87B-2) [8959] - KM - 122 11 ZhMe G9 V                        
-0619 Shakiavinch          X7B1000-0 Fl He Ba             { -3 } (600+2) [0000] - -  F 003 11 ZhMe K9 VI M4 VI K1 VI           
+0619 Shakiavinch          X7B1000-0 Fl He Ba             { -3 } (600+2) [0000] - -  F 003 11 ZhMe K1 VI M4 VI K9 VI           
 0620 Shajzdenchta         C5699DB-9 Hi Pr                { 1 }  (D89-3) [CA26] - -  - 123 14 ZhMe M9 V BD BD M3 VI            
 0714 Fozhenkiebld         E857874-4 Ga Ph Pa             { -2 } (478-3) [C691] - -  - 200 9  ZhMe M6 II M6 VI BD              
 0715 Iepldliap            C575868-8 Ph Pa Pi             { -1 } (F72+3) [673C] - -  - 213 13 ZhMe G5 V M9 VI M8 VI            
@@ -128,13 +128,13 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0817 Etsdrnshdi           C66AAC7-B Wa Hi                { 2 }  (699+1) [5C78] - -  - 121 11 ZhMe A9 V F8 V                   
 0818 Tleqlianzh           D000789-8 As Va Na Pi          { -2 } (B67-1) [7529] - -  - 623 11 ZhMe K4 V                        
 0819 Reqlzhdea            X000000-0 As Va Ba             { -3 } (600-1) [0000] - -  F 000 9  ZhMe K6 V                        
-0911 Zhde'shtinj          B547647-A Ni Ag                { 3 }  (C54-4) [8948] - KM - 125 14 ZhMe A7 V A3 V                   
+0911 Zhde'shtinj          B547647-A Ni Ag                { 3 }  (C54-4) [8948] - KM - 125 14 ZhMe A3 V A7 V                   
 0913 Jichdrietl           B5539B8-7 Hi Po                { 1 }  (988-2) [AA95] - -  - 923 12 ZhMe K0 V                        
 0915 Shiantie             C566845-8 Ph Pa Ri             { 0 }  (D72+0) [C85A] - -  - 834 16 ZhMe K3 IV K9 VI BD              
 0917 Tlrdla               B6668C7-8 Ga Ph Pa Ri          { 1 }  (87D+2) [C936] - -  - 413 13 ZhMe G1 V G0 VI G3 VI            
 0918 Echzi                A0008CE-C As Va Ph Na Pi       { 2 }  (975+5) [5A39] - -  - 514 13 ZhMe M4 V                        
 0919 Ninzhshter           A7626AD-B Ni Ri                { 2 }  (655+1) [8819] - -  - 112 12 ZhMe K5 V BD                     
-1011 Entsshodrep          B68A999-C Wa Hi Pr             { 3 }  (88A-4) [8C4E] - -  - 221 11 ZhMe K9 VI K2 VI M0 VI           
+1011 Entsshodrep          B68A999-C Wa Hi Pr             { 3 }  (88A-4) [8C4E] - -  - 221 11 ZhMe K2 VI K9 VI M0 VI           
 1012 Iaedl                A632445-D Ni Po                { 2 }  (C36+0) [362A] - D  - 433 13 ZhMe K3 V                        
 1014 Ilrevchtin           B000799-B As Va Na Pi          { 2 }  (G67+0) [693E] - -  - 123 15 ZhMe G4 V D                      
 1017 Chiejaze             A766554-C Ga Ni Ag Pr          { 3 }  (D46-3) [787F] - D  - 925 16 ZhMe G9 V                        
@@ -216,7 +216,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3012 Zenchdref            A647669-8 Ni Ag                { 1 }  (E54-2) [3787] - KM - 125 12 ZhMe K3 III                      
 3014 Anzhej               A525655-E Ni                   { 1 }  (C52-2) [474E] - -  - 312 12 ZhMe K7 V M3 VI K0 VI            
 3020 Tlibrdish            A654769-C Ag                   { 4 }  (K6B-2) [BB5D] - KM - 635 14 ZhMe M6 V BD BD                  
-3112 Vrecha               C524887-8 Ph Pi                { -1 } (771+0) [374C] - -  - 110 8  ZhMe G6 VI G8 VI G0 VI           
+3112 Vrecha               C524887-8 Ph Pi                { -1 } (771+0) [374C] - -  - 110 8  ZhMe G0 VI G8 VI G6 VI           
 3113 Bievransh            X528000-0 Ba                   { -3 } (B00+4) [0000] - -  F 012 12 ZhMe G1 IV M3 V                  
 3114 Naiaqrtla            B531754-A Na Po                { 3 }  (A69+1) [2A4D] - KM - 322 15 ZhMe M3 V D D BD                 
 3116 Zhiedlazdi           A87A666-B Wa Ni                { 1 }  (H54+0) [676A] - -  - 724 14 ZhMe M6 II D M0 V                
@@ -273,7 +273,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2126 Brria                A7A4445-D Fl Ni                { 1 }  (G37+1) [952B] - -  - 223 10 ZhMe G0 II                       
 2221 Enshchtiadrd         X526000-0 Ba                   { -3 } (A00+1) [0000] - -  F 003 11 ZhMe G4 V                        
 2223 Vleshiezhden         A8D6866-C Ph                   { 3 }  (979+1) [7B5D] - KM - 112 13 ZhMe K8 V M1 VI                  
-2224 Ezhsha               B55978A-B                      { 3 }  (868+0) [6A6E] - KM - 712 16 ZhMe M6 VI M3 VI BD              
+2224 Ezhsha               B55978A-B                      { 3 }  (868+0) [6A6E] - KM - 712 16 ZhMe M3 VI M6 VI BD              
 2226 Zdiantseienzh        B100999-F Va Hi Na In          { 5 }  (68A-4) [BE2J] - KM - 102 11 ZhMe M3 V M6 VI                  
 2229 Dle'il               B44278C-A He Pi Po             { 2 }  (965+0) [599C] - -  - 323 13 ZhMe G8 V D                      
 2327 Rezhja'              B6A2768-A Fl He                { 3 }  (86B-1) [6A59] - KM - 200 12 ZhMe F7 V                        
@@ -291,7 +291,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2527 Lobliabr             B512551-8 Ic Ni                { 0 }  (944+0) [7575] - KM - 323 12 ZhMe M7 V BD BD                  
 2529 Ibrosa               A242779-C Pi Po                { 3 }  (B66-2) [4A3A] - D  - 404 13 ZhMe G3 V                        
 2626 Stablanj             A583745-B Ri                   { 3 }  (C69+1) [4A19] - -  - 133 19 ZhMe K0 IV                       
-2721 Tlelniabr            E000569-9 As Va Ni             { -2 } (B40-2) [7327] - -  - 104 9  ZhMe A7 V A6 V K6 VI             
+2721 Tlelniabr            E000569-9 As Va Ni             { -2 } (B40-2) [7327] - -  - 104 9  ZhMe A6 V A7 V K6 VI             
 2722 Iebr                 A52499C-F Hi In                { 5 }  (989+0) [9E6F] - KM - 113 14 ZhMe M3 II                       
 2724 Zdika                A67579B-C Ag Pi                { 3 }  (869+2) [6AAA] - -  - 103 11 ZhMe G1 II K9 V                  
 2726 Chrshedr             A8338CA-A Ph Na Po             { 3 }  (A7E+4) [9B4B] - KM - 424 18 ZhMe F1 V G7 VI                  
@@ -316,7 +316,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3224 Srptier              C693798-6 Pi                   { -1 } (565+2) [9667] - -  - 103 14 ZhMe A5 V G2 VI                  
 3228 Minzhblinzh          B6B3545-A Fl Ni                { 2 }  (947+5) [178D] - KM - 500 6  ZhMe F8 V G7 VI                  
 3229 Fleqlqlashch         B662488-B Ni                   { 2 }  (A35-3) [466C] - KM - 114 13 ZhMe G9 V M5 VI M8 VI M6 VI K8 VI
-0133 Qlavrr-28            X683000-0 Ba                   { -3 } (A00-3) [0000] - -  - 000 4  NaXX G7 V D G0 V                 
+0133 Qlavrr-28            X683000-0 Ba                   { -3 } (A00-3) [0000] - -  - 000 4  NaXX G0 V D G7 V                 
 0136 Zdiaztl-73           X7B7000-0 Fl Ba                { -3 } (600+2) [0000] - -  - 014 15 NaXX G4 V M9 VI                  
 0231 Iplpaf               X766000-0 Ga Ba                { -3 } (300+0) [0000] - -  - 024 14 NaXX G3 V                        
 0332 Breentebr-1          X586000-0 Ba                   { -3 } (600+2) [0000] - -  - 033 16 NaXX F9 IV G9 V                  

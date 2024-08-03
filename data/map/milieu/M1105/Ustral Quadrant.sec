@@ -36,14 +36,14 @@
 # Alleg: AsOf: "Oleaiy'fte"
 # Alleg: AsSc: "Aslan Hierate, multiple clans split control"
 # Alleg: AsT0: "Aslan Hierate, Tlaukhu control, Yerlyaruiwo (1), Hrawoao (13), Eisohiyw (14), Ferekhearl (19)"
-# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)"
+# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khaukheairl (2), Estoieie' (16), Toaseilwi (22)"
 # Alleg: AsT2: "Aslan Hierate, Tlaukhu control, Syoisuis (3)"
 # Alleg: AsT3: "Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)"
 # Alleg: AsT4: "Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)"
 # Alleg: AsT5: "Aslan Hierate, Tlaukhu control, Hlyueawi (6), Isoitiyro (15)"
 # Alleg: AsT6: "Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)"
-# Alleg: AsT7: "Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerfearlyo (20), Yehtahikh (24)"
-# Alleg: AsT8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okunir (29)"
+# Alleg: AsT7: "Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerlearlyo (20), Yetahikh (24)"
+# Alleg: AsT8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)"
 # Alleg: AsT9: "Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)"
 # Alleg: AsTA: "Tealou Arlaoh"
 # Alleg: AsTv: "Aslan Hierate, Tlaukhu vassal clan dominates"
@@ -102,7 +102,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 1408 Uisi                 A6A1478-E Fl He Ni                   { 2 }  (635+2) [465E] - RT - 900 10 AsSc M0 V M5 V     
 1409 Eaktakhiyhyu         C300167-B Lo Va O:1308               { 0 }  (300+1) [115B] - -  - 500 11 AsVc F7 V          
 1501 Wuih                 A430488-A De Ni Po                   { 1 }  (B34+1) [455A] - T  - 414 11 AsT1 M1 V M1 V     
-1503 Heasairlui           A894AB9-E Hi In Pz                   { 4 }  (G9G+5) [BE6F] - -  A 304 8  AsMw G7 V          
+1503 Heasairlui           A894A79-E Hi In Pz                   { 4 }  (G9G+5) [BE6F] - -  A 304 8  AsSc G7 V          
 1507 Eieaua               B432533-D Ni Po                      { 1 }  (945-2) [262A] - -  - 702 8  AsVc A7 V          
 1602 Hrai'aoeti           C776377-7 Lo                         { -2 } (520-2) [3157] - -  - 203 10 AsSc G6 V M7 V     
 1604 Elaulrah             C545473-9 Ni Pa                      { -1 } (A32-4) [1326] - R  - 204 16 AsSc F9 V M1 V     
@@ -178,7 +178,7 @@ Hex  Name                 UWP       Remarks                    {Ix}   (Ex)    [C
 1120 Ul                   D300683-8 Na Ni Va                   { -3 } (951-5) [3325] - -  - 710 8  AsMw M2 V          
 1219 Hlol                 B687AB9-D Hi Ga Pz                   { 3 }  (F9F+4) [BD6E] - -  A 103 11 AsVc F7 V M6 V     
 1311 Faftyo'ear           C5506B9-8 De Ni Po Da                { -2 } (C52-1) [7469] - -  A 104 12 AsT4 F1 V M1 V     
-1411 Aieilarl             B551538-B Ni Po                      { 1 }  (C45+1) [565B] - -  - 814 12 AsT6 F7 V          
+1411 Aieilarl             B551538-B Ni Po                      { 1 }  (C45+1) [565B] - T  - 814 12 AsT6 F7 V          
 1414 Ahkalaustu           C655599-9 Ag Ni Ga                   { 0 }  (B44+1) [656A] - R  - 104 11 AsWc G2 V          
 1417 Awahraktelye         E733977-8 Hi Na Po                   { -1 } (F88-1) [9858] - -  - 104 8  AsSc F3 V M8 V     
 1511 Iyuahyehfoai         D662486-7 Ni                         { -3 } (631-4) [3146] - -  - 902 10 AsWc F9 V          

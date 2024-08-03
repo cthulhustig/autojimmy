@@ -33,6 +33,7 @@
   <Allegiances>
     <Allegiance Code="ImDs" Base="Im">Third Imperium, Domain of Sol</Allegiance>
     <Allegiance Code="SoCf" Base="So">Solomani Confederation</Allegiance>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
     <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
     <Allegiance Code="CsIm">Client state, Third Imperium</Allegiance>
   </Allegiances>

@@ -28,6 +28,7 @@
 # Alleg: Dr: "Droyne"
 # Alleg: Na: "Non-Aligned, Human-dominated"
 # Alleg: Zc: "Zhodani Client"
+# Alleg: Zh: "Zhodani Consulate"
 
 Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z PBG W A  Stellar
 ---- -------------------- --------- -------------------- ---- ---- ---- - -- - --- - -- -------
@@ -78,16 +79,16 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1312 Nashipr              E756421-2 Ni                                  - W  - 504   Zc        
 1413 Uthyathhyars         B695536-B Ag Ni                               - KM B 911   Dr        
 1615 Kianchotich          C355201-B Lo Ni                               - W  - 415   Zc        
-1712                      E548300-4 Lo Ni                               - -  - 701   Na        
-1714                      E430530-5 De Ni Po                            - -  - 400   Na        
-1811                      C2019DA-9 Hi Ic Na Va                         - -  - 103   Na        
-1817                      D9A4420-7 Fl Ni                               - W  - 404   Na        
-1918                      E58088A-4 De Ri                               - -  - 200   Na        
-2012                      C11067A-B Na Ni                               - -  - 222   Na        
-2112                      C638999-6 Hi In                               - S  - 700   Na        
-2217 Itevr                B160AB6-E De Hi                               - KM - 204   Zc        
-2219                      C574300-8 Lo Ni                               - -  - 523   Na        
-2312                      X99A010-0 Lo Ni Wa                            - -  R 800   Na        
+1712 Afle                 E548300-4 Lo Ni                               - -  - 701   Na        
+1714 El                   E430530-5 De Ni Po                            - -  - 400   Na        
+1811 Niadlchia            C2019DA-9 Hi Ic Na Va                         - -  - 103   Na        
+1817 Chiafidr             D9A4420-7 Fl Ni                               - W  - 404   Na        
+1918 Floe                 E58088A-4 De Ri                               - -  - 200   Na        
+2012 Enj                  C11067A-B Na Ni                               - -  - 222   Na        
+2112 Shazh                C638999-6 Hi In                               - S  - 700   Na        
+2217 Itevr                B160AB6-E De Hi                               - KM - 204   Zh        
+2219 Srtsshtiaz           C574300-8 Lo Ni                               - -  - 523   Na        
+2312 Chikrchi             X99A010-0 Lo Ni Wa                            - -  R 800   Na        
 2518                      C544887-6                                     - -  - 724   Na        
 2712                      E261434-3 Ni                                  - -  - 900   Na        
 2818                      A547A79-C Hi In                               - -  - 814   Na        

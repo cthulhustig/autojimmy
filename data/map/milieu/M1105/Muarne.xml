@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Muar">
+  <Name Lang="hv">Muarne</Name>
+  <Credits />
+  <X>5</X>
+  <Y>6</Y>
+  <DataFile Author="Bari Z. Stafford Sr." Source="General Turokan's Expedition to the Rim" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <Subsectors>
+    <Subsector Index="A">Amuar</Subsector>
+    <Subsector Index="B">Barnes</Subsector>
+    <Subsector Index="C">Clamuar</Subsector>
+    <Subsector Index="D">Dluarne</Subsector>
+    <Subsector Index="E">Emuart</Subsector>
+    <Subsector Index="F">Fruardi</Subsector>
+    <Subsector Index="G">Grauarn</Subsector>
+    <Subsector Index="H">Haluarg</Subsector>
+    <Subsector Index="I">Imuarff</Subsector>
+    <Subsector Index="J">Juarnest</Subsector>
+    <Subsector Index="K">Klinuar</Subsector>
+    <Subsector Index="L">Lonuarneb</Subsector>
+    <Subsector Index="M">Muaring</Subsector>
+    <Subsector Index="N">Nevuan</Subsector>
+    <Subsector Index="O">Omonuar</Subsector>
+    <Subsector Index="P">Pluast</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="Iu">Ickoul Union</Allegiance>
+    <Allegiance Code="Hi">Hillayag Federation</Allegiance>
+    <Allegiance Code="Su">Sayd Trade Union</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="OliveDrab" Allegiance="Ki" LabelPosition="2607">2407 2507 2506 2606 2706 2705 2706 2707 2607 2508 2407</Border>
+    <Border Color="Blue" Allegiance="Hi" LabelPosition="2913">2712 2812 2912 3011 3112 3012 3013 2913 2813 2814 2813 2812 2712</Border>
+    <Border Color="Yellow" Allegiance="Iu" LabelPosition="0224">0122 0222 0323 0324 0325 0325 0326 0325 0324 0223 0123 0122</Border>
+    <Border Color="Green" Allegiance="Su" LabelPosition="3310">3209 3309 3310 3209</Border>
+  </Borders>
+</Sector>

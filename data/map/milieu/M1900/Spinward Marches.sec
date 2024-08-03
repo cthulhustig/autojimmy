@@ -80,17 +80,17 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1102 Riverland            C566ADA-B Hi                                 { 2 }  (H97+4) [CC6B] BE   -  - 314 14 Wild M2 V          
 1103 Clan                 B6728AA-A He Ph Pi                           { 2 }  (B76-1) [7A78] BDe  -  - 501 12 Wild K8 V          
 1106 Jewell               A77799A-E Hi In                              { 5 }  (G89+3) [9E69] BEf  NS - 323 10 Wild G7 V          
-1110 Zircon               X792000-8 Di He                              { -3 } (E00-1) [0000] B    -  - 024 12 Wild F0 V          
+1110 Zircon               B792620-8 He Ni                              { -1 } (E50-1) [6558] B    -  - 424 12 Wild F0 V          
 1201 Ao-dai               E410673-7 Na Ni                              { -3 } (853+3) [3387] B    -  - 312 10 Wild K2 V M3 V     
 1204 Mongo                A5686BD-A Ag Ri Ni                           { 3 }  (B58+1) [191D] BC   N  - 503 7  Wild M6 III M0 V   
 1209 Utoland              C573452-8 Ni                                 { -2 } (732-4) [4237] B    -  - 410 8  NaHu M0 V          
 1210 Pequan               E565677-4 Ag Ri Ni                           { -1 } (854+1) [4551] BC   -  - 710 5  NaHu K5 V          
 1305 Nakege               D591000-5 (minor) Di He                      { -3 } (500+2) [0000] B    -  - 001 14 Wild K2 V M0 V     
-1307 Lysen                X592000-A Di He                              { -1 } (D00+1) [0000] B    -  - 023 12 Wild M3 V          
+1307 Lysen                D592441-5 Ni He                              { -3 } (731+1) [4455] B    -  - 623 12 Wild M3 V          
 1401 Foelen               E638000-8 (Chokari)4 Dolp2 Di                { -3 } (900+2) [0000] B    -  - 010 14 Wild K0 V          
 1402 Farreach             A200300-B Lo Va                              { 1 }  (C21-4) [348B] B    -  - 915 10 Wild M3 III M0 V   
 1510 Lee                  E722000-0 Ba He Po                           { -3 } (200-4) [0000] B    -  - 001 7  NaXX M3 V M8 V     
-1604 Louzy                D422000-8 Di He Po                           { -3 } (D00+2) [0000] B    -  - 010 7  Rr   M2 V          
+1604 Louzy                D4439B9-8 Hi In Po                           { 0 }  (D82+2) [9958] B    -  - 310 7  Rr   M2 V          
 1607 Grant                X664100-3 Lo Re                              { -3 } (300+1) [1181] B    -  - 122 13 Na   K6 V          
 1705 Efate                A646944-G An Hi In                           { 6 }  (B8E-1) [7F5E] BEf  NW - 400 8  Rr   F8 V          
 1706 Alell                B567894-A Pa Ri Ph                           { 3 }  (B7A+3) [8B5E] BcCe -  - 210 6  Rr   M1 V M7 V     
@@ -102,7 +102,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1808 Forboldn             D893638-5 Ni                                 { -3 } (850+3) [8388] B    -  - 212 14 Rr   G0 V          
 1809 Ruie                 C7769AA-8 (Daccamites) Hi In                 { 1 }  (B83-2) [8A88] BE   -  - 701 9  Rr   G5 V          
 1810 Diakria              C799776-9 (Amindii)9 Pi                      { 0 }  (D68+2) [7714] BD   S  - 223 11 Rr   M0 V          
-1903 Pixie                D100000-D An Di Va                           { -1 } (400+3) [0000] B    -  - 001 14 Wild K1 V M0 V     
+1903 Pixie                A100674-D An Na Ni Va                        { 1 }  (453+3) [675D] B    -  - 901 14 Wild K1 V M0 V     
 1904 Boughene             B8B333A-H An RsC Fl Lo                       { 2 }  (822+1) [156E] B    -  - 701 13 Cs   M1 V          
 1909 Hefry's Law          C200487-7 Ni Va                              { -2 } (631-5) [6285] B    S  - 320 13 Rr   K6 II M2 V    
 1910 Regina               A788976-G An (Amindii)2 Varg0 Asla0 Sa Hi Pr { 5 }  (D8B+3) [8E2F] BcEf NS - 703 8  Rr   F7 V BD M3 V  
@@ -134,19 +134,19 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2905 Pavanne              E310000-0 Ba                                 { -3 } (200+2) [0000] B    -  - 025 12 Na   M0 V          
 2906 Carsten              C427403-B Ni                                 { 0 }  (A32+2) [747D] B    -  - 804 15 Na   M1 V          
 2908 Zila                 E556779-7 Ag                                 { -1 } (96A-1) [7685] BC   -  - 701 8  Rr   K6 V M3 V     
-3001 Jesedipere           D775000-7 Di                                 { -3 } (500+1) [0000] B    -  - 011 12 Wild F4 V          
+3001 Jesedipere           D775334-7 Lo                                 { -3 } (520+1) [3257] B    -  - 111 12 Wild F4 V          
 3002 Yebab                C9A48BB-8 (Ebokin) Fl Ph                     { -1 } (D73+2) [6726] Be   -  - 712 10 Na   G9 V          
 3003 Nasemin              B98A443-B Ni Wa                              { 1 }  (935+1) [456E] B    S  - 812 10 Rr   F5 V          
 3004 Zykoca               D994520-6 Ag Ni                              { -2 } (741-3) [3362] BC   -  - 320 12 Rr   K9 V          
 3005 Aramanx              B6579BB-7 Ga Hi                              { 1 }  (B87+4) [7A85] BE   -  - 210 13 Rr   G0 V          
 3008 Pysadi               C576597-4 Ag Ni                              { -1 } (841+1) [1424] BC   -  - 901 8  Rr   F9 V M1 V     
 3010 L'oeul d'Dieu        B98A535-B Ni Pr Wa                           { 1 }  (944-1) [861B] Bc   N  - 702 6  Rr   G1 V M9 V     
-3102 Rugbird              DAC5000-A Di Fl                              { -1 } (A00+2) [0000] B    -  - 011 14 Wild M1 V          
+3102 Rugbird              DAC5000-3 Di Fl                              { -3 } (A00+2) [0000] B    -  - 011 14 Wild M1 V          
 3103 Towers               B544435-A Ni Pa                              { 1 }  (E34+2) [3519] Bc   S  A 835 11 Na   G8 V K6 V     
 3104 Feneteman            C422311-B He Lo Po                           { 0 }  (520+5) [338C] B    -  - 210 4  Na   G4 V M7 V     
 3107 Lewis                D427412-6 Ni                                 { -3 } (630+1) [9158] B    -  - 701 9  Na   F8 V          
 3110 Aramis               A5A0736-F He                                 { 3 }  (86B-1) [4A6F] B    NS - 810 9  Rr   M2 V          
-3202 Junidy               B434973-B (Llellewyloly)9 Hi                 { 3 }  (D8B+4) [BC19] BE   -  - 510 14 Wild F7 V M2 V     
+3202 Junidy               A434973-B (Llellewyloly)9 Hi                 { 3 }  (D8B+4) [BC19] BE   -  - 510 14 Wild F7 V M2 V     
 3207 Patinir              C0006BC-9 An As Va Na Ni                     { -1 } (C53+1) [4589] B    -  - 213 15 Rr   F3 V          
 3209 Natoko               B582377-8 Lo                                 { -1 } (520+3) [127B] B    N  - 101 14 Na   M2 V M6 V     
 3210 Reacher              C9A8475-8 Fl Ni                              { -2 } (D30-3) [4276] B    -  - 933 12 Na   G4 V          
@@ -176,9 +176,9 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 0915 Quare                X200000-9 Di Va                              { -2 } (B00+3) [0000] B    -  - 004 10 Wild M3 V          
 0919 Zeta 2               X6B0000-0 (Viji) Re Ba He                    { -3 } (200+4) [0000] B    -  - 020 13 Wild M0 V          
 1011 Arden                B554840-9 Pa Ph                              { 1 }  (B77-3) [3988] Bce  -  - 310 12 Wild G4 V M5 V     
-1018 Choleosti            E200000-9 Di Va                              { -2 } (400-3) [0000] B    -  - 001 5  Wild K9 V M4 V     
+1018 Choleosti            D200324-9 Lo Va                              { -2 } (420-3) [3157] B    -  - 301 5  Wild K9 V M4 V     
 1020 Margesi              X575000-6 Di                                 { -3 } (800+4) [0000] B    -  - 010 10 Wild K4 V M7 V     
-1116 Frenzie              A200331-A Lo Va                              { 1 }  (721+5) [545B] B    -  - 310 5  Wild M3 III M2 V   
+1116 Frenzie              A200431-A Ni Va                              { 1 }  (734+5) [545B] B    -  - 310 5  Wild M3 III M2 V   
 1118 Garda-Vilis          B97888D-A Pa Pi Ph                           { 2 }  (D79-1) [AA4C] BcDe S  - 312 14 Wild M3 V          
 1119 Vilis                A593997-A Hi In                              { 5 }  (D8A+2) [CE5B] BEf  NS - 420 9  Vi   G5 V M8 V     
 1212 Digitis              E536745-6                                    { -2 } (866-2) [6583] B    -  - 120 8  NaHu M3 V          
@@ -291,7 +291,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 0930 Flammarion           E623000-B Di Po                              { -1 } (800+3) [0000] B    -  - 010 11 Wild F8 V          
 1022 Colada               B564450-D Ni Pa                              { 1 }  (A36+5) [352E] Bc   -  - 911 10 Wild K2 V M8 V     
 1026 Anduril              A985756-B Ag Ri                              { 4 }  (E69-3) [2A76] BC   -  - 822 11 Wild F2 V          
-1121 Mjolnir              E530000-A De Di Po                           { -1 } (B00-2) [0000] B    -  - 022 12 Wild A5 V G0 V     
+1121 Mjolnir              E530426-7 De Ni Po                           { -3 } (B31-2) [4359] B    -  - 222 12 Wild A5 V G0 V     
 1123 Joyeuse              B564673-A Ag Ri Ni                           { 3 }  (A58+2) [699E] BC   -  - 901 13 Wild M3 V M9 V     
 1126 Orcrist              X8A6000-A Di Fl Lk                           { -1 } (A00-4) [0000] B    -  - 001 8  Wild K7 V M7 V     
 1130 Enos                 E350000-4 De Di Po                           { -3 } (700+3) [0000] B    -  - 010 8  Wild M1 V          
@@ -299,7 +299,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1223 Gram                 B895B78-B Hi In                              { 4 }  (EAA-2) [CD8A] BEf  N  - 403 10 Sw   F2 V M2 V     
 1225 Excalibur            B424730-9 Pi                                 { 1 }  (B66+2) [6868] BD   -  - 202 10 Wild K5 V          
 1324 Tyrfing              B637789-A                                    { 2 }  (A6E-1) [594C] B    -  - 801 6  Na   M2 V          
-1325 Sacnoth              X775000-C Di                                 { -1 } (C00-3) [0000] B    -  - 001 7  Wild F9 V M3 V     
+1325 Sacnoth              A775975-D Hi In                              { 4 }  (C8B+3) [AB6C] B    -  - 901 7  Wild F9 V M3 V     
 1329 Caladbolg            B56578C-A Ag Ri                              { 4 }  (A68+3) [9B5A] BCf  -  - 510 9  Wild F7 V M0 V M4 V
 1424 Beater               B685643-A Ag Ri Ga Ni                        { 3 }  (957+1) [3958] BC   -  - 810 11 Na   K4 V          
 1429 Gunn                 E544000-8 Di                                 { -3 } (500-3) [0000] B    -  - 002 9  Wild M3 V          
@@ -315,7 +315,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 1628 Mithril              E568000-0 Ba Re                              { -3 } (200+3) [0000] B    -  - 001 8  Wild F4 V          
 1721 Arba                 C200201-C Lo Va                              { 0 }  (510-3) [6219] B    -  - 410 11 Na   M2 V          
 1727 Wardn                A756686-B Ga Ni Ag                           { 2 }  (853+2) [665B] B    -  - 402 7  Wild K2 V          
-1728 Olympia              D428000-7 Di                                 { -3 } (500+1) [0000] B    -  - 020 6  Wild M3 V          
+1728 Olympia              D428676-7 Ni                                 { -3 } (551+1) [6557] B    -  - 220 6  Wild M3 V          
 1729 Smoug                X540000-9 De He Di Po                        { -2 } (B00+1) [0000] BD   -  - 002 7  Wild M1 V M7 V     
 1822 Rabwhar              E5448BC-3 Pa Pi Ph                           { -2 } (A72-3) [8644] BcDe -  - 413 12 Na   K5 V          
 1824 Adabicci             D5717C7-6 He Pi                              { -2 } (B6A+1) [A55A] BEf  -  - 701 6  Na   K8 V M8 V     
@@ -359,7 +359,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 3025 Fornice              A554A72-C Hi                                 { 3 }  (E96+1) [7D17] BE   -  - 402 13 Du   M0 V          
 3026 Grille               E410385-7 Lo                                 { -3 } (520+2) [5157] B    -  - 801 12 Du   M2 V M2 V     
 3029 Pallique             E5119A8-5 Hi Ic Na In                        { 0 }  (B87-2) [C922] BE   -  - 220 5  Na   M0 V M1 V     
-3030 Nexine               D97A000-8 (Nexxies) Di Wa                    { -3 } (700+1) [0000] B    -  - 001 12 Wild G9 V M2 V     
+3030 Nexine               C97A522-8 (Nexxies) Ni Wa                    { -2 } (740+1) [5358] B    -  - 601 12 Wild G9 V M2 V     
 3123 Nadrin               D420242-6 De He Lo Po                        { -3 } (410-1) [3115] B    S  - 720 15 Du   K5 V M1 V     
 3124 Mora                 AA99A9D-C Hi In                              { 5 }  (F9E+2) [9F6D] BEf  NS - 312 9  Du   F0 V          
 3223 Dojodo               C512331-7 Ic Lo                              { -2 } (520+1) [6147] B    S  - 710 14 Na   M0 V          
@@ -461,7 +461,7 @@ Hex  Name                 UWP       Remarks                            {Ix}   (E
 2637 Robin                E000000-C As Va Di                           { -1 } (900+2) [0000] B    -  - 002 6  Wild M2 V          
 2638 D'Mara               E75A778-5 Wa                                 { -2 } (962-1) [6564] B    -  - 510 14 Wild F4 V          
 2639 Keltchner            D525000-9 Di O:Troj-2402                     { -2 } (900+1) [0000] B    -  - 002 15 Wild K6 V          
-2731 Tussinian            B678348-7 Lo                                 { -1 } (520+4) [5275] B    -  - 320 7  Na   K0 V          
+2731 Tussinian            B678648-7 Ni Ag                              { 0 }  (553+4) [5275] B    -  - 320 7  Na   K0 V          
 2733 Edenelt              A563886-B Ph Ri                              { 3 }  (H79+3) [9B4F] BCe  -  - 634 10 Wild G7 V          
 2735 Conway               D894000-7 Di                                 { -3 } (700+2) [0000] B    S  - 011 12 Wild F0 V M0 V     
 2739 Dodds                C543978-5 Hi In Po                           { 1 }  (B88+1) [EA75] BE   S  - 223 13 Wild G7 V          

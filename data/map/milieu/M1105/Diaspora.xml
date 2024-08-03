@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<Sector Tags="Official OTU" Abbreviation="Dias">
+<Sector Selected="true" Tags="Official OTU" Abbreviation="Dias">
   <Name>Diaspora</Name>
   <Name Lang="vi">Nakulakak</Name>
   <Credits>
@@ -15,6 +15,7 @@
     </Credits>
   <X>0</X>
   <Y>2</Y>
+  <Product Author="Mark &quot;Geo&quot; Gelinas Sr." Title="Astrogator's Guide to Diaspora Sector" Publisher="GDW" Ref="https://www.mongoosepublishing.com/products/astrogators-guide-to-the-diaspora-sector-ebook" />
   <DataFile Source="Traveller 5 Second Survey" Milieu="M1105" />
   <Subsectors>
     <Subsector Index="A">Narquel</Subsector>

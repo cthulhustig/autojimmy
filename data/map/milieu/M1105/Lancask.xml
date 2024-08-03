@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Sector Tags="OTU" Abbreviation="Lanc">
+  <Name Lang="hv">Lancask</Name>
+  <Credits />
+  <X>6</X>
+  <Y>6</Y>
+  <DataFile Author="Bari Z. Stafford Sr." Source="General Turokan's Expedition to the Rim" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <Subsectors>
+    <Subsector Index="A">Alanca</Subsector>
+    <Subsector Index="B">Bancass</Subsector>
+    <Subsector Index="C">Casklier</Subsector>
+    <Subsector Index="D">Dancask</Subsector>
+    <Subsector Index="E">Erancl</Subsector>
+    <Subsector Index="F">Frocask</Subsector>
+    <Subsector Index="G">Ghancask</Subsector>
+    <Subsector Index="H">Hacasell</Subsector>
+    <Subsector Index="I">Icaskarn</Subsector>
+    <Subsector Index="J">Jananca</Subsector>
+    <Subsector Index="K">Kloonac</Subsector>
+    <Subsector Index="L">Lanikasc</Subsector>
+    <Subsector Index="M">Milanco</Subsector>
+    <Subsector Index="N">Nolcask</Subsector>
+    <Subsector Index="O">Olannak</Subsector>
+    <Subsector Index="P">Pocanask</Subsector>
+  </Subsectors>
+  <Allegiances>
+    <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="Su">Sayd Trade Union</Allegiance>
+    <Allegiance Code="Fe">Society of Friends of Fetarre</Allegiance>
+    <Allegiance Code="It">Itaurrec Unification</Allegiance>
+    <Allegiance Code="Ki">Klushan Universal Imperium</Allegiance>
+    <Allegiance Code="Lr">Lasiir Domination</Allegiance>
+    <Allegiance Code="Cs">Client state, Third Imperium</Allegiance>
+  </Allegiances>
+  <Borders>
+    <Border Color="Blue" Allegiance="Ki" LabelPosition="1939">1738 1838 1839 1940 2040 1940 1839 1739 1738</Border>
+    <Border Color="Red" Allegiance="It" LabelPosition="1936">1536 1636 1736 1835 1834 1734 1834 1934 1935 2035 2136 2137 2237 2137 2036 1937 1836 1736 1636 1536</Border>
+    <Border Color="Yellow" Allegiance="Lr" LabelPosition="2227">1926 2026 2126 2225 2326 2425 2525 2526 2527 2528 2428 2427 2327 2227 2128 2027 2026</Border>
+    <Border Color="Green" Allegiance="Su" LabelPosition="0110">0009 0109 0209 0210 0110 0009</Border>
+    <Border Color="Orange" Allegiance="Fe" LabelPosition="1602">1401 1502 1601 1701 1601 1602 1503 1502 1401</Border>
+  </Borders>
+</Sector>

@@ -77,43 +77,43 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0807                      E7B4987-5 Fl Hi                               - -  - 920   Na        
 0809                      E234303-5 Lo Ni                               - -  - 514   Na        
 0810                      C375754-5 Ag                                  - S  - 303   Na        
-0901                      CA9A8A8-9 Wa                                  - -  - 812   Na        
-0905                      A589647-8 Ni Ri                               - S  - 404   Na        
-0906                      E510733-5 Na                                  - -  - 803   Na        
-0908                      CAC5224-7 Fl Lo Ni                            - -  - 100   Na        
+0901 Ontsr                CA9A8A8-9 Wa                                  - -  - 812   Na        
+0905 Bikltse              A589647-8 Ni Ri                               - S  - 404   Na        
+0906 Shia                 E510733-5 Na                                  - -  - 803   Na        
+0908 Zdish                CAC5224-7 Fl Lo Ni                            - -  - 100   Na        
 0909 Ikpoyrtfets          B595835-9                                     - S  B 513   Dr        
-1002                      C7A149D-A Fl Ni                               - S  - 905   Na        
-1005                      B420546-B De Ni Po                            - -  - 623   Na        
+1002 Deli                 C7A149D-A Fl Ni                               - S  - 905   Na        
+1005 Chtevr               B420546-B De Ni Po                            - -  - 623   Na        
 1008 Efle                 C430225-9 De Lo Ni Po                         - -  - 320   Zh        
-1101                      C524453-9 Ni                                  - S  - 520   Na        
-1105                      C340555-8 De Ni Po                            - -  - 914   Na        
+1101 Fo                   C524453-9 Ni                                  - S  - 520   Na        
+1105 Dlavlia              C340555-8 De Ni Po                            - -  - 914   Na        
 1109 Pliansiv             E221321-4 Lo Ni Po                            - -  - 303   Zh        
-1201                      C559468-9 Ni                                  - S  - 903   Na        
-1203                      E030144-9 De Lo Ni Po                         - -  - 300   Na        
-1204                      B658956-8 Hi                                  - N  - 702   Na        
+1201 Tsi                  C559468-9 Ni                                  - S  - 903   Na        
+1203 Tlebl                E030144-9 De Lo Ni Po                         - -  - 300   Na        
+1204 Chiezh               B658956-8 Hi                                  - N  - 702   Na        
 1207 Pliieblbra           E432692-9 Na Ni Po                            - -  - 302   Zh        
 1208 Zhanzhstesh          A573966-9 Hi In                               - KM - 711   Zh        
 1210 Bienzhda             C492950-8 Hi In                               - -  - 900   Zh        
-1301                      C685897-7 Ri                                  - -  - 124   Na        
-1304                      B7B1845-B Fl                                  - S  - 102   Na        
+1301 Apl                  C685897-7 Ri                                  - -  - 124   Na        
+1304 Sentniar             B7B1845-B Fl                                  - S  - 102   Na        
 1308 Qridldadl            E440497-9 De Ni Po                            - -  - 803   Zh        
-1309                      B344798-A Ag                                  - N  - 600   Na        
+1309 Inatl                B344798-A Ag                                  - N  - 600   Na        
 1310 Kiadljdibr           A352735-B Po                                  - KM - 904   Zh        
 1403 Drabidetl            B431569-B Ni Po                               - KM - 714   Zh        
 1406 Fliamobr             A310557-B Ni                                  - KM - 503   Zh        
 1407 Chtaz                E330317-5 De Lo Ni Po                         - -  - 203   Zh        
 1408 Dlazdliez            B356155-6 Lo Ni                               - KM - 200   Zh        
-1409                      B040326-B De Lo Ni Po                         - -  - 904   Na        
+1409 Jdit                 B040326-B De Lo Ni Po                         - -  - 904   Na        
 1410 Chtotlev             A5A2952-B Fl Hi                               - KM - 925   Zh        
-1501                      C444795-6 Ag                                  - -  - 603   Na        
-1503                      D000432-6 As Ni                               - -  - 722   Na        
-1504                      X554742-0 Ag                                  - -  R 702   Na        
+1501 Azcha                C444795-6 Ag                                  - -  - 603   Na        
+1503 Efvia                D000432-6 As Ni                               - -  - 722   Na        
+1504 Reqle                X554742-0 Ag                                  - -  R 702   Na        
 1506 Shtiansh             C451482-9 Ni Po                               - W  - 214   Zh        
-1509                      C8A8421-8 Fl Ni                               - S  - 200   Na        
-1601                      E977777-5 Ag                                  - -  - 104   Na        
-1602                      B310757-9 Na                                  - S  - 710   Na        
-1603                      D444662-7 Ag Ni                               - -  - 424   Na        
-1604                      CAC8451-8 Fl Ni                               - -  - 614   Na        
+1509 Zhaa                 C8A8421-8 Fl Ni                               - S  - 200   Na        
+1601 Diekkesh             E977777-5 Ag                                  - -  - 104   Na        
+1602 Nezev                B310757-9 Na                                  - S  - 710   Na        
+1603 Diez                 D444662-7 Ag Ni                               - -  - 424   Na        
+1604 Sensh                CAC8451-8 Fl Ni                               - -  - 614   Na        
 1607 Edlvri               D200205-7 Lo Ni Va                            - -  - 604   Zh        
 1609 Yafaylmtest          B593831-9                                     - S  B 910   Dr        
 1610 Iekiaql              D200860-9 Na Va                               - W  - 220   Zh        

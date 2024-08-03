@@ -33,14 +33,14 @@
 # Alleg: AsMw: "Aslan Hierate, single multiple-world clan dominates"
 # Alleg: AsSc: "Aslan Hierate, multiple clans split control"
 # Alleg: AsT0: "Aslan Hierate, Tlaukhu control, Yerlyaruiwo (1), Hrawoao (13), Eisohiyw (14), Ferekhearl (19)"
-# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)"
+# Alleg: AsT1: "Aslan Hierate, Tlaukhu control, Khaukheairl (2), Estoieie' (16), Toaseilwi (22)"
 # Alleg: AsT2: "Aslan Hierate, Tlaukhu control, Syoisuis (3)"
 # Alleg: AsT3: "Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)"
 # Alleg: AsT4: "Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)"
 # Alleg: AsT5: "Aslan Hierate, Tlaukhu control, Hlyueawi (6), Isoitiyro (15)"
 # Alleg: AsT6: "Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)"
-# Alleg: AsT7: "Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerfearlyo (20), Yehtahikh (24)"
-# Alleg: AsT8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okunir (29)"
+# Alleg: AsT7: "Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerlearlyo (20), Yetahikh (24)"
+# Alleg: AsT8: "Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)"
 # Alleg: AsT9: "Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)"
 # Alleg: AsTv: "Aslan Hierate, Tlaukhu vassal clan dominates"
 # Alleg: AsVc: "Aslan Hierate, vassal clan dominates"
@@ -238,7 +238,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3018 Tlyehiraio           B687366-A Lo Ga O:3116         { 1 }  (721+1) [2449] - -  - 120 15 AsT5 M1 V M9 V       
 3111 Eiaheawaih           D310753-9 Na Pi                { -1 } (C68-4) [4626] - -  - 903 10 AsWc M3 V            
 3114 Isehwei              B300633-B Na Ni Va             { 1 }  (A55-2) [3728] - -  - 302 12 AsMw A4 V K9 V       
-3116 Yolyetau             A879A89-C Hi In                { 4 }  (F9F+5) [BE6D] - -  - 703 11 AsT5 G3 V M0 V       
+3116 Yolyetau             A879A89-C Hi In                { 4 }  (F9F+5) [BE6D] - T  - 703 11 AsT5 G3 V M0 V       
 3118 Foaa                 D657689-6 Ag Ni Ga             { -2 } (852-1) [7467] - -  - 704 9  AsMw F2 V            
 3120 Yutikhtaw            E54116B-5 He Lo Po O:3222      { -3 } (300-1) [3177] - -  - 404 11 AsT3 G8 V            
 3217 Kaoaw                X310156-7 Lo Fo                { -3 } (300-4) [1146] - -  R 833 14 AsT2 K0 V            
@@ -330,7 +330,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3126 Hekhyeuirlea         E2006BB-7 Na Ni Va Da          { -3 } (851-1) [8379] - -  A 600 9  AsWc M2 V            
 3127 Ahaau                B774625-A Ag Ni                { 2 }  (D56+1) [4838] - -  - 814 10 AsWc M2 V M3 V       
 3128 Tlelelr              A87437B-D Lo                   { 1 }  (A21+3) [547F] - -  - 905 12 AsMw F7 V M1 V       
-3222 Kuwiywosyo           B5827AC-A Ri Pz                { 3 }  (E6C+5) [AA8D] - -  A 305 9  AsT3 M2 V            
+3222 Kuwiywosyo           B5827AC-A Ri Pz                { 3 }  (E6C+5) [AA8D] - T  A 305 9  AsT3 M2 V            
 3224 Werualreahe          D654378-7 Lo                   { -3 } (520-3) [3157] - -  - 424 10 AsSc M1 V M2 V       
 3226 Iyeaeiiykh           C7496B6-8 Ni                   { -2 } (B52-3) [5447] - -  - 803 11 AsTv M6 III          
 3227 Yaoiawyeu            BAA926A-9 Fl Lo O:2927         { 0 }  (810+2) [427B] - -  - 104 13 AsSc K7 III M8 V M8 V
@@ -356,7 +356,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0736 Eeasyoeawyu'         X54248A-5 He Ni Po Fo          { -3 } (631-1) [6177] - -  R 205 14 AsWc G4 IV           
 0738 Feastahe             E100688-7 Na Ni Va             { -3 } (851-3) [6357] - -  - 905 17 AsWc M2 V            
 0739 Yekhao'ar            B310844-C Na Ph Pi             { 2 }  (E7C+1) [6A3A] - T  - 704 13 AsT7 A5 III          
-0831 Khiui                B8877A9-A Ag Ga Ri             { 4 }  (B6D+5) [8B6B] - -  - 402 8  AsT0 F4 III          
+0831 Khiui                B8877A9-A Ag Ga Ri             { 4 }  (B6D+5) [8B6B] - T  - 402 8  AsT0 F4 III          
 0835 Asahkyah             E97A216-6 Lo Wa                { -3 } (410-4) [1145] - -  - 705 12 AsTv A2 V F9 V       
 0837 Oulr                 D555986-7 Hi                   { -1 } (B88-2) [8846] - -  - 114 12 AsWc A1 V            
 0838 Faya                 B756377-B Lo Ga                { 1 }  (A21+1) [345B] - -  - 114 11 AsSc K6 V M6 V       

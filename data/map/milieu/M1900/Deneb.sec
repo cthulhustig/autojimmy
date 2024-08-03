@@ -54,7 +54,7 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0406 Pretoria             B6569AB-C Ga Hi                       { 4 }  (D89+1) [BD3G] BEf  NS - 720 13 Rr   G5 IV         
 0409 L'sis                A7648A8-8 Pa Ri Ph                    { 1 }  (B74+1) [A959] BcCe N  - 201 13 Na   F6 V          
 0502 El D'Nah             E549000-B Di                          { -1 } (800+2) [0000] B    -  - 002 8  Wild K6 V          
-0503 Spectre              B100654-A Na Ni Va                    { 1 }  (A57-2) [9716] B    -  - 602 9  Wild M8 V          
+0503 Spectre              B100277-A Lo Va                       { 1 }  (A11-2) [235A] B    -  - 302 9  Wild M8 V          
 0504 Ash                  A540856-9 De He Ph Pi Po              { 1 }  (B74-2) [9935] BDe  S  - 101 14 Wild M4 V M9 V     
 0508 Caladib              B697257-A Lo                          { 1 }  (511-1) [4329] B    N  - 501 11 Rr   M2 V          
 0509 Redi                 E575579-5 An Droy4 Ag Ni              { -2 } (742+1) [4379] BC   -  - 612 10 Na   F3 V M3 V     
@@ -183,13 +183,13 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 1014 Mowebe               C748534-9 Ag Ni                       { 0 }  (841+2) [4575] BC   -  - 601 7  Na   K9 V M2 V     
 1016 Liiri                B54297A-C He Hi In Po                 { 4 }  (C8C+1) [6D4D] BEf  -  - 301 14 Li   M1 V M4 V     
 1018 Hessel               B658120-B Lo                          { 1 }  (401-1) [425F] B    N  - 801 12 Na   F4 V K4 V     
-1111 Zeen                 D653578-7 DroyW Ni Po                 { -3 } (843+3) [6235] B    S  - 801 7  Wild K6 V          
+1111 Zeen                 B653678-7 DroyW Ni Po                 { -1 } (853+3) [6235] B    S  - 801 7  Wild K6 V          
 1115 Pecena               D547000-A Di                          { -1 } (900+1) [0000] B    -  - 022 11 Wild M4 V          
 1116 Abydos               D435443-9 Ni                          { -2 } (932-2) [223A] B    S  - 910 14 Wild M5 V          
 1118 Karabeth             E663374-7 Lo                          { -3 } (620+2) [7129] B    -  - 502 14 Wild K9 V M3 V     
 1212 Prigojin             E100451-9 Ni Va                       { -2 } (932-3) [5269] B    -  - 603 7  Wild K4 V          
-1213 Inar                 A310778-E Na Pi                       { 2 }  (C69-3) [896E] BD   N  - 603 6  Wild M7 V          
-1216 Morninglori          D544000-7 Di                          { -3 } (700+2) [0000] B    -  - 013 12 Wild M2 V          
+1213 Inar                 A310778-C Na Pi                       { 2 }  (C69-3) [896E] BD   N  - 603 6  Wild M7 V          
+1216 Lori                 C544586-9 Ni Ag                       { 0 }  (741+2) [5457] B    -  - 313 12 Wild M2 V          
 1217 Clarissa             X536000-A Di                          { -1 } (B00+4) [0000] B    -  - 014 15 Wild M4 V          
 1218 Gaagir               X86A000-A Di Wa                       { -1 } (600+4) [0000] B    -  - 001 11 Wild K6 V K9 V     
 1220 Minde's Star         D435349-9 Lo Px                       { -2 } (920-3) [3136] B    S  - 803 9  Wild M4 V          
@@ -271,7 +271,7 @@ Hex  Name                 UWP       Remarks                     {Ix}   (Ex)    [
 0224 Adapam               E796434-7 Ni Pa                       { -3 } (630-1) [4148] Bc   -  - 722 7  Na   K8 V          
 0226 Wroclaw              C566772-7 Ag Ri                       { 1 }  (968-1) [8883] BC   -  A 723 12 Na   G8 V K2 V     
 0228 Rimkuku              D9A8887-8 Fl Ph                       { -2 } (G74-2) [7697] Be   S  - 324 15 Na   G1 V M3 V     
-0229 Aziziyah             E86A000-B Di Wa                       { -1 } (C00-2) [0000] B    -  - 024 9  Wild G3 V          
+0229 Aziziyah             C86A676-8 Ni Ri Wa                    { -1 } (C55+3) [6758] B    -  - 424 9  Wild G3 V          
 0327 Barbary              C57179B-5 He Pi                       { -1 } (966+2) [A658] BD   S  A 613 7  Na   F5 V M4 V     
 0328 Dunstan              C649220-8 Lo                          { -2 } (910+2) [1124] B    -  - 423 8  Na   G4 V          
 0330 Canisus              C431787-8 Na Po                       { -1 } (A65+1) [968B] B    S  - 401 10 Wild G4 V M9 V M2 V

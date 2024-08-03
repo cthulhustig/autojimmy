@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<Sector Tags="Official OTU" Abbreviation="Hint">
+<Sector Selected="true" Tags="Official OTU" Abbreviation="Hint">
   <Name>Hinterworlds</Name>
   <Credits>
 
@@ -8,11 +8,12 @@
              1984).
 
              It was refined by Rob Caswell and Karl Johnson and
-             appears in &lt;cite&gt;Challenge Magazine&lt;/cite&gt;.
+             appears in &lt;cite&gt;Challenge Magazine #39&lt;/cite&gt;.
 
     </Credits>
   <X>2</X>
   <Y>2</Y>
+  <Product Author="Rob Caswell and Karl Johnson" Title="Challenge #39 - Special Supplement: The Hinterworlds" Publisher="GDW" Ref="https://preview.drivethrurpg.com/en/product/87200/challenge-magazine-no-39" />
   <DataFile Author="Rob Caswell and Karl Johnson" Source="Traveller 5 Second Survey" Milieu="M1105" />
   <Subsectors>
     <Subsector Index="A">Adar</Subsector>

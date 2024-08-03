@@ -44,15 +44,15 @@
 Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z PBG W A  Stellar            
 ---- -------------------- --------- -------------------- ---- ---- ---- - -- - --- - -- -------------------
 0302 Angekhiirgasigag     A343366-A Lo Ni Po                            - -  - 602   Va A0 V               
-0305 Arsuthgvirr          D000379-A Lo Ni As                            - -  - 513   Va M5 D M5 V          
+0305 Arsuthgvirr          D000379-A Lo Ni As                            - -  - 513   Va M5 V D             
 0307 Maarsigudumuudu      B478200-C Lo Ni                               - -  - 102   Va K1 V               
 0310 Angerar              BA9A202-9 Lo Ni Wa                            - K  - 802   Va G4 V               
 0410 Kserre               C456374-5 Lo Ni                               - K  - 604   Va G6 V               
 0502 Magashi              E120000-0 Ba Lo Ni Po De                      - -  - 013   -- K1 V               
 0510 Fhoztsoagvong        C687677-7 C1 Ag Ni Tp                         - -  - 902   Va G6 V               
 0601 Oufudzersag          A100676-B Na Ni Va                            - -  - 302   Va M7 V               
-0603 Gaakershakaangu      E9867BF-1 Ag Tp                               - -  - 602   Va F3 V F2 D          
-0609 Oloil                A432574-D Ni Po                               - -  - 100   Va G9 V G8 D M3 V     
+0603 Gaakershakaangu      E9867BF-1 Ag Tp                               - -  - 602   Va F3 V D             
+0609 Oloil                A432574-D Ni Po                               - -  - 100   Va G9 V D M3 V        
 0610 Kenapii              B355556-B Ag Ni                               - K  - 700   Va K2 V M4 V          
 0710 U Muursa             C7A2622-6 Fl Ni                               - K  - 803   Va K5 V M8 V M2 V M1 V
 0801 Tressavuessfux       D63297A-5 Dw Na Hi Po Rs                      - C  - 300   Dr F1 V               
@@ -60,7 +60,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0806 U Igha               C583779-5                                     - -  - 100   Va M0 V               
 0808 Kisham               E646000-0 Ba Lo Ni Tp                         - -  - 014   -- G7 V M6 V          
 0810 Rigeliigali          D440541-7 Ni Po De                            - -  - 134   Va G9 V M9 V          
-0902 Shushir              C300300-8 Lo Ni Va                            - -  - 613   Va G8 V M9 V M5 D     
+0902 Shushir              C300300-8 Lo Ni Va                            - -  - 613   Va G8 V M9 V D        
 1001 Allas                B100974-F Na Hi In Va                         - K  - 702   Va M3 V               
 1004 Mim Narshaanzir      C596465-6 Ni                                  - -  - 224   Va G7 V               
 1006 Iishiliigurankar     B897442-6 Ni Tp                               - K  - 325   Va K5 V M8 V          
@@ -81,7 +81,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1606 Anushkudi            E7A3000-0 Fl Ba Lo Ni                         - -  - 000   -- M5 V               
 1608 Dekgadur             X764110-3 Lo Ni Tp St                         - -  - 404   Va G3 V               
 1609 Garikhanar           B656300-A C0 Lo Ni Tp                         - -  - 100   Va F9 V M5 V          
-1610 Odzgoin              B66557B-A C6 Ag Ni Tp                         - K  - 115   Va F4 V M7 V F9 D     
+1610 Odzgoin              B66557B-A C6 Ag Ni Tp                         - K  - 115   Va F4 V M7 V D        
 1701 Oa Oufuurrknu        D798874-5 C1 Tp                               - C  - 504   Va K2 V M1 V M3 V     
 1705 Pegegirirarshug      A351202-B Lo Ni Po                            - K  - 823   Va G5 V               
 1708 Muuzo                D1207A6-8 Na Po De                            - C  - 401   Va F2 V               
@@ -92,30 +92,30 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1901 Ki Ushuuguna         B967544-8 Ag Ni Tn                            - K  - 102   Va K1 V               
 1909 Keminkhuli           C435522-B Ni                                  - K  - 811   Va F2 V M7 V          
 1910 Idaelekoadheughz     C56697B-7 Hi                                  - -  - 100   Va A2 V G4 V          
-2002 Fhuul                D787876-1 Tp                                  - C  - 701   Va F1 V A4 D M1 V M3 V
+2002 Fhuul                D787876-1 Tp                                  - C  - 701   Va F1 V D M1 V M3 V   
 2010 Shiimimir            C647547-6 Ag Ni Tp                            - K  - 112   Va F3 V               
 2107 Mizukalash           B410766-8 Na                                  - K  - 134   Va K8 V               
 2202 Aas Khi              B8A4247-C Fl Lo Ni                            - K  - 501   Va M8 V               
 2206 Kuu Nelagii          B4509EG-D Hi Po De                            - K  - 523   Va G9 V               
-2208 Uedoa                BAC6474-8 C1 Fl Ni                            - K  - 200   VC M5 V M3 V          
+2208 Uedoa                BAC6474-8 C1 Fl Ni                            - K  - 200   VC M3 V M5 V          
 2209 Luugkoug             D510778-7 Na                                  - -  - 304   VC M6 V               
 2310 Matepma              A98998B-B Hi Tp                               - -  - 112   VC G2 V               
 2401 Irudirzukhed         B440555-A Ni Po De                            - -  - 300   Va K2 V               
 2408 Veti Egawi           C000210-8 Lo Ni As                            - K  - 214   VC F3 V K2 V          
 2502 Gariseki             C65A79C-8 Wa                                  - -  - 814   Va K2 V M6 V          
 2503 Guu Gagigerulesh     C657787-6 Ag Tp                               - C  - 313   Va G4 V K7 V          
-2505 E Itilafinu          B778367-B Lo Ni Tp                            - K  - 500   VC G9 V G8 D          
+2505 E Itilafinu          B778367-B Lo Ni Tp                            - K  - 500   VC G9 V D             
 2506 Angaidzvranoigae     CA81977-B Hi                                  - C  - 910   VC M6 V               
 2604 Itanucel             C998321-9 D1 Lo Ni Tp                         - K  - 112   VC K6 V M0 V          
 2605 Susu Thotra          B8A0859-8 De                                  - K  - 300   VC M5 V               
-2609 Theas                A565657-D Ag Ni Ri                            - K  - 600   VC K2 V K6 D          
+2609 Theas                A565657-D Ag Ni Ri                            - K  - 600   VC K2 V D             
 2610 Surend               C440586-A Ni Po De                            - C  - 701   VC F3 V               
 2704 Taang                C564677-4 Ag Ni                               - -  - 100   VC G9 V               
 2708 Luk Tzeung           B764878-8 Tp St                               - -  - 914   VC G9 V               
 2709 End Egikerlo         E567534-2 Ag Ni                               - C  - 523   VC G4 V K1 V          
 2801 Cererra              C534565-7 Ni                                  - -  - 100   Na K6 III             
-2802 Tanith Republic      A410343-B Lo Ni                               - -  - 801   Na M5 V M4 V M4 V     
-2804 Neredi               B753524-A C4 Ni Po Tp                         - -  - 423   VC K6 V A2 D          
+2802 Tanith Republic      A410343-B Lo Ni                               - -  - 801   Na M4 V M5 V M4 V     
+2804 Neredi               B753524-A C4 Ni Po Tp                         - -  - 423   VC K6 V D             
 2806 Deferrane            A579787-8                                     - -  - 702   VC G6 V M1 V          
 2809 Rolu Rigayite        C664696-8 D1 Ag Ni Ri Tp                      - -  - 613   VC K8 V M0 V          
 2810 Etsigemnerrgua       EA77879-6                                     - C  - 524   VC G0 V M4 V          
@@ -129,7 +129,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3008 Hegadetid            C20047A-A Ni Va                               - -  - 200   VC M5 II M5 V         
 3105 Oerlkeghaksgvai      A000573-E Ni As                               - K  - 702   Va K0 V M2 V          
 3107 Ulksongorghu         B401463-B Ni Va Ic                            - K  - 800   Va K1 V               
-3202 Capstan              C759137-A Lo Ni Tp                            - -  - 610   Na G4 V A0 D          
+3202 Capstan              C759137-A Lo Ni Tp                            - -  - 610   Na G4 V D             
 3203 Bessel               B566776-A Ag Ri                               - -  - 313   Na K5 V               
 3206 Shusagugii           A573750-D C3                                  - K  - 302   Va K0 V M6 V          
 3209 I Shar               E463127-7 Lo Ni                               - -  - 321   Va A1 V               
@@ -149,16 +149,16 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1011 Diga Uugkamakhi      C450312-8 Lo Ni Po De                         - -  - 302   Va K1 V               
 1017 Arure                X200457-7 Ni Va                               - -  - 103   Va M1 V M7 V          
 1020 Giguursambelar       E400745-7 Na Va                               - -  - 113   Va M2 V M8 V          
-1113 Khu A Ki Iish        B130440-9 Ni Po De                            - K  - 514   Va K3 V K4 D          
+1113 Khu A Ki Iish        B130440-9 Ni Po De                            - K  - 514   Va K3 V D             
 1119 Ibisdiisadar         B677422-6 Ni Tp                               - K  - 102   Va G9 V M1 V          
 1120 Gakkimanin           A663338-A Lo Ni Tp                            - -  - 101   Va K6 V               
 1211 Gishzaasush          B446757-9 Ag                                  - -  - 800   Va M0 V               
 1319 Kurusukiguluum       B784987-C Hi Tp St                            - -  - 914   Va F1 V               
-1320 Akamlagepmishi       D989499-6 Ni Tp                               - K  - 714   Va K9 V K4 V          
+1320 Akamlagepmishi       D989499-6 Ni Tp                               - K  - 714   Va K4 V K9 V          
 1412 Agurkurduda          D465669-5 Ag Ni Ri                            - C  - 100   Va K7 V               
 1511 Uu Efhenmmadh        E465577-4 Ag Ni                               - -  - 402   Va G4 V               
-1517 Ruguulagesh          A454865-8                                     - K  - 924   Va K0 V K0 D          
-1520 Akhiishbe            D350526-5 Ni Po De                            - K  - 700   Va K4 V A4 D          
+1517 Ruguulagesh          A454865-8                                     - K  - 924   Va K0 V D             
+1520 Akhiishbe            D350526-5 Ni Po De                            - K  - 700   Va K4 V D             
 1611 Uugekir              E697000-0 Ba Lo Ni Tp                         - -  - 000   -- M0 V               
 1613 Khikanru             D7C5489-8 Fl Ni                               - C  - 703   Va M0 V               
 1618 Uth Orthmoing        C100974-D Na Hi In Va                         - C  - 200   Va K3 V M2 V          
@@ -173,28 +173,28 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1912 Sus Erladgegiida     E534000-0 Ba Lo Ni                            - -  - 000   -- G9 V M2 V K2 V     
 1913 Zerrton              C6A297A-A Fl Hi                               - CK - 803   Va K7 V M8 V          
 1914 Liirigkhupeshu       E685422-3 Ni Tp                               - C  - 502   Va K2 V M4 V          
-1915 Shuganikaka          E575000-0 Ba Lo Ni                            - -  - 010   -- G6 V G8 D          
+1915 Shuganikaka          E575000-0 Ba Lo Ni                            - -  - 010   -- G6 V D             
 1916 Argalerga            B766879-A D3 Ri Tn                            - K  - 523   Va F0 V               
 2016 Isuruga              X9C9000-0 Fl Ba Lo Ni                         - -  - 003   -- M5 III M8 V        
 2019 Ghurrilengofur       C635579-7 Ni                                  - -  - 103   VC K9 V               
 2020 Ethoto               E897794-5 Ag Tp                               - C  - 100   VC K7 V M5 V          
 2111 Thellawrr            C961576-9 Ni                                  - -  - 803   Va M1 V               
-2113 Nalanka              X510747-0 Na                                  - C  - 512   Va K7 V F9 D          
-2114 Milar                A334413-D Ni                                  - C  - 500   Va M0 V G6 D          
+2113 Nalanka              X510747-0 Na                                  - C  - 512   Va K7 V D             
+2114 Milar                A334413-D Ni                                  - C  - 500   Va M0 V D             
 2115 Diikeme              B736254-8 C1 Lo Ni                            - C  - 323   Va K6 V               
 2119 Va Usotheg           D8C6555-6 Fl Ni                               - K  - 613   VC G2 IV              
 2313 Oizeurrgeeng         D679477-3 Ni Tp                               - C  - 623   VC K1 V M8 V          
-2315 Atirxitisof          B343104-B C9 Lo Ni Po                         - K  - 501   VC K6 V K5 V          
+2315 Atirxitisof          B343104-B C9 Lo Ni Po                         - K  - 501   VC K5 V K6 V          
 2317 Fuvedut Se           B4147A9-B Ic                                  - -  - 514   VC G5 V               
 2318 Esetranniftho        E1307BE-5 Na Po De                            - C  - 200   VC F7 V K8 V          
-2319 Oag Khang            C41077B-A Na                                  - C  - 301   VC M8 V M3 V          
+2319 Oag Khang            C41077B-A Na                                  - C  - 301   VC M3 V M8 V          
 2320 Fisape Aso           B453353-8 D1 Lo Ni Po                         - K  - 123   VC A1 V               
 2414 Pioypeutse           A4281X1-A Dw Lo Ni Rs                         - -  - 324   VC F6 V M9 V          
 2416 Uunbuzu              B989388-8 Lo Ni Tp                            - C  - 212   Va K8 V               
 2512 Dhuuth               E544775-6 C9 Ag                               - -  - 511   VC K4 V               
 2514 Fou Uakhiktrol       C786679-8 Ag Ni Tp                            - C  - 424   VC A3 V               
 2516 Goyerehponu          D676452-5 Ni Tp                               - K  - 714   VC F7 V               
-2520 Uerrmmeruul          E210975-5 Na Hi In                            - -  - 825   VC G9 V M8 D          
+2520 Uerrmmeruul          E210975-5 Na Hi In                            - -  - 825   VC G9 V D             
 2611 Ya Xidalepo          B999464-A Ni Tp                               - K  - 200   VC K6 V M8 V          
 2612 Onurrorrg            C5A1676-9 Fl Ni                               - K  - 324   VC K6 V               
 2613 Heyi Ri I            B300311-9 Lo Ni Va                            - -  - 305   VC F9 V               
@@ -206,14 +206,14 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2712 Cidemi               C686521-5 Ag Ni Tp                            - C  - 624   VC A1 V               
 2713 Nanetese             B452443-9 Ni Po                               - K  - 801   VC K7 V               
 2715 Athorehetoner        D353300-7 Lo Ni Po                            - C  - 112   VC K1 V               
-2719 Aforuko              B434521-9 Ni                                  - K  - 401   VC G1 V G2 D          
+2719 Aforuko              B434521-9 Ni                                  - K  - 401   VC G1 V D             
 2720 Nilitelale           XA72522-4 Ni                                  - C  - 224   VC G0 V M4 V          
 2813 Ighurr               EA88278-4 Lo Ni                               - C  - 600   VC K4 V               
 2815 Oukhsvuel            A221778-E Na Po                               - -  - 322   VC K9 V               
 2819 Mnoervrge            D766978-7 Hi Tn                               - C  - 634   VC F3 V M3 V          
 2911 Rusathcezay          B68A343-8 Lo Ni Wa                            - -  - 700   VC G4 V M7 V          
 2913 Otzagzoulana         C511A74-C Na Hi In Ic                         - -  - 510   VC K6 V M3 V          
-2914 Meathitales          C568633-8 Ag Ni                               - -  - 800   VC G5 V A4 D          
+2914 Meathitales          C568633-8 Ag Ni                               - -  - 800   VC G5 V D             
 2919 Etideaf              C357213-8 Lo Ni                               - -  - 700   VC G5 V M9 V          
 2920 Thonttanufirent      E648755-7 Ag Tp                               - C  - 202   VC K3 V               
 3013 Earod                C5276BC-8 C9 Ni Rs                            - K  - 423   VC K8 V M0 V M2 V     
@@ -225,15 +225,15 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3119 Ceaseata             D421688-7 Na Ni Po                            - C  - 502   VC G5 V M9 V          
 3213 Etoyed               C45379A-6 Po                                  - -  - 703   VC G8 V M0 V          
 3214 De De I              B8A6253-D Fl Lo Ni                            - -  - 501   VC M2 V               
-3219 Fagzllawghuuth       C77A974-7 Hi In Wa                            - K  - 723   VC K7 V K0 V          
+3219 Fagzllawghuuth       C77A974-7 Hi In Wa                            - K  - 723   VC K0 V K7 V          
 0126 Ueghzmadh            C7A377B-7 Fl                                  - C  - 100   Va M6 V               
 0130 Ka Dudiguulaa        B597567-A Ag Ni                               - -  - 100   Va F3 V               
 0225 Gaanakar             C698210-5 Lo Ni Tp                            - -  - 722   Va K5 V               
 0229 Foinriraw            C462300-7 Lo Ni                               - -  - 600   Va G6 V               
 0424 Uguerz               C665875-4 Tp                                  - K  - 700   Va K1 V               
-0425 Shaban               C110545-9 Ni                                  - K  - 401   Va M2 V M1 V          
+0425 Shaban               C110545-9 Ni                                  - K  - 401   Va M1 V M2 V          
 0427 Adasekaagi           A655347-A C4 Lo Ni Tp                         - K  - 400   Va K9 V               
-0529 I Lashaagir          C338004-B Lo Ni                               - -  - 102   Va F7 V M8 D          
+0529 I Lashaagir          C338004-B Lo Ni                               - -  - 102   Va F7 V D             
 0530 Uan Fhoghzigzufa     A549478-B Ni                                  - C  - 400   Va K3 V               
 0624 Mmatskfagrnurr       C511A7A-8 Na Hi In Ic                         - K  - 700   Va K0 V M3 V          
 0626 Lamushkaaruudara     A330363-E Lo Ni Po De                         - -  - 223   Va A0 V               
@@ -241,10 +241,10 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0726 Gazap                B000562-E Ni As                               - -  - 903   Va K6 V               
 0729 Shiibamnu            B894022-8 Lo Ni Tp                            - C  - 701   Va G8 V               
 0730 Arilaanabuba         C695001-6 Lo Ni Tp                            - C  - 600   Va M0 V               
-0821 Ka Ashishile         B000441-D Ni As                               - -  - 104   Va M0 II K9 D         
-0823 Diikuu               C300565-7 Ni Va                               - K  - 912   Va M7 V G9 D          
+0821 Ka Ashishile         B000441-D Ni As                               - -  - 104   Va M0 II K9 V         
+0823 Diikuu               C300565-7 Ni Va                               - K  - 912   Va M7 V D             
 0825 Ernii                EA8A620-8 Ni Wa                               - C  - 223   Va K7 V               
-0826 Khushesminad         B627542-7 C9 Ni                               - K  - 400   Va K2 V F6 D          
+0826 Khushesminad         B627542-7 C9 Ni                               - K  - 400   Va K2 V D             
 0827 Faekgrunggueks       C623376-7 Lo Ni Po                            - K  - 703   Va K2 V               
 0828 Li Rar               A32866A-9 Ni                                  - K  - 611   Va K3 V M6 V          
 0921 Aginsubam            C455842-6                                     - C  - 405   Va K7 V               
@@ -279,9 +279,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1724 Nishuudisugirmi      C998596-7 Ag Ni Tp                            - -  - 811   Va K6 V               
 1726 Fawdhlleezlaik       B78977B-B                                     - -  - 100   Va F6 V               
 1727 Kukilu               B443589-9 Ni Po                               - C  - 824   Va G5 V               
-1730 Khuggu               A202788-C Na Va Ic                            - -  - 204   Va F4 V G8 D          
+1730 Khuggu               A202788-C Na Va Ic                            - -  - 204   Va F4 V D             
 1821 Zushu                A2008DD-A C9 Na Va                            - K  - 723   Va K0 V M9 V          
-1824 Saggurpemamka        A969563-D Ni Tp                               - C  - 822   Va K7 V G4 D          
+1824 Saggurpemamka        A969563-D Ni Tp                               - C  - 822   Va K7 V D             
 1825 E Ikikhikaki         E120356-8 Lo Ni Po De                         - -  - 101   Va F2 V               
 1827 Gan Diirgisha        C959343-5 Lo Ni Tp                            - C  - 414   Va G2 V               
 1828 Menmushuku           C1207CA-9 Na Po De                            - -  - 424   Va G6 V               
@@ -290,8 +290,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2022 Tidonefhe            B635304-8 C9 Lo Ni                            - K  - 200   VC M0 V M1 V          
 2024 Nonenorom            A674687-A Ag Ni Tp                            - -  - 303   VC A4 V K7 V G5 V     
 2029 Shashagamezurlan     B8C56A6-9 Fl Ni                               - -  - 301   Va M2 V               
-2030 Idirkamirkushin      B759356-8 C9 Lo Ni Tp                         - K  - 803   Va K5 V A2 D          
-2121 Ofesevopar           A9C6497-B Fl Ni                               - K  - 722   VC K5 V K4 V          
+2030 Idirkamirkushin      B759356-8 C9 Lo Ni Tp                         - K  - 803   Va K5 V D             
+2121 Ofesevopar           A9C6497-B Fl Ni                               - K  - 722   VC K4 V K5 V          
 2122 Onsukethyo           B534896-6                                     - -  - 700   VC G9 V M5 V M8 V     
 2124 Tidethmintsi         D753265-2 Lo Ni Po Tp                         - -  - 811   VC G7 V               
 2125 Dakhuguu             B687001-C Lo Ni                               - -  - 800   Va M5 V M8 V          
@@ -300,9 +300,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2129 Iriirgidiimla        C444340-9 Lo Ni                               - K  - 123   Va F8 V               
 2222 Ecunan               C787555-A Ag Ni Tp                            - C  - 220   VC K5 V               
 2223 Sotaramagu           A5517CA-9 Po                                  - K  - 400   VC K0 V               
-2225 Amgurnelenkap        B682211-B Lo Ni                               - K  - 723   Va K7 V M4 V A5 D     
-2226 Enar Khukmuu         B72968A-A Ni                                  - -  - 713   Va K6 V K2 V          
-2227 Iidershaam           C779574-7 Ni Tp                               - -  - 810   Va G7 V G3 D          
+2225 Amgurnelenkap        B682211-B Lo Ni                               - K  - 723   Va K7 V M4 V D        
+2226 Enar Khukmuu         B72968A-A Ni                                  - -  - 713   Va K2 V K6 V          
+2227 Iidershaam           C779574-7 Ni Tp                               - -  - 810   Va G7 V D             
 2228 Adishaa              E120459-9 Ni Po De                            - C  - 814   Va F6 V               
 2230 Disikhe              A22678A-D                                     - K  - 224   Va A5 V G7 V          
 2321 Rotoftesatxuda       X744652-2 Ag Ni Tp                            - C  - 801   VC G9 V               
@@ -325,7 +325,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2723 En Rahin             D97A69C-7 Ni Wa                               - C  - 402   VC F8 V               
 2824 Otxo                 C325330-7 Lo Ni                               - -  - 320   VC K6 V               
 2827 Uminanumakum         E7A7000-0 Fl Ba Lo Ni                         - -  - 004   -- K4 V               
-2921 Enmuy                A50258B-D Ni Va Ic                            - -  - 900   VC M8 V M3 V          
+2921 Enmuy                A50258B-D Ni Va Ic                            - -  - 900   VC M3 V M8 V          
 2924 Doli                 C7B0332-A Lo Ni De                            - -  - 700   VC M0 V               
 2927 Knourthog            X87A87A-4 Wa                                  - C  - 501   Va K1 V M3 V          
 2928 Khimgakgumdiker      C765ABB-8 Hi Tn St                            - -  - 413   Va K7 V M9 V          
@@ -342,18 +342,18 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3221 Makhoghi             C767674-6 Ag Ni Tn                            - K  - 904   VC G6 V K8 V K1 V     
 3222 Tematnasnaycea       B335758-8 C1                                  - -  - 700   VC K9 V M4 V          
 3223 Ososin               C767432-8 Ni Tn                               - K  - 800   VC G5 V               
-3224 Genosu               D88A320-5 Lo Ni Wa                            - K  - 815   VC A2 V A5 D          
+3224 Genosu               D88A320-5 Lo Ni Wa                            - K  - 815   VC A2 V D             
 3227 Mamiish              A221522-C Ni Po                               - K  - 724   Va A2 V G9 V          
-3228 Gvgruakunorthez      C323875-9 Na Po                               - K  - 200   Va K9 V M1 D          
+3228 Gvgruakunorthez      C323875-9 Na Po                               - K  - 200   Va K9 V D             
 3230 Omga Dzirfanfe       D845974-4 Hi In Tp                            - -  - 514   Va F5 V M7 V          
-0131 Khiszuza             C430110-7 Lo Ni Po De                         - -  - 802   Va F8 V G6 D          
+0131 Khiszuza             C430110-7 Lo Ni Po De                         - -  - 802   Va F8 V D             
 0134 Ga Kamshinina        C676510-5 Ag Ni Tp                            - -  - 104   J- F6 V               
 0140 Ikushdashiimaka      C3526AF-6 Ni Po                               - -  - 303   J- K8 V               
 0231 Kaluunugindirlii     X742556-4 Ni Po                               - C  - 701   Va K1 V               
 0235 Grekroinokhoiz       BAE4776-9 Fl                                  - -  - 802   J- K5 V               
 0237 Uen Oirr             B554477-8 Ni                                  - -  - 702   J- K4 V M1 V          
-0331 Midbeshad            A120353-G Lo Ni Po De                         - K  - 823   Va A3 IV F4 D         
-0339 Sorzvinotheza        B200543-A Ni Va                               - -  - 500   Ef M6 V M0 V          
+0331 Midbeshad            A120353-G Lo Ni Po De                         - K  - 823   Va A3 IV F4 V         
+0339 Sorzvinotheza        B200543-A Ni Va                               - -  - 500   Ef M0 V M6 V          
 0433 Mikudimarshigur      C230755-7 Na Po De                            - K  - 401   Va K1 V               
 0437 Igdzeng              B642110-7 Lo Ni Po                            - -  - 703   Ef G7 V               
 0438 Egro Khusa           C5868CH-8                                     - C  - 812   Ef G1 V               
@@ -366,9 +366,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0734 Lenmueduengok        B569410-8 Ni                                  - C  - 715   Ef G1 V K0 V          
 0736 Uzaeroka             C644530-9 Ag Ni Tp                            - K  - 200   Ef M0 V M2 V          
 0738 Foin Lous            B645320-B Lo Ni Tp                            - -  - 702   Ef K9 V M0 V          
-0739 Sokugzaghzodull      C7B4243-7 Fl Lo Ni                            - -  - 522   Ef K9 V F3 D          
+0739 Sokugzaghzodull      C7B4243-7 Fl Lo Ni                            - -  - 522   Ef K9 V D             
 0833 Allirzughoith        E443457-5 Ni Po                               - -  - 200   Ef K7 V M6 V          
-0835 Eggheng              B555597-B C6 Ag Ni Rs                         - -  - 501   Ef G4 V K7 D          
+0835 Eggheng              B555597-B C6 Ag Ni Rs                         - -  - 501   Ef G4 V D             
 0839 Llotree              A210AA7-G Na Hi In                            - C  - 502   Ef M3 V               
 0931 Umarlesa             C464000-8 Lo Ni                               - -  - 802   Va K3 V               
 0932 Embadesashi          B999300-C D4 Lo Ni Tp                         - K  - 302   Va F2 V               
@@ -382,7 +382,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1132 Goergvgruul          A342978-A Hi In Po                            - -  - 625   Va F1 V               
 1134 Fhuudhaa             B547413-7 Ni                                  - -  - 502   Ef K4 V               
 1137 Oroun                B444872-6                                     - -  - 403   J- K3 V               
-1139 Kfi Emollra          E465402-7 Ni                                  - C  - 124   Ef F3 V K8 D          
+1139 Kfi Emollra          E465402-7 Ni                                  - C  - 124   Ef F3 V D             
 1140 Le Awzonllaa         D221369-4 Lo Ni Po                            - -  - 110   Ef F6 V M8 V          
 1231 Adlirgiimadadzi      E6689DD-4 Hi Tp                               - C  - 604   Va M0 V               
 1233 Giilakhishegula      B787554-C Ag Ni Tp                            - -  - 433   Va G2 V               
@@ -410,7 +410,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1733 Muushkikhu           D5886B9-2 Ag Ni                               - C  - 301   Va G5 V               
 1832 Khurmikurulir        B5769AD-A Hi In                               - -  - 813   Va M0 V               
 1833 Kigkishasha          E410000-0 Ba Lo Ni                            - -  - 001   -- M8 V               
-1834 Ad Ked Dulish        C410487-B Ni                                  - -  - 620   Va M5 V F8 D          
+1834 Ad Ked Dulish        C410487-B Ni                                  - -  - 620   Va M5 V D             
 1835 Kaa Ushkamarikii     B646222-9 Lo Ni Tp                            - -  - 222   Va K4 V               
 1931 Arsiruruugumem       A767025-8 Lo Ni                               - -  - 904   Va F1 V               
 1936 Kidikhiishum         C223997-B Na Hi In Po                         - -  - 503   Va G2 V K6 V          
@@ -423,21 +423,21 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2131 Vraavruk             E330576-6 Ni Po De                            - -  - 700   Va M0 V M8 V          
 2132 Ar Luugirir          D8A3598-4 C0 Fl Ni                            - -  - 803   Va M0 V M2 V          
 2133 Dhuanknogorzking     CAA5157-9 Fl Lo Ni                            - K  - 300   Va A9 V               
-2134 Outronga             A995877-C C8 Tp                               - K  - 133   Va F9 V F2 V          
-2135 Ga Dush              C68AAEF-D Hi Wa                               - -  - 400   Va K7 V M3 D          
+2134 Outronga             A995877-C C8 Tp                               - K  - 133   Va F2 V F9 V          
+2135 Ga Dush              C68AAEF-D Hi Wa                               - -  - 400   Va K7 V D             
 2136 Gera Lukimir         A400447-D Ni Va                               - K  - 200   Va M5 V M7 V          
 2139 Gisuushukhur         A6A0100-D Lo Ni De                            - K  - 924   Va K2 V               
 2232 Kirurminurima        B8B8444-A Fl Ni                               - C  - 103   Va M0 V M7 V          
-2233 Kii Igan             B889224-C Lo Ni Tp                            - -  - 803   Va K6 V G4 D          
+2233 Kii Igan             B889224-C Lo Ni Tp                            - -  - 803   Va K6 V D             
 2235 Makisha              C434000-9 Lo Ni                               - -  - 702   Va F2 V M5 V          
-2237 Ru Mikisikimme       E856598-4 Ni                                  - -  - 903   Va M7 V M4 V          
+2237 Ru Mikisikimme       E856598-4 Ni                                  - -  - 903   Va M4 V M7 V          
 2239 Inbugaashag          B585233-6 Lo Ni                               - -  - 303   Va M0 V M8 V          
 2240 Ku Sharmashasha      E776559-5 Ag Ni Tn                            - C  - 513   Va F8 V M2 V          
 2331 Gam Nishi            E593000-0 Ba Lo Ni                            - -  - 000   -- K2 V               
-2332 Shir Kish            BAA5201-9 Fl Lo Ni                            - K  - 323   Va G6 V M9 D          
+2332 Shir Kish            BAA5201-9 Fl Lo Ni                            - K  - 323   Va G6 V D             
 2433 Akudaa               B793485-8 Ni                                  - -  - 600   Va M3 V               
 2435 Irkiirkir            A130676-A Na Ni Po De                         - -  - 520   Va A1 V               
-2438 Irenanikhu           E200201-7 Lo Ni Va                            - -  - 904   Va M2 V K4 D          
+2438 Irenanikhu           E200201-7 Lo Ni Va                            - -  - 904   Va M2 V D             
 2439 De Kiidilumadu       C746899-3 Tp                                  - -  - 602   Va M0 V M7 V M9 V     
 2531 Iishekemgii          D2328B8-8 Na Po                               - C  - 500   Va F1 V               
 2533 Arkumi               D748620-5 Ag Ni Tp                            - C  - 903   Va K4 V M9 V          
@@ -453,8 +453,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2836 Zirigunsii           A545312-9 Lo Ni                               - -  - 203   Va G7 V               
 2840 Indurshuugirsa       E573883-4                                     - C  - 303   Va K7 V               
 2931 Ushuzugur            D593633-6 Ni                                  - C  - 801   Va K4 V M2 V          
-2933 Ekak Aagidbunup      B553446-A Ni Po                               - -  - 702   Va K0 V K6 D          
-2934 Uu Khuurka           C313300-8 Lo Ni Ic                            - -  - 801   Va K0 V A1 D          
+2933 Ekak Aagidbunup      B553446-A Ni Po                               - -  - 702   Va K0 V D             
+2934 Uu Khuurka           C313300-8 Lo Ni Ic                            - -  - 801   Va K0 V D             
 2935 Nedbushe             C476869-7                                     - C  - 901   Va K5 V               
 2939 Akuumagadgim         E565586-5 Ag Ni                               - -  - 422   Va G9 V M1 V          
 3037 Enilankakigam        E765256-3 Lo Ni Tn St                         - C  - 104   Va G8 V               
