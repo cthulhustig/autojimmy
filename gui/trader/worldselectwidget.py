@@ -4,7 +4,6 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: Need to fix tab order, combo box is currently after icons
 class WorldSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showWorld = QtCore.pyqtSignal(traveller.World)
@@ -64,6 +63,13 @@ class WorldSelectWidget(QtWidgets.QWidget):
         layout.addWidget(self._showInfoButton)
 
         self.setLayout(layout)
+
+        # I'm not sure why I need to explicitly set tab order here but I don't
+        # elsewhere. If it's not done then the default tab order has the buttons
+        # before the combo box
+        QtWidgets.QWidget.setTabOrder(self._worldComboBox, self._mapSelectButton)
+        QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showWorldButton)
+        QtWidgets.QWidget.setTabOrder(self._showWorldButton, self._showInfoButton)
 
     def world(self) -> typing.Optional[traveller.World]:
         return self._worldComboBox.currentWorld()
