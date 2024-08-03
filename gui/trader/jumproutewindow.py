@@ -221,28 +221,31 @@ class _RefuellingPlanTable(gui.WorldTable):
 
 class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
+    showWorldRequested = QtCore.pyqtSignal(traveller.World)
 
     _StateVersion = '_StartFinishWorldsSelectWidget_v1'
 
     def __init__(self):
         super().__init__()
 
-        self._startWorldWidget = gui.WorldSelectWidget(
-            labelText='Start',
-            noSelectionText='Select a start world to continue')
+        self._startWorldWidget = gui.WorldSelectWidget(text=None)
+        self._startWorldWidget.enableShowWorldButton(True)
+        self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._startWorldWidget.showWorld.connect(self._showStartWorldClicked)
 
-        self._finishWorldWidget = gui.WorldSelectWidget(
-            labelText='Finish',
-            noSelectionText='Select a finish world to continue')
+        self._finishWorldWidget = gui.WorldSelectWidget(text=None)
+        self._finishWorldWidget.enableShowWorldButton(True)
+        self._finishWorldWidget.enableShowInfoButton(True)
         self._finishWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._finishWorldWidget.showWorld.connect(self._showFinishWorldClicked)
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._startWorldWidget)
-        layout.addWidget(self._finishWorldWidget)
+        widgetLayout = gui.FormLayoutEx()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addRow('Start World:', self._startWorldWidget)
+        widgetLayout.addRow('Finish World:', self._finishWorldWidget)
 
-        self.setLayout(layout)
+        self.setLayout(widgetLayout)
 
     def startWorld(self) -> typing.Optional[traveller.World]:
         return self._startWorldWidget.world()
@@ -335,6 +338,18 @@ class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
                 return False
 
         return True
+
+    def _handleShowWorld(self, world: traveller.World) -> None:
+        if world:
+            self.showWorldRequested.emit(world)
+
+    def _showStartWorldClicked(self) -> None:
+        self._handleShowWorld(
+            world=self._startWorldWidget.world())
+
+    def _showFinishWorldClicked(self) -> None:
+        self._handleShowWorld(
+            world=self._finishWorldWidget.world())
 
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
@@ -618,6 +633,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _setupJumpWorldsControls(self) -> None:
         self._startFinishWorldsWidget = _StartFinishWorldsSelectWidget()
         self._startFinishWorldsWidget.selectionChanged.connect(self._startFinishWorldsChanged)
+        self._startFinishWorldsWidget.showWorldRequested.connect(self._showWorldInTravellerMap)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._startFinishWorldsWidget)

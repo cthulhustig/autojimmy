@@ -202,6 +202,13 @@ class WorldManager(object):
 
         return None
 
+    def worldByAbsolutePosition(
+            self,
+            absoluteX: int,
+            absoluteY: int
+            ) -> typing.Optional[traveller.World]:
+        return self._absoluteWorldMap.get((absoluteX, absoluteY))
+
     def worldsInArea(
             self,
             centerX: int,

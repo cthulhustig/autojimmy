@@ -30,19 +30,6 @@ def _overlayHighlightColour() -> str:
     colour.setAlpha(_OverlayHighlightAlpha)
     return gui.colourToString(colour)
 
-def _createOnOffIcon(source: QtGui.QIcon) -> QtGui.QIcon:
-    icon = QtGui.QIcon()
-    for availableSize in source.availableSizes():
-        icon.addPixmap(
-            source.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
-            QtGui.QIcon.Mode.Normal,
-            QtGui.QIcon.State.On)
-        icon.addPixmap(
-            source.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
-            QtGui.QIcon.Mode.Normal,
-            QtGui.QIcon.State.Off)
-    return icon
-
 # Force a min font size of 10pt. That was the default before I added font
 # scaling and the change to a user not using scaling is quite jarring
 def _setMinFontSize(widget: QtWidgets.QWidget):
@@ -110,7 +97,7 @@ class _MapOptionToggleAction(QtWidgets.QAction):
             option=self._option,
             enabled=self.isChecked())
 
-class _SearchComboBox(gui.WorldSearchComboBox):
+class _SearchComboBox(gui.WorldSelectComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -133,18 +120,20 @@ class _SearchComboBox(gui.WorldSearchComboBox):
             textColour=_overlayTextColour(),
             bkColour=_overlayBkColour())
 
-class _IconButton(QtWidgets.QPushButton):
+class _CustomIconButton(gui.IconButton):
     def __init__(
             self,
             icon: QtGui.QIcon,
             size: QtCore.QSize,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
-        super().__init__(parent)
+        super().__init__(icon=icon, parent=parent)
 
-        self.setIcon(icon)
+        interfaceScaling = app.Config.instance().interfaceScale()
+        spacing = int(6 * interfaceScaling)
+
         self.setFixedSize(size)
-        self.setIconSize(QtCore.QSize(size.width() - 6, size.height() - 6))
+        self.setIconSize(QtCore.QSize(size.width() - spacing, size.height() - spacing))
 
         self.setStyleSheet(
             'border: {borderWidth}px solid {borderColour}; background-color:{bkColour}'.format(
@@ -827,15 +816,15 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchWidget.editTextChanged.connect(self._searchWorldTextEdited)
         self._searchWidget.worldChanged.connect(self._searchWorldSelected)
 
-        self._searchButton = _IconButton(
+        self._searchButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
             size=buttonSize,
             parent=self)
         self._searchButton.installEventFilter(self)
         self._searchButton.clicked.connect(self._searchButtonClicked)
 
-        self._infoButton = _IconButton(
-            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Info)),
+        self._infoButton = _CustomIconButton(
+            icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Info)),
             size=buttonSize,
             parent=self)
         self._infoButton.setCheckable(True)
@@ -847,14 +836,14 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._infoWidget.setFixedWidth(300)
         self._infoWidget.hide()
 
-        self._reloadButton = _IconButton(
+        self._reloadButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Reload),
             size=buttonSize,
             parent=self)
         self._reloadButton.clicked.connect(self.reload)
 
-        self._legendButton = _IconButton(
-            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
+        self._legendButton = _CustomIconButton(
+            icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Key)),
             size=buttonSize,
             parent=self)
         self._legendButton.setCheckable(True)
@@ -864,8 +853,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._legendWidget = _LegendWidget(self)
         self._legendWidget.hide()
 
-        self._configButton = _IconButton(
-            icon=_createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Settings)),
+        self._configButton = _CustomIconButton(
+            icon=gui.createOnOffIcon(source=gui.loadIcon(id=gui.Icon.Settings)),
             size=buttonSize,
             parent=self)
         self._configButton.setCheckable(True)
@@ -927,7 +916,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._selectedWorlds.append(world)
 
         with gui.SignalBlocker(widget=self._searchWidget):
-            self._searchWidget.setSelectedWorld(world=world)
+            self._searchWidget.setCurrentWorld(world=world)
 
         self.highlightWorld(world=world)
 
@@ -1356,7 +1345,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 setInfoWorld=False) # Updating info world has already been handled
 
     def _searchButtonClicked(self) -> None:
-        world = self._searchWidget.selectedWorld()
+        world = self._searchWidget.currentWorld()
         if not world:
             worlds = traveller.WorldManager.instance().searchForWorlds(
                 searchString=self._searchWidget.currentText())

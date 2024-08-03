@@ -24,6 +24,7 @@ class Icon(enum.Enum):
     Settings = 'settings.svg'
     Reload = 'reload.svg'
     Key = 'key.svg'
+    Map = 'map.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override
@@ -121,4 +122,17 @@ def loadIcon(id: Icon) -> QtGui.QIcon:
             svgPath=iconPath,
             colour=_IconColourMap.get(id))
         _IconMap[iconPath] = icon
+    return icon
+
+def createOnOffIcon(source: QtGui.QIcon) -> QtGui.QIcon:
+    icon = QtGui.QIcon()
+    for availableSize in source.availableSizes():
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Normal),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.On)
+        icon.addPixmap(
+            source.pixmap(availableSize, QtGui.QIcon.Mode.Disabled),
+            QtGui.QIcon.Mode.Normal,
+            QtGui.QIcon.State.Off)
     return icon

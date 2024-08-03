@@ -39,9 +39,12 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._resultsSplitter.addWidget(self._cargoGroupBox)
         self._resultsSplitter.addWidget(self._diceRollGroupBox)
 
+        self._horizontalSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self._horizontalSplitter.addWidget(gui.LayoutWrapperWidget(layout=leftLayout))
+        self._horizontalSplitter.addWidget(self._resultsSplitter)
+
         windowLayout = QtWidgets.QHBoxLayout()
-        windowLayout.addLayout(leftLayout, 0)
-        windowLayout.addWidget(self._resultsSplitter, 1)
+        windowLayout.addWidget(self._horizontalSplitter)
 
         self.setLayout(windowLayout)
 
@@ -51,6 +54,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
     def _setupWorldSelectControls(self) -> None:
         self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget.enableMapSelectButton(True)
+        self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
 
         layout = QtWidgets.QVBoxLayout()
@@ -261,6 +266,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         if storedValue:
             self._resultsSplitter.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='HorizontalSplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._horizontalSplitter.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
@@ -278,15 +290,13 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
         self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
         self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
+        self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
 
         self._settings.endGroup()
 
         super().saveSettings()
 
     def _purchaseWorldChanged(self) -> None:
-        self._cargoTable.removeAllRows()
-        self._diceRollTable.removeAllRows()
-
         disable = not self._purchaseWorldWidget.hasSelection()
         self._configurationGroupBox.setDisabled(disable)
         self._cargoGroupBox.setDisabled(disable)

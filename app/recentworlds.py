@@ -10,6 +10,22 @@ class RecentWorlds(object):
     _SearchFileName = 'recentworlds.ini'
     _MaxCount = 50
 
+    # Based on the default list Traveller Map shows in a drop down if you click
+    # on the search edit box when it has no content
+    _DefaultWorlds = [
+        'Core 0140', # Reference
+        'Core 2118', # Capital
+        'Spinward Marches 1910', # Regina
+        'Vland 1717', # Vland (Vilani Home World)
+        'Solomani Rim 1827', # Terra (Solomani Home World)
+        'Zhodane 2719', # Zhdant (Zhodani Home World)
+        'Provence 2402', # Lair (Vargr Home World)
+        'Dark Nebula 1226', # Kusyu (Aslan Home World)
+        'Ricenden 0827', # Guaran (Hive Home World)
+        'Centrax 2609', # Glea (Hive Capital)
+        'Ruupiin 1315' # Kirur (K'kree Home World)
+    ]
+
     _instance = None # Singleton instance
     _lock = threading.Lock()
     _settings = None # Created on first load
@@ -55,19 +71,11 @@ class RecentWorlds(object):
 
         RecentWorlds._history.clear()
         size = self._settings.beginReadArray('RecentWorlds')
+        sectorHexList = []
         for index in range(size):
             self._settings.setArrayIndex(index)
             try:
-                sectorHex = self._settings.value('SectorHex', defaultValue=None, type=str)
-                world = traveller.WorldManager.instance().world(sectorHex)
-                if not world:
-                    # Log this at a low level as it could happen if the user switches milieu
-                    logging.debug(
-                        f'Failed to find world at sector hex "{sectorHex}" when loading recent worlds list')
-                    continue
-
-                if world not in RecentWorlds._history:
-                    RecentWorlds._history.append(world)
+                sectorHexList.append(self._settings.value('SectorHex', defaultValue=None, type=str))
             except TypeError as ex:
                 logging.error(
                     f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"  (value is not a {type.__name__})')
@@ -75,10 +83,15 @@ class RecentWorlds(object):
                 logging.error(
                     f'Failed to read SectorHex from "{self._settings.group()}" in "{self._settings.fileName()}"',
                     exc_info=ex)
-
         self._settings.endArray()
 
-        self._showToolTipImages = True
+        for world in self._yieldRecentWorlds(sectorHexList=sectorHexList):
+            if world not in RecentWorlds._history:
+                RecentWorlds._history.append(world)
+
+        if not RecentWorlds._history:
+            for world in self._yieldRecentWorlds(sectorHexList=RecentWorlds._DefaultWorlds):
+                RecentWorlds._history.append(world)
 
     def save(self):
         self._settings.beginWriteArray('RecentWorlds')
@@ -86,3 +99,26 @@ class RecentWorlds(object):
             self._settings.setArrayIndex(index)
             self._settings.setValue('SectorHex', world.sectorHex())
         self._settings.endArray()
+
+    def _yieldRecentWorlds(
+            self,
+            sectorHexList: typing.Iterable[str]
+            ) -> typing.Generator[traveller.World, None, None]:
+        for sectorHex in sectorHexList:
+            world = None
+            try:
+                world = traveller.WorldManager.instance().world(sectorHex)
+            except Exception as ex:
+                logging.error(
+                    f'Exception occurred while finding world at "{sectorHex}" when loading recent worlds list',
+                    exc_info=ex)
+                continue
+
+            if not world:
+                # Log this at a low level as it could happen if the user switches milieu
+                logging.debug(
+                    f'Failed to find world at sector hex "{sectorHex}" when loading recent worlds list')
+                continue
+
+            yield world
+

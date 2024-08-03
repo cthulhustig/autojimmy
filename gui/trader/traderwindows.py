@@ -819,6 +819,8 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _setupPurchaseWorldControls(self) -> None:
         self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget.enableMapSelectButton(True)
+        self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
 
         purchaseWorldLayout = QtWidgets.QVBoxLayout()
@@ -1263,25 +1265,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _purchaseWorldChanged(self) -> None:
         self._enableDisableControls()
-
         self._saleWorldsWidget.setRelativeWorld(world=self._purchaseWorldWidget.world())
-
-        if not self._speculativeCargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text='Clear speculative cargo?')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._removeAllSpeculativeCargo()
-
-        if not self._availableCargoTable.isEmpty():
-            answer = gui.MessageBoxEx.question(
-                parent=self,
-                text='Clear available cargo?')
-            if answer == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._removeAllAvailableCargo()
-
-        # Always clear trade options as they're invalid now the purchase world has changed
-        self._tradeOptionsTable.removeAllRows()
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
@@ -2200,15 +2184,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setLayout(layout)
 
     def _enableDisableControls(self) -> None:
-        if not self._traderJob:
-            self._configurationGroupBox.setDisabled(False)
-            self._purchaseWorldsGroupBox.setDisabled(False)
-            self._saleWorldsGroupBox.setDisabled(False)
-        else:
-            # Disable configuration controls while trade option job is running
-            self._configurationGroupBox.setDisabled(True)
-            self._purchaseWorldsGroupBox.setDisabled(True)
-            self._saleWorldsGroupBox.setDisabled(True)
+        # Disable configuration controls while trade option job is running
+        self._configurationGroupBox.setDisabled(self._traderJob != None)
+        self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
+        self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
     def _allowPurchaseWorld(self, world: traveller.World) -> bool:
         # Silently ignore worlds that are already in the table
