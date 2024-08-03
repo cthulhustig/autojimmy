@@ -164,6 +164,8 @@ class WorldBerthingTable(gui.WorldTable):
 
             for item in items:
                 world = logic.deserialiseWorld(data=item)
+                if not world:
+                    continue
                 berthing = item.get('berthing')
                 if berthing == None:
                     raise RuntimeError('WorldBerthingTable world list item is missing berthing element')
