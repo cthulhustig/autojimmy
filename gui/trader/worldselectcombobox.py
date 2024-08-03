@@ -98,9 +98,16 @@ class WorldSelectComboBox(gui.ComboBoxEx):
     def currentWorld(self) -> typing.Optional[traveller.World]:
         return self._selectedWorld
 
-    def setCurrentWorld(self, world: typing.Optional[traveller.World]) -> None:
-        self.setCurrentText(world.name(includeSubsector=True) if world else '')
-        self._updateSelectedWorld(world)
+    def setCurrentWorld(
+            self,
+            world: typing.Optional[traveller.World],
+            updateRecentWorlds: bool = True
+            ) -> None:
+        self.setCurrentText(
+            world.name(includeSubsector=True) if world else '')
+        self._updateSelectedWorld(
+            world=world,
+            updateRecentWorlds=updateRecentWorlds)
 
     def enableAutoComplete(self, enable: bool) -> None:
         if enable == (self._completer != None):
@@ -222,7 +229,9 @@ class WorldSelectComboBox(gui.ComboBoxEx):
                     'Failed to restore WorldSearchComboBox selected world',
                     exc_info=ex)
                 return False
-            self.setCurrentWorld(world=world)
+            self.setCurrentWorld(
+                world=world,
+                updateRecentWorlds=False)
 
         return True
 
@@ -353,13 +362,14 @@ class WorldSelectComboBox(gui.ComboBoxEx):
 
     def _updateSelectedWorld(
             self,
-            world: typing.Optional[traveller.World]
+            world: typing.Optional[traveller.World],
+            updateRecentWorlds: bool = True
             ) -> None:
         if world == self._selectedWorld:
             return
 
         self._selectedWorld = world
-        if world:
+        if world and updateRecentWorlds:
             app.RecentWorlds.instance().addWorld(world)
 
         # Notify observers that the selected world has changed. This is done even

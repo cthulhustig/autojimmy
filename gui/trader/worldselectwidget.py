@@ -83,9 +83,14 @@ class WorldSelectWidget(QtWidgets.QWidget):
     def world(self) -> typing.Optional[traveller.World]:
         return self._worldComboBox.currentWorld()
 
-    def setWorld(self, world: typing.Optional[traveller.World]) -> None:
+    def setWorld(
+            self,
+            world: typing.Optional[traveller.World],
+            updateRecentWorlds: bool = True) -> None:
         if world != self.world():
-            self._worldComboBox.setCurrentWorld(world=world)
+            self._worldComboBox.setCurrentWorld(
+                world=world,
+                updateRecentWorlds=updateRecentWorlds)
             self.selectionChanged.emit()
 
     def hasSelection(self) -> bool:
@@ -131,7 +136,9 @@ class WorldSelectWidget(QtWidgets.QWidget):
                 logging.error(f'Failed to restore WorldSelectWidget state', exc_info=ex)
                 return False
 
-        self.setWorld(world=world)
+        self.setWorld(
+            world=world,
+            updateRecentWorlds=False)
         return True
 
     def _selectionChanged(self) -> None:
