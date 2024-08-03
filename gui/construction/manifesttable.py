@@ -1,3 +1,4 @@
+import app
 import common
 import construction
 import enum
@@ -10,6 +11,10 @@ class ManifestTable(gui.ListTable):
     class StdColumnType(enum.Enum):
         Component = 'Component'
         Factors = 'Other Factors'
+
+    # I've disabled this for now as I'm not sure I like it. I think it makes
+    # the table look uglier and I'm not sure it makes it any more readable
+    _AddSpaceBetweenPhases = False
 
     def __init__(
             self,
@@ -31,6 +36,7 @@ class ManifestTable(gui.ListTable):
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.verticalHeader().setMinimumSectionSize(1)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._showContextMenu)
         self.setWordWrap(True)
@@ -69,12 +75,16 @@ class ManifestTable(gui.ListTable):
             self.insertRow(row)
             self._fillManifestSectionTotalRow(row=row, section=section)
 
+            if ManifestTable._AddSpaceBetweenPhases:
+                row = self.rowCount()
+                self.insertRow(row)
+                self._fillSpacerRow(row=row)
+
         row = self.rowCount()
         if row > 0: # Only add total if something has been added to the manifest
             self.insertRow(row)
             self._fillManifestTotalRow(row=row)
 
-        self.resizeRowsToContents()
         self.resizeColumnsToContents()
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setStretchLastSection(True)
@@ -141,6 +151,7 @@ class ManifestTable(gui.ListTable):
                 tableItem.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop))
                 self.setItem(row, column, tableItem)
                 tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, entry)
+        self.resizeRowToContents(row)
 
     def _fillManifestSectionTotalRow(
             self,
@@ -175,11 +186,14 @@ class ManifestTable(gui.ListTable):
 
                 self.setItem(row, column, tableItem)
                 tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, section)
+        self.resizeRowToContents(row)
 
     def _fillManifestTotalRow(
             self,
             row: int
             ) -> None:
+        bkColour = QtWidgets.QApplication.palette().color(
+            QtGui.QPalette.ColorRole.AlternateBase)
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
             tableItem = None
@@ -202,8 +216,20 @@ class ManifestTable(gui.ListTable):
                 font.setBold(True)
                 tableItem.setFont(font)
 
+                tableItem.setBackground(bkColour)
+
                 self.setItem(row, column, tableItem)
                 tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, self._manifest)
+        self.resizeRowToContents(row)
+
+    def _fillSpacerRow(self, row: int) -> None:
+        height = int(10 * app.Config.instance().interfaceScale())
+        for column in range(self.columnCount()):
+            tableItem = QtWidgets.QTableWidgetItem()
+            tableItem.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)
+            self.setItem(row, column, tableItem)
+        self.setRowHeight(row, height)
+        self.verticalHeader().resizeSection(row, height)
 
     def _showContextMenu(
             self,
