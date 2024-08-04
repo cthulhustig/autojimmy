@@ -400,7 +400,7 @@ class RequestHandler(object):
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
         status, reason, headers, body = await self._makeProxyRequestAsync(request)
         if status != 200:
-            raise RuntimeError(f'Request for tile {request.query_string} filed (status: {status}, reason: {reason})')
+            raise RuntimeError(f'Request for tile {request.query_string} failed (status: {status}, reason: {reason})')
 
         contentType = headers.get('Content-Type')
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
