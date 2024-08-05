@@ -54,85 +54,85 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 0201 Auhateftao           C5105A8-7 Ni                      { -2 } (742-2) [5357] - -  - 312 15 AsT4 M0 V          
 0203 Toi'as               D6A638A-8 Fl Lo                   { -3 } (820-1) [517A] - -  - 603 7  AsT4 M2 V          
 0204 Iyki                 E530214-7 De Lo Po                { -3 } (410-5) [1135] - -  - 520 10 AsMw M2 V          
-0207 Tauaei               C431348-A Lo Po                   { 0 }  (920+1) [335A] - -  - 104 10 AsT4 A6 V          
+0207 Tauaei               C431358-A Lo Po                   { 0 }  (920+1) [335A] - -  - 604 10 AsTv A6 V          
 0301 Hteis                E431459-7 Ni Po                   { -3 } (631-2) [5168] - -  - 800 5  AsT0 M1 V          
-0303 Hluil                A588314-D Lo                      { 1 }  (821-1) [143B] - T  - 612 13 AsMw M1 V          
+0303 Hluil                A588314-D Lo Ht                   { 1 }  (821-1) [143B] - T  - 612 13 AsMw M1 V          
 0306 Ourleaaaoso          C426888-9 Ph Pi                   { 0 }  (D79+1) [8859] - -  - 803 9  AsT0 M2 V M2 V     
-0308 Oalewyutiyl          A678836-C Pa Ph Pi                { 2 }  (B7C+1) [7A4B] - T  - 210 5  AsT9 M7 II         
+0308 Oalewyutiyl          A678846-C Pa Ph Pi Ht             { 2 }  (B7C+1) [7A4B] - T  - 110 5  AsT2 K7 V          
 0309 Khalai               B000643-A As Na Ni Va             { 1 }  (955-2) [3727] - -  - 801 6  AsT7 M2 V M8 V     
-0403 Afawyakharl          D545686-5 Ag Ni                   { -2 } (852-3) [5444] - -  - 513 7  AsT2 K4 V M3 V     
+0403 Afawyakharl          D545686-5 Ag Ni Lt                { -2 } (852-3) [5444] - -  - 513 7  AsT2 K4 V M3 V     
 0404 Eieawa               CA9A866-A Oc Ph Pi O:0605         { 1 }  (H7A+1) [7949] - -  - 925 15 AsT5 G4 V          
 0405 Airei'               D540988-8 De He Hi In Po Pz       { 0 }  (G89+1) [9958] - -  A 123 15 AsWc G4 V          
 0406 Ea                   C653388-9 Lo Po                   { -1 } (A20-1) [3259] - -  - 214 14 AsT0 K2 V M8 V     
 0408 Liyrlaiw             C768976-A Hi Pr                   { 2 }  (F8C+1) [8B49] - -  - 822 11 AsSc M0 V M1 V M1 V
 0503 Aktaw                E9977AB-6 Ag Pi Pz                { -1 } (966+1) [9678] - -  A 703 10 AsT9 M0 V M2 V     
-0505 Ehtaoalalri          B534438-C Ni                      { 1 }  (734+1) [455C] - -  - 601 11 AsT1 M3 V          
+0505 Ehtaoalalri          B534438-C Ni Ht                   { 1 }  (734+1) [455C] - -  - 601 11 AsT1 M3 V          
 0507 Heahta               D511977-9 Hi Ic In Na             { 1 }  (D8B+1) [9A59] - -  - 402 12 AsSc K0 V M6 V     
 0508 Oisaokheiye          E410438-8 Ni                      { -3 } (731-3) [4158] - -  - 510 5  AsT5 K4 V          
 0601 Kihlyohiywei         B6A7436-9 Fl Ni                   { 0 }  (933-1) [3448] - -  - 103 10 AsT5 K5 V          
-0605 Styelr               C7B5956-C Fl Hi In                { 3 }  (E8E+2) [8C4B] - -  - 303 14 AsSc M1 V M2 V     
-0701 Syeou                B311975-C Hi Ic In Na             { 4 }  (B8F+2) [7D3A] - -  - 200 10 AsSc K2 V M7 V     
+0605 Styelr               C7B5956-C Fl Hi In Ht             { 3 }  (E8E+2) [8C4B] - -  - 303 14 AsSc M1 V M2 V     
+0701 Syeou                B311975-C Hi Ic In Na Ht          { 4 }  (B8F+2) [7D3A] - -  - 200 10 AsSc K2 V M7 V     
 0709 Aftekhoa             E779277-8 Lo                      { -3 } (810-3) [2158] - -  - 904 8  AsSc M3 V          
-0710 Eaoayaa              C6A8612-9 Fl Ni                   { -1 } (B53-5) [2515] - -  - 303 10 AsMw K4 IV         
+0710 Eaoayaa              C6A8622-9 Fl Ni                   { -1 } (B53-5) [2515] - -  - 603 10 AsTv K4 IV         
 0806 Eahliro              X522799-7 He Na Po Pi Fo          { -2 } (966-1) [8568] - -  R 401 5  AsT8 M1 V M8 V     
-0807 Faiei                B311146-C Ic Lo                   { 1 }  (601+1) [124B] - -  - 803 6  AsT2 K4 III        
+0807 Faiei                B311156-C Ic Lo Ht                { 1 }  (601+1) [124B] - R  - 103 6  AsMw K4 III        
 0808 Tryastelr            C89A269-B Lo Wa O:0908            { 0 }  (810+1) [326C] - -  - 804 12 AsT1 M1 V M2 V     
 0809 Trawealuaow          C678667-8 Ag Ni O:0811            { -1 } (E53-1) [6558] - -  - 124 13 AsT9 M2 V M7 V     
-0810 Toheioifoah          C7B4685-8 Fl Ni                   { -2 } (B52-4) [4436] - -  - 903 6  AsT1 M0 III D      
+0810 Toheioifoah          C7B4685-8 Fl Ni                   { -2 } (B52-4) [4436] - -  - 703 6  AsWc M0 V BD       
 0901 Eahfea               EAA6977-8 Fl Hi In                { 0 }  (F89+1) [9958] - -  - 813 15 AsSc G4 V M0 V     
 0904 Teaoa                C745156-A Lo                      { 0 }  (300-1) [1149] - -  - 100 9  AsT4 K7 V M4 V     
-0907 Heaiye               A54886B-C Pa Ph Pi O:0908         { 2 }  (F7C+4) [AA7E] - R  - 523 12 AsT1 G4 V          
+0907 Heaiye               A54886B-C Pa Ph Pi O:0908 Ht      { 2 }  (F7C+4) [AA7E] - R  - 523 12 AsT1 G4 V          
 0908 Hrahilryo            B562642-A Ni Ri                   { 2 }  (856-2) [2816] - -  - 600 10 AsT1 K4 IV         
 0910 Eyoha                B8C4567-B Fl Ni O:0811            { 1 }  (D45+1) [565B] - -  - 324 14 AsT9 G2 V          
-1004 Fih                  E544000-0 Ba                      { -3 } (200-5) [0000] - -  - 003 12 AsXX M1 V          
-1006 Ftorle               B68A979-C Hi Wa Pr                { 3 }  (F8E+4) [AC6D] - R  - 613 8  AsSc M0 V          
+1004 Fih                  E544000-0 Ba Lt                   { -3 } (200-5) [0000] - -  - 003 12 AsXX M1 V          
+1006 Ftorle               B68A979-C Hi Wa Pr Ht             { 3 }  (F8E+4) [AC6D] - R  - 613 8  AsSc M0 V          
 1010 Aou                  A550468-B De Ni Po O:0811         { 1 }  (A34+1) [455B] - -  - 622 13 AsT9 M2 V          
 1107 Autreal              C200643-A Na Ni Va                { 0 }  (B54-3) [3627] - -  - 512 11 AsT3 M1 V          
 1108 Ei'ealr              C698836-8 Pa Ph Pi                { -1 } (B77-2) [7747] - -  - 810 8  AsT1 G2 V M2 V     
 1109 Hes                  C54036A-8 De He Lo Po O:1508      { -2 } (620+1) [517A] - -  - 101 8  AsT8 M3 V M8 V     
 1201 Keafteiah            C987312-9 Lo                      { -1 } (A20-5) [1215] - -  - 414 14 AsMw M2 V M7 V     
-1206 Yorlois              X543786-5 Po Pi Fo                { -2 } (965-3) [6544] - -  R 432 10 AsT7 M3 V M3 V     
+1206 Yorlois              X543786-5 Po Pi Fo Lt             { -2 } (965-3) [6544] - -  R 432 10 AsT7 M3 V M3 V     
 1210 Tlaieateawea         B5528BA-A Po Ph Pz                { 2 }  (B7B+4) [AA7C] - -  A 401 10 AsT0 M0 V M8 V     
 1303 Osaaowolr            E410368-7 Lo O:1402               { -3 } (520-3) [3157] - -  - 720 8  AsT8 M2 V          
-1305 Eakhalrarae          B101148-E Ic Lo Va                { 1 }  (501+1) [125E] - -  - 120 5  AsT9 F2 V          
+1305 Eakhalrarae          B101148-E Ic Lo Va Ht             { 1 }  (501+1) [125E] - -  - 120 5  AsT9 F2 V          
 1309 Triwaai              E432367-9 Lo Po O:1508            { -2 } (920-2) [3159] - -  - 504 17 AsT8 K7 V          
-1402 Yufohoul             B42088A-C De He Na Po Ph Pi       { 2 }  (B7C+4) [AA7E] - -  - 701 10 AsT8 M1 V          
+1402 Yufohoul             B42088A-C De He Na Po Ph Pi Ht    { 2 }  (B7C+4) [AA7E] - -  - 701 10 AsT8 M1 V          
 1409 Aoea                 C543655-7 Ni Po                   { -2 } (852-4) [4435] - -  - 304 9  AsT2 M1 V          
 1501 Aiheakhaa            C59A589-8 Ni Wa                   { -2 } (B42-1) [6369] - -  - 713 8  AsT6 M2 V M7 V M6 V
 1502 Saohwaos             C41086A-9 Na Ph Pi O:1402         { 0 }  (A79+2) [A87B] - -  - 600 5  AsT8 K4 V M3 V     
 1505 Akhaeaweihye         C642597-9 He Ni Po                { -1 } (C43-1) [5459] - -  - 123 13 AsT7 M2 V          
-1508 Hlihael              B899977-D Hi In                   { 5 }  (C8G+4) [9E5D] - RT - 510 9  AsSc M1 V          
+1508 Hlihael              B899977-D Hi In Ht                { 5 }  (C8G+4) [9E5D] - RT - 510 9  AsSc M1 V          
 1601 Harlesera            C430888-A De Na Po Ph             { 1 }  (G7A+1) [895A] - -  - 324 14 AsT5 M0 V M4 V     
-1602 Oerihyalr            E200000-0 Ba Va                   { -3 } (200-5) [0000] - -  - 003 9  AsXX M0 V M3 V     
-1606 Ktuae                A542834-C He Po Ph Pi             { 2 }  (C7C+1) [6A3A] - R  - 520 13 AsWc K1 V M1 V M6 V
+1602 Oerihyalr            E200000-0 Ba Va Lt                { -3 } (200-5) [0000] - -  - 003 9  AsXX M0 V M3 V     
+1606 Ktuae                A542834-C He Po Ph Pi Ht          { 2 }  (C7C+1) [6A3A] - R  - 520 13 AsWc K1 V M1 V M6 V
 1609 Wyuai                C6A5386-A Fl Lo                   { 0 }  (920-1) [2349] - -  - 804 11 AsT9 K0 V M5 V     
-1610 Aoeioi               A550755-D De Po                   { 2 }  (B6D+1) [593B] - -  - 202 11 AsT1 M0 V M7 V     
-1702 Hwyerlai             A565366-D Lo O:1601               { 1 }  (A21+1) [244C] - R  - 614 12 AsT5 M2 V          
-1707 Eayewah              B58A773-C Ri Wa                   { 3 }  (C6D+1) [4A29] - -  - 103 9  AsSc M1 V M4 V     
+1610 Aoeioi               A550755-D De Po Ht                { 2 }  (B6D+1) [593B] - -  - 202 11 AsT1 M0 V M7 V     
+1702 Hwyerlai             A565366-D Lo O:1601 Ht            { 1 }  (A21+1) [244C] - R  - 614 12 AsT5 M2 V          
+1707 Eayewah              B58A773-C Ri Wa Ht                { 3 }  (C6D+1) [4A29] - -  - 103 9  AsSc M1 V M4 V     
 1709 Ikhaasealr           E7B6466-8 Fl Ni O:1508            { -3 } (A31-4) [3147] - -  - 904 13 AsT8 K8 V          
-1802 Oiye                 A9A6798-C Fl                      { 3 }  (C6C+2) [7A5C] - RT - 603 13 AsTv M2 V          
+1802 Oiye                 A9A6798-C Fl Ht                   { 3 }  (C6C+2) [7A5C] - RT - 603 13 AsTv M2 V          
 1803 Hlieiti              C42036A-7 De He Lo Po O:2001      { -2 } (520+1) [5179] - -  - 603 16 AsT1 G8 V M5 V     
 1804 Eikhouahiy           E7A2413-8 Fl He Ni                { -3 } (B31-5) [1125] - -  - 223 14 AsT5 M2 V M3 V     
-1806 Leaeiwiyrl           A879885-D Ph Pi                   { 2 }  (H7D+1) [6A3B] - -  - 425 16 AsT8 M1 V M4 V     
-1810 Ahah                 E431000-0 Ba Po                   { -3 } (200-5) [0000] - -  - 004 13 AsXX K6 V M8 V     
-1901 Teiiy                C599658-9 Ni                      { -1 } (D53-1) [6559] - -  - 314 16 AsT5 K2 IV M7 V    
+1806 Leaeiwiyrl           A879885-D Ph Pi Ht                { 2 }  (H7D+1) [6A3B] - -  - 425 16 AsT8 M1 V M4 V     
+1810 Ahah                 E431000-0 Ba Po Lt                { -3 } (200-5) [0000] - -  - 004 13 AsXX K6 V M8 V     
+1901 Teiiy                C599698-9 Ni                      { -1 } (D53-1) [6559] - -  - 214 16 AsWc K1 IV M7 V    
 1904 Aouhou               D662747-6 Ri                      { -1 } (966-1) [7656] - -  - 304 9  AsT1 M0 V M3 V     
 1905 Hroil                B7B897B-B Fl Hi In                { 5 }  (D8F+5) [BE7D] - RT - 402 11 AsSc K3 V M1 V M5 V
-1907 Eihoirl              E547456-6 Ni Pa                   { -3 } (631-4) [3145] - -  - 613 13 AsT7 G4 IV         
+1907 Eihoirl              E547486-6 Ni Pa                   { -3 } (631-4) [3145] - -  - 513 13 AsMw G4 IV         
 1908 Iyaoekha             X101898-7 Ic Na Va Ph Pi Fo       { -2 } (A76-2) [8657] - -  R 522 14 AsT0 K1 V M4 V     
 2001 Ruiawe               B99778C-A Ag Pi Pz                { 3 }  (B6C+5) [AA8D] - R  A 302 7  AsWc K2 V          
 2002 Eieaoh               D200279-8 Lo Va                   { -3 } (810-2) [3169] - -  - 304 12 AsSc M2 V M4 V     
 2004 Oiaterl              B798578-A Ag Ni                   { 3 }  (E46+2) [585A] - RT - 725 17 AsSc K5 V          
 2102 Yariktal             D8C9988-9 Fl Hi In Pz             { 1 }  (E8B+1) [9A59] - -  A 203 12 AsWc K1 V          
 2104 Ktoi                 D420488-7 De He Ni Po             { -3 } (631-3) [4157] - -  - 104 12 AsT6 M2 V          
-2106 Tyehrasei            B430345-C De Lo Po                { 1 }  (921-1) [143A] - -  - 513 9  AsT3 G9 III M0 V   
+2106 Tyehrasei            B430315-C De Lo Po Ht             { 1 }  (921-1) [143A] - R  - 513 9  AsSc G9 III M0 V   
 2110 Oukh                 C994835-8 Pa Ph Pi                { -1 } (E77-3) [6736] - -  - 313 10 AsWc M3 V          
 2205 Ierouwoarl           E577647-6 Ag Ni                   { -2 } (852-2) [6456] - -  - 403 12 AsT9 K0 V M1 V     
 2210 Sterla               E436985-9 Hi                      { 0 }  (F8A-2) [7937] - -  - 313 8  AsWc K5 V M9 V M3 V
 2301 Teliykh              X43446A-6 Ni Fo O:2001            { -3 } (631-1) [6178] - -  R 800 8  AsT1 F0 V          
-2305 Aliyahta             B621449-C He Ni Po                { 1 }  (934+2) [556D] - -  - 903 12 AsT5 M2 V          
+2305 Aliyahta             B621449-C He Ni Po Ht             { 1 }  (934+2) [556D] - -  - 903 12 AsT5 M2 V          
 2307 Aolaos               C542867-8 He Po Ph Pi O:2707      { -1 } (B77-1) [8758] - -  - 710 7  AsT1 K3 V M9 V     
-2309 Ourleilrelr          B77A16B-C Lo Wa O:2707            { 1 }  (401+3) [327E] - -  - 701 12 AsT1 M1 V M2 V     
+2309 Ourleilrelr          B77A16B-C Lo Wa O:2707 Ht         { 1 }  (401+3) [327E] - -  - 201 12 AsT2 M1 V M2 V     
 2310 Ohya                 E550973-7 De Hi Po                { -1 } (B88-4) [6824] - -  - 400 11 AsSc G6 V BD       
 2404 Aarlyehe             B69A349-B Lo Wa                   { 1 }  (721+2) [446C] - T  - 902 9  AsT4 K1 V M9 V     
 2405 Ftahilreaie          X52056B-7 De He Ni Po Fo O:2707   { -3 } (741-1) [7279] - -  R 804 16 AsT1 K4 V          
@@ -140,164 +140,164 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 2410 Wiyakhaala           B312387-B Ic Lo                   { 1 }  (921+1) [345B] - -  - 113 11 AsT8 M1 V          
 2504 Eiaeiwyae            B54636B-9 Lo O:2707               { 0 }  (B20+2) [537B] - -  - 124 12 AsT1 M2 V          
 2510 Wao'eaiharl          C588489-6 Ni Pa                   { -2 } (631-1) [5267] - -  - 101 10 AsT0 K4 V          
-2602 Afteor               B1007AB-D Na Va Pi Pz             { 2 }  (E6D+4) [997F] - -  A 105 16 AsT7 G7 II D       
+2602 Afteor               B10078B-D Na Va Pi Pz Ht          { 2 }  (E6D+4) [997F] - R  A 405 16 AsWc G7 V D        
 2603 Oiyelyaw             B79A366-A Lo Wa O:2602            { 1 }  (A21+1) [2449] - -  - 614 12 AsT7 K9 V M9 V     
 2604 Stoheiktyo           C8688A9-8 Ri Pa Ph                { 0 }  (E78+1) [9869] - -  - 513 17 AsT4 M2 V          
 2605 Trah                 B541768-A He Po Pi O:2707         { 2 }  (96B+2) [795A] - -  - 400 8  AsT1 M2 V          
 2608 Eaiiyiywas           E000278-8 As Lo Va                { -3 } (810-3) [2158] - -  - 204 12 AsSc M1 V          
-2703 Aoiyherlea'          A853668-C Ni Po O:2602            { 1 }  (D55+1) [675C] - -  - 214 13 AsT7 K3 V          
-2706 Ahlisaoea            E550000-0 Ba De Po                { -3 } (200-5) [0000] - -  - 001 6  AsXX M4 III        
-2707 Hkaoeatauye'         A5209BA-E De He Hi In Na Po Pz    { 4 }  (B8G+5) [BD7G] - T  A 100 7  AsT2 M2 V M6 V     
-2709 Ftikhaiao            A777751-C Ag Pi                   { 3 }  (96D-1) [3A18] - R  - 500 10 AsMw M0 V M3 V     
+2703 Aoiyherlea'          A853668-C Ni Po O:2602 Ht         { 1 }  (D55+1) [675C] - -  - 214 13 AsT7 K3 V          
+2706 Ahlisaoea            E550000-0 Ba De Po Lt             { -3 } (200-5) [0000] - -  - 001 6  AsXX M0 V          
+2707 Hkaoeatauye'         A5209BA-E De He Hi In Na Po Pz Ht { 4 }  (B8G+5) [BD7G] - T  A 100 7  AsT2 M2 V M6 V     
+2709 Ftikhaiao            A777751-C Ag Pi Ht                { 3 }  (96D-1) [3A18] - R  - 500 10 AsMw M0 V M3 V     
 2803 Oyalareakh           C7B68CB-9 Fl Ph Pz                { 0 }  (E79+2) [A87B] - -  A 722 10 AsT1 M1 V M6 V     
 2806 Tlaohke              B6687A6-A Ag Ri                   { 4 }  (C6D+3) [6B49] - R  - 112 11 AsVc M2 V M6 V     
 2807 Eieakheahous         CAC9725-A Fl                      { 1 }  (C6A-1) [5838] - -  - 312 11 AsT1 M2 V M5 V     
 2904 Hliyearliei          E310546-7 Ni                      { -3 } (741-4) [4246] - -  - 505 16 AsT0 G3 V          
-2907 Khtaohehya           C43388B-A Na Po Ph                { 1 }  (D7A+3) [A97C] - -  - 221 11 AsT0 G4 III        
+2907 Khtaohehya           C43388B-A Na Po Ph                { 1 }  (D7A+3) [A97C] - -  - 721 11 AsWc G4 V          
 2909 Eara                 X100168-7 Lo Va Fo O:2707         { -3 } (300-3) [1157] - -  R 302 9  AsT1 G3 V M3 V     
-3005 Kai                  B540684-A De He Ni Po             { 1 }  (C55-1) [4738] - -  - 804 14 AsT1 M1 V          
+3005 Kai                  B540684-A De He Ni Po             { 1 }  (C55-1) [4738] - T  - 104 14 AsT2 M1 V          
 3007 Feikhuiau            C201655-A Ic Na Ni Va             { 0 }  (D54-2) [4638] - -  - 905 12 AsT4 K6 V M2 V     
-3008 Fteeiwyea            A421558-C He Ni Po                { 1 }  (A45+1) [565C] - -  - 203 11 AsT7 M2 V          
-3009 Haisye'o             B7A75A8-9 Fl Ni                   { 0 }  (A44+1) [5559] - -  - 412 9  AsT3 M1 III D      
-3101 Ikeaeeli             E7B6000-0 Ba Fl                   { -3 } (200-5) [0000] - -  - 004 10 AsXX K2 V M0 V M7 V
+3008 Fteeiwyea            A421558-C He Ni Po Ht             { 1 }  (A45+1) [565C] - -  - 203 11 AsT7 M2 V          
+3009 Haisye'o             B7A7578-9 Fl Ni                   { 0 }  (A44+1) [5559] - -  - 312 9  AsSc M1 V D        
+3101 Ikeaeeli             E7B6000-0 Ba Fl Lt                { -3 } (200-5) [0000] - -  - 004 10 AsXX K2 V M0 V M7 V
 3103 Ouse                 C6A6116-A Fl Lo                   { 0 }  (600-1) [1149] - R  - 303 8  AsT4 K6 V M8 V     
 3105 Tlaioes              A200668-9 Na Ni Va O:2806         { 0 }  (B54+1) [6659] - -  - 203 10 AsT1 M2 V          
-3107 Ftuiw                A59A645-D Ni Wa                   { 1 }  (B55-1) [473B] - -  - 103 6  AsT6 F0 V M4 V     
-3108 Eahlua               C896227-9 Lo                      { -1 } (810-1) [2159] - -  - 913 16 AsT9 K1 II D       
+3107 Ftuiw                A59A645-D Ni Wa Ht                { 1 }  (B55-1) [473B] - -  - 103 6  AsT6 F0 V M4 V     
+3108 Eahlua               C896277-9 Lo                      { -1 } (810-1) [2159] - -  - 913 16 AsSc K1 V BD       
 3109 Ehaw                 E9D626A-7 Lo O:3211               { -3 } (410-1) [4179] - -  - 924 14 AsT8 M1 V          
 3204 Wahahi               C311886-A Ic Na Ph Pi             { 1 }  (C7A+1) [7949] - -  - 702 11 AsT3 M1 V M2 V     
 3207 Keihfaiiil           E550249-7 De Lo Po                { -3 } (410-2) [3168] - -  - 503 11 AsT9 M3 V M3 V     
 0111 Aihaos               C430215-7 De Lo Po                { -2 } (410-4) [1135] - -  - 103 13 AsMw K0 V M5 V     
 0115 Ouluasoihe           E7B7278-8 Fl Lo                   { -3 } (810-3) [2158] - -  - 104 11 AsSc M0 V          
-0117 Olya'                A6848A5-C Ri Pa Ph                { 3 }  (D7D+1) [6B3A] - T  - 403 6  AsT2 K2 V M4 V     
-0212 Ahaihleil            AA85637-C Ag Ni Ri                { 3 }  (D57+3) [695C] - R  - 114 13 AsWc K1 V          
+0117 Olya'                A6848A5-C Ri Pa Ph Ht             { 3 }  (D7D+1) [6B3A] - T  - 403 6  AsT2 K2 V M4 V     
+0212 Ahaihleil            AA85637-C Ag Ni Ri Ht             { 3 }  (D57+3) [695C] - R  - 114 13 AsWc K1 V          
 0213 Hwakhtoute           C434513-7 Ni                      { -2 } (742-5) [2324] - -  - 214 16 AsMw M3 V          
 0215 Ekheh                C1018B6-B Ic Na Va Ph Pi          { 1 }  (D7B+1) [794A] - -  - 803 14 AsT1 M0 V M9 V     
 0217 Iyasoi               C7B9995-A Fl Hi In                { 3 }  (E8D+1) [7C38] - -  - 503 11 AsWc M1 V D        
-0219 Ahlouseaise          BAEA323-E Lo Oc                   { 1 }  (A21-2) [142B] - -  - 723 14 AsT1 A6 V M3 V     
+0219 Ahlouseaise          BAEA383-E Lo Oc Ht                { 1 }  (A21-2) [142B] - -  - 423 14 AsT1 M3 V M6 V     
 0311 Kuau                 C566257-A Lo                      { 0 }  (910+1) [225A] - -  - 714 15 AsT4 M1 V M8 V     
 0312 Toiaolui             A56349B-A Ni Da                   { 1 }  (A34+3) [657C] - -  A 913 12 AsT9 M3 V M6 V     
-0315 Kaooh                E59A8AB-7 Wa Ph Pi Pz             { -2 } (A76+1) [A679] - -  A 705 12 AsT9 G1 III        
+0315 Kaooh                E59A89B-7 Wa Ph Pi Pz             { -2 } (A76+1) [A679] - -  A 305 12 AsWc M1 V          
 0412 Sawaoasiwais         C6A3835-9 Fl Ph                   { 0 }  (E79-2) [6837] - -  - 204 10 AsT9 K4 V          
-0413 Tiirlyewa            B58A588-C Ni Wa Pr                { 1 }  (B45+1) [565C] - R  - 104 13 AsT6 M0 V          
+0413 Tiirlyewa            B58A588-C Ni Wa Pr Ht             { 1 }  (B45+1) [565C] - R  - 104 13 AsT6 M0 V          
 0414 Tlikheheayah         A548269-A Lo O:0212               { 1 }  (811+2) [336B] - -  - 504 13 AsT4 G4 IV M4 V    
 0418 Afteikha             B795797-A Ag Pi                   { 3 }  (96C+3) [7A5A] - R  - 100 11 AsVc M0 V M7 V M5 V
 0419 Eitakhoiw            D55098A-8 De Hi Po Pz             { -1 } (E88+1) [B87A] - -  A 203 10 AsMw M2 V          
-0420 Auwyaeayo            A541978-D He Hi In Po             { 4 }  (D8G+4) [9D5D] - R  - 202 14 AsSc M1 V M3 V     
-0512 Ktektirl             A5437A8-C Po Pi                   { 2 }  (E6C+2) [795C] - -  - 423 9  AsT9 M2 V M7 V     
+0420 Auwyaeayo            A541978-D He Hi In Po Ht          { 4 }  (D8G+4) [9D5D] - R  - 202 14 AsSc M1 V M3 V     
+0512 Ktektirl             A5437A8-C Po Pi Ht                { 2 }  (E6C+2) [795C] - -  - 423 9  AsT9 M2 V M7 V     
 0513 Eiarewaor            A301686-B Ic Na Ni Va             { 1 }  (C55+1) [574A] - R  - 204 12 AsT0 G9 V          
 0515 Aoyerl               D676866-6 Pa Ph Pi O:0217         { -2 } (A75-3) [7645] - -  - 100 3  AsT6 G2 V          
-0516 Hreae                E540584-5 De He Ni Po             { -3 } (741-5) [3233] - -  - 404 14 AsT1 K0 V          
+0516 Hreae                E540584-5 De He Ni Po Lt          { -3 } (741-5) [3233] - -  - 404 14 AsT1 K0 V          
 0612 Weaike               C545885-8 Pa Ph Pi                { -1 } (D77-3) [6736] - -  - 303 10 AsT1 K4 V M4 V     
 0615 Khuiewyawea          E8B655A-8 Fl Ni                   { -3 } (B41-1) [727A] - -  - 804 11 AsT6 G3 V M1 V     
 0617 Oihta                D7B4487-8 Fl Ni                   { -3 } (931-3) [4158] - -  - 303 10 AsT9 G2 V M2 V     
 0720 Fakhakhoaai          B43436B-9 Lo O:0819               { 0 }  (820+2) [537B] - -  - 312 10 AsT4 M0 V M4 V     
-0811 Rearlaihe            A6319B7-E Hi Na Po                { 3 }  (H8F+3) [9C5E] - R  - 224 11 AsTv M0 V          
+0811 Rearlaihe            A6319B7-E Hi Na Po Ht             { 3 }  (H8F+3) [9C5E] - R  - 224 11 AsTv M0 V          
 0812 Aueikauweikh         C432437-8 Ni Po                   { -2 } (931-2) [4258] - -  - 403 9  AsT0 K0 V M1 V     
 0819 Eaoya                C6A98A6-A Fl Ph                   { 1 }  (D7A+1) [7949] - -  - 603 12 AsT4 M0 V          
 0912 Iyhe'ea              E99749B-6 Ni Pa Da                { -3 } (631-1) [6178] - -  A 533 16 AsT9 K2 V          
 0913 Ahyerle              B8A3586-8 Fl Ni                   { -1 } (943-2) [4447] - -  - 311 9  AsT7 K0 V          
 0915 Okh                  C541637-8 He Ni Po                { -2 } (B52-2) [6458] - -  - 403 14 AsT0 K4 V          
-0918 Eaktou               E579000-0 Ba                      { -3 } (200-5) [0000] - -  - 004 12 AsXX M1 V          
+0918 Eaktou               E579000-0 Ba Lt                   { -3 } (200-5) [0000] - -  - 004 12 AsXX M1 V          
 0920 Oataelehakh          B696168-B Lo O:0819               { 1 }  (601+1) [125B] - -  - 403 9  AsT4 K3 V M1 V     
 1011 Eeiloa               C62436A-8 Lo O:0811               { -2 } (920+1) [517A] - -  - 413 17 AsT9 M0 V M3 V     
-1014 Hrerl                B642974-C He Hi In Po             { 4 }  (D8F+2) [7D3A] - T  - 102 7  AsSc K7 V M9 V     
+1014 Hrerl                B642974-C He Hi In Po Ht          { 4 }  (D8F+2) [7D3A] - T  - 102 7  AsSc K7 V M9 V     
 1019 Khtawaia             E1019A5-7 Hi Ic In Na Va          { 0 }  (B89-2) [7935] - -  - 122 11 AsT3 M1 V M2 V     
 1112 Estiyrliy            B865121-B Lo Ga                   { 1 }  (901-3) [1217] - -  - 124 15 AsT2 M0 V          
 1115 Yahkoihyo            C84697B-A Hi In                   { 4 }  (D8D+5) [BD7C] - RT - 602 10 AsSc M0 V          
 1118 Iyheaestear          B546626-7 Ag Ni                   { 0 }  (854-1) [5646] - -  - 710 11 AsT6 M3 V          
-1211 Fire                 D979589-5 Ni                      { -3 } (741-2) [6266] - -  - 134 12 AsT4 K4 V          
-1216 Aioi                 E631000-0 Ba Po                   { -3 } (200-5) [0000] - -  - 023 15 AsXX M3 V          
-1219 Eaeia                B68A886-C Ri Wa Ph                { 3 }  (D7D+2) [7B4B] - R  - 303 10 AsMw M2 V          
+1211 Fire                 D979589-5 Ni Lt                   { -3 } (741-2) [6266] - -  - 134 12 AsT4 K4 V          
+1216 Aioi                 E631000-0 Ba Po Lt                { -3 } (200-5) [0000] - -  - 023 15 AsXX M3 V          
+1219 Eaeia                B68A886-C Ri Wa Ph Ht             { 3 }  (D7D+2) [7B4B] - R  - 303 10 AsMw M2 V          
 1320 Ahiyiyoakh           BAA8632-B Fl Ni                   { 1 }  (E55-3) [2717] - -  - 224 18 AsT1 M1 V M4 V     
 1411 Seasohtao            D411659-7 Ic Na Ni                { -3 } (851-2) [7368] - -  - 604 10 AsT0 M2 V          
 1413 Aoitra               A540367-A De He Lo Po O:1014      { 1 }  (921+1) [345A] - -  - 104 15 AsT9 M2 V          
-1417 Aohtoirlea'          DAB5384-8 Fl Lo                   { -3 } (720-5) [1136] - -  - 502 10 AsT1 M2 V          
-1418 Efta                 C000757-A As Na Va Pi             { 1 }  (B6A+1) [785A] - -  - 602 6  AsT4 M2 V M6 V     
+1417 Aohtoirlea'          DAB5384-8 Fl Lo                   { -3 } (720-5) [1136] - R  - 702 10 AsTv M2 V          
+1418 Efta                 C000787-A As Na Va Pi             { 1 }  (B6A+1) [785A] - -  R 802 6  AsWc M2 V M6 V     
 1420 Aauui                B557488-9 Ni Pa                   { 0 }  (A33+1) [4459] - -  - 522 14 AsT3 M2 V          
 1511 Htoisea              B696487-B Ni Pa                   { 1 }  (A34+1) [455B] - -  - 704 12 AsT2 M2 V M6 V     
-1512 Keakheie             X530686-6 De Na Ni Po Fo          { -3 } (851-4) [5345] - -  R 722 11 AsT5 M9 II D       
-1515 Yoaoh                B621686-9 He Na Ni Po             { 0 }  (C54-1) [5648] - -  - 704 12 AsT1 K1 V          
-1516 Hrirualyalea         B311615-C Ic Na Ni                { 1 }  (955-1) [473A] - -  - 401 8  AsMw M2 V          
-1518 Ahka                 C201113-B Ic Lo Va                { 0 }  (700-3) [1128] - R  - 213 9  AsT1 K0 V M2 V     
+1512 Keakheie             X530656-6 De Na Ni Po Fo          { -3 } (851-4) [5345] - -  R 322 11 AsVc M0 V          
+1515 Yoaoh                B621686-9 He Na Ni Po             { 0 }  (C54-1) [5648] - R  - 504 12 AsMw K1 V          
+1516 Hrirualyalea         B311685-C Ic Na Ni Ht             { 1 }  (955-1) [473A] - -  - 101 8  AsVc M2 V          
+1518 Ahka                 C201143-B Ic Lo Va                { 0 }  (700-3) [1128] - R  - 213 9  AsTv K0 V M2 V     
 1611 Eawalrilra           B557753-B Ag                      { 3 }  (E6D+1) [4A28] - T  - 123 11 AsTv M0 V M5 V     
-1614 Oawaihfaso           C550657-9 De Ni Po                { -1 } (E53-1) [6559] - -  - 124 14 AsT4 M2 V          
-1616 Ahriauheah           E64526A-6 Lo O:1717               { -3 } (410-1) [4178] - -  - 204 17 AsT7 M1 V          
-1617 Kar                  E550416-7 De Ni Po                { -3 } (631-4) [3146] - -  - 212 10 AsT9 K2 V          
-1618 Oihaleala            CA96369-9 Lo O:1820               { -1 } (A20+1) [426A] - -  - 123 15 AsT8 M2 V M9 V     
-1619 Iyeweitirliw         BA55138-B Lo                      { 1 }  (601+1) [125B] - -  - 803 13 AsT2 M0 V M8 V     
-1620 Astasauryae          C5308B8-9 De Na Po Ph             { 0 }  (A79+1) [8859] - -  - 700 10 AsT3 G2 V          
+1614 Oawaihfaso           C550657-9 De Ni Po                { -1 } (E53-1) [6559] - -  - 624 14 AsTv M2 V          
+1616 Ahriauheah           E64526A-6 Lo O:1717               { -3 } (410-1) [4178] - -  - 304 17 AsTv M1 V          
+1617 Kar                  E550476-7 De Ni Po                { -3 } (631-4) [3146] - -  - 412 10 AsTv K2 V          
+1618 Oihaleala            CA96359-9 Lo                      { -1 } (A20+1) [426A] - R  - 123 15 AsVc M2 V M9 V     
+1619 Iyeweitirliw         BA55168-B Lo O:1717               { 1 }  (601+1) [125B] - T  - 103 13 AsTv M0 V M8 V     
+1620 Astasauryae          C530858-9 De Na Po Ph             { 0 }  (A79+1) [8859] - T  - 100 10 AsT1 G2 V          
 1712 Ehuiw                B00066A-B As Na Ni Va O:1611      { 1 }  (D55+3) [877D] - -  - 714 17 AsT5 M2 V M3 V     
-1714 Yaw                  C549367-8 Lo O:1717               { -2 } (A20-2) [3158] - -  - 814 13 AsT7 G9 III        
+1714 Yaw                  C549387-8 Lo                      { -2 } (A20-2) [3158] - -  - 114 13 AsVc G9 V          
 1717 Hwyekhafa            B6538B9-A Po Ph Pz                { 2 }  (D7B+3) [9A6B] - -  A 421 8  AsT7 G4 V          
-1811 Faeirl               CAE8216-A Lo                      { 0 }  (410-1) [1249] - -  - 100 5  AsT2 M9 III        
-1813 Eastauea             D6A8266-8 Fl Lo O:1611            { -3 } (810-4) [1147] - -  - 904 10 AsT5 M3 V          
-1814 Hiyaeae              E8CA46B-9 Fl Ni Da O:1717         { -2 } (831+1) [627B] - -  A 402 12 AsT7 M1 V          
-1815 Kheahlorl            A8DA275-D Lo Wa                   { 1 }  (811-1) [133B] - R  - 104 13 AsSc M1 V          
-1816 Yufearleahe          C543466-8 Ni Po O:1717            { -2 } (731-3) [3247] - -  - 401 12 AsT7 G2 V M4 V     
+1811 Faeirl               CAE8266-A Lo O:0712               { 0 }  (410-1) [1249] - -  - 100 5  AsVc M3 V          
+1813 Eastauea             D6A8256-8 Fl Lo                   { -3 } (810-4) [1147] - -  - 404 10 AsTv M3 V          
+1814 Hiyaeae              E8CA48B-9 Fl Ni Da                { -2 } (831+1) [627B] - -  A 702 12 AsTv M1 V          
+1815 Kheahlorl            A8DA275-D Lo Wa Ht                { 1 }  (811-1) [133B] - R  - 104 13 AsSc M1 V          
+1816 Yufearleahe          C543486-8 Ni Po                   { -2 } (731-3) [3247] - -  - 401 12 AsMw G2 V M4 V     
 1818 Khei'eieh            B742568-B He Ni Po O:1820         { 1 }  (C45+1) [565B] - -  - 323 13 AsT8 M0 V          
-1820 Styehkiloa           A433977-E Hi Na Po                { 4 }  (G8F+3) [9D5E] - RT - 523 13 AsSc M0 V M1 V     
-1913 Yokhealri            C423647-9 Na Ni Po                { -1 } (C53-1) [6559] - -  - 313 9  AsT6 M0 III        
-1915 Isaieaso             D9DA513-7 Ni Wa                   { -3 } (741-5) [2224] - -  - 314 12 AsMw M2 V          
+1820 Styehkiloa           A433977-E Hi Na Po Ht             { 4 }  (G8F+3) [9D5E] - RT - 523 13 AsSc M0 V M1 V     
+1913 Yokhealri            C423687-9 Na Ni Po                { -1 } (C53-1) [6559] - -  - 413 9  AsVc M0 V          
+1915 Isaieaso             D9DA543-7 Ni Wa                   { -3 } (741-5) [2224] - R  - 614 12 AsTv M2 V          
 1918 Weweauuiea           B551212-A Lo Po                   { 1 }  (911-3) [1316] - -  - 423 15 AsMw M0 V          
-1920 Aisoaa               B78956A-7 Ni Pr O:1820            { -1 } (743+1) [7479] - -  - 803 13 AsT8 K3 V M8 V     
+1920 Aisoaa               B78958A-7 Ni Pr                   { -1 } (743+1) [7479] - R  - 103 13 AsMw K3 V M8 V     
 2011 Atoeilekhtea         E69A338-9 Lo Wa                   { -2 } (920-2) [3159] - -  - 813 13 AsT5 M2 V          
-2013 Tiytike              A7B7669-B Fl Ni O:1611            { 1 }  (C55+2) [776C] - R  - 904 12 AsT5 M0 V          
+2013 Tiytike              A7B7689-B Fl Ni                   { 1 }  (C55+2) [776C] - R  - 304 12 AsMw M0 V          
 2015 Haeisuir             C743534-8 Ni Po                   { -2 } (742-4) [3336] - -  - 200 8  AsT0 M1 V M6 V     
-2111 Kei                  E541266-6 He Lo Po O:2511         { -3 } (410-4) [1145] - -  - 600 8  AsT3 G8 IV         
+2111 Kei                  E541256-6 He Lo Po                { -3 } (410-4) [1145] - -  - 600 8  AsT0 G8 IV         
 2112 Ahkaseah             E6AA446-8 Fl Ni                   { -3 } (A31-4) [3147] - -  - 404 15 AsT9 M3 V          
 2119 Aofahruaei           B7B68A5-B Fl Ph                   { 2 }  (D7C+1) [6A39] - -  - 412 16 AsT2 M0 V M8 V     
 2211 Hliyal               B51186A-B Ic Na Ph Pi O:2511      { 2 }  (F7C+4) [AA7D] - -  - 123 13 AsT3 M1 V          
 2215 Ryahlyuiy            C697976-9 Hi In                   { 2 }  (E8C+1) [8B48] - R  - 112 10 AsSc G4 V M2 V     
-2216 Khteawahahea         B31038A-C Lo                      { 1 }  (721+3) [547E] - -  - 102 12 AsT9 M2 V M3 V     
+2216 Khteawahahea         B31038A-C Lo Ht                   { 1 }  (721+3) [547E] - -  - 102 12 AsT9 M2 V M3 V     
 2218 Aawei                E8CA438-9 Fl Ni                   { -2 } (A31-2) [4259] - -  - 313 14 AsT1 M2 V M3 V     
-2311 Era                  E99586A-6 Pa Ph Pi O:2511         { -2 } (A75+1) [A678] - -  - 623 16 AsT3 A2 V K7 V     
+2311 Era                  E99588A-6 Pa Ph Pi                { -2 } (A75+1) [A678] - -  - 423 16 AsMw K7 V M2 V     
 2314 Oihkaioasokh         E552737-6 Po                      { -2 } (965-2) [7556] - -  - 601 7  AsT1 K4 V M4 V     
 2315 Eaiyhtal             A311369-B Ic Lo O:2516            { 1 }  (B21+2) [446C] - -  - 424 17 AsT0 M1 V          
-2412 Styohou              E550000-0 Ba De Po                { -3 } (200-5) [0000] - -  - 002 5  AsXX G3 V          
+2412 Styohou              E550000-0 Ba De Po Lt             { -3 } (200-5) [0000] - -  - 002 5  AsXX G3 V          
 2415 Eyah                 B550275-B De Lo Po                { 1 }  (611-1) [1339] - -  - 911 10 AsSc M2 V M7 V     
 2417 Asoawukhtoha         A552467-A Ni Po O:2516            { 1 }  (C34+1) [455A] - -  - 724 14 AsT0 G2 V          
 2511 Truaktaleeae         B648757-A Ag Pi                   { 3 }  (D6C+3) [7A5A] - T  - 404 16 AsT6 M0 V          
-2512 Kteaeraosao          A421315-C He Lo Po                { 1 }  (B21-1) [143A] - -  - 624 17 AsMw K4 V M8 V     
-2516 Uikhasi              B577985-C Hi In                   { 4 }  (B8F+2) [7D3A] - -  - 200 4  AsVc M2 V          
+2512 Kteaeraosao          A421315-C He Lo Po Ht             { 1 }  (B21-1) [143A] - -  - 624 17 AsMw K4 V M8 V     
+2516 Uikhasi              B577985-C Hi In Ht                { 4 }  (B8F+2) [7D3A] - -  - 200 4  AsVc M2 V          
 2518 Eiwoilr              E430757-6 De Na Po                { -2 } (965-2) [7556] - -  - 602 14 AsT0 K3 V M6 V     
 2520 Uhkeea               B510866-B Na Ph Pi O:2719         { 2 }  (E7C+1) [7A4A] - -  - 604 10 AsT9 M3 V M7 V     
 2620 Ahal                 C425124-B Lo                      { 0 }  (700-2) [1139] - -  - 513 16 AsT4 M2 V          
-2711 Iyrl                 B31126B-D Ic Lo O:2511            { 1 }  (811+3) [437F] - -  - 904 11 AsT3 M2 III        
+2711 Iyrl                 B31126B-D Ic Lo O:2511 Ht         { 1 }  (811+3) [437F] - -  - 904 11 AsT3 M2 III        
 2712 Tlolehaw             A77A49A-B Ni Wa                   { 1 }  (A34+3) [657D] - -  - 704 16 AsT2 M2 V          
-2714 Hewiyrl              A6A9369-E Fl Lo O:2516            { 1 }  (921+2) [446F] - -  - 713 10 AsT0 M0 V          
+2714 Hewiyrl              A6A9369-E Fl Lo O:2516 Ht         { 1 }  (921+2) [446F] - -  - 713 10 AsT0 M0 V          
 2719 Sasi                 C51197A-B Hi Ic In Na             { 3 }  (H8E+5) [BC7D] - -  - 315 10 AsSc M0 V M6 V     
-2812 Aihwis               X5508C9-2 De Po Ph Fo             { -2 } (A73-1) [9663] - -  R 324 16 AsT6 K3 V          
+2812 Aihwis               X5508C9-2 De Po Ph Fo Lt          { -2 } (A73-1) [9663] - -  R 324 16 AsT6 K3 V          
 2814 Eaairakh             A423568-A Ni Po O:2516            { 1 }  (C45+1) [565A] - -  - 214 10 AsT0 G0 V          
-3014 Fehou'               E567886-6 Ri Pa Ph                { -1 } (A76-2) [7745] - -  - 412 8  AsT9 M5 II M8 V    
-3018 Hfawairaei           A52026B-D De He Lo Po O:2719      { 1 }  (811+3) [437F] - -  - 404 12 AsT9 M3 V M9 V     
+3014 Fehou'               E567886-6 Ri Pa Ph                { -1 } (A76-2) [7745] - -  - 912 8  AsWc K5 V M8 V     
+3018 Hfawairaei           A52026B-D De He Lo Po O:2719 Ht   { 1 }  (811+3) [437F] - -  - 404 12 AsT9 M3 V M9 V     
 3112 Reolryalao           X531384-6 Lo Po Fo                { -3 } (520-5) [1134] - -  R 920 7  AsT9 M2 V M9 V     
 3115 Ftaoiy               C879956-B Hi In                   { 3 }  (F8E+2) [8C4A] - -  - 304 13 AsMw K2 V          
-3116 Ahyelawaisel         B550233-B De Lo Po                { 1 }  (A11-2) [1328] - -  - 924 13 AsT9 M3 V          
-3120 Ai'yefa              E401657-7 Ic Na Ni Va             { -3 } (851-3) [6357] - -  - 903 15 AsT4 A3 V          
-3211 Ftou                 A897979-E Hi In                   { 4 }  (F8G+5) [AD6F] - T  - 404 13 AsSc K5 V          
+3116 Ahyelawaisel         B550233-B De Lo Po                { 1 }  (A11-2) [1328] - T  - 924 13 AsT2 M3 V          
+3120 Ai'yefa              E401637-7 Ic Na Ni Va             { -3 } (851-3) [6357] - -  - 103 15 AsMw A3 V          
+3211 Ftou                 A897979-E Hi In Ht                { 4 }  (F8G+5) [AD6F] - T  - 404 13 AsSc K5 V          
 3213 Woieaoihiy           C53116A-8 Lo Po O:3211            { -2 } (600+1) [317A] - -  - 703 9  AsT8 M0 V M4 V     
 3215 Weis                 C550163-9 De Lo Po O:3115         { -1 } (600-4) [1126] - -  - 203 13 AsT5 M3 V          
-3216 Reayeyeuikhe         B200788-C Na Va Pi                { 2 }  (C6C+2) [795C] - -  - 703 16 AsT1 M2 V          
+3216 Reayeyeuikhe         B200788-C Na Va Pi Ht             { 2 }  (C6C+2) [795C] - -  - 703 16 AsT1 M2 V          
 3220 Eaeas                D577552-6 Ag Ni                   { -2 } (742-5) [1312] - -  - 913 12 AsT6 M0 V          
 0121 Oiousakh             C553666-6 Ni Po O:0217            { -2 } (852-3) [5445] - -  - 814 15 AsT6 K0 V          
 0123 Khoal                C88A684-8 Ni Ri Wa                { -1 } (B53-3) [4536] - -  - 503 9  AsT1 G0 V M7 V     
-0126 Ai'                  B43189A-C Na Po Ph                { 2 }  (A7C+4) [AA7E] - -  - 400 7  AsT1 K2 V          
+0126 Ai'                  B43189A-C Na Po Ph Ht             { 2 }  (A7C+4) [AA7E] - -  - 400 7  AsT1 K2 V          
 0129 Aoleaa'              C401497-9 Ic Ni Va                { -1 } (B32-1) [4359] - -  - 523 17 AsT4 K1 V          
 0130 Ahesas               D697314-7 Lo                      { -3 } (520-5) [1135] - -  - 303 6  AsMw M3 V          
-0230 Hkohal               E576785-6 Ag Pi                   { -1 } (966-3) [5634] - -  - 505 14 AsT4 G5 IV         
+0230 Hkohal               E576775-6 Ag Pi                   { -1 } (966-3) [5634] - -  - 205 14 AsSc G5 V          
 0322 Aerlairlyelr         C8C3547-9 Fl Ni                   { -1 } (843-1) [5459] - -  - 801 5  AsT8 G3 V M9 V     
 0323 Tekhaoaolya          A644468-9 Ni Pa O:0523            { 0 }  (933+1) [4459] - T  - 221 9  AsT1 M1 V M2 V     
 0324 Fiysaoioal           C000485-7 As Ni Va                { -2 } (631-4) [2235] - -  - 215 11 AsT6 K0 V          
 0325 Eyese                D6A759B-8 Fl Ni Da                { -3 } (741-1) [727A] - -  A 600 7  AsT6 M0 V M2 V     
 0326 Ehiua                B556686-9 Ag Ni                   { 1 }  (955+1) [5748] - -  - 101 13 AsT9 M0 V M1 V     
 0330 Eis                  C30166A-7 Ic Na Ni Va O:0333      { -2 } (852+1) [8479] - -  - 605 9  AsT7 M2 V          
-0421 Ihoisail             B625312-A Lo                      { 1 }  (A21-3) [1416] - -  - 205 12 AsMw G6 III D      
+0421 Ihoisail             B625372-A Lo                      { 2 }  (A22-3) [1516] - RT - 305 12 AsSc G6 V          
 0422 Aokeaa               C550356-A De Lo Po                { 0 }  (920-1) [2349] - -  - 104 13 AsT0 K6 V          
 0424 Iaoea                C9B6553-A Fl Ni                   { 0 }  (B44-3) [2527] - -  - 404 11 AsT1 M0 V M1 V     
 0429 Oi'eea'eil           E311736-8 Ic Na Pi                { -2 } (A66-3) [6547] - -  - 701 10 AsT6 M0 V          
-0523 Eatekhaiheah         AA9A888-D Oc Ph Pi                { 2 }  (A7D+2) [8A5D] - T  - 400 12 AsT1 M2 II D       
-0525 Ae'uhei'             D7B2277-8 Fl He Lo                { -3 } (810-3) [2158] - -  - 104 8  AsSc A9 V          
+0523 Eatekhaiheah         AA9A898-D Oc Ph Pi Ht             { 2 }  (A7D+2) [8A5D] - T  - 400 12 AsTv M2 V          
+0525 Ae'uhei'             D7B2247-8 Fl He Lo                { -3 } (810-3) [2158] - R  - 104 8  AsMw A9 V          
 0526 Haryoukou            C543977-A Hi In Po                { 3 }  (F8D+3) [9C5A] - T  - 804 13 AsSc K0 V          
 0529 Sterluireiui         C697213-9 Lo                      { -1 } (710-4) [1126] - -  - 103 14 AsMw M1 V M2 V     
 0623 Ihao                 B687894-A Ga Ri Pa Ph             { 3 }  (E7C+1) [6B38] - T  - 204 12 AsT1 F0 V M2 V     
@@ -309,111 +309,112 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 0729 Arlalr               B201685-B Ic Na Ni Va             { 1 }  (C55-1) [4739] - -  - 404 12 AsT4 M2 V          
 0821 Ulreafah             E101484-7 Ic Ni Va                { -3 } (631-5) [2135] - -  - 604 15 AsT3 G3 V          
 0823 Ya'eie               E550456-6 De Ni Po                { -3 } (631-4) [3145] - -  - 823 17 AsT1 K2 V          
-0825 Iyuiaoiy             B8C4886-B Fl Ph                   { 2 }  (F7C+1) [7A4A] - -  - 223 9  AsT4 M3 V M4 V     
-0829 Eaye                 A552143-D Lo Po                   { 1 }  (601-2) [122A] - -  - 103 11 AsT5 M3 V M8 V     
-0922 Eaihoas              A420149-D De He Lo Po             { 1 }  (901+2) [226E] - T  - 524 10 AsT9 K4 IV         
+0825 Iyuiaoiy             B8C4846-B Fl Ph                   { 2 }  (F7C+1) [7A4A] - -  - 823 9  AsT2 M3 V M4 V     
+0829 Eaye                 A552143-D Lo Po Ht                { 1 }  (601-2) [122A] - -  - 103 11 AsT5 M3 V M8 V     
+0922 Eaihoas              A420159-D De He Lo Po Ht          { 1 }  (901+2) [226E] - T  - 124 10 AsSc K0 IV         
 0923 Aehuawyaftei         C311646-9 Ic Na Ni                { -1 } (B53-2) [5548] - -  - 403 14 AsT2 K1 V M5 V M9 V
 0925 Yaaiaalr             E423447-7 Ni Po                   { -3 } (631-3) [4157] - -  - 924 13 AsT1 M1 V          
 0926 Iyehoi               A758266-B Lo O:0825               { 1 }  (A11+1) [134A] - -  - 824 13 AsT4 M2 V          
 0929 Yuyafirl             C31168A-9 Ic Na Ni                { -1 } (C53+1) [857B] - -  - 104 12 AsT3 M2 V M8 V     
 1021 Aitei                C532868-9 Na Po Ph O:0623         { 0 }  (F79+1) [8859] - -  - 414 15 AsT4 M0 V          
-1024 Ualerleasar          B5556B8-A Ag Ni                   { 2 }  (C56+2) [685A] - -  - 804 9  AsT9 M3 V M6 V     
+1024 Ualerleasar          B555698-A Ag Ni                   { 2 }  (C56+2) [685A] - T  - 204 9  AsT2 M3 V M6 V     
 1025 Ftakta               C6A5583-9 Fl Ni                   { -1 } (A43-4) [2426] - -  - 103 13 AsT9 M0 V          
-1026 Aes                  E530146-8 De Lo Po                { -3 } (A00-4) [1147] - -  - 725 15 AsT3 G7 IV         
+1026 Aes                  E530156-8 De Lo Po                { -3 } (A00-4) [1147] - -  - 125 15 AsT8 G7 IV         
 1030 Auhkolaiwe           E564834-6 Ri Pa Ph                { -1 } (A76-3) [6734] - -  - 602 7  AsWc M2 V          
 1121 Yarikht              E88598B-8 Hi Ga Pr                { -1 } (G88+1) [B87A] - -  - 214 17 AsMw K6 V M5 V     
 1124 Khyehari             B6A6114-8 Fl Lo                   { -1 } (600-3) [1136] - R  - 103 12 AsMw M1 V          
-1127 Etea                 XA9A483-5 Ni Oc Fo                { -3 } (631-5) [1122] - -  R 702 9  AsT0 F4 V M2 V     
-1128 Kuhahteiw            A559367-C Lo O:1329               { 1 }  (921+1) [345C] - T  - 204 15 AsT2 M6 III K5 V   
+1127 Etea                 XA9A483-5 Ni Oc Fo Lt             { -3 } (631-5) [1122] - -  R 702 9  AsT0 F4 V M2 V     
+1128 Kuhahteiw            A559347-C Lo Ht                   { 1 }  (921+1) [345C] - T  - 304 15 AsT2 K5 V M6 V     
 1221 Yaioi                E4207B6-7 De He Na Po Pi          { -2 } (966-3) [6546] - -  - 903 8  AsT0 G0 V          
-1222 Wyawoisyatiy         B633268-C Lo Po O:1322            { 1 }  (611+1) [235C] - -  - 820 8  AsT6 M1 V          
+1222 Wyawoisyatiy         B633268-C Lo Po O:1322 Ht         { 1 }  (611+1) [235C] - -  - 820 8  AsT6 M1 V          
 1223 Aiilaola             E438268-6 Lo O:1322               { -3 } (410-3) [2156] - -  - 204 17 AsT6 F3 V          
 1227 Hkoaotoh             A6117A6-B Ic Na Pi                { 2 }  (E6C+1) [694A] - R  - 614 13 AsT3 K0 V M7 V     
-1228 Akhtaolyefai         A550215-D De Lo Po                { 1 }  (711-1) [133B] - -  - 803 12 AsMw G7 V M9 V     
+1228 Akhtaolyefai         A550215-D De Lo Po Ht             { 1 }  (711-1) [133B] - -  - 803 12 AsMw G7 V M9 V     
 1321 Aoftea               B5968A9-A Pa Ph Pi                { 2 }  (E7B+3) [9A6B] - -  - 904 14 AsT0 M1 V M2 V     
 1322 Akehteh              B69A7CC-A Wa Pi Pz                { 2 }  (C6B+5) [A98D] - -  A 703 15 AsT6 M1 V M5 V M5 V
 1324 Aielrya              A521685-B He Na Ni Po             { 1 }  (A55-1) [4739] - R  - 102 13 AsT4 K1 V          
 1325 Uii                  E540834-6 De He Po Ph Pi          { -2 } (A75-4) [6634] - -  - 504 12 AsWc K0 V          
 1326 Eaou'                D400487-7 Ni Va                   { -3 } (631-3) [4157] - -  - 824 12 AsT5 M3 V M5 V     
+1328 Hfailiyr             E530267-6 De Lo Po O:1329         { -3 } (410-3) [2156] - -  - 713 12 AsTv M2 V          
 1329 Arareea              B564848-A Ri Pa Ph                { 4 }  (C7C+3) [8C5A] - RT - 411 5  AsTv M0 V          
-1330 Araiw                B411768-C Ic Na Pi O:1329         { 2 }  (D6C+2) [795C] - -  - 604 11 AsT2 M0 V M1 V     
+1330 Araiw                B411768-C Ic Na Pi O:1329 Ht      { 2 }  (D6C+2) [795C] - -  - 604 11 AsT2 M0 V M1 V     
 1423 Erehalruaoas         C555724-8 Ag                      { 0 }  (F68-2) [5736] - -  - 324 14 AsWc M3 V          
 1427 Akhteawau            B5515A8-B Ni Po                   { 1 }  (B45+1) [565B] - -  - 404 12 AsT5 K1 V M3 V     
-1530 Haktuea              B69A645-8 Ni Wa                   { -1 } (A53-3) [4536] - -  - 602 8  AsT9 M1 II         
+1530 Haktuea              B69A675-8 Ni Wa                   { 0 }  (A53-3) [4636] - RT - 102 8  AsTv M1 V          
 1621 Aihfe                B565846-A Ri Pa Ph                { 3 }  (E7C+2) [7B49] - -  - 422 13 AsT2 F5 V          
-1623 Eale                 C6A2594-8 Fl He Ni                { -2 } (B42-4) [3336] - -  - 313 7  AsT2 M0 V M2 V     
-1628 Oiloieseirl          B4358A5-C Ph                      { 2 }  (A7C+1) [6A3A] - -  - 700 8  AsT4 M1 V M5 V     
-1722 Yehyorl              D420977-A De He Hi In Na Po       { 2 }  (F8C+2) [9B5A] - -  - 422 10 AsSc M3 V          
-1723 Uiiykheikh           E8A7722-8 Fl                      { -2 } (F66-5) [3514] - -  - 215 15 AsT6 M1 V          
-1729 Iyeaases             AA95885-C Pa Ph Pi                { 2 }  (F7C+1) [6A3A] - -  - 105 12 AsT9 M1 V          
-1730 Laiktiya             A79A766-E Wa Pi O:1729            { 2 }  (B6D+1) [694D] - -  - 602 12 AsT9 G6 V M0 V     
-1821 Eafoarei             A61197B-D Hi Ic In Na             { 4 }  (F8G+5) [BD7F] - T  - 213 13 AsSc B6 III        
-1822 Fiyouakou            B674589-8 Ag Ni                   { 0 }  (944+1) [6569] - T  - 311 8  AsT2 G1 V M7 V M1 V
-1823 Esaeaw               C7B927B-A Fl Lo                   { 0 }  (710+2) [427C] - -  - 812 10 AsSc G5 V M9 V     
-1826 Eilreeafa            C638684-6 Ni                      { -2 } (852-4) [4434] - -  - 910 4  AsT4 K1 V          
-1828 Ofelarl              CA8927C-A Lo                      { 0 }  (710+3) [528D] - -  - 403 11 AsSc K2 IV         
-1829 Ilah                 E541489-7 He Ni Po                { -3 } (631-2) [5168] - -  - 913 11 AsT4 K5 V M2 V     
-1830 Koahalr              C89A569-A Ni Wa O:1931            { 0 }  (944+1) [656B] - -  - 202 15 AsT8 M2 V          
-1922 Htaiaurl             E757656-6 Ag Ni Ga                { -2 } (852-3) [5445] - -  - 112 13 AsT5 M4 II         
-1923 Khueihweah           B550148-B De Lo Po                { 1 }  (701+1) [125B] - R  - 204 12 AsT0 K4 V          
-1927 Hryo                 D551866-6 Po Ph O:2228            { -2 } (A75-3) [7645] - -  - 304 9  AsT8 K3 V M0 V     
-1928 Ahua'e'              D698668-5 Ag Ni O:2228            { -2 } (852-2) [6455] - -  - 702 6  AsT8 M1 V          
-1930 Ileayu               E754423-3 Ni Pa                   { -3 } (631-5) [1121] - -  - 912 11 AsT8 G2 V          
-2023 Ke                   E431554-6 Ni Po                   { -3 } (741-5) [3234] - -  - 613 12 AsT2 M1 V M4 V     
-2024 Leayukhtaye          A742886-C He Po Ph Pi             { 2 }  (C7C+1) [7A4B] - -  - 602 12 AsT5 K4 V M1 V M4 V
-2026 Hle'alrois           A550312-D De Lo Po                { 1 }  (921-3) [1419] - -  - 204 14 AsMw M1 V          
-2027 Soalakheaoue         A550468-8 De Ni Po O:2228         { -1 } (C32-1) [4358] - R  - 224 15 AsT8 M7 III D      
-2030 Ktilairurla          A6A6248-E Fl Lo                   { 1 }  (711+1) [235E] - -  - 903 13 AsT8 M2 V M5 V     
+1623 Eale                 C6A2594-8 Fl He Ni                { -2 } (B42-4) [3336] - -  - 213 7  AsTv M0 V M2 V     
+1628 Oiloieseirl          B435885-C Ph Ht                   { 2 }  (A7C+1) [6A3A] - R  - 300 8  AsVc M1 V M5 V     
+1722 Yehyorl              D420977-A De He Hi In Na Po       { 2 }  (F8C+2) [9B5A] - -  - 822 10 AsTv M3 V          
+1723 Uiiykheikh           E8A7752-8 Fl                      { -2 } (F66-5) [3514] - -  - 315 15 AsMw M1 V          
+1729 Iyeaases             AA95885-C Pa Ph Pi Ht             { 2 }  (F7C+1) [6A3A] - R  - 605 12 AsWc M1 V          
+1730 Laiktiya             A79A756-E Wa Pi Ht                { 2 }  (B6D+1) [694D] - T  - 102 12 AsTv G6 V M0 V     
+1821 Eafoarei             A61197B-D Hi Ic In Na Ht          { 4 }  (F8G+5) [BD7F] - T  - 213 13 AsSc B6 III        
+1822 Fiyouakou            B6745A9-8 Ag Ni                   { 0 }  (944+1) [6569] - T  - 611 8  AsT2 G1 V M7 V M1 V
+1823 Esaeaw               C7B927B-A Fl Lo                   { 0 }  (710+2) [427C] - R  - 812 10 AsSc G5 V M9 V     
+1826 Eilreeafa            C638624-6 Ni                      { -2 } (852-4) [4434] - -  - 310 4  AsT4 K1 V          
+1828 Ofelarl              CA8927C-A Lo                      { 0 }  (710+3) [528D] - -  - 203 11 AsTv K2 IV         
+1829 Ilah                 E541489-7 He Ni Po                { -3 } (631-2) [5168] - -  - 713 11 AsMw K5 V M2 V     
+1830 Koahalr              C89A559-A Ni Wa                   { 0 }  (944+1) [656B] - -  - 102 15 AsTv M2 V          
+1922 Htaiaurl             E757676-6 Ag Ni Ga                { -2 } (852-3) [5445] - -  - 712 13 AsSc K2 V          
+1923 Khueihweah           B550148-B De Lo Po                { 1 }  (701+1) [125B] - R  - 104 12 AsVc K4 V          
+1927 Hryo                 D551886-6 Po Ph                   { -2 } (A75-3) [7645] - -  - 304 9  AsVc K3 V M0 V     
+1928 Ahua'e'              D698648-5 Ag Ni Lt                { -2 } (852-2) [6455] - -  - 502 6  AsMw M1 V          
+1930 Ileayu               E754483-3 Ni Pa Lt                { -3 } (631-5) [1121] - -  - 112 11 AsT1 G2 V          
+2023 Ke                   E431574-6 Ni Po                   { -3 } (741-5) [3234] - -  - 613 12 AsSc M1 V M4 V     
+2024 Leayukhtaye          A742836-C He Po Ph Pi Ht          { 2 }  (C7C+1) [7A4B] - T  - 202 12 AsT2 K4 V M1 V M4 V
+2026 Hle'alrois           A550342-D De Lo Po Ht             { 2 }  (922-3) [1519] - RT - 204 14 AsTv M1 V          
+2027 Soalakheaoue         A550448-8 De Ni Po                { -1 } (C32-1) [4358] - R  - 224 15 AsTv M1 V          
+2030 Ktilairurla          A6A6278-E Fl Lo Ht                { 1 }  (711+1) [235E] - R  - 503 13 AsSc M2 V M5 V     
 2121 Yuki'yefaorl         C55098B-A De Hi Po                { 2 }  (E8C+4) [BB7C] - T  - 403 10 AsTv M2 V          
-2125 Airahwoiwoiw         B550489-B De Ni Po                { 1 }  (934+2) [556C] - T  - 903 12 AsT3 M6 II         
+2125 Airahwoiwoiw         B550459-B De Ni Po                { 1 }  (934+2) [556C] - T  - 403 12 AsT0 M3 V          
 2126 Stetl                D5339B8-7 Hi Na Po Pz             { -1 } (B88-1) [9857] - -  A 301 9  AsVc K7 V M2 V     
-2129 Yoaorelakh           B9DA278-B Lo Wa                   { 1 }  (A11+1) [235B] - -  - 724 15 AsSc F0 V          
-2130 Aheaoaa              E000767-9 As Na Va Pi O:2228      { -1 } (D68-1) [7659] - -  - 313 10 AsT8 M0 V          
-2224 Ahteayew             C85745A-A Ni Ga Pa                { 0 }  (A33+2) [647C] - -  - 313 10 AsT1 G2 V M5 V     
-2226 Kheayeh              B6A5687-8 Fl Ni                   { -1 } (A53-1) [6558] - -  - 702 11 AsT2 M0 V M3 V     
+2129 Yoaorelakh           B9DA258-B Lo Wa                   { 1 }  (A11+1) [235B] - -  - 424 15 AsVc F0 V          
+2130 Aheaoaa              E000787-9 As Na Va Pi             { -1 } (D68-1) [7659] - -  - 313 10 AsT2 M0 V          
+2224 Ahteayew             C85745A-A Ni Ga Pa                { 0 }  (A33+2) [647C] - -  - 213 10 AsMw G2 V M5 V     
+2226 Kheayeh              B6A5687-8 Fl Ni                   { -1 } (A53-1) [6558] - R  - 302 11 AsVc M0 V M3 V     
 2228 Alaoa                B79AA85-B Hi In Wa                { 4 }  (J9F+2) [8E39] - T  - 624 17 AsT2 K3 V          
-2323 Akhya                A437A58-E Hi                      { 3 }  (F9F+3) [AD5E] - R  - 203 10 AsMw G4 V          
-2327 Oliy                 A431566-D Ni Po O:2228            { 1 }  (C45+1) [464C] - -  - 705 14 AsT8 M3 V          
-2329 Arl                  B596686-9 Ag Ni                   { 1 }  (B55+1) [5748] - -  - 903 10 AsT9 M0 V          
-2330 Keaoialeirou         C434835-A Ph                      { 1 }  (E7A-1) [6938] - -  - 113 12 AsWc G4 V          
+2323 Akhya                A437A58-E Hi Ht                   { 3 }  (F9F+3) [AD5E] - R  - 203 10 AsMw G4 V          
+2327 Oliy                 A431586-D Ni Po Ht                { 2 }  (C45+1) [474C] - RT - 705 14 AsT8 M3 V          
+2329 Arl                  B596676-9 Ag Ni                   { 1 }  (B55+1) [5748] - R  - 403 10 AsSc G0 V          
+2330 Keaoialeirou         C434885-A Ph                      { 1 }  (E7A-1) [6938] - T  - 113 12 AsTv G4 V          
 2423 Iyeaaerakh           C430121-A De Lo Po                { 0 }  (500-4) [1116] - -  - 120 13 AsT1 K5 V          
-2429 Yaou                 B100388-E Lo Va                   { 1 }  (B21+1) [345E] - R  - 524 18 AsT7 K4 V M2 V     
-2430 Eakye                E66A313-5 Lo Wa                   { -3 } (520-5) [1122] - -  - 503 14 AsMw K8 V M1 V     
+2429 Yaou                 B100358-E Lo Va Ht                { 1 }  (B21+1) [345E] - R  - 124 18 AsTv K4 V M2 V     
+2430 Eakye                E66A383-5 Lo Wa Lt                { -3 } (520-5) [1122] - -  - 103 14 AsMw K8 V M1 V     
 2522 Reiwaosi             D997978-8 Hi In                   { 0 }  (E89+1) [9958] - R  - 603 6  AsSc K0 V          
 2527 Keyakhyuei           E101957-9 Hi Ic In Na Va          { 1 }  (F8B+1) [9A59] - -  - 204 13 AsTv K2 V M9 V     
-2528 Iouhiwuaraih         E654247-7 Lo                      { -3 } (410-3) [2157] - -  - 613 14 AsT8 F0 III        
-2530 Ahiyh                A665487-D Ni Ga Pa                { 1 }  (934+1) [455D] - R  - 103 10 AsT4 G2 V          
+2528 Iouhiwuaraih         E654277-7 Lo                      { -3 } (410-3) [2157] - -  - 113 14 AsSc F0 V          
+2530 Ahiyh                A665497-D Ni Ga Pa Ht             { 1 }  (934+1) [455D] - R  - 803 10 AsTv G2 V          
 2623 Wahekhelrye          E7BA688-8 Fl Ni                   { -3 } (B51-3) [6358] - -  - 503 15 AsT0 K3 V          
 2625 Iyei                 A665697-8 Ag Ni Ga Ri             { 1 }  (C55+1) [6758] - -  - 904 10 AsT9 K0 V          
-2626 Ayeaihairiyh         E540169-5 De He Lo Po O:2726      { -3 } (300-2) [2166] - -  - 303 14 AsT6 K6 V M3 V     
-2629 Khtye'yur            B569688-B Ni Ri                   { 2 }  (A56+2) [685B] - R  - 611 8  AsT4 M2 V          
-2630 Haoekhealya'         C431414-9 Ni Po                   { -1 } (A32-3) [2337] - -  - 513 7  AsMw K2 V          
+2626 Ayeaihairiyh         E540169-5 De He Lo Po O:2726 Lt   { -3 } (300-2) [2166] - -  - 303 14 AsT6 K6 V M3 V     
+2629 Khtye'yur            B569698-B Ni Ri                   { 2 }  (A56+2) [685B] - R  - 111 8  AsWc M2 V          
+2630 Haoekhealya'         C431434-9 Ni Po                   { -1 } (A32-3) [2337] - R  - 213 7  AsMw K2 V          
 2726 Ftiwaia              B550658-9 De Ni Po                { 0 }  (B54+1) [6659] - -  - 303 11 AsT6 M0 V          
-2728 Htayueeiliyw         B434767-C O:2629                  { 2 }  (C6C+2) [795C] - -  - 703 13 AsT4 G1 V          
-2823 Yeifiy               B420725-C De He Na Po Pi          { 2 }  (C6C+1) [593A] - -  - 803 12 AsMw M0 V M3 V     
+2728 Htayueeiliyw         B434757-C Ht                      { 2 }  (C6C+2) [795C] - -  - 503 13 AsT2 G1 V          
+2823 Yeifiy               B420725-C De He Na Po Pi Ht       { 2 }  (C6C+1) [593A] - -  - 803 12 AsMw M0 V M3 V     
 2827 Teieiweiloh          D548566-6 Ag Ni O:3225            { -2 } (742-3) [4345] - -  - 100 10 AsT6 M1 V          
-2921 Khyaa                C4246A9-7 Ni                      { -2 } (852-1) [7468] - -  - 800 4  AsT9 K5 III        
+2921 Khyaa                C4246A9-7 Ni                      { -2 } (852-1) [7468] - T  - 700 4  AsT7 K5 V          
 2922 Fteas                E554166-7 Lo O:2823               { -3 } (300-4) [1146] - -  - 112 8  AsMw M3 V          
-2923 Khuyoholoi           E410000-0 Ba                      { -3 } (200-5) [0000] - -  - 003 14 AsXX M1 V          
+2923 Khuyoholoi           E410000-0 Ba Lt                   { -3 } (200-5) [0000] - -  - 003 14 AsXX M1 V          
 2924 Esteisah             B51168A-A Ic Na Ni                { 1 }  (E55+3) [877C] - -  - 315 16 AsT9 M3 V          
 2926 Ktata                C550113-8 De Lo Po                { -2 } (900-5) [1125] - -  - 624 16 AsMw M1 V          
-2927 Au                   E579514-5 Ni                      { -3 } (741-5) [3233] - -  - 524 12 AsMw M1 V M3 V     
+2927 Au                   E579514-5 Ni Lt                   { -3 } (741-5) [3233] - -  - 524 12 AsMw M1 V M3 V     
 3022 Heahyorlalr          C101868-A Ic Na Va Ph Pi O:2823   { 1 }  (C7A+1) [895A] - -  - 302 13 AsMw K3 V          
 3023 Khteie               B9D6659-A Ni                      { 1 }  (A55+2) [776B] - R  - 911 14 AsT6 M2 V          
-3027 Aoukhyow             A57A276-D Lo Wa                   { 1 }  (811+1) [134C] - -  - 422 12 AsSc K5 V M0 V M7 V
-3029 Tyukhisearl          C76A59C-A Ni Wa Pr Da             { 0 }  (744+3) [858D] - -  A 600 6  AsT1 M8 III        
-3129 Tluarl               A435169-E Lo O:3130               { 1 }  (801+2) [226F] - -  - 423 18 AsT7 M0 V          
-3130 Tuakee'              B77A783-C Wa Pi                   { 2 }  (A6C-1) [4929] - -  - 410 11 AsT7 M2 V          
+3027 Aoukhyow             A57A276-D Lo Wa Ht                { 1 }  (811+1) [134C] - -  - 422 12 AsSc K5 V M0 V M7 V
+3029 Tyukhisearl          C76A58C-A Ni Wa Pr Da             { 0 }  (744+3) [858D] - -  A 400 6  AsMw M8 III        
+3129 Tluarl               A435169-E Lo O:3130 Ht            { 1 }  (801+2) [226F] - -  - 423 18 AsT7 M0 V          
+3130 Tuakee'              B77A783-C Wa Pi Ht                { 2 }  (A6C-1) [4929] - -  - 410 11 AsT7 M2 V          
 3223 Taaouah              C596868-8 Pa Ph Pi O:3225         { -1 } (E77-1) [8758] - -  - 313 11 AsT6 M3 V          
 3224 Heaweh               A631667-9 Na Ni Po O:3225         { 0 }  (B54+1) [6659] - -  - 303 10 AsT6 M2 V          
 3225 Alaiheyelail         B668848-A Ri Pa Ph                { 3 }  (E7C+3) [8B5A] - R  - 422 10 AsMw G4 V          
 3226 Tryuowao             B57A694-B Ni Wa                   { 1 }  (D55-1) [4739] - -  - 814 12 AsT8 K4 V M0 V     
 0132 Fteaoeaa             C89A48A-8 Ni Wa                   { -2 } (731+1) [627A] - -  - 101 9  AsT1 K4 V          
 0133 Iylei                C657A7A-B Ga Hi                   { 2 }  (C99+1) [AC5B] - T  - 114 13 AsSc G3 V M5 V     
-0139 Keiilryeha           D755487-4 Ni Ga Pa                { -3 } (631-3) [4154] - -  - 703 8  AsT4 G0 V M0 V     
-0232 Earlea               A665368-9 Lo Ga O:0333            { 0 }  (920+1) [3359] - -  - 104 9  AsT7 A1 V          
+0139 Keiilryeha           D755487-4 Ni Ga Pa Lt             { -3 } (631-3) [4154] - -  - 703 8  AsT4 G0 V M0 V     
+0232 Earlea               A665338-9 Lo Ga                   { 0 }  (920+1) [3359] - R  - 404 9  AsMw F1 V          
 0233 Ftiyeeal             B7646AB-8 Ag Ni Ri Da             { 1 }  (D55+3) [877A] - -  A 505 11 AsT5 G0 V          
-0235 Khiyw                A584483-D Ni Pa                   { 1 }  (B34-2) [152A] - -  - 514 14 AsT4 M3 V          
+0235 Khiyw                A584483-D Ni Pa Ht                { 1 }  (B34-2) [152A] - -  - 514 14 AsT4 M3 V          
 0240 Asealaos             C879946-B Hi In                   { 3 }  (E8E+2) [8C4A] - -  - 612 14 AsMw M1 V M5 V     
 0333 Hkahai               B886683-A Ag Ni Ga Ri             { 3 }  (D57+1) [3927] - R  - 105 9  AsVc K3 V M8 V     
 0337 Fiylrefteir          D843466-7 Ni Po O:0338            { -3 } (631-4) [3146] - -  - 100 4  AsT6 M1 V M5 V     
@@ -422,101 +423,101 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 0431 Weyelye              B551446-7 Ni Po                   { -1 } (632-2) [3346] - R  - 902 11 AsT4 M1 V          
 0437 Aoiteales            B578389-B Lo                      { 1 }  (721+2) [446C] - -  - 220 7  AsT6 G5 V          
 0440 Hekhikhawe           B89A634-A Ni Wa                   { 1 }  (B55-1) [4738] - -  - 303 9  AsT2 G3 V M6 V M4 V
-0535 Ktahoues             E555245-7 Lo                      { -3 } (410-5) [1135] - -  - 900 9  AsT7 K9 III D      
+0535 Ktahoues             E555215-7 Lo                      { -3 } (410-5) [1135] - -  - 500 9  AsMw K9 V          
 0540 Ktiyw                E57878A-6 Ag Pi                   { -1 } (966+1) [9678] - -  - 904 7  AsT1 M0 V          
 0631 Khtehoirei           B421789-A He Na Po Pi             { 2 }  (E6B+3) [896B] - -  - 305 10 AsT8 M1 V          
 0633 Tyaw                 C694366-9 Lo O:0631               { -1 } (820-2) [2248] - -  - 912 15 AsT8 M3 V          
 0635 Hyaikh               B648667-A Ag Ni O:0333            { 2 }  (856+2) [685A] - -  - 700 7  AsT7 M2 V          
-0639 Uauaestasiy'         B00076A-D As Na Va Pi O:0440      { 2 }  (E6D+4) [997F] - -  - 605 9  AsT2 M1 V          
+0639 Uauaestasiy'         B00076A-D As Na Va Pi O:0440 Ht   { 2 }  (E6D+4) [997F] - -  - 605 9  AsT2 M1 V          
 0640 Uaeeakhtiylr         A562587-B Ni Pr                   { 1 }  (B45+1) [565B] - -  - 222 15 AsT3 K4 V          
 0732 Htuatreisea          CA97414-9 Ni Pa                   { -1 } (932-3) [2337] - -  - 403 10 AsMw M1 V          
-0838 Heewyeheh            A575868-C Pa Ph Pi O:1240         { 2 }  (C7C+2) [8A5C] - R  - 502 8  AsT6 G0 V M0 V     
+0838 Heewyeheh            A575868-C Pa Ph Pi O:1240 Ht      { 2 }  (C7C+2) [8A5C] - R  - 502 8  AsT6 G0 V M0 V     
 0840 Iylas                E411846-7 Ic Na Ph Pi             { -2 } (A76-3) [7646] - -  - 604 12 AsT4 M0 V M2 V     
 0932 Alouh                B550867-A De Po Ph O:0631         { 2 }  (C7B+2) [8A5A] - -  - 202 7  AsT8 F3 V          
 0934 Hlaire               C7A4359-B Fl Lo                   { 0 }  (720+1) [436C] - -  - 702 8  AsT9 G3 V M3 V     
-0936 Oaiysiyaolra         A6A527B-E Fl Lo                   { 1 }  (A11+3) [437G] - -  - 724 9  AsSc K2 III D      
+0936 Oaiysiyaolra         A6A526B-E Fl Lo O:0838 Ht         { 1 }  (A11+3) [437G] - T  - 324 9  AsMw K2 IV         
 0939 Wahahoi              C678268-6 Lo O:1240               { -2 } (410-2) [2156] - -  - 232 16 AsT6 K6 V          
 1032 Htai                 C59A498-A Ni Wa                   { 0 }  (A33+1) [445A] - -  - 304 9  AsT8 K2 IV M8 V    
 1034 Htoihfeaail          D3118B6-8 Ic Na Ph Pi             { -2 } (E76-3) [7647] - -  - 522 17 AsT1 M1 V M1 V     
-1131 Easah                E421566-7 He Ni Po O:1329         { -3 } (741-4) [4246] - -  - 701 10 AsT2 G7 III        
-1132 Lauetreah            X8567C9-2 Ag Ga Fo                { -1 } (964+1) [8663] - -  R 513 11 AsT4 M1 V          
+1131 Easah                E421526-7 He Ni Po                { -3 } (741-4) [4246] - -  - 101 10 AsMw G7 IV         
+1132 Lauetreah            X8567C9-2 Ag Ga Fo Lt             { -1 } (964+1) [8663] - -  R 513 11 AsT4 M1 V          
 1135 Erlaorastea'         D732167-8 Lo Po O:1336            { -3 } (700-3) [1158] - -  - 413 12 AsT7 G0 V M8 V     
 1138 Ufihka'              B550245-B De Lo Po                { 1 }  (611-1) [1339] - R  - 811 12 AsT6 K3 V M1 V     
 1139 Ahoaaoe              B54076A-A De He Po Pi O:1240      { 2 }  (B6B+4) [997C] - R  - 902 9  AsT6 M1 V M8 V     
 1240 Yoileiraikh          C432974-9 Hi Na Po                { 1 }  (G8B-1) [7A37] - -  - 614 13 AsSc M1 V M1 V     
 1332 Iilyewe              B8C5636-9 Fl Ni                   { 0 }  (A54-1) [5648] - -  - 220 9  AsT7 M3 V          
-1333 Ahahearele           C534134-A Lo                      { 0 }  (800-2) [1138] - -  - 514 9  AsT6 M1 V          
-1334 Hkieikhaiw           B79A446-C Ni Wa                   { 1 }  (934+1) [354B] - -  - 503 12 AsT0 M1 V M8 V     
-1335 Asta                 C636668-7 Ni O:1336               { -2 } (852-2) [6457] - -  - 503 12 AsT7 G2 V M6 V M8 V
-1336 Ieaw                 C430886-A De Na Po Ph             { 1 }  (H7A+1) [7949] - -  - 325 18 AsT7 M1 V M3 V     
-1337 Eileilahya           C89966B-5 Ni O:1336               { -2 } (852+1) [8477] - -  - 204 11 AsT7 M0 V          
-1338 Htawuruawaw          A748499-B Ni Pa                   { 1 }  (C34+2) [556C] - R  - 724 11 AsT1 M2 V          
-1432 Uktyukhal            C542369-6 He Lo Po O:1329         { -2 } (520-1) [4167] - -  - 200 7  AsT2 M2 V M4 V     
-1435 Eaoeafyase           D546425-5 Ni Pa                   { -3 } (631-5) [2133] - -  - 802 10 AsT6 M2 V          
-1436 Ealahiylua           C420685-7 De He Na Ni Po          { -2 } (852-4) [4435] - -  - 622 13 AsT3 K2 V          
-1437 Eawesoih             C000787-A As Na Va Pi             { 1 }  (C6A+1) [785A] - -  - 612 10 AsT4 M0 V M9 V     
-1438 Heaoa                E5438A8-6 Po Ph Pi                { -2 } (A75-2) [8656] - -  - 904 10 AsT3 K1 V          
-1531 Kheaw                A311214-E Ic Lo                   { 1 }  (B11-1) [133C] - -  - 525 16 AsMw K8 V          
-1532 Hweaai               C698466-9 Ni Pa O:1329            { -1 } (B32-2) [3348] - -  - 405 12 AsT2 G5 IV         
+1333 Ahahearele           C534164-A Lo O:1332               { 0 }  (800-2) [1138] - R  - 614 9  AsMw M1 V          
+1334 Hkieikhaiw           B79A486-C Ni Wa Ht                { 1 }  (934+1) [354B] - R  - 103 12 AsWc M1 V M8 V     
+1335 Asta                 C636638-7 Ni                      { -2 } (852-2) [6457] - R  - 203 12 AsWc G2 V M6 V M8 V
+1336 Ieaw                 C430886-A De Na Po Ph             { 1 }  (H7A+1) [7949] - -  - 125 18 AsWc M1 V M3 V     
+1337 Eileilahya           C89967B-5 Ni Lt                   { -2 } (852+1) [8477] - -  - 304 11 AsSc M0 V          
+1338 Htawuruawaw          A748459-B Ni Pa                   { 1 }  (C34+2) [556C] - R  - 124 11 AsTv M2 V          
+1432 Uktyukhal            C542359-6 He Lo Po                { -2 } (520-1) [4167] - R  - 600 7  AsVc M2 V M4 V     
+1435 Eaoeafyase           D546485-5 Ni Pa Lt                { -3 } (631-5) [2133] - -  - 202 10 AsMw K2 V          
+1436 Ealahiylua           C420655-7 De He Na Ni Po          { -2 } (852-4) [4435] - R  - 122 13 AsWc K2 V          
+1437 Eawesoih             C000777-A As Na Va Pi             { 1 }  (C6A+1) [785A] - -  - 212 10 AsSc M0 V M9 V     
+1438 Heaoa                E5438B8-6 Po Ph Pi                { -2 } (A75-2) [8656] - -  - 904 10 AsTv K1 V          
+1531 Kheaw                A311274-E Ic Lo Ht                { 2 }  (B12-1) [143C] - RT - 125 16 AsSc K8 V          
+1532 Hweaai               C698476-9 Ni Pa                   { -1 } (B32-2) [3348] - -  - 805 12 AsTv G5 V          
 1534 Syefaoi              E895483-7 Ni Pa                   { -3 } (631-5) [1124] - -  - 312 10 AsT4 M2 V          
-1536 Iyhahiaah            C879587-7 Ni                      { -2 } (742-2) [5357] - -  - 704 15 AsT6 G6 III D      
+1536 Iyhahiaah            C879537-7 Ni                      { -2 } (742-2) [5357] - -  - 104 15 AsVc G6 V BD       
 1537 Hwis                 C756515-9 Ag Ni Ga                { 0 }  (944-2) [3537] - R  - 702 9  AsMw F4 V          
-1636 Ailr                 C59A166-9 Lo Wa O:1836            { -1 } (300-2) [1148] - -  - 100 11 AsT0 M3 V          
-1637 Oareasyoheah         C577833-8 Pa Ph Pi                { -1 } (D77-4) [5725] - -  - 103 13 AsT9 M1 V          
-1638 Eatlaihiyia          B310979-D Hi In Na                { 4 }  (F8G+5) [AD6E] - T  - 104 11 AsSc A2 V          
-1733 Hkearlyuwyo          E579444-7 Ni                      { -3 } (631-5) [2135] - -  - 414 14 AsT2 K2 V M8 V     
+1636 Ailr                 C59A166-9 Lo Wa O:1638            { -1 } (300-2) [1148] - -  - 100 11 AsSc M3 V          
+1637 Oareasyoheah         C577883-8 Pa Ph Pi                { -1 } (D77-4) [5725] - R  - 603 13 AsTv M1 V          
+1638 Eatlaihiyia          B310979-D Hi In Na Ht             { 4 }  (F8G+5) [AD6E] - T  - 104 11 AsSc A2 V          
+1733 Hkearlyuwyo          E579484-7 Ni                      { -3 } (631-5) [2135] - -  - 214 14 AsWc K2 V M8 V     
 1734 Aokhalisi            C101998-A Hi Ic In Na Va          { 4 }  (E8D+3) [9D5A] - RT - 203 14 AsTv M2 V          
-1735 Eataieawaii          C546495-5 Ni Pa                   { -2 } (631-4) [2233] - -  - 423 13 AsT3 M2 V M7 V     
-1736 Yoyuseahoil          A43127A-E Lo Po                   { 1 }  (811+3) [437G] - -  - 604 10 AsSc M1 V M1 V     
-1739 Eeiweah              E000885-7 As Na Va Ph Pi          { -2 } (A76-4) [6635] - -  - 703 9  AsT0 M2 V          
-1740 Eawyuyeeasas         C5328AB-9 Na Po Ph Pz             { 0 }  (B79+2) [A87B] - -  A 701 5  AsT3 M1 V          
-1832 Tyuiyi               C576166-9 Lo O:1931               { -1 } (600-2) [1148] - -  - 203 16 AsT8 A5 V          
-1836 Hwaoye               B550887-A De Po Ph                { 2 }  (D7B+2) [8A5A] - -  - 103 11 AsT0 F4 V M3 V     
-1837 Aktafaua             BA9A233-D Lo Oc                   { 1 }  (611-2) [132A] - -  - 702 8  AsT1 M1 V M4 V     
-1931 Oihreailre'          B424858-D Ph Pi                   { 2 }  (B7D+2) [8A5D] - -  - 601 12 AsT8 A1 IV         
-1932 Eaeaayetlea          B543545-7 Ni Po                   { -1 } (743-3) [3435] - -  - 402 5  AsT8 M1 V          
-1934 Hlii                 B55855A-7 Ag Ni                   { 0 }  (744+2) [7579] - -  - 512 13 AsT9 K0 V M6 V     
-1937 Hteireiheia          B755116-B Lo Ga                   { 1 }  (701+1) [124A] - -  - 404 17 AsT2 G8 V M6 V     
-1939 Hyuhaulyo            E551683-3 Ni Po                   { -3 } (851-5) [3321] - -  - 223 13 AsT0 M1 V M5 V     
-2031 Hkeiyhous            C551267-9 Lo Po O:1931            { -1 } (810-1) [2159] - -  - 313 9  AsT8 M3 V          
-2032 Tlutrualr            B599868-B Ph Pi O:2034            { 2 }  (E7C+2) [8A5B] - R  - 904 15 AsT2 M2 V          
+1735 Eataieawaii          C546475-5 Ni Pa Lt                { -2 } (631-4) [2233] - R  - 423 13 AsSc M2 V M7 V     
+1736 Yoyuseahoil          A43125A-E Lo Po Ht                { 1 }  (811+3) [437G] - R  - 304 10 AsMw M1 V M1 V     
+1739 Eeiweah              E000885-7 As Na Va Ph Pi          { -2 } (A76-4) [6635] - -  - 103 9  AsVc M2 V          
+1740 Eawyuyeeasas         C53287B-9 Na Po Ph Pz             { 0 }  (B79+2) [A87B] - R  A 801 5  AsSc M1 V          
+1832 Tyuiyi               C576116-9 Lo                      { -1 } (600-2) [1148] - -  - 103 16 AsMw A5 V          
+1836 Hwaoye               B5508A7-A De Po Ph                { 2 }  (D7B+2) [8A5A] - R  - 103 11 AsWc F4 V M3 V     
+1837 Aktafaua             BA9A263-D Lo Oc O:1734 Ht         { 1 }  (611-2) [132A] - -  - 202 8  AsTv M1 V M4 V     
+1931 Oihreailre'          B424858-D Ph Pi Ht                { 2 }  (B7D+2) [8A5D] - -  - 101 12 AsVc F1 V          
+1932 Eaeaayetlea          B543595-7 Ni Po                   { -1 } (743-3) [3435] - T  - 102 5  AsTv M1 V          
+1934 Hlii                 B55858A-7 Ag Ni                   { 0 }  (744+2) [7579] - -  - 212 13 AsVc K0 V M6 V     
+1937 Hteireiheia          B755116-B Lo Ga                   { 1 }  (701+1) [124A] - -  - 104 17 AsMw G8 V M6 V     
+1939 Hyuhaulyo            E551683-3 Ni Po Lt                { -3 } (851-5) [3321] - -  - 223 13 AsT0 M1 V M5 V     
+2031 Hkeiyhous            C551247-9 Lo Po                   { -1 } (810-1) [2159] - -  - 113 9  AsVc M3 V          
+2032 Tlutrualr            B599838-B Ph Pi                   { 2 }  (E7C+2) [8A5B] - R  - 104 15 AsWc M2 V          
 2034 Tlaieayeho           C42197A-9 He Hi In Na Po          { 2 }  (G8C+4) [BB7B] - R  - 223 15 AsSc M3 V          
 2040 Akoueia              C43058C-7 De Ni Po Da             { -2 } (742+1) [838A] - -  A 223 17 AsT2 M2 V M3 V     
-2131 Alrae                E57A833-7 Wa Ph Pi                { -2 } (A76-5) [5624] - -  - 800 6  AsT1 G1 V M8 V     
-2132 Stewoheaw            A631632-C Na Ni Po                { 1 }  (A55-3) [2718] - R  - 602 9  AsT9 M3 III M5 V   
-2133 Hleasakhew           BA67568-7 Ag Ni Pr O:2034         { 0 }  (744+1) [5557] - R  - 403 6  AsT2 M2 V M6 V     
-2134 Khaukhya             C422424-8 He Ni Po                { -2 } (A31-4) [2236] - -  - 504 14 AsT2 M0 V M0 V     
-2135 Yuaftoulral          B5215AB-9 He Ni Po Da             { 0 }  (B44+2) [757B] - -  A 213 13 AsT8 M0 V          
-2136 Khtyeloisel          B99649B-B Ni Pa Da                { 1 }  (934+3) [657D] - -  A 303 11 AsT1 M0 V          
-2139 Tlaoihaoekh          A431468-C Ni Po O:Akti-2201       { 1 }  (C34+1) [455C] - -  - 315 13 AsTv F0 V M6 V     
-2235 Ouerl                A311685-C Ic Na Ni                { 1 }  (D55-1) [473A] - -  - 723 13 AsT9 K4 V          
+2131 Alrae                E57A883-7 Wa Ph Pi                { -2 } (A76-5) [5624] - -  - 700 6  AsMw G1 V M8 V     
+2132 Stewoheaw            A631632-C Na Ni Po Ht             { 1 }  (A55-3) [2718] - R  - 202 9  AsTv M3 V M5 V     
+2133 Hleasakhew           BA67588-7 Ag Ni Pr                { 0 }  (744+1) [5557] - R  - 103 6  AsTv K2 V M6 V     
+2134 Khaukhya             C422414-8 He Ni Po                { -2 } (A31-4) [2236] - R  - 304 14 AsMw M0 V M0 V     
+2135 Yuaftoulral          B52158B-9 He Ni Po Da             { 0 }  (B44+2) [757B] - R  A 813 13 AsVc M0 V          
+2136 Khtyeloisel          B99647B-B Ni Pa Da                { 1 }  (934+3) [657D] - R  A 703 11 AsSc M0 V          
+2139 Tlaoihaoekh          A431468-C Ni Po O:Akti-2201 Ht    { 1 }  (C34+1) [455C] - -  - 315 13 AsTv F0 V M6 V     
+2235 Ouerl                A311635-C Ic Na Ni Ht             { 1 }  (D55-1) [473A] - R  - 123 13 AsVc K4 V          
 2237 Urlaiwohoiw          E7B6486-8 Fl Ni                   { -3 } (931-4) [3147] - -  - 903 10 AsT3 K3 V          
 2240 Hiheasoae            B695584-8 Ag Ni                   { 0 }  (A44-2) [3536] - T  - 303 11 AsT8 M2 V          
 2333 Staeeakh             C585433-8 Ni Pa                   { -2 } (931-5) [1225] - -  - 921 9  AsT9 M0 V          
 2339 Teihi                D7A3266-8 Fl Lo O:Akti-2201       { -3 } (410-4) [1147] - -  - 600 8  AsTv M0 V M8 V     
 2434 Oarl                 D557166-7 Lo O:2235               { -3 } (300-4) [1146] - -  - 924 13 AsT9 M0 V M2 V     
-2439 Iyhteaw              D69545A-6 Ni Pa                   { -3 } (631-1) [6178] - -  - 903 9  AsT0 M7 III        
+2439 Iyhteaw              D69547A-6 Ni Pa                   { -3 } (631-1) [6178] - -  - 603 9  AsSc K7 V          
 2532 Oaaerleiwes          B7795A6-7 Ni                      { -1 } (743-2) [4446] - -  - 603 12 AsT0 M2 V          
 2534 Oaatrias             C6A9767-8 Fl O:2235               { -1 } (E67-1) [7658] - -  - 423 13 AsT9 M0 V          
 2535 Tesar                D000166-8 As Lo Va O:2235         { -3 } (600-4) [1147] - -  - 203 9  AsT9 G7 V          
 2537 Oasutryuh            E530884-7 De Na Po Ph             { -2 } (A76-4) [6635] - -  - 912 10 AsT8 M1 V M2 V     
-2636 Tua                  E8C7000-0 Ba Fl                   { -3 } (200-5) [0000] - -  - 004 10 AsXX G0 V          
-2731 Loiftiyer            C501569-9 Ic Ni Va O:2629         { -1 } (943+1) [646A] - -  - 402 12 AsT4 G0 V M3 V     
-2732 Kheir                E551884-6 Po Ph                   { -2 } (A75-4) [6634] - -  - 113 14 AsT6 M3 V          
+2636 Tua                  E8C7000-0 Ba Fl Lt                { -3 } (200-5) [0000] - -  - 004 10 AsXX G0 V          
+2731 Loiftiyer            C501549-9 Ic Ni Va                { -1 } (943+1) [646A] - R  - 402 12 AsVc G0 V M3 V     
+2732 Kheir                E551884-6 Po Ph                   { -2 } (A75-4) [6634] - -  - 113 14 AsTv M3 V          
 2735 Eahoirlealr          C6A7867-9 Fl Ph O:3134            { 0 }  (D79+1) [8859] - -  - 403 7  AsT9 M2 V          
-2740 Khoikheasi           B423974-E Hi In Na Po             { 4 }  (G8G+2) [7D3C] - T  - 923 14 AsSc M2 V M5 V     
-2836 Oiktau               X544413-5 Ni Pa Fo                { -3 } (631-5) [1122] - -  R 703 6  AsMw G1 V M9 V     
-2838 Triy                 B310488-C Ni                      { 1 }  (734+1) [455C] - -  - 501 8  AsT2 F0 IV         
-2933 Hkuawiy              B5889A6-C Hi Pr                   { 3 }  (D8E+2) [8C4B] - R  - 302 9  AsMw M1 V M9 V     
+2740 Khoikheasi           B423974-E Hi In Na Po Ht          { 4 }  (G8G+2) [7D3C] - T  - 923 14 AsSc M2 V M5 V     
+2836 Oiktau               X544413-5 Ni Pa Fo Lt             { -3 } (631-5) [1122] - -  R 703 6  AsMw G1 V M9 V     
+2838 Triy                 B310448-C Ni Ht                   { 1 }  (734+1) [455C] - -  - 601 8  AsTv F0 IV         
+2933 Hkuawiy              B5889A6-C Hi Pr Ht                { 3 }  (D8E+2) [8C4B] - R  - 302 9  AsMw M1 V M9 V     
 2938 Kao'eaiei            B435314-9 Lo                      { 0 }  (920-2) [1337] - -  - 404 14 AsMw M2 V          
 2939 Aekh                 X531415-6 Ni Po Fo                { -3 } (631-5) [2134] - -  R 923 15 AsMw M1 V M7 V     
-2940 Faulruaktair         E796000-0 Ba                      { -3 } (200-5) [0000] - -  - 012 14 AsXX M0 V          
-3037 Khtaooiiaa           A550866-C De Po Ph O:2740         { 2 }  (E7C+1) [7A4B] - -  - 404 13 AsT0 M1 V M5 V     
+2940 Faulruaktair         E796000-0 Ba Lt                   { -3 } (200-5) [0000] - -  - 012 14 AsXX M0 V          
+3037 Khtaooiiaa           A550866-C De Po Ph O:2740 Ht      { 2 }  (E7C+1) [7A4B] - -  - 404 13 AsT0 M1 V M5 V     
 3038 Yewaee               C57738A-9 Lo                      { -1 } (520+1) [527B] - -  - 700 10 AsT4 M3 V          
 3039 Eihalri              DA89368-8 Lo O:2740               { -3 } (920-3) [3158] - -  - 722 12 AsT0 K4 V M0 V     
-3131 Yelew                A663569-C Ni Pr O:3130            { 1 }  (B45+2) [666D] - -  - 904 12 AsT7 G4 V M2 V     
+3131 Yelew                A663569-C Ni Pr O:3130 Ht         { 1 }  (B45+2) [666D] - -  - 904 12 AsT7 G4 V M2 V     
 3134 Areis                C732755-A Na Po                   { 1 }  (A6A-1) [5838] - -  - 901 6  AsT9 K4 V          
 3140 Ktuwifyu             C687566-9 Ag Ni Ga Pr O:Akti-2901 { 0 }  (944-1) [4548] - -  - 511 7  AsMw M2 V M7 V M9 V
 3231 Eawai'               D89A256-A Lo Wa                   { -1 } (910-2) [1149] - -  - 323 13 AsT5 M0 V          
 3234 Atektye              C420469-8 De He Ni Po O:3134      { -2 } (831-1) [5269] - -  - 402 12 AsT9 F0 V M0 V     
-3235 Tyoh                 E59A559-5 Ni Wa                   { -3 } (741-2) [6266] - -  - 502 7  AsT5 K1 V          
+3235 Tyoh                 E59A559-5 Ni Wa Lt                { -3 } (741-2) [6266] - -  - 502 7  AsT5 K1 V          

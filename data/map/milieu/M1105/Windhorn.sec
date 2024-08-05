@@ -40,22 +40,22 @@
 
 Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N B  Z PBG W  A    Stellar            
 ---- -------------------- --------- -------------------- ------ ------- ------ - -- - --- -- ---- -------------------
-0104 Dognezafue           E989585-3 Ni Pr                { -3 } (741-5) [3231] - C  - 403 10 VVar F7 V M6 V          
+0104 Dognezafue           E989585-3 Ni Pr Lt             { -3 } (741-5) [3231] - C  - 403 10 VVar F7 V M6 V          
 0202 Dzoulodzzueng        B555774-A Ag                   { 3 }  (D6C+1) [5A38] - K  - 913 17 VVar F9 V M8 V          
-0204 Lliurr               EAE49C9-4 Hi Pz                { -1 } (B86+1) [A865] - -  A 514 16 VVar F4 V               
+0204 Lliurr               EAE49C9-4 Hi Pz Lt             { -1 } (B86+1) [A865] - -  A 514 16 VVar F4 V               
 0206 Ghoearrg             D000257-A As Lo Va             { -1 } (B10-1) [215A] - -  - 607 18 VVar G3 V M7 V M1 V     
 0207 Oganaksfouts         B797366-8 Lo                   { -1 } (920-2) [2247] - K  - 904 9  VVar F1 V               
-0302 Knoengrugh           D88A875-3 Ri Wa Ph             { -1 } (A75-3) [6731] - -  - 512 9  VVar G7 V M6 V M4 V     
-0310 Knoerorr             A310400-D Ni                   { 2 }  (D35-2) [1618] - CK - 816 18 VVar M1 V M2 V          
-0402 Genfoghudzuks        B56667A-5 Ag Ni Ri             { 1 }  (855+3) [8777] - -  - 900 9  VVar F4 V               
+0302 Knoengrugh           D88A875-3 Ri Wa Ph Lt          { -1 } (A75-3) [6731] - -  - 512 9  VVar G7 V M6 V M4 V     
+0310 Knoerorr             A310400-D Ni Ht                { 2 }  (D35-2) [1618] - CK - 816 18 VVar M1 V M2 V          
+0402 Genfoghudzuks        B56667A-5 Ag Ni Ri Lt          { 1 }  (855+3) [8777] - -  - 900 9  VVar F4 V               
 0403 Koeguksue            E569574-7 Ni Pr                { -3 } (741-5) [3235] - -  - 905 14 VVar G7 V               
 0407 Luaenak              CA9A622-6 Ni Oc                { -1 } (853-5) [2512] - CK - 916 11 VVar F1 V M3 V          
-0501 Ksuthakhful          C787400-5 Ni Ga Pa             { -2 } (631-5) [1211] - C  - 102 7  VVar F9 V M1 V          
-0502 Goeghfoedh           A8C7510-D Fl Ni                { 1 }  (945-3) [1618] - K  - 502 5  VVar M3 V               
+0501 Ksuthakhful          C787400-5 Ni Ga Pa Lt          { -2 } (631-5) [1211] - C  - 102 7  VVar F9 V M1 V          
+0502 Goeghfoedh           A8C7510-D Fl Ni Ht             { 1 }  (945-3) [1618] - K  - 502 5  VVar M3 V               
 0506 Kanagheg             C435421-6 Ni                   { -2 } (631-5) [1212] - -  - 312 10 VVar G0 V               
 0510 Gakhguekhs           A422877-B He Na Po Ph Pi       { 2 }  (E7C+2) [8A5B] - K  - 204 12 VVar F9 V G9 V M4 V     
 0605 Zuzukhgzuen          B68948A-7 Ni                   { -1 } (632+1) [6379] - -  - 815 16 VVar F1 V M4 V          
-0606 Gokal                E598778-5 Ag Pi                { -1 } (966-1) [7655] - -  - 605 11 VVar F0 V M3 V          
+0606 Gokal                E598778-5 Ag Pi Lt             { -1 } (966-1) [7655] - -  - 605 11 VVar F0 V M3 V          
 0608 Gvaefarr             D311687-7 Ic Na Ni             { -3 } (851-3) [6357] - K  - 904 12 VVar K9 V               
 0609 Laekhue              B64658B-6 Ag Ni                { 0 }  (744+2) [7578] - -  - 613 13 VVar K5 V               
 0610 Aengzothokh          E000752-8 As Na Va Pi          { -2 } (E66-5) [3514] - -  - 505 10 VVar M0 V M2 V          
@@ -64,39 +64,39 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0705 Kfaziaeng            E413778-7 Ic Na Pi             { -2 } (966-2) [7557] - C  - 104 13 VVar M2 V               
 0710 Orengsung            B646976-8 Hi In                { 2 }  (F8B+1) [8B47] - -  - 922 15 VVar F8 V M3 V          
 0802 Thousarllorr         C789775-9 Ri                   { 1 }  (A6A-1) [5837] - K  - 810 5  VVar F6 V               
-0804 Llakuerr             A543123-C Lo Po                { 1 }  (901-2) [1229] - K  - 624 12 VVar F1 V               
+0804 Llakuerr             A543123-C Lo Po Ht             { 1 }  (901-2) [1229] - K  - 624 12 VVar F1 V               
 0807 Nounraeltors         D100330-7 Lo Va                { -3 } (520-5) [1112] - C  - 411 11 VVar G5 V               
-0809 Defasul              E8A1000-0 Ba Fl He             { -3 } (200-5) [0000] - K  - 003 12 VVar G0 V               
-0901 Gholirrkekugh        A85A45A-C Ni Wa                { 2 }  (935+4) [667E] - CK - 203 9  VVar F8 V M7 V          
+0809 Defasul              E8A1000-0 Ba Fl He Lt          { -3 } (200-5) [0000] - K  - 003 12 VVar G0 V               
+0901 Gholirrkekugh        A85A45A-C Ni Wa Ht             { 2 }  (935+4) [667E] - CK - 203 9  VVar F8 V M7 V          
 0902 Oekheteueng          B7B0631-A He Ni                { 1 }  (C55-3) [2716] - -  - 604 11 VVar M2 V M3 V          
 0903 Khaekhag             C552553-7 Ni Po                { -2 } (742-5) [2324] - K  - 512 10 VVar F1 V               
-0909 Ksaezong             C776874-5 Pa Ph Pi             { -1 } (A76-3) [6733] - C  - 103 6  VVar F0 V M4 V          
+0909 Ksaezong             C776874-5 Pa Ph Pi Lt          { -1 } (A76-3) [6733] - C  - 103 6  VVar F0 V M4 V          
 0910 Eukure               C535578-9 Ni                   { -1 } (D43-1) [5459] - -  - 406 15 VVar M3 V M5 V          
 1001 Ukhsunkhukong        AAA4767-8 Fl O:                { 0 }  (B68+1) [7758] - K  - 211 10 VVar M0 V               
-1002 Touksousu            D545666-5 Ag Ni                { -2 } (852-3) [5444] - C  - 301 11 VVar F2 V               
+1002 Touksousu            D545666-5 Ag Ni Lt             { -2 } (852-3) [5444] - C  - 301 11 VVar F2 V               
 1004 Ksoekakforr          D30097B-7 Hi In Na Va          { 0 }  (B89+2) [B979] - -  - 104 12 VVar F0 V               
-1008 Dindhung             D65587A-4 Ga Pa Ph             { -2 } (A74+1) [A676] - C  - 700 4  VVar F6 V               
+1008 Dindhung             D65587A-4 Ga Pa Ph Lt          { -2 } (A74+1) [A676] - C  - 700 4  VVar F6 V               
 1009 Voagour              B200644-B Na Ni Va             { 1 }  (C55-1) [4739] - -  - 213 9  VVar G4 V               
 1106 Ngaengoedz           B679776-A Pi                   { 2 }  (E6B+1) [6949] - -  - 705 12 VVar F1 V               
 1109 Uethknal             E434512-6 Ni                   { -3 } (741-5) [1212] - C  - 400 9  VVar M0 V               
-1202 Aeghukhs             X648540-5 Ag Ni Fo             { -2 } (742-5) [1311] - -  R 504 13 VVar M1 V M2 V          
+1202 Aeghukhs             X648540-5 Ag Ni Fo Lt          { -2 } (742-5) [1311] - -  R 504 13 VVar M1 V M2 V          
 1203 Ouksu                C7A1222-8 Fl He Lo             { -1 } (710-5) [1114] - CK - 503 7  VVar G1 V M4 V          
-1301 Rrazoghkhaega        A541110-C He Lo Po             { 1 }  (501-3) [1217] - K  - 811 7  VVar F3 V               
+1301 Rrazoghkhaega        A541110-C He Lo Po Ht          { 1 }  (501-3) [1217] - K  - 811 7  VVar F3 V               
 1305 Fursoekhurs          C550430-7 De Ni Po             { -2 } (631-5) [1212] - K  - 724 14 VVar G5 V               
 1410 Gouueurr             E647222-6 Lo                   { -3 } (410-5) [1112] - C  - 422 11 NaVa F1 V               
-0111 Kfoghuenggzu         C554799-4 Ag                   { 0 }  (966+1) [8765] - -  - 303 12 VVar F1 V M2 V          
-0113 Seos                 B576685-5 Ag Ni                { 0 }  (854-2) [4633] - -  - 213 11 VVar F9 V M8 V M3 V     
+0111 Kfoghuenggzu         C554799-4 Ag Lt                { 0 }  (966+1) [8765] - -  - 303 12 VVar F1 V M2 V          
+0113 Seos                 B576685-5 Ag Ni Lt             { 0 }  (854-2) [4633] - -  - 213 11 VVar F9 V M8 V M3 V     
 0211 Dharukeksoue         C200A79-9 Hi In Na Va          { 2 }  (H9C+3) [BC6A] - -  - 505 18 VVar K0 V               
 0411 Zidzurz              B420778-9 De He Na Po Pi       { 1 }  (B6A+1) [7859] - K  - 402 10 VVar K0 V               
-0413 Gzoengsuerr          X571532-5 He Ni Fo             { -3 } (741-5) [1211] - -  R 511 6  VVar G7 V               
-0414 Gaedueng             B9AA356-D Fl Lo                { 2 }  (722+1) [254C] - CK - 402 13 VVar M5 III             
+0413 Gzoengsuerr          X571532-5 He Ni Fo Lt          { -3 } (741-5) [1211] - -  R 511 6  VVar G7 V               
+0414 Gaedueng             B9AA356-D Fl Lo Ht             { 2 }  (722+1) [254C] - CK - 402 13 VVar M5 III             
 0513 Idzaae               C400432-7 Ni Va                { -2 } (631-5) [1213] - -  - 117 17 VVar M2 V M5 V          
 0611 Zakhlluekh           B302200-9 Ic Lo Va             { 0 }  (510-4) [1214] - -  - 610 7  VVar M3 V               
 0712 Voerzuerrg           C543224-8 Lo Po                { -2 } (410-4) [1136] - -  - 600 7  VVar F2 V               
-0816 Ouluedzuezor         A425624-C Ni                   { 1 }  (A55-1) [473A] - -  - 302 11 NaVa M3 V               
+0816 Ouluedzuezor         A425624-C Ni Ht                { 1 }  (A55-1) [473A] - -  - 302 11 NaVa M3 V               
 2519 Lliaen               CAA8784-8 Fl                   { -1 } (E67-3) [5636] - -  - 414 12 NaVa K9 V               
 2611 Aedzko               C310230-B Lo                   { 0 }  (B10-4) [1216] - C  - 525 15 NaVa G5 V M8 V          
-2815 Izoeghzgu            B433344-D Lo Po                { 1 }  (721-1) [143B] - -  - 220 6  NaVa K8 V               
+2815 Izoeghzgu            B433344-D Lo Po Ht             { 1 }  (721-1) [143B] - -  - 220 6  NaVa K8 V               
 2919 Khokorrghoer         B796210-8 Lo                   { -1 } (610-5) [1113] - K  - 502 12 V17D F6 V               
 3013 Kagha                B561434-A Ni                   { 1 }  (734-1) [2538] - K  - 301 8  V17D F3 V M4 V          
 3017 Knukhsang            B410320-A Lo                   { 1 }  (921-3) [1415] - K  - 404 9  V17D M2 V               
@@ -106,8 +106,8 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3117 Khoodukhsoung        A987778-7 Ag Ri                { 2 }  (96A+2) [7957] - K  - 718 17 V17D F0 V M1 V F0 V     
 3119 Vokhson              B886AB9-B Hi Ga Pz             { 3 }  (C9E+4) [BD6C] - K  A 100 7  V17D F2 V               
 3120 Thanaezfus           E435648-6 Ni                   { -3 } (851-3) [6356] - C  - 504 14 V17D M3 V               
-3217 Uuergaetsze          D676788-5 Ag Pi                { -1 } (966-1) [7655] - -  - 317 16 V17D F4 V M0 V          
-3218 Onuekhs              C546757-5 Ag Pi                { 0 }  (967+1) [7755] - K  - 402 6  V17D K2 V               
+3217 Uuergaetsze          D676788-5 Ag Pi Lt             { -1 } (966-1) [7655] - -  - 317 16 V17D F4 V M0 V          
+3218 Onuekhs              C546757-5 Ag Pi Lt             { 0 }  (967+1) [7755] - K  - 402 6  V17D K2 V               
 1730 Ksalarrkfaegz        A55287A-A Po Ph                { 2 }  (C7B+4) [AA7C] - K  - 711 11 VNgC F0 V               
 1830 Otogaerrg            A896535-B Ag Ni                { 2 }  (C46+1) [3739] - -  - 814 12 VNgC F3 V               
 2126 Vaeghaarong          B500100-8 Lo Va                { -1 } (600-5) [1113] - -  - 203 8  V17D M1 V M3 V          
@@ -117,19 +117,19 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2430 Egvingour            E784112-6 Lo                   { -3 } (300-5) [1112] - -  - 310 12 V17D F2 V M0 V          
 2530 Gvoezonakh           C879735-9 Pi                   { 1 }  (A6A-1) [5837] - CK - 201 7  V17D F3 V M0 V          
 2625 Uaesu                B311898-7 Ic Na Ph Pi          { 0 }  (A78+1) [8857] - -  - 500 12 V17D F0 V               
-2627 Kaeidz               E543355-5 Lo Po                { -3 } (520-5) [1133] - C  - 104 11 V17D F0 V               
-2629 Uangi                A744457-D Ni Pa                { 1 }  (A34+1) [455D] - K  - 104 14 V17D F8 V               
+2627 Kaeidz               E543355-5 Lo Po Lt             { -3 } (520-5) [1133] - C  - 104 11 V17D F0 V               
+2629 Uangi                A744457-D Ni Pa Ht             { 1 }  (A34+1) [455D] - K  - 104 14 V17D F8 V               
 2630 Llueagharlaeg        C759445-8 Ni                   { -2 } (731-4) [2236] - -  - 810 4  V17D M2 V               
-2722 Votelthag            E540348-5 De He Lo Po          { -3 } (520-3) [3155] - C  - 622 13 V17D F1 V               
+2722 Votelthag            E540348-5 De He Lo Po Lt       { -3 } (520-3) [3155] - C  - 622 13 V17D F1 V               
 2821 Saetunuen            C420656-8 De He Na Ni Po       { -2 } (852-3) [5447] - K  - 100 4  V17D K3 V               
 2822 Aengkhekkuerr        C311557-9 Ic Ni                { -1 } (743-1) [5459] - K  - 300 6  V17D M2 V               
 2825 Akha                 B410885-9 Na Ph Pi             { 1 }  (E7A-1) [6937] - -  - 613 15 V17D G1 V               
-2826 Arrgksaers           C666689-3 Ag Ni Ga Ri          { 0 }  (854+1) [7664] - K  - 925 15 V17D F2 V               
-2921 Zasaeksogaeg         C556434-4 Ni Pa                { -2 } (631-4) [2232] - C  - 103 14 V17D F0 V               
+2826 Arrgksaers           C666689-3 Ag Ni Ga Ri Lt       { 0 }  (854+1) [7664] - K  - 925 15 V17D F2 V               
+2921 Zasaeksogaeg         C556434-4 Ni Pa Lt             { -2 } (631-4) [2232] - C  - 103 14 V17D F0 V               
 2926 Gvurrurrg            C5A3876-8 Fl Ph                { -1 } (A77-2) [7747] - C  - 500 7  V17D F9 V M7 V          
-2927 Gzenughodh           E797779-5 Ag Pi                { -1 } (966+1) [8666] - -  - 412 10 V17D F7 V               
+2927 Gzenughodh           E797779-5 Ag Pi Lt             { -1 } (966+1) [8666] - -  - 412 10 V17D F7 V               
 3023 Knueavilighz         D8B6978-8 Fl Hi In             { 0 }  (B89+1) [9958] - C  - 600 8  V17D M1 V M4 V          
-3025 Ksisaekazgou         D884562-3 Ag Ni Pr             { -2 } (742-5) [1311] - -  - 914 15 V17D K3 V               
+3025 Ksisaekazgou         D884562-3 Ag Ni Pr Lt          { -2 } (742-5) [1311] - -  - 914 15 V17D K3 V               
 3026 Etsiang              B552878-A Po Ph                { 2 }  (B7B+2) [8A5A] - K  - 210 4  V17D F1 V M4 V          
 3030 Aedzi                C540233-9 De He Lo Po          { 0 }  (610-3) [1226] - CK - 402 8  V17D F0 V               
 3122 Knagzourrg           A59588B-8 Pa Ph Pi             { 0 }  (B78+2) [A87A] - K  - 301 11 V17D F5 V               
@@ -138,63 +138,63 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3223 Vanezokhs            C500312-7 Lo Va                { -1 } (520-5) [1213] - CK - 715 13 V17D M1 V               
 3224 Nollae               C544558-9 Ag Ni                { 0 }  (744+1) [5559] - K  - 900 6  V17D M0 V               
 3225 Naeghutsghok         A523215-9 Lo Po                { 0 }  (610-2) [1237] - K  - 602 8  V17D M1 V               
-3230 Oerdirrgh            C77658B-5 Ag Ni                { 0 }  (744+2) [7577] - CK - 613 9  V17D F2 V               
-0137 Thognu               E543864-5 Po Ph Pi             { -2 } (A75-4) [6633] - -  - 104 11 VNgC F4 V               
-0237 Goza                 C867557-5 Ag Ni Ga Pr          { -1 } (743-1) [5455] - -  - 704 7  VNgC F9 V               
+3230 Oerdirrgh            C77658B-5 Ag Ni Lt             { 0 }  (744+2) [7577] - CK - 613 9  V17D F2 V               
+0137 Thognu               E543864-5 Po Ph Pi Lt          { -2 } (A75-4) [6633] - -  - 104 11 VNgC F4 V               
+0237 Goza                 C867557-5 Ag Ni Ga Pr Lt       { -1 } (743-1) [5455] - -  - 704 7  VNgC F9 V               
 0336 Ourrezuekh           B568675-9 Ag Ni Ri             { 2 }  (G56+1) [4837] - -  - 717 16 VNgC F9 V M3 V          
-0338 Uekotoeaerrar        E579425-5 Ni                   { -3 } (631-5) [2133] - -  - 506 14 VNgC G3 V M1 V          
-0436 Sotonuklloerr        C96877A-4 Ag Ri                { 1 }  (967+3) [9876] - C  - 816 14 VNgC F8 V M5 V          
+0338 Uekotoeaerrar        E579425-5 Ni Lt                { -3 } (631-5) [2133] - -  - 506 14 VNgC G3 V M1 V          
+0436 Sotonuklloerr        C96877A-4 Ag Ri Lt             { 1 }  (967+3) [9876] - C  - 816 14 VNgC F8 V M5 V          
 0437 Sueknazaerrg         E545400-8 Ni Pa                { -3 } (A31-5) [1113] - -  - 204 15 VNgC F1 V M0 V          
 0438 Kuerrughknoul        A657566-A Ag Ni Ga             { 2 }  (946+1) [4749] - K  - 820 10 VNgC F0 V               
 0440 Kfoenuerrgag         B544500-B Ag Ni                { 3 }  (C47-1) [1816] - CK - 205 10 VNgC F1 V M6 V          
-0534 Aghzouzknae          E6958AC-5 Pa Ph Pi Pz          { -2 } (A75+1) [B688] - C  A 917 19 VNgC F1 V M7 V F1 V     
-0633 Ngavi                E645430-5 Ni Pa                { -3 } (631-5) [1111] - C  - 620 11 VNgC F7 V               
+0534 Aghzouzknae          E6958AC-5 Pa Ph Pi Pz Lt       { -2 } (A75+1) [B688] - C  A 917 19 VNgC F1 V M7 V F1 V     
+0633 Ngavi                E645430-5 Ni Pa Lt             { -3 } (631-5) [1111] - C  - 620 11 VNgC F7 V               
 0639 Rollugz              A525589-B Ni                   { 1 }  (745+2) [666C] - -  - 900 7  VNgC M3 V               
 0640 Khusa                D61477B-7 Ic Pi                { -2 } (966+1) [9579] - K  - 212 15 VNgC F7 V               
 0736 Kueoets              E687977-7 Hi Ga Pr             { -1 } (B88-1) [9857] - C  - 513 11 VNgC F2 V               
-0740 Vedhaaez             A622A77-C He Hi In Na Po       { 4 }  (G9F+4) [AE5C] - -  - 304 12 VNgC G0 V M5 V          
+0740 Vedhaaez             A622A77-C He Hi In Na Po Ht    { 4 }  (G9F+4) [AE5C] - -  - 304 12 VNgC G0 V M5 V          
 0833 Kagaedzukh           C554566-8 Ag Ni O:             { -1 } (B43-2) [4447] - -  - 604 9  VNgC F3 V               
-0835 Figorurzaz           E878979-5 Hi In                { 0 }  (B88+1) [A966] - C  - 502 10 VNgC F2 V M6 V          
+0835 Figorurzaz           E878979-5 Hi In Lt             { 0 }  (B88+1) [A966] - C  - 502 10 VNgC F2 V M6 V          
 0836 Kanae                A310976-B Hi In Na             { 4 }  (D8F+3) [8D4A] - -  - 611 14 VNgC F6 V               
-0839 Kharorr              EAA7000-0 Ba Fl                { -3 } (200-5) [0000] - -  - 001 4  VNgC M3 V               
-0936 Khaevaen             X566576-1 Ag Ni Pr Fo          { -2 } (742-3) [4341] - -  R 302 11 VNgC F9 V M4 V          
+0839 Kharorr              EAA7000-0 Ba Fl Lt             { -3 } (200-5) [0000] - -  - 001 4  VNgC M3 V               
+0936 Khaevaen             X566576-1 Ag Ni Pr Fo Lt       { -2 } (742-3) [4341] - -  R 302 11 VNgC F9 V M4 V          
 0937 Kouz                 D430652-6 De Na Ni Po          { -3 } (851-5) [2312] - -  - 423 10 VNgC F9 V M8 V          
 0939 Dhokholtha           X42068D-7 De He Na Ni Po Fo    { -3 } (851+1) [A39B] - C  R 415 14 VNgC M0 V M8 V          
 1034 Sallougakh           E667431-7 Ni Ga Pa             { -3 } (631-5) [1113] - C  - 214 9  VNgC F3 V               
 1035 Dhoriz               A8A7444-A Fl Ni                { 1 }  (B34-1) [2538] - K  - 214 12 VNgC F9 IV K5 V         
 1038 Ouksae               B597220-6 Lo                   { -1 } (410-5) [1111] - K  - 925 17 VNgC F3 V M7 V          
-1039 Ughurz               A849376-C Lo                   { 1 }  (A21+1) [244B] - K  - 614 14 VNgC G3 V               
+1039 Ughurz               A849376-C Lo Ht                { 1 }  (A21+1) [244B] - K  - 614 14 VNgC G3 V               
 1040 Foaenaekh            E00066A-7 As Na Ni Va O:       { -3 } (851-1) [8379] - -  - 601 5  VNgC M3 V               
 1133 Kuzoung              E400872-7 Na Va Ph Pi          { -2 } (A76-5) [4613] - C  - 325 16 VNgC F3 V F9 V M6 V     
 1135 Llaedon              C65769A-7 Ag Ni Ga             { -1 } (853+1) [8579] - -  - 903 11 VNgC K5 V               
 1136 Khouksoudhoez        DA8A776-6 Oc Ri                { -1 } (966-2) [6645] - C  - 603 15 VNgC F9 V               
-1139 Uoluedhgaeg          A552868-C Po Ph O:             { 2 }  (B7C+2) [8A5C] - K  - 910 14 VNgC M0 V M8 V          
-1140 Vutseghafi           E584435-5 Ni Pa                { -3 } (631-5) [2133] - C  - 702 9  VNgC F1 V               
-1234 Gnuefe               C88959B-5 Ni Pr Da             { -2 } (742+1) [7377] - -  A 304 13 VNgC G8 V M0 V          
+1139 Uoluedhgaeg          A552868-C Po Ph O: Ht          { 2 }  (B7C+2) [8A5C] - K  - 910 14 VNgC M0 V M8 V          
+1140 Vutseghafi           E584435-5 Ni Pa Lt             { -3 } (631-5) [2133] - C  - 702 9  VNgC F1 V               
+1234 Gnuefe               C88959B-5 Ni Pr Da Lt          { -2 } (742+1) [7377] - -  A 304 13 VNgC G8 V M0 V          
 1238 Ogzonanong           C7C475A-9 Fl                   { 0 }  (B69+2) [977B] - C  - 702 10 VNgC M3 V M3 V          
 1331 Niroenkfunoz         A8A6210-9 Fl Lo                { 0 }  (810-4) [1214] - -  - 313 11 VNgC M0 V               
 1335 Ekhaegz              B201632-9 Ic Na Ni Va          { 0 }  (A54-4) [2615] - K  - 202 9  VNgC M2 V M7 V          
 1336 Vuenasu              C501326-7 Ic Lo Va             { -2 } (520-3) [2146] - -  - 303 6  VNgC M0 V M2 V          
-1337 Saekhoell            D563237-4 Lo                   { -3 } (410-3) [2154] - C  - 633 15 VNgC F7 V               
+1337 Saekhoell            D563237-4 Lo Lt                { -3 } (410-3) [2154] - C  - 633 15 VNgC F7 V               
 1432 Allunsoeks           A57857A-A Ag Ni                { 2 }  (B46+4) [777C] - -  - 104 11 VNgC F9 V               
-1435 Akezaenae            A634443-E Ni                   { 1 }  (934-2) [152B] - -  - 803 12 VNgC M0 V               
+1435 Akezaenae            A634443-E Ni Ht                { 1 }  (934-2) [152B] - -  - 803 12 VNgC M0 V               
 1438 Ineon                C594777-8 Ag Pi                { 0 }  (C68+1) [7758] - -  - 703 10 VNgC G3 V               
 1440 Senguva              A562514-9 Ni Pr                { 0 }  (A44-2) [3537] - K  - 603 8  VNgC G3 V               
 1536 Kfogthan             E8C7431-9 Fl Ni                { -2 } (731-5) [1215] - C  - 601 10 VNgC M2 V               
 1537 Aefoung              C410414-7 Ni                   { -2 } (631-4) [2235] - -  - 102 11 VNgC M2 V M3 V          
 1538 Gvueo                B4225AA-8 He Ni Po Da          { -1 } (A43+1) [747A] - -  A 203 8  VNgC M2 V M5 V          
-1539 Ksoga                B776674-5 Ag Ni                { 0 }  (854-2) [4633] - -  - 900 9  VNgC M1 V               
-1631 Aar                  C79957C-5 Ni                   { -2 } (742+1) [8388] - -  - 903 13 VNgC F4 V M3 V          
-1632 Vaezoaerr            C854675-3 Ag Ni                { -1 } (853-3) [4531] - C  - 109 14 VNgC M0 V M2 V M2 V     
+1539 Ksoga                B776674-5 Ag Ni Lt             { 0 }  (854-2) [4633] - -  - 900 9  VNgC M1 V               
+1631 Aar                  C79957C-5 Ni Lt                { -2 } (742+1) [8388] - -  - 903 13 VNgC F4 V M3 V          
+1632 Vaezoaerr            C854675-3 Ag Ni Lt             { -1 } (853-3) [4531] - C  - 109 14 VNgC M0 V M2 V M2 V     
 1634 Oego                 C565422-8 Ni Pa                { -1 } (C32-5) [1314] - CK - 115 16 VNgC F9 V               
 1635 Khuoenknan           C513751-7 Ic Na Pi             { -1 } (967-5) [3613] - -  - 508 20 VNgC M2 V M4 V          
-1638 Gvokfizoeks          E564979-5 Hi Pr                { -1 } (B87+1) [A866] - C  - 803 15 VNgC F6 V               
+1638 Gvokfizoeks          E564979-5 Hi Pr Lt             { -1 } (B87+1) [A866] - C  - 803 15 VNgC F6 V               
 1640 Llaegvoigz           C767335-6 Lo Ga                { -2 } (520-4) [1134] - -  - 201 10 VNgC F7 V M3 V          
 1731 Erulgoengarrg        B65787A-9 Ga Pa Ph             { 1 }  (A7A+3) [A97B] - -  - 200 10 VNgC F2 V               
 1732 Soghzalghag          D778A77-6 Hi In (Aezorgh)      { 1 }  (C99+1) [AB56] - CK - 304 15 VNgC F7 V               
 1736 Zokfofaenkudh        C100977-8 Hi In Na Va          { 1 }  (G8A+1) [9A58] - C  - 505 14 VNgC F5 V               
 1738 Knekueoul            E310748-7 Na Pi                { -2 } (966-2) [7557] - C  - 313 14 VNgC F9 V               
-1831 Roerragh             E997888-5 Pa Ph Pi             { -2 } (A75-2) [8655] - C  - 903 8  VNgC F8 V M0 V          
+1831 Roerragh             E997888-5 Pa Ph Pi Lt          { -2 } (A75-2) [8655] - C  - 903 8  VNgC F8 V M0 V          
 1832 Zedzog               B532554-8 Ni Po                { -1 } (843-3) [3436] - C  - 601 8  VNgC M2 V               
 1833 Afoe                 C200778-7 Na Va Pi             { 0 }  (968+1) [7757] - CK - 402 5  VNgC M1 V               
 1834 Vekodzraegh          E422338-7 He Lo Po             { -3 } (520-3) [3157] - -  - 806 17 VNgC M2 V M2 V          
@@ -202,28 +202,28 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1840 Foakhsigzikhs        A684366-8 Lo                   { -1 } (720-2) [2247] - -  - 602 7  VNgC F1 V               
 1931 Gaeroezesu           B5456BA-9 Ag Ni Da             { 1 }  (855+3) [877B] - C  A 800 8  VNgC F4 V               
 1932 Okillodz             A572430-8 He Ni                { -1 } (932-5) [1313] - -  - 103 10 VNgC G1 V               
-1937 Rirzegh              E557351-4 Lo                   { -3 } (520-5) [1111] - C  - 901 9  VNgC M2 V               
-1938 Sughaesouu           B100669-C Na Ni Va             { 1 }  (B55+2) [776D] - K  - 203 16 VNgC K8 V               
-2031 Nuegorek             C9D5531-5 Ni                   { -2 } (742-5) [1311] - -  - 703 10 V17D M1 V               
-2034 Thangaedh            E656110-3 Lo Ga                { -3 } (300-5) [1111] - C  - 924 14 V17D F3 V               
+1937 Rirzegh              E557351-4 Lo Lt                { -3 } (520-5) [1111] - C  - 901 9  VNgC M2 V               
+1938 Sughaesouu           B100669-C Na Ni Va Ht          { 1 }  (B55+2) [776D] - K  - 203 16 VNgC K8 V               
+2031 Nuegorek             C9D5531-5 Ni Lt                { -2 } (742-5) [1311] - -  - 703 10 V17D M1 V               
+2034 Thangaedh            E656110-3 Lo Ga Lt             { -3 } (300-5) [1111] - C  - 924 14 V17D F3 V               
 2038 Aggedhlloez          C42079C-9 De He Na Po Pi Pz    { 1 }  (D6A+4) [A88C] - CK A 713 9  VNgC K9 V M1 V          
 2040 Aghzorerroen         C556430-7 Ni Pa                { -1 } (632-5) [1312] - CK - 700 6  VNgC M1 V               
-2134 Thoengoukhs          A95A412-C Ni Wa                { 1 }  (B34-3) [1518] - K  - 405 13 V17D F2 V M4 V          
+2134 Thoengoukhs          A95A412-C Ni Wa Ht             { 1 }  (B34-3) [1518] - K  - 405 13 V17D F2 V M4 V          
 2140 Sueighz              C553452-8 Ni Po                { -2 } (A31-5) [1214] - C  - 113 12 V17D K4 V               
-2231 Thagvaguekhs         D565300-5 Lo                   { -3 } (520-5) [1111] - -  - 820 11 V17D F6 V M1 V          
+2231 Thagvaguekhs         D565300-5 Lo Lt                { -3 } (520-5) [1111] - -  - 820 11 V17D F6 V M1 V          
 2232 Aelgaloedzuen        C687799-6 Ag Ga Ri             { 1 }  (968+2) [8867] - -  - 516 14 V17D F5 V M2 V          
-2233 Thoeo                A551220-D Lo Po                { 1 }  (B11-3) [1318] - -  - 316 17 V17D G8 V M5 V          
+2233 Thoeo                A551220-D Lo Po Ht             { 1 }  (B11-3) [1318] - -  - 316 17 V17D G8 V M5 V          
 2234 Orag                 B422200-B He Lo Po             { 1 }  (411-3) [1316] - K  - 500 8  V17D K3 V               
 2335 Okueallnurr          A300777-B Na Va Pi             { 2 }  (B6C+2) [795B] - K  - 902 13 V17D M0 V M4 V M5 V     
 2336 Aegenokh             A786899-8 Ga Ri Pa Ph          { 1 }  (A79+2) [9969] - K  - 400 13 V17D F8 V M7 V          
 2337 Soeoukae             B427477-8 Ni                   { -1 } (B32-1) [4358] - K  - 232 13 V17D M0 V M4 V          
-2434 Voeong               E67457A-5 Ag Ni                { -2 } (742+1) [7377] - C  - 200 10 V17D K9 V               
+2434 Voeong               E67457A-5 Ag Ni Lt             { -2 } (742+1) [7377] - C  - 200 10 V17D K9 V               
 2435 Knazoe               A747430-8 Ni Pa                { -1 } (632-5) [1313] - -  - 100 5  V17D F9 V               
-2535 Zorrueghiueng        C568678-3 Ag Ni Ri             { 0 }  (854+1) [6653] - -  - 404 14 V17D M1 V M3 V          
+2535 Zorrueghiueng        C568678-3 Ag Ni Ri Lt          { 0 }  (854+1) [6653] - -  - 404 14 V17D M1 V M3 V          
 2536 Oeguekhs             E423454-8 Ni Po                { -3 } (A31-5) [2136] - -  - 704 11 V17D M0 V M5 V          
-2537 Thoei                E758000-0 Ba                   { -3 } (200-5) [0000] - -  - 023 12 V17D K3 V M4 V          
+2537 Thoei                E758000-0 Ba Lt                { -3 } (200-5) [0000] - -  - 023 12 V17D K3 V M4 V          
 2631 Siluerrror           A7B2556-B Fl He Ni             { 1 }  (B45+1) [464A] - -  - 604 11 V17D M1 V               
-2632 Fadoe                C645350-5 Lo                   { -1 } (520-5) [1211] - CK - 802 12 V17D F3 V M3 V          
+2632 Fadoe                C645350-5 Lo Lt                { -1 } (520-5) [1211] - CK - 802 12 V17D F3 V M3 V          
 2634 Llungthung           C58637A-6 Lo                   { -2 } (520+1) [5178] - -  - 713 13 V17D K6 V M2 V          
 2637 Rozi                 D698976-7 Hi In                { 0 }  (B89-1) [8946] - C  - 820 14 V17D F8 V M3 V          
 2638 Ghuezoldaedz         B5A3876-8 Fl Ph                { 0 }  (F78-1) [7847] - -  - 914 15 V17D F6 V M3 V          
@@ -237,26 +237,26 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2837 Llogzun              C544367-6 Lo                   { -2 } (520-2) [3156] - -  - 914 12 V17D F0 V               
 2838 Oneghkuth            E79966A-7 Ni                   { -3 } (851-1) [8379] - C  - 803 13 V17D F0 V               
 2840 Norgnaekurz          D547512-7 Ag Ni                { -2 } (742-5) [1313] - K  - 103 12 V17D F8 V               
-2931 Ksongrek             E75A000-0 Ba Wa                { -3 } (200-5) [0000] - K  - 002 14 V17D M2 V M2 V          
-2932 Ruengkul             B8C2200-C Fl He Lo             { 1 }  (511-3) [1317] - K  - 210 4  V17D K3 V               
-2933 Rugvuekafagh         A525300-E Lo                   { 1 }  (521-3) [1419] - K  - 900 11 V17D M1 V M2 V          
+2931 Ksongrek             E75A000-0 Ba Wa Lt             { -3 } (200-5) [0000] - K  - 002 14 V17D M2 V M2 V          
+2932 Ruengkul             B8C2200-C Fl He Lo Ht          { 1 }  (511-3) [1317] - K  - 210 4  V17D K3 V               
+2933 Rugvuekafagh         A525300-E Lo Ht                { 1 }  (521-3) [1419] - K  - 900 11 V17D M1 V M2 V          
 2934 Rukfaengookh         C667337-6 Lo Ga                { -2 } (520-2) [3156] - C  - 804 11 V17D F0 V               
 2937 Khuekhor             B562677-6 Ni Ri                { 0 }  (854+1) [6656] - -  - 225 14 V17D F6 V M0 V          
 2940 Ghaesan              C5558AA-6 Pa Ph Pz             { 0 }  (A77+2) [A878] - CK A 400 8  V17D M1 V               
 3031 Gaegaevegha          B7487B8-9 Ag Pi                { 3 }  (B6C+3) [7A59] - CK - 402 11 V17D F0 V               
 3035 Gvuekoodhuen         C7A4358-8 Fl Lo                { -2 } (720-2) [3158] - K  - 102 14 V17D M2 V               
-3037 Aeghokhu             B420565-C De He Ni Po          { 1 }  (D45-1) [363A] - K  - 424 10 V17D G7 V               
+3037 Aeghokhu             B420565-C De He Ni Po Ht       { 1 }  (D45-1) [363A] - K  - 424 10 V17D G7 V               
 3040 Thorrghgharz         B570974-7 De He Hi In          { 3 }  (B8C+1) [7C35] - CK - 924 10 V17D G3 V               
-3131 Aerrlleghz           C5578AB-3 Pa Ph Pz             { -1 } (A75+1) [A775] - -  A 213 15 V17D F7 V               
+3131 Aerrlleghz           C5578AB-3 Pa Ph Pz Lt          { -1 } (A75+1) [A775] - -  A 213 15 V17D F7 V               
 3132 Zounguraae           C768433-9 Ni Pa                { -1 } (932-4) [1326] - -  - 103 13 V17D F9 V               
 3133 Rriuekfu             B300673-B Na Ni Va             { 2 }  (856-1) [3828] - CK - 900 6  V17D M1 V               
-3134 Uun                  D642974-5 He Hi In Po          { 0 }  (B88-2) [7933] - -  - 813 10 V17D F4 V M6 V          
-3135 Khoeknue             C766254-5 Lo Ga                { -2 } (410-4) [1133] - -  - 103 15 V17D K2 V M8 V          
-3136 Kaeghzog             E647210-5 Lo                   { -3 } (410-5) [1111] - -  - 100 5  V17D F8 V M4 V          
+3134 Uun                  D642974-5 He Hi In Po Lt       { 0 }  (B88-2) [7933] - -  - 813 10 V17D F4 V M6 V          
+3135 Khoeknue             C766254-5 Lo Ga Lt             { -2 } (410-4) [1133] - -  - 103 15 V17D K2 V M8 V          
+3136 Kaeghzog             E647210-5 Lo Lt                { -3 } (410-5) [1111] - -  - 100 5  V17D F8 V M4 V          
 3139 Rursurr              C310100-7 Lo                   { -2 } (300-5) [1112] - K  - 504 11 V17D K9 V               
-3140 Gnoutonlleghz        E100000-0 Ba Va                { -3 } (200-5) [0000] - K  - 014 12 V17D F2 V               
+3140 Gnoutonlleghz        E100000-0 Ba Va Lt             { -3 } (200-5) [0000] - K  - 014 12 V17D F2 V               
 3231 Ueaekhsaegz          B574465-7 Ni Pa                { -1 } (632-3) [2335] - K  - 501 11 V17D F6 V               
 3232 Dzuekorri            E20047B-7 Ni Va                { -3 } (631-1) [6179] - C  - 300 9  V17D M2 V               
 3233 Llagi                B551677-8 Ni Po                { -1 } (F53-1) [6558] - -  - 107 17 V17D F9 V M6 V          
-3238 Tsaekfuu             B739A77-C Hi                   { 3 }  (C9E+3) [AD5C] - -  - 700 12 V17D F5 V M4 V          
+3238 Tsaekfuu             B739A77-C Hi Ht                { 3 }  (C9E+3) [AD5C] - -  - 700 12 V17D F5 V M4 V          
 3240 Keko                 B310144-9 Lo                   { 0 }  (500-2) [1137] - -  - 702 14 V17D F9 V               
