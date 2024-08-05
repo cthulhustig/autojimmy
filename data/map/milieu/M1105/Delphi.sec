@@ -39,57 +39,57 @@
 Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N    B  Z PBG W  A    Stellar       
 ---- -------------------- --------- -------------------- ------ ------- ------ ---- -- - --- -- ---- --------------
 0102 Murphy               C544596-6 Ag Ni                { -1 } (743-2) [4445] BC   -  - 101 11 ImDc M0 V          
-0103 Oxnard               E6756A9-5 Ag Ni                { -2 } (852-1) [7466] BC   -  - 524 15 ImDc M2 V M6 V     
+0103 Oxnard               E6756A9-5 Ag Ni Lt             { -2 } (852-1) [7466] BC   -  - 524 15 ImDc M2 V M6 V     
 0105 Dunlap               A575221-B Lo                   { 1 }  (811-3) [1317] B    -  - 604 15 ImDc K3 V M8 V     
 0106 Wrall                D100595-9 Ni Va Da             { -2 } (742-4) [3337] B    -  A 600 6  ImDc M2 V          
 0107 McPherson            B564657-9 Ag Ni Ri Cp          { 2 }  (B56+2) [6859] BCF  -  - 303 10 ImDc K4 V          
 0108 Kornag               E310240-9 Lo                   { -2 } (610-5) [1114] B    -  - 820 12 ImDc G4 V M2 V     
 0109 Freyja               B435522-9 Ni                   { 0 }  (744-4) [1515] B    S  - 100 9  ImDc G7 V          
 0110 Ravenkin             E310587-9 Ni                   { -2 } (A42-2) [5359] B    -  - 303 6  ImDc M0 V M6 V     
-0202 Ewoin                X66487A-2 Ri Pa Ph Fo DroyW    { -1 } (A74+1) [A774] -    -  R 204 9  ImDc M3 V          
-0204 Per                  B100532-D Ni Va                { 1 }  (E45-3) [1619] B    -  - 925 11 ImDc M2 V          
+0202 Ewoin                X66487A-2 Ri Pa Ph Fo DroyW Lt { -1 } (A74+1) [A774] -    -  R 204 9  ImDc M3 V          
+0204 Per                  B100532-D Ni Va Ht             { 1 }  (E45-3) [1619] B    -  - 925 11 ImDc M2 V          
 0205 Dareene              X526300-7 Lo Fo                { -3 } (520-5) [1112] -    -  R 125 10 ImDc M1 V          
 0209 Waconthaco           C693656-7 Ni                   { -2 } (852-3) [5446] B    -  - 201 11 ImDc M2 V M8 V     
 0210 Ceileachan           D428896-8 Ph Pi                { -2 } (D76-3) [7647] BDe  -  - 103 7  ImDc K1 V          
 0303 Ziraa                C5559EJ-6 Hi Pz                { 0 }  (B88+5) [E9AB] BE   -  A 914 13 ImDc K6 V          
-0310 Irishmen             B547645-5 Ag Ni Da             { 0 }  (854-2) [4633] BC   N  A 305 10 ImDc M1 V M6 V     
-0401 Lloyd                X994433-5 Ni Pa Fo             { -3 } (631-5) [1122] -    -  R 625 10 ImDc G2 V M0 V     
+0310 Irishmen             B547645-5 Ag Ni Da Lt          { 0 }  (854-2) [4633] BC   N  A 305 10 ImDc M1 V M6 V     
+0401 Lloyd                X994433-5 Ni Pa Fo Lt          { -3 } (631-5) [1122] -    -  R 625 10 ImDc G2 V M0 V     
 0403 Raritan              C573452-9 Ni                   { -1 } (A32-5) [1315] B    -  - 904 12 ImDc K2 V M6 V M1 V
 0407 Naldo                C664897-7 Ri Pa Ph Pz          { 0 }  (A78+1) [8857] BcCe -  A 900 9  ImDc K3 V          
 0410 Wade                 C645311-7 Lo                   { -2 } (520-5) [1113] B    -  - 213 13 ImDc M3 V M6 V     
-0505 Dreyfuss             B310378-C Lo                   { 1 }  (821+1) [345C] B    -  - 703 10 ImDc G0 V          
-0506 Theresann            C67868B-5 Ag Ni                { -1 } (853+1) [8577] BC   -  - 804 13 ImDc M3 V          
+0505 Dreyfuss             B310378-C Lo Ht                { 1 }  (821+1) [345C] B    -  - 703 10 ImDc G0 V          
+0506 Theresann            C67868B-5 Ag Ni Lt             { -1 } (853+1) [8577] BC   -  - 804 13 ImDc M3 V          
 0508 Iason                B979443-7 Ni                   { -1 } (632-4) [1324] B    -  - 800 13 ImDc M2 V M3 V     
 0510 Pabst                C000640-8 As Na Ni Va          { -2 } (D52-5) [1413] B    -  - 932 9  ImDc M2 V M3 V     
-0603 Iaian                D768456-5 Ni Pa                { -3 } (631-4) [3144] Bc   -  - 223 9  ImDc M2 V M6 V     
+0603 Iaian                D768456-5 Ni Pa Lt             { -3 } (631-4) [3144] Bc   -  - 223 9  ImDc M2 V M6 V     
 0605 Ader                 D874ABE-7 Hi In Pz             { 0 }  (C99+4) [EA9B] BE   -  A 704 9  ImDc M1 V          
 0607 Walters              C100765-9 Na Va Pi O:0706      { 0 }  (E69-2) [5737] BD   -  - 414 14 ImDc M0 V          
 0701 Jazz                 C421777-7 He Na Po Pi          { -1 } (967-1) [7657] BD   -  - 600 12 ImDc M1 V          
 0702 Newcastle            C634214-6 Lo                   { -2 } (410-4) [1134] B    -  - 115 15 ImDc M0 V          
 0703 Krishnan             A578100-A Lo                   { 1 }  (501-3) [1215] B    -  - 402 6  ImDc M0 V          
-0705 Deng                 E645741-5 Ag Pi                { -1 } (966-5) [3611] BCD  -  - 104 7  ImDc M0 V          
+0705 Deng                 E645741-5 Ag Pi Lt             { -1 } (966-5) [3611] BCD  -  - 104 7  ImDc M0 V          
 0706 Everglades           B99A6AA-A Ni Wa Da             { 1 }  (D55+3) [877C] B    -  A 905 12 ImDc M3 V M6 V     
 0709 Modesta              B857410-8 Ni Ga Pa             { -1 } (932-5) [1313] Bc   -  - 703 15 ImDc M2 V          
 0802 Darken               E310537-7 Ni                   { -3 } (741-3) [5257] B    -  - 804 15 ImDc M0 V          
 0803 Drumma               C565677-6 Ag Ni Ri             { 0 }  (854+1) [6656] BC   -  - 703 13 ImDc G3 V          
 0804 Metellus             E310332-7 Lo                   { -3 } (520-5) [1113] B    -  - 702 12 ImDc M1 V          
 0901 Morrill              C1008A6-7 Na Va Ph Pi          { -1 } (A77-2) [7746] BDe  -  - 313 10 ImDc K1 V M5 V     
-0904 Kamikir              B99A99C-C Hi In Wa Cp Pz       { 4 }  (F8F+5) [CD8F] BEF  -  A 504 9  ImDc G2 V M2 V     
-0905 Siolta               A87A697-E Ni Wa                { 1 }  (C55+1) [675E] B    N  - 604 13 ImDc K3 V          
+0904 Kamikir              B99A99C-C Hi In Wa Cp Pz Ht    { 4 }  (F8F+5) [CD8F] BEF  -  A 504 9  ImDc G2 V M2 V     
+0905 Siolta               A87A697-E Ni Wa Ht             { 1 }  (C55+1) [675E] B    N  - 604 13 ImDc K3 V          
 0906 Robin                B994330-A Lo                   { 1 }  (A21-3) [1415] B    N  - 114 8  ImDc M2 V          
 1001 Garel                C894335-9 Lo                   { -1 } (920-3) [1237] B    -  - 604 7  ImDc M2 V          
-1002 Kennedy              C878345-5 Lo                   { -2 } (520-4) [1133] B    -  - 710 10 ImDc G6 V          
-1007 Clarinda             E757423-4 Ni Ga Pa             { -3 } (631-5) [1121] Bc   -  - 804 9  ImDc M1 V          
-1009 Ursalem              D100AA9-D Hi In Na Va          { 2 }  (E9E+3) [BC6E] BE   S  - 402 14 ImDc K0 V M2 V     
+1002 Kennedy              C878345-5 Lo Lt                { -2 } (520-4) [1133] B    -  - 710 10 ImDc G6 V          
+1007 Clarinda             E757423-4 Ni Ga Pa Lt          { -3 } (631-5) [1121] Bc   -  - 804 9  ImDc M1 V          
+1009 Ursalem              D100AA9-D Hi In Na Va Ht       { 2 }  (E9E+3) [BC6E] BE   S  - 402 14 ImDc K0 V M2 V     
 1010 Aeldra               D537679-6 Ni Varg?             { -3 } (851-2) [7367] B    -  - 823 14 ImDc G0 V          
 1101 Thomaswyff           C000741-7 As Na Va Pi          { -1 } (967-5) [3613] BD   -  - 712 7  ImDc K0 V          
-1103 Tsent                B639954-E Hi                   { 3 }  (H8F+1) [7C3C] BE   -  - 724 13 ImDc M3 V M7 V     
+1103 Tsent                B639954-E Hi Ht                { 3 }  (H8F+1) [7C3C] BE   -  - 724 13 ImDc M3 V M7 V     
 1104 Giuditta             B100434-9 Ni Va                { 0 }  (A33-2) [2437] B    -  - 104 7  ImDc G2 IV         
-1109 Pale                 A100433-D Ni Va                { 1 }  (934-2) [152A] B    -  - 412 11 ImDc M3 V          
+1109 Pale                 A100433-D Ni Va Ht             { 1 }  (934-2) [152A] B    -  - 412 11 ImDc M3 V          
 1202 Caaling              B532464-B Ni Po O:1103         { 1 }  (D34-1) [2539] B    -  - 525 10 ImDc M0 V M2 V M8 V
-1203 Eustache             E545898-5 Pa Ph Pi             { -2 } (A75-2) [8655] BcDe -  - 422 7  ImDc M0 V          
-1205 Depot 2              A78746A-D Ni Ga Pa Da Mr       { 2 }  (B35+4) [667F] Bc   D  A 105 17 ImDc K0 V          
-1208 Pabdy                A542640-C He Ni Po             { 1 }  (D55-3) [1717] B    N  - 814 8  ImDc G4 V M0 V     
+1203 Eustache             E545898-5 Pa Ph Pi Lt          { -2 } (A75-2) [8655] BcDe -  - 422 7  ImDc M0 V          
+1205 Depot 2              A78746A-D Ni Ga Pa Da Mr Ht    { 2 }  (B35+4) [667F] Bc   D  A 105 17 ImDc K0 V          
+1208 Pabdy                A542640-C He Ni Po Ht          { 1 }  (D55-3) [1717] B    N  - 814 8  ImDc G4 V M0 V     
 1209 Heer                 C79679C-8 Ag Pi Pz             { 0 }  (D68+3) [A78B] BCD  -  A 704 10 ImDc M3 V          
 1301 Buren                C587220-9 Lo                   { -1 } (610-5) [1114] B    -  - 820 11 ImDc M1 V          
 1305 Fugentun             E100433-7 Ni Va                { -3 } (631-5) [1124] B    -  - 923 8  ImDc M3 V M4 V     
@@ -99,25 +99,25 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1310 Mexican              C100433-8 Ni Va                { -2 } (B31-5) [1225] B    -  - 914 12 ImDc A8 III D      
 1401 Ehrlich              E100434-A Ni Va                { -1 } (932-3) [2338] B    -  - 503 10 ImDc M0 V M3 V     
 1404 Crede                D565220-7 Lo                   { -3 } (410-5) [1112] B    -  - 501 14 ImDc M0 V M3 V     
-1405 Ainu                 A100434-F Ni Va                { 1 }  (934-1) [253D] B    -  - 103 6  ImDc M3 V          
-1407 Amaryllis            D565220-3 Lo                   { -3 } (410-5) [1111] B    -  - 801 14 ImDc M2 V M4 V     
-1409 Gallup               E756440-2 Ni Ga Pa             { -3 } (631-5) [1111] Bc   -  - 820 15 ImDc M1 V M1 V     
-1501 Kokba                A310510-E Ni                   { 1 }  (D45-3) [1619] B    -  - 724 11 ImDc G6 V M6 V M4 V
+1405 Ainu                 A100434-F Ni Va Ht             { 1 }  (934-1) [253D] B    -  - 103 6  ImDc M3 V          
+1407 Amaryllis            D565220-3 Lo Lt                { -3 } (410-5) [1111] B    -  - 801 14 ImDc M2 V M4 V     
+1409 Gallup               E756440-2 Ni Ga Pa Lt          { -3 } (631-5) [1111] Bc   -  - 820 15 ImDc M1 V M1 V     
+1501 Kokba                A310510-E Ni Ht                { 1 }  (D45-3) [1619] B    -  - 724 11 ImDc G6 V M6 V M4 V
 1502 Jaleel               B625785-7 Pi                   { 0 }  (968-2) [5735] BD   N  - 703 11 ImDc M2 V          
-1504 Wuhan                A532464-C Ni Po O:1603         { 1 }  (D34-1) [253A] B    -  - 625 10 ImDc M0 V M2 V     
+1504 Wuhan                A532464-C Ni Po O:1603 Ht      { 1 }  (D34-1) [253A] B    -  - 625 10 ImDc M0 V M2 V     
 1505 Orinoco              C100433-9 Ni Va                { -1 } (932-4) [1326] B    -  - 903 10 ImDc K0 V          
 1506 Hartley              B525677-B Ni                   { 1 }  (855+1) [675B] B    -  - 200 13 ImDc M0 V M1 V     
 1507 Antony               X431721-6 Na Po Fo             { -2 } (965-5) [3512] -    -  R 314 15 ImDc M0 V          
 1508 Dyconson             D100434-7 Ni Va                { -3 } (631-5) [2135] B    -  - 203 16 ImDc M2 V          
-1601 Quezo                B100434-D Ni Va                { 1 }  (A34-1) [253B] B    -  - 722 11 ImDc M9 II         
-1602 April Dawn           A100433-F Ni Va                { 1 }  (B34-2) [152C] B    -  - 105 13 ImDc K9 V          
-1603 Krallides            A525677-D Ni                   { 1 }  (B55+1) [675D] B    -  - 103 8  ImDc K1 V          
-1605 Sao                  A431721-E Na Po                { 2 }  (C6D-2) [391A] B    -  - 603 12 ImDc K3 IV         
-1607 Moonfriend           A527587-E Ni                   { 1 }  (C45+1) [565E] B    -  - 523 8  ImDc G0 V          
+1601 Quezo                B100434-D Ni Va Ht             { 1 }  (A34-1) [253B] B    -  - 722 11 ImDc M9 II         
+1602 April Dawn           A100433-F Ni Va Ht             { 1 }  (B34-2) [152C] B    -  - 105 13 ImDc K9 V          
+1603 Krallides            A525677-D Ni Ht                { 1 }  (B55+1) [675D] B    -  - 103 8  ImDc K1 V          
+1605 Sao                  A431721-E Na Po Ht             { 2 }  (C6D-2) [391A] B    -  - 603 12 ImDc K3 IV         
+1607 Moonfriend           A527587-E Ni Ht                { 1 }  (C45+1) [565E] B    -  - 523 8  ImDc G0 V          
 1701 Portland             C431721-6 Na Po                { -1 } (966-5) [3612] B    -  - 112 15 ImDc F3 V          
 1702 Uganda               D527587-7 Ni                   { -3 } (741-3) [5257] B    -  - 402 7  ImDc K5 V M1 V     
 1703 Sakon                E100433-7 Ni Va                { -3 } (631-5) [1124] B    -  - 812 13 ImDc M2 V          
-1707 Keltus               A525677-D Ni                   { 1 }  (C55+1) [675D] B    -  - 813 9  ImDc M0 V M1 V     
+1707 Keltus               A525677-D Ni Ht                { 1 }  (C55+1) [675D] B    -  - 813 9  ImDc M0 V M1 V     
 1801 Dishiirpi            B525966-9 Hi In Mr             { 3 }  (E8D+2) [8C48] BE   N  - 812 15 ImDc M1 V M2 V     
 1802 Fairhinath           C756440-9 Ni Ga Pa             { -1 } (A32-5) [1314] Bc   -  - 604 7  ImDc K2 V M8 V     
 1803 Moriarty             C100433-B Ni Va                { 0 }  (A33-3) [1428] B    -  - 504 8  ImDc M1 V M3 V     
@@ -125,9 +125,9 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1805 Mach                 B431721-B Na Po                { 2 }  (F6C-2) [3917] B    -  - 124 9  ImDc K7 V M8 V     
 1903 Trevelian            B527587-B Ni                   { 1 }  (A45+1) [565B] B    -  - 103 8  ImDc M3 V          
 1905 Izmir                D553420-7 Ni Po                { -3 } (631-5) [1112] B    -  - 804 8  ImDc K4 V M3 V M4 V
-2110 Navajo               A100433-F Ni Va                { 1 }  (A34-2) [152C] B    -  - 713 11 ImDc K3 V          
+2110 Navajo               A100433-F Ni Va Ht             { 1 }  (A34-2) [152C] B    -  - 713 11 ImDc K3 V          
 2202 Teresa               C565220-7 Lo                   { -2 } (410-5) [1112] -    -  - 623 8  CsIm M1 V M8 V     
-2204 Sebastia             E756440-4 Ni Ga Pa             { -3 } (631-5) [1111] -    -  - 110 5  CsIm K2 V          
+2204 Sebastia             E756440-4 Ni Ga Pa Lt          { -3 } (631-5) [1111] -    -  - 110 5  CsIm K2 V          
 2801 Cretan               D534420-7 Ni                   { -3 } (631-5) [1112] -    -  - 300 4  CsIm M2 V M8 V     
 2910 Pero                 B5746AC-7 Ag Ni Da             { 0 }  (854+3) [968A] -    -  A 504 12 NaHu M3 V          
 3003 Jillott              C100433-8 Ni Va                { -2 } (B31-5) [1225] -    -  - 214 10 NaHu M1 V M3 V     
@@ -140,20 +140,20 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0214 Moravia              D627364-7 Lo O:0313            { -3 } (520-5) [1135] B    -  - 301 11 ImDc M0 V          
 0218 Linor                B544524-8 Ag Ni                { 0 }  (D44-2) [3536] BC   -  - 824 9  ImDc M0 V          
 0219 Yildiz               C566430-6 Ni Pa                { -2 } (631-5) [1211] Bc   -  - 205 12 ImDc M0 V M4 V     
-0220 Winnie               A100124-D Lo Va                { 1 }  (401-1) [123B] B    -  - 910 14 ImDc M0 V M2 V     
+0220 Winnie               A100124-D Lo Va Ht             { 1 }  (401-1) [123B] B    -  - 910 14 ImDc M0 V M2 V     
 0311 Croftes              C676223-7 Lo                   { -2 } (410-5) [1124] B    -  - 901 5  ImDc K3 V          
 0312 Font                 E557545-6 Ag Ni                { -2 } (742-4) [3334] BC   -  - 304 11 ImDc M2 V          
 0313 Zukhimi              A427979-B Hi In Cp             { 4 }  (F8F+5) [AD6C] BEF  -  - 313 15 ImDc M2 V M7 V     
 0314 Soranal              A687374-8 Lo Ga                { -1 } (520-3) [1236] B    -  - 500 10 ImDc G1 V M1 V     
 0316 Hlutwig              B5777C9-6 Ag Pi Pz             { 1 }  (968+2) [8867] BCD  -  A 405 8  ImDc K3 V          
-0317 Bootes               A3106B9-C Na Ni Da             { 1 }  (A55+2) [776D] B    N  A 520 11 ImDc K0 V          
-0319 McCallum             D786885-3 Ga Ri Pa Ph          { -1 } (A75-3) [6731] BcCe S  - 612 10 ImDc M0 V M4 V     
+0317 Bootes               A3106B9-C Na Ni Da Ht          { 1 }  (A55+2) [776D] B    N  A 520 11 ImDc K0 V          
+0319 McCallum             D786885-3 Ga Ri Pa Ph Lt       { -1 } (A75-3) [6731] BcCe S  - 612 10 ImDc M0 V M4 V     
 0320 Dyce                 C432576-9 Ni Po                { -1 } (943-2) [4448] B    -  - 302 12 ImDc K4 V          
 0411 Ffort                D66A557-7 Ni Wa Pr             { -2 } (742-2) [5357] Bc   W  - 312 13 ImDc G6 V M5 V     
 0413 Orlando              E673785-6 Pi                   { -2 } (965-4) [5534] BD   -  - 720 14 ImDc M1 V M2 V     
 0415 Althea               C88A300-A Lo Wa                { 0 }  (920-4) [1315] B    -  - 904 10 ImDc M3 V M3 V     
-0511 Warmage              B000666-C As Na Ni Va Mr       { 1 }  (D55+1) [574B] B    N  - 314 8  ImDc M3 V          
-0512 Wart                 A00077C-C As Na Va Pi          { 2 }  (G6C+5) [A98F] BD   -  - 434 10 ImDc G2 V M4 V     
+0511 Warmage              B000666-C As Na Ni Va Mr Ht    { 1 }  (D55+1) [574B] B    N  - 314 8  ImDc M3 V          
+0512 Wart                 A00077C-C As Na Va Pi Ht       { 2 }  (G6C+5) [A98F] BD   -  - 434 10 ImDc G2 V M4 V     
 0514 Venus                D66A620-8 Ni Ri Wa             { -2 } (D52-5) [1413] BC   -  - 705 9  ImDc M1 V M3 V     
 0515 Stoneburner          B59176A-8 He Pi O:0313         { 0 }  (B68+2) [977A] BD   -  - 202 14 ImDc K7 V          
 0516 De Rome              A541873-9 He Po Ph Pi Droy?    { 1 }  (A7A-2) [5926] BDe  -  - 900 7  ImDc M3 V          
@@ -162,95 +162,95 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0618 Magveil              B675513-8 Ag Ni                { 0 }  (C44-3) [2525] BC   N  - 705 10 ImDc K2 V M3 V     
 0712 Addis                D694672-6 Ag Ni                { -2 } (852-5) [2412] BC   -  - 904 13 ImDc G6 V          
 0713 Durrell              B544358-8 Lo                   { -1 } (720-1) [3258] B    -  - 911 11 ImDc K1 V          
-0715 Heine                A98A244-E Lo Wa Da             { 1 }  (711-1) [133C] B    -  A 203 16 ImDc M1 V          
+0715 Heine                A98A244-E Lo Wa Da Ht          { 1 }  (711-1) [133C] B    -  A 203 16 ImDc M1 V          
 0716 Pragon               B757686-7 Ag Ni Ga             { 0 }  (854-1) [5646] BC   -  - 923 9  ImDc K3 V          
 0717 Distant Smoke        A583500-A Ni Pr                { 1 }  (B45-3) [1615] Bc   -  - 404 9  ImDc K7 V M3 V     
 0719 Hearst               B557635-7 Ag Ni                { 0 }  (854-2) [4635] BC   -  - 104 10 ImDc M0 V M6 V     
 0813 Capricorn            C421100-9 He Lo Po Da          { -1 } (600-5) [1114] B    -  A 312 6  ImDc K9 V          
-0814 Alpharats            A310356-E Lo                   { 1 }  (821+1) [244D] B    -  - 903 10 ImDc M2 V M2 V     
+0814 Alpharats            A310356-E Lo Ht                { 1 }  (821+1) [244D] B    -  - 903 10 ImDc M2 V M2 V     
 0816 Vaksogh              B410321-8 Lo                   { -1 } (820-5) [1214] B    -  - 812 10 ImDc M2 V          
-0817 Orloft               E575310-5 Lo Da                { -3 } (520-5) [1111] B    -  A 403 15 ImDc M1 V          
+0817 Orloft               E575310-5 Lo Da Lt             { -3 } (520-5) [1111] B    -  A 403 15 ImDc M1 V          
 0818 Durkee               B58579B-A Ag Ri Pz             { 4 }  (D6D+5) [9B7C] BCf  N  A 904 17 ImDc K2 V M4 V     
 0916 Odin                 C543444-6 Ni Po                { -2 } (631-4) [2234] B    -  - 703 7  ImDc K2 V          
 0918 Galis                E425133-7 Lo                   { -3 } (300-5) [1124] B    -  - 622 9  ImDc K4 V          
 1013 Aylen                C584161-7 Lo O:1315            { -2 } (300-5) [1113] B    -  - 612 13 ImDc M2 V          
-1015 Duane                B310867-C Na Ph Pi O:0818      { 2 }  (C7C+2) [8A5C] BDe  S  - 202 15 ImDc M1 V          
-1016 Daon                 B9D6454-C Ni                   { 1 }  (A34-1) [253A] B    -  - 204 7  ImDc M3 V          
+1015 Duane                B310867-C Na Ph Pi O:0818 Ht   { 2 }  (C7C+2) [8A5C] BDe  S  - 202 15 ImDc M1 V          
+1016 Daon                 B9D6454-C Ni Ht                { 1 }  (A34-1) [253A] B    -  - 204 7  ImDc M3 V          
 1018 Emila                E744100-8 Lo                   { -3 } (600-5) [1113] B    -  - 603 10 ImDc K9 V          
-1019 Zzurvurh             C551A9B-C Hi Po Pz             { 2 }  (F9D+4) [CC7E] BE   -  A 812 6  ImDc M0 V          
+1019 Zzurvurh             C551A9B-C Hi Po Pz Ht          { 2 }  (F9D+4) [CC7E] BE   -  A 812 6  ImDc M0 V          
 1111 Carthage             B525677-8 Ni                   { -1 } (853-1) [6558] B    -  - 100 10 ImDc K3 V          
 1114 Evraud               D431721-6 Na Po Varg?          { -2 } (965-5) [3512] B    -  - 223 9  ImDc M1 V          
 1116 Lacerta              E000587-7 As Ni Va             { -3 } (741-3) [5257] B    -  - 212 9  ImDc M0 V M3 V     
-1118 Antler               A553420-D Ni Po Cp             { 2 }  (935-2) [1618] BF   NS - 603 12 ImDc M3 V M8 V     
+1118 Antler               A553420-D Ni Po Cp Ht          { 2 }  (935-2) [1618] BF   NS - 603 12 ImDc M3 V M8 V     
 1119 McDonald             E100434-A Ni Va                { -1 } (732-3) [2338] B    -  - 410 9  ImDc M1 V          
 1212 Lillibet             B87A320-9 Lo Wa Varg?          { 0 }  (920-4) [1314] B    -  - 404 7  ImDc K8 V          
-1213 De Coupeland         A767787-C Ag Ga Ri Varg?       { 4 }  (B6E+4) [7B5C] BCf  -  - 102 12 ImDc K4 V M5 V M2 V
+1213 De Coupeland         A767787-C Ag Ga Ri Varg? Ht    { 4 }  (B6E+4) [7B5C] BCf  -  - 102 12 ImDc K4 V M5 V M2 V
 1315 Pasadena             B525677-9 Ni                   { 0 }  (B54+1) [6659] B    -  - 703 10 ImDc K1 V M8 V     
 1716 Watton               C431721-8 Na Po                { -1 } (B67-5) [3614] B    -  - 702 11 ImDc K0 V          
 1813 V'nebree             E527587-7 Ni                   { -3 } (741-3) [5257] B    -  - 615 12 ImDc M0 V M7 V     
 1815 Kirkja               C100433-9 Ni Va                { -1 } (A32-4) [1326] B    -  - 504 10 ImDc M1 V          
-2011 Yugoslav             A000587-E As Ni Va Cp          { 1 }  (A45+1) [565E] BF   N  - 512 11 ImDc G2 V          
+2011 Yugoslav             A000587-E As Ni Va Cp Ht       { 1 }  (A45+1) [565E] BF   N  - 512 11 ImDc G2 V          
 2014 Whitaker             E100433-7 Ni Va                { -3 } (631-5) [1124] B    -  - 104 9  ImDc M0 V          
 2113 Detroit              B525677-7 Ni                   { -1 } (853-1) [6557] B    -  - 810 10 ImDc K2 V M7 V     
 2514 Mithra               C431721-9 Na Po                { 0 }  (A69-4) [3715] B    -  - 501 13 ImDc G0 V M5 V     
 2612 Tolananda            C525986-8 Hi In                { 1 }  (F8A+1) [8A47] BE   -  - 822 10 ImDc M2 V          
-2711 Shaw                 E897554-5 Ag Ni                { -2 } (742-4) [3333] BC   -  - 223 12 ImDc M2 V          
+2711 Shaw                 E897554-5 Ag Ni Lt             { -2 } (742-4) [3333] BC   -  - 223 12 ImDc M2 V          
 2720 Shunarshalad         C667989-7 Hi Ga Pr             { 0 }  (B89+1) [A968] BcE  -  - 703 12 ImDc M3 V          
-2813 Vermillion           A527587-D Ni                   { 1 }  (A45+1) [565D] -    -  - 203 10 CsIm G0 V          
+2813 Vermillion           A527587-D Ni Ht                { 1 }  (A45+1) [565D] -    -  - 203 10 CsIm G0 V          
 0122 Aprapo               C310853-8 Na Ph Pi Pz          { -1 } (D77-4) [5725] BDe  -  A 803 6  ImDc M7 III        
 0123 Cosimio              C667249-8 Lo Ga                { -2 } (710-1) [3169] B    -  - 903 15 ImDc G0 V          
 0127 Kirby                B893133-8 Lo                   { -1 } (600-4) [1125] B    -  - 803 14 ImDc G2 V          
-0129 Walden               E687769-4 Ag Ga Ri O:0329      { 0 }  (966+1) [8765] BC   -  - 533 12 ImDc G1 V          
+0129 Walden               E687769-4 Ag Ga Ri O:0329 Lt   { 0 }  (966+1) [8765] BC   -  - 533 12 ImDc G1 V          
 0222 Duana                B653203-9 Lo Po Da             { 0 }  (810-3) [1226] B    -  A 604 8  ImDc K1 V M9 V     
-0225 Monmouth             D893277-5 Lo                   { -3 } (410-3) [2155] B    -  - 923 11 ImDc K6 V M1 V     
-0226 Bishan               D7699DH-4 Hi Pr Pz             { -1 } (B86+4) [E8A9] BcE  -  A 304 8  ImDc M1 V          
+0225 Monmouth             D893277-5 Lo Lt                { -3 } (410-3) [2155] B    -  - 923 11 ImDc K6 V M1 V     
+0226 Bishan               D7699DH-4 Hi Pr Pz Lt          { -1 } (B86+4) [E8A9] BcE  -  A 304 8  ImDc M1 V          
 0228 Koenig               B792841-8 He Ph Pi             { 0 }  (D78-4) [4814] BDe  -  - 603 14 ImDc M1 V          
 0328 Napoleonic           E423633-7 Na Ni Po Da          { -3 } (851-5) [3324] B    -  A 204 13 ImDc M1 V M3 V     
 0329 Aklan                B573986-B Hi In                { 4 }  (E8F+3) [8D4A] BEf  -  - 503 12 ImDc K2 V M3 V     
-0330 Zarkov               C777843-5 Pa Ph Pi             { -1 } (A76-4) [5722] BcDe -  - 522 7  ImDc M2 V          
+0330 Zarkov               C777843-5 Pa Ph Pi Lt          { -1 } (A76-4) [5722] BcDe -  - 522 7  ImDc M2 V          
 0421 Withern              C100963-B Hi In Na Va O:0623   { 3 }  (E8E+1) [6C28] BE   -  - 603 7  ImDc M2 V M9 V     
 0422 Dunk                 C769AEF-B Hi Pz                { 2 }  (G9D+5) [FCAG] BE   -  A 713 11 ImDc G3 V          
-0423 Byrd                 B300343-D Lo Va                { 1 }  (521-2) [142A] B    -  - 300 9  ImDc A9 V          
+0423 Byrd                 B300343-D Lo Va Ht             { 1 }  (521-2) [142A] B    -  - 300 9  ImDc A9 V          
 0425 Steinngium           D63245A-6 Ni Po Da             { -3 } (631-1) [6178] B    -  A 804 14 ImDc F3 V          
 0427 Irys                 B88957A-B Ni Pr                { 1 }  (C45+3) [767D] Bc   -  - 405 11 ImDc M0 V M5 V M2 V
 0429 Ray                  B310511-9 Ni                   { 0 }  (744-4) [1515] B    -  - 300 9  ImDc M0 V M3 V     
 0523 Ziina                E42399A-7 Hi In Na Po Pz       { 0 }  (B89+2) [B979] BE   -  A 403 14 ImDc K4 V M9 V     
 0527 Hadamard             B100230-9 Lo Va Da             { 0 }  (910-4) [1214] B    -  A 923 9  ImDc G7 V          
 0528 Valli                B562876-6 Ri Ph Pz             { 1 }  (A78+1) [7945] BCe  -  A 104 15 ImDc M1 V          
-0623 Ychea                A427988-D Hi In Cp             { 4 }  (D8G+4) [9D5D] BEF  -  - 502 7  ImDc K0 V          
+0623 Ychea                A427988-D Hi In Cp Ht          { 4 }  (D8G+4) [9D5D] BEF  -  - 502 7  ImDc K0 V          
 0625 Xaviar               A561510-9 Ni Pr                { 0 }  (A44-4) [1514] Bc   N  - 703 11 ImDc G3 V          
 0627 Laura                B555211-7 Lo                   { -1 } (410-5) [1113] B    -  - 203 9  ImDc G4 V M4 V     
 0630 Knightsbridge        D725310-7 Lo Da                { -3 } (520-5) [1112] B    S  A 320 7  ImDc M1 V          
 0721 T'Ch'aikotta         C5716AB-6 He Ni Da             { -2 } (852+1) [8478] B    -  A 204 16 ImDc M3 V M5 V     
-0722 Ituxi                AA79555-E Ni                   { 1 }  (945-1) [363C] B    -  - 102 6  ImDc K1 V          
-0723 Drinishok            A100400-F Ni Va                { 1 }  (C34-3) [151A] B    -  - 224 9  ImDc M3 III        
+0722 Ituxi                AA79555-E Ni Ht                { 1 }  (945-1) [363C] B    -  - 102 6  ImDc K1 V          
+0723 Drinishok            A100400-F Ni Va Ht             { 1 }  (C34-3) [151A] B    -  - 224 9  ImDc M3 III        
 0724 McAllister           A574524-8 Ag Ni                { 0 }  (C44-2) [3536] BC   -  - 905 17 ImDc M1 V M5 V     
 0725 Darniki              C624994-7 Hi In                { 1 }  (B8A-1) [7A35] BE   -  - 104 9  ImDc G3 V M7 V     
 0730 Fforte               C435226-6 Lo                   { -2 } (410-3) [1145] B    -  - 524 13 ImDc K2 V          
 0821 Parsifal             E310757-9 Na Pi                { -1 } (D68-1) [7659] BD   -  - 404 7  ImDc K4 III        
-0823 Herodotus            A100435-F Ni Va                { 1 }  (A34-1) [253D] B    -  - 604 10 ImDc M2 V          
+0823 Herodotus            A100435-F Ni Va Ht             { 1 }  (A34-1) [253D] B    -  - 604 10 ImDc M2 V          
 0826 Midelton             E300867-7 Na Va Ph Pi O:0827   { -2 } (A76-2) [8657] BDe  -  - 713 10 ImDc K4 V          
 0827 Cheng                B5448BC-9 Pa Ph Pi Pz          { 1 }  (F7A+4) [B98C] BcDe -  A 605 14 ImDc M2 V M4 V     
-0829 Breandan             A994688-C Ag Ni                { 2 }  (956+2) [685C] BC   N  - 310 8  ImDc M2 V          
-0830 Lashkagur            B74498A-C Hi In                { 4 }  (D8F+5) [BD7E] BEf  -  - 902 14 ImDc G1 V          
+0829 Breandan             A994688-C Ag Ni Ht             { 2 }  (956+2) [685C] BC   N  - 310 8  ImDc M2 V          
+0830 Lashkagur            B74498A-C Hi In Ht             { 4 }  (D8F+5) [BD7E] BEf  -  - 902 14 ImDc G1 V          
 0922 Orn                  D64A404-8 Ni Wa                { -3 } (831-5) [2136] B    -  - 902 15 ImDc K4 V          
 0925 Konat-Kale           B310886-B Na Ph Cp Pi          { 2 }  (C7C+1) [7A4A] BDeF -  - 302 7  ImDc M3 V          
 0926 Poynting             C787634-8 Ag Ni Ga Ri          { 0 }  (D54-2) [4636] BC   -  - 905 17 ImDc M0 V M1 V     
 0929 Gabon                C10088A-B Na Va Ph Pi          { 1 }  (E7B+3) [A97D] BDe  -  - 513 8  ImDc K3 V M4 V     
 1021 Valandor             C100434-B Ni Va                { 0 }  (833-2) [2439] B    -  - 811 13 ImDc M1 V M2 V     
-1022 Gine                 A100433-E Ni Va                { 1 }  (934-2) [152B] B    -  - 703 9  ImDc K4 V          
+1022 Gine                 A100433-E Ni Va Ht             { 1 }  (934-2) [152B] B    -  - 703 9  ImDc K4 V          
 1024 Toirdealbach         B525677-7 Ni                   { -1 } (853-1) [6557] B    -  - 403 13 ImDc M0 V M4 V     
 1028 Edmonton             C431721-A Na Po                { 1 }  (E6A-3) [3816] B    -  - 823 8  ImDc K3 V M0 V M0 V
-1123 De Weton             D565220-5 Lo                   { -3 } (410-5) [1111] B    -  - 103 8  ImDc K9 V          
-1223 Fermi                A100433-C Ni Va                { 1 }  (B34-2) [1529] B    N  - 823 11 ImDc K3 V M2 V     
+1123 De Weton             D565220-5 Lo Lt                { -3 } (410-5) [1111] B    -  - 103 8  ImDc K9 V          
+1223 Fermi                A100433-C Ni Va Ht             { 1 }  (B34-2) [1529] B    N  - 823 11 ImDc K3 V M2 V     
 1230 Eudore               A525677-B Ni                   { 1 }  (D55+1) [675B] B    -  - 923 8  ImDc K9 V          
 1422 Barnet               C897554-6 Ag Ni                { -1 } (743-3) [3434] BC   -  - 204 10 ImDc K4 V M7 V     
 1521 Kumish               B543988-7 Hi In Po             { 2 }  (B8B+2) [9B57] BE   -  - 902 10 ImDc K7 V M5 V     
 1523 Ashisesh             D565984-8 Hi Pr                { -1 } (F88-3) [7836] BcE  -  - 504 16 ImDc K4 V          
 1722 Leviticus            B527587-A Ni                   { 1 }  (B45+1) [565A] B    N  - 213 7  ImDc G0 V          
-1724 Anaxias              A553A85-D Hi Po Cs             { 3 }  (C9F+1) [8D3B] BEF  -  - 900 11 ImDc K0 V M3 V     
+1724 Anaxias              A553A85-D Hi Po Cs Ht          { 3 }  (C9F+1) [8D3B] BEF  -  - 900 11 ImDc K0 V M3 V     
 1825 Abell                X525677-7 Ni Fo                { -3 } (851-3) [6357] -    -  R 404 8  ImDc G1 V M6 V     
-2025 Sian                 B100434-E Ni Va                { 1 }  (D34-1) [253C] B    N  - 525 10 ImDc K3 IV         
+2025 Sian                 B100434-E Ni Va Ht             { 1 }  (D34-1) [253C] B    N  - 525 10 ImDc K3 IV         
 2026 Riirzukhindi         E565984-8 Hi Pr                { -1 } (F88-3) [7836] BcE  -  - 504 7  ImDc K7 V          
 2030 Hultor               B431721-B Na Po                { 2 }  (D6C-2) [3917] B    -  - 322 13 ImDc M2 V M2 V     
 2224 Hergrom              E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 804 13 ImDc M1 V          
@@ -258,13 +258,13 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2522 Martina              B527587-7 Ni                   { -1 } (743-1) [5457] B    -  - 304 8  ImDc M2 V          
 2526 Evanston             E100433-A Ni Va                { -1 } (932-4) [1327] -    -  - 403 14 CsIm M1 V          
 2630 Robynson             A100434-B Ni Va                { 1 }  (934-1) [2539] -    N  - 303 6  CsIm G2 V M6 V     
-2726 Haiji                X8D68AC-2 Ph Fo                { -2 } (A73+1) [B685] -    -  R 602 10 NaHu M1 V          
-2830 Vermpe               D553420-3 Ni Po                { -3 } (631-5) [1111] -    -  - 503 11 NaHu M2 V          
+2726 Haiji                X8D68AC-2 Ph Fo Lt             { -2 } (A73+1) [B685] -    -  R 602 10 NaHu M1 V          
+2830 Vermpe               D553420-3 Ni Po Lt             { -3 } (631-5) [1111] -    -  - 503 11 NaHu M2 V          
 3130 Crofta               B565220-7 Lo                   { -1 } (410-5) [1112] -    M  - 922 13 NaHu K4 V          
 3222 Hays                 C525677-9 Ni                   { -1 } (A53-1) [6559] B    -  - 220 9  ImDc M3 V          
 3229 Fuller               B100433-9 Ni Va                { 0 }  (B33-3) [1426] -    M  - 905 14 NaHu M3 V          
 0133 Cey                  B310101-9 Lo                   { 0 }  (600-4) [1115] B    -  - 412 8  ImDc M6 V M8 V     
-0134 Iimnime              E767988-3 Hi Ga Pr             { -1 } (B86-1) [9853] BcE  -  - 323 13 ImDc M1 V          
+0134 Iimnime              E767988-3 Hi Ga Pr Lt          { -1 } (B86-1) [9853] BcE  -  - 323 13 ImDc M1 V          
 0138 Dashuun              B577765-A Ag Pi O:Mass-3136    { 3 }  (C6C+1) [5A38] BCD  -  - 612 9  ImDc G0 V M8 V     
 0139 Bditri               B31079C-8 Na Pi Pz             { 0 }  (C68+3) [A78B] BD   -  A 712 13 ImDc G2 V          
 0140 Critzer              C524210-7 Lo                   { -2 } (410-5) [1112] B    -  - 701 11 ImDc M1 V M9 V     
@@ -274,85 +274,85 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0339 Zeno                 C591679-7 He Ni                { -2 } (852-1) [7468] B    -  - 403 11 ImDc M1 V          
 0431 Plauka               E695340-6 Lo Da                { -3 } (520-5) [1111] B    -  A 804 13 ImDc K1 V M1 V     
 0436 Regis                B566655-9 Ag Ni Ri             { 2 }  (B56+1) [4837] BC   -  - 103 16 ImDc M2 V          
-0437 Pavillion            D544720-5 Ag Pi                { -1 } (966-5) [2611] BCD  -  - 603 6  ImDc K3 V M3 V M5 V
+0437 Pavillion            D544720-5 Ag Pi Lt             { -1 } (966-5) [2611] BCD  -  - 603 6  ImDc K3 V M3 V M5 V
 0438 Gushamad             D2009AD-A Hi In Na Va Pz       { 2 }  (G8C+5) [DB9E] BE   -  A 423 14 ImDc M3 V M9 V     
 0532 Piinur               E200533-7 Ni Va                { -3 } (741-5) [2224] B    -  - 200 12 ImDc K4 V M0 V     
 0533 Korbak               A432320-B Lo Po Cp             { 2 }  (922-2) [1516] BF   NW - 913 13 ImDc F9 V          
-0534 Eta-Gu               B73A552-E Ni Wa                { 1 }  (945-3) [161A] B    -  - 602 10 ImDc M1 V          
-0536 Ektuurim             C788774-4 Ag Ri                { 1 }  (967-1) [5832] BC   -  - 703 7  ImDc M0 V          
+0534 Eta-Gu               B73A552-E Ni Wa Ht             { 1 }  (945-3) [161A] B    -  - 602 10 ImDc M1 V          
+0536 Ektuurim             C788774-4 Ag Ri Lt             { 1 }  (967-1) [5832] BC   -  - 703 7  ImDc M0 V          
 0537 Uowdin               C31049B-7 Ni Da                { -2 } (631+1) [6279] B    -  A 805 15 ImDc K3 V M5 V     
-0631 Altoveros            D896451-5 Ni Pa                { -3 } (631-5) [1111] Bc   -  - 215 9  ImDc M1 V M9 V     
+0631 Altoveros            D896451-5 Ni Pa Lt             { -3 } (631-5) [1111] Bc   -  - 215 9  ImDc M1 V M9 V     
 0637 Harwart              B310427-9 Ni                   { 0 }  (B33+1) [4459] B    -  - 205 12 ImDc M3 V          
 0639 Braaza               B574578-A Ag Ni                { 2 }  (C46+2) [575A] BC   -  - 523 13 ImDc K7 V          
 0731 Moldovaan            C100752-8 Na Va Pi Pz          { -1 } (D67-5) [3614] BD   -  A 904 9  ImDc K6 III M2 V   
-0732 Vashtii              A529455-F Ni                   { 1 }  (A34-1) [253D] B    -  - 222 11 ImDc K5 V M9 V     
+0732 Vashtii              A529455-F Ni Ht                { 1 }  (A34-1) [253D] B    -  - 222 11 ImDc K5 V M9 V     
 0737 Patnor               B673465-A Ni O:0739            { 1 }  (A34-1) [2538] B    -  - 604 11 ImDc K0 V M3 V     
-0739 Altsuulervin         B100721-D Na Va Pi             { 2 }  (C6D-2) [3919] BD   -  - 803 9  ImDc K2 V          
-0832 Depot 1              A58346A-D Ni Da Mr             { 2 }  (A35+4) [667F] B    D  A 304 12 ImDc M3 V M3 V     
+0739 Altsuulervin         B100721-D Na Va Pi Ht          { 2 }  (C6D-2) [3919] BD   -  - 803 9  ImDc K2 V          
+0832 Depot 1              A58346A-D Ni Da Mr Ht          { 2 }  (A35+4) [667F] B    D  A 304 12 ImDc M3 V M3 V     
 0836 Wovim                E54A998-6 Hi In Wa             { 0 }  (B88+1) [9956] BE   -  - 914 8  ImDc K3 V          
 0838 Em                   C310331-7 Lo                   { -2 } (520-5) [1113] B    -  - 512 16 ImDc M0 V          
 0840 Aandimar             C310697-9 Na Ni                { -1 } (B53-1) [6559] B    -  - 203 9  ImDc G3 V M4 V     
 0933 Rappik               B57289B-8 He Ph Pi Pz          { 0 }  (E78+2) [A87A] BDe  -  A 313 7  ImDc M2 V          
-0935 Pepsi                D566877-2 Ri Pa Ph             { -1 } (A74-1) [8752] BcCe -  - 202 15 ImDc M0 V          
+0935 Pepsi                D566877-2 Ri Pa Ph Lt          { -1 } (A74-1) [8752] BcCe -  - 202 15 ImDc M0 V          
 0937 Eysellt              E000133-A As Lo Va Da          { -1 } (700-4) [1127] B    -  A 213 14 ImDc M8 III D      
 0938 Jacobite             C686354-7 Lo Ga Da             { -2 } (520-4) [1135] B    -  A 225 15 ImDc K9 V M9 V     
-1031 De Thorneclay        B527587-C Ni                   { 1 }  (A45+1) [565C] B    -  - 903 15 ImDc M2 V M6 V M8 V
+1031 De Thorneclay        B527587-C Ni Ht                { 1 }  (A45+1) [565C] B    -  - 903 15 ImDc M2 V M6 V M8 V
 1034 Lavoisier            B553420-8 Ni Po                { -1 } (932-5) [1313] B    -  - 403 8  ImDc M1 V          
 1035 McConnell            E639340-7 Lo                   { -3 } (520-5) [1112] B    -  - 711 8  ImDc G3 V          
-1036 Belthan              A310877-E Na Ph Cp Pi          { 2 }  (E7D+2) [8A5E] BDeF -  - 413 11 ImDc K3 V          
+1036 Belthan              A310877-E Na Ph Cp Pi Ht       { 2 }  (E7D+2) [8A5E] BDeF -  - 413 11 ImDc K3 V          
 1039 Beowulf              B996454-B Ni Pa                { 1 }  (A34-1) [2539] Bc   N  - 104 11 ImDc G0 V          
-1133 Barett               E756440-5 Ni Ga Pa             { -3 } (631-5) [1111] Bc   -  - 124 12 ImDc M3 V          
-1134 Martis               A897554-D Ag Ni                { 2 }  (746+1) [373B] BC   -  - 600 8  ImDc M3 V M5 V     
+1133 Barett               E756440-5 Ni Ga Pa Lt          { -3 } (631-5) [1111] Bc   -  - 124 12 ImDc M3 V          
+1134 Martis               A897554-D Ag Ni Ht             { 2 }  (746+1) [373B] BC   -  - 600 8  ImDc M3 V M5 V     
 1136 Bane                 B667253-8 Lo Ga                { -1 } (610-4) [1125] B    -  - 802 12 ImDc K5 V          
-1137 Monticello           E6888CF-2 Ri Pa Ph Pz          { -1 } (A74+4) [D7A7] BcCe -  A 900 7  ImDc M2 V          
+1137 Monticello           E6888CF-2 Ri Pa Ph Pz Lt       { -1 } (A74+4) [D7A7] BcCe -  A 900 7  ImDc M2 V          
 1138 Bert                 A310610-9 Na Ni                { 0 }  (E54-4) [1614] B    -  - 324 9  ImDc M0 V M2 V     
 1140 McCluskey            C625785-8 Pi                   { -1 } (C67-3) [5636] BD   -  - 103 11 ImDc M2 V          
 1234 Turkish              C431721-6 Na Po                { -1 } (966-5) [3612] B    -  - 620 14 ImDc M2 V M5 V     
 1235 Mancournes           C527587-7 Ni                   { -2 } (742-2) [5357] B    -  - 314 9  ImDc K3 V M5 V     
 1236 Metheri              B553420-B Ni Po                { 1 }  (734-3) [1516] B    -  - 201 14 ImDc K9 V          
 1239 Francine             C639340-A Lo                   { 0 }  (820-4) [1315] B    -  - 103 11 ImDc M1 V M2 V     
-1240 Campe                E89758B-5 Ag Ni                { -2 } (742+1) [7377] BC   -  - 404 12 ImDc M1 V          
-1335 Wardrop              B100433-D Ni Va                { 1 }  (A34-2) [152A] B    -  - 522 12 ImDc M2 V          
-1337 Riverfield           A100434-E Ni Va                { 1 }  (934-1) [253C] B    -  - 103 8  ImDc G8 IV M8 V    
+1240 Campe                E89758B-5 Ag Ni Lt             { -2 } (742+1) [7377] BC   -  - 404 12 ImDc M1 V          
+1335 Wardrop              B100433-D Ni Va Ht             { 1 }  (A34-2) [152A] B    -  - 522 12 ImDc M2 V          
+1337 Riverfield           A100434-E Ni Va Ht             { 1 }  (934-1) [253C] B    -  - 103 8  ImDc G8 IV M8 V    
 1340 Ril                  C565220-7 Lo                   { -2 } (410-5) [1112] B    -  - 700 11 ImDc G3 V          
 1435 Urbana               B667253-B Lo Ga                { 1 }  (711-2) [1328] B    -  - 103 10 ImDc G0 V M9 V     
 1438 Mikkim               B6888CF-8 Ri Pa Ph Pz          { 2 }  (E7A+5) [DAAD] BcCe W  A 804 10 ImDc K4 V          
-1534 Medsa                A431721-E Na Po                { 2 }  (C6D-2) [391A] B    -  - 903 8  ImDc K3 V          
+1534 Medsa                A431721-E Na Po Ht             { 2 }  (C6D-2) [391A] B    -  - 903 8  ImDc K3 V          
 1536 Cabot                D100A99-A Hi In Na Va          { 2 }  (G9C+3) [BC6B] BE   -  - 704 8  ImDc M2 V          
-1539 Pecos                A525677-D Ni                   { 1 }  (855+1) [675D] B    -  - 600 6  ImDc K3 V          
-1540 Drusolo              C100433-C Ni Va                { 0 }  (A33-3) [1429] B    -  - 722 13 ImDc M2 V M8 V     
-1635 Ffuntayns            E553420-5 Ni Po                { -3 } (631-5) [1111] B    -  - 521 10 ImDc M2 V          
-1638 Wandesforth          C100434-C Ni Va                { 0 }  (733-2) [243A] B    -  - 310 11 ImDc K3 V          
-1639 Ginger               C100433-C Ni Va                { 0 }  (C33-3) [1429] B    -  - 915 16 ImDc M2 V          
+1539 Pecos                A525677-D Ni Ht                { 1 }  (855+1) [675D] B    -  - 600 6  ImDc K3 V          
+1540 Drusolo              C100433-C Ni Va Ht             { 0 }  (A33-3) [1429] B    -  - 722 13 ImDc M2 V M8 V     
+1635 Ffuntayns            E553420-5 Ni Po Lt             { -3 } (631-5) [1111] B    -  - 521 10 ImDc M2 V          
+1638 Wandesforth          C100434-C Ni Va Ht             { 0 }  (733-2) [243A] B    -  - 310 11 ImDc K3 V          
+1639 Ginger               C100433-C Ni Va Ht             { 0 }  (C33-3) [1429] B    -  - 915 16 ImDc M2 V          
 1640 McNaughton           E000677-7 As Na Ni Va          { -3 } (851-3) [6357] B    -  - 212 10 ImDc K3 V          
 1736 Gimesh               E1009A7-9 Hi In Na Va          { 1 }  (E8B+1) [9A59] BE   -  - 703 9  ImDc M2 V          
-1737 Todd                 A100633-C Na Ni Va Cp          { 1 }  (C55-2) [3729] BF   -  - 813 17 ImDc K0 V          
+1737 Todd                 A100633-C Na Ni Va Cp Ht       { 1 }  (C55-2) [3729] BF   -  - 813 17 ImDc K0 V          
 1739 Gilina               C756440-9 Ni Ga Pa             { -1 } (832-5) [1314] Bc   -  - 402 8  ImDc K2 V          
 1740 Thayer               C100433-B Ni Va                { 0 }  (833-3) [1428] B    -  - 702 14 ImDc K2 V M5 V     
 1836 Caret                C100433-8 Ni Va                { -2 } (831-5) [1225] B    -  - 102 11 ImDc K3 V M6 V     
 1839 Ariome               C525677-7 Ni                   { -2 } (852-2) [6457] B    -  - 415 15 ImDc M0 V M2 V     
 1840 Fasner               E431721-8 Na Po                { -2 } (B66-5) [3514] B    -  - 102 7  ImDc M2 V          
-1935 Anise                D100A99-D Hi In Na Va          { 2 }  (G9E+3) [BC6E] BE   -  - 304 7  ImDc K2 IV         
+1935 Anise                D100A99-D Hi In Na Va Ht       { 2 }  (G9E+3) [BC6E] BE   -  - 304 7  ImDc K2 IV         
 1937 Grimman              B525677-B Ni                   { 1 }  (A55+1) [675B] B    -  - 202 12 ImDc K1 V M7 V     
 1939 Calais               D431721-8 Na Po                { -2 } (D66-5) [3514] B    -  - 213 10 ImDc M1 V          
 2035 Osen                 D000587-7 As Ni Va             { -3 } (741-3) [5257] B    -  - 512 9  ImDc M2 V M8 V     
 2135 Zepher               C100433-A Ni Va                { 0 }  (A33-3) [1427] B    -  - 413 12 ImDc M0 V M2 V     
-2139 Lastir               A100434-D Ni Va                { 1 }  (A34-1) [253B] B    -  - 613 17 ImDc M0 V M8 V     
+2139 Lastir               A100434-D Ni Va Ht             { 1 }  (A34-1) [253B] B    -  - 613 17 ImDc M0 V M8 V     
 2234 Tyne                 B100433-A Ni Va                { 1 }  (934-2) [1527] -    -  - 103 14 NaHu F0 V          
 2235 Schneider            E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 205 13 ImDc M2 V          
 2240 Beaknose             B431721-8 Na Po                { 0 }  (A68-4) [3714] B    -  - 201 9  ImDc M3 V          
 2336 Eisner               A553420-B Ni Po                { 1 }  (A34-3) [1516] -    -  - 813 15 NaHu K1 V M4 V     
 2337 Iino                 C639340-A Lo                   { 0 }  (720-4) [1315] -    -  - 611 14 CsIm M1 V M1 V     
-2338 Corineus             C8D758B-5 Ni                   { -2 } (742+1) [7377] -    -  - 523 16 NaHu K1 V M1 V     
-2339 Elke                 E310000-0 Ba                   { -3 } (200-5) [0000] -    -  - 005 10 NaXX K0 V M7 V     
+2338 Corineus             C8D758B-5 Ni Lt                { -2 } (742+1) [7377] -    -  - 523 16 NaHu K1 V M1 V     
+2339 Elke                 E310000-0 Ba Lt                { -3 } (200-5) [0000] -    -  - 005 10 NaXX K0 V M7 V     
 2340 Gibbs                C625785-7 Pi                   { -1 } (967-3) [5635] BD   -  - 110 8  ImDc K2 V M1 V     
 2433 Asher                C532444-6 Ni Po                { -2 } (631-4) [2234] B    -  - 403 11 ImDc M0 V M8 V     
 2436 Marty                C545898-7 Pa Ph Pi             { -1 } (A77-1) [8757] BcDe -  - 723 16 ImDc M2 V          
-2438 Cabra                A787200-C Lo Ga                { 1 }  (811-3) [1317] B    -  - 204 12 ImDc G2 V          
+2438 Cabra                A787200-C Lo Ga Ht             { 1 }  (811-3) [1317] B    -  - 204 12 ImDc G2 V          
 2439 Bronx                D100433-A Ni Va                { -1 } (B32-4) [1327] B    -  - 714 10 ImDc M1 V M9 V     
 2440 Fortescue            C525677-7 Ni                   { -2 } (852-2) [6457] -    -  - 804 15 CsIm G4 V          
 2533 Reagan               E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 104 14 ImDc K6 V M3 V     
-2535 Dem                  C100433-C Ni Va                { 0 }  (933-3) [1429] B    -  - 703 14 ImDc G1 V          
+2535 Dem                  C100433-C Ni Va Ht             { 0 }  (933-3) [1429] B    -  - 703 14 ImDc G1 V          
 2536 Henderson            E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 624 16 ImDc M2 V          
 2537 Adinett              C100433-9 Ni Va                { -1 } (C32-4) [1326] B    -  - 724 9  ImDc G3 V M4 V     
 2538 Menlo                E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 313 13 ImDc K6 V          
@@ -360,26 +360,26 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 2632 Serreg               B565220-B Lo                   { 1 }  (911-3) [1316] B    -  - 405 14 ImDc K2 V          
 2633 Janice               C100434-A Ni Va                { 0 }  (833-2) [2438] B    -  - 802 10 ImDc A4 V M7 V     
 2638 Hesylwode            B565220-A Lo                   { 1 }  (811-3) [1315] B    -  - 604 10 ImDc G9 V          
-2640 Pott                 E756440-5 Ni Ga Pa             { -3 } (631-5) [1111] Bc   -  - 405 13 ImDc G4 V M1 V     
+2640 Pott                 E756440-5 Ni Ga Pa Lt          { -3 } (631-5) [1111] Bc   -  - 405 13 ImDc G4 V M1 V     
 2733 Caddrairc            C310867-7 Na Ph Pi O:3035      { -1 } (A77-1) [8757] BDe  -  - 123 13 ImDc G5 IV         
 2735 Coning               C9D6454-9 Ni                   { -1 } (932-3) [2337] B    -  - 303 14 ImDc M3 V M9 V     
-2737 Burdewer             E744100-5 Lo                   { -3 } (300-5) [1111] B    -  - 901 6  ImDc K6 V M9 V     
+2737 Burdewer             E744100-5 Lo Lt                { -3 } (300-5) [1111] B    -  - 901 6  ImDc K6 V M9 V     
 2740 Maud                 E551522-7 Ni Po                { -3 } (741-5) [1213] B    -  - 203 9  ImDc K3 V          
-2831 Khmer                B639340-C Lo                   { 1 }  (A21-3) [1417] -    -  - 423 14 NaHu G1 V M6 V     
+2831 Khmer                B639340-C Lo Ht                { 1 }  (A21-3) [1417] -    -  - 423 14 NaHu G1 V M6 V     
 2832 Nero                 B89758B-A Ag Ni                { 2 }  (B46+4) [777C] BC   -  - 413 10 ImDc F4 V          
 2833 Frigidair            B587220-B Lo                   { 2 }  (912-2) [1416] B    NS - 405 13 ImDc M2 V          
 2839 Rogis                C544622-6 Ag Ni                { -1 } (853-5) [2512] BC   -  - 404 8  ImDc G3 V          
 2931 Boffit               B566433-9 Ni Pa                { 0 }  (A33-3) [1426] -    -  - 613 16 CsIm M3 V M5 V     
 2935 Pensacola            A655636-B Ag Ni Ga             { 2 }  (B56+1) [584A] BC   -  - 812 12 ImDc M3 V          
-2937 Dougal               B100433-D Ni Va                { 1 }  (834-2) [152A] B    -  - 702 14 ImDc M3 V          
+2937 Dougal               B100433-D Ni Va Ht             { 1 }  (834-2) [152A] B    -  - 702 14 ImDc M3 V          
 2938 McKenna              E525677-7 Ni                   { -3 } (851-3) [6357] B    -  - 804 12 ImDc M0 V          
 3034 Bagley               D100434-7 Ni Va                { -3 } (631-5) [2135] B    -  - 704 11 ImDc K0 V M8 V     
 3035 Breda                A565984-B Hi Cp Pr             { 4 }  (J8F+2) [7D39] BcEF NS - 825 15 ImDc M2 V          
-3037 Horshard             B000721-D As Na Va Pi          { 2 }  (E6D-2) [3919] BD   -  - 605 13 ImDc M2 V          
+3037 Horshard             B000721-D As Na Va Pi Ht       { 2 }  (E6D-2) [3919] BD   -  - 605 13 ImDc M2 V          
 3040 Taliarin             B100434-B Ni Va                { 1 }  (634-1) [2539] B    N  - 700 10 ImDc K4 V          
 3134 Willow               B756440-7 Ni Ga Pa             { -1 } (632-5) [1312] Bc   -  - 512 7  ImDc M0 V M0 V     
 3137 Cotes                C897554-6 Ag Ni                { -1 } (743-3) [3434] BC   -  - 210 12 ImDc M2 V          
-3138 Dami                 A200657-D Na Ni Va             { 1 }  (C55+1) [675D] B    -  - 604 10 ImDc K2 V          
+3138 Dami                 A200657-D Na Ni Va Ht          { 1 }  (C55+1) [675D] B    -  - 604 10 ImDc K2 V          
 3140 Aida                 B100433-9 Ni Va                { 0 }  (934-2) [1426] B    S  - 503 14 ImDc M3 V          
 3234 Huchonson            B431721-7 Na Po                { 0 }  (968-4) [3713] B    -  - 624 16 ImDc M5 III M5 V   
 3235 Lindsey              D527587-7 Ni                   { -3 } (741-3) [5257] B    -  - 404 11 ImDc G4 V          

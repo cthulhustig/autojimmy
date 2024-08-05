@@ -5,17 +5,34 @@
   <X>-5</X>
   <Y>5</Y>
   <DataFile Source="Solomani and Aslan" Milieu="M1105" Ref="https://travellermap.com/data/irlaftalea" />
-  <Subsectors />
+  <Subsectors>
+    <Subsector Index="A">Aokhtaul</Subsector>
+    <Subsector Index="B">Eaiykair</Subsector>
+    <Subsector Index="C">Aikhtoas</Subsector>
+    <Subsector Index="D">Ktiyewiylra</Subsector>
+    <Subsector Index="E">Hwiylei</Subsector>
+    <Subsector Index="F">Eafua'oiw</Subsector>
+    <Subsector Index="G">Arlyohalreai</Subsector>
+    <Subsector Index="H">Arlurla</Subsector>
+    <Subsector Index="I">Toseluaoa</Subsector>
+    <Subsector Index="J">Wyehaeriyl</Subsector>
+    <Subsector Index="K">Hrolektoaou</Subsector>
+    <Subsector Index="L">Eawal</Subsector>
+    <Subsector Index="M">Wastoieil</Subsector>
+    <Subsector Index="N">Htal</Subsector>
+    <Subsector Index="O">Eihlaorlaos</Subsector>
+    <Subsector Index="P">Treyakhel</Subsector>
+  </Subsectors>
   <Allegiances>
     <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
     <Allegiance Code="Se">Steaak'heafera</Allegiance>
     <Allegiance Code="As">Aslan Hierate</Allegiance>
     <Allegiance Code="A9" Base="As">Aslan Hierate, Tlaukhu control, Aokhalte (10), Sahao' (21), Ouokhoi (26)</Allegiance>
-    <Allegiance Code="A1" Base="As">Aslan Hierate, Tlaukhu control, Khauleairl (2), Estoieie' (16), Toaseilwi (22)</Allegiance>
+    <Allegiance Code="A1" Base="As">Aslan Hierate, Tlaukhu control, Khaukheairl (2), Estoieie' (16), Toaseilwi (22)</Allegiance>
     <Allegiance Code="A3" Base="As">Aslan Hierate, Tlaukhu control, Tralyeaeawi (4), Yulraleh (12), Aiheilar (25), Riyhalaei (28)</Allegiance>
-    <Allegiance Code="A8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okunir (29)</Allegiance>
+    <Allegiance Code="A8" Base="As">Aslan Hierate, Tlaukhu control, Seieakh (9), Akatoiloh (18), We'okurir (29)</Allegiance>
     <Allegiance Code="A4" Base="As">Aslan Hierate, Tlaukhu control, Eakhtiyho (5), Eteawyolei' (11), Fteweyeakh (23)</Allegiance>
-    <Allegiance Code="A7" Base="As">Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerfearlyo (20), Yehtahikh (24)</Allegiance>
+    <Allegiance Code="A7" Base="As">Aslan Hierate, Tlaukhu control, Ikhtealyo (8), Tlerlearlyo (20), Yetahikh (24)</Allegiance>
     <Allegiance Code="A2" Base="As">Aslan Hierate, Tlaukhu control, Syoisuis (3)</Allegiance>
     <Allegiance Code="A6" Base="As">Aslan Hierate, Tlaukhu control, Uiktawa (7), Iykyasea (17), Faowaou (27)</Allegiance>
   </Allegiances>

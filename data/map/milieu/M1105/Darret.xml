@@ -4,7 +4,7 @@
   <Credits />
   <X>4</X>
   <Y>5</Y>
-  <DataFile Author="Bari Z. Stafford Sr." Source="The Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <DataFile Author="Bari Z. Stafford Sr." Source="General Turokan's Expedition to the Rim" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
   <Subsectors>
     <Subsector Index="A">Arret</Subsector>
     <Subsector Index="B">Barrec</Subsector>
@@ -25,5 +25,13 @@
   </Subsectors>
   <Allegiances>
     <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="Bo">Borin Consortium</Allegiance>
+    <Allegiance Code="Je">Jerrbole Consortium</Allegiance>
+    <Allegiance Code="Ae">Ayt Commonwealth</Allegiance>
   </Allegiances>
+  <Borders>
+    <Border Color="Blue" Allegiance="Bo" LabelPosition="1204">1004 1003 1002 1102 1002 1003 1104 1204 1205 1306 1206 1106 1105 1004</Border>
+    <Border Color="Red" Allegiance="Ae" LabelPosition="1410">1310 1409 1408 1409 1510 1410 1411 1410 1310</Border>
+    <Border Color="Yellow" Allegiance="Je" LabelPosition="1422">1121 1120 1220 1320 1420 1520 1521 1621 1522 1523 1422 1323 1322 1221 1121</Border>
+  </Borders>
 </Sector>

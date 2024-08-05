@@ -54,7 +54,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1003 Rerkleblmie          X555000-0 Ba                   { -3 } (B00-2) [0000] - -  - 021 13 NaXX M4 V                      
 1105 Plrbl-17             X689000-0 Ba                   { -3 } (700+2) [0000] - -  - 002 14 NaXX M6 V                      
 1208 Pied-35              X200000-0 Va Ba                { -3 } (900+1) [0000] - -  - 002 11 NaXX K8 V                      
-1210 Ieshjepenshi         X654000-0 Ba                   { -3 } (900+0) [0000] - -  - 024 14 NaXX F9 V F4 V G8 V            
+1210 Ieshjepenshi         X654000-0 Ba                   { -3 } (900+0) [0000] - -  - 024 14 NaXX F4 V F9 V G8 V            
 1306 Iezhklienz           X641000-0 He Ba Po             { -3 } (600+0) [0000] - -  - 033 10 NaXX G3 IV M5 V                
 1308 Iaieqr-47            X532000-0 Ba Po                { -3 } (400-1) [0000] - -  - 010 5  NaXX A5 II G9 VI               
 1410 Ietpl-92             X568000-0 Ba                   { -3 } (600+2) [0000] - -  - 022 14 NaXX K2 IV BD D                
@@ -119,7 +119,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 0618 Ieqlninch-5          X9B5000-0 Fl Ba                { -3 } (900-3) [0000] - -  - 014 11 NaXX A4 III D F5 V             
 0713 Shtodr-59            X656000-0 Ga Ba                { -3 } (900-2) [0000] - -  - 021 11 NaXX M4 III                    
 0912 Tlarqief             X8B0000-0 He Ba                { -3 } (A00-3) [0000] - -  - 003 16 NaXX G3 IV G4 V K1 VI          
-0913 Onzhqriechch         X627000-0 Ba                   { -3 } (400+3) [0000] - -  - 021 11 NaXX G9 V M8 VI G4 V           
+0913 Onzhqriechch         X627000-0 Ba                   { -3 } (400+3) [0000] - -  - 021 11 NaXX G4 V M8 VI G9 V           
 1011 Abrpredlavrz         X427000-0 Ba                   { -3 } (600+1) [0000] - -  - 003 9  NaXX K1 V K6 VI BD             
 1014 Iadrdlaq             X685000-0 Ga Ba                { -3 } (500-1) [0000] - -  - 002 12 NaXX M8 II BD                  
 1015 Ieshsiench           X100000-0 Va Ba                { -3 } (A00-4) [0000] - -  - 024 15 NaXX M8 V BD                   
@@ -132,7 +132,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1216 Dlrn-72              X679000-0 Ba                   { -3 } (500+4) [0000] - -  - 024 17 NaXX G6 V                      
 1217 Fanzhmi'tlazh        C421578-7 He Ni Po             { -2 } (741-2) [5315] - -  - 104 9  NaHu G2 V K4 VI G8 V           
 1219 Iapria-47            X86A000-0 Wa Ba                { -3 } (800+1) [0000] - -  - 000 8  NaXX G9 V K2 VI K8 VI          
-1316 Rzhets-74            X634000-0 Ba                   { -3 } (B00+1) [0000] - -  - 023 12 NaXX G8 V M2 V G6 V K8 VI      
+1316 Rzhets-74            X634000-0 Ba                   { -3 } (B00+1) [0000] - -  - 023 12 NaXX G6 V M2 V G8 V K8 VI      
 1319 Blef-22              X98A000-0 Wa Ba                { -3 } (900+1) [0000] - -  - 000 7  NaXX F1 V                      
 1320 Ianzhzhosh           X627000-0 Ba                   { -3 } (400+0) [0000] - -  - 000 7  NaXX G2 V                      
 1411 Plalqliapl           X8B7000-0 Fl Ba                { -3 } (A00+2) [0000] - -  - 004 13 NaXX G2 V M5 VI                
@@ -149,7 +149,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1818 Qetsniem             X541000-0 He Ba Po             { -3 } (600+0) [0000] - -  - 000 11 NaXX G4 IV G7 V                
 1820 Zdanshpifedr         X626000-0 Ba                   { -3 } (700+4) [0000] - -  - 012 13 NaXX M9 V M5 VI                
 1913 Qrepr-48             X576000-0 Ba                   { -3 } (600+1) [0000] - -  - 024 13 NaXX K1 V M0 VI                
-1914 Deziad-87            X642000-0 He Ba Po             { -3 } (500-1) [0000] - -  - 020 10 NaXX K5 V D K0 V BD            
+1914 Deziad-87            X642000-0 He Ba Po             { -3 } (500-1) [0000] - -  - 020 10 NaXX K0 V D K5 V BD            
 1915 Pidlinshdlie         X776000-0 Ba                   { -3 } (400-1) [0000] - -  - 000 11 NaXX G3 V G9 VI                
 1918 Zdeqpanshkrr         X622000-0 He Ba Po             { -3 } (600+0) [0000] - -  - 010 13 NaXX A4 V                      
 1920 Frdanj               E454863-7 Ph Pa                { -2 } (C75-2) [4668] - -  - 923 10 NaHu G9 V                      
@@ -194,7 +194,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 3215 Tliaiadl             X523000-0 Ba Po                { -3 } (900+1) [0000] - -  - 022 12 NaXX G1 V K3 VI K3 VI M8 VI    
 3218 Evrzheprev           C685477-4 Ga Ni Pa             { -2 } (630+3) [3244] - -  - 821 10 ZhMe K9 V                      
 3219 Evkriezmienj         X556000-0 Ba                   { -3 } (500-2) [0000] - -  F 012 7  ZhMe F8 V                      
-0126 Sieflat              X202000-0 Ic Va Ba             { -3 } (700+1) [0000] - -  - 000 7  NaXX M5 V M1 V                 
+0126 Sieflat              X202000-0 Ic Va Ba             { -3 } (700+1) [0000] - -  - 000 7  NaXX M1 V M5 V                 
 0127 Azhzdi-56            X633000-0 Ba Po                { -3 } (700+0) [0000] - -  - 023 16 NaXX K8 V                      
 0129 Drtlia-82            X764000-0 Ba                   { -3 } (500+1) [0000] - -  - 004 15 NaXX G8 V M7 VI M0 VI M2 VI    
 0221 Chtia-19             X421000-0 He Ba Po             { -3 } (500-1) [0000] - -  - 024 16 NaXX G0 V M7 VI                
@@ -253,7 +253,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1930 Lienians             X675000-0 Ba                   { -3 } (800-1) [0000] - -  - 025 16 NaXX G2 V K4 VI                
 2023 Qrazhkra             D667475-2 Ga Ni Pa             { -3 } (630+4) [7161] - -  A 122 11 NaHu G7 V                      
 2024 Ekchtad-81           X110000-0 Ba                   { -3 } (300-3) [0000] - -  - 000 7  NaXX A3 Ia                     
-2027 Brabltlikr           X665000-0 Ga Ba                { -3 } (700+4) [0000] - -  - 013 11 NaXX G6 V G7 V G0 V            
+2027 Brabltlikr           X665000-0 Ga Ba                { -3 } (700+4) [0000] - -  - 013 11 NaXX G0 V G7 V G6 V            
 2030 Krartspliana         D855455-4 Ga Ni Pa             { -3 } (830+3) [5125] - -  - 104 8  ZhMe K8 V                      
 2126 Chepzdi              X566000-0 Ba                   { -3 } (500+2) [0000] - -  - 010 9  NaXX F3 III F1 V               
 2129 Vieen                X545000-0 Ba                   { -3 } (800-5) [0000] - -  - 003 10 NaXX F6 VI G4 VI               
@@ -346,7 +346,7 @@ Hex  Name                 UWP       Remarks              {Ix}   (Ex)    [Cx]   N
 1736 Shiazi               A520445-E De He Ni Po          { 2 }  (938+2) [163K] - KM - 503 9  ZhMe M1 II                     
 1737 Dijiekr              A100656-F Va Ni Na             { 2 }  (A56-1) [385F] - KM - 400 5  ZhMe G1 V                      
 1832 Dianzhdo             A552447-D Ni Po                { 2 }  (D34-1) [365H] - KM - 614 14 ZhMe K2 V                      
-1833 Shtrvrpiadrc         C5459DA-6 Hi In                { 1 }  (48B+1) [BA44] - -  - 314 9  ZhMe K9 V K5 V                 
+1833 Shtrvrpiadrc         C5459DA-6 Hi In                { 1 }  (48B+1) [BA44] - -  - 314 9  ZhMe K5 V K9 V                 
 1834 Jonjqie              A444685-B Ni Ag                { 2 }  (E53+0) [685A] - -  - 422 14 ZhMe G8 V                      
 1835 Zhiache'             C594459-6 Ni Pa                { -2 } (830-2) [6297] - -  - 823 15 ZhMe K0 V                      
 1837 Chtieie              C636A75-8 Hi                   { 0 }  (997-2) [7A16] - -  - 324 15 ZhMe F0 III                    

@@ -38,322 +38,322 @@
 # Alleg: NaHu: "Non-Aligned, Human-dominated"
 # Alleg: NaXX: "Non-Aligned, unclaimed"
 
-Hex  Name                 UWP       Remarks               {Ix}   (Ex)    [Cx]   N B  Z PBG W  A    Stellar       
----- -------------------- --------- --------------------- ------ ------- ------ - -- - --- -- ---- --------------
-0106 Rutagh               E6A6112-9 Fl Lo Varg1           { -2 } (900-2) [316A] - -  - 810 12 JuPr M4 V          
-0109 Carrarn              B100759-C Na Va Pi Varg3        { 2 }  (66A-5) [4978] - -  - 502 13 JuPr G7 V          
-0201 Khakarrgh            B677737-9 Ag Pi                 { 2 }  (A67+3) [591D] - -  - 912 12 JuPr F2 V M4 V     
-0203 Rahar                C695634-5 Ag Ni                 { -1 } (851+5) [7565] - -  - 704 12 JuPr K3 V          
-0206 Rrurrgur             B311267-B Ic Lo Varg1 O:        { 1 }  (A11+2) [436B] - -  - 405 17 JuPr K6 V M9 V     
-0207 Agha                 C210635-D Na Ni Varg5           { 0 }  (E56-3) [963C] - -  - 213 13 JuPr F9 V          
-0210 Shaka                C4455D7-A Ag Ni Varg1           { 1 }  (945+2) [7637] - -  - 322 7  JuPr F9 V          
-0303 Caska                A765A9B-B Hi Ga Varg2           { 4 }  (699+1) [CE7C] - KM - 104 13 JuPr G6 V M7 V     
-0305 Khaz                 E68727B-1 Lo Ga                 { -3 } (910+1) [6151] - -  - 403 9  JuPr F7 V          
-0307 Ghirrzik             D210457-C Ni                    { -1 } (A33-4) [835C] - -  - 705 12 JuPr M0 V M1 V     
-0310 Cis-rabir            B4957C9-C Ag Pi Varg1           { 3 }  (A6B-3) [9A48] - -  - 920 10 JuPr F9 V          
-0402 Hebrar               B6988B6-7 Pa Ph Pi              { 0 }  (976+1) [D863] - -  - 523 13 JuPr K2 V          
-0405 Ziraghur             A99856A-C Ag Ni O:              { 2 }  (945-1) [5719] - K  - 511 10 JuPr F7 V          
-0408 Ghurrgarrgh          C320558-B De He Ni Po           { 0 }  (943+1) [554D] - -  - 113 15 JuPr G7 V          
-0505 Par                  A4639A5-A Hi Pr                 { 3 }  (B8D+1) [8C7A] - M  - 723 15 JuPr K8 V          
-0601 Raub                 CAC4414-C Fl Ni                 { 0 }  (B32+1) [348D] - -  - 703 8  JuPr G9 V M3 V     
-0606 Ghukhakh             E510300-2 Lo Varg1              { -3 } (820+1) [3173] - -  - 604 14 JuPr M9 V          
-0610 Papaa                C469436-7 Ni                    { -2 } (730+2) [4269] - -  - 300 9  JuPr F1 V          
-0707 Siraska              D574524-A Ag Ni                 { 0 }  (B45-1) [2585] - -  - 113 8  JuPr G8 V M6 V     
-0802 Khurrgh              B65A99C-8 Hi Wa                 { 1 }  (988+4) [AA99] - K  - 404 15 JuPr F7 V          
-0803 Sikhi                D8C3418-B Fl Ni                 { -1 } (D31+2) [339B] - -  - 302 5  JuPr M1 V M8 V     
-0804 Canta                D575A88-7 Hi In                 { 0 }  (894-3) [AA4B] - M  - 410 12 JuPr G4 V M3 V     
-0805 Rinkook              CA7A543-A Ni Oc                 { 0 }  (C43+4) [355D] - -  - 814 14 JuPr G3 V M3 V     
-0807 Rurrzik              C699343-5 Lo                    { -2 } (A20+1) [4154] - -  - 813 12 JuPr F4 V          
-0810 Khaekhurr            C444657-B Ag Ni Varg3           { 1 }  (553-2) [676E] - -  - 902 9  JuPr F5 V M2 V     
-0904 Saepar               C000659-B As Na Ni Va           { 0 }  (A54+1) [864D] - -  - 404 16 JuPr K0 V          
-0905 Ghueghik             C634565-7 Ni O:0904             { -2 } (641+1) [631B] - -  - 325 14 JuPr G6 II         
-0909 Voegan               D312534-8 Ic Ni Varg3           { -3 } (840+2) [8256] - -  - 103 13 JuPr M4 V          
-1007 Rutarrgh             A4519ED-8 Hi Po                 { 1 }  (C87+1) [8A5B] - -  - 903 10 JuPr F4 V M8 V     
-1008 Arrghan              A476999-A Hi In Varg2           { 4 }  (A8F-3) [8D3F] - -  - 100 9  JuPr F8 V M6 V     
-1102 Tagh                 B1108C9-B Na Ph Pi              { 2 }  (87B+1) [6A4G] - -  - 623 11 JuPr K8 V          
-1108 Dakh                 D689944-8 Hi Pr                 { -1 } (A87-1) [9819] - -  - 505 11 JuPr F6 V          
-1109 Digh                 A556785-8 Ag                    { 1 }  (86C+5) [5826] - K  - 601 6  JuPr F4 V M5 V     
-1202 Sezakh               D777341-5 Lo                    { -3 } (720-1) [1148] - M  - 810 11 JuPr F4 V          
-1203 Errurrgh             B895345-B Lo Varg1              { 2 }  (522+2) [755C] - KM - 310 6  JuPr G8 V          
-1207 Rarrza               B894846-9 Pa Ph Pi              { 1 }  (578+4) [6995] - -  - 702 14 JuPr F9 V          
-1210 Agodz                B9867A8-8 Ag Ri Varg2           { 3 }  (96B+2) [8A5A] - KM - 521 7  JuPr F5 V          
-1307 Rudzkha              A475420-D Ni Pa                 { 2 }  (733+1) [362B] - KM - 300 8  JuPr F1 V          
-1308 Ragh                 A8B688A-B Fl Ph Varg5           { 2 }  (D7A+2) [8A8D] - -  - 623 11 JuPr F9 V          
-1309 Digharrgh            B693688-5 Ni                    { -1 } (851+1) [4577] - K  - 902 10 JuPr F1 V          
-1406 Sagharr              D633423-9 Ni Po Varg4           { -2 } (C31+1) [729C] - -  - 403 15 JuPr M0 V M5 V     
-1408 Urrgha               X300000-0 Ba Va                 { -3 } (A00+2) [0000] - -  - 022 15 JuPr M9 V          
-1501 Ovoeghagun           E441300-2 He Lo Po              { -3 } (620+4) [3111] - -  - 102 13 NaHu F2 V          
-1504 Sighnarr             B560576-C De Ni Pr Varg2        { 1 }  (D46+1) [462F] - K  - 914 16 JuPr F8 V          
-1506 Ghadzarrgh           D4C1416-B Fl He Ni Varg1        { -1 } (830-4) [536A] - -  - 402 12 JuPr K0 V          
-1602 Dioco                C4629EE-7 Hi Pr Varg1           { 0 }  (68B-2) [A932] - M  - 213 15 NaHu K4 V          
-1604 Sigurroegh           A86A687-C Ni Ri Wa Varg1        { 2 }  (D53+1) [484C] - -  - 305 9  JuPr F0 V          
-1608 Uta                  B636441-A Ni Varg2              { 1 }  (E33+2) [158A] - -  - 203 12 NaHu M4 V M8 V     
-1701 Ikgzoeroulurr        X5A0000-0 Ba He                 { -3 } (B00+4) [0000] - -  - 002 11 NaXX M4 V          
-1705 Voeraghz             A544573-D Ag Ni                 { 2 }  (E47+4) [477D] - -  - 120 10 JuPr F4 V M4 V     
-1707 Aekokago             D578785-5 Ag Pi Varg1           { -1 } (666+2) [3661] - -  - 400 3  NaHu F8 V M4 V     
-1801 Ugar                 D200325-9 Lo Va Varg4           { -2 } (720+2) [5116] - -  - 604 17 NaHu K1 V M9 V     
-1806 Lizashlik            A593694-8 Ni                    { -1 } (F54+1) [4539] - -  - 325 17 NaHu F2 V M0 V     
-1807 Lwynhy               C545988-9 Hi In                 { 2 }  (B8A+1) [CB18] - -  - 112 15 NaHu F6 V          
-1808 Aladashumiiki        C465975-6 Hi Pr                 { 0 }  (386-2) [994A] - -  - 105 12 NaHu F4 V M4 V     
-1901 Asihit               D698534-6 Ag Ni                 { -2 } (642-3) [3389] - -  - 602 10 NaHu F1 V M1 V     
-1902 Sovanjaak            X400000-0 Ba Va                 { -3 } (700+2) [0000] - -  - 010 7  NaXX M1 V M7 V     
-1903 Kerkiilamu           E210300-A Lo                    { -1 } (D20+1) [822A] - -  - 504 11 NaHu M1 V          
-1906 Pynuotkuos           C6468A8-C Pa Ph Pi Varg1        { 1 }  (979+2) [A9AE] - -  - 803 10 NaHu F4 V          
-1910 Ada                  C541999-5 He Hi In Po           { 1 }  (788-4) [CA53] - -  - 603 14 NaHu F1 V          
-2003 Satih                A658984-B Hi                    { 3 }  (A85-1) [BC8D] - -  - 803 11 NaHu F2 V M3 V     
-2004 Naenaruel            A5649B8-B Hi Pr                 { 3 }  (C8F+4) [9C5B] - M  - 900 9  NaHu G3 V M4 V     
-2005 Rhonhi               B4628B8-6 Ri Ph                 { 1 }  (A76-3) [7956] - K  - 704 14 NaHu F7 V          
-2007 Ouzaell              B433558-9 Ni Po                 { 0 }  (744-2) [5546] - K  - 220 13 NaHu G5 V M1 V     
-2101 Aiwunupe             C6978A6-5 Pa Ph Pi              { -1 } (677+1) [8773] - -  - 404 10 NaHu F1 V M8 V     
-2102 Udkhaaziirash        A7779DE-B Hi In                 { 4 }  (A8B+4) [8D9B] - -  - 703 11 NaHu F3 V          
-2103 Mohy                 A4588DC-7 Pa Ph                 { 0 }  (478+2) [586B] - K  - 100 8  NaHu G5 V M1 V     
-2104 Gzodaegdoedz         D443232-7 Lo Po Varg1           { -3 } (510+1) [1157] - M  - 912 12 NaHu F4 V M2 V     
-2107 Ek                   X000000-0 As Ba Va              { -3 } (A00+1) [0000] - -  - 003 11 NaXX M1 V M1 V     
-2203 Lykukihavyt          C533458-8 Ni Po                 { -2 } (630-2) [12A6] - -  - 203 12 NaHu M4 V          
-2204 Gumushu              C682753-6 Ri                    { 0 }  (866+4) [4742] - -  - 303 15 NaHu F5 V M4 V     
-2205 Kigaakigum           D556768-2 Ag O:2005             { -1 } (A65+1) [7661] - M  - 823 13 NaHu F6 V          
-2209 Ychmiwryr            B999510-C Ni                    { 1 }  (H43-1) [467A] - -  - 823 16 NaHu F5 V          
-2302 Dusa                 C322545-9 He Ni Po              { -1 } (D45-1) [643E] - -  - 303 10 NaHu F2 V M8 V     
-2303 Maga                 A675640-C Ag Ni                 { 2 }  (E54+1) [687B] - K  - 904 13 NaHu F9 V M5 V     
-2305 Gagiizidiiga         C586786-6 Ag Ri                 { 1 }  (56A-3) [585A] - -  - 105 10 NaHu K1 V          
-2310 Mor                  B996421-A Ni Pa                 { 1 }  (D36-1) [5559] - -  - 505 14 NaHu F8 V          
-2403 Amimuum              C84797A-8 Hi In Varg2           { 1 }  (987+2) [CA95] - -  - 904 11 NaHu F1 V          
-2405 Oudhuegvae           C625448-7 Ni Varg1              { -2 } (333+3) [822A] - M  - 704 15 NaHu M9 III M4 V   
-2406 Argag                E432656-7 Na Ni Po              { -3 } (852+1) [637A] - -  - 204 14 NaHu G7 V          
-2408 Kumakiiga            A988642-B Ag Ni Ri              { 3 }  (757+2) [595B] - K  - 400 9  NaHu F0 V M9 V     
-2410 Ghersong             A4536A9-A Ni Po Varg2           { 1 }  (B53-4) [3757] - -  - 803 11 NaHu F3 V          
-2501 Nuri                 D571200-7 He Lo                 { -3 } (710-3) [4126] - M  - 614 11 NaHu F2 V          
-2503 Dekeli               C775553-9 Ag Ni                 { 0 }  (G43+1) [3588] - -  - 413 12 NaHu F9 V          
-2504 Resopem              B8849BC-B Hi Pr                 { 3 }  (A88+4) [9C4G] - -  - 603 9  NaHu F9 V          
-2508 Maa                  C428538-9 Ni                    { -1 } (C42+2) [947C] - -  - 104 7  NaHu K2 V M2 V     
-2605 Ullizo               AA7799B-A Hi In Varg1           { 4 }  (A8G-2) [9D46] - -  - 210 13 NaHu G5 V M1 V     
-2606 Farraghufueka        B473755-7 Pi                    { 0 }  (46A-2) [8789] - M  - 702 5  NaHu G3 V M1 V     
-2607 Uekhoeng             D510539-A Ni Varg1              { -1 } (840-2) [4449] - -  - 204 14 NaHu M2 V M9 V     
-2610 Sefinar              D434443-8 Ni Varg1              { -3 } (830+2) [216A] - -  - 402 5  NaHu M8 V          
-2701 Enoggvokhs           D544542-6 Ag Ni                 { -2 } (743+1) [6341] - M  - 601 14 NaHu G1 V          
-2702 Benadd               A441631-8 He Ni Po              { 0 }  (F55+3) [5648] - KM - 414 11 NaHu F1 V          
-2703 Gvueruk              E552438-9 Ni Po                 { -2 } (D33+4) [1267] - -  - 302 10 NaHu K8 V          
-2704 Khefs Dzo            A569989-8 Hi Pr                 { 1 }  (98A+2) [BA88] - K  - 805 11 NaHu F1 V          
-2705 Daegthor             X300000-0 Ba Va                 { -3 } (400+5) [0000] - -  - 004 14 NaXX G3 V          
-2709 Naddes               C554441-8 Ni Pa Varg1           { -2 } (C33+1) [125A] - -  - 104 12 NaHu F4 V          
-2805 Lupushshir           B7979EF-8 Hi In Varg1           { 2 }  (688-4) [9B3A] - M  - 400 7  NaHu M2 V          
-2809 Vy                   B545625-9 Ag Ni Varg5           { 1 }  (956+2) [676B] - K  - 302 6  NaHu K4 V          
-2902 Udenga               X120000-0 Ba De Po              { -3 } (300-2) [0000] - -  - 004 17 NaXX M8 V          
-2907 Regu                 B000686-B As Na Ni Va Varg3     { 1 }  (853+4) [672A] - -  - 302 6  NaHu F8 V          
-2908 Gagur                D647877-8 Pa Ph Pi              { -2 } (875+2) [465D] - -  - 512 10 NaHu F1 V          
-2910 Raroota              C610514-A Ni                    { 0 }  (746-1) [3539] - -  - 302 11 NaHu K0 V M2 V     
-3002 Aerrggeng            A526665-B Ni O:                 { 2 }  (B58+3) [484F] - KM - 103 10 NaHu M3 V M9 V     
-3003 Ibugug               E554436-3 Ni Pa                 { -3 } (730+4) [4141] - -  - 913 8  NaHu F2 V          
-3005 Urnaakashig          E6A2321-B Fl He Lo Varg4        { -1 } (A20-3) [124E] - -  - 904 10 NaHu M1 V          
-3007 Oneluevueknou        A6569DG-7 Hi Ga                 { 1 }  (78B+1) [DA25] - K  - 902 9  NaHu F6 V          
-3009 Terkpedherhi         B679844-6 Ph Pi                 { 0 }  (67A-4) [6846] - -  - 612 10 NaHu M4 V M6 V     
-3101 Er                   E447436-8 Ni Pa                 { -3 } (730+4) [5135] - -  - 300 6  NaHu G0 V          
-3103 Gasuu                B313640-7 Ic Na Ni              { -1 } (452-2) [3558] - -  - 603 9  NaHu M5 V M7 V M9 V
-3105 Mukekis              X100000-0 Ba Va                 { -3 } (900-4) [0000] - -  - 014 17 NaXX M4 V          
-3107 Mopetu               B79588B-C Pa Ph Pi Varg1        { 2 }  (A78+4) [7A4E] - -  - 404 16 NaHu F7 V M9 V     
-3108 Kikashinnipi         X500000-0 Ba Va                 { -3 } (200-2) [0000] - -  - 000 10 NaXX M4 V M7 V     
-3202 Okghuthtsuegh        C435451-8 Ni                    { -2 } (B30+5) [1257] - M  - 803 13 NaHu G7 V          
-3203 Pualemaski           X110000-0 Ba                    { -3 } (600+1) [0000] - -  - 014 14 NaXX K8 V          
-3205 Egt                  A7969BA-B Hi In Varg2           { 4 }  (C8A-1) [AD1C] - K  - 322 13 NaHu G1 V          
-3208 Khaerong             E498232-8 Lo                    { -3 } (910+4) [4184] - -  - 804 10 NaHu K2 V          
-3209 Leeteng              C433424-B Ni Po                 { 0 }  (B33-2) [348E] - -  - 602 9  NaHu M1 V M4 V     
-3210 Bat                  D430214-A De Lo Po              { -1 } (C10+3) [6168] - -  - 805 13 NaHu F3 V          
-0116 Imkha                C547420-6 Ni Pa                 { -2 } (533+1) [5216] - M  - 304 11 JHhk M6 V          
-0119 Kulirzir             X540000-0 Ba De He Po           { -3 } (900+2) [0000] - -  - 001 4  JHhk F0 V          
-0211 Gisanal              A778778-7 Ag Pi Varg1           { 1 }  (765+1) [2847] - -  - 523 13 JuPr F7 V          
-0213 Kaspur               D437438-9 Ni Varg1              { -2 } (731-1) [122A] - -  - 101 11 JuPr K9 V          
-0313 Aedzae               C692745-6 He Pi Varg4           { -1 } (B6B-3) [5658] - M  - 902 12 JuPr F2 V M3 V     
-0411 Zoegaekhso           D438344-9 Lo                    { -2 } (E20-2) [5198] - M  - 713 10 JuPr M2 V          
-0414 Garfaerroe           C55888B-A Pa Ph Varg5           { 1 }  (A79-2) [994B] - -  - 413 12 JuPr F8 V M2 V     
-0416 Khoengkuerrgh        X100000-0 Ba Va                 { -3 } (A00+3) [0000] - -  - 012 15 JuHl K2 IV         
-0417 Agusha               E649315-C Lo Varg2              { -1 } (720+1) [626E] - -  - 805 15 JuHl F5 V          
-0518 Bikali               B5977AB-5 Ag Pi                 { 1 }  (569+2) [7834] - -  - 623 8  JuHl F1 V          
-0519 Kongrougzog          A567ADF-7 Hi                    { 1 }  (A97+1) [AB34] - -  - 304 13 JuHl F0 V          
-0611 Orrgorkso            A63A310-C Lo Wa                 { 1 }  (E21+4) [545C] - K  - 214 14 JuPr M9 V          
-0619 Umanirgilunud        X210000-0 Ba                    { -3 } (500-1) [0000] - -  - 024 12 JuHl K7 V          
-0711 Kungangfuk           D3244BA-A Ni                    { -1 } (833+3) [1347] - -  - 300 10 JuPr G9 V          
-0715 Kfodha               A883997-B Hi Pr Varg1           { 3 }  (78D+1) [AC6A] - K  - 310 9  NaHu M0 V M8 V     
-0716 Dakanikiguri         B47255A-B He Ni                 { 1 }  (743-1) [761C] - -  - 113 11 NaHu F3 V M1 V     
-0718 Anweg                C79749A-9 Ni Pa                 { -1 } (B34+1) [3325] - M  - 304 11 NaHu F9 V          
-0811 Ivavours             E453536-A Ni Po                 { -1 } (940+1) [945F] - -  - 310 7  JuPr F3 V M3 V     
-0820 Kirralimigag         CAA685B-B Fl Ph Varg1           { 1 }  (B76-5) [B92C] - -  - 603 10 JuHl F6 V M7 V     
-0911 Ellong               C553555-6 Ni Po                 { -2 } (843-2) [5396] - -  - 314 14 JuPr F8 V M1 V     
-0912 Dhartsun             B9899CA-D Hi Pr Varg3           { 3 }  (48C+2) [9C3E] - -  - 500 7  JuPr F6 V M8 V     
-1014 Rumaaire             X310000-0 Ba                    { -3 } (C00-1) [0000] - -  - 032 12 NaXX M3 V          
-1016 Turrdun              B647766-9 Ag Pi O:1118          { 2 }  (A6B+1) [791A] - M  - 612 9  NaHu F5 V          
-1113 Talrotis             X310000-0 Ba                    { -3 } (700-2) [0000] - -  - 004 15 NaXX G0 V          
-1114 Kikigulagabi         B669576-7 Ni Pr                 { -1 } (743-1) [9447] - M  - 604 12 NaHu F7 V M3 V     
-1118 Isgakikuga           A8C5AA8-B Fl Hi In              { 4 }  (798-4) [8E4C] - -  - 202 10 NaHu K8 V M2 V     
-1119 Kha                  C460A98-B De Hi Varg2           { 2 }  (C9C+2) [EC26] - M  - 100 12 NaHu F7 V          
-1213 Keiwhi               E513100-A Ic Lo Varg4           { -1 } (C00+5) [2159] - -  - 603 6  NaHu G0 V          
-1313 Suth                 A8B3667-B Fl Ni Varg5 O:1615    { 1 }  (854-2) [6717] - -  - 903 10 NaHu K7 V M0 V     
-1319 Thigz                A7569DC-B Hi Ga                 { 3 }  (78A+1) [8C2E] - -  - 902 10 NaHu G9 V M4 V     
-1415 Saamedirer           B446556-D Ag Ni Varg4           { 2 }  (H46+2) [2768] - -  - 423 13 NaHu G4 V          
-1514 Gaada                B9A7346-C Fl Lo                 { 2 }  (722+1) [1519] - KM - 700 9  NaHu K3 V          
-1515 Bamlisumguur         A746759-A Ag Pi Varg5           { 3 }  (768+2) [7A6A] - -  - 310 11 NaHu F8 V          
-1615 Kotsfa               B669977-A Hi Pr Varg2           { 3 }  (589-1) [8C1C] - -  - 200 11 NaHu G8 V M5 V     
-1616 Outoudzduez          B659859-A Ph Varg4              { 3 }  (C7B+4) [8B28] - KM - 414 16 NaHu F5 V M3 V     
-1617 Omverendtto          D6A5584-9 Fl Ni                 { -2 } (740-1) [5338] - M  - 504 16 NaHu G2 V          
-1715 Cregen               X200000-0 Ba Va                 { -3 } (600-2) [0000] - -  - 013 11 NaXX K2 V M5 V     
-1718 Postytos             B56699D-9 Hi Pr Varg3           { 2 }  (888+1) [9B9A] - M  - 313 13 NaHu F0 V          
-1816 Orrterz              E478864-6 Pa Ph Pi O:1915       { -2 } (C75-2) [5659] - -  - 715 14 NaHu F5 V          
-1817 Kawahowhi            E8B0338-A He Lo                 { -1 } (C20+1) [828C] - -  - 704 12 NaHu G5 V M1 V     
-1820 Miorogrod            A773620-9 Ni                    { 0 }  (756-1) [7644] - -  - 500 7  NaHu M2 V M4 V     
-1915 Kesittanma           A98A9BB-A Hi Wa Pr Varg5        { 3 }  (C8C-1) [AC3D] - -  - 105 14 NaHu F0 V M6 V     
-1916 Nna                  X000000-0 As Ba Va              { -3 } (500+2) [0000] - -  - 000 6  NaXX K8 V M3 V     
-1917 Iriputanga           A587755-B Ag Ri                 { 4 }  (B69-2) [6B9A] - M  - 614 8  NaHu F9 V          
-1918 Lannieton            X540000-0 Ba De He Po           { -3 } (800-5) [0000] - -  - 002 8  NaXX F2 V          
-2013 Ul                   B52A587-D Ni Varg1              { 1 }  (744+1) [161C] - K  - 200 7  NaHu K0 IV M0 V    
-2016 Sharagirukis         A774861-7 Pa Ph Pi O:1915       { 0 }  (97C-2) [7858] - -  - 613 14 NaHu F3 V M4 V     
-2019 Diduddbas            C310346-A Lo                    { 0 }  (E20+1) [137C] - M  - 615 14 NaHu M3 V          
-2112 Dilushka             C314300-A Ic Lo                 { 0 }  (D20-3) [635B] - M  - 305 14 NaHu F5 V          
-2113 Ghatsghaeg           XAFA000-0 Ba Oc                 { -3 } (700+1) [0000] - -  - 014 17 NaXX M2 V M4 V     
-2115 Khaekarr             X000000-0 As Ba Va              { -3 } (200-5) [0000] - -  - 013 11 NaXX M7 V M8 V     
-2117 Ke                   B452300-7 Lo Po Varg2           { 0 }  (420-1) [7373] - KM - 720 8  NaHu F9 V          
-2120 He                   A462957-A Hi Pr Varg1           { 3 }  (78D+1) [BC9A] - K  - 614 9  NaHu F8 V          
-2211 Repstotjijk          A446869-C Pa Ph Pi O:2412       { 2 }  (C78+4) [6A5G] - -  - 604 13 NaHu F3 V M2 V     
-2217 Mepdiisharig         B56398C-A Hi Pr                 { 4 }  (786+1) [9D2A] - KM - 903 10 NaHu F7 V          
-2219 Brybintw             B433889-7 Na Po Ph Varg1        { 0 }  (B79-1) [9898] - K  - 514 9  NaHu G8 V          
-2311 Dimijn               C554678-6 Ag Ni                 { -1 } (650-2) [6568] - M  - 924 11 NaHu F1 V M8 V     
-2313 Dy                   A6979A7-B Hi In                 { 4 }  (788+2) [BD97] - K  - 203 12 NaHu F1 V M6 V     
-2315 Urki                 C30389E-7 Ic Na Va Ph Pi Varg1  { -1 } (977+2) [4748] - -  - 804 14 NaHu F5 V          
-2316 Kunzikikunuza        AA6A98A-D Hi Oc Pr              { 3 }  (98A+1) [BC5A] - -  - 413 12 NaHu F1 V M3 V     
-2317 All                  C487434-8 Ni Pa Varg3           { -2 } (B32+4) [3276] - -  - 115 13 NaHu K9 V          
-2318 Arraegue             B541233-9 He Lo Po              { 0 }  (C10+2) [1259] - K  - 712 10 NaHu F3 V          
-2319 Oghaers              A857988-D Hi Ga Varg2           { 3 }  (E8B-5) [9C8E] - -  - 413 12 NaHu F0 V          
-2412 Updashidiram         A8799EA-A Hi In Varg2           { 4 }  (58C-3) [BD57] - K  - 920 10 NaHu F9 V          
-2415 Aenurrgaekou         X8A2000-0 Ba Fl He              { -3 } (400+2) [0000] - -  - 013 13 NaXX K0 IV         
-2418 Mun                  C666968-6 Hi Ga Pr O:2319       { 0 }  (589+3) [6948] - -  - 400 7  NaHu F6 V M7 V     
-2419 Mutitoa              X5A5000-0 Ba Fl                 { -3 } (A00+1) [0000] - -  - 003 6  NaXX K0 V          
-2514 Uirvrijn             A77A863-C Wa Ph Pi O:2412       { 2 }  (C7B-1) [3A3E] - -  - 704 14 NaHu F6 V          
-2515 Midishmumur          C757566-3 Ag Ni Ga Varg2 O:2412 { -1 } (845+5) [7481] - -  - 110 6  NaHu F4 V          
-2518 Zoentuegh            C556543-8 Ag Ni Varg2           { -1 } (D40+4) [A449] - -  - 323 10 NaHu G1 V          
-2520 Nir                  C545576-8 Ag Ni                 { -1 } (D41+2) [5465] - M  - 103 13 NaHu F5 V          
-2617 Rwddffiar            XAB3000-0 Ba Fl                 { -3 } (800-3) [0000] - -  - 000 10 NaXX M8 V          
-2619 Iraad                B777468-9 Ni Pa O:2319          { 1 }  (C35-2) [4528] - KM - 704 16 NaHu F9 V          
-2714 Akhgaeng             A569989-C Hi Pr                 { 3 }  (A89+1) [9C8F] - K  - 513 13 NaHu F7 V          
-2911 Doeleir              C5A4320-9 Fl Lo                 { -1 } (D20-3) [128B] - M  - 513 9  NaHu K9 V          
-2912 Deiddat              B554963-9 Hi Varg1 O:3012       { 3 }  (88A-3) [BC69] - KM - 701 5  NaHu G0 V          
-2915 Gjittnaeng           AAC6668-9 Fl Ni Varg3 O:3012    { 0 }  (D53-1) [463B] - K  - 824 12 NaHu M5 V          
-2918 Linajisme            A788876-C Ri Pa Ph Varg1        { 3 }  (878-4) [8B5D] - K  - 514 13 NaHu F8 V M4 V     
-3012 Taildahre            B4569CG-B Hi                    { 3 }  (G88+5) [9C6A] - -  - 414 13 NaHu F8 V M6 V     
-3015 Nuukhanir            D324613-7 Ni                    { -3 } (350-4) [537A] - M  - 602 9  NaHu K2 V M1 V     
-3017 Di                   A477732-D Ag Pi                 { 3 }  (B69-4) [6A5J] - K  - 114 14 NaHu K6 V          
-3018 Iikhugama            D482156-8 Lo                    { -3 } (B00-4) [117D] - M  - 423 12 NaHu F2 V M0 V     
-3114 Manoaani             C6889BD-6 Hi Pr Varg1           { 0 }  (585+1) [6945] - M  - 402 8  NaHu F5 V M8 V     
-3115 Khii                 C42956A-9 Ni O:3117             { -1 } (D41+3) [6467] - -  - 204 13 NaHu M4 V M8 V     
-3116 Aeg                  C6847AD-6 Ag Ri                 { 1 }  (269+1) [C848] - M  - 302 13 NaHu F3 V M9 V     
-3117 Kiirkinkirizi        A767978-D Hi Ga Pr Varg3        { 3 }  (A8A-2) [AC1D] - K  - 902 13 NaHu G0 V          
-3119 Be                   C654645-4 Ag Ni                 { -1 } (255+2) [5555] - M  - 205 9  NaHu F5 V          
-3211 Aeraegfoeksse        B435412-D Ni Varg5              { 1 }  (A36+1) [754C] - M  - 700 8  NaHu M8 III        
-3213 Jaarut               A7668A7-B Ga Ri Pa Ph           { 3 }  (97E+3) [4B5E] - -  - 713 11 NaHu K1 V M7 V M3 V
-3214 Ud                   B847741-7 Ag Pi                 { 1 }  (467-3) [3825] - K  - 104 16 NaHu G9 V          
-3215 Gviguezeghoug        X000000-0 As Ba Va              { -3 } (600+3) [0000] - -  - 001 7  NaXX M1 V          
-3216 Viar                 C110401-C Ni Varg2              { 0 }  (736+2) [448A] - -  - 613 13 NaHu G9 V          
-3217 Kimirii              X100000-0 Ba Va                 { -3 } (500+1) [0000] - -  - 010 10 NaXX G9 V M3 V     
-3219 Agvarzoerr           C540611-6 De He Ni Po           { -2 } (651+1) [6447] - -  - 513 12 NaHu F0 V          
-0121 Nenn                 C64499E-8 Hi In                 { 1 }  (98C+1) [BA87] - -  - 613 12 JuHl F1 V          
-0123 Kuune                A452A63-D Hi Po Varg1 O:        { 3 }  (99B+1) [BD6C] - K  - 203 16 JuHl F5 V          
-0124 Mirashidi            A66668B-8 Ag Ni Ga Ri Varg2     { 1 }  (C54+2) [1787] - -  - 323 11 JuHl F3 V          
-0223 Gzaek                B97A562-C Ni Wa O:              { 1 }  (947+1) [265E] - -  - 112 10 JuHl F0 V          
-0328 Mar                  E653143-2 Lo Po Varg2           { -3 } (900-4) [2151] - -  - 203 12 JuHl F1 V          
-0329 Thollydam            X212000-0 Ba Ic                 { -3 } (B00+2) [0000] - -  - 003 12 JuHl M7 V M7 V     
-0429 Kokhs                D410200-8 Lo                    { -3 } (810-5) [3176] - -  - 802 13 JuHl M6 V          
-0430 Sii                  D432100-9 Lo Po Varg1           { -2 } (500+2) [2156] - M  - 203 8  JuHl K6 V M9 V     
-0522 Kuu                  B546875-B Pa Ph Pi              { 2 }  (97A-1) [6A5C] - M  - 314 15 JuHl F4 V          
-0523 Galiibegada          D78A300-8 Lo Wa Varg4           { -3 } (820+1) [8195] - -  - 305 14 JuHl F5 V          
-0527 Ab                   B445569-7 Ag Ni Varg2 O:0728    { 0 }  (942-4) [5586] - K  - 803 16 JuHl G0 V          
-0622 Sing                 B566246-7 Lo Varg1              { -1 } (910-4) [3157] - -  - 110 6  JuHl M0 V M3 V M1 V
-0623 Gimashkhizara        A76A88A-9 Ri Wa Ph              { 2 }  (B7B-2) [BA9B] - -  - 613 14 JuHl G8 V M3 V     
-0624 Pinapupiru           B57657B-5 Ag Ni                 { 0 }  (C42+1) [5579] - K  - 210 7  JuHl M1 V M9 V     
-0627 Fetap                A458689-D Ag Ni Varg4           { 2 }  (858-5) [786G] - K  - 510 8  JuHl K7 V          
-0722 Temkaka              A439679-A Ni                    { 1 }  (A57-1) [477C] - K  - 514 15 JuHl F3 V M8 V     
-0723 Emug                 A97988B-8 Ph Pi Varg1           { 0 }  (D73-5) [6829] - -  - 513 12 JuHl K7 V M9 V     
-0724 Byddklob             B998999-7 Hi In Varg1           { 2 }  (58C-2) [CB97] - K  - 304 17 JuHl F2 V          
-0728 Le                   B663ACF-9 Hi Varg1              { 2 }  (B9B+1) [BC2A] - K  - 514 10 JuHl F8 V M1 V     
-0827 Whuuka               X000000-0 As Ba Va              { -3 } (900-1) [0000] - -  - 003 9  JuHl K4 V          
-0828 Zasorrg              C304442-B Ic Ni Va              { 0 }  (B32+1) [44A9] - M  - 523 17 JuHl M0 V M3 V     
-0922 Vun                  E68A100-7 Lo Wa Varg1           { -3 } (300-3) [3197] - -  - 503 9  JuHl F5 V M4 V     
-0923 Liadyhwed            C693873-6 Ph Pi                 { -1 } (672+2) [5765] - M  - 723 14 JuHl F0 V M3 V     
-0928 Ugwontfeidd          A45798B-D Hi Varg3              { 3 }  (589+1) [7C6G] - M  - 203 11 JuHl F7 V          
-1024 Arzan                X541000-0 Ba He Po              { -3 } (500+5) [0000] - -  - 010 6  JuHl F8 V          
-1026 Keratapa             B577223-9 Lo                    { 0 }  (910-1) [224A] - M  - 523 18 JuHl F1 V          
-1122 Gulila               C455484-6 Ni Pa                 { -2 } (634+3) [8246] - M  - 824 17 NaHu F9 V          
-1124 Ston                 XAC7000-0 Ba Fl                 { -3 } (700-1) [0000] - -  - 023 16 JuHl M1 V          
-1128 Rob                  X432000-0 Ba Po                 { -3 } (700+3) [0000] - -  - 000 10 JuHl M4 V          
-1225 Tipai                A433677-C Na Ni Po              { 1 }  (856-1) [575C] - -  - 203 8  JuHl M2 V          
-1226 Akhuranududi         E656787-2 Ag Ga                 { -1 } (564-1) [9641] - -  - 300 11 JuHl F1 V M5 V     
-1227 Milinkhi             B775675-8 Ag Ni                 { 0 }  (C54-1) [764A] - K  - 414 18 JuHl F0 V          
-1228 Ush                  A794A9B-A Hi In                 { 4 }  (E99-1) [EE6D] - M  - 423 13 JuHl F8 V M1 V     
-1230 Nidnalag             X433000-0 Ba Po                 { -3 } (400+3) [0000] - -  - 014 12 JuHl F6 V          
-1321 Giapeimiwch          X573000-0 Ba                    { -3 } (800+2) [0000] - -  - 004 12 NaXX G8 V          
-1322 Miirkha              B323464-B Ni Po O:1323          { 2 }  (A36+3) [262F] - KM - 401 4  NaHu M1 V          
-1323 Gharrgh              A7649ED-C Hi Pr Varg1           { 3 }  (D88-2) [CC4A] - -  - 814 8  NaHu F1 V          
-1328 Sakimdurgani         A673353-B Lo                    { 1 }  (C21+1) [843B] - -  - 304 8  JuHl F2 V M1 V     
-1329 Ligish               C777585-9 Ag Ni Varg2           { 0 }  (D46-3) [653C] - -  - 704 11 JuHl F9 V M0 V     
-1422 Gijrmerins           D659156-9 Lo                    { -2 } (B00-4) [2138] - M  - 405 10 NaHu F4 V          
-1424 Lasre                A667872-8 Ga Ri Pa Ph           { 2 }  (A7B-4) [DA35] - KM - 622 13 NaHu G4 V          
-1425 Amli                 X100000-0 Ba Va                 { -3 } (600+2) [0000] - -  - 002 8  NaXX M8 V          
-1426 Iige                 X677000-0 Ba                    { -3 } (600-1) [0000] - -  - 005 14 NaXX F7 V          
-1522 Katowuepe            X648000-0 Ba                    { -3 } (400-5) [0000] - -  - 000 6  NaXX F4 V          
-1523 Dung                 C445267-5 Lo O:1323             { -2 } (310+1) [3186] - -  - 405 17 NaHu G1 V M3 V     
-1524 Bednystek            X100000-0 Ba Va                 { -3 } (500-1) [0000] - -  - 004 10 NaXX K1 IV         
-1622 Ab                   B84A964-9 Hi In Wa Varg4 O:1323 { 3 }  (D8D-3) [BC59] - -  - 104 13 NaHu F6 V          
-1722 Tapaslan             X444000-0 Ba                    { -3 } (500+4) [0000] - -  - 002 9  NaXX M9 V          
-2125 Dourrgh              X548000-0 Ba                    { -3 } (900-1) [0000] - -  - 014 13 NaXX F1 V M8 V     
-2421 Slelerkinwest        X657000-0 Ba Ga                 { -3 } (600+3) [0000] - -  - 010 12 NaXX F2 V M1 V     
-2824 Koungue              X7B5000-0 Ba Fl                 { -3 } (500+2) [0000] - -  - 005 14 NaXX M7 V          
-2921 Wunsmook             X668000-0 Ba                    { -3 } (500+2) [0000] - -  - 003 14 NaXX F2 V          
-0135 Sjin                 E423100-9 Lo Po Varg3           { -2 } (F00+5) [4189] - -  - 205 13 JuHl M0 V          
-0136 Uerzksasnoeth        A749A96-C Hi In Varg1           { 4 }  (A9G+1) [AE58] - -  - 200 8  JuHl F4 V M0 V     
-0140 Runggvoeknue         B682897-7 Ri Ph                 { 1 }  (278+1) [8947] - -  - 905 14 JuHl F3 V M2 V     
-0231 Aengaze              D684667-4 Ag Ni Ri O:           { -1 } (850+1) [1563] - -  - 801 11 JuHl G9 V          
-0232 Kellgaekaedae        X300000-0 Ba Va                 { -3 } (700-1) [0000] - -  - 022 13 JuHl M0 V M3 V     
-0234 Ungar                A443630-C Ni Po                 { 1 }  (D54+1) [771B] - -  - 405 16 JuHl F3 V          
-0240 Si                   C423300-9 Lo Po                 { -1 } (620-2) [2257] - M  - 902 5  JuHl M7 V M8 V     
-0331 Odzoez               B694334-8 Lo Varg2              { -1 } (F20+1) [4268] - K  - 705 13 JuHl K4 V M1 V     
-0334 Shila                A561844-8 Ri Ph Varg3           { 1 }  (E7A-3) [898A] - K  - 112 10 JuHl F7 V M9 V     
-0338 Lluezdhouz           C64A68A-7 Ni Wa                 { -2 } (C52+1) [A456] - -  - 204 15 JuHl F4 V          
-0431 Ulluell              C300377-9 Lo Va                 { -1 } (C20-4) [32A6] - -  - 722 16 JuHl M8 V          
-0434 Gil                  A586999-B Hi Pr                 { 3 }  (A8D+2) [BC28] - K  - 820 10 JuHl F3 V          
-0435 Adar                 B789998-C Hi Pr                 { 3 }  (388-4) [BC2F] - K  - 800 10 JuHl G4 V          
-0533 Adkamiiga            X538000-0 Ba                    { -3 } (700+4) [0000] - -  - 004 16 JuHl M1 V M5 V     
-0535 Kehemirata           A401424-A Ic Ni Va              { 1 }  (G32+1) [453B] - -  - 715 14 JuHl G8 V          
-0633 Staree               A545666-7 Ag Ni O:0434          { 0 }  (751+1) [566A] - -  - 604 12 JuHl F7 V          
-0636 Tuil                 X460000-0 Ba De                 { -3 } (700+3) [0000] - -  - 013 11 JuHl F8 V M3 V     
-0637 Aerzondag            B7389DF-9 Hi                    { 2 }  (B89+1) [8B39] - -  - 112 13 JuHl F6 V M9 V     
-0638 Aa                   B958000-6 Di                    { -1 } (900+1) [0000] - -  - 003 10 JuHl F2 V M5 V     
-0639 Aache                B6799AB-D Hi In Varg3           { 4 }  (F88-3) [CD4D] - K  - 314 17 JuHl K7 V          
-0735 Rraeng               A538999-C Hi                    { 3 }  (B8E-3) [CC19] - -  - 724 16 JuHl G9 V M7 V     
-0736 Paukjatnik           C89A7CF-8 Wa Pi                 { -1 } (D62+1) [6657] - -  - 905 14 JuHl M9 V          
-0738 Oruengzila           A765ABB-D Hi Ga Varg1           { 3 }  (A97+1) [8D7E] - K  - 112 11 JuHl F7 V          
-0832 Reng                 A748737-A Ag Pi                 { 3 }  (A6E+5) [8A66] - -  - 804 13 JuHl M3 V          
-0833 Talkemiejat          A547668-A Ag Ni O:0834          { 2 }  (758+1) [887C] - -  - 602 8  JuHl F2 V M4 V M0 V
-0834 Fathall              A866ADE-9 Hi Ga                 { 2 }  (698+4) [9CA7] - K  - 812 9  JuHl F1 V          
-0835 Kid                  D799567-6 Ni Varg2 O:0735       { -3 } (841+3) [22A7] - -  - 921 11 JuHl F3 V          
-0837 Iriir                X53A000-0 Ba Wa                 { -3 } (600-1) [0000] - -  - 012 14 JuHl M0 V M1 V     
-0839 Aegnueg              A452520-9 Ni Po                 { 0 }  (C45-1) [752C] - -  - 202 9  JuHl K9 V M4 V     
-0931 Dwycawlowm           X222000-0 Ba Po                 { -3 } (500+2) [0000] - -  - 004 13 JuHl M5 V          
-0932 Iririi               X434000-0 Ba                    { -3 } (800+2) [0000] - -  - 034 16 JuHl M0 V          
-0934 Siirgikagigaa        X000000-0 As Ba Va              { -3 } (800+5) [0000] - -  - 003 11 JuHl M0 V M7 V     
-0935 Stij                 A54577A-B Ag Pi                 { 3 }  (868-1) [6A7E] - K  - 103 11 JuHl G3 V          
-0939 Dede                 A999648-A Ni Varg3              { 1 }  (B57+1) [571F] - -  - 505 11 JuHl F7 V          
-1033 U                    A446300-C Lo                    { 1 }  (C21+1) [5449] - K  - 922 8  JuHl G8 V          
-1035 Unmakhimshim         E545120-6 Lo Varg2              { -3 } (900-3) [5172] - -  - 103 11 JuHl G7 V M6 V     
-1038 Khakuukhimka         X200000-0 Ba Va                 { -3 } (700-1) [0000] - -  - 000 7  JuHl M1 V          
-1132 Beprannein           X300000-0 Ba Va                 { -3 } (900+1) [0000] - -  - 000 9  JuHl G9 V M7 V     
-1140 Aerafa               A66AABA-D Hi Wa Varg3           { 3 }  (697-2) [AD3D] - -  - 404 9  JuHl F9 V M4 V     
-1232 Mir                  C695223-8 Lo                    { -2 } (G10-2) [5138] - -  - 924 14 JuHl F8 V          
-1233 Mudadiikadu          X570000-0 Ba De He              { -3 } (400+2) [0000] - -  - 004 8  JuHl F0 V          
-1234 Aegvenuth            D439200-7 Lo Varg2              { -3 } (B10-2) [3145] - -  - 410 11 JuHl M5 III        
-1235 Ada                  A878447-B Ni Pa Varg2           { 1 }  (H35+1) [3579] - M  - 105 10 JuHl F5 V M1 V     
-1238 Inadimkhishir        X100000-0 Ba Va                 { -3 } (800-3) [0000] - -  - 023 10 JuHl M4 V M9 V     
-1332 Emimgadii            X431257-5 Lo Po                 { -3 } (710+1) [1185] - -  - 302 10 JuHl M3 V          
-1432 Gakha                X401000-0 Ba Ic Va              { -3 } (900-2) [0000] - -  - 000 8  JuHl G3 V          
-1540 Ashila               B7857A9-9 Ag Ga Ri Varg5        { 3 }  (76C+2) [6A1C] - K  - 903 12 NaHu F9 V          
-1933 Emuula               X300000-0 Ba Va                 { -3 } (500-2) [0000] - -  - 012 11 NaXX M4 III K1 V   
-2139 Miimish              X444000-0 Ba                    { -3 } (600-1) [0000] - -  - 012 7  NaXX F0 V          
-2338 Aabe                 X539000-0 Ba                    { -3 } (800-1) [0000] - -  - 000 8  NaXX M9 V          
-2531 Kewhukape            X787000-0 Ba Ga                 { -3 } (700+1) [0000] - -  - 001 9  NaXX F2 V          
-2538 Guuzi                X428000-0 Ba                    { -3 } (600-1) [0000] - -  - 015 11 NaXX M2 V M4 V     
-2934 Khaa                 X564000-0 Ba                    { -3 } (300-1) [0000] - -  - 021 11 NaXX G6 V          
+Hex  Name                 UWP       Remarks                  {Ix}   (Ex)    [Cx]   N B  Z PBG W  A    Stellar       
+---- -------------------- --------- ------------------------ ------ ------- ------ - -- - --- -- ---- --------------
+0106 Rutagh               E6A6112-9 Fl Lo Varg1              { -2 } (900-2) [316A] - -  - 810 12 JuPr M4 V          
+0109 Carrarn              B100759-C Na Va Pi Varg3 Ht        { 2 }  (66A-5) [4978] - -  - 502 13 JuPr G7 V          
+0201 Khakarrgh            B677737-9 Ag Pi                    { 2 }  (A67+3) [591D] - -  - 912 12 JuPr F2 V M4 V     
+0203 Rahar                C695634-5 Ag Ni Lt                 { -1 } (851+5) [7565] - -  - 704 12 JuPr K3 V          
+0206 Rrurrgur             B311267-B Ic Lo Varg1 O:           { 1 }  (A11+2) [436B] - -  - 405 17 JuPr K6 V M9 V     
+0207 Agha                 C210635-D Na Ni Varg5 Ht           { 0 }  (E56-3) [963C] - -  - 213 13 JuPr F9 V          
+0210 Shaka                C4455D7-A Ag Ni Varg1              { 1 }  (945+2) [7637] - -  - 322 7  JuPr F9 V          
+0303 Caska                A765A9B-B Hi Ga Varg2              { 4 }  (699+1) [CE7C] - KM - 104 13 JuPr G6 V M7 V     
+0305 Khaz                 E68727B-1 Lo Ga Lt                 { -3 } (910+1) [6151] - -  - 403 9  JuPr F7 V          
+0307 Ghirrzik             D210457-C Ni Ht                    { -1 } (A33-4) [835C] - -  - 705 12 JuPr M0 V M1 V     
+0310 Cis-rabir            B4957C9-C Ag Pi Varg1 Ht           { 3 }  (A6B-3) [9A48] - -  - 920 10 JuPr F9 V          
+0402 Hebrar               B6988B6-7 Pa Ph Pi                 { 0 }  (976+1) [D863] - -  - 523 13 JuPr K2 V          
+0405 Ziraghur             A99856A-C Ag Ni O: Ht              { 2 }  (945-1) [5719] - K  - 511 10 JuPr F7 V          
+0408 Ghurrgarrgh          C320558-B De He Ni Po              { 0 }  (943+1) [554D] - -  - 113 15 JuPr G7 V          
+0505 Par                  A4639A5-A Hi Pr                    { 3 }  (B8D+1) [8C7A] - M  - 723 15 JuPr K8 V          
+0601 Raub                 CAC4414-C Fl Ni Ht                 { 0 }  (B32+1) [348D] - -  - 703 8  JuPr G9 V M3 V     
+0606 Ghukhakh             E510300-2 Lo Varg1 Lt              { -3 } (820+1) [3173] - -  - 604 14 JuPr M9 V          
+0610 Papaa                C469436-7 Ni                       { -2 } (730+2) [4269] - -  - 300 9  JuPr F1 V          
+0707 Siraska              D574524-A Ag Ni                    { 0 }  (B45-1) [2585] - -  - 113 8  JuPr G8 V M6 V     
+0802 Khurrgh              B65A99C-8 Hi Wa                    { 1 }  (988+4) [AA99] - K  - 404 15 JuPr F7 V          
+0803 Sikhi                D8C3418-B Fl Ni                    { -1 } (D31+2) [339B] - -  - 302 5  JuPr M1 V M8 V     
+0804 Canta                D575A88-7 Hi In                    { 0 }  (894-3) [AA4B] - M  - 410 12 JuPr G4 V M3 V     
+0805 Rinkook              CA7A543-A Ni Oc                    { 0 }  (C43+4) [355D] - -  - 814 14 JuPr G3 V M3 V     
+0807 Rurrzik              C699343-5 Lo Lt                    { -2 } (A20+1) [4154] - -  - 813 12 JuPr F4 V          
+0810 Khaekhurr            C444657-B Ag Ni Varg3              { 1 }  (553-2) [676E] - -  - 902 9  JuPr F5 V M2 V     
+0904 Saepar               C000659-B As Na Ni Va              { 0 }  (A54+1) [864D] - -  - 404 16 JuPr K0 V          
+0905 Ghueghik             C634565-7 Ni O:0904                { -2 } (641+1) [631B] - -  - 325 14 JuPr G6 II         
+0909 Voegan               D312534-8 Ic Ni Varg3              { -3 } (840+2) [8256] - -  - 103 13 JuPr M4 V          
+1007 Rutarrgh             A4519ED-8 Hi Po                    { 1 }  (C87+1) [8A5B] - -  - 903 10 JuPr F4 V M8 V     
+1008 Arrghan              A476999-A Hi In Varg2              { 4 }  (A8F-3) [8D3F] - -  - 100 9  JuPr F8 V M6 V     
+1102 Tagh                 B1108C9-B Na Ph Pi                 { 2 }  (87B+1) [6A4G] - -  - 623 11 JuPr K8 V          
+1108 Dakh                 D689944-8 Hi Pr                    { -1 } (A87-1) [9819] - -  - 505 11 JuPr F6 V          
+1109 Digh                 A556785-8 Ag                       { 1 }  (86C+5) [5826] - K  - 601 6  JuPr F4 V M5 V     
+1202 Sezakh               D777341-5 Lo Lt                    { -3 } (720-1) [1148] - M  - 810 11 JuPr F4 V          
+1203 Errurrgh             B895345-B Lo Varg1                 { 2 }  (522+2) [755C] - KM - 310 6  JuPr G8 V          
+1207 Rarrza               B894846-9 Pa Ph Pi                 { 1 }  (578+4) [6995] - -  - 702 14 JuPr F9 V          
+1210 Agodz                B9867A8-8 Ag Ri Varg2              { 3 }  (96B+2) [8A5A] - KM - 521 7  JuPr F5 V          
+1307 Rudzkha              A475420-D Ni Pa Ht                 { 2 }  (733+1) [362B] - KM - 300 8  JuPr F1 V          
+1308 Ragh                 A8B688A-B Fl Ph Varg5              { 2 }  (D7A+2) [8A8D] - -  - 623 11 JuPr F9 V          
+1309 Digharrgh            B693688-5 Ni Lt                    { -1 } (851+1) [4577] - K  - 902 10 JuPr F1 V          
+1406 Sagharr              D633423-9 Ni Po Varg4              { -2 } (C31+1) [729C] - -  - 403 15 JuPr M0 V M5 V     
+1408 Urrgha               X300000-0 Ba Va Lt                 { -3 } (A00+2) [0000] - -  - 022 15 JuPr M9 V          
+1501 Ovoeghagun           E441300-2 He Lo Po Lt              { -3 } (620+4) [3111] - -  - 102 13 NaHu F2 V          
+1504 Sighnarr             B560576-C De Ni Pr Varg2 Ht        { 1 }  (D46+1) [462F] - K  - 914 16 JuPr F8 V          
+1506 Ghadzarrgh           D4C1416-B Fl He Ni Varg1           { -1 } (830-4) [536A] - -  - 402 12 JuPr K0 V          
+1602 Dioco                C4629EE-7 Hi Pr Varg1              { 0 }  (68B-2) [A932] - M  - 213 15 NaHu K4 V          
+1604 Sigurroegh           A86A687-C Ni Ri Wa Varg1 Ht        { 2 }  (D53+1) [484C] - -  - 305 9  JuPr F0 V          
+1608 Uta                  B636441-A Ni Varg2                 { 1 }  (E33+2) [158A] - -  - 203 12 NaHu M4 V M8 V     
+1701 Ikgzoeroulurr        X5A0000-0 Ba He Lt                 { -3 } (B00+4) [0000] - -  - 002 11 NaXX M4 V          
+1705 Voeraghz             A544573-D Ag Ni Ht                 { 2 }  (E47+4) [477D] - -  - 120 10 JuPr F4 V M4 V     
+1707 Aekokago             D578785-5 Ag Pi Varg1 Lt           { -1 } (666+2) [3661] - -  - 400 3  NaHu F8 V M4 V     
+1801 Ugar                 D200325-9 Lo Va Varg4              { -2 } (720+2) [5116] - -  - 604 17 NaHu K1 V M9 V     
+1806 Lizashlik            A593694-8 Ni                       { -1 } (F54+1) [4539] - -  - 325 17 NaHu F2 V M0 V     
+1807 Lwynhy               C545988-9 Hi In                    { 2 }  (B8A+1) [CB18] - -  - 112 15 NaHu F6 V          
+1808 Aladashumiiki        C465975-6 Hi Pr                    { 0 }  (386-2) [994A] - -  - 105 12 NaHu F4 V M4 V     
+1901 Asihit               D698534-6 Ag Ni                    { -2 } (642-3) [3389] - -  - 602 10 NaHu F1 V M1 V     
+1902 Sovanjaak            X400000-0 Ba Va Lt                 { -3 } (700+2) [0000] - -  - 010 7  NaXX M1 V M7 V     
+1903 Kerkiilamu           E210300-A Lo                       { -1 } (D20+1) [822A] - -  - 504 11 NaHu M1 V          
+1906 Pynuotkuos           C6468A8-C Pa Ph Pi Varg1 Ht        { 1 }  (979+2) [A9AE] - -  - 803 10 NaHu F4 V          
+1910 Ada                  C541999-5 He Hi In Po Lt           { 1 }  (788-4) [CA53] - -  - 603 14 NaHu F1 V          
+2003 Satih                A658984-B Hi                       { 3 }  (A85-1) [BC8D] - -  - 803 11 NaHu F2 V M3 V     
+2004 Naenaruel            A5649B8-B Hi Pr                    { 3 }  (C8F+4) [9C5B] - M  - 900 9  NaHu G3 V M4 V     
+2005 Rhonhi               B4628B8-6 Ri Ph                    { 1 }  (A76-3) [7956] - K  - 704 14 NaHu F7 V          
+2007 Ouzaell              B433558-9 Ni Po                    { 0 }  (744-2) [5546] - K  - 220 13 NaHu G5 V M1 V     
+2101 Aiwunupe             C6978A6-5 Pa Ph Pi Lt              { -1 } (677+1) [8773] - -  - 404 10 NaHu F1 V M8 V     
+2102 Udkhaaziirash        A7779DE-B Hi In                    { 4 }  (A8B+4) [8D9B] - -  - 703 11 NaHu F3 V          
+2103 Mohy                 A4588DC-7 Pa Ph                    { 0 }  (478+2) [586B] - K  - 100 8  NaHu G5 V M1 V     
+2104 Gzodaegdoedz         D443232-7 Lo Po Varg1              { -3 } (510+1) [1157] - M  - 912 12 NaHu F4 V M2 V     
+2107 Ek                   X000000-0 As Ba Va Lt              { -3 } (A00+1) [0000] - -  - 003 11 NaXX M1 V M1 V     
+2203 Lykukihavyt          C533458-8 Ni Po                    { -2 } (630-2) [12A6] - -  - 203 12 NaHu M4 V          
+2204 Gumushu              C682753-6 Ri                       { 0 }  (866+4) [4742] - -  - 303 15 NaHu F5 V M4 V     
+2205 Kigaakigum           D556768-2 Ag O:2005 Lt             { -1 } (A65+1) [7661] - M  - 823 13 NaHu F6 V          
+2209 Ychmiwryr            B999510-C Ni Ht                    { 1 }  (H43-1) [467A] - -  - 823 16 NaHu F5 V          
+2302 Dusa                 C322545-9 He Ni Po                 { -1 } (D45-1) [643E] - -  - 303 10 NaHu F2 V M8 V     
+2303 Maga                 A675640-C Ag Ni Ht                 { 2 }  (E54+1) [687B] - K  - 904 13 NaHu F9 V M5 V     
+2305 Gagiizidiiga         C586786-6 Ag Ri                    { 1 }  (56A-3) [585A] - -  - 105 10 NaHu K1 V          
+2310 Mor                  B996421-A Ni Pa                    { 1 }  (D36-1) [5559] - -  - 505 14 NaHu F8 V          
+2403 Amimuum              C84797A-8 Hi In Varg2              { 1 }  (987+2) [CA95] - -  - 904 11 NaHu F1 V          
+2405 Oudhuegvae           C625448-7 Ni Varg1                 { -2 } (333+3) [822A] - M  - 704 15 NaHu M9 III M4 V   
+2406 Argag                E432656-7 Na Ni Po                 { -3 } (852+1) [637A] - -  - 204 14 NaHu G7 V          
+2408 Kumakiiga            A988642-B Ag Ni Ri                 { 3 }  (757+2) [595B] - K  - 400 9  NaHu F0 V M9 V     
+2410 Ghersong             A4536A9-A Ni Po Varg2              { 1 }  (B53-4) [3757] - -  - 803 11 NaHu F3 V          
+2501 Nuri                 D571200-7 He Lo                    { -3 } (710-3) [4126] - M  - 614 11 NaHu F2 V          
+2503 Dekeli               C775553-9 Ag Ni                    { 0 }  (G43+1) [3588] - -  - 413 12 NaHu F9 V          
+2504 Resopem              B8849BC-B Hi Pr                    { 3 }  (A88+4) [9C4G] - -  - 603 9  NaHu F9 V          
+2508 Maa                  C428538-9 Ni                       { -1 } (C42+2) [947C] - -  - 104 7  NaHu K2 V M2 V     
+2605 Ullizo               AA7799B-A Hi In Varg1              { 4 }  (A8G-2) [9D46] - -  - 210 13 NaHu G5 V M1 V     
+2606 Farraghufueka        B473755-7 Pi                       { 0 }  (46A-2) [8789] - M  - 702 5  NaHu G3 V M1 V     
+2607 Uekhoeng             D510539-A Ni Varg1                 { -1 } (840-2) [4449] - -  - 204 14 NaHu M2 V M9 V     
+2610 Sefinar              D434443-8 Ni Varg1                 { -3 } (830+2) [216A] - -  - 402 5  NaHu M8 V          
+2701 Enoggvokhs           D544542-6 Ag Ni                    { -2 } (743+1) [6341] - M  - 601 14 NaHu G1 V          
+2702 Benadd               A441631-8 He Ni Po                 { 0 }  (F55+3) [5648] - KM - 414 11 NaHu F1 V          
+2703 Gvueruk              E552438-9 Ni Po                    { -2 } (D33+4) [1267] - -  - 302 10 NaHu K8 V          
+2704 Khefs Dzo            A569989-8 Hi Pr                    { 1 }  (98A+2) [BA88] - K  - 805 11 NaHu F1 V          
+2705 Daegthor             X300000-0 Ba Va Lt                 { -3 } (400+5) [0000] - -  - 004 14 NaXX G3 V          
+2709 Naddes               C554441-8 Ni Pa Varg1              { -2 } (C33+1) [125A] - -  - 104 12 NaHu F4 V          
+2805 Lupushshir           B7979EF-8 Hi In Varg1              { 2 }  (688-4) [9B3A] - M  - 400 7  NaHu M2 V          
+2809 Vy                   B545625-9 Ag Ni Varg5              { 1 }  (956+2) [676B] - K  - 302 6  NaHu K4 V          
+2902 Udenga               X120000-0 Ba De Po Lt              { -3 } (300-2) [0000] - -  - 004 17 NaXX M8 V          
+2907 Regu                 B000686-B As Na Ni Va Varg3        { 1 }  (853+4) [672A] - -  - 302 6  NaHu F8 V          
+2908 Gagur                D647877-8 Pa Ph Pi                 { -2 } (875+2) [465D] - -  - 512 10 NaHu F1 V          
+2910 Raroota              C610514-A Ni                       { 0 }  (746-1) [3539] - -  - 302 11 NaHu K0 V M2 V     
+3002 Aerrggeng            A526665-B Ni O:                    { 2 }  (B58+3) [484F] - KM - 103 10 NaHu M3 V M9 V     
+3003 Ibugug               E554436-3 Ni Pa Lt                 { -3 } (730+4) [4141] - -  - 913 8  NaHu F2 V          
+3005 Urnaakashig          E6A2321-B Fl He Lo Varg4           { -1 } (A20-3) [124E] - -  - 904 10 NaHu M1 V          
+3007 Oneluevueknou        A6569DG-7 Hi Ga                    { 1 }  (78B+1) [DA25] - K  - 902 9  NaHu F6 V          
+3009 Terkpedherhi         B679844-6 Ph Pi                    { 0 }  (67A-4) [6846] - -  - 612 10 NaHu M4 V M6 V     
+3101 Er                   E447436-8 Ni Pa                    { -3 } (730+4) [5135] - -  - 300 6  NaHu G0 V          
+3103 Gasuu                B313640-7 Ic Na Ni                 { -1 } (452-2) [3558] - -  - 603 9  NaHu M5 V M7 V M9 V
+3105 Mukekis              X100000-0 Ba Va Lt                 { -3 } (900-4) [0000] - -  - 014 17 NaXX M4 V          
+3107 Mopetu               B79588B-C Pa Ph Pi Varg1 Ht        { 2 }  (A78+4) [7A4E] - -  - 404 16 NaHu F7 V M9 V     
+3108 Kikashinnipi         X500000-0 Ba Va Lt                 { -3 } (200-2) [0000] - -  - 000 10 NaXX M4 V M7 V     
+3202 Okghuthtsuegh        C435451-8 Ni                       { -2 } (B30+5) [1257] - M  - 803 13 NaHu G7 V          
+3203 Pualemaski           X110000-0 Ba Lt                    { -3 } (600+1) [0000] - -  - 014 14 NaXX K8 V          
+3205 Egt                  A7969BA-B Hi In Varg2              { 4 }  (C8A-1) [AD1C] - K  - 322 13 NaHu G1 V          
+3208 Khaerong             E498232-8 Lo                       { -3 } (910+4) [4184] - -  - 804 10 NaHu K2 V          
+3209 Leeteng              C433424-B Ni Po                    { 0 }  (B33-2) [348E] - -  - 602 9  NaHu M1 V M4 V     
+3210 Bat                  D430214-A De Lo Po                 { -1 } (C10+3) [6168] - -  - 805 13 NaHu F3 V          
+0116 Imkha                C547420-6 Ni Pa                    { -2 } (533+1) [5216] - M  - 304 11 JHhk M6 V          
+0119 Kulirzir             X540000-0 Ba De He Po Lt           { -3 } (900+2) [0000] - -  - 001 4  JHhk F0 V          
+0211 Gisanal              A778778-7 Ag Pi Varg1              { 1 }  (765+1) [2847] - -  - 523 13 JuPr F7 V          
+0213 Kaspur               D437438-9 Ni Varg1                 { -2 } (731-1) [122A] - -  - 101 11 JuPr K9 V          
+0313 Aedzae               C692745-6 He Pi Varg4              { -1 } (B6B-3) [5658] - M  - 902 12 JuPr F2 V M3 V     
+0411 Zoegaekhso           D438344-9 Lo                       { -2 } (E20-2) [5198] - M  - 713 10 JuPr M2 V          
+0414 Garfaerroe           C55888B-A Pa Ph Varg5              { 1 }  (A79-2) [994B] - -  - 413 12 JuPr F8 V M2 V     
+0416 Khoengkuerrgh        X100000-0 Ba Va Lt                 { -3 } (A00+3) [0000] - -  - 012 15 JuHl K2 IV         
+0417 Agusha               E649315-C Lo Varg2 Ht              { -1 } (720+1) [626E] - -  - 805 15 JuHl F5 V          
+0518 Bikali               B5977AB-5 Ag Pi Lt                 { 1 }  (569+2) [7834] - -  - 623 8  JuHl F1 V          
+0519 Kongrougzog          A567ADF-7 Hi                       { 1 }  (A97+1) [AB34] - -  - 304 13 JuHl F0 V          
+0611 Orrgorkso            A63A310-C Lo Wa Ht                 { 1 }  (E21+4) [545C] - K  - 214 14 JuPr M9 V          
+0619 Umanirgilunud        X210000-0 Ba Lt                    { -3 } (500-1) [0000] - -  - 024 12 JuHl K7 V          
+0711 Kungangfuk           D3244BA-A Ni                       { -1 } (833+3) [1347] - -  - 300 10 JuPr G9 V          
+0715 Kfodha               A883997-B Hi Pr Varg1              { 3 }  (78D+1) [AC6A] - K  - 310 9  NaHu M0 V M8 V     
+0716 Dakanikiguri         B47255A-B He Ni                    { 1 }  (743-1) [761C] - -  - 113 11 NaHu F3 V M1 V     
+0718 Anweg                C79749A-9 Ni Pa                    { -1 } (B34+1) [3325] - M  - 304 11 NaHu F9 V          
+0811 Ivavours             E453536-A Ni Po                    { -1 } (940+1) [945F] - -  - 310 7  JuPr F3 V M3 V     
+0820 Kirralimigag         CAA685B-B Fl Ph Varg1              { 1 }  (B76-5) [B92C] - -  - 603 10 JuHl F6 V M7 V     
+0911 Ellong               C553555-6 Ni Po                    { -2 } (843-2) [5396] - -  - 314 14 JuPr F8 V M1 V     
+0912 Dhartsun             B9899CA-D Hi Pr Varg3 Ht           { 3 }  (48C+2) [9C3E] - -  - 500 7  JuPr F6 V M8 V     
+1014 Rumaaire             X310000-0 Ba Lt                    { -3 } (C00-1) [0000] - -  - 032 12 NaXX M3 V          
+1016 Turrdun              B647766-9 Ag Pi O:1118             { 2 }  (A6B+1) [791A] - M  - 612 9  NaHu F5 V          
+1113 Talrotis             X310000-0 Ba Lt                    { -3 } (700-2) [0000] - -  - 004 15 NaXX G0 V          
+1114 Kikigulagabi         B669576-7 Ni Pr                    { -1 } (743-1) [9447] - M  - 604 12 NaHu F7 V M3 V     
+1118 Isgakikuga           A8C5AA8-B Fl Hi In                 { 4 }  (798-4) [8E4C] - -  - 202 10 NaHu K8 V M2 V     
+1119 Kha                  C460A98-B De Hi Varg2              { 2 }  (C9C+2) [EC26] - M  - 100 12 NaHu F7 V          
+1213 Keiwhi               E513100-A Ic Lo Varg4              { -1 } (C00+5) [2159] - -  - 603 6  NaHu G0 V          
+1313 Suth                 A8B3667-B Fl Ni Varg5 O:1615       { 1 }  (854-2) [6717] - -  - 903 10 NaHu K7 V M0 V     
+1319 Thigz                A7569DC-B Hi Ga                    { 3 }  (78A+1) [8C2E] - -  - 902 10 NaHu G9 V M4 V     
+1415 Saamedirer           B446556-D Ag Ni Varg4 Ht           { 2 }  (H46+2) [2768] - -  - 423 13 NaHu G4 V          
+1514 Gaada                B9A7346-C Fl Lo Ht                 { 2 }  (722+1) [1519] - KM - 700 9  NaHu K3 V          
+1515 Bamlisumguur         A746759-A Ag Pi Varg5              { 3 }  (768+2) [7A6A] - -  - 310 11 NaHu F8 V          
+1615 Kotsfa               B669977-A Hi Pr Varg2              { 3 }  (589-1) [8C1C] - -  - 200 11 NaHu G8 V M5 V     
+1616 Outoudzduez          B659859-A Ph Varg4                 { 3 }  (C7B+4) [8B28] - KM - 414 16 NaHu F5 V M3 V     
+1617 Omverendtto          D6A5584-9 Fl Ni                    { -2 } (740-1) [5338] - M  - 504 16 NaHu G2 V          
+1715 Cregen               X200000-0 Ba Va Lt                 { -3 } (600-2) [0000] - -  - 013 11 NaXX K2 V M5 V     
+1718 Postytos             B56699D-9 Hi Pr Varg3              { 2 }  (888+1) [9B9A] - M  - 313 13 NaHu F0 V          
+1816 Orrterz              E478864-6 Pa Ph Pi O:1915          { -2 } (C75-2) [5659] - -  - 715 14 NaHu F5 V          
+1817 Kawahowhi            E8B0338-A He Lo                    { -1 } (C20+1) [828C] - -  - 704 12 NaHu G5 V M1 V     
+1820 Miorogrod            A773620-9 Ni                       { 0 }  (756-1) [7644] - -  - 500 7  NaHu M2 V M4 V     
+1915 Kesittanma           A98A9BB-A Hi Wa Pr Varg5           { 3 }  (C8C-1) [AC3D] - -  - 105 14 NaHu F0 V M6 V     
+1916 Nna                  X000000-0 As Ba Va Lt              { -3 } (500+2) [0000] - -  - 000 6  NaXX K8 V M3 V     
+1917 Iriputanga           A587755-B Ag Ri                    { 4 }  (B69-2) [6B9A] - M  - 614 8  NaHu F9 V          
+1918 Lannieton            X540000-0 Ba De He Po Lt           { -3 } (800-5) [0000] - -  - 002 8  NaXX F2 V          
+2013 Ul                   B52A587-D Ni Varg1 Ht              { 1 }  (744+1) [161C] - K  - 200 7  NaHu K0 IV M0 V    
+2016 Sharagirukis         A774861-7 Pa Ph Pi O:1915          { 0 }  (97C-2) [7858] - -  - 613 14 NaHu F3 V M4 V     
+2019 Diduddbas            C310346-A Lo                       { 0 }  (E20+1) [137C] - M  - 615 14 NaHu M3 V          
+2112 Dilushka             C314300-A Ic Lo                    { 0 }  (D20-3) [635B] - M  - 305 14 NaHu F5 V          
+2113 Ghatsghaeg           XAFA000-0 Ba Oc Lt                 { -3 } (700+1) [0000] - -  - 014 17 NaXX M2 V M4 V     
+2115 Khaekarr             X000000-0 As Ba Va Lt              { -3 } (200-5) [0000] - -  - 013 11 NaXX M7 V M8 V     
+2117 Ke                   B452300-7 Lo Po Varg2              { 0 }  (420-1) [7373] - KM - 720 8  NaHu F9 V          
+2120 He                   A462957-A Hi Pr Varg1              { 3 }  (78D+1) [BC9A] - K  - 614 9  NaHu F8 V          
+2211 Repstotjijk          A446869-C Pa Ph Pi O:2412 Ht       { 2 }  (C78+4) [6A5G] - -  - 604 13 NaHu F3 V M2 V     
+2217 Mepdiisharig         B56398C-A Hi Pr                    { 4 }  (786+1) [9D2A] - KM - 903 10 NaHu F7 V          
+2219 Brybintw             B433889-7 Na Po Ph Varg1           { 0 }  (B79-1) [9898] - K  - 514 9  NaHu G8 V          
+2311 Dimijn               C554678-6 Ag Ni                    { -1 } (650-2) [6568] - M  - 924 11 NaHu F1 V M8 V     
+2313 Dy                   A6979A7-B Hi In                    { 4 }  (788+2) [BD97] - K  - 203 12 NaHu F1 V M6 V     
+2315 Urki                 C30389E-7 Ic Na Va Ph Pi Varg1     { -1 } (977+2) [4748] - -  - 804 14 NaHu F5 V          
+2316 Kunzikikunuza        AA6A98A-D Hi Oc Pr Ht              { 3 }  (98A+1) [BC5A] - -  - 413 12 NaHu F1 V M3 V     
+2317 All                  C487434-8 Ni Pa Varg3              { -2 } (B32+4) [3276] - -  - 115 13 NaHu K9 V          
+2318 Arraegue             B541233-9 He Lo Po                 { 0 }  (C10+2) [1259] - K  - 712 10 NaHu F3 V          
+2319 Oghaers              A857988-D Hi Ga Varg2 Ht           { 3 }  (E8B-5) [9C8E] - -  - 413 12 NaHu F0 V          
+2412 Updashidiram         A8799EA-A Hi In Varg2              { 4 }  (58C-3) [BD57] - K  - 920 10 NaHu F9 V          
+2415 Aenurrgaekou         X8A2000-0 Ba Fl He Lt              { -3 } (400+2) [0000] - -  - 013 13 NaXX K0 IV         
+2418 Mun                  C666968-6 Hi Ga Pr O:2319          { 0 }  (589+3) [6948] - -  - 400 7  NaHu F6 V M7 V     
+2419 Mutitoa              X5A5000-0 Ba Fl Lt                 { -3 } (A00+1) [0000] - -  - 003 6  NaXX K0 V          
+2514 Uirvrijn             A77A863-C Wa Ph Pi O:2412 Ht       { 2 }  (C7B-1) [3A3E] - -  - 704 14 NaHu F6 V          
+2515 Midishmumur          C757566-3 Ag Ni Ga Varg2 O:2412 Lt { -1 } (845+5) [7481] - -  - 110 6  NaHu F4 V          
+2518 Zoentuegh            C556543-8 Ag Ni Varg2              { -1 } (D40+4) [A449] - -  - 323 10 NaHu G1 V          
+2520 Nir                  C545576-8 Ag Ni                    { -1 } (D41+2) [5465] - M  - 103 13 NaHu F5 V          
+2617 Rwddffiar            XAB3000-0 Ba Fl Lt                 { -3 } (800-3) [0000] - -  - 000 10 NaXX M8 V          
+2619 Iraad                B777468-9 Ni Pa O:2319             { 1 }  (C35-2) [4528] - KM - 704 16 NaHu F9 V          
+2714 Akhgaeng             A569989-C Hi Pr Ht                 { 3 }  (A89+1) [9C8F] - K  - 513 13 NaHu F7 V          
+2911 Doeleir              C5A4320-9 Fl Lo                    { -1 } (D20-3) [128B] - M  - 513 9  NaHu K9 V          
+2912 Deiddat              B554963-9 Hi Varg1 O:3012          { 3 }  (88A-3) [BC69] - KM - 701 5  NaHu G0 V          
+2915 Gjittnaeng           AAC6668-9 Fl Ni Varg3 O:3012       { 0 }  (D53-1) [463B] - K  - 824 12 NaHu M5 V          
+2918 Linajisme            A788876-C Ri Pa Ph Varg1 Ht        { 3 }  (878-4) [8B5D] - K  - 514 13 NaHu F8 V M4 V     
+3012 Taildahre            B4569CG-B Hi                       { 3 }  (G88+5) [9C6A] - -  - 414 13 NaHu F8 V M6 V     
+3015 Nuukhanir            D324613-7 Ni                       { -3 } (350-4) [537A] - M  - 602 9  NaHu K2 V M1 V     
+3017 Di                   A477732-D Ag Pi Ht                 { 3 }  (B69-4) [6A5J] - K  - 114 14 NaHu K6 V          
+3018 Iikhugama            D482156-8 Lo                       { -3 } (B00-4) [117D] - M  - 423 12 NaHu F2 V M0 V     
+3114 Manoaani             C6889BD-6 Hi Pr Varg1              { 0 }  (585+1) [6945] - M  - 402 8  NaHu F5 V M8 V     
+3115 Khii                 C42956A-9 Ni O:3117                { -1 } (D41+3) [6467] - -  - 204 13 NaHu M4 V M8 V     
+3116 Aeg                  C6847AD-6 Ag Ri                    { 1 }  (269+1) [C848] - M  - 302 13 NaHu F3 V M9 V     
+3117 Kiirkinkirizi        A767978-D Hi Ga Pr Varg3 Ht        { 3 }  (A8A-2) [AC1D] - K  - 902 13 NaHu G0 V          
+3119 Be                   C654645-4 Ag Ni Lt                 { -1 } (255+2) [5555] - M  - 205 9  NaHu F5 V          
+3211 Aeraegfoeksse        B435412-D Ni Varg5 Ht              { 1 }  (A36+1) [754C] - M  - 700 8  NaHu M8 III        
+3213 Jaarut               A7668A7-B Ga Ri Pa Ph              { 3 }  (97E+3) [4B5E] - -  - 713 11 NaHu K1 V M7 V M3 V
+3214 Ud                   B847741-7 Ag Pi                    { 1 }  (467-3) [3825] - K  - 104 16 NaHu G9 V          
+3215 Gviguezeghoug        X000000-0 As Ba Va Lt              { -3 } (600+3) [0000] - -  - 001 7  NaXX M1 V          
+3216 Viar                 C110401-C Ni Varg2 Ht              { 0 }  (736+2) [448A] - -  - 613 13 NaHu G9 V          
+3217 Kimirii              X100000-0 Ba Va Lt                 { -3 } (500+1) [0000] - -  - 010 10 NaXX G9 V M3 V     
+3219 Agvarzoerr           C540611-6 De He Ni Po              { -2 } (651+1) [6447] - -  - 513 12 NaHu F0 V          
+0121 Nenn                 C64499E-8 Hi In                    { 1 }  (98C+1) [BA87] - -  - 613 12 JuHl F1 V          
+0123 Kuune                A452A63-D Hi Po Varg1 O: Ht        { 3 }  (99B+1) [BD6C] - K  - 203 16 JuHl F5 V          
+0124 Mirashidi            A66668B-8 Ag Ni Ga Ri Varg2        { 1 }  (C54+2) [1787] - -  - 323 11 JuHl F3 V          
+0223 Gzaek                B97A562-C Ni Wa O: Ht              { 1 }  (947+1) [265E] - -  - 112 10 JuHl F0 V          
+0328 Mar                  E653143-2 Lo Po Varg2 Lt           { -3 } (900-4) [2151] - -  - 203 12 JuHl F1 V          
+0329 Thollydam            X212000-0 Ba Ic Lt                 { -3 } (B00+2) [0000] - -  - 003 12 JuHl M7 V M7 V     
+0429 Kokhs                D410200-8 Lo                       { -3 } (810-5) [3176] - -  - 802 13 JuHl M6 V          
+0430 Sii                  D432100-9 Lo Po Varg1              { -2 } (500+2) [2156] - M  - 203 8  JuHl K6 V M9 V     
+0522 Kuu                  B546875-B Pa Ph Pi                 { 2 }  (97A-1) [6A5C] - M  - 314 15 JuHl F4 V          
+0523 Galiibegada          D78A300-8 Lo Wa Varg4              { -3 } (820+1) [8195] - -  - 305 14 JuHl F5 V          
+0527 Ab                   B445569-7 Ag Ni Varg2 O:0728       { 0 }  (942-4) [5586] - K  - 803 16 JuHl G0 V          
+0622 Sing                 B566246-7 Lo Varg1                 { -1 } (910-4) [3157] - -  - 110 6  JuHl M0 V M3 V M1 V
+0623 Gimashkhizara        A76A88A-9 Ri Wa Ph                 { 2 }  (B7B-2) [BA9B] - -  - 613 14 JuHl G8 V M3 V     
+0624 Pinapupiru           B57657B-5 Ag Ni Lt                 { 0 }  (C42+1) [5579] - K  - 210 7  JuHl M1 V M9 V     
+0627 Fetap                A458689-D Ag Ni Varg4 Ht           { 2 }  (858-5) [786G] - K  - 510 8  JuHl K7 V          
+0722 Temkaka              A439679-A Ni                       { 1 }  (A57-1) [477C] - K  - 514 15 JuHl F3 V M8 V     
+0723 Emug                 A97988B-8 Ph Pi Varg1              { 0 }  (D73-5) [6829] - -  - 513 12 JuHl K7 V M9 V     
+0724 Byddklob             B998999-7 Hi In Varg1              { 2 }  (58C-2) [CB97] - K  - 304 17 JuHl F2 V          
+0728 Le                   B663ACF-9 Hi Varg1                 { 2 }  (B9B+1) [BC2A] - K  - 514 10 JuHl F8 V M1 V     
+0827 Whuuka               X000000-0 As Ba Va Lt              { -3 } (900-1) [0000] - -  - 003 9  JuHl K4 V          
+0828 Zasorrg              C304442-B Ic Ni Va                 { 0 }  (B32+1) [44A9] - M  - 523 17 JuHl M0 V M3 V     
+0922 Vun                  E68A100-7 Lo Wa Varg1              { -3 } (300-3) [3197] - -  - 503 9  JuHl F5 V M4 V     
+0923 Liadyhwed            C693873-6 Ph Pi                    { -1 } (672+2) [5765] - M  - 723 14 JuHl F0 V M3 V     
+0928 Ugwontfeidd          A45798B-D Hi Varg3 Ht              { 3 }  (589+1) [7C6G] - M  - 203 11 JuHl F7 V          
+1024 Arzan                X541000-0 Ba He Po Lt              { -3 } (500+5) [0000] - -  - 010 6  JuHl F8 V          
+1026 Keratapa             B577223-9 Lo                       { 0 }  (910-1) [224A] - M  - 523 18 JuHl F1 V          
+1122 Gulila               C455484-6 Ni Pa                    { -2 } (634+3) [8246] - M  - 824 17 NaHu F9 V          
+1124 Ston                 XAC7000-0 Ba Fl Lt                 { -3 } (700-1) [0000] - -  - 023 16 JuHl M1 V          
+1128 Rob                  X432000-0 Ba Po Lt                 { -3 } (700+3) [0000] - -  - 000 10 JuHl M4 V          
+1225 Tipai                A433677-C Na Ni Po Ht              { 1 }  (856-1) [575C] - -  - 203 8  JuHl M2 V          
+1226 Akhuranududi         E656787-2 Ag Ga Lt                 { -1 } (564-1) [9641] - -  - 300 11 JuHl F1 V M5 V     
+1227 Milinkhi             B775675-8 Ag Ni                    { 0 }  (C54-1) [764A] - K  - 414 18 JuHl F0 V          
+1228 Ush                  A794A9B-A Hi In                    { 4 }  (E99-1) [EE6D] - M  - 423 13 JuHl F8 V M1 V     
+1230 Nidnalag             X433000-0 Ba Po Lt                 { -3 } (400+3) [0000] - -  - 014 12 JuHl F6 V          
+1321 Giapeimiwch          X573000-0 Ba Lt                    { -3 } (800+2) [0000] - -  - 004 12 NaXX G8 V          
+1322 Miirkha              B323464-B Ni Po O:1323             { 2 }  (A36+3) [262F] - KM - 401 4  NaHu M1 V          
+1323 Gharrgh              A7649ED-C Hi Pr Varg1 Ht           { 3 }  (D88-2) [CC4A] - -  - 814 8  NaHu F1 V          
+1328 Sakimdurgani         A673353-B Lo                       { 1 }  (C21+1) [843B] - -  - 304 8  JuHl F2 V M1 V     
+1329 Ligish               C777585-9 Ag Ni Varg2              { 0 }  (D46-3) [653C] - -  - 704 11 JuHl F9 V M0 V     
+1422 Gijrmerins           D659156-9 Lo                       { -2 } (B00-4) [2138] - M  - 405 10 NaHu F4 V          
+1424 Lasre                A667872-8 Ga Ri Pa Ph              { 2 }  (A7B-4) [DA35] - KM - 622 13 NaHu G4 V          
+1425 Amli                 X100000-0 Ba Va Lt                 { -3 } (600+2) [0000] - -  - 002 8  NaXX M8 V          
+1426 Iige                 X677000-0 Ba Lt                    { -3 } (600-1) [0000] - -  - 005 14 NaXX F7 V          
+1522 Katowuepe            X648000-0 Ba Lt                    { -3 } (400-5) [0000] - -  - 000 6  NaXX F4 V          
+1523 Dung                 C445267-5 Lo O:1323 Lt             { -2 } (310+1) [3186] - -  - 405 17 NaHu G1 V M3 V     
+1524 Bednystek            X100000-0 Ba Va Lt                 { -3 } (500-1) [0000] - -  - 004 10 NaXX K1 IV         
+1622 Ab                   B84A964-9 Hi In Wa Varg4 O:1323    { 3 }  (D8D-3) [BC59] - -  - 104 13 NaHu F6 V          
+1722 Tapaslan             X444000-0 Ba Lt                    { -3 } (500+4) [0000] - -  - 002 9  NaXX M9 V          
+2125 Dourrgh              X548000-0 Ba Lt                    { -3 } (900-1) [0000] - -  - 014 13 NaXX F1 V M8 V     
+2421 Slelerkinwest        X657000-0 Ba Ga Lt                 { -3 } (600+3) [0000] - -  - 010 12 NaXX F2 V M1 V     
+2824 Koungue              X7B5000-0 Ba Fl Lt                 { -3 } (500+2) [0000] - -  - 005 14 NaXX M7 V          
+2921 Wunsmook             X668000-0 Ba Lt                    { -3 } (500+2) [0000] - -  - 003 14 NaXX F2 V          
+0135 Sjin                 E423100-9 Lo Po Varg3              { -2 } (F00+5) [4189] - -  - 205 13 JuHl M0 V          
+0136 Uerzksasnoeth        A749A96-C Hi In Varg1 Ht           { 4 }  (A9G+1) [AE58] - -  - 200 8  JuHl F4 V M0 V     
+0140 Runggvoeknue         B682897-7 Ri Ph                    { 1 }  (278+1) [8947] - -  - 905 14 JuHl F3 V M2 V     
+0231 Aengaze              D684667-4 Ag Ni Ri O: Lt           { -1 } (850+1) [1563] - -  - 801 11 JuHl G9 V          
+0232 Kellgaekaedae        X300000-0 Ba Va Lt                 { -3 } (700-1) [0000] - -  - 022 13 JuHl M0 V M3 V     
+0234 Ungar                A443630-C Ni Po Ht                 { 1 }  (D54+1) [771B] - -  - 405 16 JuHl F3 V          
+0240 Si                   C423300-9 Lo Po                    { -1 } (620-2) [2257] - M  - 902 5  JuHl M7 V M8 V     
+0331 Odzoez               B694334-8 Lo Varg2                 { -1 } (F20+1) [4268] - K  - 705 13 JuHl K4 V M1 V     
+0334 Shila                A561844-8 Ri Ph Varg3              { 1 }  (E7A-3) [898A] - K  - 112 10 JuHl F7 V M9 V     
+0338 Lluezdhouz           C64A68A-7 Ni Wa                    { -2 } (C52+1) [A456] - -  - 204 15 JuHl F4 V          
+0431 Ulluell              C300377-9 Lo Va                    { -1 } (C20-4) [32A6] - -  - 722 16 JuHl M8 V          
+0434 Gil                  A586999-B Hi Pr                    { 3 }  (A8D+2) [BC28] - K  - 820 10 JuHl F3 V          
+0435 Adar                 B789998-C Hi Pr Ht                 { 3 }  (388-4) [BC2F] - K  - 800 10 JuHl G4 V          
+0533 Adkamiiga            X538000-0 Ba Lt                    { -3 } (700+4) [0000] - -  - 004 16 JuHl M1 V M5 V     
+0535 Kehemirata           A401424-A Ic Ni Va                 { 1 }  (G32+1) [453B] - -  - 715 14 JuHl G8 V          
+0633 Staree               A545666-7 Ag Ni O:0434             { 0 }  (751+1) [566A] - -  - 604 12 JuHl F7 V          
+0636 Tuil                 X460000-0 Ba De Lt                 { -3 } (700+3) [0000] - -  - 013 11 JuHl F8 V M3 V     
+0637 Aerzondag            B7389DF-9 Hi                       { 2 }  (B89+1) [8B39] - -  - 112 13 JuHl F6 V M9 V     
+0638 Aa                   B958000-6 Di                       { -1 } (900+1) [0000] - -  - 003 10 JuHl F2 V M5 V     
+0639 Aache                B6799AB-D Hi In Varg3 Ht           { 4 }  (F88-3) [CD4D] - K  - 314 17 JuHl K7 V          
+0735 Rraeng               A538999-C Hi Ht                    { 3 }  (B8E-3) [CC19] - -  - 724 16 JuHl G9 V M7 V     
+0736 Paukjatnik           C89A7CF-8 Wa Pi                    { -1 } (D62+1) [6657] - -  - 905 14 JuHl M9 V          
+0738 Oruengzila           A765ABB-D Hi Ga Varg1 Ht           { 3 }  (A97+1) [8D7E] - K  - 112 11 JuHl F7 V          
+0832 Reng                 A748737-A Ag Pi                    { 3 }  (A6E+5) [8A66] - -  - 804 13 JuHl M3 V          
+0833 Talkemiejat          A547668-A Ag Ni O:0834             { 2 }  (758+1) [887C] - -  - 602 8  JuHl F2 V M4 V M0 V
+0834 Fathall              A866ADE-9 Hi Ga                    { 2 }  (698+4) [9CA7] - K  - 812 9  JuHl F1 V          
+0835 Kid                  D799567-6 Ni Varg2 O:0735          { -3 } (841+3) [22A7] - -  - 921 11 JuHl F3 V          
+0837 Iriir                X53A000-0 Ba Wa Lt                 { -3 } (600-1) [0000] - -  - 012 14 JuHl M0 V M1 V     
+0839 Aegnueg              A452520-9 Ni Po                    { 0 }  (C45-1) [752C] - -  - 202 9  JuHl K9 V M4 V     
+0931 Dwycawlowm           X222000-0 Ba Po Lt                 { -3 } (500+2) [0000] - -  - 004 13 JuHl M5 V          
+0932 Iririi               X434000-0 Ba Lt                    { -3 } (800+2) [0000] - -  - 034 16 JuHl M0 V          
+0934 Siirgikagigaa        X000000-0 As Ba Va Lt              { -3 } (800+5) [0000] - -  - 003 11 JuHl M0 V M7 V     
+0935 Stij                 A54577A-B Ag Pi                    { 3 }  (868-1) [6A7E] - K  - 103 11 JuHl G3 V          
+0939 Dede                 A999648-A Ni Varg3                 { 1 }  (B57+1) [571F] - -  - 505 11 JuHl F7 V          
+1033 U                    A446300-C Lo Ht                    { 1 }  (C21+1) [5449] - K  - 922 8  JuHl G8 V          
+1035 Unmakhimshim         E545120-6 Lo Varg2                 { -3 } (900-3) [5172] - -  - 103 11 JuHl G7 V M6 V     
+1038 Khakuukhimka         X200000-0 Ba Va Lt                 { -3 } (700-1) [0000] - -  - 000 7  JuHl M1 V          
+1132 Beprannein           X300000-0 Ba Va Lt                 { -3 } (900+1) [0000] - -  - 000 9  JuHl G9 V M7 V     
+1140 Aerafa               A66AABA-D Hi Wa Varg3 Ht           { 3 }  (697-2) [AD3D] - -  - 404 9  JuHl F9 V M4 V     
+1232 Mir                  C695223-8 Lo                       { -2 } (G10-2) [5138] - -  - 924 14 JuHl F8 V          
+1233 Mudadiikadu          X570000-0 Ba De He Lt              { -3 } (400+2) [0000] - -  - 004 8  JuHl F0 V          
+1234 Aegvenuth            D439200-7 Lo Varg2                 { -3 } (B10-2) [3145] - -  - 410 11 JuHl M5 III        
+1235 Ada                  A878447-B Ni Pa Varg2              { 1 }  (H35+1) [3579] - M  - 105 10 JuHl F5 V M1 V     
+1238 Inadimkhishir        X100000-0 Ba Va Lt                 { -3 } (800-3) [0000] - -  - 023 10 JuHl M4 V M9 V     
+1332 Emimgadii            X431257-5 Lo Po Lt                 { -3 } (710+1) [1185] - -  - 302 10 JuHl M3 V          
+1432 Gakha                X401000-0 Ba Ic Va Lt              { -3 } (900-2) [0000] - -  - 000 8  JuHl G3 V          
+1540 Ashila               B7857A9-9 Ag Ga Ri Varg5           { 3 }  (76C+2) [6A1C] - K  - 903 12 NaHu F9 V          
+1933 Emuula               X300000-0 Ba Va Lt                 { -3 } (500-2) [0000] - -  - 012 11 NaXX M4 III K1 V   
+2139 Miimish              X444000-0 Ba Lt                    { -3 } (600-1) [0000] - -  - 012 7  NaXX F0 V          
+2338 Aabe                 X539000-0 Ba Lt                    { -3 } (800-1) [0000] - -  - 000 8  NaXX M9 V          
+2531 Kewhukape            X787000-0 Ba Ga Lt                 { -3 } (700+1) [0000] - -  - 001 9  NaXX F2 V          
+2538 Guuzi                X428000-0 Ba Lt                    { -3 } (600-1) [0000] - -  - 015 11 NaXX M2 V M4 V     
+2934 Khaa                 X564000-0 Ba Lt                    { -3 } (300-1) [0000] - -  - 021 11 NaXX G6 V          

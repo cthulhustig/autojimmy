@@ -39,135 +39,135 @@
 # Alleg: NaHu: "Non-Aligned, Human-dominated"
 # Alleg: NaXX: "Non-Aligned, unclaimed"
 
-Hex  Name                      UWP       Remarks                    {Ix}   (Ex)    [Cx]   N   B  Z PBG W  A    Stellar       
----- ------------------------- --------- -------------------------- ------ ------- ------ --- -- - --- -- ---- --------------
-0102 Cauldron                  D988222-4 Lo                         { -3 } (410-5) [1111] B   -  - 403 7  ImDd M0 V          
-0105 Iselen                    A543678-9 Ni Po                      { 0 }  (B54+1) [6659] B   -  - 403 7  ImDd G0 V          
-0106 Reudden                   B5536BG-7 Ni Po Da                   { -1 } (853+4) [B5AC] B   -  A 400 9  ImDd G4 V          
-0108 Kukaa                     C544100-A Lo                         { 0 }  (600-4) [1115] B   -  - 503 7  ImDd G1 V          
-0109 Amoirve                   B565476-B Ni Pa                      { 1 }  (A34+1) [354A] Bc  N  - 704 10 ImDd G8 V          
-0203 Solbatn                   B87A443-A Ni Wa                      { 1 }  (934-2) [1527] B   -  - 603 11 ImDd K3 V          
-0208 Peshtorno                 B783841-8 Ri Ph                      { 1 }  (E79-3) [4914] BCe N  - 622 7  ImDd G1 V          
-0210 Petre                     B696478-A Ni Pa                      { 1 }  (734+1) [455A] Bc  -  - 210 10 ImDd F4 V          
-0305 Dimple                    D200201-8 Lo Va                      { -3 } (410-5) [1114] B   S  - 500 13 ImDd G1 V M1 V     
-0402 Benidorm                  E546400-8 Ni Pa                      { -3 } (831-5) [1113] Bc  -  - 120 10 ImDd G2 V          
-0408 Carian                    B300459-B Ni Va                      { 1 }  (C34+2) [556C] B   N  - 924 9  ImDd M0 V M7 V     
-0410 Ambossa                   B684459-9 Ni Pa                      { 0 }  (633+1) [546A] Bc  -  - 700 9  ImDd G2 V          
-0502 Corp Town                 B574211-B Lo                         { 1 }  (411-3) [1317] B   -  - 100 13 ImDd F6 V M1 V     
-0503 Lintl                     B739AEE-C Hi Pz                      { 3 }  (G9E+5) [ED9G] BE  -  A 404 10 ImDd K2 V          
-0602 Whisp                     C551110-6 Lo Po                      { -2 } (300-5) [1111] B   -  - 204 13 ImDd A6 V F7 V     
-0604 Gaspar                    B436337-D Lo                         { 1 }  (621+1) [345D] B   -  - 801 9  ImDd M2 V          
-0605 Igualada                  B540567-9 De He Ni Po O:0707         { 0 }  (844+1) [5559] B   N  - 701 11 ImDd G2 V          
-0701 Mukiud                    B433210-D Lo Po                      { 1 }  (911-3) [1318] B   -  - 823 8  ImDd M3 V          
-0702 Checker                   C300225-9 Lo Va                      { -1 } (A10-3) [1137] B   -  - 615 10 ImDd M1 V M7 V     
-0707 Colony Five               B5759A5-B Hi In Cp                   { 4 }  (D8F+2) [7D39] BEF -  - 420 10 ImDd G9 IV M1 V    
-0710 Zaguki                    B560212-9 De Lo                      { 0 }  (810-4) [1215] B   -  - 804 10 ImDd F2 V M6 V     
-0801 Elixir                    B768321-9 Lo                         { 0 }  (A20-4) [1315] B   -  - 423 8  ImDd F4 V          
-0903 Evet's World              B201656-D Ic Na Ni Va Da             { 1 }  (B55+1) [574C] B   N  A 503 9  ImDd M3 V          
-1002 Ulnert                    B53769D-7 Ni Da                      { -1 } (853+3) [A59B] B   -  A 803 10 ImDd K4 V M8 V     
-1102 Earl Center               A998111-9 Lo                         { 0 }  (700-4) [1115] B   -  - 604 7  ImDd K9 V          
-1103 Yvette                    A79A633-D Ni Wa                      { 1 }  (E55-2) [372A] B   -  - 133 9  ImDd G2 V          
-1204 Oleiros                   B000457-D As Ni Va                   { 1 }  (634+1) [455D] -   -  - 300 8  NaHu M1 V          
-1301 Sestao                    A420675-C De He Na Ni Po             { 1 }  (A55-1) [473A] B   N  - 611 9  ImDd M0 V          
-1302 Gorod                     D6689CG-7 Hi Pr Pz                   { -1 } (B88+4) [E8AC] BcE -  A 111 10 ImDd K4 V M1 V     
-1907 Aum-rhar                  A857948-C Hi Ga (Tezcat) Di(Varaku)  { 3 }  (H8E+3) [9C5C] -   -  - 824 14 NaXX K9 V          
-2108 Zamoran                   B674675-A Ag Ni Droy4                { 2 }  (C56+1) [4838] -   M  - 904 11 NaHu F5 V          
-2509 Arnorac                   B581468-A Ni Mr                      { 1 }  (834+1) [455A] -   N  - 302 9  CsIm K8 V          
-2609 Gordon                    B310776-A Na Pi                      { 2 }  (C6B+1) [6949] -   -  - 203 11 NaHu M3 V M4 V     
-2904 Schuuni                   BA9A599-D Ni Oc                      { 1 }  (745+2) [666E] -   -  - 100 9  NaHu G0 V          
-3103 Ishlagu Calibration Point ???????-? {Anomaly}                                        -   -  - ???                       
-0111 Grudovo                   B560453-C De Ni                      { 1 }  (B34-2) [1529] B   -  - 914 13 ImDd K0 IV D       
-0112 Banskonno                 A582444-C Ni Droy6                   { 1 }  (A34-1) [253A] B   -  - 204 13 ImDd G0 V          
-0118 Bastion                   B737532-B Ni                         { 1 }  (845-3) [1617] B   N  - 401 6  ImDd A9 V K4 V     
-0212 Aldaya                    B885620-6 Ag Ni Ga Ri                { 1 }  (855-3) [1711] BC  S  - 423 8  ImDd K4 V          
-0216 Neon                      D78227A-7 Lo                         { -3 } (410-1) [4179] B   -  - 923 10 ImDd F6 V M4 V     
-0217 Cerebin                   B423662-C Na Ni Po O:Troj-3215       { 1 }  (F55-3) [2718] B   -  - 534 14 ImDd G1 IV         
-0313 Helifil                   D310724-8 Na Pi RsB                  { -2 } (C66-4) [5536] BD  -  - 403 10 ImDd K1 V          
-0416 Tonnurad                  B563695-7 Ni Ri                      { 0 }  (854-2) [4635] -   -  - 803 7  NaHu G3 V M5 V G5 V
-0511 Fraaga                    B691420-B He Ni                      { 1 }  (834-3) [1516] B   -  - 702 15 ImDd K2 V M9 V M1 V
-0613 Usher Proto-System        ???????-? {Anomaly}                                        -   -  - ???                       
-0618 Chandler Station          ???????-? {Anomaly}                                        -   -  - ???                       
-1314 R'Bak                     X587777-2 Ag Ri Fo                   { 0 }  (965+1) [7752] -   -  R 721 9  NaHu G3 V          
-1812 Undrelyn                  B551433-6 Ni Po Da Chir2             { -1 } (632-4) [1323] -   -  A 514 12 NaHu F1 V D        
-2714 Roguestar                 ???????-? {Anomaly}                                        -   -  - ???                       
-0921 Zuflucht                  C545720-8 Ag Pi                      { 0 }  (A68-4) [2713] -   M  - 610 6  NaHu F0 V F8 V     
-0925 Wellington                C8B0263-A He Lo O:0926               { 0 }  (410-3) [1227] -   -  - 600 7  NaHu G9 V M2 V     
-0926 Esperanza                 A674ABC-B Hi In Pz Di(Droyne)        { 5 }  (G9G+5) [DF8E] -   KM A 113 16 NaHu F7 V          
-0930 St. Hilaire               B579763-A Pi O:0926                  { 2 }  (96B-1) [4927] -   M  - 900 9  NaHu K1 V D        
-1030 Nebelwelt                 C879425-5 Ni                         { -2 } (631-4) [2233] -   -  - 202 11 NaHu K3 V          
-1123 Gloire                    C764567-9 Ag Ni Pr O:1323            { 0 }  (B44+1) [5559] -   -  - 301 14 NaHu G7 V          
-1323 Serendip Belt             A000949-C As Hi In Na Va             { 5 }  (E8G+5) [AE6D] -   KM - 223 15 NaHu F9 V          
-1327 New Colchis               A8959AA-C Hi In Pz                   { 5 }  (B8G+5) [BE7E] -   KM A 300 6  NaHu K1 V K9 V     
-1426 Herzenslust               E995765-6 Ag Pi O:1327               { -1 } (966-3) [5634] -   -  - 602 14 NaHu G6 V          
-1429 Orphee                    X885610-0 Ag Ni Ga Ri Fo (Orpheides) { -1 } (853-5) [1511] -   -  R 110 6  NaHu G9 V M0 V     
-1522 Topas                     D420899-7 De He Na Po Ph Pi          { -2 } (A76-1) [9668] -   -  - 301 11 NaHu F7 V          
-1525 Elysee                    B502532-9 Ic Ni Va                   { 0 }  (844-4) [1515] -   M  - 820 6  NaHu G1 V M2 V     
-1526 Besancon                  C201341-9 Ic Lo Va                   { -1 } (720-5) [1215] -   M  - 604 10 NaHu K0 V M3 V     
-1621 Berlichingen              D500437-8 Ni Va                      { -3 } (631-3) [4158] -   -  - 600 11 NaHu M3 V M3 V     
-1628 Joyeuse                   A7899B9-C Hi Pr Pz                   { 4 }  (F8F+5) [AD6D] -   KM A 304 12 NaHu G3 V          
-1724 Sturgeon's Law            DAC1451-9 Fl He Ni                   { -2 } (B31-5) [1215] -   -  - 301 13 NaHu K0 IV         
-1729 Quichotte                 E576667-6 Ag Ni O:1628               { -2 } (852-2) [6456] -   M  - 601 11 NaHu G4 V          
-1822 Neubayern                 A7889C9-C Hi Pr Pz                   { 4 }  (C8F+5) [AD6D] -   KM A 310 8  NaHu G0 V K7 V     
-1923 Schlesien Belt            C000367-B As Lo Va O:1822            { 0 }  (720+1) [335B] -   M  - 122 7  NaHu M3 V          
-1925 New Home                  A565857-D Ri Pa Ph                   { 4 }  (D7F+4) [8C5D] -   KM - 811 15 NaHu G2 V          
-2026 Colchis                   B676898-9 Pa Ph Pi                   { 1 }  (B7A+1) [8959] -   M  - 501 13 NaHu G8 V          
-2123 St. Genevieve             C560100-A De Lo                      { 0 }  (700-4) [1115] -   M  - 802 10 NaHu K0 V          
-2225 Acadie                    C868563-9 Ag Ni Pr O:2325            { 0 }  (744-3) [2526] -   -  - 600 10 NaHu K0 V D        
-2322 Sansterre                 A87A943-C Hi In Wa                   { 5 }  (E8G+2) [6E29] -   KM - 311 11 NaHu G9 V          
-2324 Achille                   E301335-9 Ic Lo Va                   { -2 } (620-4) [1137] -   -  - 120 11 NaHu G7 III        
-2325 Amondiage                 A5629A9-C Hi Pr                      { 4 }  (D8F+5) [AD6D] -   KM - 304 11 NaHu G1 V          
-2423 St. Denis                 D735764-7 O:2322                     { -2 } (966-4) [5535] -   M  - 711 13 NaHu G8 V          
-2528 Riftspan Station          ???????-? {Anomaly}                                        -   -  - ???                       
-2930 Cyclone                   B599347-9 Lo                         { 0 }  (920+1) [3359] B   -  - 204 9  ImDv G9 V M1 V     
-3028 Eskandor                  C551499-9 Ni Po                      { -1 } (A32+1) [536A] B   -  - 804 11 ImDv G3 V          
-3029 Sakaliin                  B857222-B Lo Ga                      { 1 }  (811-3) [1317] B   -  - 413 7  ImDv F0 V M9 V     
-3030 Rampart                   A434200-F Lo                         { 1 }  (711-3) [131A] B   N  - 812 6  ImDv M3 V M8 V     
-3128 Jokelyn                   B201469-B Ic Ni Va O:Gush-0130       { 1 }  (C34+2) [556C] B   -  - 915 9  ImDv M3 V          
-3229 Hoilhapuli                B76565A-8 Ag Ni Ga Ri Tapa2          { 1 }  (G55+3) [877A] BC  -  - 335 17 ImDv F1 V          
-3230 Bonn                      A8C578C-B Fl Pz                      { 2 }  (D6C+5) [A98E] B   -  A 913 10 ImDv M1 V M2 V     
-0134 Hope Freeport             ???????-? {Anomaly}                                        -   -  - ???                       
-0435 Garden                    B755578-A Ag Ni Ga Di(Salika)        { 2 }  (B46+2) [575A] -   -  - 404 8  NaHu K4 V M4 V     
-0539 Rogue Dwarf               ???????-? {Anomaly}                                        -   -  - ???                       
-2139 Arraste                   B59368B-6 Ni                         { -1 } (853+1) [8578] B   -  - 604 13 ImDv K7 V M5 V     
-2239 Jacob                     B100400-E Ni Va                      { 1 }  (834-3) [1519] B   -  - 302 13 ImDv M1 V          
-2240 Fresneise                 B728512-A Ni                         { 1 }  (B45-3) [1616] B   -  - 622 13 ImDv M3 V M7 V     
-2337 Pit Stop                  B593326-A Lo                         { 1 }  (721+1) [2449] B   S  - 311 13 ImDv G1 V          
-2435 Uxors                     BA97677-5 Ag Ni An ChirW             { 0 }  (854+1) [6655] BC  S  - 804 9  ImDv M1 V          
-2436 Mieniept                  B794454-B Ni Pa                      { 1 }  (634-1) [2539] Bc  -  - 800 9  ImDv G0 V          
-2534 Quiver                    B310405-D Ni                         { 1 }  (A34-1) [253B] B   -  - 404 9  ImDv K7 V M1 V     
-2536 Argus                     C755A96-8 Hi Ga                      { 0 }  (F99-1) [9A47] BE  S  - 403 11 ImDv G4 V          
-2537 Boneyard                  B420310-A De He Lo Po                { 1 }  (A21-3) [1415] B   N  - 914 8  ImDv G2 V M8 V     
-2538 Delinski                  B55367A-8 Ni Po                      { -1 } (D53+1) [857A] B   -  - 914 11 ImDv K4 V M6 V     
-2539 Valentorn                 D556512-4 Ag Ni                      { -2 } (742-5) [1311] BC  -  - 900 8  ImDv F0 V          
-2540 Haliburn                  B565777-7 Ag Ri                      { 2 }  (96A+2) [7957] BC  -  - 514 13 ImDv K9 V          
-2636 Stock Point 3             A436110-F Lo                         { 1 }  (301-3) [121A] B   -  - 500 11 ImDv M3 V          
-2638 Grecorn                   B79858C-B Ag Ni Da                   { 2 }  (746+5) [878E] BC  -  A 700 12 ImDv K3 V          
-2731 Filentred                 B548534-8 Ag Ni                      { 0 }  (B44-2) [3536] BC  S  - 504 12 ImDv F5 V M7 V     
-2733 G'haenbaz                 C557558-A Ag Ni Tapa6                { 1 }  (745+1) [565A] BC  -  - 100 12 ImDv F4 V          
-2737 Bouvrier                  E430668-8 De Na Ni Po O:2738         { -3 } (951-3) [6358] B   -  - 210 11 ImDv K1 V          
-2738 Cyril                     A7969B9-E Hi In Cp Pz                { 5 }  (F8H+5) [AE6F] BEF NS A 522 10 ImDv G4 V          
-2739 Chateau                   E450200-5 De Lo Po                   { -3 } (410-5) [1111] B   -  - 714 8  ImDv F6 V K4 V     
-2740 Dead End                  C576310-5 Lo                         { -2 } (520-5) [1111] B   -  - 902 15 ImDv K4 V          
-2832 Debica                    D645688-6 Ag Ni RsA                  { -2 } (852-2) [6456] BC  -  - 600 13 ImDv K7 V M4 V     
-2833 Gundamoor                 B311637-C Ic Na Ni                   { 1 }  (E55+1) [675C] B   -  - 324 10 ImDv K1 IV M5 V    
-2834 Bokilborn                 B573552-C Ni Tapa8                   { 1 }  (B45-3) [1618] B   -  - 804 13 ImDv F0 V M8 V     
-2837 Angsturm                  A545788-B Ag Pi                      { 3 }  (E6D+3) [7A5B] BCD -  - 314 15 ImDv K4 V          
-2838 Vlad                      A554844-C Pa Ph                      { 2 }  (E7C+1) [6A3A] Bce N  - 804 13 ImDv F1 V          
-2931 Vleeck                    C762475-6 Ni                         { -2 } (631-4) [2234] B   -  - 404 7  ImDv G2 V          
-2932 Pamraeltan                A537651-E Ni Tapa4                   { 1 }  (B55-3) [271A] B   N  - 703 14 ImDv A2 V M5 V     
-2934 P'hakar                   C420456-B De He Ni Po Tapa3          { 0 }  (B33-1) [344A] B   S  - 923 14 ImDv M1 V          
-2935 Harmony                   E6538AF-4 Po Ph Pz                   { -2 } (A74+3) [D6A9] Be  -  A 633 12 ImDv F0 V          
-2939 Numeron                   B432769-9 Na Po O:2838               { 1 }  (D6A+2) [886A] B   -  - 313 8  ImDv M3 V          
-3035 Mynez                     E627989-8 Hi In                      { 0 }  (F89+1) [A969] BE  -  - 904 13 ImDv K1 V          
-3036 Seville                   B657445-7 Ni Ga Pa                   { -1 } (632-3) [2335] Bc  -  - 404 12 ImDv F1 V          
-3037 Dagu                      B100362-C Lo Va O:2738               { 1 }  (921-3) [1418] B   -  - 504 11 ImDv K4 V K8 V     
-3038 Transit                   B987230-8 Lo                         { -1 } (610-5) [1113] B   -  - 520 11 ImDv G7 V          
-3040 Elphintrax                C574476-7 Ni Pa Da Chir4             { -2 } (631-3) [3246] Bc  -  A 413 9  ImDv F2 V M1 V     
-3132 Alexander                 B42369A-B Na Ni Po                   { 1 }  (C55+3) [877D] B   -  - 404 9  ImDv G4 V          
-3133 Breezy                    B100544-C Ni Va                      { 1 }  (B45-1) [363A] B   -  - 704 16 ImDv M1 V M7 V     
-3134 Dlaekan                   A583657-D Ni Ri (Tapazmal)           { 2 }  (A56+2) [685D] BC  -  - 202 8  ImDv G4 V M6 V     
-3135 Good Home                 B745789-9 Ag Pi                      { 2 }  (C6B+3) [896A] BCD N  - 303 8  ImDv F0 V M6 V     
-3136 Alverik                   A550698-A De Ni Po Da                { 1 }  (855+1) [675A] B   -  A 800 10 ImDv K0 V          
-3140 Unseren                   B552549-9 Ni Po                      { 0 }  (A44+1) [656A] B   S  - 803 10 ImDv G5 V          
-3231 Roger                     B424200-B Lo                         { 1 }  (411-3) [1316] B   -  - 300 8  ImDv M2 V          
-3237 Jeandrent                 BA7A666-8 Ni Oc O:2837               { -1 } (C53-2) [5547] B   N  - 613 13 ImDv G0 V M4 V     
+Hex  Name                      UWP       Remarks                       {Ix}   (Ex)    [Cx]   N   B  Z PBG W  A    Stellar       
+---- ------------------------- --------- ----------------------------- ------ ------- ------ --- -- - --- -- ---- --------------
+0102 Cauldron                  D988222-4 Lo Lt                         { -3 } (410-5) [1111] B   -  - 403 7  ImDd M0 V          
+0105 Iselen                    A543678-9 Ni Po                         { 0 }  (B54+1) [6659] B   -  - 403 7  ImDd G0 V          
+0106 Reudden                   B5536BG-7 Ni Po Da                      { -1 } (853+4) [B5AC] B   -  A 400 9  ImDd G4 V          
+0108 Kukaa                     C544100-A Lo                            { 0 }  (600-4) [1115] B   -  - 503 7  ImDd G1 V          
+0109 Amoirve                   B565476-B Ni Pa                         { 1 }  (A34+1) [354A] Bc  N  - 704 10 ImDd G8 V          
+0203 Solbatn                   B87A443-A Ni Wa                         { 1 }  (934-2) [1527] B   -  - 603 11 ImDd K3 V          
+0208 Peshtorno                 B783841-8 Ri Ph                         { 1 }  (E79-3) [4914] BCe N  - 622 7  ImDd G1 V          
+0210 Petre                     B696478-A Ni Pa                         { 1 }  (734+1) [455A] Bc  -  - 210 10 ImDd F4 V          
+0305 Dimple                    D200201-8 Lo Va                         { -3 } (410-5) [1114] B   S  - 500 13 ImDd G1 V M1 V     
+0402 Benidorm                  E546400-8 Ni Pa                         { -3 } (831-5) [1113] Bc  -  - 120 10 ImDd G2 V          
+0408 Carian                    B300459-B Ni Va                         { 1 }  (C34+2) [556C] B   N  - 924 9  ImDd M0 V M7 V     
+0410 Ambossa                   B684459-9 Ni Pa                         { 0 }  (633+1) [546A] Bc  -  - 700 9  ImDd G2 V          
+0502 Corp Town                 B574211-B Lo                            { 1 }  (411-3) [1317] B   -  - 100 13 ImDd F6 V M1 V     
+0503 Lintl                     B739AEE-C Hi Pz Ht                      { 3 }  (G9E+5) [ED9G] BE  -  A 404 10 ImDd K2 V          
+0602 Whisp                     C551110-6 Lo Po                         { -2 } (300-5) [1111] B   -  - 204 13 ImDd A6 V F7 V     
+0604 Gaspar                    B436337-D Lo Ht                         { 1 }  (621+1) [345D] B   -  - 801 9  ImDd M2 V          
+0605 Igualada                  B540567-9 De He Ni Po O:0707            { 0 }  (844+1) [5559] B   N  - 701 11 ImDd G2 V          
+0701 Mukiud                    B433210-D Lo Po Ht                      { 1 }  (911-3) [1318] B   -  - 823 8  ImDd M3 V          
+0702 Checker                   C300225-9 Lo Va                         { -1 } (A10-3) [1137] B   -  - 615 10 ImDd M1 V M7 V     
+0707 Colony Five               B5759A5-B Hi In Cp                      { 4 }  (D8F+2) [7D39] BEF -  - 420 10 ImDd G9 IV M1 V    
+0710 Zaguki                    B560212-9 De Lo                         { 0 }  (810-4) [1215] B   -  - 804 10 ImDd F2 V M6 V     
+0801 Elixir                    B768321-9 Lo                            { 0 }  (A20-4) [1315] B   -  - 423 8  ImDd F4 V          
+0903 Evet's World              B201656-D Ic Na Ni Va Da Ht             { 1 }  (B55+1) [574C] B   N  A 503 9  ImDd M3 V          
+1002 Ulnert                    B53769D-7 Ni Da                         { -1 } (853+3) [A59B] B   -  A 803 10 ImDd K4 V M8 V     
+1102 Earl Center               A998111-9 Lo                            { 0 }  (700-4) [1115] B   -  - 604 7  ImDd K9 V          
+1103 Yvette                    A79A633-D Ni Wa Ht                      { 1 }  (E55-2) [372A] B   -  - 133 9  ImDd G2 V          
+1204 Oleiros                   B000457-D As Ni Va Ht                   { 1 }  (634+1) [455D] -   -  - 300 8  NaHu M1 V          
+1301 Sestao                    A420675-C De He Na Ni Po Ht             { 1 }  (A55-1) [473A] B   N  - 611 9  ImDd M0 V          
+1302 Gorod                     D6689CG-7 Hi Pr Pz                      { -1 } (B88+4) [E8AC] BcE -  A 111 10 ImDd K4 V M1 V     
+1907 Aum-rhar                  A857948-C Hi Ga (Tezcat) Di(Varaku) Ht  { 3 }  (H8E+3) [9C5C] -   -  - 824 14 NaXX K9 V          
+2108 Zamoran                   B674675-A Ag Ni Droy4                   { 2 }  (C56+1) [4838] -   M  - 904 11 NaHu F5 V          
+2509 Arnorac                   B581468-A Ni Mr                         { 1 }  (834+1) [455A] -   N  - 302 9  CsIm K8 V          
+2609 Gordon                    B310776-A Na Pi                         { 2 }  (C6B+1) [6949] -   -  - 203 11 NaHu M3 V M4 V     
+2904 Schuuni                   BA9A599-D Ni Oc Ht                      { 1 }  (745+2) [666E] -   -  - 100 9  NaHu G0 V          
+3103 Ishlagu Calibration Point ???????-? {Anomaly}                                           -   -  - ???                       
+0111 Grudovo                   B560453-C De Ni Ht                      { 1 }  (B34-2) [1529] B   -  - 914 13 ImDd K0 IV D       
+0112 Banskonno                 A582444-C Ni Droy6 Ht                   { 1 }  (A34-1) [253A] B   -  - 204 13 ImDd G0 V          
+0118 Bastion                   B737532-B Ni                            { 1 }  (845-3) [1617] B   N  - 401 6  ImDd A9 V K4 V     
+0212 Aldaya                    B885620-6 Ag Ni Ga Ri                   { 1 }  (855-3) [1711] BC  S  - 423 8  ImDd K4 V          
+0216 Neon                      D78227A-7 Lo                            { -3 } (410-1) [4179] B   -  - 923 10 ImDd F6 V M4 V     
+0217 Cerebin                   B423662-C Na Ni Po O:Troj-3215 Ht       { 1 }  (F55-3) [2718] B   -  - 534 14 ImDd G1 IV         
+0313 Helifil                   D310724-8 Na Pi RsB                     { -2 } (C66-4) [5536] BD  -  - 403 10 ImDd K1 V          
+0416 Tonnurad                  B563695-7 Ni Ri                         { 0 }  (854-2) [4635] -   -  - 803 7  NaHu G3 V M5 V G5 V
+0511 Fraaga                    B691420-B He Ni                         { 1 }  (834-3) [1516] B   -  - 702 15 ImDd K2 V M9 V M1 V
+0613 Usher Proto-System        ???????-? {Anomaly}                                           -   -  - ???                       
+0618 Chandler Station          ???????-? {Anomaly}                                           -   -  - ???                       
+1314 R'Bak                     X587777-2 Ag Ri Fo Lt                   { 0 }  (965+1) [7752] -   -  R 721 9  NaHu G3 V          
+1812 Undrelyn                  B551433-6 Ni Po Da Chir2                { -1 } (632-4) [1323] -   -  A 514 12 NaHu F1 V D        
+2714 Roguestar                 ???????-? {Anomaly}                                           -   -  - ???                       
+0921 Zuflucht                  C545720-8 Ag Pi                         { 0 }  (A68-4) [2713] -   M  - 610 6  NaHu F0 V F8 V     
+0925 Wellington                C8B0263-A He Lo O:0926                  { 0 }  (410-3) [1227] -   -  - 600 7  NaHu G9 V M2 V     
+0926 Esperanza                 A674ABC-B Hi In Pz Di(Droyne)           { 5 }  (G9G+5) [DF8E] -   KM A 113 16 NaHu F7 V          
+0930 St. Hilaire               B579763-A Pi O:0926                     { 2 }  (96B-1) [4927] -   M  - 900 9  NaHu K1 V D        
+1030 Nebelwelt                 C879425-5 Ni Lt                         { -2 } (631-4) [2233] -   -  - 202 11 NaHu K3 V          
+1123 Gloire                    C764567-9 Ag Ni Pr O:1323               { 0 }  (B44+1) [5559] -   -  - 301 14 NaHu G7 V          
+1323 Serendip Belt             A000949-C As Hi In Na Va Ht             { 5 }  (E8G+5) [AE6D] -   KM - 223 15 NaHu F9 V          
+1327 New Colchis               A8959AA-C Hi In Pz Ht                   { 5 }  (B8G+5) [BE7E] -   KM A 300 6  NaHu K1 V K9 V     
+1426 Herzenslust               E995765-6 Ag Pi O:1327                  { -1 } (966-3) [5634] -   -  - 602 14 NaHu G6 V          
+1429 Orphee                    X885610-0 Ag Ni Ga Ri Fo (Orpheides) Lt { -1 } (853-5) [1511] -   -  R 110 6  NaHu G9 V M0 V     
+1522 Topas                     D420899-7 De He Na Po Ph Pi             { -2 } (A76-1) [9668] -   -  - 301 11 NaHu F7 V          
+1525 Elysee                    B502532-9 Ic Ni Va                      { 0 }  (844-4) [1515] -   M  - 820 6  NaHu G1 V M2 V     
+1526 Besancon                  C201341-9 Ic Lo Va                      { -1 } (720-5) [1215] -   M  - 604 10 NaHu K0 V M3 V     
+1621 Berlichingen              D500437-8 Ni Va                         { -3 } (631-3) [4158] -   -  - 600 11 NaHu M3 V M3 V     
+1628 Joyeuse                   A7899B9-C Hi Pr Pz Ht                   { 4 }  (F8F+5) [AD6D] -   KM A 304 12 NaHu G3 V          
+1724 Sturgeon's Law            DAC1451-9 Fl He Ni                      { -2 } (B31-5) [1215] -   -  - 301 13 NaHu K0 IV         
+1729 Quichotte                 E576667-6 Ag Ni O:1628                  { -2 } (852-2) [6456] -   M  - 601 11 NaHu G4 V          
+1822 Neubayern                 A7889C9-C Hi Pr Pz Ht                   { 4 }  (C8F+5) [AD6D] -   KM A 310 8  NaHu G0 V K7 V     
+1923 Schlesien Belt            C000367-B As Lo Va O:1822               { 0 }  (720+1) [335B] -   M  - 122 7  NaHu M3 V          
+1925 New Home                  A565857-D Ri Pa Ph Ht                   { 4 }  (D7F+4) [8C5D] -   KM - 811 15 NaHu G2 V          
+2026 Colchis                   B676898-9 Pa Ph Pi                      { 1 }  (B7A+1) [8959] -   M  - 501 13 NaHu G8 V          
+2123 St. Genevieve             C560100-A De Lo                         { 0 }  (700-4) [1115] -   M  - 802 10 NaHu K0 V          
+2225 Acadie                    C868563-9 Ag Ni Pr O:2325               { 0 }  (744-3) [2526] -   -  - 600 10 NaHu K0 V D        
+2322 Sansterre                 A87A943-C Hi In Wa Ht                   { 5 }  (E8G+2) [6E29] -   KM - 311 11 NaHu G9 V          
+2324 Achille                   E301335-9 Ic Lo Va                      { -2 } (620-4) [1137] -   -  - 120 11 NaHu G7 III        
+2325 Amondiage                 A5629A9-C Hi Pr Ht                      { 4 }  (D8F+5) [AD6D] -   KM - 304 11 NaHu G1 V          
+2423 St. Denis                 D735764-7 O:2322                        { -2 } (966-4) [5535] -   M  - 711 13 NaHu G8 V          
+2528 Riftspan Station          ???????-? {Anomaly}                                           -   -  - ???                       
+2930 Cyclone                   B599347-9 Lo                            { 0 }  (920+1) [3359] B   -  - 204 9  ImDv G9 V M1 V     
+3028 Eskandor                  C551499-9 Ni Po                         { -1 } (A32+1) [536A] B   -  - 804 11 ImDv G3 V          
+3029 Sakaliin                  B857222-B Lo Ga                         { 1 }  (811-3) [1317] B   -  - 413 7  ImDv F0 V M9 V     
+3030 Rampart                   A434200-F Lo Ht                         { 1 }  (711-3) [131A] B   N  - 812 6  ImDv M3 V M8 V     
+3128 Jokelyn                   B201469-B Ic Ni Va O:Gush-0130          { 1 }  (C34+2) [556C] B   -  - 915 9  ImDv M3 V          
+3229 Hoilhapuli                B76565A-8 Ag Ni Ga Ri Tapa2             { 1 }  (G55+3) [877A] BC  -  - 335 17 ImDv F1 V          
+3230 Bonn                      A8C578C-B Fl Pz                         { 2 }  (D6C+5) [A98E] B   -  A 913 10 ImDv M1 V M2 V     
+0134 Hope Freeport             ???????-? {Anomaly}                                           -   -  - ???                       
+0435 Garden                    B755578-A Ag Ni Ga Di(Salika)           { 2 }  (B46+2) [575A] -   -  - 404 8  NaHu K4 V M4 V     
+0539 Rogue Dwarf               ???????-? {Anomaly}                                           -   -  - ???                       
+2139 Arraste                   B59368B-6 Ni                            { -1 } (853+1) [8578] B   -  - 604 13 ImDv K7 V M5 V     
+2239 Jacob                     B100400-E Ni Va Ht                      { 1 }  (834-3) [1519] B   -  - 302 13 ImDv M1 V          
+2240 Fresneise                 B728512-A Ni                            { 1 }  (B45-3) [1616] B   -  - 622 13 ImDv M3 V M7 V     
+2337 Pit Stop                  B593326-A Lo                            { 1 }  (721+1) [2449] B   S  - 311 13 ImDv G1 V          
+2435 Uxors                     BA97677-5 Ag Ni An ChirW Lt             { 0 }  (854+1) [6655] BC  S  - 804 9  ImDv M1 V          
+2436 Mieniept                  B794454-B Ni Pa                         { 1 }  (634-1) [2539] Bc  -  - 800 9  ImDv G0 V          
+2534 Quiver                    B310405-D Ni Ht                         { 1 }  (A34-1) [253B] B   -  - 404 9  ImDv K7 V M1 V     
+2536 Argus                     C755A96-8 Hi Ga                         { 0 }  (F99-1) [9A47] BE  S  - 403 11 ImDv G4 V          
+2537 Boneyard                  B420310-A De He Lo Po                   { 1 }  (A21-3) [1415] B   N  - 914 8  ImDv G2 V M8 V     
+2538 Delinski                  B55367A-8 Ni Po                         { -1 } (D53+1) [857A] B   -  - 914 11 ImDv K4 V M6 V     
+2539 Valentorn                 D556512-4 Ag Ni Lt                      { -2 } (742-5) [1311] BC  -  - 900 8  ImDv F0 V          
+2540 Haliburn                  B565777-7 Ag Ri                         { 2 }  (96A+2) [7957] BC  -  - 514 13 ImDv K9 V          
+2636 Stock Point 3             A436110-F Lo Ht                         { 1 }  (301-3) [121A] B   -  - 500 11 ImDv M3 V          
+2638 Grecorn                   B79858C-B Ag Ni Da                      { 2 }  (746+5) [878E] BC  -  A 700 12 ImDv K3 V          
+2731 Filentred                 B548534-8 Ag Ni                         { 0 }  (B44-2) [3536] BC  S  - 504 12 ImDv F5 V M7 V     
+2733 G'haenbaz                 C557558-A Ag Ni Tapa6                   { 1 }  (745+1) [565A] BC  -  - 100 12 ImDv F4 V          
+2737 Bouvrier                  E430668-8 De Na Ni Po O:2738            { -3 } (951-3) [6358] B   -  - 210 11 ImDv K1 V          
+2738 Cyril                     A7969B9-E Hi In Cp Pz Ht                { 5 }  (F8H+5) [AE6F] BEF NS A 522 10 ImDv G4 V          
+2739 Chateau                   E450200-5 De Lo Po Lt                   { -3 } (410-5) [1111] B   -  - 714 8  ImDv F6 V K4 V     
+2740 Dead End                  C576310-5 Lo Lt                         { -2 } (520-5) [1111] B   -  - 902 15 ImDv K4 V          
+2832 Debica                    D645688-6 Ag Ni RsA                     { -2 } (852-2) [6456] BC  -  - 600 13 ImDv K7 V M4 V     
+2833 Gundamoor                 B311637-C Ic Na Ni Ht                   { 1 }  (E55+1) [675C] B   -  - 324 10 ImDv K1 IV M5 V    
+2834 Bokilborn                 B573552-C Ni Tapa8 Ht                   { 1 }  (B45-3) [1618] B   -  - 804 13 ImDv F0 V M8 V     
+2837 Angsturm                  A545788-B Ag Pi                         { 3 }  (E6D+3) [7A5B] BCD -  - 314 15 ImDv K4 V          
+2838 Vlad                      A554844-C Pa Ph Ht                      { 2 }  (E7C+1) [6A3A] Bce N  - 804 13 ImDv F1 V          
+2931 Vleeck                    C762475-6 Ni                            { -2 } (631-4) [2234] B   -  - 404 7  ImDv G2 V          
+2932 Pamraeltan                A537651-E Ni Tapa4 Ht                   { 1 }  (B55-3) [271A] B   N  - 703 14 ImDv A2 V M5 V     
+2934 P'hakar                   C420456-B De He Ni Po Tapa3             { 0 }  (B33-1) [344A] B   S  - 923 14 ImDv M1 V          
+2935 Harmony                   E6538AF-4 Po Ph Pz Lt                   { -2 } (A74+3) [D6A9] Be  -  A 633 12 ImDv F0 V          
+2939 Numeron                   B432769-9 Na Po O:2838                  { 1 }  (D6A+2) [886A] B   -  - 313 8  ImDv M3 V          
+3035 Mynez                     E627989-8 Hi In                         { 0 }  (F89+1) [A969] BE  -  - 904 13 ImDv K1 V          
+3036 Seville                   B657445-7 Ni Ga Pa                      { -1 } (632-3) [2335] Bc  -  - 404 12 ImDv F1 V          
+3037 Dagu                      B100362-C Lo Va O:2738 Ht               { 1 }  (921-3) [1418] B   -  - 504 11 ImDv K4 V K8 V     
+3038 Transit                   B987230-8 Lo                            { -1 } (610-5) [1113] B   -  - 520 11 ImDv G7 V          
+3040 Elphintrax                C574476-7 Ni Pa Da Chir4                { -2 } (631-3) [3246] Bc  -  A 413 9  ImDv F2 V M1 V     
+3132 Alexander                 B42369A-B Na Ni Po                      { 1 }  (C55+3) [877D] B   -  - 404 9  ImDv G4 V          
+3133 Breezy                    B100544-C Ni Va Ht                      { 1 }  (B45-1) [363A] B   -  - 704 16 ImDv M1 V M7 V     
+3134 Dlaekan                   A583657-D Ni Ri (Tapazmal) Ht           { 2 }  (A56+2) [685D] BC  -  - 202 8  ImDv G4 V M6 V     
+3135 Good Home                 B745789-9 Ag Pi                         { 2 }  (C6B+3) [896A] BCD N  - 303 8  ImDv F0 V M6 V     
+3136 Alverik                   A550698-A De Ni Po Da                   { 1 }  (855+1) [675A] B   -  A 800 10 ImDv K0 V          
+3140 Unseren                   B552549-9 Ni Po                         { 0 }  (A44+1) [656A] B   S  - 803 10 ImDv G5 V          
+3231 Roger                     B424200-B Lo                            { 1 }  (411-3) [1316] B   -  - 300 8  ImDv M2 V          
+3237 Jeandrent                 BA7A666-8 Ni Oc O:2837                  { -1 } (C53-2) [5547] B   N  - 613 13 ImDv G0 V M4 V     

@@ -27,7 +27,11 @@
     <Allegiance Code="Na" Base="Na">Non-Aligned, Human-dominated</Allegiance>
     <Allegiance Code="Dr">Droyne</Allegiance>
     <Allegiance Code="Zc">Zhodani Client</Allegiance>
+    <Allegiance Code="Zh" Base="Zh">Zhodani Consulate</Allegiance>
   </Allegiances>
+  <Borders>
+    <Border Allegiance="ZhVQ" LabelPosition="1237">1036 1136 1135 1134 1135 1235 1336 1435 1336 1337 1338 1339 1239 1240 1239 1238 1138 1037 1036</Border>
+  </Borders>
   <Routes>
     <Route Start="1006" End="1110" Type="Core Route" />
     <Route Start="1006" End="1304" Type="Core Route" />

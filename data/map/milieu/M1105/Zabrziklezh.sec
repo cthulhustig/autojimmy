@@ -28,6 +28,7 @@
 # Alleg: Dr: "Droyne"
 # Alleg: Na: "Non-Aligned, Human-dominated"
 # Alleg: Zc: "Zhodani Client"
+# Alleg: Zh: "Zhodani Consulate"
 
 Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z PBG W A  Stellar
 ---- -------------------- --------- -------------------- ---- ---- ---- - -- - --- - -- -------
@@ -542,46 +543,46 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0838                      A666301-C Lo Ni                               - N  - 503   Na        
 0839                      C140666-9 De Ni Po                            - -  - 204   Na        
 0840                      D4658B9-6                                     - S  - 504   Na        
-0931                      C66A956-A Hi Wa                               - -  - 902   Na        
-1035                      D4748CA-6                                     - S  - 103   Na        
-1036                      C340530-A De Ni Po                            - S  - 724   Na        
-1037                      B551841-7 Po                                  - S  - 810   Na        
-1131                      D410889-7 Na                                  - -  - 613   Na        
-1134                      C8659CA-A Hi                                  - W  - 104   Na        
-1135                      D85A100-A Lo Ni Wa                            - -  - 105   Na        
-1136                      D550554-8 De Ni Po                            - -  - 603   Na        
-1137                      C737852-6                                     - -  - 724   Na        
-1138                      C472541-6 Ni                                  - -  - 503   Na        
-1140                      B8A0164-8 De Lo Ni                            - S  - 300   Na        
-1232                      C748674-6 Ag Ni                               - S  - 102   Na        
-1234                      E200340-7 Lo Ni Va                            - -  - 903   Na        
-1236                      A644477-9 Ni                                  - N  - 300   Na        
-1237                      C66A347-8 Lo Ni Wa                            - S  - 613   Na        
-1238                      D89A9AA-6 Hi In Wa                            - S  - 720   Na        
-1239                      B87A663-9 Ni Wa                               - S  - 504   Na        
-1240 Jalblial             B566455-C Ni                                  - KM - 900   Zc        
-1332                      B669674-9 Ni Ri                               - -  - 210   Na        
-1333                      D63A67B-5 Ni Wa                               - S  - 903   Na        
-1334                      E767025-4 Lo Ni                               - -  - 623   Na        
-1337 Aadl                 B727000-C Ba Lo Ni                            - KM - 804   Zc        
-1338                      C6547CE-8 Ag                                  - -  - 814   Na        
-1339                      C645634-5 Ag Ni                               - -  - 903   Na        
-1432                      E5699AD-4 Hi                                  - -  - 603   Na        
-1435                      BA5A277-A Lo Ni Wa                            - NS - 325   Na        
-1436                      E899001-7 Lo Ni                               - -  - 121   Na        
-1437                      X577589-0 Ag Ni                               - -  R 602   Na        
-1531                      E582510-2 Ni                                  - -  - 512   Na        
-1532                      C88467A-6 Ag Ni Ri                            - -  - 200   Na        
-1533                      C769247-6 Lo Ni                               - -  - 504   Na        
-1535                      C626300-8 Lo Ni                               - -  - 602   Na        
-1537                      EA8A257-8 Lo Ni Wa                            - -  - 622   Na        
-1538                      E360364-8 De Lo Ni                            - -  - 102   Na        
-1540                      C34297B-8 Hi In Po                            - -  - 305   Na        
-1631                      E430222-8 De Lo Ni Po                         - -  - 913   Na        
-1633                      B4858A8-7                                     - NS - 602   Na        
-1635                      C100466-C Ni Va                               - S  - 614   Na        
-1637                      B120955-G De Hi In Na Po                      - N  - 700   Na        
-1638                      E443001-4 Lo Ni Po                            - -  - 823   Na        
+0931 Dliaql               C66A956-A Hi Wa                               - -  - 902   Na        
+1035 Tlebl                D4748CA-6                                     - S  - 103   Na        
+1036 Onsh                 C340530-A De Ni Po                            - S  - 724   Zh        
+1037 Qeret                B551841-7 Po                                  - S  - 810   Zh        
+1131 Zhdochr              D410889-7 Na                                  - -  - 613   Na        
+1134 Tanshidr             C8659CA-A Hi                                  - W  - 104   Zh        
+1135 Saplif               D85A100-A Lo Ni Wa                            - -  - 105   Zh        
+1136 Ichiafl              D550554-8 De Ni Po                            - -  - 603   Zh        
+1137 Aqliazia             C737852-6                                     - -  - 724   Zh        
+1138 Orzhiabr             C472541-6 Ni                                  - -  - 503   Zh        
+1140 Ishen                B8A0164-8 De Lo Ni                            - S  - 300   Na        
+1232 Ninch                C748674-6 Ag Ni                               - S  - 102   Na        
+1234 Moblfei              E200340-7 Lo Ni Va                            - -  - 903   Na        
+1236 Zhieevel             A644477-9 Ni                                  - N  - 300   Na        
+1237 Plerbteiv            C66A347-8 Lo Ni Wa                            - S  - 613   Zh        
+1238 Evrekapl             D89A9AA-6 Hi In Wa                            - S  - 720   Zh        
+1239 Oresf                B87A663-9 Ni Wa                               - S  - 504   Zh        
+1240 Jalblial             B566455-C Ni                                  - KM - 900   Zh        
+1332 Mlriea               B669674-9 Ni Ri                               - -  - 210   Na        
+1333 Aincih               D63A67B-5 Ni Wa                               - S  - 903   Na        
+1334 Tianjole             E767025-4 Lo Ni                               - -  - 623   Na        
+1337 Aadl                 B727000-C Ba Lo Ni                            - KM - 804   Zh        
+1338 Enseperia            C6547CE-8 Ag                                  - -  - 814   Zh        
+1339 Jdenjetle            C645634-5 Ag Ni                               - -  - 903   Zh        
+1432 Tilesheetl           E5699AD-4 Hi                                  - -  - 603   Na        
+1435 Kagenfro             BA5A277-A Lo Ni Wa                            - NS - 325   Zh        
+1436 E'ribr               E899001-7 Lo Ni                               - -  - 121   Na        
+1437 Zheqlen              X577589-0 Ag Ni                               - -  R 602   Na        
+1531 Stitl                E582510-2 Ni                                  - -  - 512   Na        
+1532 Nodrents             C88467A-6 Ag Ni Ri                            - -  - 200   Na        
+1533 Ivchta               C769247-6 Lo Ni                               - -  - 504   Na        
+1535 Chainzia             C626300-8 Lo Ni                               - -  - 602   Na        
+1537 Kentie               EA8A257-8 Lo Ni Wa                            - -  - 622   Na        
+1538 Archoa               E360364-8 De Lo Ni                            - -  - 102   Na        
+1540 Chitci               C34297B-8 Hi In Po                            - -  - 305   Na        
+1631 Qialshto             E430222-8 De Lo Ni Po                         - -  - 913   Na        
+1633 Zhiabia              B4858A8-7                                     - NS - 602   Na        
+1635 Zefledre             C100466-C Ni Va                               - S  - 614   Na        
+1637 Tlenchidle           B120955-G De Hi In Na Po                      - N  - 700   Na        
+1638 Zdiafra              E443001-4 Lo Ni Po                            - -  - 823   Na        
 1731                      D210555-A Ni                                  - -  - 902   Na        
 1735                      C868424-8 Ni                                  - -  - 203   Na        
 1736                      C766100-A Lo Ni                               - -  - 712   Na        

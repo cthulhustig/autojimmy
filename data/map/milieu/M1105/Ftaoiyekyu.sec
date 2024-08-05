@@ -36,37 +36,37 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 ---- -------------------- --------- -------------------- ---- ---- ---- - -- - --- - -- --------------
 0708                      XA6A023-0 Lo Ni Wa                            - -  - 003   Na F5 V          
 0709                      X9B2020-0 Fl Lo Ni                            - -  - 000   Na K2 V          
-1401                      X783026-0 Lo Ni                               - -  - 003   Na G7 V M6 D     
-1806                      X303021-4 Ic Lo Ni Va                         - -  - 004   Na K6 V M4 D     
-0513                      XA9A000-5 Ba Lo Ni Wa                         - -  - 000   Na F8 V M1 D     
-0816                      X656001-0 Lo Ni                               - -  - 000   Na F5 V M1 D     
-0915                      X532002-1 Lo Ni Po                            - -  - 012   Na G3 V M3 D M0 D
-1816                      X75A000-0 Ba Lo Ni Wa                         - -  - 003   Na K0 V M7 D     
+1401                      X783026-0 Lo Ni                               - -  - 003   Na G7 V M6 V     
+1806                      X303021-4 Ic Lo Ni Va                         - -  - 004   Na K6 V M4 V     
+0513                      XA9A000-5 Ba Lo Ni Wa                         - -  - 000   Na F8 V M1 V     
+0816                      X656001-0 Lo Ni                               - -  - 000   Na F5 V M1 V     
+0915                      X532002-1 Lo Ni Po                            - -  - 012   Na G3 V M3 V M0 V
+1816                      X75A000-0 Ba Lo Ni Wa                         - -  - 003   Na K0 V M7 V     
 2519                      X897000-0 Ba Lo Ni                            - -  - 025   Na G1 V          
 1427                      X510037-0 Lo Ni                               - -  - 002   Na M5 II         
 2821                      XAA8031-3 Fl Lo Ni                            - -  - 002   Na M4 V M8 V     
-3030                      X645000-2 Ba Lo Ni                            - -  - 012   Na F8 V M9 D     
+3030                      X645000-2 Ba Lo Ni                            - -  - 012   Na F8 V M9 V     
 3227                      X100000-3 Ba Lo Ni Va                         - -  - 004   Na K5 V          
 0240                      X310020-1 Lo Ni                               - -  - 012   Na G9 V M6 V     
-0339                      X447033-0 Lo Ni                               - -  - 024   Na F9 V M4 D     
-0537                      X555032-0 Lo Ni                               - -  - 024   Na M2 V M6 D M9 D
-0639                      X5A0020-0 De Lo Ni                            - -  - 003   Na G2 V M5 D     
-0739                      X342023-2 Lo Ni Po                            - -  - 023   Na G2 V M2 D     
+0339                      X447033-0 Lo Ni                               - -  - 024   Na F9 V M4 V     
+0537                      X555032-0 Lo Ni                               - -  - 024   Na M2 V M6 V M9 V
+0639                      X5A0020-0 De Lo Ni                            - -  - 003   Na G2 V M5 V     
+0739                      X342023-2 Lo Ni Po                            - -  - 023   Na G2 V M2 V     
 1040                      X414000-0 Ba Ic Lo Ni                         - -  - 000   Na M9 V          
-1139                      X420001-1 De Lo Ni Po                         - -  - 004   Na M9 V M4 D     
-1238                      X625000-3 Ba Lo Ni                            - -  - 021   Na M8 V M1 V     
-1431                      X6B1034-0 Fl Lo Ni                            - -  - 010   Na K1 V M7 D     
+1139                      X420001-1 De Lo Ni Po                         - -  - 004   Na M4 V M9 V     
+1238                      X625000-3 Ba Lo Ni                            - -  - 021   Na M1 V M8 V     
+1431                      X6B1034-0 Fl Lo Ni                            - -  - 010   Na K1 V M7 V     
 1439 Aeouhyeh             D8968BC-2                                     - S  - 304   As F8 V          
-1440 Asaalreweh           D798368-4 Lo Ni                               - S  - 500   As G1 V M3 D     
+1440 Asaalreweh           D798368-4 Lo Ni                               - S  - 500   As G1 V M3 V     
 1531                      X515035-3 Ic Lo Ni                            - -  - 004   Na M5 V          
 1635                      X260005-0 De Lo Ni                            - -  - 012   Na F6 V          
 1638 Aauihlaita           CA89751-8 Ri                                  - S  - 824   As G7 V          
-1738 Ealoaheili           D340144-8 De Lo Ni Po                         - S  - 110   As F4 V M7 D     
-1739 Ohiluiao             C554574-6 Ag Ni                               - -  - 402   As G1 V M3 D     
-1839 Auawoi'eiwao         C445686-7 Ag Ni                               - -  - 604   As F3 V M1 D     
+1738 Ealoaheili           D340144-8 De Lo Ni Po                         - S  - 110   As F4 V M7 V     
+1739 Ohiluiao             C554574-6 Ag Ni                               - -  - 402   As G1 V M3 V     
+1839 Auawoi'eiwao         C445686-7 Ag Ni                               - -  - 604   As F3 V M1 V     
 2035                      X130002-1 De Lo Ni Po                         - -  - 023   Na G5 V          
 2037 Aiiaol               A68A135-D Lo Ni Wa                            - -  - 103   As G2 V          
-2338 Feikhti              A160365-E De Lo Ni                            - N  - 714   As F9 V M7 D     
+2338 Feikhti              A160365-E De Lo Ni                            - N  - 714   As F9 V M7 V     
 2339 Yearesau             A324136-A Lo Ni                               - NS - 214   As M3 V          
 2436 Ktalurlauail         A9A4356-B Fl Lo Ni                            - S  - 822   As M6 V          
 2437 Eatrekter            A100575-G Ni Va                               - -  - 413   As M5 V          
@@ -75,17 +75,17 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2538 Eah                  B794899-7                                     - N  - 422   As F9 V          
 2539 Uweal                B747345-9 Lo Ni                               - -  - 604   As G7 V          
 2540 Ahioasaseaw          B374343-A Lo Ni                               - -  - 100   As F7 V          
-2639 Khterlelrui          B866454-B Ni                                  - -  - 303   As G2 V M8 D     
-2736 Hresa                B343558-C Ni Po                               - S  - 710   As F7 V M0 D M2 D
+2639 Khterlelrui          B866454-B Ni                                  - -  - 303   As G2 V M8 V     
+2736 Hresa                B343558-C Ni Po                               - S  - 710   As F7 V M0 V M2 V
 3031                      X525000-2 Ba Lo Ni                            - -  - 014   Na F0 V          
 3032                      X549001-0 Lo Ni                               - -  - 023   Na F6 V          
 3033                      X440002-1 De Lo Ni Po                         - -  - 013   Na F2 V          
 3035 Eifyelreah           B639677-B Ni                                  - N  - 210   As M6 IV         
 3131                      X476003-0 Lo Ni                               - -  - 034   Na F5 V          
-3134 Hwawarluaeia         B160220-C De Lo Ni                            - N  - 603   As F7 V M3 D M0 D
+3134 Hwawarluaeia         B160220-C De Lo Ni                            - N  - 603   As F7 V M3 V M0 V
 3231 Oheieah              B311666-7 Ic Na Ni                            - N  - 903   As A7 V          
 3232 Ea'iyhfeakh          B988555-C Ag Ni                               - -  - 724   As F1 V          
 3233 Tloulaorloal         B100440-E Ni Va                               - -  - 304   As G0 IV         
 3234 Steawoihkoi          B695677-8 Ag Ni                               - N  - 902   As F6 V          
 3237 Tlausiylryu          B9A1221-8 Fl Lo Ni                            - -  - 714   As K6 V          
-3240 Wiyhteaie            B5566BE-A Ag Ni                               - N  - 323   As G5 V M1 D     
+3240 Wiyhteaie            B5566BE-A Ag Ni                               - N  - 323   As G5 V M1 V     

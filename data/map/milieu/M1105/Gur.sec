@@ -39,7 +39,7 @@
 Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx]   N B Z PBG W  A    Stellar              
 ---- -------------------- --------- ----------------------- ------ ------- ------ - - - --- -- ---- ---------------------
 0102 Maiden               XAD7000-0 Ba                      { -3 } (500-5) [0000] - - - 034 14 NaHu K1 V M4 V            
-0103 Flotsam Station      D561112-6 Lo                      { -3 } (700+3) [1147] - - - 524 15 NaHu G2 V G0 IV           
+0103 Flotsam Station      D561112-6 Lo                      { -3 } (700+3) [1147] - - - 524 15 NaHu G0 IV G2 V           
 0201 Twaroy               B776737-6 Ag Pi (Twaro)           { 1 }  (969-2) [7845] - - - 225 18 NaHu A9 V                 
 0203 Nouf                 D673440-0 Ni                      { -3 } (731+4) [6145] - - - 300 7  NaVa G2 V                 
 0302 Fargh                D240555-8 De Ni Po                { -3 } (D43+2) [5274] - - - 123 16 NaVa K6 V                 
@@ -50,8 +50,8 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 0809 Blue Lung            E6A1000-0 Fl He Ba                { -3 } (900-2) [0000] - - - 035 15 NaHu M5 V                 
 0906 Reliquary            D21057A-9 Ni                      { -2 } (944+1) [138A] - - - 313 9  NaHu M6 V                 
 1308 Crash Five           E553585-0 Ni Po                   { -3 } (B43-2) [7262] - - - 135 15 NaHu M3 V                 
-1502 Nebu                 E555000-0 Ba                      { -3 } (700+1) [0000] - - - 002 8  NaHu M4 V M0 V            
-1505                      E636200-8 Lo                      { -3 } (910-3) [116A] - - - 112 13 NaHu M5 V M0 V            
+1502 Nebu                 E555000-0 Ba                      { -3 } (700+1) [0000] - - - 002 8  NaHu M0 V M4 V            
+1505                      E636200-8 Lo                      { -3 } (910-3) [116A] - - - 112 13 NaHu M0 V M5 V            
 2306 Keetrakrur           E323000-0 Ba Po                   { -3 } (700+1) [0000] - - - 002 12 NaHu G7 V M5 V            
 0214                      E53325A-3 Lo Po                   { -3 } (310+1) [31A4] - - A 725 14 NaHu G1 V                 
 0618                      E577110-1 Lo                      { -3 } (800+1) [2111] - - A 123 10 NaHu M2 V M5 V            
@@ -221,7 +221,7 @@ Hex  Name                 UWP       Remarks                 {Ix}   (Ex)    [Cx] 
 1438                      B7464QK-C Ni Pa                   { 1 }  (F33-5) [853A] - K - 214 15 Kk   M3 V                 
 1440                      E549000-0 Ba                      { -3 } (800+1) [0000] - - - 024 15 Kk   K8 V                 
 1531                      E000000-0 As Va Ba                { -3 } (900+1) [0000] - - - 012 10 Kk   K4 III               
-1533                      B552756-A Po Giru6 Ciru4          { 2 }  (E6E+1) [6999] - K - 124 16 KC   M4 V M3 V            
+1533                      B552756-A Po Giru6 Ciru4          { 2 }  (E6E+1) [6999] - K - 124 16 KC   M3 V M4 V            
 1534                      B6724QK-C He Ni                   { 1 }  (436-2) [253E] - - - 302 9  Kk   M0 V M6 V            
 1537                      C4013QK-C Ic Va Lo                { 0 }  (D20+1) [535B] - - - 805 11 Kk   K8 V K9 V            
 1538                      A5598RK-E Ph                      { 2 }  (G76+1) [6A1B] - K - 724 17 Kk   G7 V K0 V            

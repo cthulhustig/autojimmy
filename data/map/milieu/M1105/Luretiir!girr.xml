@@ -32,12 +32,12 @@
   <Allegiances>
     <Allegiance Code="K3">Gathering of Kirgia</Allegiance>
     <Allegiance Code="Na">Non­Aligned, Human-dominated</Allegiance>
-    <Allegiance Code="Hc">Human Client State</Allegiance>
+    <Allegiance Code="Sa">Saga Isles</Allegiance>
     <Allegiance Code="Re">Renkard Union</Allegiance>
     <Allegiance Code="Lt">Lords of Thunder</Allegiance>
-    <Allegiance Code="KC">Client state, Two Thousand Worlds</Allegiance>
     <Allegiance Code="K4">Ka'ra Mandate</Allegiance>
     <Allegiance Code="Kl">Lank'gha Collective</Allegiance>
+    <Allegiance Code="KC">Client state, Two Thousand Worlds</Allegiance>
     <Allegiance Code="Kk">The Two Thousand Worlds</Allegiance>
   </Allegiances>
   <Borders>
@@ -46,7 +46,7 @@
     <Border Color="Purple" Allegiance="Lt" LabelPosition="1427">0226 0326 0426 0527 0627 0727 0826 0927 1027 1127 1126 1225 1325 1324 1424 1524 1623 1622 1723 1822 1922 2021 2020 2120 2219 2320 2420 2421 2422 2423 2424 2325 2225 2226 2227 2228 2129 2130 2030 1931 1831 1832 1833 1734 1634 1635 1636 1637 1638 1639 1539 1439 1438 1338 1238 1139 1140 1040 0940 0839 0739 0638 0538 0637 0737 0736 0735 0734 0733 0632 0631 0630 0530 0429 0428 0427 0327 0226</Border>
     <Border WrapLabel="true" Color="Red" Allegiance="Re" LabelPosition="0231">0026 0027 0128 0129 0130 0230 0331 0431 0432 0433 0434 0535 0435 0336 0235 0135 0035 0034 0033 0032 0031 0030 0029 0028 0027 0026</Border>
     <Border WrapLabel="true" Color="YellowGreen" Allegiance="K3" LabelPosition="0402">0100 0200 0300 0400 0500 0600 0700 0701 0702 0703 0603 0604 0505 0404 0305 0304 0303 0302 0201 0101 0100</Border>
-    <Border Color="Orange" Allegiance="Hc" LabelPosition="0210">0111 0112 0212 0312 0311 0410 0409 0408 0409 0410 0411 0412 0413 0314 0315 0215 0214 0114 0113 0112 0111</Border>
+    <Border Color="Orange" Allegiance="Sa" LabelPosition="0210">0111 0112 0212 0312 0311 0410 0409 0408 0409 0410 0411 0412 0413 0314 0315 0215 0214 0114 0113 0112 0111</Border>
     <Border WrapLabel="true" Color="Lime" Allegiance="Kl" LabelPosition="2135">1938 1937 1936 2035 2034 2033 2133 2232 2332 2331 2332 2432 2433 2434 2435 2436 2537 2538 2438 2439 2339 2238 2138 2038 1938</Border>
   </Borders>
 </Sector>

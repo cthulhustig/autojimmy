@@ -432,7 +432,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1727 Zhonts               C898344-7 Lo Ni                               - W  - 512   Zh        
 1730 Oiansh               A532435-D Ni Po                               - KM - 702   Zh        
 1824 Chielda              C767532-9 Ag Ni                               - -  - 600   Zh        
-1828                      E556624-6 Ag Ni                               - -  - 811   Na        
+1828 Panzh                E556624-6 Ag Ni                               - -  - 811   Na        
 1830 Prera                C997625-5 Ag Ni                               - -  - 804   Zh        
 1922 Tsia                 A95A587-C Ni Wa                               - KM - 304   Zh        
 1924 Chensh               B434A67-C Hi In                               - KM - 404   Zh        
@@ -451,12 +451,12 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2224 Yrch                 E64A7BA-5 Wa                                  - -  - 204   Zh        
 2226 Plesh                C9A7543-7 Fl Ni                               - -  - 403   Zh        
 2228 Kiezh                A354100-C Lo Ni                               - KM - 203   Zh        
-2322                      B227115-D Lo Ni                               - N  - 124   Na        
-2324                      C424220-9 Lo Ni                               - -  - 604   Na        
+2322 Enshe                B227115-D Lo Ni                               - N  - 124   Na        
+2324 Fleq                 C424220-9 Lo Ni                               - -  - 604   Na        
 2328 Rianzh               D635430-4 Ni                                  - W  - 100   Zh        
 2330 Estel                C746867-4                                     - -  - 600   Zh        
 2422 Nabr                 D579410-3 Ni                                  - -  - 323   Zh        
-2423                      CA9A233-6 Lo Ni Wa                            - S  - 304   Na        
+2423 Zdiesh               CA9A233-6 Lo Ni Wa                            - S  - 304   Na        
 2521                      C224135-A Lo Ni                               - -  - 412   Na        
 2523                      A666967-C Hi                                  - N  - 902   Na        
 2525                      C554896-3                                     - -  - 512   Na        

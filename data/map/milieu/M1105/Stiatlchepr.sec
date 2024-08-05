@@ -41,11 +41,11 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0108 Iachteblzda          A866568-B Ag Ni                               - KM - 922   Zh M3 V          
 0109 Shtienzhid           X7A7000-0 Ba Fl Ni                            - -  R 403   Zh G3 II         
 0110 Antsyitl             C5559B9-C Hi In                               - -  - 124   Zh A2 V          
-0202 Kripliv              C310202-7 Lo Ni                               - KM - 903   Zh M8 V M3 V     
+0202 Kripliv              C310202-7 Lo Ni                               - KM - 903   Zh M3 V M8 V     
 0204 Ekrelemeba           A88A756-D Ri Wa Cp                            - KM - 202   Zh M7 III        
 0208 Faqrtlivrib          C9DA57A-8 Fl Ni Wa                            - -  - 501   Zh M6 V          
 0209 Atsndr               D564475-2 Ni                                  - -  - 312   Zh K1 IV         
-0301 Farrfrz              X210000-0 Ba Ni Po                            - -  R 125   Na M2 V M1 V     
+0301 Farrfrz              X210000-0 Ba Ni Po                            - -  R 125   Na M1 V M2 V     
 0302 Rdri                 C877874-5 Ag Ri                               - -  - 112   Zh G3 V          
 0303 Ashel                D675587-5 Ag Ni                               - -  - 324   Zh M7 V          
 0304 Danzhklaj            X566000-0 Ba Ni                               - -  R 724   Zh F0 V M4 V     
@@ -55,13 +55,13 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0310 Fivlchta             X100000-0 Ba Ni Va                            - -  R 101   Zh M4 V          
 0401 Dlekrb               C55746A-6 Ag Ni                               - -  - 223   Zh M3 V          
 0402 Jetlkria             A889A7A-E Hi In Na                            - KM - 114   Zh M0 V M8 V     
-0405 Ianchzhots           A520576-9 De Ni Po                            - KM - 112   Zh M6 V M2 V     
-0501 Zhet                 X301000-0 Ba Ic Ni Va                         - -  R 134   Na K3 V K0 V     
+0405 Ianchzhots           A520576-9 De Ni Po                            - KM - 112   Zh M2 V M6 V     
+0501 Zhet                 X301000-0 Ba Ic Ni Va                         - -  R 134   Na K0 V K3 V     
 0503 Stiti                X649000-0 Ba Ni                               - -  R 120   Zh M2 V          
 0505 Einj                 A954312-B Lo Ni                               - KM A 600   Zh M3 V          
-0506 Ifrdadr              X488000-0 Ba Ni                               - -  R 123   Zh M5 V M8 V M2 V
+0506 Ifrdadr              X488000-0 Ba Ni                               - -  R 123   Zh M2 V M8 V M5 V
 0507 Yabrabr              X420000-0 Ba De Ni Po                         - -  R 524   Zh F5 V          
-0510 Irnjzdiez            C9A7456-8 Fl Lo Ni                            - -  - 203   Zh M5 V M2 V     
+0510 Irnjzdiez            C9A7456-8 Fl Lo Ni                            - -  - 203   Zh M2 V M5 V     
 0602 Eshdled              B99A554-B Ni Wa                               - KM - 920   Zh F8 V          
 0605 Aniefr               X799000-0 Ba Ni                               - -  R 414   Zh F0 V          
 0606 Samimpa              B424210-9 Lo Ni                               - KM - 424   Zh M6 V          
@@ -72,7 +72,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0704 Tlieshtalvib         B8577C9-6 Ag                                  - -  - 124   Zh G7 V          
 0706 Biaeer               B688343-B Lo Ni                               - -  - 103   Zh M4 V          
 0801 Friaye               X89A000-0 Ba Ni Wa                            - -  R 423   Zh G3 V          
-0802 Pabrtsian            A000210-C As Lo Ni                            - KM - 213   Zh M9 V M7 V     
+0802 Pabrtsian            A000210-C As Lo Ni                            - KM - 213   Zh M7 V M9 V     
 0803 Estbriatla           C656745-6 Ag                                  - -  - 101   Zh F5 V          
 0804 Planshemi            A540531-A De Ni Po                            - KM - 122   Zh G4 III        
 0806 Zhentiablan          C996314-5 Lo Ni                               - -  - 522   Zh F2 V M1 V     
@@ -80,19 +80,19 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0901 Blechansh            B100664-B Na Va                               - -  - 313   Zh M1 V          
 0902 Iaziavokr            X9B4000-0 Ba Fl Ni                            - -  R 112   Zh M6 V          
 0904 Densensh             B96A743-B Wa                                  - KM - 510   Zh M3 V          
-0905 Akrefr               X6A6000-0 Ba Fl Ni                            - -  R 400   Zh M1 V M0 V M3 V
+0905 Akrefr               X6A6000-0 Ba Fl Ni                            - -  R 400   Zh M0 V M1 V M3 V
 0906 Radrbl               X777000-0 Ba Ni                               - -  R 322   Zh M8 V M9 V     
 0907 Lofriats             X320000-0 Ba De Ni Po                         - -  R 911   Zh F7 V          
 0909 Reridrfegl           X68A000-0 Ba Ni Wa                            - -  R 910   Zh M2 V M2 V     
 1002 Zhdiblnie            C78A320-A Lo Ni Wa                            - -  - 123   Zh M0 V          
-1004 Didliench            B968741-7 Ag                                  - KM - 310   Zh M6 V M0 V     
+1004 Didliench            B968741-7 Ag                                  - KM - 310   Zh M0 V M6 V     
 1005 Tliaqriatl           X7B4000-0 Ba Fl Ni                            - -  R 524   Zh M7 V          
 1007 Fibrflepld           A866548-D Ag Ni                               - D  - 103   Zh K8 V          
 1009 Ablplontnen          X778000-0 Ba Ni                               - -  R 713   Zh M0 V          
 1103 E'eil                X8B7000-0 Ba Fl Lo Ni                         - -  R 411   Zh G8 V M5 V     
 1104 Ritie                C000220-8 As Lo Ni Va                         - -  - 403   Zh M9 V          
 1105 Eshe                 B8C0202-B De Lo Ni                            - KM A 804   Zh G6 V          
-1106 Iat                  B9A4223-8 Fl Lo Ni                            - -  - 902   Zh M3 V M0 V     
+1106 Iat                  B9A4223-8 Fl Lo Ni                            - -  - 902   Zh M0 V M3 V     
 1107 Letsnansh            X466873-0 Ri                                  - -  R 103   Zh M0 II         
 1108 Ekrzhi               B301543-A Ic Ni Va                            - KM - 701   Zh M9 V          
 1110 Fralzdresh           C989659-9 Ri                                  - -  - 423   Zh M6 V          
@@ -125,7 +125,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1802 Qlanchtlev           B74A200-A Lo Ni Wa                            - KM - 201   Zh M8 IV         
 1803 ELFOPISH             C100214-C Lo Ni Va                            - -  - 303   Zh K3 V          
 1806 Protifr              B500316-C Lo Ni Va                            - -  - 901   Zh M2 V          
-1807 Iqradr               X8B7000-0 Ba Fl Ni                            - -  R 213   Zh M8 V F3 IV    
+1807 Iqradr               X8B7000-0 Ba Fl Ni                            - -  R 213   Zh F3 IV M8 V    
 1808 Shtae                C402577-B Ic Ni Va                            - -  - 102   Zh F8 V          
 1809 Qlapli               C100537-8 Ni Va                               - -  - 333   Zh M3 V          
 1810 Nienziencha          E330210-6 De Lo Ni Po                         - -  - 324   Zh M6 V          
@@ -135,9 +135,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1906 Prprblatnots         A7A3644-B Fl                                  - KM - 404   Zh M7 V          
 1907 Chteflrzh            A595400-C Ni                                  - -  - 202   Zh F9 V          
 1908 Pliaqldliansh        B7476B8-6 Ag                                  - -  - 200   Zh M2 V          
-1910 Tetlez               X8C5000-0 Ba Fl Ni                            - -  R 822   Zh M9 V F2 V     
+1910 Tetlez               X8C5000-0 Ba Fl Ni                            - -  R 822   Zh F2 V M9 V     
 2007 Idliechvrint         X259000-0 Ba Ni                               - -  R 322   Zh K2 III        
-2010 Dadrinj              C565436-5 Ni                                  - -  - 523   Zh F7 V M1 IV    
+2010 Dadrinj              C565436-5 Ni                                  - -  - 523   Zh M1 IV F7 V    
 2104 Shtialzhdants        C96A685-5 Ri Wa                               - -  - 620   Zh G7 V          
 2105 Iapiapr              B664787-6 Ag                                  - -  - 103   Zh G3 IV         
 2107 Diablsezhche         A100966-C Hi In Na Va                         - KM - 725   Zh M2 III        
@@ -149,15 +149,15 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2204 Iantsazh             C856AE9-9 Hi                                  - -  - 125   Zh M8 V          
 2205 Ikqresh              A539472-D Ni                                  - KM - 104   Zh M6 V          
 2207 Emme                 X96A000-0 Ba Ni Wa                            - -  R 202   Zh G6 V          
-2209 Nedrchti             B784556-8 Ag Ni                               - KM - 224   Zh M9 V M6 D     
+2209 Nedrchti             B784556-8 Ag Ni                               - KM - 224   Zh M6 V M9 V     
 2302 Shtevri              C6839B9-9 Hi                                  - -  U 113   Zh M5 V          
 2303 Vleqiafie            D453788-7 Po                                  - -  - 114   Zh M3 V          
 2304 Iabokrfiqr           A0005AA-C As Ni                               - KM - 113   Zh K5 IV         
 2305 Zhdielfon            C65A455-9 Ni Wa                               - -  - 133   Zh M8 IV         
 2306 Tsallize             X647000-0 Ba Ni                               - -  R 900   Zh M3 V M3 V     
-2308 Pientne              X9C7000-0 Ba Fl Ni                            - -  R 022   Zh G3 V M1 D     
+2308 Pientne              X9C7000-0 Ba Fl Ni                            - -  R 022   Zh G3 V M1 V     
 2401 Qlrie'               A343657-E Po                                  - D  - 422   Zh F4 V          
-2402 Ferzdlezhdr          A200A54-D Hi In Na Va Cp                      - KM - 221   Zh K2 III M3 D   
+2402 Ferzdlezhdr          A200A54-D Hi In Na Va Cp                      - KM - 221   Zh K2 III M3 V   
 2404 Onzhshti             D556445-6 Ni                                  - -  - 414   Zh M6 V          
 2406 Qrezdie              B958724-A Ag                                  - -  - 104   Zh F7 V          
 2407 Shtobrfledri         C736AAA-9 Hi                                  - -  - 113   Zh M7 V          
@@ -166,10 +166,10 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2502 Tanjkrazh            E500474-8 Ni Va                               - -  - 622   Zh F3 III        
 2505 Defranz              A464764-8 Ag Ri                               - KM - 324   Zh G1 IV         
 2506 Qrebriql             B667333-8 Lo Ni                               - -  - 404   Zh M7 V          
-2507 Iezdra               C7B2A57-9 Fl Hi                               - -  - 114   Zh M9 V M7 D     
+2507 Iezdra               C7B2A57-9 Fl Hi                               - -  - 114   Zh M7 V M9 V     
 2602 Vlietsfria           AAA6644-A Fl                                  - KM - 221   Zh G4 V          
 2603 Eqplishi             B8A6887-8 Fl                                  - -  - 224   Zh M6 V          
-2605 Vrijdonzh            B789543-7 Ni                                  - KM - 714   Zh F8 V M2 D     
+2605 Vrijdonzh            B789543-7 Ni                                  - KM - 714   Zh F8 V M2 V     
 2608 Driabribri           B350565-C De Ni Po                            - KM - 113   Zh K3 IV         
 2701 Niadrqle             C200854-9 Na Va                               - -  - 500   Zh M2 III        
 2702 Jdiedlijadr          B556302-A Lo Ni                               - -  - 225   Zh M5 V          
@@ -190,10 +190,10 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2906 Zheiant              A667266-A Lo Ni                               - KM - 822   Zh M7 V          
 3004 Tliaabrba            A987999-E Hi In Ri Cp                         - D  - 934   Zh F6 V          
 3006 Zdibrv               A53A684-B Wa                                  - KM - 304   Zh F4 V          
-3009 Qretsanjtsie         E688320-6 Lo Ni                               - -  - 204   Zh M8 V M1 D     
+3009 Qretsanjtsie         E688320-6 Lo Ni                               - -  - 204   Zh M1 V M8 V     
 3010 Natebl               C656267-4 Lo Ni                               - -  - 424   Zh F7 V          
 3101 Pieli                X232000-0 Ba Lo Ni Po                         - -  R 623   Zh K2 III        
-3103 Krnchprpr            C785866-6 Ri                                  - -  - 224   Zh F3 V M2 IV    
+3103 Krnchprpr            C785866-6 Ri                                  - -  - 224   Zh M2 IV F3 V    
 3106 Tszdiaanz            B101434-9 Ic Ni Va                            - KM - 724   Zh K7 V          
 3201 Echzhodliebr         X7A7000-0 Ba Fl Lo Ni                         - -  R 514   Zh G3 V          
 3202 Shachdie             B697855-6                                     - -  - 523   Zh M5 V          
@@ -202,7 +202,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3206 Enshi                X000000-0 As Ba Lo Ni                         - -  R 404   Zh M4 V          
 3207 Imtiejets            C893552-8 Ni                                  - -  - 303   Zh F9 V          
 3208 Bradl                B697563-7 Ag Ni                               - -  - 913   Zh F8 V          
-3209 Bozdetl              B56515A-7 Lo Ni                               - -  - 613   Zh               
+3209 Bozdetl              B56515A-7 Lo Ni                               - -  - 613   Zh M6 V          
 3210 Fietlfedr            A427124-C Lo Ni                               - KM - 204   Zh K4 V          
 0112 Eints                C610676-5 Na Ni                               - -  - 601   Zh M4 III        
 0113 Tselplians           C786443-7 Ni                                  - -  - 215   Zh M9 V          
@@ -220,7 +220,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0312 Tlaprzhe             A7A2200-A Fl Lo Ni                            - KM - 102   Zh M9 V          
 0313 Iezhdaplkr           B66A426-B Ni Wa                               - -  - 214   Zh G3 IV         
 0315 Kriashzhd            A000977-A As Hi In Na                         - -  A 201   Zh K2 III        
-0318 Flimstezhqli         C440ACD-C De Hi In Po                         - -  A 112   Zh M2 V M2 D     
+0318 Flimstezhqli         C440ACD-C De Hi In Po                         - -  A 112   Zh M2 V M2 V     
 0319 Shitsteplavl         B663856-6 Ri                                  - -  - 335   Zh F5 IV         
 0411 Danchqanshez         B100543-B Ni Va                               - KM - 624   Zh K8 II         
 0412 Dlanzhiapl           C42277A-5 Na Po                               - -  - 111   Zh M3 IV         
@@ -228,7 +228,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0417 Vrenzchtebl          X343000-0 Ba Lo Ni Po                         - -  R 323   Zh M1 V          
 0418 Petsrafl             C626ACC-8 Hi In                               - -  - 320   Zh F3 III        
 0419 Aplfr                A588741-8 Ag Ri                               - -  - 403   Zh M3 II         
-0511 Chtiqalinzh          B384374-8 Lo Ni                               - -  - 322   Zh M8 V M1 D     
+0511 Chtiqalinzh          B384374-8 Lo Ni                               - -  - 322   Zh M1 V M8 V     
 0513 Ekriepl              B877878-B Ga                                  - KM - 523   Zh M7 V          
 0515 Jdezhea              C8A7400-A Fl Ni                               - -  - 802   Zh G2 IV         
 0517 Plobrzhetzh          X610000-0 Ba Ni                               - -  R 424   Zh M1 V M3 V     
@@ -250,7 +250,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0812 Qae                  B68A873-A Ri Wa                               - KM - 801   Zh M8 IV         
 0813 Chtasi               A442AC8-D Hi In Po Cp                         - KM - 302   Zh F8 V          
 0816 Ianseial             B554532-9 Ag Ni                               - -  - 500   Zh M6 III        
-0818 Vlashabrjiaq         E100657-A Na Ni Va                            - -  - 900   Zh K3 V M1 D     
+0818 Vlashabrjiaq         E100657-A Na Ni Va                            - -  - 900   Zh K3 V M1 V     
 0819 Dlinzhsht            A444300-C Lo Ni                               - KM - 913   Zh M5 IV         
 0820 Chtodrvrensh         B554532-9 Ag Ni                               - -  - 400   Zh G2 III        
 0913 Qatslaench           X9C1000-0 Ba Fl Lo Ni                         - -  R 702   Zh K8 V          
@@ -269,12 +269,12 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1215 Nela                 C88A659-7 Ri Wa                               - -  - 124   Zh M8 V          
 1216 Aktsa                B466310-C Lo Ni                               - -  - 123   Zh F7 V          
 1219 Metilar              A433300-D Lo Ni Po                            - KM - 302   Zh G1 V          
-1220 Ichnakljetl          C8C6533-9 Fl Ni                               - -  - 114   Zh M5 V G7 V     
+1220 Ichnakljetl          C8C6533-9 Fl Ni                               - -  - 114   Zh G7 V M5 V     
 1312 Tladeplovieb         B300332-D Lo Ni Va                            - KM - 823   Zh F2 V          
 1314 Vleakrzhel           C152798-A Po                                  - -  - 522   Zh M5 III        
 1316 Drantszhdara         A512226-9 Ic Lo Ni                            - KM - 834   Zh F6 V          
 1317 Enshqraj             B89A9EH-9 Hi In Wa                            - -  - 213   Zh G9 V          
-1318 Ezh Tsiadlzd         B7A2756-8 Fl                                  - KM - 203   Zh M9 V M7 D     
+1318 Ezh Tsiadlzd         B7A2756-8 Fl                                  - KM - 203   Zh M7 V M9 V     
 1412 Anzhzhrdeql          B468257-B Lo Ni                               - KM - 824   Zh G2 IV         
 1413 Ejiek                C546988-5 Hi In                               - -  - 803   Zh M4 V          
 1414 Dekrinsh             X342000-0 Ba Lo Ni Po                         - -  R 614   Zh K3 V          
@@ -284,9 +284,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1514 Tlaflzdit            X425000-0 Ba Lo Ni                            - -  R 424   Zh F6 V          
 1515 Eprtlilt             X677000-0 Ba Lo Ni                            - -  R 204   Zh G3 V          
 1519 Qribrr               E53A114-6 Lo Ni Wa                            - -  - 310   Zh M5 IV         
-1520 Chtiantseia          A896620-9 Ag                                  - -  - 713   Zh M7 V M2 D     
+1520 Chtiantseia          A896620-9 Ag                                  - -  - 713   Zh M2 V M7 V     
 1614 Tlianshzabl          B400310-8 Lo Ni Va                            - -  - 822   Zh F1 V          
-1615 Serezhdflyia         A530878-B De Na Po                            - KM A 601   Zh M6 V F1 V     
+1615 Serezhdflyia         A530878-B De Na Po                            - KM A 601   Zh F1 V M6 V     
 1616 Ravrvedr             B331976-C Hi Na Po                            - KM - 701   Zh M4 IV         
 1619 Atieanj              X100000-0 Ba Lo Ni Va                         - -  R 222   Zh M2 III        
 1711 Krieldie             C432646-6 Na Po                               - -  U 824   Zh M3 V          
@@ -298,7 +298,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1719 Vedreblchien         C661353-9 Lo Ni                               - -  - 713   Zh G2 V          
 1720 Senens               C656656-8 Ag Ni                               - -  - 224   Zh F7 V M1 V     
 1811 Etpefltse            B9667BA-A Ag                                  - -  - 321   Zh G4 V          
-1812 Dreflpatl            E125540-9 Ni                                  - -  - 500   Zh M3 V M6 D     
+1812 Dreflpatl            E125540-9 Ni                                  - -  - 500   Zh M3 V M6 V     
 1814 Shtiefrqa            C454467-6 Ni                                  - -  - 424   Zh F8 IV         
 1817 Iezdotlabl           B645998-C Hi In                               - KM - 212   Zh M7 V          
 1819 Shtamzhdeaz          C745689-A Ag Ni                               - -  - 110   Zh F7 V M6 V     
@@ -308,7 +308,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1919 Binchzhdadri         A549200-D Lo Ni                               - KM - 223   Zh M3 V          
 1920 Vlietlzhdie          C756421-6 Ni                                  - KM - 302   Zh M2 V M2 V     
 2012 Vlableql             X7A6000-0 Ba Fl Ni                            - -  R 300   Zh G7 V          
-2014 Zdinsaqestia         A899A99-E Hi In                               - KM - 722   Zh F7 V M7 D     
+2014 Zdinsaqestia         A899A99-E Hi In                               - KM - 722   Zh F7 V M7 V     
 2015 Nedlezhdr            A999999-F Hi In Ri Cp                         - KM - 313   Zh G3 IV         
 2016 Sidrdlenj            B40088B-9 Na Va                               - -  - 234   Zh               
 2020 Driaflzha            C230125-B De Lo Ni Po                         - -  - 603   Zh K4 V          
@@ -318,8 +318,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2116 Zhatlchte            D964357-8 Lo Ni                               - -  - 333   Zh G8 V          
 2119 Qlenjieplbe          C564654-4 Ag Ri                               - -  - 123   Zh M2 V          
 2211 Kreztliap            A123544-C Ni Po                               - KM - 104   Zh K3 V          
-2212 Tlrstea              X697000-0 Ba Ni                               - -  R 313   Zh M6 V M4 V     
-2215 Piechovrash          C595220-9 Lo Ni                               - -  - 522   Zh M2 V M5 II    
+2212 Tlrstea              X697000-0 Ba Ni                               - -  R 313   Zh M4 V M6 V     
+2215 Piechovrash          C595220-9 Lo Ni                               - -  - 522   Zh M5 II M2 V    
 2216 Rilqlapl             C741665-5 Ni Po                               - -  - 723   Zh K7 III        
 2217 Qraqltlaqrzd         C654110-5 Lo Ni                               - -  - 824   Zh M3 V          
 2218 Nietliaf             C120247-C De Lo Ni Po                         - -  - 414   Zh M7 IV         
@@ -335,14 +335,14 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2415 Zeqla                D100401-B Ni Va                               - -  - 223   Zh M5 III        
 2416 Obdiprlfl            C8A7659-C Ag Fl Ni                            - -  - 134   Zh G7 V          
 2417 Tsiebrensh           B773558-C Ni                                  - KM - 712   Zh M7 V          
-2420 Teshte               X9C9000-0 Ba Fl Ni                            - -  R 314   Zh M9 V M6 III   
+2420 Teshte               X9C9000-0 Ba Fl Ni                            - -  R 314   Zh M6 III M9 V   
 2513 Shtenzhanez          C58969A-6 Ri                                  - -  - 313   Zh M6 IV         
 2516 Plenshfozh           A983100-A Lo Ni                               - KM - 402   Zh F9 V          
 2519 Vlel                 D769756-7 Ri                                  - -  - 620   Zh M7 V          
 2520 Chtadlzhebl          C694576-7 Ag Ni                               - -  - 123   Zh M3 V          
 2613 Dlabrfrin            E96A783-3 Ri Wa                               - -  - 423   Zh G0 V          
 2614 Tliea                E000201-8 As Lo Ni                            - -  A 214   Zh K0 V          
-2615 Iplmiek              C768234-5 Lo Ni                               - -  - 101   Zh M8 V F1 V     
+2615 Iplmiek              C768234-5 Lo Ni                               - -  - 101   Zh F1 V M8 V     
 2616 Krbrzdapabr          X000000-0 As Ba Ni                            - -  R 215   Zh K3 V          
 2617 Fleztelrnch          B9B1656-9 Fl                                  - KM - 524   Zh M3 V M3 V     
 2618 Zhedebril            C966449-8 Ni                                  - -  - 222   Zh G3 V          
@@ -351,14 +351,14 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2717 Eprqiemisod          D434551-6 Ni                                  - -  - 310   Zh M2 V          
 2719 Chtotlshte           A624542-A Ni                                  - KM - 124   Zh M5 V          
 2720 Kefints              D200375-9 Lo Ni Va                            - -  - 525   Zh K3 V          
-2811 Kretsejivlzd         E600663-8 Na Ni Va                            - -  - 322   Zh M0 V K1 V     
+2811 Kretsejivlzd         E600663-8 Na Ni Va                            - -  - 322   Zh K1 V M0 V     
 2812 Beshpri              A440472-D De Ni Po                            - KM - 323   Zh K5 V          
 2815 Batsbevl             C9D447A-5 Fl Ni                               - -  - 221   Zh M8 V          
 2819 Vladrkrie            EA79120-5 Lo Ni                               - -  - 622   Zh G9 V          
 2912 Ietliefatl           B668378-A Lo Ni                               - KM - 114   Zh M9 V          
 2914 Datlzdet             A68A467-C Ni Wa                               - KM - 603   Zh M0 V          
-2915 Ezchta               A986789-9 Ag Ri                               - KM A 220   Zh M7 V M0 V     
-2917 Anzhip               C4848AA-7 Ga                                  - -  - 302   Zh M6 V M3 V     
+2915 Ezchta               A986789-9 Ag Ri                               - KM A 220   Zh M0 V M7 V     
+2917 Anzhip               C4848AA-7 Ga                                  - -  - 302   Zh M3 V M6 V     
 2918 Lavvlananzh          X8C5000-0 Ba Fl Ni                            - -  R 624   Zh F0 V M6 V     
 2919 Chatsiebrefr         A86A386-E Lo Ni Wa Cp                         - KM - 101   Zh G2 IV         
 2920 Majflial             B78A57A-B Ni Wa                               - -  - 413   Zh M8 V          
@@ -374,7 +374,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3120 Tsialzhd             B523455-9 Ni Po                               - -  - 110   Zh M3 V          
 3211 Kriechstie           B8675A9-A Ag Ni                               - -  - 213   Zh G2 V          
 3214 Lapieflt             A8684BE-B Ga Ni                               - KM - 212   Zh G1 IV         
-3215 Revzdier             X696000-0 Ba Ni                               - -  R 114   Zh M3 V M1 V     
+3215 Revzdier             X696000-0 Ba Ni                               - -  R 114   Zh M1 V M3 V     
 3216 Chtekl               X240760-1 De Po                               - -  R 600   Zh K2 V          
 3217 Driefbranch          AA9A335-D Ag                                  - KM - 324   Zh M6 V          
 3219 Shteplazh            X9C8000-0 Ba Fl Ni                            - -  R 201   Zh M8 V          
@@ -391,7 +391,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0228 Ieet                 X540000-0 Ba De Ni Po                         - -  R 614   Zh M2 V M2 V     
 0230 Deprdlevldai         A400366-A Lo Ni Va                            - KM - 415   Zh K3 V          
 0321 Ebrbekr              X723000-0 Ba Ni Po                            - -  R 312   Zh F6 IV         
-0324 Daf                  C673400-8 Lo Ni                               - -  - 824   Zh F5 V M2 D     
+0324 Daf                  C673400-8 Lo Ni                               - -  - 824   Zh F5 V M2 V     
 0325 Ardlo'               A753762-A Po                                  - KM - 801   Zh M7 IV         
 0326 Dlavlidafl           C500864-9 Na Va                               - -  - 321   Zh F8 V          
 0328 Shatliedrekl         C79A400-B Ni Wa                               - -  - 200   Zh M5 V          
@@ -399,7 +399,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0423 Naranzatl            X6B1000-0 Ba Fl Ni                            - -  R 023   Zh M9 V          
 0425 Flienshtlap          A867453-B Ag Ni                               - KM - 223   Zh M2 V          
 0427 Adinszl              X000000-0 As Ba Ni                            - -  R 113   Zh K2 V          
-0429 Feldostlish          D543667-2 Ni Po                               - -  - 125   Zh F7 V M3 D     
+0429 Feldostlish          D543667-2 Ni Po                               - -  - 125   Zh F7 V M3 V     
 0430 Efazdosh             B434130-D Lo Ni                               - KM - 122   Zh F3 IV         
 0521 Fraflzodi            A776334-A Lo Ni                               - KM - 902   Zh M7 V          
 0523 Tlashakritl          C434698-9 Ni                                  - -  - 313   Zh G2 IV         
@@ -446,7 +446,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1224 Zhdienzh             E400431-5 Ni Va                               - -  - 204   Zh M3 V          
 1226 Sheliajnenz          D100678-7 Na Ni Va                            - -  - 404   Zh K2 V          
 1227 Imzl                 C565767-5 Ri                                  - -  - 402   Zh G3 V          
-1228 Tleprshtafrd         C4303A8-B De Lo Ni Po                         - KM - 913   Zh M2 V M3 D     
+1228 Tleprshtafrd         C4303A8-B De Lo Ni Po                         - KM - 913   Zh M2 V M3 V     
 1324 Ismlz                C423389-B Lo Ni Po                            - -  - 702   Zh F5 V          
 1325 Eafrikrachl          C652300-6 Lo Ni Po                            - -  - 602   Zh M7 V          
 1327 Ozh                  A1008AA-C Na Va                               - KM - 522   Zh K7 V          
@@ -461,8 +461,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1529 Ezianzh              A8447B9-7 Ag                                  - KM - 424   Zh M9 V          
 1621 Endant               B3779C9-C Hi In                               - KM - 502   Zh G1 IV         
 1624 Dlebadl              AA67958-C Lo Ni                               - KM - 215   Zh G3 V          
-1628 Vinzhicht            B402755-B Ic Na Va                            - KM - 322   Zh M7 V M1 D     
-1630 Dlilqesh             A000673-D As Na Ni                            - R  - 501   Zh M4 V M1 V     
+1628 Vinzhicht            B402755-B Ic Na Va                            - KM - 322   Zh M1 V M7 V     
+1630 Dlilqesh             A000673-D As Na Ni                            - R  - 501   Zh M1 V M4 V     
 1721 Jadlazefodl          E663400-3 Ni                                  - -  A 720   Zh G2 V          
 1727 Aptliepr             B400100-C Lo Ni Va                            - KM - 124   Zh F4 V          
 1822 Aplple'dra           B311686-A Ic Na                               - KM - 425   Zh M6 V          
@@ -490,8 +490,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2227 Shade'krach          C443120-5 Lo Ni Po                            - -  - 324   Zh M2 V          
 2230 Klezhirzdavl         A347999-A Hi In                               - KM - 702   Zh F3 IV         
 2321 Tlientse'            C666966-A Hi In                               - -  - 402   Zh G3 V          
-2322 Sish                 B200355-A Lo Ni Po                            - KM - 514   Zh M2 V K4 V     
-2324 Zdrieyipra           B142520-4 Ni Po                               - -  - 324   Zh F1 II M6 D    
+2322 Sish                 B200355-A Lo Ni Po                            - KM - 514   Zh K4 V M2 V     
+2324 Zdrieyipra           B142520-4 Ni Po                               - -  - 324   Zh F1 II M6 V    
 2325 Da'chariedle         X200000-0 Ba Ni                               - -  R 622   Zh K3 V          
 2326 Kliev                B356320-8 Lo Ni                               - -  - 512   Zh M4 V          
 2327 Antsazhiefl          C7CA100-9 Fl Lo Ni Wa                         - -  - 423   Zh A6 V          
@@ -502,7 +502,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2425 Iezhel               B98A336-C Lo Ni Wa                            - -  - 322   Zh G3 IV         
 2426 Otstlanzhast         A86976A-D Ri                                  - KM - 820   Zh G7 V          
 2521 Dlefrplrdlia         A521452-C Ni Po                               - KM - 512   Zh M2 V          
-2525 Atlzhenszin          C6A7535-8 Ag Fl Ni                            - -  - 314   Zh M8 V M4 V     
+2525 Atlzhenszin          C6A7535-8 Ag Fl Ni                            - -  - 314   Zh M4 V M8 V     
 2526 Shenzchtenzh         E157247-5 Lo Ni                               - -  - 902   Zh K4 V          
 2622 Fiklbadlstie         D20069B-7 Na Ni Va                            - -  - 804   Zh F3 V          
 2623 Qlazhdopizze         A644622-C Ag Ni                               - KM - 304   Zh M9 V          
@@ -514,11 +514,11 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2629 Stichdlanzh          B200588-C Ni Va                               - KM - 513   Zh F2 V          
 2722 Pliez                C688213-9 Lo Ni                               - -  - 110   Zh M2 V M2 V     
 2725 Aer                  CA8A675-B Ni Ri Wa                            - -  - 920   Zh M6 V          
-2729 Enchtanjtl           B675331-6 Lo Ni                               - -  - 125   Zh M7 V M3 V     
+2729 Enchtanjtl           B675331-6 Lo Ni                               - -  - 125   Zh M3 V M7 V     
 2730 Tedl                 A364200-B Lo Ni                               - KM - 121   Zh G4 V          
 2822 Kevdrietsdl          D13179A-7 Na Po                               - -  - 603   Zh F6 V          
 2823 Chanjshasta          B7A8886-9 Fl                                  - KM - 115   Zh G2 IV         
-2824 Keprzenzh            C341563-9 Ni Po                               - -  - 301   Zh F3 V M2 D     
+2824 Keprzenzh            C341563-9 Ni Po                               - -  - 301   Zh F3 V M2 V     
 2825 Achpieagrs           E847352-5 Lo Ni                               - -  R 200   Zh M3 V          
 2826 Fievr                AAA7AA7-D Fl Hi Ni                            - KM - 402   Zh M6 V          
 2922 Brianrienzc          B14379C-C Po                                  - KM - 401   Zh F6 V M2 V     
@@ -538,11 +538,11 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3128 Qledtlepro           A846778-8 Ag                                  - KM - 520   Zh M9 V          
 3130 Ienttez              A733337-C Lo Ni Po                            - KM - 214   Zh F6 V K3 V     
 3223 Plazhepzde           A445320-B Lo Ni                               - KM - 424   Zh M2 IV         
-3224 Yiadle               D958120-3 Lo Ni                               - -  - 412   Zh M7 V M2 D     
+3224 Yiadle               D958120-3 Lo Ni                               - -  - 412   Zh M2 V M7 V     
 3226 Jdenteste            E744400-6 Ni                                  - -  A 214   Zh F7 V          
 3227 Ablshtibr            D346620-4 Ag Ni                               - -  - 623   Zh K5 V          
 3228 Dienz                C540230-7 De Lo Ni Po                         - -  - 224   Zh M6 V          
-3229 Zdenshkezie          C440379-5 De Lo Ni Po                         - -  - 102   Zh M3 V M2 D     
+3229 Zdenshkezie          C440379-5 De Lo Ni Po                         - -  - 102   Zh M2 V M3 V     
 3230 Eqle                 A7A5200-9 Fl Lo Ni                            - KM - 622   Zh G2 V          
 0132 Tlepldianz           C6A3222-A Lo Ni Va                            - -  - 313   Zh M5 V          
 0133 Jdied                E652322-2 Lo Ni Po                            - -  A 202   Zh F2 III        
@@ -552,8 +552,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0231 Zheflmiats           C720779-4 De Na Po                            - -  - 913   Zh M2 III        
 0232 Ekrzhia'paz          A200830-C Na Va                               - KM - 822   Zh M8 V          
 0233 Shieziblchr          B6679C9-7 Hi In                               - -  - 313   Zh G1 V          
-0234 Zhialidlad           B133898-B Na Po                               - -  - 902   Zh F2 V M2 D     
-0235 Soliejplan           E544338-8 Lo Ni                               - -  - 500   Zh M4 D          
+0234 Zhialidlad           B133898-B Na Po                               - -  - 902   Zh F2 V M2 V     
+0235 Soliejplan           E544338-8 Lo Ni                               - -  - 500   Zh M4 V          
 0236 Edlneq               B69367A-6                                     - -  - 124   Zh M3 V          
 0238 Aob                  X400000-0 Ba Ni Va                            - -  R 310   Zh K6 III        
 0333 Adlzhdosh            A747974-D Lo Ni                               - KM - 701   Zh M7 V          
@@ -568,7 +568,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0434 Siebrtlapl           X945000-0 Ba Ni                               - -  R 102   Zh F7 V          
 0435 Zhiechtsant          X210000-0 Ba Lo Ni                            - -  R 303   Zh M1 III        
 0438 Ezh Chiezii          C000435-8 As Ni                               - -  - 904   Zh K7 V          
-0440 Yiazdotsel           C524541-5 Ni                                  - -  - 424   Zh F2 V M2 D     
+0440 Yiazdotsel           C524541-5 Ni                                  - -  - 424   Zh F2 V M2 V     
 0533 Jdapr                B567776-8 Ag Ri                               - -  - 800   Zh G7 V          
 0538 Ikrre                A757558-B Ag Ni                               - KM - 722   Zh F1 IV         
 0631 Anchiabriar          C268214-A Lo Ni                               - KM - 414   Zh G3 V          
@@ -581,7 +581,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0734 Tatliel              B676776-8 Ag                                  - KM - 602   Zh G6 IV         
 0738 Ziaro                C245656-A Ag Ni                               - -  - 222   Zh F7 III        
 0739 Zhdedlqlavr          B653463-A Ni Po                               - -  - 514   Zh F3 V          
-0740 Ialzda               X200000-0 Ba Ni Va                            - -  R 601   Zh K2 V M3 D     
+0740 Ialzda               X200000-0 Ba Ni Va                            - -  R 601   Zh K2 V M3 V     
 0833 Fretlbrevlra         C879323-6 Lo Ni                               - -  - 724   Zh M5 V          
 0835 Abr                  C741220-7 Lo Ni Po                            - -  - 425   Zh M2 V          
 0840 Ste'desh             A000343-B As Lo Ni                            - KM - 922   Zh F5 V          
@@ -595,7 +595,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1038 Efchiqmie            B610555-8 De Ni                               - -  - 602   Zh M0 III        
 1133 Aazbi                B231100-B Lo Ni Po                            - KM - 814   Zh M8 V          
 1134 Kelokievlch          E200230-8 Lo Ni Va                            - -  - 401   Zh M2 IV         
-1137 Moiple               X000000-0 As Ba Lo Ni                         - -  R 502   Zh M6 V M2 D     
+1137 Moiple               X000000-0 As Ba Lo Ni                         - -  R 502   Zh M2 V M6 V     
 1138 Idlki                X8B7000-0 Ba Fl Lo Ni                         - -  R 734   Zh M6 V          
 1139 Aprfof               A646200-C Lo Ni                               - KM - 234   Zh F7 V          
 1140 Dashyi               X954000-0 Ba Ni                               - -  R 902   Zh M2 II         
@@ -606,18 +606,18 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1238 ZhafrieZo            A867A59-C Hi In                               - KM - 403   Zh K2 V K2 V     
 1240 Vesh                 B123779-9 Na Po                               - KM - 302   Zh K7 V M9 V     
 1332 Iartliv              C210142-A Lo Ni                               - -  - 422   Zh M6 V          
-1335 Adlvazdiet           C889300-9 Lo Ni                               - -  - 501   Zh M6 II K9 II   
+1335 Adlvazdiet           C889300-9 Lo Ni                               - -  - 501   Zh K9 II M6 II   
 1336 Qaazepl              X788744-1 Ag Ri                               - -  R 810   Zh F3 V          
 1337 Chezchtans           A654300-A Lo Ni                               - KM - 605   Zh M0 V          
 1339 Stenchzhjo           D779679-6 Ni                                  - -  - 723   Zh G5 V          
 1431 Yornetsia            B472541-9 Ni                                  - KM - 103   Zh G2 IV         
 1434 Ianchinzh            X544000-0 Ba Lo Ni                            - -  R 212   Zh M4 V M4 V     
 1435 Klrqrek              X7AA000-0 Ba Fl Lo Ni                         - -  R 405   Zh G2 V          
-1436 Iprtlien             X675000-0 Ba Lo Ni                            - -  R 000   Zh M3 V F2 V     
+1436 Iprtlien             X675000-0 Ba Lo Ni                            - -  R 000   Zh F2 V M3 V     
 1438 Tsiaprinjd           B452426-9 Ni Po                               - -  - 801   Zh G1 III        
 1439 Tanshvikl            B975500-B Ag Ni                               - KM - 100   Zh K2 V          
 1440 Preiabr              X544000-0 Ba Lo Ni                            - -  R 222   Zh M7 IV         
-1532 Frakrna              A858999-A Hi                                  - KM - 122   Zh F2 V M2 D     
+1532 Frakrna              A858999-A Hi                                  - KM - 122   Zh F2 V M2 V     
 1537 Plefrchiepl          C535454-9 Ni                                  - -  - 213   Zh M9 V          
 1538 Dleam                X300000-0 Ba Ni Va                            - -  - 904   Zh K2 IV         
 1632 Ieblianzh            A595600-B Ag Ni                               - KM - 313   Zh M3 II         
@@ -635,9 +635,9 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 1837 Rofrtliezhi          C642542-5 Ni Po                               - -  - 202   Zh M2 V M2 V     
 1838 Zdiatchedrie         C454534-8 Ag Ni                               - -  - 801   Zh M4 V          
 1933 Senzhprepro          A75A355-B Lo Ni Wa                            - KM - 311   Zh K0 V M3 V     
-1934 Ieblqlanch           X752682-3 Ni Po                               - -  R 403   Zh M5 V M8 V M2 V
+1934 Ieblqlanch           X752682-3 Ni Po                               - -  R 403   Zh M2 V M8 V M5 V
 1935 Iekoz                X7B5000-0 Ba Fl Lo Ni                         - -  R 222   Zh F5 V          
-1936 Ibrqr                XAC6000-0 Ba Fl Lo Ni                         - -  R 013   Zh M5 V M2 V     
+1936 Ibrqr                XAC6000-0 Ba Fl Lo Ni                         - -  R 013   Zh M2 V M5 V     
 1938 Yevlchtej            D559410-4 Ni                                  - -  - 102   Zh F8 V          
 1939 Shivtlevrb           D687300-8 Lo Ni                               - -  - 120   Zh G0 V          
 2031 Atlinzzie            B200400-E Ni Va                               - KM - 302   Zh F6 V          
@@ -667,7 +667,7 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2531 Vliekr               E430662-7 De Na Ni Po                         - -  - 402   Zh K3 V          
 2532 Kliensh              X656678-2 Ag Ni                               - -  R 523   Zh M4 V          
 2538 Iefiastaflenc        B846100-C Lo Hi                               - KM - 510   Zh F3 V          
-2540 Evtlibldrivl         B300997-B Hi Ni Va                            - -  - 602   Zh M3 V M1 V     
+2540 Evtlibldrivl         B300997-B Hi Ni Va                            - -  - 602   Zh M1 V M3 V     
 2632 Shitl                A9A8747-B Fl                                  - KM - 210   Zh G4 V          
 2634 Qribainzhdr          A387668-D Ag Ni Ri Cp                         - KM - 922   Zh G2 V          
 2639 Tladrach             D100576-7 Ni Va                               - -  - 415   Zh M2 V M2 V     
@@ -677,11 +677,11 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 2738 Preldlajaprza        X566000-0 Ba Ni                               - -  R 320   Zh G5 V          
 2835 Onzi                 C221774-9 Na Po                               - -  - 501   Zh M2 III        
 2837 Zdanshchiail         B685323-A Lo Ni                               - KM - 914   Zh G3 V          
-2838 Plibrpiplit          C443389-A Lo Ni Po                            - -  - 500   Zh F7 V M3 D     
+2838 Plibrpiplit          C443389-A Lo Ni Po                            - -  - 500   Zh F7 V M3 V     
 2839 Drepaklstimva        B342100-C Lo Ni Po                            - KM - 622   Zh M1 V          
 2931 Joniplielva          X430000-0 Ba De Ni Po                         - -  R 424   Zh F3 IV         
 2932 Bliazhdrebr          D756597-3 Ag Ni                               - -  - 223   Zh M4 V          
-2935 Oliaitlakrch         C400113-B Lo Ni Va                            - -  - 322   Zh K4 V A2 D     
+2935 Oliaitlakrch         C400113-B Lo Ni Va                            - -  - 322   Zh A2 V K4 V     
 2936 Zdavile              E9A2334-7 Fl Lo Ni                            - -  - 923   Zh G1 IV         
 2937 Ijia                 D430311-6 De Lo Ni Po                         - -  - 602   Zh F2 III        
 2939 Abovki               B572720-5                                     - KM - 623   Zh M5 V          
@@ -697,8 +697,8 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 3139 Driechetledat        C45A530-8 Ni Wa                               - -  - 124   Zh M7 V          
 3231 Anjsotstie           X302210-8 De Lo Ni Po                         - -  R 902   Zh K2 V          
 3232 Ieshiejinch          X410000-0 Ba De Ni                            - -  R 404   Zh F1 IV         
-3234 Bralshalej           E100100-9 Lo Ni                               - -  - 913   Zh K4 V M3 D     
+3234 Bralshalej           E100100-9 Lo Ni                               - -  - 913   Zh K4 V M3 V     
 3235 Enchiadritl          D856973-4 Hi In                               - -  - 424   Zh F6 V          
-3238 Ipr                  D100666-9 Na Ni Va                            - -  - 512   Zh M3 V M2 V     
+3238 Ipr                  D100666-9 Na Ni Va                            - -  - 512   Zh M2 V M3 V     
 3239 Zdetleklatl          E100442-8 Ni Va                               - -  - 724   Zh F4 IV         
 3240 Izmal                A000652-9 As Na                               - KM - 112   Zh K2 V          

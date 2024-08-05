@@ -556,44 +556,35 @@ Hex  Name                 UWP       Remarks              {Ix} (Ex) [Cx] N B  Z P
 0837                      E562675-5 Ni Ri                               - -  - 614   Na        
 0838                      A5497BE-D                                     - S  - 114   Na        
 0840                      C110452-C Ni                                  - -  - 714   Na        
-0934                      B324611-A Ni                                  - NS - 404   Na        
-0935                      C667567-5 Ag Ni                               - -  - 623   Na        
-0936                      D764674-1 Ag Ni Ri                            - -  - 203   Na        
-0938                      C477885-9                                     - S  - 604   Na        
-0939                      C36469B-9 Ag Ni Ri                            - -  - 124   Na        
-1032                      B887721-6 Ag                                  - -  - 600   Na        
-1033                      C0007A8-7 As Na                               - S  - 700   Na        
-1035                      D67A7AC-3 Wa                                  - S  - 205   Na        
-1036                      C510662-6 Na Ni                               - -  - 320   Na        
-1040                      A210311-A Lo Ni                               - N  - 803   Na        
-1132                      C566745-8 Ag Ri                               - -  - 610   Na        
-1133                      X86A663-0 Ni Ri Wa                            - -  R 434   Na        
-1134                      D527879-4                                     - S  - 705   Na        
-1135                      C726585-9 Ni                                  - S  - 804   Na        
-1136                      C665A97-A Hi                                  - -  - 624   Na        
-1137                      C333223-7 Lo Ni Po                            - S  - 904   Na        
-1138                      C7B2677-6 Fl Ni                               - -  - 703   Na        
-1139                      C624989-7 Hi In                               - S  - 203   Na        
-1140                      E0008DE-5 As Na                               - -  - 903   Na        
-1235                      E875212-4 Lo Ni                               - -  - 602   Na        
-1240                      B533573-8 Ni Po                               - -  - 605   Na        
-1333                      X467000-3 Ba Lo Ni                            - -  R 303   Zc        
-1336                      B6447A9-8 Ag                                  - -  - 703   Na        
-1338                      A000101-D As Lo Ni                            - NS - 500   Na        
-1432                      C757411-5 Ni                                  - -  - 303   Na        
+0938 Vrenzh               C477885-9                                     - S  - 604   Na        
+0939 Arrean               C36469B-9 Ag Ni Ri                            - -  - 124   Na        
+1032 Lires                B887721-6 Ag                                  - -  - 600   Na        
+1033 Flomda               C0007A8-7 As Na                               - S  - 700   Na        
+1040 Zrien                A210311-A Lo Ni                               - N  - 803   Na        
+1132 Prefsh               C566745-8 Ag Ri                               - -  - 610   Na        
+1133 Noream               X86A663-0 Ni Ri Wa                            - -  R 434   Na        
+1134 Dreon                D527879-4                                     - S  - 705   Na        
+1138 Wreald               C7B2677-6 Fl Ni                               - -  - 703   Na        
+1139 Reaffn               C624989-7 Hi In                               - S  - 203   Na        
+1140 Peafe                E0008DE-5 As Na                               - -  - 903   Na        
+1235 Vorea                E875212-4 Lo Ni                               - -  - 602   Na        
+1240 Sefae                B533573-8 Ni Po                               - -  - 605   Na        
+1333 Greath               X467000-3 Ba Lo Ni                            - -  R 303   Zc        
+1336 Klinth               B6447A9-8 Ag                                  - -  - 703   Na        
+1338 Modeon               A000101-D As Lo Ni                            - NS - 500   Na        
+1432 Hures                C757411-5 Ni                                  - -  - 303   Na        
 1433 Bafrpobl             A661685-7 Ni Ri                               - KM - 303   Zh        
-1435                      E366361-3 Lo Ni                               - -  - 914   Na        
-1436                      C636457-9 Ni                                  - S  - 720   Na        
-1437                      C4436BC-7 Ni Po                               - -  - 704   Na        
-1439                      D0006BF-6 As Na Ni                            - -  - 704   Na        
-1440                      E504113-6 Ic Lo Ni Va                         - -  - 902   Na        
-1533                      C73556A-7 Ni                                  - -  - 420   Na        
+1436 Sermvi               C636457-9 Ni                                  - S  - 720   Na        
+1437 Pliatz               C4436BC-7 Ni Po                               - -  - 704   Na        
+1439 Okron                D0006BF-6 As Na Ni                            - -  - 704   Na        
+1440 Freeast              E504113-6 Ic Lo Ni Va                         - -  - 902   Na        
+1533 Jiread               C73556A-7 Ni                                  - -  - 420   Na        
 1536 Idlshti              B667858-C Ri                                  - KM - 804   Zh        
-1540                      C8D3103-7 Fl Lo Ni                            - S  - 803   Na        
-1636                      C546330-7 Lo Ni                               - S  - 214   Na        
-1638                      B989768-B Ri                                  - S  - 403   Na        
+1540 Team                 C8D3103-7 Fl Lo Ni                            - S  - 803   Na        
+1636 Limef                C546330-7 Lo Ni                               - S  - 214   Na        
+1638 Tureso               B989768-B Ri                                  - S  - 403   Na        
 1639 Flaklvle             A311445-A Ic Ni                               - KM - 103   Zh        
-1640                      C541499-4 Ni Po                               - S  - 500   Na        
+1640 Naerrn               C541499-4 Ni Po                               - S  - 500   Na        
 1734                      B400427-D Ni Va                               - -  - 202   Na        
 1737                      C470666-9 De Ni                               - S  - 402   Na        
 1739                      B222279-D Lo Ni Po                            - NS - 704   Na        

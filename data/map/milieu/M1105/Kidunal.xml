@@ -48,5 +48,6 @@
     <Route Start="0404" End="0502" Type="Trade" />
     <Route Start="0404" End="0304" Type="Trade" />
     <Route Start="3204" End="0304" StartOffsetX="-1" Type="Trade" />
+    <Route Start="0423" End="3222" EndOffsetX="-1" />
   </Routes>
 </Sector>

@@ -4,7 +4,7 @@
   <Credits />
   <X>5</X>
   <Y>5</Y>
-  <DataFile Author="Bari Z. Stafford Sr." Source="The Core Route Project" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
+  <DataFile Author="Bari Z. Stafford Sr." Source="General Turokan's Expedition to the Rim" Milieu="M1105" Ref="https://web.archive.org/web/20030406042613/http://www.geocities.com/traveller_core_route/proj004/proj004.html" />
   <Subsectors>
     <Subsector Index="A">Ataur</Subsector>
     <Subsector Index="B">Baurre</Subsector>
@@ -25,6 +25,12 @@
   </Subsectors>
   <Allegiances>
     <Allegiance Code="NaXX" Base="Na">Non-Aligned, unclaimed</Allegiance>
+    <Allegiance Code="Jg">Johrn-Guunanek Axis</Allegiance>
+    <Allegiance Code="Oc">Otuana Confederation</Allegiance>
     <Allegiance Code="NaHu" Base="Na">Non-Aligned, Human-dominated</Allegiance>
   </Allegiances>
+  <Borders>
+    <Border Color="Yellow" Allegiance="Oc" LabelPosition="1831">1631 1731 1830 1931 2031 1932 1831 1731 1631</Border>
+    <Border Color="Red" Allegiance="Jg" LabelPosition="0825">0525 0625 0726 0825 0925 0924 0923 1023 1024 1125 1126 1127 1026 0927 0827 0826 0726 0625 0525</Border>
+  </Borders>
 </Sector>
