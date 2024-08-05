@@ -269,6 +269,13 @@ class SimulatorWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
+            key='USeAnomalyRefuellingState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._useAnomalyRefuellingCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
             key='AnomalyFuelCostState',
             type=QtCore.QByteArray)
         if storedValue:
@@ -337,6 +344,7 @@ class SimulatorWindow(gui.WindowWidget):
         self._settings.setValue('PerJumpOverheadsState', self._perJumpOverheadsSpinBox.saveState())
         self._settings.setValue('RefuellingStrategyState', self._refuellingStrategyComboBox.saveState())
         self._settings.setValue('UseFuelCachesState', self._useFuelCachesCheckBox.saveState())
+        self._settings.setValue('UseAnomalyRefuellingState', self._useAnomalyRefuellingCheckBox.saveState())
         self._settings.setValue('AnomalyFuelCostState', self._anomalyFuelCostSpinBox.saveState())
         self._settings.setValue('AnomalyBerthingCostState', self._anomalyBerthingCostSpinBox.saveState())
         self._settings.setValue('RouteOptimisationState', self._routeOptimisationComboBox.saveState())
@@ -445,17 +453,24 @@ class SimulatorWindow(gui.WindowWidget):
         self._useFuelCachesCheckBox.setChecked(True)
         self._useFuelCachesCheckBox.setToolTip(gui.UseFuelCachesToolTip)
 
-        self._anomalyFuelCostSpinBox = gui.TogglableSpinBox()
+        self._useAnomalyRefuellingCheckBox = gui.CheckBoxEx()
+        self._useAnomalyRefuellingCheckBox.setChecked(True)
+        self._useAnomalyRefuellingCheckBox.setToolTip(gui.AnomalyRefuellingToolTip)
+        self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._enableDisableControls)
+
+        self._anomalyFuelCostSpinBox = gui.SpinBoxEx()
         self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
-        self._anomalyFuelCostSpinBox.setChecked(False)
         self._anomalyFuelCostSpinBox.setValue(1000)
         self._anomalyFuelCostSpinBox.setToolTip(gui.AnomalyRefuellingToolTip)
+        self._anomalyFuelCostSpinBox.setEnabled(
+            self._useAnomalyRefuellingCheckBox.isChecked())
 
-        self._anomalyBerthingCostSpinBox = gui.TogglableSpinBox()
+        self._anomalyBerthingCostSpinBox = gui.SpinBoxEx()
         self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
-        self._anomalyBerthingCostSpinBox.setChecked(False)
         self._anomalyBerthingCostSpinBox.setValue(5000)
         self._anomalyBerthingCostSpinBox.setToolTip(gui.AnomalyBerthingToolTip)
+        self._anomalyBerthingCostSpinBox.setEnabled(
+            self._useAnomalyRefuellingCheckBox.isChecked())
 
         self._routeOptimisationComboBox = gui.EnumComboBox(
             type=logic.RouteOptimisation,
@@ -483,6 +498,7 @@ class SimulatorWindow(gui.WindowWidget):
         rightLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
+        rightLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
         rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
         rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
         rightLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
@@ -537,6 +553,10 @@ class SimulatorWindow(gui.WindowWidget):
             self._configGroupBox.setDisabled(False)
             self._simulationGroupBox.setDisabled(not self._startWorldWidget.hasSelection())
 
+        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
+
     def _startWorldChanged(self) -> None:
         world = self._startWorldWidget.world()
         if world:
@@ -582,11 +602,12 @@ class SimulatorWindow(gui.WindowWidget):
                 text='Ship\'s combined fuel and cargo capacities can\'t be larger than its total tonnage')
             return
 
+        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyFuelCostSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value(),
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
             rules=app.Config.instance().rules())
         if not pitCostCalculator.refuellingType(
                 world=self._startWorldWidget.world()):
