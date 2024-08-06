@@ -269,7 +269,7 @@ class SimulatorWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='USeAnomalyRefuellingState',
+            key='UseAnomalyRefuellingState',
             type=QtCore.QByteArray)
         if storedValue:
             self._useAnomalyRefuellingCheckBox.restoreState(storedValue)
