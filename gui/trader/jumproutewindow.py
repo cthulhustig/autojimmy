@@ -659,13 +659,20 @@ class JumpRouteWindow(gui.WindowWidget):
         self._useFuelCachesCheckBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
 
-        self._anomalyRefuellingSpinBox = gui.SharedAnomalyRefuellingSpinBox()
-        self._anomalyRefuellingSpinBox.setEnabled(
+        self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
+        self._useAnomalyRefuellingCheckBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
+        self._useAnomalyRefuellingCheckBox.stateChanged.connect(self._anomalyRefuellingToggled)
 
-        self._anomalyBerthingSpinBox = gui.SharedAnomalyBerthingSpinBox()
-        self._anomalyBerthingSpinBox.setEnabled(
-            self._fuelBasedRoutingCheckBox.isChecked())
+        self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
+        self._anomalyFuelCostSpinBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked() and
+            self._useAnomalyRefuellingCheckBox.isChecked())
+
+        self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
+        self._anomalyBerthingCostSpinBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked() and
+            self._useAnomalyRefuellingCheckBox.isChecked())
 
         self._perJumpOverheadsSpinBox = gui.SharedJumpOverheadSpinBox()
 
@@ -684,8 +691,9 @@ class JumpRouteWindow(gui.WindowWidget):
         rightLayout.setContentsMargins(0, 0, 0, 0)
         rightLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         rightLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
-        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyRefuellingSpinBox)
-        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)
+        rightLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
+        rightLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        rightLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
 
         routingLayout = QtWidgets.QHBoxLayout()
         routingLayout.addLayout(leftLayout)
@@ -912,11 +920,12 @@ class JumpRouteWindow(gui.WindowWidget):
         # Fuel based route calculation
         pitCostCalculator = None
         if self._fuelBasedRoutingCheckBox.isChecked():
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
                 rules=app.Config.instance().rules())
 
             # Highlight cases where start world or waypoints don't support the
@@ -1581,12 +1590,13 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointWorldsGroupBox.setDisabled(runningJob)
         self._avoidWorldsGroupBox.setDisabled(runningJob)
 
-        if not runningJob:
-            fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
-            self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
-            self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
-            self._anomalyRefuellingSpinBox.setEnabled(fuelBasedRouting)
-            self._anomalyBerthingSpinBox.setEnabled(fuelBasedRouting)
+        fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
+        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
+        self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
+        self._useAnomalyRefuellingCheckBox.setEnabled(fuelBasedRouting)
+        self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
 
     def _selectWorld(self) -> typing.Optional[traveller.World]:
         dlg = gui.WorldSearchDialog(parent=self)
@@ -1625,11 +1635,12 @@ class JumpRouteWindow(gui.WindowWidget):
         # Only calculate logistics if fuel based routing is enabled. If it's disabled the route will
         # most likely contain worlds that don't match the refuelling strategy
         if self._fuelBasedRoutingCheckBox.isChecked():
+            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
                 useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-                anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
                 rules=app.Config.instance().rules())
 
             try:

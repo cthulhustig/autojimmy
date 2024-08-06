@@ -129,8 +129,15 @@ class _BaseTraderWindow(gui.WindowWidget):
         self._includeFinishWorldBerthingCheckBox = gui.SharedIncludeFinishBerthingCheckBox()
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._useFuelCachesCheckBox = gui.SharedUseFuelCachesCheckBox()
-        self._anomalyRefuellingSpinBox = gui.SharedAnomalyRefuellingSpinBox()
-        self._anomalyBerthingSpinBox = gui.SharedAnomalyBerthingSpinBox()
+        self._useAnomalyRefuellingCheckBox = gui.SharedUseAnomalyRefuellingCheckBox()
+        self._useAnomalyRefuellingCheckBox.stateChanged.connect(
+            self._anomalyRefuellingToggled)
+        self._anomalyFuelCostSpinBox = gui.SharedAnomalyFuelCostSpinBox()
+        self._anomalyFuelCostSpinBox.setEnabled(
+            self._useAnomalyRefuellingCheckBox.isChecked())
+        self._anomalyBerthingCostSpinBox = gui.SharedAnomalyBerthingCostSpinBox()
+        self._anomalyBerthingCostSpinBox.setEnabled(
+            self._useAnomalyRefuellingCheckBox.isChecked())
 
         centerLayout = gui.FormLayoutEx()
         centerLayout.setContentsMargins(0, 0, 0, 0)
@@ -140,8 +147,9 @@ class _BaseTraderWindow(gui.WindowWidget):
         centerLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
         centerLayout.addRow('Refuelling Strategy:', self._refuellingStrategyComboBox)
         centerLayout.addRow('Use Fuel Caches:', self._useFuelCachesCheckBox)
-        centerLayout.addRow('Anomaly Fuel Cost:', self._anomalyRefuellingSpinBox)
-        centerLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingSpinBox)
+        centerLayout.addRow('Use Anomaly Refuelling:', self._useAnomalyRefuellingCheckBox)
+        centerLayout.addRow('Anomaly Fuel Cost:', self._anomalyFuelCostSpinBox)
+        centerLayout.addRow('Anomaly Berthing Cost:', self._anomalyBerthingCostSpinBox)
 
         self._includeLogisticsCostsCheckBox = gui.SharedIncludeLogisticsCostsCheckBox()
         self._includeUnprofitableTradesCheckBox = gui.SharedIncludeUnprofitableCheckBox()
@@ -396,6 +404,9 @@ class _BaseTraderWindow(gui.WindowWidget):
             minValue: int,
             maxValue: int) -> None:
         pass
+
+    def _anomalyRefuellingToggled(self) -> None:
+        self._enableDisableControls()
 
     # This should be implemented by the derived class
     def _calculateTradeOptions(self) -> None:
@@ -1090,6 +1101,10 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._saleWorldsGroupBox.setDisabled(True)
             self._createCargoManifestButton.setDisabled(True)
 
+        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
+
     def _addSpeculativeCargo(
             self,
             cargoRecord: logic.CargoRecord
@@ -1774,11 +1789,12 @@ class WorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
             rules=app.Config.instance().rules())
 
         # Flag cases where the purchase world doesn't match the refuelling
@@ -2189,6 +2205,10 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._purchaseWorldsGroupBox.setDisabled(self._traderJob != None)
         self._saleWorldsGroupBox.setDisabled(self._traderJob != None)
 
+        anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
+        self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
+
     def _allowPurchaseWorld(self, world: traveller.World) -> bool:
         # Silently ignore worlds that are already in the table
         return not self._purchaseWorldsWidget.containsWorld(world)
@@ -2394,11 +2414,12 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
                 text='Ship\'s combined fuel and free cargo capacities can\'t be larger than its total tonnage')
             return
 
+        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         pitCostCalculator = logic.PitStopCostCalculator(
             refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
             useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-            anomalyFuelCost=self._anomalyRefuellingSpinBox.value(),
-            anomalyBerthingCost=self._anomalyBerthingSpinBox.value(),
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
             rules=app.Config.instance().rules())
 
         # Flag cases where purchase worlds don't match the refuelling strategy. No options will be

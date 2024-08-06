@@ -591,14 +591,26 @@ class SharedUseFuelCachesCheckBox(_SharedCheckBox):
             toolTip=gui.UseFuelCachesToolTip,
             parent=parent)
 
-class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
-    class _SettingUpdater(_TogglableSpinBoxUpdater):
-        def _loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().useAnomalyRefuelling(),
-                    app.Config.instance().anomalyFuelCost())
+class SharedUseAnomalyRefuellingCheckBox(_SharedCheckBox):
+    class _SettingUpdater(_CheckBoxUpdater):
+        def _loadValue(self) -> bool:
+            return app.Config.instance().useAnomalyRefuelling()
 
-        def _saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setUseAnomalyRefuelling(enabled)
+        def _saveValue(self, value: bool) -> None:
+            return app.Config.instance().setUseAnomalyRefuelling(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedUseAnomalyRefuellingCheckBox._SettingUpdater,
+            toolTip=gui.AnomalyRefuellingToolTip,
+            parent=parent)
+
+class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
+    class _SettingUpdater(_SpinBoxUpdater):
+        def _loadValue(self) -> int:
+            return app.Config.instance().anomalyFuelCost()
+
+        def _saveValue(self, value: int) -> None:
             app.Config.instance().setAnomalyFuelCost(value)
 
     def __init__(
@@ -606,20 +618,18 @@ class SharedAnomalyRefuellingSpinBox(_SharedTogglableSpinBox):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            updaterType=SharedAnomalyRefuellingSpinBox._SettingUpdater,
+            updaterType=SharedAnomalyFuelCostSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip=gui.AnomalyRefuellingToolTip,
+            toolTip=gui.AnomalyFuelCostToolTip,
             parent=parent)
 
-class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
-    class _SettingUpdater(_TogglableSpinBoxUpdater):
-        def _loadValue(self) -> typing.Tuple[bool, int]:
-            return (app.Config.instance().useAnomalyBerthing(),
-                    app.Config.instance().anomalyBerthingCost())
+class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
+    class _SettingUpdater(_SpinBoxUpdater):
+        def _loadValue(self) -> int:
+            return app.Config.instance().anomalyBerthingCost()
 
-        def _saveValue(self, enabled: bool, value: int) -> None:
-            app.Config.instance().setUseAnomalyBerthing(enabled)
+        def _saveValue(self, value: int) -> None:
             app.Config.instance().setAnomalyBerthingCost(value)
 
     def __init__(
@@ -627,10 +637,10 @@ class SharedAnomalyBerthingSpinBox(_SharedTogglableSpinBox):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            updaterType=SharedAnomalyBerthingSpinBox._SettingUpdater,
+            updaterType=SharedAnomalyBerthingCostSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip=gui.AnomalyBerthingToolTip,
+            toolTip=gui.AnomalyBerthingCostToolTip,
             parent=parent)
 
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):
