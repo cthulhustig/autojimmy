@@ -621,7 +621,7 @@ class SharedAnomalyFuelCostSpinBox(_SharedSpinBox):
             updaterType=SharedAnomalyFuelCostSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip=gui.AnomalyRefuellingToolTip,
+            toolTip=gui.AnomalyFuelCostToolTip,
             parent=parent)
 
 class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
@@ -640,7 +640,7 @@ class SharedAnomalyBerthingCostSpinBox(_SharedSpinBox):
             updaterType=SharedAnomalyBerthingCostSpinBox._SettingUpdater,
             minValue=0,
             maxValue=app.MaxPossibleCredits,
-            toolTip=gui.AnomalyBerthingToolTip,
+            toolTip=gui.AnomalyBerthingCostToolTip,
             parent=parent)
 
 class SharedRouteOptimisationComboBox(_SharedEnumComboBox):

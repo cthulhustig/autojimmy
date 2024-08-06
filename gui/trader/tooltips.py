@@ -118,7 +118,7 @@ RefuellingStrategyToolTip = createStringToolTip(
     escape=False)
 UseFuelCachesToolTip = createStringToolTip(
     '<p>Specify if fuel caches can be used when calculating a jump route.</p>'
-    '<p>Fuel Caches are systems that have the {{Fuel}} remark. These tend '
+    '<p>Fuel Caches are systems that have the {Fuel} remark. These tend '
     'to be unmanned platforms in otherwise dead space. Fuel is free, assuming '
     'you can find them.</p>'
     '<p>At the time of writing, the only fuel caches in the stock Traveller '
@@ -132,8 +132,8 @@ UseFuelCachesToolTip = createStringToolTip(
     escape=False)
 AnomalyRefuellingToolTip = createStringToolTip(
     '<p>Specify if anomalies can be used for refuelling when calculating a '
-    'jump route and, if they can, how much that fuel costs per ton.</p>'
-    '<p>Anomalies are systems that have the {{Anomaly}} remark. How this '
+    'jump route.</p>'
+    '<p>Anomalies are systems that have the {Anomaly} remark. How this '
     'remark is used in the Traveller Map data is a little inconsistent. In '
     'some places (e.g. Chandler Station in Reft) it\'s used for a star port '
     'in dead space where fuel can be purchased for exorbitant prices. '
@@ -145,21 +145,14 @@ AnomalyRefuellingToolTip = createStringToolTip(
     'if the ship can hold enough fuel to then jump on to the next stop in the '
     'route without refuelling. If you want to completely avoid fuel cache '
     'hexes in your jump route, you can add them to the avoid worlds.</i></p>'
-    '<p><i>This setting doesn\'t apply to systems that have the {{Anomaly}} '
-    'and {{Fuel}} remarks as they are treated as fuel caches.</i></p>',
+    '<p><i>This setting doesn\'t apply to systems that have the {Anomaly} '
+    'and {Fuel} remarks as they are treated as fuel caches.</i></p>',
     escape=False)
-AnomalyBerthingToolTip = createStringToolTip(
-    '<p>Specify if anomalies require berthing in order to refuel and, if so, '
-    'how much it costs.</p>'
-    '<p>Anomalies are systems that have the {{Anomaly}} remark. How this '
-    'remark is used in the Traveller Map data is a little inconsistent. In '
-    'some places (e.g. Chandler Station in Reft) it\'s used for a star port '
-    'in dead space where fuel can be purchased for exorbitant prices. '
-    'However, in other places (e.g. The Big Wreck in Corridor) it\'s used '
-    'for points of interest where it might be possible to scavenge some fuel '
-    'but you probably shouldn\'t rely on it.</p>'
-    '<p><i>This setting doesn\'t apply to systems that have the {{Anomaly}} '
-    'and {{Fuel}} remarks as they are treated as fuel caches.</i></p>',
+AnomalyFuelCostToolTip = createStringToolTip(
+    '<p>Specify the per-ton cost of fuel at anomalies.</p>',
+    escape=False)
+AnomalyBerthingCostToolTip = createStringToolTip(
+    '<p>Specify the cost of berthing at anomalies.</p>',
     escape=False)
 IncludeStartBerthingToolTip = createStringToolTip(
     '<p>Include start world berthing cost in logistics calculations</p>',

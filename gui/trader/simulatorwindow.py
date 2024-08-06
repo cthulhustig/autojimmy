@@ -461,14 +461,14 @@ class SimulatorWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox = gui.SpinBoxEx()
         self._anomalyFuelCostSpinBox.setRange(0, app.MaxPossibleCredits)
         self._anomalyFuelCostSpinBox.setValue(1000)
-        self._anomalyFuelCostSpinBox.setToolTip(gui.AnomalyRefuellingToolTip)
+        self._anomalyFuelCostSpinBox.setToolTip(gui.AnomalyFuelCostToolTip)
         self._anomalyFuelCostSpinBox.setEnabled(
             self._useAnomalyRefuellingCheckBox.isChecked())
 
         self._anomalyBerthingCostSpinBox = gui.SpinBoxEx()
         self._anomalyBerthingCostSpinBox.setRange(0, app.MaxPossibleCredits)
         self._anomalyBerthingCostSpinBox.setValue(5000)
-        self._anomalyBerthingCostSpinBox.setToolTip(gui.AnomalyBerthingToolTip)
+        self._anomalyBerthingCostSpinBox.setToolTip(gui.AnomalyBerthingCostToolTip)
         self._anomalyBerthingCostSpinBox.setEnabled(
             self._useAnomalyRefuellingCheckBox.isChecked())
 
