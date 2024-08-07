@@ -38,7 +38,7 @@ DetectedCairoSvgState = CairoSvgState.Working
 # processes that are spawned
 try:
     with open(_RequirementsFile, 'r') as file:
-        lineCount = len(file.readlines())
+        lineCount = len([line for line in file.readlines() if line.strip()[:1] not in ('', '#')])
         if lineCount != len(_Requirements):
             print(f'Dependency checker requirements list length doesn\'t match the number of lines in {_RequirementsFile}, results may be inaccurate!')
 except Exception as ex:
