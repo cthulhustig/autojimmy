@@ -126,7 +126,7 @@ class AsyncRequest(QtCore.QObject):
             self._teardown() # Making a new request cancels any in progress request
 
             self._requestTask = asyncio.ensure_future(
-                self._getRequestAsync(url),
+                self._getRequestAsync(url=url, loop=loop),
                 loop=loop)
 
             if timeout != None:
@@ -148,7 +148,7 @@ class AsyncRequest(QtCore.QObject):
             self._teardown() # Making a new request cancels any in progress request
 
             self._requestTask = asyncio.ensure_future(
-                self._postRequestAsync(url=url, content=content, headers=headers),
+                self._postRequestAsync(url=url, content=content, headers=headers, loop=loop),
                 loop=loop)
 
             if timeout != None:
@@ -160,12 +160,13 @@ class AsyncRequest(QtCore.QObject):
 
     async def _getRequestAsync(
             self,
-            url: str
+            url: str,
+            loop: typing.Optional[asyncio.AbstractEventLoop] = None # None means use current loop
             ) -> None:
         try:
             logging.info(f'Starting async GET request for {url}')
 
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(loop=loop) as session:
                 async with session.get(url=url) as response:
                     status = response.status
                     reason = response.reason
@@ -196,7 +197,8 @@ class AsyncRequest(QtCore.QObject):
             self,
             url: str,
             content: typing.Optional[typing.Union[bytes, str, typing.Mapping[str, typing.Union[bytes, str]]]],
-            headers: typing.Optional[typing.Mapping[str, str]]
+            headers: typing.Optional[typing.Mapping[str, str]],
+            loop: typing.Optional[asyncio.AbstractEventLoop] = None # None means use current loop
             ) -> None:
         try:
             logging.debug(f'Starting async POST request to {url}')
@@ -215,7 +217,7 @@ class AsyncRequest(QtCore.QObject):
             else:
                 data = content
 
-            async with aiohttp.ClientSession(headers=headers) as session:
+            async with aiohttp.ClientSession(headers=headers, loop=loop) as session:
                 async with session.post(url=url, data=data) as response:
                     status = response.status
                     reason = response.reason

@@ -1,5 +1,6 @@
 import aiofiles
 import aiohttp.web
+import asyncio
 import app
 import common
 import io
@@ -79,7 +80,8 @@ class RequestHandler(object):
             travellerMapUrl: str,
             installDir: str,
             tileCache: proxy.TileCache,
-            compositor: typing.Optional[proxy.Compositor]
+            compositor: typing.Optional[proxy.Compositor],
+            loop: typing.Optional[asyncio.AbstractEventLoop]
             ) -> None:
         super().__init__()
         self._travellerMapUrl = travellerMapUrl
@@ -101,13 +103,17 @@ class RequestHandler(object):
         if parsedUrl.scheme.lower() == 'https':
             self._connector = aiohttp.TCPConnector(
                 limit_per_host=maxConnectionsPerHost,
-                keepalive_timeout=RequestHandler._ConnectionKeepAliveSeconds)
+                keepalive_timeout=RequestHandler._ConnectionKeepAliveSeconds,
+                loop=loop)
         else:
             self._connector = aiohttp.TCPConnector(
                 limit_per_host=maxConnectionsPerHost,
-                force_close=True)
+                force_close=True,
+                loop=loop)
 
-        self._session = aiohttp.ClientSession(connector=self._connector)
+        self._session = aiohttp.ClientSession(
+            connector=self._connector,
+            loop=loop)
 
     async def initAsync(self) -> None:
         # Add static routes for Traveller Map web interface snapshot
@@ -400,7 +406,7 @@ class RequestHandler(object):
             ) -> typing.Tuple[bytes, str, typing.Optional[travellermap.MapFormat]]:
         status, reason, headers, body = await self._makeProxyRequestAsync(request)
         if status != 200:
-            raise RuntimeError(f'Request for tile {request.query_string} failed (status: {status}, reason: {reason})')
+            raise RuntimeError(f'Request for tile {request.query_string} filed (status: {status}, reason: {reason})')
 
         contentType = headers.get('Content-Type')
         tileFormat = travellermap.mimeTypeToMapFormat(contentType)
