@@ -326,7 +326,8 @@ class MapProxy(object):
                 travellerMapUrl=travellerMapUrl,
                 installDir=installDir,
                 tileCache=tileCache,
-                compositor=compositor)
+                compositor=compositor,
+                loop=loop)
             loop.run_until_complete(requestHandler.initAsync())
             if mainsData:
                 # Add static route for mains data
@@ -337,7 +338,8 @@ class MapProxy(object):
 
             # Set up web server with all requests redirected to my handler
             webApp = aiohttp.web.Application(
-                middlewares=[_serverHeaderMiddlewareAsync])
+                middlewares=[_serverHeaderMiddlewareAsync],
+                loop=loop)
             webApp.router.add_route(
                 method='*',
                 path='/{path:.*?}',
