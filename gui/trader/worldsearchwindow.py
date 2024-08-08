@@ -256,6 +256,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._leftRightSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._leftRightSplitter.addWidget(configWidget)
         self._leftRightSplitter.addWidget(self._foundWorldsGroupBox)
+        self._leftRightSplitter.setStretchFactor(0, 1)
+        self._leftRightSplitter.setStretchFactor(1, 100)
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._leftRightSplitter)

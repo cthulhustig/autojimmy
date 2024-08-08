@@ -608,6 +608,8 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._mainSplitter.addWidget(configurationWidget)
         self._mainSplitter.addWidget(self._tradeOptionsGroupBox)
+        self._mainSplitter.setStretchFactor(0, 1)
+        self._mainSplitter.setStretchFactor(1, 100)
 
         self._tradeInfoSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self._tradeInfoSplitter.addWidget(self._mainSplitter)
@@ -2034,6 +2036,8 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._mainSplitter.addWidget(leftWidget)
         self._mainSplitter.addWidget(self._tradeOptionsGroupBox)
+        self._mainSplitter.setStretchFactor(0, 1)
+        self._mainSplitter.setStretchFactor(1, 100)
 
         self._tradeInfoSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self._tradeInfoSplitter.addWidget(self._mainSplitter)

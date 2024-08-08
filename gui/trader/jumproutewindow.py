@@ -388,6 +388,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._mainSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._mainSplitter.addWidget(configurationWidget)
         self._mainSplitter.addWidget(self._plannedRouteGroupBox)
+        self._mainSplitter.setStretchFactor(0, 1)
+        self._mainSplitter.setStretchFactor(1, 100)
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._mainSplitter)
