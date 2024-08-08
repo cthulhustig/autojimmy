@@ -18,10 +18,9 @@ _WelcomeMessage = """
     <p>For Mongoose Traveller players, {name} can calculate Sale and Purchase Trade Scores for
     the chosen worlds. These are calculated as the sum of the Sale and Purchase DMs for a given
     list of Trade Goods. These values are only aimed as a guide but in general the larger the value,
-    the better the sale/purchase prices are likely to be.</p>
-    <p>By selecting the Trade Goods the player has to sell or selecting the Trade Goods in their
-    purchase range the Trade Score can help players quickly identify worlds which may be good
-    options for trading.</p>
+    the better the sale/purchase prices are likely to be. By selecting the Trade Goods the player
+    has to sell or selecting the Trade Goods in their purchase range the Trade Score can help
+    players quickly identify worlds which may be good options for trading.</p>
     <p>{name} can integrate with Traveller Map in order to show the found worlds. This feature
     requires an internet connection.</p>
     </html>
@@ -256,6 +255,8 @@ class WorldSearchWindow(gui.WindowWidget):
         self._leftRightSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._leftRightSplitter.addWidget(configWidget)
         self._leftRightSplitter.addWidget(self._foundWorldsGroupBox)
+        self._leftRightSplitter.setStretchFactor(0, 1)
+        self._leftRightSplitter.setStretchFactor(1, 100)
 
         windowLayout = QtWidgets.QVBoxLayout()
         windowLayout.addWidget(self._leftRightSplitter)

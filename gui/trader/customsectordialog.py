@@ -1291,6 +1291,8 @@ class CustomSectorDialog(gui.DialogEx):
         self._horizontalSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._horizontalSplitter.addWidget(self._sectorListGroupBox)
         self._horizontalSplitter.addWidget(self._sectorDataGroupBox)
+        self._horizontalSplitter.setStretchFactor(0, 1)
+        self._horizontalSplitter.setStretchFactor(1, 2)
 
         dialogLayout = QtWidgets.QHBoxLayout()
         dialogLayout.addWidget(self._horizontalSplitter)

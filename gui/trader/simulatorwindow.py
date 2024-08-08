@@ -136,6 +136,8 @@ class SimulatorWindow(gui.WindowWidget):
         self._leftRightSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self._leftRightSplitter.addWidget(leftWidget)
         self._leftRightSplitter.addWidget(self._simulationGroupBox)
+        self._leftRightSplitter.setStretchFactor(0, 1)
+        self._leftRightSplitter.setStretchFactor(1, 100)
 
         self._topBottomSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         self._topBottomSplitter.addWidget(self._leftRightSplitter)
