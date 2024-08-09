@@ -3,7 +3,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
-from reportlab.platypus import PageBreak, Table, TableStyle, Flowable
+from reportlab.platypus import CellStyle, PageBreak, Table, TableStyle, Flowable
 
 import app
 import math
@@ -50,6 +50,8 @@ _PageNumberHorizontalMargin = 20
 _PageNumberVerticalMargin = 10
 
 _MaxWastedSpace = 200
+
+_HitsEditBoxWidth = 15
 
 # This controls the number of empty rows added at the bottom of the current details table for user
 # specified stuff. These row will have both the state name and value as editable fields
@@ -465,13 +467,13 @@ class RobotToPdf(object):
                     typing.Tuple[int, int], # Upper left of span
                     typing.Tuple[int, int], # Lower right of span
                     str, # Background colour string
-                    ]]] = None
-            ) -> Table:
-        gridColour = _TableGridColour if self._colour else '#000000'
-        styles = [
-            ('INNERGRID', (0, 0), (-1, -1), _TableLineWidth, gridColour),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP')
-            ]
+                    ]]] = None,
+            drawGrid: bool = True
+            ) -> TableStyle:
+        styles = [('VALIGN', (0, 0), (-1, -1), 'TOP')]
+        if drawGrid:
+            gridColour = _TableGridColour if self._colour else '#000000'
+            styles.append(('INNERGRID', (0, 0), (-1, -1), _TableLineWidth, gridColour))
         if spans:
             for ul, br in spans:
                 styles.append(('SPAN', ul, br))
@@ -486,14 +488,18 @@ class RobotToPdf(object):
             data: typing.List[typing.List[typing.Union[str, Flowable]]],
             spans: typing.List[typing.Tuple[typing.Tuple[int, int], typing.Tuple[int, int]]] = None,
             colWidths: typing.Optional[typing.List[typing.Optional[typing.Union[str, int]]]] = None,
-            copyHeaderOnSplit: bool = True
+            copyHeaderOnSplit: bool = True,
+            tableStyle: typing.Optional[TableStyle] = None,
+            cellStyles: typing.Optional[typing.Iterable[typing.Iterable[CellStyle]]] = None,
             ) -> Table:
-        tableStyle = self._createTableStyle(spans=spans)
+        if tableStyle == None:
+            tableStyle = self._createTableStyle(spans=spans)
 
-        cellStyles = pdf.createTableCellStyles(
-            tableData=data,
-            horzCellPadding=_CellHorizontalPadding,
-            vertCellPadding=_CellVerticalPadding)
+        if cellStyles == None:
+            cellStyles = pdf.createTableCellStyles(
+                tableData=data,
+                horzCellPadding=_CellHorizontalPadding,
+                vertCellPadding=_CellVerticalPadding)
 
         return Table(
             data=data,
@@ -514,23 +520,66 @@ class RobotToPdf(object):
             specialityGroupingCount=specialityGroupingCount)
         tableData = []
         tableSpans = []
+        cellStyles = []
 
         row = []
+        styles = []
         for field in _WorksheetTopRow:
             if worksheet.hasField(field=field):
                 row.append(pdf.ParagraphEx(
                     text=field.value,
                     style=_TableHeaderNormalStyle))
+                styles.append(pdf.createTableCellStyle(
+                    name=repr((len(row) - 1, 0))))
         tableData.append(row)
+        cellStyles.append(styles)
         columnCount = len(row)
 
         row = []
+        styles = []
         for field in _WorksheetTopRow:
-            if worksheet.hasField(field=field):
+            if not worksheet.hasField(field=field):
+                continue
+
+            topPadding = 3
+            if includeEditableFields and (field == robots.Worksheet.Field.Hits):
+                groupData = [[
+                    self._createSingleLineEditBox(
+                        name=f'HitsEdit',
+                        fixedWidth=_HitsEditBoxWidth,
+                        style=_TableDataNormalStyle),
+                    pdf.ParagraphEx(
+                        text=' / ' + worksheet.value(field=field),
+                        style=_TableDataNormalStyle)]]
+                groupTableStyle = self._createTableStyle(drawGrid=False)
+                groupCellStyles = [[
+                    pdf.createTableCellStyle(
+                        name='HitsEditStyle',
+                        horzCellPadding=0,
+                        vertCellPadding=0),
+                    pdf.createTableCellStyle(
+                        name='HitsTextStyle',
+                        horzCellPadding=0,
+                        vertCellPadding=1)]]
+                row.append(self._createTable(
+                    data=groupData,
+                    colWidths=[None, '*'],
+                    tableStyle=groupTableStyle,
+                    cellStyles=groupCellStyles))
+                topPadding = 2
+            else:
                 row.append(pdf.ParagraphEx(
                     text=worksheet.value(field=field),
                     style=_TableDataNormalStyle))
+
+            cellStyle = CellStyle(
+                repr((len(row) - 1, len(tableData))))
+            cellStyle.topPadding = topPadding
+            cellStyle.bottomPadding = 3
+            cellStyle.leftPadding = cellStyle.rightPadding = 5
+            styles.append(cellStyle)
         tableData.append(row)
+        cellStyles.append(styles)
 
         for field in robots.Worksheet.Field:
             if field in _WorksheetTopRow:
@@ -545,11 +594,19 @@ class RobotToPdf(object):
                 pdf.ParagraphEx(
                     text=worksheet.value(field=field),
                     style=_TableDataNormalStyle)]
+            styles = [
+                pdf.createTableCellStyle(
+                    name=repr((0, len(tableData)))),
+                pdf.createTableCellStyle(
+                    name=repr((1, len(tableData))))]
             for _ in range(len(row), columnCount):
                 row.append(pdf.ParagraphEx(
                     text='',
                     style=_TableDataNormalStyle))
+                styles.append(pdf.createTableCellStyle(
+                    name=repr((len(row) - 1, len(tableData)))))
             tableData.append(row)
+            cellStyles.append(styles)
 
             rowIndex = len(tableData) - 1
             tableSpans.append(((1, rowIndex), (columnCount - 1, rowIndex)))
@@ -563,11 +620,19 @@ class RobotToPdf(object):
                     self._createSingleLineEditBox(
                         name=f'InfoEditValue {index + 1}',
                         style=_TableHeaderNormalStyle)]
+                styles = [
+                    pdf.createTableCellStyle(
+                        name=repr((0, len(tableData)))),
+                    pdf.createTableCellStyle(
+                        name=repr((1, len(tableData))))]
                 for _ in range(len(row), columnCount):
                     row.append(pdf.ParagraphEx(
                         text='',
                         style=_TableDataNormalStyle))
+                    styles.append(pdf.createTableCellStyle(
+                        name=repr((len(row) - 1, len(tableData)))))
                 tableData.append(row)
+                cellStyles.append(styles)
 
                 rowIndex = len(tableData) - 1
                 tableSpans.append(((1, rowIndex), (columnCount - 1, rowIndex)))
@@ -576,7 +641,8 @@ class RobotToPdf(object):
             data=tableData,
             spans=tableSpans,
             colWidths=[None] * columnCount,
-            copyHeaderOnSplit=False)
+            copyHeaderOnSplit=False,
+            cellStyles=cellStyles)
 
     def _usablePageSize(self) -> typing.Tuple[float, float]:
         return (
