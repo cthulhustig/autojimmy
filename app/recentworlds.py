@@ -23,7 +23,8 @@ class RecentWorlds(object):
         'Dark Nebula 1226', # Kusyu (Aslan Home World)
         'Ricenden 0827', # Guaran (Hive Home World)
         'Centrax 2609', # Glea (Hive Capital)
-        'Ruupiin 1315' # Kirur (K'kree Home World)
+        'Ruupiin 1315', # Kirur (K'kree Home World)
+        'Daibei 2428' # Girillovitch (Jimmy's Home World)
     ]
 
     _instance = None # Singleton instance
