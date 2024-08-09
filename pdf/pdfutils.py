@@ -265,6 +265,18 @@ class MultiPageDocTemplateEx(BaseDocTemplate):
         finally:
             canvas.restoreState()
 
+def createTableCellStyle(
+        name: str,
+        horzCellPadding: float = 5,
+        vertCellPadding: float = 3,
+        ) -> CellStyle:
+    style = CellStyle(name)
+    style.topPadding = vertCellPadding
+    style.bottomPadding = vertCellPadding
+    style.leftPadding = horzCellPadding
+    style.rightPadding = horzCellPadding
+    return style
+
 def createTableCellStyles(
         tableData: typing.Iterable[typing.Iterable[Paragraph]],
         horzCellPadding: float = 5,
@@ -274,11 +286,10 @@ def createTableCellStyles(
     for row in range(len(tableData)):
         rowStyles = []
         for column in range(len(tableData[row])):
-            style = CellStyle(repr((row, column)))
-            style.topPadding = vertCellPadding
-            style.bottomPadding = vertCellPadding
-            style.leftPadding = horzCellPadding
-            style.rightPadding = horzCellPadding
+            style = createTableCellStyle(
+                name=repr((row, column)),
+                horzCellPadding=horzCellPadding,
+                vertCellPadding=vertCellPadding)
             rowStyles.append(style)
         cellStyles.append(rowStyles)
     return cellStyles
