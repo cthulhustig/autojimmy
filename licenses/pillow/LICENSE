@@ -1,11 +1,11 @@
 The Python Imaging Library (PIL) is
 
     Copyright © 1997-2011 by Secret Labs AB
-    Copyright © 1995-2011 by Fredrik Lundh
+    Copyright © 1995-2011 by Fredrik Lundh and contributors
 
 Pillow is the friendly PIL fork. It is
 
-    Copyright © 2010-2023 by Jeffrey A. Clark (Alex) and contributors.
+    Copyright © 2010-2024 by Jeffrey A. Clark and contributors
 
 Like PIL, Pillow is licensed under the open source HPND License:
 
@@ -609,7 +609,7 @@ consider it more useful to permit linking proprietary applications with the
 library.  If this is what you want to do, use the GNU Library General
 Public License instead of this License.
  
-===== harfbuzz-8.2.1 ===== 
+===== harfbuzz-8.5.0 ===== 
  
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
 For parts of HarfBuzz that are licensed under different licenses see individual
@@ -654,10 +654,11 @@ FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
 ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
 PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  
-===== lcms2-2.15 ===== 
+===== lcms2-2.16 ===== 
  
-Little CMS
-Copyright (c) 1998-2020 Marti Maria Saguer
+MIT License
+
+Copyright (c) 2023 Marti Maria Saguer
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the 
@@ -678,7 +679,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
-===== libjpeg-turbo-3.0.0 ===== 
+===== libjpeg-turbo-3.0.3 ===== 
  
 LEGAL ISSUES
 ============
@@ -732,30 +733,33 @@ assumed by the product vendor.
 libjpeg-turbo Licenses
 ======================
 
-libjpeg-turbo is covered by three compatible BSD-style open source licenses:
+libjpeg-turbo is covered by two compatible BSD-style open source licenses:
 
 - The IJG (Independent JPEG Group) License, which is listed in
   [README.ijg](README.ijg)
 
-  This license applies to the libjpeg API library and associated programs
-  (any code inherited from libjpeg, and any modifications to that code.)
+  This license applies to the libjpeg API library and associated programs,
+  including any code inherited from libjpeg and any modifications to that
+  code.  Note that the libjpeg-turbo SIMD source code bears the
+  [zlib License](https://opensource.org/licenses/Zlib), but in the context of
+  the overall libjpeg API library, the terms of the zlib License are subsumed
+  by the terms of the IJG License.
 
 - The Modified (3-clause) BSD License, which is listed below
 
-  This license covers the TurboJPEG API library and associated programs, as
-  well as the build system.
-
-- The [zlib License](https://opensource.org/licenses/Zlib)
-
-  This license is a subset of the other two, and it covers the libjpeg-turbo
-  SIMD extensions.
+  This license applies to the TurboJPEG API library and associated programs, as
+  well as the build system.  Note that the TurboJPEG API library wraps the
+  libjpeg API library, so in the context of the overall TurboJPEG API library,
+  both the terms of the IJG License and the terms of the Modified (3-clause)
+  BSD License apply.
 
 
 Complying with the libjpeg-turbo Licenses
 =========================================
 
 This section provides a roll-up of the libjpeg-turbo licensing terms, to the
-best of our understanding.
+best of our understanding.  This is not a license in and of itself.  It is
+intended solely for clarification.
 
 1.  If you are distributing a modified version of the libjpeg-turbo source,
     then:
@@ -769,7 +773,7 @@ best of our understanding.
         - Clauses 1 and 3 of the zlib License
 
     2.  You must add your own copyright notice to the header of each source
-        file you modified, so others can tell that you modified that file (if
+        file you modified, so others can tell that you modified that file.  (If
         there is not an existing copyright header in that file, then you can
         simply add a notice stating that you modified the file.)
 
@@ -850,8 +854,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 
-Why Three Licenses?
-===================
+Why Two Licenses?
+=================
 
 The zlib License could have been used instead of the Modified (3-clause) BSD
 License, and since the IJG License effectively subsumes the distribution
@@ -862,7 +866,7 @@ attribution and endorsement protections to other entities.  Thus, it was
 desirable to choose a license that granted us the same protections for new code
 that were granted to the IJG for code derived from their software.
  
-===== libwebp-1.3.2 ===== 
+===== libwebp-1.4.0 ===== 
  
 Copyright (c) 2010, Google Inc. All rights reserved.
 
@@ -895,7 +899,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  
-===== lpng1639 ===== 
+===== lpng1643 ===== 
  
 COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 =========================================
@@ -903,8 +907,8 @@ COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 PNG Reference Library License version 2
 ---------------------------------------
 
- * Copyright (c) 1995-2022 The PNG Reference Library Authors.
- * Copyright (c) 2018-2022 Cosmin Truta.
+ * Copyright (c) 1995-2024 The PNG Reference Library Authors.
+ * Copyright (c) 2018-2024 Cosmin Truta.
  * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
  * Copyright (c) 1996-1997 Andreas Dilger.
  * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
@@ -1032,7 +1036,7 @@ to supporting the PNG file format in commercial products.  If you use
 this source code in a product, acknowledgment is not required but would
 be appreciated.
  
-===== openjpeg-2.5.0 ===== 
+===== openjpeg-2.5.2 ===== 
  
 /*
  * The copyright in this software is being made available under the 2-clauses 
@@ -1100,7 +1104,7 @@ WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
 LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 
 OF THIS SOFTWARE.
  
-===== xz-5.4.4 ===== 
+===== xz-5.4.5 ===== 
  
 
 XZ Utils Licensing
@@ -1179,9 +1183,9 @@ XZ Utils Licensing
     information.
 
  
-===== zlib-1.3 ===== 
+===== zlib-1.3.1 ===== 
  
- (C) 1995-2023 Jean-loup Gailly and Mark Adler
+ (C) 1995-2024 Jean-loup Gailly and Mark Adler
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
