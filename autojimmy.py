@@ -443,7 +443,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 text='Failed to update universe data', exception=ex)
 
     def _showAbout(self) -> None:
-        licenseDir = os.path.join(_installDirectory(), 'Licenses')
+        licenseDir = os.path.join(_installDirectory(), 'licenses')
         aboutDialog = gui.AboutDialog(
             parent=self,
             licenseDir=licenseDir)
