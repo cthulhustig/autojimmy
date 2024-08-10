@@ -66,7 +66,7 @@ class RobotSheetWidget(QtWidgets.QWidget):
         self._specialityGroupCountSpinBox.setRange(3, 10)
         self._specialityGroupCountSpinBox.setValue(4)
         self._specialityGroupCountSpinBox.setUncheckedValue(0)
-        self._specialityGroupCountSpinBox.setToolTip(RobotSheetWidget._ApplySkillModifiersToolTip)
+        self._specialityGroupCountSpinBox.setToolTip(RobotSheetWidget._GroupSkillSpecialitiesToolTip)
         self._specialityGroupCountSpinBox.valueChanged.connect(self._specialityGroupCountChanged)
 
         controlsLayout = QtWidgets.QHBoxLayout()
