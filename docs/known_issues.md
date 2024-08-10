@@ -72,7 +72,7 @@ ln -s /usr/lib/python3/dist-packages/PyQt5 <VENV_PATH>/lib/<PYTHON_VERSION>/site
 ```
 
 ## Debian/Ubuntu: Installing requirements.txt fails when upgrading Auto-Jimmy
-If your running Python in a venv and have previously used the workaround for 
+If your running Python in a venv and have previously used the workaround for
 [The Traveller Map window is blank](#debianubuntu-the-traveller-map-window-is-blank),
 you may get a error similar to the following after downloading a new version
 of the Auto-Jimmy source and using pip to install requirements for the new
@@ -102,6 +102,9 @@ following command before running Auto-Jimmy ([source](https://github.com/githubu
 ```
 XDG_SESSION_TYPE=x11
 ```
+
+## macOS: Segmentation fault: 11 when starting
+This can happen when using Python 3.12. Using Python 3.11 resolves the issue.
 
 ## macOS: World information tool tips aren't showing tile images from Traveller Map
 This issue can be caused by an HTTPS certificate failure. After installing a versions of
