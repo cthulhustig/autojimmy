@@ -22,9 +22,9 @@ class UuidObject(object):
 class DiceModifier(UuidObject):
     def __init__(
             self,
-            name: str,
-            enabled: bool,
-            value: int
+            name: str = '',
+            enabled: bool = True,
+            value: int = 0
             ) -> None:
         self._name = name
         self._enabled = enabled
@@ -76,16 +76,18 @@ class DiceRoller(UuidObject):
             self,
             name: str,
             dieCount: int,
-            dieSides: int,
+            dieType: common.DieType,
             constantDM: int = 0,
-            boonBaneCount: int = 0, # Negative = # bane dice, Positive = # boon dice
+            boonCount: int = 0,
+            baneCount: int = 0,
             randomGenerator: typing.Optional[random.Random] = None
             ) -> None:
         self._name = name
         self._dieCount = dieCount
-        self._dieSides = dieSides
+        self._dieType = dieType
         self._constantDM = constantDM
-        self._boonBaneCount = boonBaneCount
+        self._boonCount = boonCount
+        self._baneCount = baneCount
         self._dynamicDMs: typing.List[DiceModifier] = []
         self._randomGenerator = randomGenerator if randomGenerator else random
 
@@ -101,23 +103,29 @@ class DiceRoller(UuidObject):
     def setDieCount(self, dieCount: int) -> None:
         self._dieCount = dieCount
 
-    def dieSides(self) -> int:
-        return self._dieSides
+    def dieType(self) -> int:
+        return self._dieType
 
-    def setDieSides(self, dieSides: int) -> None:
-        self._dieSides = dieSides
+    def setDieType(self, dieType: common.DieType) -> None:
+        self._dieType = dieType
 
     def constantDM(self) -> int:
         return self._constantDM
 
-    def setConstantDM(self, constantModifier: int) -> None:
-        self._constantDM = constantModifier
+    def setConstantDM(self, modifier: int) -> None:
+        self._constantDM = modifier
 
-    def boonBaneCount(self) -> int:
-        return self._boonBaneCount
+    def boonCount(self) -> int:
+        return self._boonCount
 
-    def setBoonBaneCount(self, count: int) -> None:
+    def setBoonCount(self, count: int) -> None:
         self._boonCount = count
+
+    def baneCount(self) -> int:
+        return self._baneCount
+
+    def setBaneCount(self, count: int) -> None:
+        self._baneCount = count
 
     def addDynamicDM(self, modifier: DiceModifier) -> None:
         if modifier not in self._dynamicDMs:
@@ -139,23 +147,28 @@ class DiceRoller(UuidObject):
     def roll(
             self,
             targetNumber: typing.Optional[int] = None
-            ) -> common.DiceRollResult:
-        rolls: typing.List[common.ScalarCalculation] = []
-        dieCount = self._dieCount + abs(self._boonBaneCount)
-        for index in range(0, dieCount):
-            roll = self._randomGenerator.randint(1, self._dieSides)
-            rolls.append(common.ScalarCalculation(
+            ) -> DiceRollResult:
+        originalRolls: typing.List[common.ScalarCalculation] = []
+        boonBaneCount = self._boonCount - self._baneCount
+        totalDieCount = self._dieCount + abs(boonBaneCount)
+        dieSides = 3 if self._dieType == common.DieType.D3 else 6
+        for index in range(0, totalDieCount):
+            roll = self._randomGenerator.randint(1, dieSides)
+            if self._dieType == common.DieType.DD:
+                roll * 10
+            originalRolls.append(common.ScalarCalculation(
                 value=roll,
-                index=f'{self._name} D{self._dieSides} Roll {index + 1}/{dieCount}'))
+                name=f'{self._name} {self._dieType.value} Roll {index + 1}/{totalDieCount}'))
 
         # TODO: Need to double check this logic is right
-        filteredRolls = rolls.sort(key=lambda x: x.value(), reverse=False)
-        if self._boonBaneCount > 0:
-            filteredRolls = rolls[:self._dieCount]
-        elif self._boonBaneCount < 0:
-            filteredRolls = rolls[self._dieCount:]
+        if boonBaneCount != 0:
+            usedRolls = list(originalRolls)
+            usedRolls.sort(
+                key=lambda x: x.value(),
+                reverse=boonBaneCount > 0)
+            usedRolls = usedRolls[:self._dieCount]
         else:
-            filteredRolls = rolls
+            usedRolls = originalRolls
 
         modifiers = []
         if self._constantDM != 0:
@@ -169,7 +182,7 @@ class DiceRoller(UuidObject):
                     name=f'{self._name} DM'))
 
         total = common.Calculator.sum(
-            values=filteredRolls + modifiers,
+            values=usedRolls + modifiers,
             name=f'{self._name} Modified Roll')
 
         effect = None
@@ -186,7 +199,7 @@ class DiceRoller(UuidObject):
         return DiceRollResult(
             total=total,
             effect=effect,
-            rolls=rolls)
+            rolls=originalRolls)
 
 class DiceRollerGroup(UuidObject):
     def __init__(

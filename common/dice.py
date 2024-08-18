@@ -4,6 +4,11 @@ import random
 import re
 import typing
 
+class DieType(enum.Enum):
+    D6 = 'D'
+    D3 = 'D3'
+    DD = 'DD' # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
+
 _Lowest1DRoll = common.ScalarCalculation(
     value=1,
     name='Lowest Roll With 1D')
@@ -306,11 +311,6 @@ class DiceRoller(object):
     def rolls(self) -> typing.Iterable[DiceRollResult]:
         return self._rolls
 
-class DieType(enum.Enum):
-    D6 = 0
-    D3 = 1
-    DD = 2 # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
-
 class DiceRoll(object):
     # This matches <OptionalDiceCount><DiceType><OptionalConstantModifier>
     # NOTE: The OptionalConstantModifier may contain a space between the sign
@@ -321,11 +321,20 @@ class DiceRoll(object):
 
     def __init__(
             self,
-            count: common.ScalarCalculation = common.ScalarCalculation(value=0),
+            count: typing.Union[common.ScalarCalculation, int] = 0,
             type: DieType = DieType.D6,
-            constant: common.ScalarCalculation = common.ScalarCalculation(value=0),
+            constant: typing.Union[common.ScalarCalculation, int] = 0,
             ) -> None:
         super().__init__()
+        if not isinstance(count, common.ScalarCalculation):
+            count = common.ScalarCalculation(
+                value=count,
+                name='Die Count')
+        if not isinstance(constant, common.ScalarCalculation):
+            constant = common.ScalarCalculation(
+                value=constant,
+                name='Constant DM')
+
         self._count = count
         self._type = type
         self._constant = constant

@@ -268,6 +268,25 @@ class RadioButtonEx(QtWidgets.QRadioButton):
 class SpinBoxEx(QtWidgets.QSpinBox):
     _StateVersion = 'SpinBoxEx_v1'
 
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -291,6 +310,25 @@ class SpinBoxEx(QtWidgets.QSpinBox):
 
 class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     _StateVersion = 'DoubleSpinBoxEx_v1'
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
 
     # Set the number of decimal places to the minimum number needed to represent
     # the supplied value, with the number of decimal places clamped to the
@@ -1298,6 +1336,16 @@ class ListWidgetEx(QtWidgets.QListWidget):
             if item.isSelected():
                 count += 1
         return count
+
+    def itemFromWidget(
+            self,
+            widget: QtWidgets.QWidget
+            ) -> typing.Optional[QtWidgets.QListWidgetItem]:
+        for item in self.items():
+            itemWidget = self.itemWidget(item)
+            if itemWidget == widget:
+                return item
+        return None
 
 class VBoxLayoutEx(QtWidgets.QVBoxLayout):
     @typing.overload

@@ -92,6 +92,8 @@ from .robots.robotmanifesttable import *
 from .robots.robotsheetwidget import *
 from .robots.robotinfowidget import *
 from .robots.robotbuilderwindow import *
+from .diceroller.dicerollerwidget import *
+from .diceroller.dicerollerwindow import *
 from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
