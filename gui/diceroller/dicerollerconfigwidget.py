@@ -39,6 +39,7 @@ class DiceModifierWidget(QtWidgets.QWidget):
         self._modifierSpinBox.valueChanged.connect(self._modifierChanged)
 
         widgetLayout = QtWidgets.QHBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
         widgetLayout.addWidget(self._enabledCheckBox)
         widgetLayout.addWidget(QtWidgets.QLabel('Name: '))
         widgetLayout.addWidget(self._nameLineEdit)
@@ -62,6 +63,8 @@ class DiceModifierWidget(QtWidgets.QWidget):
 class DiceModifierListWidget(gui.ListWidgetEx):
     modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifier)
 
+    _ItemSpacing = 10
+
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -82,12 +85,18 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         deleteButton = gui.IconButton(icon=gui.loadIcon(id=gui.Icon.CloseTab))
         deleteButton.clicked.connect(lambda: self._deleteClicked(modifier))
 
+        itemSpacing = int(DiceModifierListWidget._ItemSpacing * \
+            app.Config.instance().interfaceScale())
+
         layout = QtWidgets.QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, itemSpacing)
         layout.addWidget(modifierWidget)
         layout.addWidget(deleteButton)
 
         itemWidget = gui.LayoutWrapperWidget(layout)
+        itemWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)
 
         item = QtWidgets.QListWidgetItem()
         item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsSelectable)
@@ -95,6 +104,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self.addItem(item)
         self.setItemWidget(item, itemWidget)
         self._modifierItemMap[modifier] = item
+        self._updateDimensions()
 
     def removeModifier(self, modifier: diceroller.DiceModifier) -> None:
         item = self._modifierItemMap.get(modifier)
@@ -108,12 +118,33 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         if widget:
             widget.hide()
             widget.deleteLater()
+        self._updateDimensions()
+
+    def clear(self) -> None:
+        super().clear()
+        self._modifierItemMap.clear()
+        self._updateDimensions()
 
     def _deleteClicked(self, modifier: diceroller.DiceModifier) -> None:
         self.removeModifier(modifier=modifier)
         self.modifierDeleted.emit(modifier)
 
-class DiceRollerWidget(QtWidgets.QWidget):
+    def _updateDimensions(self) -> None:
+        self.updateGeometry()
+        height = width = 0
+        if self.count() > 0:
+            height = self.sizeHintForRow(0) * self.count() + \
+                (self.frameWidth() * 2)
+            width = self.sizeHintForColumn(0) + \
+                (self.frameWidth() * 2)
+        if not self.horizontalScrollBar().isHidden():
+            height += self.horizontalScrollBar().height()
+        if not self.verticalScrollBar().isHidden():
+            width += self.verticalScrollBar().width()
+        self.setFixedHeight(height)
+        self.setMinimumWidth(width)
+
+class DiceRollerConfigWidget(QtWidgets.QWidget):
     def __init__(
             self,
             roller: diceroller.DiceRoller,
@@ -124,7 +155,6 @@ class DiceRollerWidget(QtWidgets.QWidget):
         self._roller = roller
         self._dieCountSpinBox = gui.SpinBoxEx()
         self._dieCountSpinBox.setRange(0, 100)
-        self._dieCountSpinBox.setValue(self._roller.dieCount())
         self._dieCountSpinBox.valueChanged.connect(self._dieCountChanged)
 
         self._dieTypeComboBox = gui.EnumComboBox(
@@ -141,7 +171,6 @@ class DiceRollerWidget(QtWidgets.QWidget):
         self._constantDMSpinBox = gui.SpinBoxEx()
         self._constantDMSpinBox.enableAlwaysShowSign(True)
         self._constantDMSpinBox.setRange(-100, 100)
-        self._constantDMSpinBox.setValue(self._roller.constantDM())
         self._constantDMSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
@@ -156,64 +185,111 @@ class DiceRollerWidget(QtWidgets.QWidget):
 
         self._boonCountSpinBox = gui.SpinBoxEx()
         self._boonCountSpinBox.setRange(0, 10)
-        self._boonCountSpinBox.setValue(self._roller.boonCount())
         self._boonCountSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._boonCountSpinBox.valueChanged.connect(self._boonCountChanged)
 
+        self._clearBoonsButton = QtWidgets.QPushButton('Clear')
+        self._clearBoonsButton.clicked.connect(self._clearBoonsClicked)
+
+        boonsLayout = QtWidgets.QHBoxLayout()
+        boonsLayout.setContentsMargins(0, 0, 0, 0)
+        boonsLayout.addWidget(self._boonCountSpinBox)
+        boonsLayout.addWidget(self._clearBoonsButton)
+        boonsLayout.addStretch()
+
         self._baneCountSpinBox = gui.SpinBoxEx()
         self._baneCountSpinBox.setRange(0, 10)
-        self._baneCountSpinBox.setValue(self._roller.baneCount())
         self._baneCountSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._baneCountSpinBox.valueChanged.connect(self._baneCountChanged)
 
-        boonBaneLayout = QtWidgets.QHBoxLayout()
-        boonBaneLayout.setContentsMargins(0, 0, 0, 0)
-        boonBaneLayout.addLayout(gui.createLabelledWidgetLayout(
-            text='Boons:',
-            widget=self._boonCountSpinBox))
-        boonBaneLayout.addLayout(gui.createLabelledWidgetLayout(
-            text='Banes:',
-            widget=self._baneCountSpinBox))
+        self._clearBanesButton = QtWidgets.QPushButton('Clear')
+        self._clearBanesButton.clicked.connect(self._clearBanesClicked)
 
-        self._addModifierButton = QtWidgets.QPushButton('Add Modifier')
+        banesLayout = QtWidgets.QHBoxLayout()
+        banesLayout.setContentsMargins(0, 0, 0, 0)
+        banesLayout.addWidget(self._baneCountSpinBox)
+        banesLayout.addWidget(self._clearBanesButton)
+        banesLayout.addStretch()
+
+        self._addModifierButton = QtWidgets.QPushButton('Add')
         self._addModifierButton.clicked.connect(self._addModifierClicked)
 
-        self._clearModifiersButton = QtWidgets.QPushButton('Clear Modifiers')
-        self._clearModifiersButton.clicked.connect(self._clearModifiersClicked)
+        self._removeModifiersButton = QtWidgets.QPushButton('Remove All')
+        self._removeModifiersButton.clicked.connect(self._removeAllModifiersClicked)
 
         self._modifierList = DiceModifierListWidget()
-        self._modifierList.setHidden(True) # Will be shown if modifiers added
+        self._modifierList.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self._modifierList.modifierDeleted.connect(self._modifierDeleted)
-        for modifier in self._roller.yieldDynamicDMs():
-            self._modifierList.addModifier(modifier)
 
         modifierControlLayout = QtWidgets.QHBoxLayout()
         modifierControlLayout.setContentsMargins(0, 0, 0, 0)
         modifierControlLayout.addWidget(self._addModifierButton)
-        modifierControlLayout.addWidget(self._clearModifiersButton)
+        modifierControlLayout.addWidget(self._removeModifiersButton)
+        modifierControlLayout.addStretch()
 
         modifiersLayout = QtWidgets.QVBoxLayout()
         modifiersLayout.addLayout(modifierControlLayout)
         modifiersLayout.addWidget(self._modifierList)
 
-        self._rollButton = QtWidgets.QPushButton('Roll')
-        self._rollButton.clicked.connect(self._rollDice)
+        controlLayout = gui.FormLayoutEx()
+        controlLayout.addRow('Dice Roll:', diceRollLayout)
+        controlLayout.addRow('Boons:', boonsLayout)
+        controlLayout.addRow('Banes:', banesLayout)
+        controlLayout.addRow('Modifiers:', modifiersLayout)
+        controlLayout.addStretch()
 
-        self._resultsLabel = QtWidgets.QLabel()
+        wrapperWidget = QtWidgets.QWidget()
+        wrapperWidget.setLayout(controlLayout)
+        wrapperWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+
+        scrollArea = gui.ScrollAreaEx()
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(wrapperWidget)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addLayout(diceRollLayout)
-        widgetLayout.addLayout(boonBaneLayout)
-        widgetLayout.addLayout(modifiersLayout)
-        widgetLayout.addWidget(self._rollButton)
-        widgetLayout.addWidget(self._resultsLabel)
+        widgetLayout.addWidget(scrollArea)
 
         self.setLayout(widgetLayout)
+        self._syncToRoller()
+
+    def roller(self) -> diceroller.DiceRoller:
+        return self._roller
+
+    def setRoller(
+            self,
+            roller: diceroller.DiceRoller
+            ) -> None:
+        self._roller = roller
+
+    def _syncToRoller(self) -> None:
+        with gui.SignalBlocker(self._dieCountSpinBox):
+            self._dieCountSpinBox.setValue(self._roller.dieCount())
+
+        with gui.SignalBlocker(self._dieTypeComboBox):
+            self._dieTypeComboBox.setCurrentEnum(self._roller.dieType())
+
+        with gui.SignalBlocker(self._constantDMSpinBox):
+            self._constantDMSpinBox.setValue(self._roller.constantDM())
+
+        with gui.SignalBlocker(self._boonCountSpinBox):
+            self._boonCountSpinBox.setValue(self._roller.boonCount())
+
+        with gui.SignalBlocker(self._baneCountSpinBox):
+            self._baneCountSpinBox.setValue(self._roller.baneCount())
+
+        with gui.SignalBlocker(self._modifierList):
+            self._modifierList.clear()
+            for modifier in self._roller.yieldDynamicDMs():
+                self._modifierList.addModifier(modifier)
 
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
@@ -231,29 +307,27 @@ class DiceRollerWidget(QtWidgets.QWidget):
         self._roller.setBoonCount(
             count=self._boonCountSpinBox.value())
 
+    def _clearBoonsClicked(self) -> None:
+        self._boonCountSpinBox.setValue(0)
+
     def _baneCountChanged(self) -> None:
         self._roller.setBaneCount(
             count=self._baneCountSpinBox.value())
+
+    def _clearBanesClicked(self) -> None:
+        self._baneCountSpinBox.setValue(0)
 
     def _addModifierClicked(self) -> None:
         modifier = diceroller.DiceModifier()
         self._roller.addDynamicDM(modifier=modifier)
         self._modifierList.addModifier(modifier)
-        self._modifierList.setHidden(False)
 
-    def _clearModifiersClicked(self) -> None:
+    # TODO: This should probably have an 'are you sure' prompt
+    def _removeAllModifiersClicked(self) -> None:
         modifiers = list(self._roller.yieldDynamicDMs())
         for modifier in modifiers:
             self._roller.removeDynamicDM(modifier)
             self._modifierList.removeModifier(modifier)
-        self._modifierList.setHidden(True)
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
         self._roller.removeDynamicDM(modifier)
-        if self._modifierList.isEmpty():
-            self._modifierList.setHidden(True)
-
-    def _rollDice(self) -> None:
-        result = self._roller.roll()
-        total=result.total()
-        self._resultsLabel.setText(f'You rolled {total.value()}')

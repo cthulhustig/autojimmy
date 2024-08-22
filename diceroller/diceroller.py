@@ -103,7 +103,7 @@ class DiceRoller(UuidObject):
     def setDieCount(self, dieCount: int) -> None:
         self._dieCount = dieCount
 
-    def dieType(self) -> int:
+    def dieType(self) -> common.DieType:
         return self._dieType
 
     def setDieType(self, dieType: common.DieType) -> None:

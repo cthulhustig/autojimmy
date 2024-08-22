@@ -66,6 +66,14 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             widget = item.widget()
             widget.setHidden(hidden)
 
+    def addStretch(self) -> None:
+        spacer = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding)
+        self.addItem(spacer)
+
 class TabWidgetEx(QtWidgets.QTabWidget):
     _StateVersion = 'TabWidgetEx_v1'
 
@@ -1219,6 +1227,30 @@ class ScrollAreaEx(QtWidgets.QScrollArea):
             scrollBar.setValue(stream.readInt())
 
         return True
+
+class HorizontalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+
+class VerticalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Expanding)
 
 # NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
 # doesn't make logical sense to save scrollbar state for an auto
