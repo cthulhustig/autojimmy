@@ -10,7 +10,8 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-class RollResultWidget(QtWidgets.QWidget):
+# TODO: Does this need to take interface scaling into account?
+class FullSizeTextWidget(QtWidgets.QWidget):
     def __init__(
             self,
             text: str = '',
@@ -91,6 +92,56 @@ class RollResultWidget(QtWidgets.QWidget):
         font.setPointSize(size)
         self.setFont(font)
 
+class DiceRollResultsWidget(QtWidgets.QWidget):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+
+        self._results = None
+
+        self._totalWidget = FullSizeTextWidget()
+
+        self._targetWidget = FullSizeTextWidget()
+        self._targetWidget.setHidden(True)
+
+        widgetLayout = QtWidgets.QVBoxLayout()
+        widgetLayout.setContentsMargins(0, 0, 0, 0)
+        widgetLayout.addWidget(self._totalWidget, 5)
+        widgetLayout.addWidget(self._targetWidget, 1)
+
+        self.setLayout(widgetLayout)
+
+    def setResults(
+            self,
+            results: typing.Optional[diceroller.DiceRollResult]
+            ) -> None:
+        if results:
+            total = results.total()
+            target = results.target()
+            effect = results.effect()
+            self._totalWidget.setText(str(total.value()))
+            if target:
+                targetText = 'Pass' if total.value() >= target.value() else 'Fail'
+                if effect and effect.value() > 0:
+                    targetText += f' (Effect: {effect.value()})'
+                self._targetWidget.setText(targetText)
+            self._targetWidget.setHidden(target == None)
+        else:
+            self._totalWidget.setText('')
+            self._targetWidget.setText('')
+            self._targetWidget.setHidden(True)
+
+# TODO: I think I need some kind of animation or something to show
+# random numbers scrolling by or something. The main issue it solves
+# is that, if you happen to roll the same number as you previously
+# rolled, it's not obvious anything actually happened so the user
+# might think they miss clicked and roll again rather than realising
+# what is displayed is their new roll
+# - The main thing when implementing this is that the actual roll
+# should be made at the very start so the final value is known the
+# entire time the animation is playing.
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -155,7 +206,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollButton = QtWidgets.QPushButton('Roll Dice')
         self._rollButton.clicked.connect(self._rollDice)
 
-        self._resultsWidget = RollResultWidget()
+        self._resultsWidget = DiceRollResultsWidget()
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._rollButton)
@@ -166,8 +217,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _rollDice(self) -> None:
         result = self._roller.roll()
-        total=result.total()
-        self._resultsWidget.setText(str(total.value()))
+        self._resultsWidget.setResults(result)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

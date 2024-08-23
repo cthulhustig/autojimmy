@@ -484,6 +484,9 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
     def setLayoutDirection(self, direction: QtCore.Qt.LayoutDirection) -> None:
         self._checkBox.setLayoutDirection(direction)
 
+    def setSpinBoxValue(self, value: int) -> None:
+        self._spinBox.setValue(value)
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)

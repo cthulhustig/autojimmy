@@ -237,11 +237,19 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         modifiersLayout.addLayout(modifierControlLayout)
         modifiersLayout.addWidget(self._modifierList)
 
+        self._targetNumberSpinBox = gui.OptionalSpinBox()
+        self._targetNumberSpinBox.setMinimum(0)
+        self._targetNumberSpinBox.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._targetNumberSpinBox.valueChanged.connect(self._targetNumberChanged)
+
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
         controlLayout.addRow('Boons:', boonsLayout)
         controlLayout.addRow('Banes:', banesLayout)
         controlLayout.addRow('Modifiers:', modifiersLayout)
+        controlLayout.addRow('Target Number:', self._targetNumberSpinBox)
         controlLayout.addStretch()
 
         wrapperWidget = QtWidgets.QWidget()
@@ -290,6 +298,13 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             self._modifierList.clear()
             for modifier in self._roller.yieldDynamicDMs():
                 self._modifierList.addModifier(modifier)
+            self._modifierList.setHidden(self._modifierList.isEmpty())
+
+        with gui.SignalBlocker(self._targetNumberSpinBox):
+            targetNumber = self._roller.targetNumber()
+            self._targetNumberSpinBox.setValue(targetNumber)
+            if targetNumber == None:
+                self._targetNumberSpinBox.setSpinBoxValue(8)
 
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
@@ -321,6 +336,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         modifier = diceroller.DiceModifier()
         self._roller.addDynamicDM(modifier=modifier)
         self._modifierList.addModifier(modifier)
+        self._modifierList.setHidden(False)
 
     # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
@@ -328,6 +344,11 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         for modifier in modifiers:
             self._roller.removeDynamicDM(modifier)
             self._modifierList.removeModifier(modifier)
+        self._modifierList.setHidden()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
         self._roller.removeDynamicDM(modifier)
+        self._modifierList.setHidden(self._modifierList.isEmpty())
+
+    def _targetNumberChanged(self) -> None:
+        self._roller.setTargetNumber(self._targetNumberSpinBox.value())

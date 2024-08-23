@@ -52,24 +52,29 @@ class DiceRollResult(UuidObject):
     def __init__(
             self,
             total: common.ScalarCalculation,
+            rolls: typing.Iterable[common.ScalarCalculation],
+            target: typing.Optional[common.ScalarCalculation],
             effect: typing.Optional[common.ScalarCalculation],
-            rolls: typing.Iterable[common.ScalarCalculation]
             ) -> None:
         self._total = total
-        self._effect = effect
         self._rolls = rolls
+        self._target = target
+        self._effect = effect
 
     def total(self) -> common.ScalarCalculation:
         return self._total
+
+    def yieldRolls(self) -> typing.Generator[common.ScalarCalculation, None, None]:
+        for roll in self._rolls:
+            yield roll
+
+    def target(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._target
 
     # The effect will only be set if a target number was specified and that
     # target number was met
     def effect(self) -> typing.Optional[common.ScalarCalculation]:
         return self._effect
-
-    def yieldRolls(self) -> typing.Generator[common.ScalarCalculation, None, None]:
-        for roll in self._rolls:
-            yield roll
 
 class DiceRoller(UuidObject):
     def __init__(
@@ -80,6 +85,8 @@ class DiceRoller(UuidObject):
             constantDM: int = 0,
             boonCount: int = 0,
             baneCount: int = 0,
+            dynamicDMs: typing.Optional[typing.Iterable[DiceModifier]] = None,
+            targetNumber: typing.Optional[int] = None,
             randomGenerator: typing.Optional[random.Random] = None
             ) -> None:
         self._name = name
@@ -88,7 +95,8 @@ class DiceRoller(UuidObject):
         self._constantDM = constantDM
         self._boonCount = boonCount
         self._baneCount = baneCount
-        self._dynamicDMs: typing.List[DiceModifier] = []
+        self._dynamicDMs: typing.List[DiceModifier] = list(dynamicDMs) if dynamicDMs else []
+        self._targetNumber = targetNumber
         self._randomGenerator = randomGenerator if randomGenerator else random
 
     def name(self) -> str:
@@ -144,10 +152,16 @@ class DiceRoller(UuidObject):
         for modifier in self._dynamicDMs:
             yield modifier
 
-    def roll(
+    def targetNumber(self) -> typing.Optional[int]:
+        return self._targetNumber
+
+    def setTargetNumber(
             self,
-            targetNumber: typing.Optional[int] = None
-            ) -> DiceRollResult:
+            targetNumber: typing.Optional[int]
+            ) -> None:
+        self._targetNumber = targetNumber
+
+    def roll(self) -> DiceRollResult:
         originalRolls: typing.List[common.ScalarCalculation] = []
         boonBaneCount = self._boonCount - self._baneCount
         totalDieCount = self._dieCount + abs(boonBaneCount)
@@ -185,21 +199,23 @@ class DiceRoller(UuidObject):
             values=usedRolls + modifiers,
             name=f'{self._name} Modified Roll')
 
+        target = None
         effect = None
-        if targetNumber != None:
-            targetNumber = _makeScalarValue(
-                value=targetNumber,
+        if self._targetNumber != None:
+            target = _makeScalarValue(
+                value=self._targetNumber,
                 name=f'{self._name} Target Number')
-            if total.value() >= targetNumber:
+            if total.value() >= target.value():
                 effect = common.Calculator.subtract(
                     lhs=total,
-                    rhs=targetNumber,
+                    rhs=target,
                     name=f'{self._name} Roll Effect')
 
         return DiceRollResult(
             total=total,
-            effect=effect,
-            rolls=originalRolls)
+            rolls=originalRolls,
+            target=target,
+            effect=effect)
 
 class DiceRollerGroup(UuidObject):
     def __init__(
