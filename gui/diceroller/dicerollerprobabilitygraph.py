@@ -70,22 +70,29 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         probabilities = self._roller.calculateProbabilities()
         xValues = list(probabilities.keys())
         yValues = [value.value() * 100 for value in probabilities.values()]
+
         defaultColour = 'w' if gui.isDarkModeEnabled() else 'k'
         colours = []
         for roll in xValues:
             colours.append('b' if roll == self._highlightRoll else defaultColour)
 
+        xMin = min(xValues)
+        xMax = max(xValues)
+        xRange = (xMax - xMin) + 1
+        barWidth = (xRange / len(xValues)) * 0.8
+
         if self._bars == None:
             self._bars = pyqtgraph.BarGraphItem(
                 x=xValues,
                 height=yValues,
-                width=0.5,
+                width=barWidth,
                 brushes=colours)
             self._graph.addItem(self._bars)
         else:
             self._bars.setOpts(
                 x=xValues,
                 height=yValues,
+                width=barWidth,
                 brushes=colours)
         self._bars.show()
 

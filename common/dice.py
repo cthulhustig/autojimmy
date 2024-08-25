@@ -7,6 +7,11 @@ import random
 import re
 import typing
 
+# Useful die probability related stuff
+# https://grognardgravitywell.wordpress.com/2020/07/22/boons-banes/
+# https://www.lookwhattheshoggothdraggedin.com/post/dice-rolls-in-traveller.html
+# https://anydice.com/
+
 class DieType(enum.Enum):
     D6 = 'D'
     D3 = 'D3'
@@ -144,13 +149,8 @@ def calculateRollProbabilities(
     if hasBoon and hasBane:
         hasBoon = hasBane = False
 
-    if hasBoon:
-        dieCount += 1
-    elif hasBane:
-        dieCount += 1
-
     results = _calculateRollProbabilities(
-        dieCount=dieCount,
+        dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
         dieSides=3 if dieType == DieType.D3 else 6,
         ignoreHighest=1 if hasBane else 0,
         ignoreLowest=1 if hasBoon else 0)
@@ -159,12 +159,12 @@ def calculateRollProbabilities(
     probabilities = {}
     for value, combinations in results.items():
         if dieType == DieType.DD:
-            value *= 10
+            value *= _DDRollMultiplier.value()
         combinations /= denominator
 
         percentageChance = common.ScalarCalculation(
             value=combinations,
-            name=f'Normalised Percentage Probability Of Rolling {value} With {dieCount}{dieType.value}')
+            name=f'Normalised Percentage Probability Of Rolling {value}')
         probabilities[value + modifier] = percentageChance
 
     return probabilities
@@ -233,7 +233,7 @@ def calculateRollProbability(
     for value in range(startValue, stopValue + 1):
         values.append(probabilities[value])
 
-    probabilityString = f'Percentage Probability Of Rolling {typeString} {targetValue} With {dieCount}{dieType.value}'
+    probabilityString = f'Percentage Probability Of Rolling {typeString} {targetValue}'
     if modifier:
         probabilityString += f' {modifier:+}'
 
@@ -251,6 +251,8 @@ def calculateRollRangeProbability(
         dieCount: typing.Union[int, common.ScalarCalculation],
         lowValue: typing.Union[int, common.ScalarCalculation],
         highValue: typing.Union[int, common.ScalarCalculation],
+        hasBoon: bool = False,
+        hasBane: bool = False,
         modifier: typing.Union[int, common.ScalarCalculation] = 0,
         dieType: DieType = DieType.D6
         ) -> common.ScalarCalculation:
@@ -272,10 +274,12 @@ def calculateRollRangeProbability(
 
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
-        dieType=dieType)
+        dieType=dieType,
+        hasBoon=hasBoon,
+        hasBane=hasBane)
     assert(probabilities)
 
-    probabilityString = f'Percentage Probability Of Rolling Between {lowValue} and {highValue} With {dieCount}{dieType.value}'
+    probabilityString = f'Percentage Probability Of Rolling Between {lowValue} and {highValue}'
     if modifier:
         probabilityString += f' {modifier:+}'
 
