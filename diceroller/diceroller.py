@@ -1,4 +1,5 @@
 import common
+import enum
 import random
 import typing
 import uuid
@@ -53,20 +54,33 @@ class DiceRollResult(UuidObject):
             self,
             total: common.ScalarCalculation,
             rolls: typing.Iterable[common.ScalarCalculation],
+            ignored: typing.Optional[common.ScalarCalculation],
+            modifiers: typing.Mapping[
+                common.ScalarCalculation, # Modifier name
+                str], # Modifier value
             target: typing.Optional[common.ScalarCalculation],
             effect: typing.Optional[common.ScalarCalculation],
             ) -> None:
         self._total = total
-        self._rolls = rolls
+        self._rolls = list(rolls) if rolls else []
+        self._ignored = ignored
+        self._modifiers = dict(modifiers) if modifiers else {}
         self._target = target
         self._effect = effect
 
     def total(self) -> common.ScalarCalculation:
         return self._total
 
-    def yieldRolls(self) -> typing.Generator[common.ScalarCalculation, None, None]:
+    def yieldRolls(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, bool], None, None]:
         for roll in self._rolls:
-            yield roll
+            yield (roll, roll is self._ignored)
+
+    def ignored(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._ignored
+
+    def yieldModifiers(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, str], None, None]:
+        for pair in self._modifiers.items():
+            yield pair
 
     def target(self) -> typing.Optional[common.ScalarCalculation]:
         return self._target
@@ -77,14 +91,17 @@ class DiceRollResult(UuidObject):
         return self._effect
 
 class DiceRoller(UuidObject):
+    class Flags(enum.IntFlag):
+        HasBoonDice = 1
+        HasBaneDice = 2
+
     def __init__(
             self,
             name: str,
             dieCount: int,
             dieType: common.DieType,
             constantDM: int = 0,
-            boonCount: int = 0,
-            baneCount: int = 0,
+            flags: Flags = 0,
             dynamicDMs: typing.Optional[typing.Iterable[DiceModifier]] = None,
             targetNumber: typing.Optional[int] = None,
             randomGenerator: typing.Optional[random.Random] = None
@@ -93,8 +110,7 @@ class DiceRoller(UuidObject):
         self._dieCount = dieCount
         self._dieType = dieType
         self._constantDM = constantDM
-        self._boonCount = boonCount
-        self._baneCount = baneCount
+        self._flags = flags
         self._dynamicDMs: typing.List[DiceModifier] = list(dynamicDMs) if dynamicDMs else []
         self._targetNumber = targetNumber
         self._randomGenerator = randomGenerator if randomGenerator else random
@@ -123,17 +139,29 @@ class DiceRoller(UuidObject):
     def setConstantDM(self, modifier: int) -> None:
         self._constantDM = modifier
 
-    def boonCount(self) -> int:
-        return self._boonCount
+    def flags(self) -> Flags:
+        return self._flags
 
-    def setBoonCount(self, count: int) -> None:
-        self._boonCount = count
+    def setFlags(self, flags: Flags) -> None:
+        self._flags = flags
 
-    def baneCount(self) -> int:
-        return self._baneCount
+    def hasBoon(self) -> bool:
+        return (self._flags & DiceRoller.Flags.HasBoonDice) != 0
 
-    def setBaneCount(self, count: int) -> None:
-        self._baneCount = count
+    def setHasBoon(self, enabled: bool) -> None:
+        if enabled:
+            self._flags |= DiceRoller.Flags.HasBoonDice
+        else:
+            self._flags &= ~DiceRoller.Flags.HasBoonDice
+
+    def hasBane(self) -> bool:
+        return (self._flags & DiceRoller.Flags.HasBaneDice) != 0
+
+    def setHasBane(self, enabled: bool) -> None:
+        if enabled:
+            self._flags |= DiceRoller.Flags.HasBaneDice
+        else:
+            self._flags &= ~DiceRoller.Flags.HasBaneDice
 
     def addDynamicDM(self, modifier: DiceModifier) -> None:
         if modifier not in self._dynamicDMs:
@@ -163,7 +191,11 @@ class DiceRoller(UuidObject):
 
     def roll(self) -> DiceRollResult:
         originalRolls: typing.List[common.ScalarCalculation] = []
-        boonBaneCount = self._boonCount - self._baneCount
+        boonBaneCount = 0
+        if self.hasBoon() and not self.hasBane():
+            boonBaneCount = 1
+        elif self.hasBane() and not self.hasBoon():
+            boonBaneCount = -1
         totalDieCount = self._dieCount + abs(boonBaneCount)
         dieSides = 3 if self._dieType == common.DieType.D3 else 6
         for index in range(0, totalDieCount):
@@ -175,46 +207,56 @@ class DiceRoller(UuidObject):
                 name=f'{self._name} {self._dieType.value} Roll {index + 1}/{totalDieCount}'))
 
         # TODO: Need to double check this logic is right
-        if boonBaneCount != 0:
+        usedRolls = originalRolls
+        ignoredRoll = None
+        if boonBaneCount > 0:
+            # The roll has a boon so remove the lowest value
             usedRolls = list(originalRolls)
-            usedRolls.sort(
-                key=lambda x: x.value(),
-                reverse=boonBaneCount > 0)
-            usedRolls = usedRolls[:self._dieCount]
-        else:
-            usedRolls = originalRolls
+            ignoredRoll = min(usedRolls, key=lambda x: x.value())
+            usedRolls.remove(ignoredRoll)
+        elif boonBaneCount < 0:
+            # The roll has a bane so remove the largest value
+            usedRolls = list(originalRolls)
+            ignoredRoll = max(usedRolls, key=lambda x: x.value())
+            usedRolls.remove(ignoredRoll)
 
-        modifiers = []
+        modifiers = {}
         if self._constantDM != 0:
-            modifiers.append(_makeScalarValue(
+            modifiers['Constant Roll Modifier'] = _makeScalarValue(
                 value=self._constantDM,
-                name=f'{self._name} Constant DM'))
+                name=f'{self._name} Constant DM')
         for modifier in self._dynamicDMs:
-            if modifier.enabled() and (modifier.value() != 0):
-                modifiers.append(_makeScalarValue(
+            if modifier.enabled():
+                # NOTE: Dynamic modifiers with a value of 0 are intentionally
+                # included so they show up in the detailed report view
+                modifierName = modifier.name()
+                modifier = _makeScalarValue(
                     value=modifier.value(),
-                    name=f'{self._name} DM'))
+                    name=f'{self._name} DM')
+                modifiers[modifier] = modifierName
 
         total = common.Calculator.sum(
-            values=usedRolls + modifiers,
+            values=usedRolls + list(modifiers.keys()),
             name=f'{self._name} Modified Roll')
 
-        target = None
+        targetNumber = None
         effect = None
         if self._targetNumber != None:
-            target = _makeScalarValue(
+            targetNumber = _makeScalarValue(
                 value=self._targetNumber,
                 name=f'{self._name} Target Number')
-            if total.value() >= target.value():
+            if total.value() >= targetNumber.value():
                 effect = common.Calculator.subtract(
                     lhs=total,
-                    rhs=target,
+                    rhs=targetNumber,
                     name=f'{self._name} Roll Effect')
 
         return DiceRollResult(
             total=total,
             rolls=originalRolls,
-            target=target,
+            ignored=ignoredRoll,
+            modifiers=modifiers,
+            target=targetNumber,
             effect=effect)
 
 class DiceRollerGroup(UuidObject):

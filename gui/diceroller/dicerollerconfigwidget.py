@@ -183,37 +183,17 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         diceRollLayout.addWidget(self._constantDMSpinBox)
         diceRollLayout.addStretch()
 
-        self._boonCountSpinBox = gui.SpinBoxEx()
-        self._boonCountSpinBox.setRange(0, 10)
-        self._boonCountSpinBox.setSizePolicy(
+        self._hasBoonCheckBox = gui.CheckBoxEx()
+        self._hasBoonCheckBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
-        self._boonCountSpinBox.valueChanged.connect(self._boonCountChanged)
+        self._hasBoonCheckBox.stateChanged.connect(self._hasBoonChanged)
 
-        self._clearBoonsButton = QtWidgets.QPushButton('Clear')
-        self._clearBoonsButton.clicked.connect(self._clearBoonsClicked)
-
-        boonsLayout = QtWidgets.QHBoxLayout()
-        boonsLayout.setContentsMargins(0, 0, 0, 0)
-        boonsLayout.addWidget(self._boonCountSpinBox)
-        boonsLayout.addWidget(self._clearBoonsButton)
-        boonsLayout.addStretch()
-
-        self._baneCountSpinBox = gui.SpinBoxEx()
-        self._baneCountSpinBox.setRange(0, 10)
-        self._baneCountSpinBox.setSizePolicy(
+        self._hasBaneCheckBox = gui.CheckBoxEx()
+        self._hasBaneCheckBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
-        self._baneCountSpinBox.valueChanged.connect(self._baneCountChanged)
-
-        self._clearBanesButton = QtWidgets.QPushButton('Clear')
-        self._clearBanesButton.clicked.connect(self._clearBanesClicked)
-
-        banesLayout = QtWidgets.QHBoxLayout()
-        banesLayout.setContentsMargins(0, 0, 0, 0)
-        banesLayout.addWidget(self._baneCountSpinBox)
-        banesLayout.addWidget(self._clearBanesButton)
-        banesLayout.addStretch()
+        self._hasBaneCheckBox.stateChanged.connect(self._hasBaneChanged)
 
         self._addModifierButton = QtWidgets.QPushButton('Add')
         self._addModifierButton.clicked.connect(self._addModifierClicked)
@@ -246,8 +226,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
-        controlLayout.addRow('Boons:', boonsLayout)
-        controlLayout.addRow('Banes:', banesLayout)
+        controlLayout.addRow('Boon:', self._hasBoonCheckBox)
+        controlLayout.addRow('Bane:', self._hasBaneCheckBox)
         controlLayout.addRow('Modifiers:', modifiersLayout)
         controlLayout.addRow('Target Number:', self._targetNumberSpinBox)
         controlLayout.addStretch()
@@ -288,11 +268,11 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._constantDMSpinBox):
             self._constantDMSpinBox.setValue(self._roller.constantDM())
 
-        with gui.SignalBlocker(self._boonCountSpinBox):
-            self._boonCountSpinBox.setValue(self._roller.boonCount())
+        with gui.SignalBlocker(self._hasBoonCheckBox):
+            self._hasBoonCheckBox.setChecked(self._roller.hasBoon())
 
-        with gui.SignalBlocker(self._baneCountSpinBox):
-            self._baneCountSpinBox.setValue(self._roller.baneCount())
+        with gui.SignalBlocker(self._hasBaneCheckBox):
+            self._hasBaneCheckBox.setChecked(self._roller.hasBane())
 
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
@@ -318,19 +298,13 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._roller.setConstantDM(
             self._constantDMSpinBox.value())
 
-    def _boonCountChanged(self) -> None:
-        self._roller.setBoonCount(
-            count=self._boonCountSpinBox.value())
+    def _hasBoonChanged(self) -> None:
+        self._roller.setHasBoon(
+            self._hasBoonCheckBox.isChecked())
 
-    def _clearBoonsClicked(self) -> None:
-        self._boonCountSpinBox.setValue(0)
-
-    def _baneCountChanged(self) -> None:
-        self._roller.setBaneCount(
-            count=self._baneCountSpinBox.value())
-
-    def _clearBanesClicked(self) -> None:
-        self._baneCountSpinBox.setValue(0)
+    def _hasBaneChanged(self) -> None:
+        self._roller.setHasBane(
+            self._hasBaneCheckBox.isChecked())
 
     def _addModifierClicked(self) -> None:
         modifier = diceroller.DiceModifier()

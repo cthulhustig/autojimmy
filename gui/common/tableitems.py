@@ -8,6 +8,11 @@ class TableWidgetItemEx(QtWidgets.QTableWidgetItem):
         font.setBold(enable)
         self.setFont(font)
 
+    def setStrikeOut(self, enable: bool = True) -> None:
+        font = self.font()
+        font.setStrikeOut(enable)
+        self.setFont(font)
+
 class FormattedNumberTableWidgetItem(TableWidgetItemEx):
     def __init__(
             self,

@@ -142,6 +142,18 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 # - The main thing when implementing this is that the actual roll
 # should be made at the very start so the final value is known the
 # entire time the animation is playing.
+# TODO: Need to handle fumbles and criticals (should display it)
+# - UPDATE: I can't find fumbles in the core rules and criticals
+#   only apply when attacking vehicles or spacecraft.
+# TODO: The rules (Core 2e p59 and 2022 p61) say a player can only
+# have one boon and/or one bane (and having both cancels out). I
+# think I'll leave the roller supporting multiple boons/banes but
+# update the UI to be check boxes (clear buttons don't make sense
+# at that point)
+# TODO: There success/failure types based on effect that I should
+# probably display (e.g. 'Effect: # (Type)') (Core 2e p59 and 2022 p61)
+# TODO: Should show possible range of roll as settings are changed
+# TODO: Remove blank space at bottom of modifier list (when it's shown)
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -177,12 +189,20 @@ class DiceRollerWindow(gui.WindowWidget):
         if storedValue:
             self._splitter.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='RollDisplayModeState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._rollDisplayModeTabView.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
         self._settings.setValue('SplitterState', self._splitter.saveState())
+        self._settings.setValue('RollDisplayModeState', self._rollDisplayModeTabView.saveState())
 
         self._settings.endGroup()
 
@@ -206,18 +226,29 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollButton = QtWidgets.QPushButton('Roll Dice')
         self._rollButton.clicked.connect(self._rollDice)
 
-        self._resultsWidget = DiceRollResultsWidget()
+        self._simpleResultsWidget = DiceRollResultsWidget()
+        self._detailedResultsWidget = gui.DiceRollResultsTable()
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._rollButton)
-        groupLayout.addWidget(self._resultsWidget)
+        groupLayout.addWidget(self._simpleResultsWidget)
+
+        self._rollDisplayModeTabView = gui.TabWidgetEx()
+        self._rollDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
+        self._rollDisplayModeTabView.addTab(self._simpleResultsWidget, 'Simple')
+        self._rollDisplayModeTabView.addTab(self._detailedResultsWidget, 'Detailed')
+
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.addWidget(self._rollButton)
+        groupLayout.addWidget(self._rollDisplayModeTabView)
 
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
 
     def _rollDice(self) -> None:
         result = self._roller.roll()
-        self._resultsWidget.setResults(result)
+        self._simpleResultsWidget.setResults(result)
+        self._detailedResultsWidget.setResults(result)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
