@@ -150,22 +150,10 @@ class DiceRollResultsTable(gui.ListTable):
             row: int,
             total: common.ScalarCalculation
             ) -> None:
-        bkColour = QtWidgets.QApplication.palette().color(
-            QtGui.QPalette.ColorRole.AlternateBase)
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            tableItem = None
-            if columnType == DiceRollResultsTable.ColumnType.Name:
-                tableItem = gui.TableWidgetItemEx(f'Die Roll Total')
-            elif columnType == DiceRollResultsTable.ColumnType.Value:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=total.value())
-
-            if tableItem:
-                tableItem.setBold(True)
-                tableItem.setBackground(bkColour)
-                self.setItem(row, column, tableItem)
-        self.resizeRowToContents(row)
+        self._fillGenericTotalRow(
+            row=row,
+            name=f'Dice Roll Total',
+            total=total)
 
     def _fillModifierRow(
             self,
@@ -192,26 +180,25 @@ class DiceRollResultsTable(gui.ListTable):
             row: int,
             total: common.ScalarCalculation
             ) -> None:
-        bkColour = QtWidgets.QApplication.palette().color(
-            QtGui.QPalette.ColorRole.AlternateBase)
-        for column in range(self.columnCount()):
-            columnType = self.columnHeader(column)
-            tableItem = None
-            if columnType == DiceRollResultsTable.ColumnType.Name:
-                tableItem = gui.TableWidgetItemEx(f'Modifiers Total')
-            elif columnType == DiceRollResultsTable.ColumnType.Value:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=total.value())
-
-            if tableItem:
-                tableItem.setBold(True)
-                tableItem.setBackground(bkColour)
-                self.setItem(row, column, tableItem)
-        self.resizeRowToContents(row)
+        self._fillGenericTotalRow(
+            row=row,
+            name='Modifiers Total',
+            total=total)
 
     def _fillTotalRow(
             self,
             row: int,
+            total: common.ScalarCalculation
+            ) -> None:
+        self._fillGenericTotalRow(
+            row=row,
+            name='Total',
+            total=total)
+
+    def _fillGenericTotalRow(
+            self,
+            row: int,
+            name: str,
             total: common.ScalarCalculation
             ) -> None:
         bkColour = QtWidgets.QApplication.palette().color(
@@ -220,7 +207,7 @@ class DiceRollResultsTable(gui.ListTable):
             columnType = self.columnHeader(column)
             tableItem = None
             if columnType == DiceRollResultsTable.ColumnType.Name:
-                tableItem = gui.TableWidgetItemEx(f'Total')
+                tableItem = gui.TableWidgetItemEx(name)
             elif columnType == DiceRollResultsTable.ColumnType.Value:
                 tableItem = gui.FormattedNumberTableWidgetItem(
                     value=total.value())
