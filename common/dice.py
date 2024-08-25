@@ -139,12 +139,20 @@ def _calculateRollProbabilities(
                 masterResults[sum_showing_max + k] += multiplier * v
     return masterResults
 
+class ProbabilityType(enum.Enum):
+    EqualTo = 'Equal To'
+    GreaterThan = 'Greater Than'
+    GreaterOrEqualTo = 'Greater Or Equal To'
+    LessThan = 'Less Than'
+    LessThanOrEqualTo = 'Less Or Equal To'
+
 def calculateRollProbabilities(
         dieCount: int,
         dieType: DieType = DieType.D6,
         hasBoon: bool = False,
         hasBane: bool = False,
-        modifier: int = 0
+        modifier: int = 0,
+        probability: ProbabilityType = ProbabilityType.EqualTo
         ) -> typing.Mapping[int, common.ScalarCalculation]:
     if hasBoon and hasBane:
         hasBoon = hasBane = False
@@ -157,34 +165,38 @@ def calculateRollProbabilities(
 
     denominator = sum(results.values())
     probabilities = {}
+    accumulate = 0
     for value, combinations in results.items():
         if dieType == DieType.DD:
             value *= _DDRollMultiplier.value()
-        combinations /= denominator
 
-        percentageChance = common.ScalarCalculation(
-            value=combinations,
-            name=f'Normalised Percentage Probability Of Rolling {value}')
-        probabilities[value + modifier] = percentageChance
+        if probability == ProbabilityType.EqualTo:
+            enumerator = combinations
+        elif probability == ProbabilityType.LessThan:
+            enumerator = accumulate
+        elif probability == ProbabilityType.LessThanOrEqualTo:
+            enumerator = accumulate + combinations
+        elif probability == ProbabilityType.GreaterOrEqualTo:
+            enumerator = denominator - accumulate
+        elif probability == ProbabilityType.GreaterThan:
+            enumerator = denominator - (accumulate + combinations)
+
+        probabilities[value + modifier] = common.ScalarCalculation(
+            value=enumerator / denominator,
+            name=f'Normalised Percentage Probability Of Rolling {probability.value} {value}')
+        accumulate += combinations
 
     return probabilities
-
-class RollTargetType(enum.Enum):
-    EqualTo = 0
-    GreaterThan = 1
-    GreaterOrEqualTo = 2
-    LessThan = 3
-    LessThanOrEqualTo = 4
 
 # NOTE: This function returns a normalised percentage in the range (0->1.0)
 def calculateRollProbability(
         dieCount: typing.Union[int, common.ScalarCalculation],
-        targetType: RollTargetType,
         targetValue: typing.Union[int, common.ScalarCalculation],
         hasBoon: bool = False,
         hasBane: bool = False,
         modifier: typing.Union[int, common.ScalarCalculation] = 0,
-        dieType: DieType = DieType.D6
+        dieType: DieType = DieType.D6,
+        probability: ProbabilityType = ProbabilityType.GreaterOrEqualTo,
         ) -> common.ScalarCalculation:
     if isinstance(dieCount, common.ScalarCalculation):
         dieCount = dieCount.value()
@@ -208,21 +220,21 @@ def calculateRollProbability(
     minValue = min(probabilities.keys())
     maxValue = max(probabilities.keys())
 
-    if targetType == RollTargetType.EqualTo:
+    if probability == ProbabilityType.EqualTo:
         return probabilities[targetValue - modifier]
-    elif targetType == RollTargetType.GreaterThan:
+    elif probability == ProbabilityType.GreaterThan:
         startValue = max((targetValue + 1) - modifier, minValue)
         stopValue = maxValue
         typeString = 'Greater Than'
-    elif targetType == RollTargetType.GreaterOrEqualTo:
+    elif probability == ProbabilityType.GreaterOrEqualTo:
         startValue = max(targetValue - modifier, minValue)
         stopValue = maxValue
         typeString = 'Greater Than Or Equal To'
-    elif targetType == RollTargetType.LessThan:
+    elif probability == ProbabilityType.LessThan:
         startValue = minValue
         stopValue = min((targetValue - 1) - modifier, maxValue)
         typeString = 'Less Than'
-    elif targetType == RollTargetType.LessThanOrEqualTo:
+    elif probability == ProbabilityType.LessThanOrEqualTo:
         startValue = minValue
         stopValue = min(targetValue - modifier, maxValue)
         typeString = 'Less Than Or Equal To'

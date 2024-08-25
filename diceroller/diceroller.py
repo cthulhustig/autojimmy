@@ -220,7 +220,10 @@ class DiceRoller(UuidObject):
             ) -> None:
         self._targetNumber = targetNumber
 
-    def calculateProbabilities(self) -> typing.Mapping[int, common.ScalarCalculation]:
+    def calculateProbabilities(
+            self,
+            probability: common.ProbabilityType = common.ProbabilityType.EqualTo,
+            ) -> typing.Mapping[int, common.ScalarCalculation]:
         modifierTotal = self.constantDM()
         for modifier in self.yieldDynamicDMs():
             if modifier.enabled():
@@ -230,9 +233,13 @@ class DiceRoller(UuidObject):
             dieType=self.dieType(),
             hasBoon=self.hasBoon(),
             hasBane=self.hasBane(),
-            modifier=modifierTotal)
+            modifier=modifierTotal,
+            probability=probability)
 
-    def calculateTargetProbability(self) -> typing.Optional[common.ScalarCalculation]:
+    def calculateTargetProbability(
+            self,
+            probability: common.ProbabilityType = common.ProbabilityType.GreaterOrEqualTo,
+            ) -> typing.Optional[common.ScalarCalculation]:
         targetNumber = self.targetNumber()
         if targetNumber == None:
             return None
@@ -242,13 +249,13 @@ class DiceRoller(UuidObject):
             if modifier.enabled():
                 modifierTotal +=  modifier.value()
         return common.calculateRollProbability(
-            targetType=common.RollTargetType.GreaterOrEqualTo,
-            targetNumber=targetNumber,
             dieCount=self.dieCount(),
             dieType=self.dieType(),
             hasBoon=self.hasBoon(),
             hasBane=self.hasBane(),
-            modifier=modifierTotal)
+            modifier=modifierTotal,
+            targetNumber=targetNumber,
+            probability=probability,)
 
     def roll(self) -> DiceRollResult:
         originalRolls: typing.List[common.ScalarCalculation] = []

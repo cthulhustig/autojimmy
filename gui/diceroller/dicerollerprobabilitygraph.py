@@ -23,6 +23,13 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         self._bars = None
         self._highlightRoll = None
 
+        self._typeComboBox = gui.EnumComboBox(
+            type=common.ProbabilityType)
+        self._typeComboBox.setCurrentEnum(
+            value=common.ProbabilityType.EqualTo)
+        self._typeComboBox.currentIndexChanged.connect(
+            self._updateGraph)
+
         self._graph = _CustomPlotWidget()
         self._graph.mouseMoveSignal.connect(self._moveCursor)
 
@@ -33,6 +40,10 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         self._graph.setLabel('left', 'Probability (%)', **styles)
         self._graph.setLabel('bottom', 'Dice Roll', **styles)
 
+        # TODO: I'm not sure about forcing the Y range. It means the graph
+        # can be pretty low if you have a large number of dice
+        self._graph.setYRange(0, 100)
+
         # Prevent the mouse from panning/scaling the graph
         self._graph.setMouseEnabled(x=False, y=False)
 
@@ -41,6 +52,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(gui.createLabelledWidgetLayout('Probability Type', self._typeComboBox))
         layout.addWidget(self._graph)
 
         self.setLayout(layout)
@@ -67,7 +79,8 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             self._bars.hide()
             return # No weapon set so nothing to do
 
-        probabilities = self._roller.calculateProbabilities()
+        probabilities = self._roller.calculateProbabilities(
+            probability=self._typeComboBox.currentEnum())
         xValues = list(probabilities.keys())
         yValues = [value.value() * 100 for value in probabilities.values()]
 
@@ -86,14 +99,16 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
                 x=xValues,
                 height=yValues,
                 width=barWidth,
-                brushes=colours)
+                brushes=colours,
+                pen=defaultColour)
             self._graph.addItem(self._bars)
         else:
             self._bars.setOpts(
                 x=xValues,
                 height=yValues,
                 width=barWidth,
-                brushes=colours)
+                brushes=colours,
+                pen=defaultColour)
         self._bars.show()
 
     def _moveCursor(
