@@ -220,6 +220,36 @@ class DiceRoller(UuidObject):
             ) -> None:
         self._targetNumber = targetNumber
 
+    def calculateProbabilities(self) -> typing.Mapping[int, common.ScalarCalculation]:
+        modifierTotal = self.constantDM()
+        for modifier in self.yieldDynamicDMs():
+            if modifier.enabled():
+                modifierTotal +=  modifier.value()
+        return common.calculateRollProbabilities(
+            dieCount=self.dieCount(),
+            dieType=self.dieType(),
+            hasBoon=self.hasBoon(),
+            hasBane=self.hasBane(),
+            modifier=modifierTotal)
+
+    def calculateTargetProbability(self) -> typing.Optional[common.ScalarCalculation]:
+        targetNumber = self.targetNumber()
+        if targetNumber == None:
+            return None
+
+        modifierTotal = self.constantDM()
+        for modifier in self.yieldDynamicDMs():
+            if modifier.enabled():
+                modifierTotal +=  modifier.value()
+        return common.calculateRollProbability(
+            targetType=common.RollTargetType.GreaterOrEqualTo,
+            targetNumber=targetNumber,
+            dieCount=self.dieCount(),
+            dieType=self.dieType(),
+            hasBoon=self.hasBoon(),
+            hasBane=self.hasBane(),
+            modifier=modifierTotal)
+
     def roll(self) -> DiceRollResult:
         originalRolls: typing.List[common.ScalarCalculation] = []
         boonBaneCount = 0
@@ -253,9 +283,10 @@ class DiceRoller(UuidObject):
 
         modifiers = {}
         if self._constantDM != 0:
-            modifiers['Constant Roll Modifier'] = _makeScalarValue(
+            modifier = _makeScalarValue(
                 value=self._constantDM,
                 name=f'{self._name} Constant DM')
+            modifiers[modifier] = 'Constant Roll Modifier'
         for modifier in self._dynamicDMs:
             if modifier.enabled():
                 # NOTE: Dynamic modifiers with a value of 0 are intentionally

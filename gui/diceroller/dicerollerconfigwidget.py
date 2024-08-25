@@ -7,7 +7,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 class DiceModifierWidget(QtWidgets.QWidget):
-    deleteClicked = QtCore.pyqtSignal()
+    modifierChanged = QtCore.pyqtSignal()
 
     def __init__(
             self,
@@ -50,17 +50,18 @@ class DiceModifierWidget(QtWidgets.QWidget):
 
     def _nameChanged(self) -> None:
         self._modifier.setName(self._nameLineEdit.text())
+        self.modifierChanged.emit()
 
     def _enabledChanged(self) -> None:
         self._modifier.setEnabled(self._enabledCheckBox.isChecked())
+        self.modifierChanged.emit()
 
     def _modifierChanged(self) -> None:
         self._modifier.setValue(self._modifierSpinBox.value())
-
-    def _deleteClicked(self) -> None:
-        self.deleteClicked.emit()
+        self.modifierChanged.emit()
 
 class DiceModifierListWidget(gui.ListWidgetEx):
+    modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifier)
     modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifier)
 
     _ItemSpacing = 10
@@ -81,6 +82,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
 
     def addModifier(self, modifier: diceroller.DiceModifier) -> None:
         modifierWidget = DiceModifierWidget(modifier=modifier)
+        modifierWidget.modifierChanged.connect(lambda: self._modifierChanged(modifier))
 
         deleteButton = gui.IconButton(icon=gui.loadIcon(id=gui.Icon.CloseTab))
         deleteButton.clicked.connect(lambda: self._deleteClicked(modifier))
@@ -119,15 +121,21 @@ class DiceModifierListWidget(gui.ListWidgetEx):
             widget.hide()
             widget.deleteLater()
         self._updateDimensions()
+        self.modifierDeleted.emit(modifier)
 
     def clear(self) -> None:
         super().clear()
+        for modifier in self._modifierItemMap.keys():
+            self.modifierDeleted.emit(modifier)
         self._modifierItemMap.clear()
         self._updateDimensions()
 
+    def _modifierChanged(self, modifier: diceroller.DiceModifier) -> None:
+        self.modifierChanged.emit(modifier)
+
     def _deleteClicked(self, modifier: diceroller.DiceModifier) -> None:
+        # Don't emit modifierDeleted as removeModifier will do that
         self.removeModifier(modifier=modifier)
-        self.modifierDeleted.emit(modifier)
 
     def _updateDimensions(self) -> None:
         self.updateGeometry()
@@ -145,6 +153,8 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self.setMinimumWidth(width)
 
 class DiceRollerConfigWidget(QtWidgets.QWidget):
+    configChanged = QtCore.pyqtSignal()
+
     def __init__(
             self,
             roller: diceroller.DiceRoller,
@@ -205,6 +215,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._modifierList.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+        self._modifierList.modifierChanged.connect(self._modifierChanged)
         self._modifierList.modifierDeleted.connect(self._modifierDeleted)
 
         modifierControlLayout = QtWidgets.QHBoxLayout()
@@ -289,40 +300,57 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
             self._dieCountSpinBox.value())
+        self.configChanged.emit()
 
     def _dieTypeChanged(self) -> None:
         self._roller.setDieType(
             self._dieTypeComboBox.currentEnum())
+        self.configChanged.emit()
 
     def _constantDMChanged(self) -> None:
         self._roller.setConstantDM(
             self._constantDMSpinBox.value())
+        self.configChanged.emit()
 
     def _hasBoonChanged(self) -> None:
         self._roller.setHasBoon(
             self._hasBoonCheckBox.isChecked())
+        self.configChanged.emit()
 
     def _hasBaneChanged(self) -> None:
         self._roller.setHasBane(
             self._hasBaneCheckBox.isChecked())
+        self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:
         modifier = diceroller.DiceModifier()
         self._roller.addDynamicDM(modifier=modifier)
         self._modifierList.addModifier(modifier)
         self._modifierList.setHidden(False)
+        self.configChanged.emit()
 
     # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
         modifiers = list(self._roller.yieldDynamicDMs())
         for modifier in modifiers:
             self._roller.removeDynamicDM(modifier)
-            self._modifierList.removeModifier(modifier)
+
+        # Block signals to prevent multiple config update
+        # notifications as modifiers are deleted
+        with gui.SignalBlocker(self._modifierList):
+            self._modifierList.clear()
+
         self._modifierList.setHidden()
+        self.configChanged.emit()
+
+    def _modifierChanged(self) -> None:
+        self.configChanged.emit()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
         self._roller.removeDynamicDM(modifier)
         self._modifierList.setHidden(self._modifierList.isEmpty())
+        self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:
         self._roller.setTargetNumber(self._targetNumberSpinBox.value())
+        self.configChanged.emit()

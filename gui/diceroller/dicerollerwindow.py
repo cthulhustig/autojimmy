@@ -1,4 +1,3 @@
-from PyQt5.QtGui import QPaintEvent
 import app
 import common
 import diceroller
@@ -9,128 +8,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
-
-# TODO: Does this need to take interface scaling into account?
-class FullSizeTextWidget(QtWidgets.QWidget):
-    def __init__(
-            self,
-            text: str = '',
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(parent)
-        self._text = text
-        self._configureFont()
-
-    def text(self) -> str:
-        return self._text
-
-    def setText(self, text: str) -> None:
-        self._text = text
-        self._configureFont()
-        self.repaint()
-
-    def resizeEvent(self, a0: QtGui.QResizeEvent | None) -> None:
-        super().resizeEvent(a0)
-        self._configureFont()
-
-    def paintEvent(self, a0: QPaintEvent | None) -> None:
-        painter = QtGui.QPainter(self)
-
-        usableArea = self.rect()
-        painter.drawText(
-            usableArea,
-            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
-            self._text)
-        painter.end()
-
-    # Based on some code from here
-    # https://stackoverflow.com/questions/42652738/how-to-automatically-increase-decrease-text-size-in-label-in-qt
-    def _configureFont(self) -> None:
-        text = self.text()
-        font = self.font()
-        size = font.pointSize()
-        fontMetrics = QtGui.QFontMetrics(font)
-        usableArea = self.rect()
-        contentRect = fontMetrics.boundingRect(
-            usableArea,
-            0,
-            text)
-
-        # decide whether to increase or decrease
-        if (contentRect.height() > usableArea.height()) or \
-            (contentRect.width() > usableArea.width()):
-            step = -1
-        else:
-            step = 1
-
-        # iterate until text fits best into rectangle of label
-        while(True):
-            font.setPointSize(size + step)
-            fontMetrics = QtGui.QFontMetrics(font)
-            contentRect = fontMetrics.boundingRect(
-                usableArea,
-                0,
-                text)
-            if (step < 0):
-                if (size <= 1):
-                    break
-                size += step
-                if (contentRect.height() < usableArea.height()) and \
-                    (contentRect.width() < usableArea.width()):
-                    # Stop as soon as the new size would mean both the
-                    # content dimensions are within the usable area
-                    break
-            else:
-                if (contentRect.height() > usableArea.height()) or \
-                    (contentRect.width() > usableArea.width()):
-                    # Stop as soon as the new size would mean either of
-                    # the content dimensions were larger than the usable
-                    # area
-                    break
-                size += step
-
-        font.setPointSize(size)
-        self.setFont(font)
-
-class DiceRollResultsWidget(QtWidgets.QWidget):
-    def __init__(
-            self,
-            parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
-        super().__init__(parent)
-
-        self._results = None
-
-        self._totalWidget = FullSizeTextWidget()
-
-        self._targetWidget = FullSizeTextWidget()
-        self._targetWidget.setHidden(True)
-
-        widgetLayout = QtWidgets.QVBoxLayout()
-        widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addWidget(self._totalWidget, 5)
-        widgetLayout.addWidget(self._targetWidget, 1)
-
-        self.setLayout(widgetLayout)
-
-    def setResults(
-            self,
-            results: typing.Optional[diceroller.DiceRollResult]
-            ) -> None:
-        if results:
-            total = results.total()
-            effectType = results.effectType()
-            self._totalWidget.setText(str(total.value()))
-            if effectType:
-                targetText = effectType.value
-                effectValue = results.effectValue()
-                targetText += f' (Effect: {effectValue.value()})'
-                self._targetWidget.setText(targetText)
-            self._targetWidget.setHidden(effectType == None)
-        else:
-            self._totalWidget.setText('')
-            self._targetWidget.setText('')
-            self._targetWidget.setHidden(True)
 
 # TODO: I think I need some kind of animation or something to show
 # random numbers scrolling by or something. The main issue it solves
@@ -206,6 +83,8 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerConfigWidget.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+        self._rollerConfigWidget.configChanged.connect(
+            self._configChanged)
 
         self._rollButton = QtWidgets.QPushButton('Roll Dice')
         self._rollButton.clicked.connect(self._rollDice)
@@ -219,13 +98,18 @@ class DiceRollerWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(groupLayout)
 
     def _createRollResultsControls(self) -> None:
-        self._simpleResultsWidget = DiceRollResultsWidget()
+        self._simpleResultsWidget = gui.DiceRollResultsWidget()
         self._detailedResultsWidget = gui.DiceRollResultsTable()
+        self._probabilityGraph = gui.DiceRollerProbabilityGraph()
+
+        # TODO: This should be changed when I support multiple rollers
+        self._probabilityGraph.setRoller(self._roller)
 
         self._rollDisplayModeTabView = gui.TabWidgetEx()
         self._rollDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._rollDisplayModeTabView.addTab(self._simpleResultsWidget, 'Simple')
         self._rollDisplayModeTabView.addTab(self._detailedResultsWidget, 'Detailed')
+        self._rollDisplayModeTabView.addTab(self._probabilityGraph, 'Probabilities')
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._rollDisplayModeTabView)
@@ -233,10 +117,14 @@ class DiceRollerWindow(gui.WindowWidget):
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
 
+    def _configChanged(self) -> None:
+        self._probabilityGraph.syncToRoller()
+
     def _rollDice(self) -> None:
         result = self._roller.roll()
         self._simpleResultsWidget.setResults(result)
         self._detailedResultsWidget.setResults(result)
+        self._probabilityGraph.setHighlightRoll(result.total())
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
