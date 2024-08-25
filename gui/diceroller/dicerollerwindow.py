@@ -119,15 +119,14 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             ) -> None:
         if results:
             total = results.total()
-            target = results.target()
-            effect = results.effect()
+            effectType = results.effectType()
             self._totalWidget.setText(str(total.value()))
-            if target:
-                targetText = 'Pass' if total.value() >= target.value() else 'Fail'
-                if effect and effect.value() > 0:
-                    targetText += f' (Effect: {effect.value()})'
+            if effectType:
+                targetText = effectType.value
+                effectValue = results.effectValue()
+                targetText += f' (Effect: {effectValue.value()})'
                 self._targetWidget.setText(targetText)
-            self._targetWidget.setHidden(target == None)
+            self._targetWidget.setHidden(effectType == None)
         else:
             self._totalWidget.setText('')
             self._targetWidget.setText('')

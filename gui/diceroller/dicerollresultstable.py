@@ -105,7 +105,7 @@ class DiceRollResultsTable(gui.ListTable):
             row=row,
             total=self._rollResults.total())
 
-        effect = self._rollResults.effect()
+        effect = self._rollResults.effectValue()
         if effect:
             row = self.rowCount()
             self.insertRow(row)

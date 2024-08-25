@@ -4,6 +4,14 @@ import random
 import typing
 import uuid
 
+class DiceRollEffectType(enum.Enum):
+    ExceptionalFailure = 'Exceptional Failure'
+    AverageFailure = 'Average Failure'
+    MarginalFailure = 'Marginal Failure'
+    MarginalSuccess = 'Marginal Success'
+    AverageSuccess = 'Average Success'
+    ExceptionalSuccess = 'Exceptional Success'
+
 def _makeScalarValue(
         value: typing.Union[common.ScalarCalculation, int],
         name: str
@@ -12,6 +20,24 @@ def _makeScalarValue(
         return common.Calculator.equals(value=value, name=name)
     else:
         return common.ScalarCalculation(value=value, name=name)
+
+def _effectValueToType(
+        value: typing.Union[common.ScalarCalculation, int],
+        ) -> DiceRollEffectType:
+    if isinstance(value, common.ScalarCalculation):
+        value = value.value()
+    if value <= -6:
+        return DiceRollEffectType.ExceptionalFailure
+    elif value <= -2:
+        return DiceRollEffectType.AverageFailure
+    elif value == -1:
+        return DiceRollEffectType.MarginalFailure
+    elif value == 0:
+        return DiceRollEffectType.MarginalSuccess
+    elif value <= 5:
+        return DiceRollEffectType.AverageSuccess
+    else:
+        return DiceRollEffectType.ExceptionalSuccess
 
 class UuidObject(object):
     def __init__(self) -> None:
@@ -58,15 +84,17 @@ class DiceRollResult(UuidObject):
             modifiers: typing.Mapping[
                 common.ScalarCalculation, # Modifier name
                 str], # Modifier value
-            target: typing.Optional[common.ScalarCalculation],
-            effect: typing.Optional[common.ScalarCalculation],
+            targetNumber: typing.Optional[common.ScalarCalculation],
+            effectType: typing.Optional[DiceRollEffectType],
+            effectValue: typing.Optional[common.ScalarCalculation],
             ) -> None:
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
         self._modifiers = dict(modifiers) if modifiers else {}
-        self._target = target
-        self._effect = effect
+        self._targetNumber = targetNumber
+        self._effectType = effectType
+        self._effectValue = effectValue
 
     def total(self) -> common.ScalarCalculation:
         return self._total
@@ -82,13 +110,16 @@ class DiceRollResult(UuidObject):
         for pair in self._modifiers.items():
             yield pair
 
-    def target(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._target
+    def targetNumber(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._targetNumber
 
     # The effect will only be set if a target number was specified and that
     # target number was met
-    def effect(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._effect
+    def effectType(self) -> typing.Optional[DiceRollEffectType]:
+        return self._effectType
+
+    def effectValue(self) -> typing.Optional[common.ScalarCalculation]:
+        return self._effectValue
 
 class DiceRoller(UuidObject):
     class Flags(enum.IntFlag):
@@ -240,24 +271,26 @@ class DiceRoller(UuidObject):
             name=f'{self._name} Modified Roll')
 
         targetNumber = None
-        effect = None
+        effectValue = None
+        effectType = None
         if self._targetNumber != None:
             targetNumber = _makeScalarValue(
                 value=self._targetNumber,
                 name=f'{self._name} Target Number')
-            if total.value() >= targetNumber.value():
-                effect = common.Calculator.subtract(
-                    lhs=total,
-                    rhs=targetNumber,
-                    name=f'{self._name} Roll Effect')
+            effectValue = common.Calculator.subtract(
+                lhs=total,
+                rhs=targetNumber,
+                name=f'{self._name} Roll Effect')
+            effectType = _effectValueToType(value=effectValue)
 
         return DiceRollResult(
             total=total,
             rolls=originalRolls,
             ignored=ignoredRoll,
             modifiers=modifiers,
-            target=targetNumber,
-            effect=effect)
+            targetNumber=targetNumber,
+            effectType=effectType,
+            effectValue=effectValue)
 
 class DiceRollerGroup(UuidObject):
     def __init__(
