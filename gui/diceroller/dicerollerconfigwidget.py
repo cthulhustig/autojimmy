@@ -157,7 +157,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            roller: diceroller.DiceRoller,
+            roller: typing.Optional[diceroller.DiceRoller] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -168,8 +168,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._dieCountSpinBox.valueChanged.connect(self._dieCountChanged)
 
         self._dieTypeComboBox = gui.EnumComboBox(
-            type=common.DieType,
-            value=self._roller.dieType())
+            type=common.DieType)
         self._dieTypeComboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
@@ -249,13 +248,13 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
 
-        scrollArea = gui.ScrollAreaEx()
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setWidget(wrapperWidget)
+        self._scrollArea = gui.ScrollAreaEx()
+        self._scrollArea.setWidgetResizable(True)
+        self._scrollArea.setWidget(wrapperWidget)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addWidget(scrollArea)
+        widgetLayout.addWidget(self._scrollArea)
 
         self.setLayout(widgetLayout)
         self._syncToRoller()
@@ -265,11 +264,18 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def setRoller(
             self,
-            roller: diceroller.DiceRoller
+            roller: typing.Optional[diceroller.DiceRoller]
             ) -> None:
         self._roller = roller
+        self._syncToRoller()
 
     def _syncToRoller(self) -> None:
+        if not self._roller:
+            self._scrollArea.setHidden(True)
+            return
+
+        self._scrollArea.setHidden(False)
+
         with gui.SignalBlocker(self._dieCountSpinBox):
             self._dieCountSpinBox.setValue(self._roller.dieCount())
 

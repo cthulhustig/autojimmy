@@ -1,7 +1,7 @@
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class TableViewItemDelegateEx(QtWidgets.QStyledItemDelegate):
+class StyledItemDelegateEx(QtWidgets.QStyledItemDelegate):
     def __init__(
             self,
             parent: typing.Optional[QtCore.QObject] = None
@@ -31,7 +31,7 @@ class TableViewItemDelegateEx(QtWidgets.QStyledItemDelegate):
 # span to calculate how tall the word wrapped text will be.
 # NOTE: Currently only supports spans covering multiple columns, not multiple
 # rows
-class TableViewSpannedWordWrapFixDelegate(TableViewItemDelegateEx):
+class TableViewSpannedWordWrapFixDelegate(StyledItemDelegateEx):
     def sizeHint(
             self,
             option: QtWidgets.QStyleOptionViewItem,

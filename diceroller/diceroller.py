@@ -2,7 +2,6 @@ import common
 import enum
 import random
 import typing
-import uuid
 
 class DiceRollEffectType(enum.Enum):
     ExceptionalFailure = 'Exceptional Failure'
@@ -39,43 +38,7 @@ def _effectValueToType(
     else:
         return DiceRollEffectType.ExceptionalSuccess
 
-class UuidObject(object):
-    def __init__(self) -> None:
-        self._uuid = str(uuid.uuid4())
-
-    def uuid(self) -> str:
-        return self._uuid
-
-class DiceModifier(UuidObject):
-    def __init__(
-            self,
-            name: str = '',
-            enabled: bool = True,
-            value: int = 0
-            ) -> None:
-        self._name = name
-        self._enabled = enabled
-        self._value = value
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> str:
-        self._name = name
-
-    def enabled(self) -> bool:
-        return self._enabled
-
-    def setEnabled(self, enabled: bool) -> None:
-        self._enabled = enabled
-
-    def value(self) -> int:
-        return self._value
-
-    def setValue(self, value: int)-> None:
-        self._value = value
-
-class DiceRollResult(UuidObject):
+class DiceRollResult(common.UuidObject):
     def __init__(
             self,
             total: common.ScalarCalculation,
@@ -88,6 +51,7 @@ class DiceRollResult(UuidObject):
             effectType: typing.Optional[DiceRollEffectType],
             effectValue: typing.Optional[common.ScalarCalculation],
             ) -> None:
+        super().__init__()
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
@@ -121,7 +85,45 @@ class DiceRollResult(UuidObject):
     def effectValue(self) -> typing.Optional[common.ScalarCalculation]:
         return self._effectValue
 
-class DiceRoller(UuidObject):
+class DiceModifier(common.UuidObject):
+    def __init__(
+            self,
+            name: str = '',
+            enabled: bool = True,
+            value: int = 0
+            ) -> None:
+        super().__init__()
+        self._name = name
+        self._enabled = enabled
+        self._value = value
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DiceModifier):
+            return super().__eq__(other) and \
+                self._name == other._name and \
+                self._enabled ==  other._enabled and \
+                self._value == other._value
+        return False
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str) -> str:
+        self._name = name
+
+    def enabled(self) -> bool:
+        return self._enabled
+
+    def setEnabled(self, enabled: bool) -> None:
+        self._enabled = enabled
+
+    def value(self) -> int:
+        return self._value
+
+    def setValue(self, value: int)-> None:
+        self._value = value
+
+class DiceRoller(common.UuidObject):
     class Flags(enum.IntFlag):
         HasBoonDice = 1
         HasBaneDice = 2
@@ -129,28 +131,48 @@ class DiceRoller(UuidObject):
     def __init__(
             self,
             name: str,
+            group: str,
             dieCount: int,
             dieType: common.DieType,
             constantDM: int = 0,
             flags: Flags = 0,
             dynamicDMs: typing.Optional[typing.Iterable[DiceModifier]] = None,
-            targetNumber: typing.Optional[int] = None,
-            randomGenerator: typing.Optional[random.Random] = None
+            targetNumber: typing.Optional[int] = None
             ) -> None:
+        super().__init__()
         self._name = name
+        self._group = group
         self._dieCount = dieCount
         self._dieType = dieType
         self._constantDM = constantDM
         self._flags = flags
         self._dynamicDMs: typing.List[DiceModifier] = list(dynamicDMs) if dynamicDMs else []
         self._targetNumber = targetNumber
-        self._randomGenerator = randomGenerator if randomGenerator else random
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, DiceRoller):
+            return super().__eq__(other) and \
+                self._name == other._name and \
+                self._group == other._group and \
+                self._dieCount ==  other._dieCount and \
+                self._dieType == other._dieType and \
+                self._constantDM == other._constantDM and \
+                self._flags == other._flags and \
+                self._dynamicDMs == other._dynamicDMs and \
+                self._targetNumber == other._targetNumber
+        return False
 
     def name(self) -> str:
         return self._name
 
-    def setName(self, name: str) -> str:
+    def setName(self, name: str) -> None:
         self._name = name
+
+    def group(self) -> str:
+        return self._group
+
+    def setGroup(self, group: str) -> None:
+        self._group = group
 
     def dieCount(self) -> int:
         return self._dieCount
@@ -257,7 +279,13 @@ class DiceRoller(UuidObject):
             targetNumber=targetNumber,
             probability=probability,)
 
-    def roll(self) -> DiceRollResult:
+    def roll(
+            self,
+            randomGenerator: typing.Optional[random.Random] = None,
+            ) -> DiceRollResult:
+        if randomGenerator == None:
+            randomGenerator = random
+
         originalRolls: typing.List[common.ScalarCalculation] = []
         boonBaneCount = 0
         if self.hasBoon() and not self.hasBane():
@@ -267,7 +295,7 @@ class DiceRoller(UuidObject):
         totalDieCount = self._dieCount + abs(boonBaneCount)
         dieSides = 3 if self._dieType == common.DieType.D3 else 6
         for index in range(0, totalDieCount):
-            roll = self._randomGenerator.randint(1, dieSides)
+            roll = randomGenerator.randint(1, dieSides)
             if self._dieType == common.DieType.DD:
                 roll * 10
             originalRolls.append(common.ScalarCalculation(
@@ -329,40 +357,3 @@ class DiceRoller(UuidObject):
             targetNumber=targetNumber,
             effectType=effectType,
             effectValue=effectValue)
-
-class DiceRollerGroup(UuidObject):
-    def __init__(
-            self,
-            name: str,
-            ) -> None:
-        self._name = name
-        self._rollers: typing.List[DiceRoller] = []
-
-    def name(self) -> str:
-        return self._name
-
-    def setName(self, name: str) -> str:
-        self._name = name
-
-    def addRoller(
-            self,
-            roller: DiceRoller
-            ) -> None:
-        if roller not in self._rollers:
-            self._rollers.append(roller)
-
-    def removeRoller(
-            self,
-            roller: DiceRoller
-            ) -> None:
-        self._rollers.remove(roller)
-
-    def findRoller(self, uuid) -> typing.Optional[DiceRoller]:
-        for roller in self._rollers:
-            if uuid == roller.uuid():
-                return roller
-        return None
-
-    def yieldRollers(self) -> typing.Generator[DiceRoller, None, None]:
-        for roller in self._rollers:
-            yield roller

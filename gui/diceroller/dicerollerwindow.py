@@ -29,15 +29,12 @@ class DiceRollerWindow(gui.WindowWidget):
             title='Dice Roller',
             configSection='DiceRoller')
 
-        self._roller = diceroller.DiceRoller(
-            name='Hack Roller',
-            dieCount=1,
-            dieType=common.DieType.D6)
-
+        self._createRollerManagerControls()
         self._createRollerConfigControls()
         self._createRollResultsControls()
 
         self._splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self._splitter.addWidget(self._managerGroupBox)
         self._splitter.addWidget(self._configGroupBox)
         self._splitter.addWidget(self._resultsGroupBox)
 
@@ -77,9 +74,19 @@ class DiceRollerWindow(gui.WindowWidget):
 
         super().saveSettings()
 
+    def _createRollerManagerControls(self) -> None:
+        self._rollerManagerWidget = gui.DiceRollerManagerWidget()
+        self._rollerManagerWidget.rollerSelected.connect(self._rollerSelected)
+
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.setContentsMargins(0, 0, 0, 0)
+        groupLayout.addWidget(self._rollerManagerWidget)
+
+        self._managerGroupBox = QtWidgets.QGroupBox('Dice Rollers')
+        self._managerGroupBox.setLayout(groupLayout)
+
     def _createRollerConfigControls(self) -> None:
-        self._rollerConfigWidget = gui.DiceRollerConfigWidget(
-            roller=self._roller)
+        self._rollerConfigWidget = gui.DiceRollerConfigWidget()
         self._rollerConfigWidget.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
@@ -102,9 +109,6 @@ class DiceRollerWindow(gui.WindowWidget):
         self._detailedResultsWidget = gui.DiceRollResultsTable()
         self._probabilityGraph = gui.DiceRollerProbabilityGraph()
 
-        # TODO: This should be changed when I support multiple rollers
-        self._probabilityGraph.setRoller(self._roller)
-
         self._rollDisplayModeTabView = gui.TabWidgetEx()
         self._rollDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
         self._rollDisplayModeTabView.addTab(self._simpleResultsWidget, 'Simple')
@@ -117,11 +121,19 @@ class DiceRollerWindow(gui.WindowWidget):
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
 
+    def _rollerSelected(self, roller: diceroller.DiceRoller) -> None:
+        self._rollerConfigWidget.setRoller(roller=roller)
+        self._probabilityGraph.setRoller(roller=roller)
+
     def _configChanged(self) -> None:
         self._probabilityGraph.syncToRoller()
 
     def _rollDice(self) -> None:
-        result = self._roller.roll()
+        roller = self._rollerConfigWidget.roller()
+        if not roller:
+            # TODO: Do something?
+            pass
+        result = roller.roll()
         self._simpleResultsWidget.setResults(result)
         self._detailedResultsWidget.setResults(result)
         self._probabilityGraph.setHighlightRoll(result.total())

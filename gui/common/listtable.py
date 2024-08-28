@@ -111,7 +111,7 @@ class ListTable(gui.TableWidgetEx):
         self.installEventFilter(self)
         self.resizeRowsToContents()
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        itemDelegate = gui.TableViewItemDelegateEx()
+        itemDelegate = gui.StyledItemDelegateEx()
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self.setItemDelegate(itemDelegate)
 

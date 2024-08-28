@@ -96,6 +96,7 @@ from .robots.robotbuilderwindow import *
 from .diceroller.dicerollresultswidget import *
 from .diceroller.dicerollresultstable import *
 from .diceroller.dicerollerprobabilitygraph import *
+from .diceroller.dicerollermanagerwidget import *
 from .diceroller.dicerollerconfigwidget import *
 from .diceroller.dicerollerwindow import *
 from .startupprogressdialog import *

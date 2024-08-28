@@ -35,7 +35,6 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         self._graph.setBackground(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Base))
 
-        font = QtWidgets.QApplication.font()
         styles = {'color': gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Text))}
         self._graph.setLabel('left', 'Probability (%)', **styles)
         self._graph.setLabel('bottom', 'Dice Roll', **styles)
@@ -76,7 +75,8 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
     def _updateGraph(self):
         if not self._roller:
-            self._bars.hide()
+            if self._bars != None:
+                self._bars.hide()
             return # No weapon set so nothing to do
 
         probabilities = self._roller.calculateProbabilities(
@@ -87,7 +87,12 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         defaultColour = 'w' if gui.isDarkModeEnabled() else 'k'
         colours = []
         for roll in xValues:
-            colours.append('b' if roll == self._highlightRoll else defaultColour)
+            colour = defaultColour
+            if roll == self._highlightRoll:
+                colour = 'b'
+            elif roll == self._roller.targetNumber():
+                colour = 'g'
+            colours.append(colour)
 
         xMin = min(xValues)
         xMax = max(xValues)

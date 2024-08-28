@@ -1194,6 +1194,35 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             style=f' style="{headerAlignment}"' if headerAlignment else '',
             headerText=headerText)
 
+class TreeWidgetEx(QtWidgets.QTreeWidget):
+    # https://stackoverflow.com/questions/20203443/right-align-a-button-in-a-qtreeview-column
+    def setAlignedIndexWidget(
+            self,
+            index: QtCore.QModelIndex,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setIndexWidget(index, container)
+
+    def setAlignedItemWidget(
+            self,
+            item: QtWidgets.QTreeWidgetItem,
+            column: int,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setItemWidget(item, column, container)
+
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'
 
