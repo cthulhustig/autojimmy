@@ -34,17 +34,17 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
-        self._newRollerAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
-        self._newRollerAction.triggered.connect(self._newRollerClicked)
-        self._treeWidget.addAction(self._newRollerAction)
-        self._toolbar.addAction(self._newRollerAction)
-
         self._newGroupAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewList), 'New Group', self)
         self._newGroupAction.triggered.connect(self._newGroupClicked)
         self._treeWidget.addAction(self._newGroupAction)
         self._toolbar.addAction(self._newGroupAction)
+
+        self._newRollerAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
+        self._newRollerAction.triggered.connect(self._newRollerClicked)
+        self._treeWidget.addAction(self._newRollerAction)
+        self._toolbar.addAction(self._newRollerAction)
 
         self._deleteAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
@@ -61,6 +61,11 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
         widgetLayout.addWidget(self._treeWidget)
 
         self.setLayout(widgetLayout)
+
+        self._syncToManager()
+
+    def groupCount(self) -> int:
+        return self._treeWidget.topLevelItemCount()
 
     # TODO: This could create a group if none exist
     def _newRollerClicked(self) -> None:
@@ -84,15 +89,16 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
             # TODO: Do something
             return
 
-        rollerItem = self._addRollerToGroupItem(
-            groupItem=item,
-            roller=roller)
+        rollerItem = self._createRollerItem(
+            roller=roller,
+            groupItem=item)
+        rollerItem.setSelected(True)
         self._treeWidget.setCurrentItem(rollerItem)
 
     def _newGroupClicked(self) -> None:
         try:
             groupName = 'Group'
-            rollerName = 'Default Roller'
+            rollerName = 'New Roller'
             manager = diceroller.DiceRollerManager.instance()
             groupId = manager.createGroup(groupName)
             roller = manager.createRoller(
@@ -104,18 +110,19 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
             # TODO: Do something
             return
 
-        groupItem = QtWidgets.QTreeWidgetItem([groupName, ''])
-        groupItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, groupId)
+        groupItem = self._createGroupItem(
+            groupId=groupId,
+            groupName=groupName)
         self._treeWidget.addTopLevelItem(groupItem)
 
-        rollerItem = self._addRollerToGroupItem(
-            groupItem=groupItem,
-            roller=roller)
+        rollerItem = self._createRollerItem(
+            roller=roller,
+            groupItem=groupItem)
 
         # It looks like you have to expand after the item has been
         # added to the control
         groupItem.setExpanded(True)
-
+        rollerItem.setSelected(True)
         self._treeWidget.setCurrentItem(rollerItem)
 
     def _deleteClicked(self) -> None:
@@ -151,12 +158,43 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
         roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         self.rollerSelected.emit(roller)
 
-    def _addRollerToGroupItem(
+    def _createGroupItem(
             self,
-            groupItem: QtWidgets.QTreeWidgetItem,
-            roller: diceroller.DiceRoller
+            groupId: str,
+            groupName: str,
             ) -> QtWidgets.QTreeWidgetItem:
-        rollerItem = QtWidgets.QTreeWidgetItem([roller.name(), ''])
-        rollerItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
-        groupItem.addChild(rollerItem)
+        item = QtWidgets.QTreeWidgetItem([groupName])
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, groupId)
+        return item
+
+    def _createRollerItem(
+            self,
+            roller: diceroller.DiceRoller,
+            groupItem: QtWidgets.QTreeWidgetItem,
+            ) -> QtWidgets.QTreeWidgetItem:
+        item = QtWidgets.QTreeWidgetItem([roller.name()])
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
+        if groupItem:
+            groupItem.addChild(item)
+        return item
+
+    def _syncToManager(self) -> None:
+        with gui.SignalBlocker(self._treeWidget):
+            manager = diceroller.DiceRollerManager.instance()
+            for groupIndex, groupId in enumerate(manager.yieldGroups()):
+                groupItem = self._treeWidget.topLevelItem(groupIndex)
+                groupName = manager.groupName(groupId)
+                if not groupItem:
+                    groupItem = self._createGroupItem(
+                        groupId=groupId,
+                        groupName=groupName)
+                    self._treeWidget.addTopLevelItem(groupItem)
+                for rollerIndex, roller in enumerate(manager.yieldRollers(groupId=groupId)):
+                    rollerItem = groupItem.child(rollerIndex)
+                    if not rollerItem:
+                        rollerItem = self._createRollerItem(
+                            roller=roller,
+                            groupItem=groupItem)
+
+
 

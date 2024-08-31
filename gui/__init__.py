@@ -98,6 +98,7 @@ from .diceroller.dicerollresultstable import *
 from .diceroller.dicerollerprobabilitygraph import *
 from .diceroller.dicerollermanagerwidget import *
 from .diceroller.dicerollerconfigwidget import *
+from .diceroller.dicerollhistorywidget import *
 from .diceroller.dicerollerwindow import *
 from .startupprogressdialog import *
 from .downloadprogressdialog import *

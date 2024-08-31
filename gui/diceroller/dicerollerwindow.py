@@ -23,6 +23,18 @@ _WelcomeMessage = """
 # TODO: Should show possible range of roll as settings are changed
 # - A graph showing probability of different values would be pretty cool
 # TODO: Remove blank space at bottom of modifier list (when it's shown)
+# TODO: Need a roll history window
+# - Important in case the user somehow manages to clear the previous
+# results when switching from attack to damage roll as they wouldn't
+# be able to go back to see what the effect was. Currently the old
+# result will remain until you next click roll but I shouldn't assume
+# that will always be the case in all situations
+# - If i'm storing things in the database I could make an all time
+# roll history but that might just be pointless db bloat
+# - What would be really cool is if it was a list rather than just
+# text so you could click on things to go back to see all the
+# details of previous rolls (basically it would put the results
+# back in the results window)
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
@@ -32,14 +44,19 @@ class DiceRollerWindow(gui.WindowWidget):
         self._createRollerManagerControls()
         self._createRollerConfigControls()
         self._createRollResultsControls()
+        self._createRollHistoryControls()
 
-        self._splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
-        self._splitter.addWidget(self._managerGroupBox)
-        self._splitter.addWidget(self._configGroupBox)
-        self._splitter.addWidget(self._resultsGroupBox)
+        self._horizontalSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self._horizontalSplitter.addWidget(self._managerGroupBox)
+        self._horizontalSplitter.addWidget(self._configGroupBox)
+        self._horizontalSplitter.addWidget(self._resultsGroupBox)
+
+        self._verticalSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
+        self._verticalSplitter.addWidget(self._horizontalSplitter)
+        self._verticalSplitter.addWidget(self._historyGroupBox)
 
         windowLayout = QtWidgets.QHBoxLayout()
-        windowLayout.addWidget(self._splitter)
+        windowLayout.addWidget(self._verticalSplitter)
 
         self.setLayout(windowLayout)
 
@@ -50,10 +67,17 @@ class DiceRollerWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='SplitterState',
+            key='HorzSplitterState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._splitter.restoreState(storedValue)
+            self._horizontalSplitter.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='VertSplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._verticalSplitter.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -62,13 +86,30 @@ class DiceRollerWindow(gui.WindowWidget):
         if storedValue:
             self._rollDisplayModeTabView.restoreState(storedValue)
 
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ProbabilitiesState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._probabilityGraph.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='HistoryState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._historyWidget.restoreState(storedValue)
+
         self._settings.endGroup()
 
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
-        self._settings.setValue('SplitterState', self._splitter.saveState())
+        self._settings.setValue('HorzSplitterState', self._horizontalSplitter.saveState())
+        self._settings.setValue('VertSplitterState', self._verticalSplitter.saveState())
         self._settings.setValue('RollDisplayModeState', self._rollDisplayModeTabView.saveState())
+        self._settings.setValue('ProbabilitiesState', self._probabilityGraph.saveState())
+        self._settings.setValue('HistoryState', self._historyWidget.saveState())
 
         self._settings.endGroup()
 
@@ -77,6 +118,7 @@ class DiceRollerWindow(gui.WindowWidget):
     def _createRollerManagerControls(self) -> None:
         self._rollerManagerWidget = gui.DiceRollerManagerWidget()
         self._rollerManagerWidget.rollerSelected.connect(self._rollerSelected)
+        self._rollerManagerWidget.rollerDeleted.connect(self._rollerDeleted)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.setContentsMargins(0, 0, 0, 0)
@@ -121,22 +163,80 @@ class DiceRollerWindow(gui.WindowWidget):
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
 
+    def _createRollHistoryControls(self) -> None:
+        self._historyWidget = gui.DiceRollHistoryWidget()
+        self._historyWidget.resultSelected.connect(self._historySelectionChanged)
+
+        groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.addWidget(self._historyWidget)
+
+        self._historyGroupBox = QtWidgets.QGroupBox('History')
+        self._historyGroupBox.setLayout(groupLayout)
+
     def _rollerSelected(self, roller: diceroller.DiceRoller) -> None:
-        self._rollerConfigWidget.setRoller(roller=roller)
-        self._probabilityGraph.setRoller(roller=roller)
+        with gui.SignalBlocker(self._rollerConfigWidget):
+            self._rollerConfigWidget.setRoller(roller=roller)
+
+        with gui.SignalBlocker(self._probabilityGraph):
+            self._probabilityGraph.setRoller(roller=roller)
+
+    def _rollerDeleted(self, roller: diceroller.DiceRoller) -> None:
+        currentRoller = self._rollerConfigWidget.roller()
+        if not currentRoller or (roller.uuid() != currentRoller.uuid()):
+            return
+
+        with gui.SignalBlocker(self._rollerConfigWidget):
+            self._rollerConfigWidget.setRoller(None)
+
+        with gui.SignalBlocker(self._probabilityGraph):
+            self._probabilityGraph.setRoller(None)
+
+        with gui.SignalBlocker(self._historyWidget):
+            self._historyWidget.purgeHistory(roller)
 
     def _configChanged(self) -> None:
-        self._probabilityGraph.syncToRoller()
+        with gui.SignalBlocker(self._probabilityGraph):
+            self._probabilityGraph.syncToRoller()
+
+    # TODO: This needs work. It's passing a 'new' roller to the
+    # widgets when it should probably update the 'stored' version
+    # of the roller with this ones state and switch to it
+    def _historySelectionChanged(
+            self,
+            roller: diceroller.DiceRoller,
+            result: diceroller.DiceRollResult
+            ) -> None:
+        with gui.SignalBlocker(self._rollerConfigWidget):
+            self._rollerConfigWidget.setRoller(roller=roller)
+
+        with gui.SignalBlocker(self._simpleResultsWidget):
+            self._simpleResultsWidget.setResults(result)
+
+        with gui.SignalBlocker(self._detailedResultsWidget):
+            self._detailedResultsWidget.setResults(result)
+
+        with gui.SignalBlocker(self._probabilityGraph):
+            self._probabilityGraph.setRoller(roller=roller)
+            self._probabilityGraph.setHighlightRoll(result.total())
 
     def _rollDice(self) -> None:
         roller = self._rollerConfigWidget.roller()
         if not roller:
             # TODO: Do something?
-            pass
+            return
         result = roller.roll()
-        self._simpleResultsWidget.setResults(result)
-        self._detailedResultsWidget.setResults(result)
-        self._probabilityGraph.setHighlightRoll(result.total())
+
+        with gui.SignalBlocker(self._simpleResultsWidget):
+            self._simpleResultsWidget.setResults(result)
+
+        with gui.SignalBlocker(self._detailedResultsWidget):
+            self._detailedResultsWidget.setResults(result)
+
+        with gui.SignalBlocker(self._probabilityGraph):
+            self._probabilityGraph.setHighlightRoll(result.total())
+
+        with gui.SignalBlocker(self._historyWidget):
+            self._historyWidget.addResult(roller, result)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

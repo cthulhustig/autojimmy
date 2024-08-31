@@ -50,8 +50,9 @@ class DiceRollResult(common.UuidObject):
             targetNumber: typing.Optional[common.ScalarCalculation],
             effectType: typing.Optional[DiceRollEffectType],
             effectValue: typing.Optional[common.ScalarCalculation],
+            copyUuid: str = None
             ) -> None:
-        super().__init__()
+        super().__init__(copyUuid=copyUuid)
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
@@ -90,9 +91,10 @@ class DiceModifier(common.UuidObject):
             self,
             name: str = '',
             enabled: bool = True,
-            value: int = 0
+            value: int = 0,
+            copyUuid: str = None
             ) -> None:
-        super().__init__()
+        super().__init__(copyUuid=copyUuid)
         self._name = name
         self._enabled = enabled
         self._value = value
@@ -104,6 +106,9 @@ class DiceModifier(common.UuidObject):
                 self._enabled ==  other._enabled and \
                 self._value == other._value
         return False
+
+    def __hash__(self):
+        return hash((super().__hash__(), self._name, self._enabled, self._value))
 
     def name(self) -> str:
         return self._name
@@ -137,9 +142,10 @@ class DiceRoller(common.UuidObject):
             constantDM: int = 0,
             flags: Flags = 0,
             dynamicDMs: typing.Optional[typing.Iterable[DiceModifier]] = None,
-            targetNumber: typing.Optional[int] = None
+            targetNumber: typing.Optional[int] = None,
+            copyUuid: str = None
             ) -> None:
-        super().__init__()
+        super().__init__(copyUuid=copyUuid)
         self._name = name
         self._group = group
         self._dieCount = dieCount
@@ -161,6 +167,18 @@ class DiceRoller(common.UuidObject):
                 self._dynamicDMs == other._dynamicDMs and \
                 self._targetNumber == other._targetNumber
         return False
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self._name,
+            self._group,
+            self._dieCount,
+            self._dieType,
+            self._constantDM,
+            self._flags,
+            self._dynamicDMs,
+            self._targetNumber))
 
     def name(self) -> str:
         return self._name

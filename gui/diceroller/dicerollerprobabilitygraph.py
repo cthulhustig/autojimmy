@@ -1,6 +1,7 @@
 import common
 import diceroller
 import gui
+import logging
 import pyqtgraph
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -14,6 +15,8 @@ class _CustomPlotWidget(pyqtgraph.PlotWidget):
         return super().mouseMoveEvent(event)
 
 class DiceRollerProbabilityGraph(QtWidgets.QWidget):
+    _StateVersion = 'DiceRollerProbabilityGraph_v1'
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None,
@@ -73,6 +76,38 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
     def syncToRoller(self) -> None:
         self._updateGraph()
 
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(self._StateVersion)
+
+        statsState = self._typeComboBox.saveState()
+        stream.writeUInt32(statsState.count() if statsState else 0)
+        if statsState:
+            stream.writeRawData(statsState.data())
+
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != self._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug('Failed to restore DiceRollerProbabilityGraph state (Incorrect version)')
+            return False
+
+        count = stream.readUInt32()
+        if count <= 0:
+            return True
+        statsState = QtCore.QByteArray(stream.readRawData(count))
+        if not self._typeComboBox.restoreState(statsState):
+            return False
+
+        return True
+
     def _updateGraph(self):
         if not self._roller:
             if self._bars != None:
@@ -90,8 +125,8 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             colour = defaultColour
             if roll == self._highlightRoll:
                 colour = 'b'
-            elif roll == self._roller.targetNumber():
-                colour = 'g'
+            elif self._roller.targetNumber() != None:
+                colour = 'g' if roll >= self._roller.targetNumber() else 'r'
             colours.append(colour)
 
         xMin = min(xValues)

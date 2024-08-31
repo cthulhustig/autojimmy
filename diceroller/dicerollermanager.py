@@ -122,10 +122,15 @@ class DiceRollerManager(object):
         roller = self._lookupRoller(roller.uuid())
         del self._rollers[roller.uuid()]
 
-    def yieldRollers(self) -> typing.Generator[diceroller.DiceRoller, None, None]:
+    def yieldRollers(
+            self,
+            groupId: typing.Optional[str],
+            ) -> typing.Generator[diceroller.DiceRoller, None, None]:
         # Use a copy of the list to allow for callers manipulating the
         # list as we go
         for roller in list(self._rollers.values()):
+            if groupId and (groupId != roller.group()):
+                continue
             yield roller
 
     def _lookupGroup(self, groupId: str) -> _DiceRollerGroup:
