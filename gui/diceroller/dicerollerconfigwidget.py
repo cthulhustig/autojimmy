@@ -1,17 +1,17 @@
 import app
 import common
-import enum
 import diceroller
 import gui
+import objectdb
 import typing
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
 class DiceModifierWidget(QtWidgets.QWidget):
     modifierChanged = QtCore.pyqtSignal()
 
     def __init__(
             self,
-            modifier: diceroller.DiceModifier,
+            modifier: diceroller.DiceModifierDatabaseObject,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -61,8 +61,8 @@ class DiceModifierWidget(QtWidgets.QWidget):
         self.modifierChanged.emit()
 
 class DiceModifierListWidget(gui.ListWidgetEx):
-    modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifier)
-    modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifier)
+    modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
+    modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
 
     _ItemSpacing = 10
 
@@ -77,10 +77,10 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
 
         self._modifierItemMap: typing.Dict[
-            diceroller.DiceModifier,
+            diceroller.DiceModifierDatabaseObject,
             QtWidgets.QListWidgetItem] = {}
 
-    def addModifier(self, modifier: diceroller.DiceModifier) -> None:
+    def addModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         modifierWidget = DiceModifierWidget(modifier=modifier)
         modifierWidget.modifierChanged.connect(lambda: self._modifierChanged(modifier))
 
@@ -108,7 +108,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self._modifierItemMap[modifier] = item
         self._updateDimensions()
 
-    def removeModifier(self, modifier: diceroller.DiceModifier) -> None:
+    def removeModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         item = self._modifierItemMap.get(modifier)
         if not item:
             return
@@ -130,10 +130,10 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self._modifierItemMap.clear()
         self._updateDimensions()
 
-    def _modifierChanged(self, modifier: diceroller.DiceModifier) -> None:
+    def _modifierChanged(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         self.modifierChanged.emit(modifier)
 
-    def _deleteClicked(self, modifier: diceroller.DiceModifier) -> None:
+    def _deleteClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         # Don't emit modifierDeleted as removeModifier will do that
         self.removeModifier(modifier=modifier)
 
@@ -157,7 +157,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            roller: typing.Optional[diceroller.DiceRoller] = None,
+            roller: typing.Optional[diceroller.DiceRollerDatabaseObject] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -259,12 +259,12 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.setLayout(widgetLayout)
         self._syncToRoller()
 
-    def roller(self) -> diceroller.DiceRoller:
+    def roller(self) -> diceroller.DiceRollerDatabaseObject:
         return self._roller
 
     def setRoller(
             self,
-            roller: typing.Optional[diceroller.DiceRoller]
+            roller: typing.Optional[diceroller.DiceRollerDatabaseObject]
             ) -> None:
         self._roller = roller
         self._syncToRoller()
@@ -293,7 +293,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
-            for modifier in self._roller.yieldDynamicDMs():
+            for modifier in self._roller.dynamicDMs():
                 self._modifierList.addModifier(modifier)
             self._modifierList.setHidden(self._modifierList.isEmpty())
 
@@ -306,57 +306,89 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
             self._dieCountSpinBox.value())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()
 
     def _dieTypeChanged(self) -> None:
         self._roller.setDieType(
             self._dieTypeComboBox.currentEnum())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()
 
     def _constantDMChanged(self) -> None:
         self._roller.setConstantDM(
             self._constantDMSpinBox.value())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()
 
     def _hasBoonChanged(self) -> None:
         self._roller.setHasBoon(
             self._hasBoonCheckBox.isChecked())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()
 
     def _hasBaneChanged(self) -> None:
         self._roller.setHasBane(
             self._hasBaneCheckBox.isChecked())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:
-        modifier = diceroller.DiceModifier()
-        self._roller.addDynamicDM(modifier=modifier)
+        modifier = diceroller.DiceModifierDatabaseObject(
+            name='Modifier',
+            value=0,
+            enabled=True)
+        self._roller.addDynamicDM(dynamicDM=modifier)
+        objectdb.ObjectDbManager.instance().createObject(
+            object=modifier)
+
         self._modifierList.addModifier(modifier)
         self._modifierList.setHidden(False)
         self.configChanged.emit()
 
     # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
-        modifiers = list(self._roller.yieldDynamicDMs())
-        for modifier in modifiers:
-            self._roller.removeDynamicDM(modifier)
+        for modifier in self._roller.dynamicDMs():
+            self._roller.removeDynamicDM(dynamicDM=modifier)
+            # TODO: Make this more efficient
+            objectdb.ObjectDbManager.instance().deleteObject(
+                id=modifier.id())
 
         # Block signals to prevent multiple config update
         # notifications as modifiers are deleted
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
 
-        self._modifierList.setHidden()
+        self._modifierList.setHidden(True)
         self.configChanged.emit()
 
     def _modifierChanged(self) -> None:
+        # TODO: Probably only need to update the modifier here
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
         self.configChanged.emit()
 
-    def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
+    def _modifierDeleted(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         self._roller.removeDynamicDM(modifier)
+        objectdb.ObjectDbManager.instance().deleteObject(
+            id=modifier.id())
+
         self._modifierList.setHidden(self._modifierList.isEmpty())
         self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:
         self._roller.setTargetNumber(self._targetNumberSpinBox.value())
+        objectdb.ObjectDbManager.instance().updateObject(
+            object=self._roller)
+
         self.configChanged.emit()

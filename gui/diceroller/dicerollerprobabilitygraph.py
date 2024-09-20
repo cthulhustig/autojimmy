@@ -61,7 +61,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
     def setRoller(
             self,
-            roller: typing.Optional[diceroller.DiceRoller] = None
+            roller: typing.Optional[diceroller.DiceRollerDatabaseObject] = None
             ) -> None:
         self._roller = roller
         self._updateGraph()
@@ -114,7 +114,18 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
                 self._bars.hide()
             return # No weapon set so nothing to do
 
-        probabilities = self._roller.calculateProbabilities(
+        modifiers = []
+        for modifier in self._roller.dynamicDMs():
+            assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
+            if modifier.enabled():
+                modifiers.append((modifier.name(), modifier.value()))
+        probabilities = diceroller.calculateProbabilities(
+            dieCount=self._roller.dieCount(),
+            dieType=self._roller.dieCount(),
+            constantDM=self._roller.constantDM(),
+            hasBoon=self._roller.hasBoon(),
+            hasBane=self._roller.hasBane(),
+            dynamicDMs=modifiers,
             probability=self._typeComboBox.currentEnum())
         xValues = list(probabilities.keys())
         yValues = [value.value() * 100 for value in probabilities.values()]

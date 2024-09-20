@@ -8,7 +8,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class DiceRollHistoryWidget(QtWidgets.QWidget):
-    resultSelected = QtCore.pyqtSignal([diceroller.DiceRoller, diceroller.DiceRollResult])
+    resultSelected = QtCore.pyqtSignal([diceroller.DiceRollerDatabaseObject, diceroller.DiceRollResult])
 
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
@@ -53,7 +53,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def addResult(
         self,
-        roller: diceroller.DiceRoller,
+        roller: diceroller.DiceRollerDatabaseObject,
         result: diceroller.DiceRollResult
         ) -> None:
         roller = copy.deepcopy(roller)
@@ -64,7 +64,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def purgeHistory(
         self,
-        roller: diceroller.DiceRoller
+        roller: diceroller.DiceRollerDatabaseObject
         ) -> None:
         pass
 
@@ -103,7 +103,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
     def _fillTableRow(
             self,
             row: int,
-            roller: diceroller.DiceRoller,
+            roller: diceroller.DiceRollerDatabaseObject,
             result: diceroller.DiceRollResult
             ) -> None:
         itemData = (roller, result)

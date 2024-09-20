@@ -1,3 +1,3 @@
 from .diceroller import *
-from .dicerollermanager import *
+from .databaseobjects import *
 

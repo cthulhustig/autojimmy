@@ -11,6 +11,7 @@ import gunsmith
 import locale
 import logging
 import multiprocessing
+import objectdb
 import os
 import pathlib
 import proxy
@@ -495,6 +496,9 @@ def main() -> None:
             app.setLogLevel(logLevel)
         except Exception as ex:
             logging.warning('Failed to set log level', exc_info=ex)
+
+        databasePath = os.path.join(appDir, 'autojimmy.db')
+        objectdb.ObjectDbManager.instance().initialise(databasePath=databasePath)
 
         installMapsDir = os.path.join(installDir, 'data', 'map')
         overlayMapsDir = os.path.join(appDir, 'map')

@@ -1,12 +1,13 @@
 import common
 import diceroller
 import gui
+import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore
 
 class DiceRollerManagerWidget(QtWidgets.QWidget):
-    rollerSelected = QtCore.pyqtSignal(diceroller.DiceRoller)
-    rollerDeleted = QtCore.pyqtSignal(diceroller.DiceRoller)
+    rollerSelected = QtCore.pyqtSignal(diceroller.DiceRollerDatabaseObject)
+    rollerDeleted = QtCore.pyqtSignal(diceroller.DiceRollerDatabaseObject)
 
     def __init__(
             self,
@@ -64,9 +65,6 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
 
         self._syncToManager()
 
-    def groupCount(self) -> int:
-        return self._treeWidget.topLevelItemCount()
-
     # TODO: This could create a group if none exist
     def _newRollerClicked(self) -> None:
         item = self._treeWidget.currentItem()
@@ -75,18 +73,20 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
             return
         if item.parent() != None:
             item = item.parent()
-        groupId = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
 
         try:
-            rollerName = 'New Roller'
-            manager = diceroller.DiceRollerManager.instance()
-            roller = manager.createRoller(
-                name=rollerName,
-                groupId=groupId,
+            roller = diceroller.DiceRollerDatabaseObject(
+                name='New Roller',
                 dieCount=1,
                 dieType=common.DieType.D6)
+            group.addRoller(roller)
+            objectdb.ObjectDbManager.instance().createObject(
+                object=roller)
         except Exception as ex:
             # TODO: Do something
+            print(ex)
             return
 
         rollerItem = self._createRollerItem(
@@ -97,22 +97,22 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
 
     def _newGroupClicked(self) -> None:
         try:
-            groupName = 'Group'
-            rollerName = 'New Roller'
-            manager = diceroller.DiceRollerManager.instance()
-            groupId = manager.createGroup(groupName)
-            roller = manager.createRoller(
-                name=rollerName,
-                groupId=groupId,
+            roller = diceroller.DiceRollerDatabaseObject(
+                name='New Roller',
                 dieCount=1,
                 dieType=common.DieType.D6)
+            group = diceroller.DiceRollerGroupDatabaseObject(
+                name='New Roller',
+                rollers=[roller])
+
+            objectdb.ObjectDbManager.instance().createObject(
+                object=group)
         except Exception as ex:
             # TODO: Do something
+            print(ex)
             return
 
-        groupItem = self._createGroupItem(
-            groupId=groupId,
-            groupName=groupName)
+        groupItem = self._createGroupItem(group=group)
         self._treeWidget.addTopLevelItem(groupItem)
 
         rollerItem = self._createRollerItem(
@@ -132,15 +132,15 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
             return
 
         isGroup = item.parent() == None
-        objectKey = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(object, objectdb.DatabaseObject))
 
         try:
-            if isGroup:
-                diceroller.DiceRollerManager().instance().removeGroup(objectKey)
-            else:
-                diceroller.DiceRollerManager().instance().removeRoller(objectKey)
+            objectdb.ObjectDbManager.instance().deleteObject(
+                id=object.id())
         except Exception as ex:
             # TODO: Do something
+            print(ex)
             pass
 
         if isGroup:
@@ -149,7 +149,7 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
         else:
             parent = item.parent()
             parent.removeChild(item)
-            self.rollerDeleted.emit(objectKey)
+            self.rollerDeleted.emit(object)
 
     def _treeSelectionChanged(self) -> None:
         item = self._treeWidget.currentItem()
@@ -160,16 +160,15 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
 
     def _createGroupItem(
             self,
-            groupId: str,
-            groupName: str,
+            group: diceroller.DiceRollerGroupDatabaseObject
             ) -> QtWidgets.QTreeWidgetItem:
-        item = QtWidgets.QTreeWidgetItem([groupName])
-        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, groupId)
+        item = QtWidgets.QTreeWidgetItem([group.name()])
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, group)
         return item
 
     def _createRollerItem(
             self,
-            roller: diceroller.DiceRoller,
+            roller: diceroller.DiceRollerDatabaseObject,
             groupItem: QtWidgets.QTreeWidgetItem,
             ) -> QtWidgets.QTreeWidgetItem:
         item = QtWidgets.QTreeWidgetItem([roller.name()])
@@ -180,16 +179,15 @@ class DiceRollerManagerWidget(QtWidgets.QWidget):
 
     def _syncToManager(self) -> None:
         with gui.SignalBlocker(self._treeWidget):
-            manager = diceroller.DiceRollerManager.instance()
-            for groupIndex, groupId in enumerate(manager.yieldGroups()):
+            groups = objectdb.ObjectDbManager.instance().readObjects(
+                classType=diceroller.DiceRollerGroupDatabaseObject)
+            for groupIndex, group in enumerate(groups):
+                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
                 groupItem = self._treeWidget.topLevelItem(groupIndex)
-                groupName = manager.groupName(groupId)
                 if not groupItem:
-                    groupItem = self._createGroupItem(
-                        groupId=groupId,
-                        groupName=groupName)
+                    groupItem = self._createGroupItem(group=group)
                     self._treeWidget.addTopLevelItem(groupItem)
-                for rollerIndex, roller in enumerate(manager.yieldRollers(groupId=groupId)):
+                for rollerIndex, roller in enumerate(group.rollers()):
                     rollerItem = groupItem.child(rollerIndex)
                     if not rollerItem:
                         rollerItem = self._createRollerItem(

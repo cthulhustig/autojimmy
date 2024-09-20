@@ -2,6 +2,7 @@ import app
 import common
 import diceroller
 import gui
+import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -173,16 +174,16 @@ class DiceRollerWindow(gui.WindowWidget):
         self._historyGroupBox = QtWidgets.QGroupBox('History')
         self._historyGroupBox.setLayout(groupLayout)
 
-    def _rollerSelected(self, roller: diceroller.DiceRoller) -> None:
+    def _rollerSelected(self, roller: diceroller.DiceRollerDatabaseObject) -> None:
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(roller=roller)
 
         with gui.SignalBlocker(self._probabilityGraph):
             self._probabilityGraph.setRoller(roller=roller)
 
-    def _rollerDeleted(self, roller: diceroller.DiceRoller) -> None:
+    def _rollerDeleted(self, roller: diceroller.DiceRollerDatabaseObject) -> None:
         currentRoller = self._rollerConfigWidget.roller()
-        if not currentRoller or (roller.uuid() != currentRoller.uuid()):
+        if not currentRoller or (roller.id() != currentRoller.id()):
             return
 
         with gui.SignalBlocker(self._rollerConfigWidget):
@@ -198,12 +199,18 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._probabilityGraph):
             self._probabilityGraph.syncToRoller()
 
-    # TODO: This needs work. It's passing a 'new' roller to the
-    # widgets when it should probably update the 'stored' version
-    # of the roller with this ones state and switch to it
+    # TODO: This is borked, it's passing the historic roller object to
+    # the config, this roller will have the correct parent id set to
+    # reference the group it was part of but this instance of the roller
+    # won't be the one in the list of roller instances held by the group
+    # that the manager widget is using.
+    # This means config changes will be made to the historic roller by
+    # the config widget (and written to the db), however if you were then
+    # to write the group held by the manager widget, it would revert the
+    # changes that had been made to the roller.
     def _historySelectionChanged(
             self,
-            roller: diceroller.DiceRoller,
+            roller: diceroller.DiceRollerDatabaseObject,
             result: diceroller.DiceRollResult
             ) -> None:
         with gui.SignalBlocker(self._rollerConfigWidget):
@@ -224,7 +231,19 @@ class DiceRollerWindow(gui.WindowWidget):
         if not roller:
             # TODO: Do something?
             return
-        result = roller.roll()
+        modifiers = []
+        for modifier in roller.dynamicDMs():
+            assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
+            if modifier.enabled():
+                modifiers.append((modifier.name(), modifier.value()))
+        result = diceroller.rollDice(
+            dieCount=roller.dieCount(),
+            dieType=roller.dieType(),
+            constantDM=roller.constantDM(),
+            hasBoon=roller.hasBoon(),
+            hasBane=roller.hasBane(),
+            dynamicDMs=modifiers,
+            targetNumber=roller.targetNumber())
 
         with gui.SignalBlocker(self._simpleResultsWidget):
             self._simpleResultsWidget.setResults(result)
