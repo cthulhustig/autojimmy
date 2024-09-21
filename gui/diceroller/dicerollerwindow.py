@@ -17,25 +17,29 @@ _WelcomeMessage = """
 # might think they miss clicked and roll again rather than realising
 # what is displayed is their new roll
 # - The main thing when implementing this is that the actual roll
-# should be made at the very start so the final value is known the
-# entire time the animation is playing.
-# TODO: There success/failure types based on effect that I should
-# probably display (e.g. 'Effect: # (Type)') (Core 2e p59 and 2022 p61)
-# TODO: Should show possible range of roll as settings are changed
-# - A graph showing probability of different values would be pretty cool
-# TODO: Remove blank space at bottom of modifier list (when it's shown)
-# TODO: Need a roll history window
-# - Important in case the user somehow manages to clear the previous
-# results when switching from attack to damage roll as they wouldn't
-# be able to go back to see what the effect was. Currently the old
-# result will remain until you next click roll but I shouldn't assume
-# that will always be the case in all situations
-# - If i'm storing things in the database I could make an all time
-# roll history but that might just be pointless db bloat
-# - What would be really cool is if it was a list rather than just
-# text so you could click on things to go back to see all the
-# details of previous rolls (basically it would put the results
-# back in the results window)
+#   should be made at the very start so the final value is known the
+#   entire time the animation is playing.
+# TODO: It might be better to move the manager widget code into the
+# window and have it construct the tree
+# - I think it makes conceptual sense as it's controlling what the
+#   window is displaying, it should also make fixing the roll history
+#   easier
+# - It would also allow me to move the database updating code out of
+#   the config widget and into the main window so all the database
+#   stuff is handled by it
+#   - Could trigger it in the main window when it gets notified that
+#       the roller has been updated
+# TODO: Need to fix switching to previous roll with the history window
+# - It's not updating the DiceRollerDatabaseObject held by the manager
+#   widget that controls everything
+# - Would be easier if manager stuff was in window (see above)
+# TODO: Need to use delayed edit notifications for text boxes as there
+# is a noticeable lag as it updates the db every time you hit a key
+# TODO: Need to be able to rename groups and rollers
+# TODO: Need to be able to duplicate rollers (and maybe groups)
+# TODO: Need json import/export
+# - Ideally selecting multiple rollers to export to a single file (ideally
+#   from multiple groups)
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
         super().__init__(
