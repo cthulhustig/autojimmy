@@ -41,9 +41,7 @@ class DiceModifierWidget(QtWidgets.QWidget):
         widgetLayout = QtWidgets.QHBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
         widgetLayout.addWidget(self._enabledCheckBox)
-        widgetLayout.addWidget(QtWidgets.QLabel('Name: '))
         widgetLayout.addWidget(self._nameLineEdit)
-        widgetLayout.addWidget(QtWidgets.QLabel('DM: '))
         widgetLayout.addWidget(self._modifierSpinBox)
 
         self.setLayout(widgetLayout)
@@ -192,6 +190,13 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         diceRollLayout.addWidget(self._constantDMSpinBox)
         diceRollLayout.addStretch()
 
+        self._targetNumberSpinBox = gui.OptionalSpinBox()
+        self._targetNumberSpinBox.setMinimum(0)
+        self._targetNumberSpinBox.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._targetNumberSpinBox.valueChanged.connect(self._targetNumberChanged)
+
         self._hasBoonCheckBox = gui.CheckBoxEx()
         self._hasBoonCheckBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
@@ -227,19 +232,12 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         modifiersLayout.addLayout(modifierControlLayout)
         modifiersLayout.addWidget(self._modifierList)
 
-        self._targetNumberSpinBox = gui.OptionalSpinBox()
-        self._targetNumberSpinBox.setMinimum(0)
-        self._targetNumberSpinBox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._targetNumberSpinBox.valueChanged.connect(self._targetNumberChanged)
-
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
+        controlLayout.addRow('Target Number:', self._targetNumberSpinBox)
         controlLayout.addRow('Boon:', self._hasBoonCheckBox)
         controlLayout.addRow('Bane:', self._hasBaneCheckBox)
         controlLayout.addRow('Modifiers:', modifiersLayout)
-        controlLayout.addRow('Target Number:', self._targetNumberSpinBox)
         controlLayout.addStretch()
 
         wrapperWidget = QtWidgets.QWidget()
