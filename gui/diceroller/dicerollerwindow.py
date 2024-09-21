@@ -11,6 +11,10 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
+# TODO: The more I'm reading I think having objects implement __hash__
+# is a bad idea. It can cause problems if the hash of objects in things
+# like dicts and sets change.
+# - I can't remember why I added it in the first place
 # TODO: There is currently a bug in the way database objects are handled.
 # If you were to detach an object from another object (e.g. remove a
 # modifier from one roller and attach it to another), then create/update
