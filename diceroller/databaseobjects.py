@@ -282,11 +282,6 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
         self._rollers.add(roller)
 
     def removeRoller(self, roller: DiceRollerDatabaseObject) -> None:
-        if not isinstance(roller, DiceRollerDatabaseObject):
-            raise ValueError(f'Roller is not a {DiceRollerDatabaseObject}')
-        if roller.parent() != self.id():
-            raise ValueError(f'{self.id()} is not the parent of roller {roller.id()}')
-
         self._rollers.remove(roller)
 
     @staticmethod
