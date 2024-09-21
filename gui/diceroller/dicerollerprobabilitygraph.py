@@ -121,7 +121,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
                 modifiers.append((modifier.name(), modifier.value()))
         probabilities = diceroller.calculateProbabilities(
             dieCount=self._roller.dieCount(),
-            dieType=self._roller.dieCount(),
+            dieType=self._roller.dieType(),
             constantDM=self._roller.constantDM(),
             hasBoon=self._roller.hasBoon(),
             hasBane=self._roller.hasBane(),
