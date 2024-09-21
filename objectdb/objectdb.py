@@ -42,6 +42,13 @@ class DatabaseEntity(object):
         self._parent = parent
 
 class DatabaseObject(DatabaseEntity):
+    def __init__(
+            self,
+            id: typing.Optional[str] = None,
+            parent: typing.Optional[str] = None
+            ) -> None:
+        super().__init__(id=id, parent=parent)
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DatabaseObject):
             return super().__eq__(other)
@@ -239,10 +246,23 @@ class ObjectDbManager(object):
             tableObjectDefs: typing.Dict[str, ObjectDef] = {}
             classObjectDefs: typing.Dict[typing.Type[DatabaseObject], ObjectDef] = {}
             for classType in classTypes:
-                # TODO: Check that classType implements __eq__ and __hash__
+                # DatabaseObject implements __eq__ and __hash__ to make it easier for
+                # derived classes that need to implement them to do so. They aren't
+                # actually needed by the ObjectDbManager implementation. However, the
+                # fact that DatabaseObject does have them means it's best for all
+                # derived classes to implement them to avoid bugs that could be caused
+                # by accidentally using the base implementation when dealing with
+                # derived objects
+                if not common.hasMethod(obj=classType, method='__eq__', includeSubclasses=False):
+                    raise RuntimeError(f'{classType} is derived from DatabaseObject so must implement __eq__')
+                if not common.hasMethod(obj=classType, method='__hash__', includeSubclasses=False):
+                    raise RuntimeError(f'{classType} is derived from DatabaseObject so must implement __hash__')
 
-                if 'defineObject' not in classType.__dict__:
-                    raise RuntimeError(f'DatabaseObject class {classType} has no static defineObject implementation')
+                # All DatabaseObject classes should have a static defineObject function
+                # that the ObjectDbManager can use to retrieve its ObjectDef
+                if not common.hasMethod(obj=classType, method='defineObject', includeSubclasses=False):
+                    raise RuntimeError(f'{classType} is derived from DatabaseObject so must have a static defineObject function')
+
                 objectDef = classType.defineObject()
                 if not isinstance(objectDef, ObjectDef):
                     raise RuntimeError(f'Object definition for {classType} is not derived from ObjectDef')
@@ -410,12 +430,6 @@ class ObjectDbManager(object):
                 value = operator.methodcaller(paramDef.paramName())(entity)
                 if value == None and not paramDef.isOptional():
                     raise RuntimeError(f'Mandatory parameter accessor {objectDef.classType()}.{paramDef.paramName()} returned none for object {entity.id()}')
-
-                 # TODO: I think the way object parameters are currently handled could result in
-                 # objects not being deleted from the db. If an object parameter references one
-                 # object in the database then a update sets it to a different instance (with a
-                 # different id) then I don't think anything will delete the old object it used to
-                 # reference
 
                 childEntity = None
                 if value != None:
@@ -700,6 +714,7 @@ class ObjectDbManager(object):
                 raise ValueError(f'Object {entity.id()} uses unknown type {type(entity)}')
 
             paramDefs = objectDef.paramDefs()
+            columns = objectDef.columnNames()
 
             # Update the entities table metadata
             sql = """
@@ -715,20 +730,28 @@ class ObjectDbManager(object):
                 'table': objectDef.tableName()}
             cursor.execute(sql, values)
 
-            # Update the object's specific table fields
-            columns = [paramDef.columnName() for paramDef in paramDefs]
-            sql = """
-                INSERT INTO {table} (id, {columns})
-                VALUES (:id, {placeholders})
-                ON CONFLICT(id) DO UPDATE SET {conflict};
-                """.format(
-                    table=objectDef.tableName(),
-                    columns=', '.join(columns),
-                    placeholders=', '.join([f':{col}' for col in columns]),
-                    conflict=', '.join([f'{col} = excluded.{col}' for col in columns]))
-            values = {'id': entity.id()}
+            # Query existing values if any of the objects parameters refer to
+            # another entity as they're used to delete the old object if the
+            # parameter is being updated to refer to a different object
+            hasReference = any(
+                paramDef.paramType() in {ParamDef.ParamType.Object, ParamDef.ParamType.List}
+                for paramDef in paramDefs)
+            exitingValues = None
+            if hasReference:
+                sql = """
+                    SELECT {columns}
+                    FROM {dataTable}
+                    WHERE id = :id
+                    LIMIT 1;
+                    """.format(
+                        columns=','.join(columns),
+                        dataTable=objectDef.tableName(),
+                        entitiesTable=ObjectDbManager._EntitiesTableName)
+                cursor.execute(sql, {'id': entity.id()})
+                exitingValues = cursor.fetchone()
 
-            for paramDef in paramDefs:
+            values = {'id': entity.id()}
+            for index, paramDef in enumerate(paramDefs):
                 paramType = paramDef.paramType()
                 column = paramDef.columnName()
 
@@ -736,6 +759,7 @@ class ObjectDbManager(object):
                 if value == None and not paramDef.isOptional():
                     raise RuntimeError(f'Mandatory parameter accessor {objectDef.classType()}.{paramDef.paramName()} returned none for object {entity.id()}')
 
+                isReference = False
                 childEntity = None
                 if value != None:
                     if paramType == ParamDef.ParamType.Text:
@@ -755,12 +779,14 @@ class ObjectDbManager(object):
                         if not isinstance(value, DatabaseObject):
                             raise RuntimeError(
                                 f'Value returned by parameter accessor {objectDef.classType()}.{paramDef.paramName()} for object {entity.id()} is not a DatabaseObject')
+                        isReference = True
                         childEntity = value
                         value = value.id()
                     elif paramType == ParamDef.ParamType.List:
                         if not isinstance(value, DatabaseList):
                             raise RuntimeError(
                                 f'Value returned by parameter accessor {objectDef.classType()}.{paramDef.paramName()} for object {entity.id()} is not a DatabaseList')
+                        isReference = True
                         childEntity = value
                         value = value.id()
                     else:
@@ -769,10 +795,29 @@ class ObjectDbManager(object):
 
                 values[column] = value
 
+                if isReference:
+                    oldId = exitingValues[index]
+                    if oldId != None and oldId != value:
+                        sql = """
+                            DELETE FROM {table}
+                            WHERE id = :id;
+                            """.format(table=ObjectDbManager._EntitiesTableName)
+                        cursor.execute(sql, {'id': oldId})
+
                 if childEntity != None:
                     # Recursively update the child entity
                     self._internalUpdateEntity(entity=childEntity, cursor=cursor)
 
+            # Update the object's specific table fields
+            sql = """
+                INSERT INTO {table} (id, {columns})
+                VALUES (:id, {placeholders})
+                ON CONFLICT(id) DO UPDATE SET {conflict};
+                """.format(
+                    table=objectDef.tableName(),
+                    columns=', '.join(columns),
+                    placeholders=', '.join([f':{col}' for col in columns]),
+                    conflict=', '.join([f'{col} = excluded.{col}' for col in columns]))
             cursor.execute(sql, values)
         elif isinstance(entity, DatabaseList):
             # Update the entities table for the list
@@ -789,21 +834,43 @@ class ObjectDbManager(object):
                 'table': ObjectDbManager._ListsTableName}
             cursor.execute(sql, values)
 
-            # Update the list items
-            # Remove existing list items not in the current list
-            cursor.execute('DELETE FROM {table} WHERE id = :id'.format(
-                table=ObjectDbManager._ListsTableName), {'id': entity.id()})
+            # Delete any children that were in the list but aren't any more
+            contentIds = [child.id() for child in entity]
+            sql = """
+                DELETE FROM {entitiesTable}
+                WHERE id IN (
+                    SELECT object
+                    FROM {listsTable}
+                    WHERE id = ?
+                    AND object NOT IN ({placeholders})
+                );
+            """.format(
+                entitiesTable=ObjectDbManager._EntitiesTableName,
+                listsTable=ObjectDbManager._ListsTableName,
+                placeholders=', '.join('?' for _ in contentIds))
+            values = [entity.id()] + contentIds
+            cursor.execute(sql, values)
 
-            # Re-add all items in the list (simple approach)
+            # Recursively update list children. This must be done before
+            # the inserting items into the list for them in order to
+            # avoid failing foreign key checks
+            for child in entity:
+                self._internalUpdateEntity(entity=child, cursor=cursor)
+
+            # Remove all existing items for the list and add the new ones.
+            # This is a bit inefficient if the majority of the same objects
+            # are still in the list, however it has the advantage that it
+            # keeps the order of the items in the db the same as the order
+            # the list object has them
+            sql = 'DELETE FROM {table} WHERE id = :id'.format(
+                table=ObjectDbManager._ListsTableName)
+            cursor.execute(sql, {'id': entity.id()})
+
             values = [(entity.id(), child.id()) for child in entity]
             if values:
                 sql = 'INSERT INTO {table} (id, object) VALUES (?, ?)'.format(
                     table=ObjectDbManager._ListsTableName)
                 cursor.executemany(sql, values)
-
-            # Recursively update list children
-            for child in entity:
-                self._internalUpdateEntity(entity=child, cursor=cursor)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
 
