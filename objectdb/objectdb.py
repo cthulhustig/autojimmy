@@ -364,9 +364,12 @@ class ObjectDbManager(object):
             ) -> DatabaseObject:
         logging.debug(f'ObjectDbManager reading object {id}')
         with ObjectDbManager._lock:
-            return self._internalReadEntity(
-                id=id,
-                cursor=self._connection.cursor())
+            # Use a transaction for the read to ensure a consistent
+            # view of the database across multiple selects
+            with self._connection:
+                return self._internalReadEntity(
+                    id=id,
+                    cursor=self._connection.cursor())
 
     def readObjects(
             self,
@@ -374,9 +377,12 @@ class ObjectDbManager(object):
             ) -> typing.Iterable[DatabaseObject]:
         logging.debug(f'ObjectDbManager reading object of type {classType}')
         with ObjectDbManager._lock:
-            return self._internalReadEntities(
-                classType=classType,
-                cursor=self._connection.cursor())
+            # Use a transaction for the read to ensure a consistent
+            # view of the database across multiple selects
+            with self._connection:
+                return self._internalReadEntities(
+                    classType=classType,
+                    cursor=self._connection.cursor())
 
     def updateObject(
             self,
