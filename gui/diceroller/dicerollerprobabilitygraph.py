@@ -44,7 +44,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         # TODO: I'm not sure about forcing the Y range. It means the graph
         # can be pretty low if you have a large number of dice
-        self._graph.setYRange(0, 100)
+        #self._graph.setYRange(0, 100)
 
         # Prevent the mouse from panning/scaling the graph
         self._graph.setMouseEnabled(x=False, y=False)
