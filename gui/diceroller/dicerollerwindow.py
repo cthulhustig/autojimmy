@@ -11,67 +11,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: There is currently a bug in the way database objects are handled.
-# If you were to detach an object from another object (e.g. remove a
-# modifier from one roller and attach it to another), then create/update
-# the object you attached it to, it would result in two objects in the
-# database referring to the same object
-# - I don't think it will affect the dice roller as I don't think I'll
-#   ever be detaching objects and attaching them to another, but not
-#   fixing it now is just asking for trouble in the future
-# - OPTION: An entity is assigned a new id when it's attached to a new
-# parent (NOT when it's detached from a parent). This means it would
-# effectively be a new object that gets added if it's attached to a
-# different parent and saved.
-#   - Assigning a new id when it's attached rather than when it's detached
-#     is important as it means instead of attaching it to a new object the
-#     id of the object can be used to delete it from the database
-#   - This solution feels a little hacky and may bite me in the future
-#   - I think it could be made better by adding more logic (but more
-#     complexity)
-#       - An entity could maintain a last parent id variable when it's
-#         detached and not change the id if it's re-attached to the
-#         same parent
-#       - I think I'd also want to prevent it changing the id it's
-#         assigned at construction when attaching to it's first parent
-# - OPTION: Before updating an entity (specifically before writing any
-#   new parent data to the entity table), execute queries to check if
-#   the object is already in use.
-#   - I think this might just be as simple as checking to see if the
-#     object is already in the entity table with it's parent id set to
-#     an entity that is not the new parent id. If such an object exists
-#     then don't update
-#   - The main issue I see with this is it catches the issue and prevents
-#     invalid data being written to the database but (unlike the previous
-#     option) it doesn't prevent the problem occurring in the first place.
-#     That's a problem as it means future code could easily miss use objects
-#     and cause bugs.
-#   - I think this might be the SQL to only update the table if there is
-#     no entry for the object or the existing entry has no parent id or
-#     it has the same parent id.
-#     IMPORTANT: Chat-gpt says I could then use context.rowcount to check
-#     to see if the row was updated (and throw an exception indicating
-#     there was a problem) but I have a couple of concerns.
-#     - If this was just a standard update but there had been no change
-#       to the objects parent then it might trigger a false positive as
-#       there would have been no change to the data
-#     - Chat-gpt could be talking shit and the fact when 'no update is
-#       taking place' the column values are technically being set to
-#       their current value so it may be classed as an 'update
-#
-"""
-INSERT INTO {table} (id, parent, table_name)
-VALUES (:id, :parent, :table)
-ON CONFLICT(id) DO UPDATE SET
-    parent = CASE
-        WHEN (parent IS NOT NULL AND parent != excluded.parent) THEN parent
-        ELSE excluded.parent
-    END,
-    table_name = CASE
-        WHEN (parent IS NOT NULL AND parent != excluded.parent) THEN table_name
-        ELSE excluded.table_name
-    END;
-"""
 # TODO: This is a possibly useful example query that looks up a list id
 # and returns a comma separated list of all the objects from the list
 # as the value for the column rather than the list id. I believe if

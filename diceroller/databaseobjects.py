@@ -165,8 +165,8 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
         self._dynamicDMs.add(object=dynamicDM)
 
-    def removeDynamicDM(self, dynamicDM: DiceModifierDatabaseObject) -> None:
-        self._dynamicDMs.remove(object=dynamicDM)
+    def removeDynamicDM(self, id: str) -> DiceModifierDatabaseObject:
+        return self._dynamicDMs.remove(id=id)
 
     def targetNumber(self) -> typing.Optional[int]:
         return self._targetNumber
@@ -256,8 +256,8 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
 
         self._rollers.add(roller)
 
-    def removeRoller(self, roller: DiceRollerDatabaseObject) -> None:
-        self._rollers.remove(roller)
+    def removeRoller(self, id: str) -> DiceRollerDatabaseObject:
+        return self._rollers.remove(id=id)
 
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:

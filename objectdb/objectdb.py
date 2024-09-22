@@ -16,8 +16,11 @@ class DatabaseEntity(object):
         super().__init__()
         self._id = id if id != None else str(uuid.uuid4())
         self._parent = parent
+        self._lastParent = None
 
     def __eq__(self, other: object) -> bool:
+        # NOTE: Last parent is intentionally not compared, it's not really
+        # part of the objects state
         if isinstance(other, DatabaseEntity):
             return self._id == other._id and \
                 self._parent == other._parent
@@ -35,6 +38,39 @@ class DatabaseEntity(object):
     def setParent(self, parent: typing.Optional[str]) -> None:
         if parent and self._parent:
             raise RuntimeError(f'Object {self._id} already has a parent')
+
+        if self._parent != None and parent == None:
+            # The entity is being detached from it's current parent
+            self._lastParent = self._parent
+        elif parent != None and parent != self._lastParent:
+            # This object is being attached to a parent that is different
+            # from the one it was last attached to. It's assigned a new
+            # id to effectively make it a new object.
+            # NOTE: This is done to avoid the problematic case of an entity
+            # instance being detached from one parent and attached to
+            # another and then that parent entity saved, resulting in both
+            # parents referencing the same child entity. I could have the
+            # db manager check for this happening at the point an object is
+            # being updated, I think it would just be a case of checking the
+            # entity table to see if there was an entry for the entity being
+            # updated and if so, was it's parent id different to the one it
+            # will be updated to (check the todo that was removed from
+            # DiceRollerWindow when this comment was added for SQL that
+            # __might__ do the check and update if it's ok in a single query).
+            # The problem with doing it in the db manager is it prevents the
+            # db getting into a bad state but it doesn't prevent code from
+            # creating objects in this bad state then trying and failing to
+            # update them. It would be the kind of thing that could result in
+            # objects getting into a bad state in obscure corner cases that I
+            # don't catch and the user getting a write error. By changing the
+            # id like this it __should__ mean objects never get into a bad
+            # state in the first place.
+            # NOTE: It's important that the id is updated at the point it's
+            # attached to a new parent rather than at the point it's detached
+            # from the previous parent in order to allow code to detach an
+            # entity from a parent then retrieve the id from it to explicitly
+            # delete the entity from the db.
+            self._id = str(uuid.uuid4())
 
         self._parent = parent
 
@@ -82,20 +118,30 @@ class DatabaseList(DatabaseEntity):
         return self._objects.__getitem__(index)
 
     def init(self, objects: typing.Iterable[DatabaseObject]) -> None:
+        seen = set(obj.id() for obj in objects)
+        if len(seen) != len(objects):
+            raise ValueError(f'Init object list can\'t contain objects with duplicate ids')
+
         self.clear()
         for object in objects:
             object.setParent(self.id())
             self._objects.append(object)
 
     def add(self, object: DatabaseObject) -> None:
+        for current in self._objects:
+            if current.id() == object.id():
+                raise ValueError(f'Object {object.id()} is already in list {self.id()}')
+
         object.setParent(self.id())
         self._objects.append(object)
 
-    def remove(self, object: DatabaseObject) -> None:
-        if object.parent() != self.id():
-            raise ValueError(f'{self.id()} is not the parent of object {object.id()}')
-        self._objects.remove(object)
-        object.setParent(None)
+    def remove(self, id: str) -> DatabaseObject:
+        for obj in self._objects:
+            if id == obj.id():
+                self._objects.remove(obj)
+                obj.setParent(None)
+                return obj
+        raise ValueError(f'{id} not found in list {self.id()}')
 
     def clear(self) -> None:
         for object in self._objects:

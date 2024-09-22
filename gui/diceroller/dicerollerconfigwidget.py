@@ -359,7 +359,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
         for modifier in self._roller.dynamicDMs():
-            self._roller.removeDynamicDM(dynamicDM=modifier)
+            self._roller.removeDynamicDM(id=modifier.id())
             # TODO: Make this more efficient
             objectdb.ObjectDbManager.instance().deleteObject(
                 id=modifier.id())
@@ -379,7 +379,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.configChanged.emit()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
-        self._roller.removeDynamicDM(modifier)
+        self._roller.removeDynamicDM(id=modifier.id())
         objectdb.ObjectDbManager.instance().deleteObject(
             id=modifier.id())
 
