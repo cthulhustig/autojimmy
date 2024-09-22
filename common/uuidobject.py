@@ -13,8 +13,5 @@ class UuidObject(object):
             return self._uuid == other._uuid
         return False
 
-    def __hash__(self) -> int:
-        return hash(self._uuid)
-
     def uuid(self) -> str:
         return self._uuid

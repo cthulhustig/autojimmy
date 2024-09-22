@@ -75,8 +75,10 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
 
         self._modifierItemMap: typing.Dict[
-            diceroller.DiceModifierDatabaseObject,
-            QtWidgets.QListWidgetItem] = {}
+            str,
+            typing.Tuple[
+                diceroller.DiceModifierDatabaseObject,
+                QtWidgets.QListWidgetItem]] = {}
 
     def addModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         modifierWidget = DiceModifierWidget(modifier=modifier)
@@ -103,14 +105,14 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         item.setSizeHint(itemWidget.sizeHint())
         self.addItem(item)
         self.setItemWidget(item, itemWidget)
-        self._modifierItemMap[modifier] = item
+        self._modifierItemMap[modifier.id()] = (modifier, item)
         self._updateDimensions()
 
     def removeModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
-        item = self._modifierItemMap.get(modifier)
+        _, item = self._modifierItemMap.get(modifier.id(), (None, None))
         if not item:
             return
-        del self._modifierItemMap[modifier]
+        del self._modifierItemMap[modifier.id()]
         row = self.row(item)
         widget = self.itemWidget(item)
         if row >= 0:
@@ -123,7 +125,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
 
     def clear(self) -> None:
         super().clear()
-        for modifier in self._modifierItemMap.keys():
+        for modifier, _ in self._modifierItemMap.values():
             self.modifierDeleted.emit(modifier)
         self._modifierItemMap.clear()
         self._updateDimensions()

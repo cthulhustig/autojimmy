@@ -25,13 +25,6 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
                 self._enabled == other._enabled
         return False
 
-    def __hash__(self) -> int:
-        return hash((
-            super().__hash__(),
-            self._name,
-            self._value,
-            self._enabled))
-
     def name(self) -> str:
         return self._name
 
@@ -104,18 +97,6 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
                 self._dynamicDMs == other._dynamicDMs and \
                 self._targetNumber == other._targetNumber
         return False
-
-    def __hash__(self) -> int:
-        return hash((
-            super().__hash__(),
-            self._name,
-            self._dieCount,
-            self._dieType,
-            self._constantDM,
-            self._hasBoon,
-            self._hasBane,
-            self._dynamicDMs,
-            self._targetNumber))
 
     def name(self) -> str:
         return self._name
@@ -234,12 +215,6 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
                 self._name == other._name and \
                 self._rollers ==  other._rollers
         return False
-
-    def __hash__(self) -> int:
-        return hash((
-            super().__hash__(),
-            self._name,
-            self._rollers))
 
     def name(self) -> str:
         return self._name

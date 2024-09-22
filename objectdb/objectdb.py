@@ -23,9 +23,6 @@ class DatabaseEntity(object):
                 self._parent == other._parent
         return False
 
-    def __hash__(self) -> int:
-        return hash((self._id, self._parent))
-
     def id(self) -> str:
         return self._id
 
@@ -54,11 +51,6 @@ class DatabaseObject(DatabaseEntity):
             return super().__eq__(other)
         return False
 
-    def __hash__(self) -> int:
-        # As there are no arguments, create a tuple and hash it to differentiate it
-        # from the hash of the parent class
-        return hash((super().__hash__()))
-
 class DatabaseList(DatabaseEntity):
     def __init__(
             self,
@@ -76,11 +68,6 @@ class DatabaseList(DatabaseEntity):
             return super().__eq__(other) and \
                 self._objects == other._objects
         return False
-
-    def __hash__(self) -> int:
-        return hash((
-            super().__hash__(),
-            self._objects))
 
     def __iter__(self) -> typing.Iterator[DatabaseObject]:
         return self._objects.__iter__()
@@ -246,17 +233,14 @@ class ObjectDbManager(object):
             tableObjectDefs: typing.Dict[str, ObjectDef] = {}
             classObjectDefs: typing.Dict[typing.Type[DatabaseObject], ObjectDef] = {}
             for classType in classTypes:
-                # DatabaseObject implements __eq__ and __hash__ to make it easier for
-                # derived classes that need to implement them to do so. They aren't
-                # actually needed by the ObjectDbManager implementation. However, the
-                # fact that DatabaseObject does have them means it's best for all
-                # derived classes to implement them to avoid bugs that could be caused
-                # by accidentally using the base implementation when dealing with
-                # derived objects
+                # DatabaseObject implements __eq__ make it easier for derived classes
+                # that need to do so. They aren't actually needed by the ObjectDbManager
+                # implementation. However, the fact that DatabaseObject does have them
+                # means it's best for all derived classes to implement them to avoid
+                # bugs that could be caused by accidentally using the base implementation
+                # when dealing with derived objects
                 if not common.hasMethod(obj=classType, method='__eq__', includeSubclasses=False):
                     raise RuntimeError(f'{classType} is derived from DatabaseObject so must implement __eq__')
-                if not common.hasMethod(obj=classType, method='__hash__', includeSubclasses=False):
-                    raise RuntimeError(f'{classType} is derived from DatabaseObject so must implement __hash__')
 
                 # All DatabaseObject classes should have a static defineObject function
                 # that the ObjectDbManager can use to retrieve its ObjectDef
