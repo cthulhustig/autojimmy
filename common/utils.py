@@ -275,3 +275,15 @@ def pythonVersionCheck(
     except:
         # If something goes wrong assume we don't meet the min version
         return False
+
+class DebugTimer():
+    def __init__(self, string: str = 'Timer'):
+        self._string = string
+
+    def __enter__(self) -> 'DebugTimer':
+        self._startTime = utcnow()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        delta = utcnow() - self._startTime
+        print(f'{self._string}: {delta.microseconds / 1000}ms')

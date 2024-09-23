@@ -1,3 +1,5 @@
+import common
+import math
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -33,51 +35,31 @@ class FullSizeTextWidget(QtWidgets.QWidget):
             self._text)
         painter.end()
 
-    # Based on some code from here
-    # https://stackoverflow.com/questions/42652738/how-to-automatically-increase-decrease-text-size-in-label-in-qt
     def _configureFont(self) -> None:
         text = self.text()
         font = self.font()
-        size = font.pointSize()
-        fontMetrics = QtGui.QFontMetrics(font)
         usableArea = self.rect()
-        contentRect = fontMetrics.boundingRect(
-            usableArea,
-            0,
-            text)
 
-        # decide whether to increase or decrease
-        if (contentRect.height() > usableArea.height()) or \
-            (contentRect.width() > usableArea.width()):
-            step = -1
-        else:
-            step = 1
+        low = 1
+        high = usableArea.height()
+        best = None
 
-        # iterate until text fits best into rectangle of label
-        while(True):
-            font.setPointSize(size + step)
+        while low <= high:
+            mid = low + ((high - low) // 2)
+            font.setPixelSize(mid)
             fontMetrics = QtGui.QFontMetrics(font)
-            contentRect = fontMetrics.boundingRect(
-                usableArea,
-                0,
-                text)
-            if (step < 0):
-                if (size <= 1):
-                    break
-                size += step
-                if (contentRect.height() < usableArea.height()) and \
-                    (contentRect.width() < usableArea.width()):
-                    # Stop as soon as the new size would mean both the
-                    # content dimensions are within the usable area
-                    break
-            else:
-                if (contentRect.height() > usableArea.height()) or \
-                    (contentRect.width() > usableArea.width()):
-                    # Stop as soon as the new size would mean either of
-                    # the content dimensions were larger than the usable
-                    # area
-                    break
-                size += step
+            contentRect = fontMetrics.boundingRect(text)
+            contentRect.moveTo(0, 0)
 
-        font.setPointSize(size)
-        self.setFont(font)
+            contained = usableArea.contains(contentRect)
+            if (best == None or mid > best) and contained:
+                best = mid
+
+            if contained:
+                low = mid + 1
+            else:
+                high = mid - 1
+
+        if best != None:
+            font.setPixelSize(best)
+            self.setFont(font)
