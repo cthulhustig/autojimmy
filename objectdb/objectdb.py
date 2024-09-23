@@ -42,7 +42,7 @@ class DatabaseEntity(object):
         if self._parent != None and parent == None:
             # The entity is being detached from it's current parent
             self._lastParent = self._parent
-        elif parent != None and parent != self._lastParent:
+        elif parent != None and self._lastParent != None  and parent != self._lastParent:
             # This object is being attached to a parent that is different
             # from the one it was last attached to. It's assigned a new
             # id to effectively make it a new object.
