@@ -831,7 +831,7 @@ class ObjectDbManager(object):
 
                 values[column] = value
 
-                if isReference:
+                if isReference and (exitingValues != None):
                     oldId = exitingValues[index]
                     if oldId != None and oldId != value:
                         sql = """
