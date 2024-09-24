@@ -17,7 +17,7 @@ class DiceRollResultsTable(gui.ListTable):
             ) -> None:
         super().__init__(parent=parent)
 
-        self._rollResults = None
+        self._results = None
 
         self.setColumnHeaders(DiceRollResultsTable.ColumnType)
         self.resizeColumnsToContents() # Size columns to header text
@@ -40,19 +40,19 @@ class DiceRollResultsTable(gui.ListTable):
 
     def setResults(
             self,
-            rollResults: typing.Optional[diceroller.DiceRollResult]
+            results: typing.Optional[diceroller.DiceRollResult]
             ) -> None:
-        self._rollResults = rollResults
+        self._results = results
         self.update()
 
     def update(self) -> None:
         self.removeAllRows()
-        if not self._rollResults:
+        if not self._results:
             self.resizeRowsToContents()
             return
 
         usedRolls = []
-        for index, (roll, ignored) in enumerate(self._rollResults.yieldRolls()):
+        for index, (roll, ignored) in enumerate(self._results.yieldRolls()):
             row = self.rowCount()
             self.insertRow(row)
             self._fillRollRow(
@@ -77,7 +77,7 @@ class DiceRollResultsTable(gui.ListTable):
             total=rollTotal)
 
         usedModifiers = []
-        for modifier, name in self._rollResults.yieldModifiers():
+        for modifier, name in self._results.yieldModifiers():
             row = self.rowCount()
             self.insertRow(row)
             self._fillModifierRow(
@@ -103,9 +103,9 @@ class DiceRollResultsTable(gui.ListTable):
         self.insertRow(row)
         self._fillTotalRow(
             row=row,
-            total=self._rollResults.total())
+            total=self._results.total())
 
-        effect = self._rollResults.effectValue()
+        effect = self._results.effectValue()
         if effect:
             row = self.rowCount()
             self.insertRow(row)
@@ -265,7 +265,7 @@ class DiceRollResultsTable(gui.ListTable):
         try:
             calculationWindow = gui.WindowManager.instance().showCalculationWindow()
             calculationWindow.showCalculation(
-                calculation=self._rollResults.total())
+                calculation=self._results.total())
         except Exception as ex:
             message = 'Failed to show calculations'
             logging.error(message, exc_info=ex)
