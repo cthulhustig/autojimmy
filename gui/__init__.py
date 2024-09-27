@@ -93,6 +93,7 @@ from .robots.robotmanifesttable import *
 from .robots.robotsheetwidget import *
 from .robots.robotinfowidget import *
 from .robots.robotbuilderwindow import *
+from .diceroller.dieanimationwidget import *
 from .diceroller.dicerollresultswidget import *
 from .diceroller.dicerollresultstable import *
 from .diceroller.dicerollerprobabilitygraph import *
