@@ -66,6 +66,14 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             widget = item.widget()
             widget.setHidden(hidden)
 
+    def addStretch(self) -> None:
+        spacer = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding)
+        self.addItem(spacer)
+
 class TabWidgetEx(QtWidgets.QTabWidget):
     _StateVersion = 'TabWidgetEx_v1'
 
@@ -268,6 +276,25 @@ class RadioButtonEx(QtWidgets.QRadioButton):
 class SpinBoxEx(QtWidgets.QSpinBox):
     _StateVersion = 'SpinBoxEx_v1'
 
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -291,6 +318,25 @@ class SpinBoxEx(QtWidgets.QSpinBox):
 
 class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     _StateVersion = 'DoubleSpinBoxEx_v1'
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
 
     # Set the number of decimal places to the minimum number needed to represent
     # the supplied value, with the number of decimal places clamped to the
@@ -437,6 +483,9 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
     def setLayoutDirection(self, direction: QtCore.Qt.LayoutDirection) -> None:
         self._checkBox.setLayoutDirection(direction)
+
+    def setSpinBoxValue(self, value: int) -> None:
+        self._spinBox.setValue(value)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -1145,6 +1194,35 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             style=f' style="{headerAlignment}"' if headerAlignment else '',
             headerText=headerText)
 
+class TreeWidgetEx(QtWidgets.QTreeWidget):
+    # https://stackoverflow.com/questions/20203443/right-align-a-button-in-a-qtreeview-column
+    def setAlignedIndexWidget(
+            self,
+            index: QtCore.QModelIndex,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setIndexWidget(index, container)
+
+    def setAlignedItemWidget(
+            self,
+            item: QtWidgets.QTreeWidgetItem,
+            column: int,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setItemWidget(item, column, container)
+
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'
 
@@ -1181,6 +1259,30 @@ class ScrollAreaEx(QtWidgets.QScrollArea):
             scrollBar.setValue(stream.readInt())
 
         return True
+
+class HorizontalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+
+class VerticalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Expanding)
 
 # NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
 # doesn't make logical sense to save scrollbar state for an auto
@@ -1298,6 +1400,16 @@ class ListWidgetEx(QtWidgets.QListWidget):
             if item.isSelected():
                 count += 1
         return count
+
+    def itemFromWidget(
+            self,
+            widget: QtWidgets.QWidget
+            ) -> typing.Optional[QtWidgets.QListWidgetItem]:
+        for item in self.items():
+            itemWidget = self.itemWidget(item)
+            if itemWidget == widget:
+                return item
+        return None
 
 class VBoxLayoutEx(QtWidgets.QVBoxLayout):
     @typing.overload

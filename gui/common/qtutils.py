@@ -199,3 +199,35 @@ def textToHtmlContent(text: str, font: typing.Optional[QtGui.QFont]) -> str:
         if font.italic():
             text = f'<i>{text}</i>'
     return text
+
+def sizeFontToFit(
+        orig: QtGui.QFont,
+        text: str,
+        rect: QtCore.QRect
+        ) -> typing.Optional[QtGui.QFont]:
+        font = QtGui.QFont(orig)
+        low = 1
+        high = rect.height()
+        best = None
+
+        while low <= high:
+            mid = low + ((high - low) // 2)
+            font.setPixelSize(mid)
+            fontMetrics = QtGui.QFontMetrics(font)
+            contentRect = fontMetrics.boundingRect(text)
+            contentRect.moveTo(0, 0)
+
+            contained = rect.contains(contentRect)
+            if (best == None or mid > best) and contained:
+                best = mid
+
+            if contained:
+                low = mid + 1
+            else:
+                high = mid - 1
+
+        if best == None:
+            return None
+
+        font.setPixelSize(best)
+        return font

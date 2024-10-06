@@ -15,6 +15,7 @@ from .common.autoselectmessagebox import *
 from .common.inputdialogex import *
 from .common.textwindow import *
 from .common.listtable import *
+from .common.fullsizetextwidget import *
 from .common.flowlayout import *
 from .common.colourdialogex import *
 from .common.colourbutton import *
@@ -92,6 +93,14 @@ from .robots.robotmanifesttable import *
 from .robots.robotsheetwidget import *
 from .robots.robotinfowidget import *
 from .robots.robotbuilderwindow import *
+from .diceroller.dieanimationwidget import *
+from .diceroller.dicerollresultswidget import *
+from .diceroller.dicerollresultstable import *
+from .diceroller.dicerollerprobabilitygraph import *
+from .diceroller.dicerollermanagerwidget import *
+from .diceroller.dicerollerconfigwidget import *
+from .diceroller.dicerollhistorywidget import *
+from .diceroller.dicerollerwindow import *
 from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *
