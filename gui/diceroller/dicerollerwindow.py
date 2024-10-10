@@ -42,15 +42,6 @@ WHERE
 GROUP BY
     dr.id, dr.name, dr.die_count, dr.die_type, dr.constant_dm, dr.has_boon, dr.has_bane, dr.target_number;
 """
-# TODO: I think I need some kind of animation or something to show
-# random numbers scrolling by or something. The main issue it solves
-# is that, if you happen to roll the same number as you previously
-# rolled, it's not obvious anything actually happened so the user
-# might think they miss clicked and roll again rather than realising
-# what is displayed is their new roll
-# - The main thing when implementing this is that the actual roll
-#   should be made at the very start so the final value is known the
-#   entire time the animation is playing.
 # TODO: It might be better to move the manager widget code into the
 # window and have it construct the tree
 # - I think it makes conceptual sense as it's controlling what the
@@ -65,8 +56,17 @@ GROUP BY
 # - It's not updating the DiceRollerDatabaseObject held by the manager
 #   widget that controls everything
 # - Would be easier if manager stuff was in window (see above)
+# TODO: Need to disable UI while roll animation is taking place
+# - It will stop users accidentally double clicking the roll button
+# - It will avoid any oddness with the user changing roller controls or
+# switching to a different roller while the animation is in progress
 # TODO: Need to use delayed edit notifications for text boxes as there
 # is a noticeable lag as it updates the db every time you hit a key
+# TODO: Probability graph needs tool tips to show exact probabilities for
+# the column under the cursor
+# - Will need to take probability type into account (i.e. 'X% change of
+# rolling greater or equal to Y')
+# TODO: Ability to reorder modifiers
 # TODO: Need to be able to rename groups and rollers
 # TODO: Need to be able to duplicate rollers (and maybe groups)
 # TODO: Need json import/export
