@@ -44,7 +44,7 @@ class DiceRollResult(common.UuidObject):
             self,
             total: common.ScalarCalculation,
             rolls: typing.Iterable[common.ScalarCalculation],
-            ignored: typing.Optional[common.ScalarCalculation],
+            ignored: typing.Optional[common.ScalarCalculation], # The same instance MUST appear in rolls
             modifiers: typing.Mapping[
                 common.ScalarCalculation, # Modifier name
                 str], # Modifier value
@@ -65,12 +65,26 @@ class DiceRollResult(common.UuidObject):
     def total(self) -> common.ScalarCalculation:
         return self._total
 
+    def rolledTotal(self) -> common.ScalarCalculation:
+        rolls = [roll for roll in self._rolls if roll is not self._ignored]
+        return common.Calculator.sum(values=rolls)
+
+    def rollCount(self) -> int:
+        return len(self._rolls)
+
     def yieldRolls(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, bool], None, None]:
         for roll in self._rolls:
             yield (roll, roll is self._ignored)
 
     def ignored(self) -> typing.Optional[common.ScalarCalculation]:
         return self._ignored
+
+    def modifiersTotal(self)-> common.ScalarCalculation:
+        modifiers = [modifier for modifier in self._modifiers.keys()]
+        return common.Calculator.sum(values=modifiers)
+
+    def modifierCount(self) -> int:
+        return len(self._modifiers)
 
     def yieldModifiers(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, str], None, None]:
         for pair in self._modifiers.items():

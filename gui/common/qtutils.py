@@ -203,8 +203,12 @@ def textToHtmlContent(text: str, font: typing.Optional[QtGui.QFont]) -> str:
 def sizeFontToFit(
         orig: QtGui.QFont,
         text: str,
-        rect: QtCore.QRect
+        rect: QtCore.QRect,
+        align: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignCenter
         ) -> typing.Optional[QtGui.QFont]:
+        # Remove any non-alignment flags
+        align &= int(QtCore.Qt.AlignmentFlag.AlignHorizontal_Mask | QtCore.Qt.AlignmentFlag.AlignVertical_Mask)
+
         font = QtGui.QFont(orig)
         low = 1
         high = rect.height()
@@ -214,7 +218,7 @@ def sizeFontToFit(
             mid = low + ((high - low) // 2)
             font.setPixelSize(mid)
             fontMetrics = QtGui.QFontMetrics(font)
-            contentRect = fontMetrics.boundingRect(text)
+            contentRect = fontMetrics.boundingRect(rect, align, text)
             contentRect.moveTo(0, 0)
 
             contained = rect.contains(contentRect)

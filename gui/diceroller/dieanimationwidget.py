@@ -16,10 +16,12 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # exactly what I need (although some of the 3d to 2d projection code
 # it generated is a little hacky).
 class DieAnimationWidget(QtWidgets.QWidget):
+    animationComplete = QtCore.pyqtSignal()
+
     class _SpinState(Enum):
-        NOT_SPINNING = 0
-        SPINNING = 1
-        STOPPING = 2
+        Idle = 0
+        Spinning = 1
+        FadingIn = 2
 
     # Define the 8 vertices of a cube in 3D space
     _Vertices = [
@@ -37,11 +39,14 @@ class DieAnimationWidget(QtWidgets.QWidget):
         (1, 2, 6, 5)   # Right face
     ]
 
+    _UpdateIntervalMs = 30
     _MinSpins = 4
     _MaxSpins = 10
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+        self._result = None
+        self._strike = False
         self._angleX = 0 # TODO: Could these be stored in radians to save converting each time painting occurs
         self._angleY = 0
         self._totalRotationX = 0
@@ -49,29 +54,26 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._spinDirectionX = 0
         self._spinDirectionY = 0
         self._spinStartTime = None
-        self._spinDuration = 5  # Spin for 5 seconds (adjustable)
-        self._easingProgress = 0  # Track progress of the easing function
-        self._fadeDuration = 1  # Fade in duration (adjustable)
-        self._fadeInProgress = 0  # Track progress of fade-in
+        self._spinDurationMs = 5000
+        self._fadeDurationMs = 1000
+        self._fadeInProgress = 0
         self._dieColour = QtGui.QColor('#003366')
         self._textColour = QtGui.QColor('#FFCC00')
+        self._strikeColour = QtGui.QColor('#FF0000')
+        self._spinState = DieAnimationWidget._SpinState.Idle
 
         self._lightDirection = (0, 0, -1)  # Light coming from the front
         self._ambientLight = 0
 
         self._timer = QtCore.QTimer(self)
         self._timer.timeout.connect(self._updateAnimation)
-        self._timer.start(30)  # Update every 30 milliseconds
-
-        self.setWindowTitle("Flat-Shaded Spinning Cube")
-        self.setGeometry(100, 100, 600, 800)
-
-        # Updated to use enum
-        self.spinState = DieAnimationWidget._SpinState.NOT_SPINNING
 
         # Mouse control variables
         self._lastMousePosition = None
-        self._result = None  # Store the number to display after spin
+
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
 
     def dieColour(self) -> QtGui.QColor:
         return self._dieColour
@@ -84,6 +86,12 @@ class DieAnimationWidget(QtWidgets.QWidget):
 
     def setTextColour(self, colour: QtGui.QColor) -> None:
         self._textColour = colour
+
+    def strikeColour(self) -> QtGui.QColor:
+        return self._strikeColour
+
+    def setStrikeColour(self, colour: QtGui.QColor) -> None:
+        self._strikeColour = colour
 
     def setLightDirection(self) -> typing.Tuple[float, float, float]:
         return self._lightDirection
@@ -98,21 +106,32 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._ambientLight = intensity
 
     def getSpinDuration(self) -> float:
-        return self._spinDuration
+        return self._spinDurationMs
 
-    def setSpinDuration(self, duration: float) -> None:
-        self._spinDuration = duration
+    def setSpinDuration(self, durationMs: float) -> None:
+        self._spinDurationMs = durationMs
 
     def getFadeDuration(self) -> float:
-        return self._fadeDuration
+        return self._fadeDurationMs
 
-    def setFadeDuration(self, duration: float) -> None:
-        self._fadeDuration = duration
+    def setFadeDuration(self, durationMs: float) -> None:
+        self._fadeDurationMs = durationMs
 
-    def startSpin(self, result: int) -> None:
+    def setValue(self, result: int, strike: bool = False) -> None:
+        if self._spinState != DieAnimationWidget._SpinState.Idle:
+            self.cancelSpin()
+
+        self._result = result
+        self._strike = strike
+        self._fadeInProgress = 1.0
+        self.update()  # Trigger repaint
+
+    def startSpin(self, result: int, strike: bool = False) -> None:
+        if self._spinState != DieAnimationWidget._SpinState.Idle:
+            self.cancelSpin()
+
         """ Start spinning the cube with a specified number of rotations and directions. """
-        self.spinState = DieAnimationWidget._SpinState.SPINNING
-        self._easingProgress = 0
+        self._spinState = DieAnimationWidget._SpinState.Spinning
         self._fadeInProgress = 0
         self._spinStartTime = time.time()  # Record the start time of the spin
 
@@ -127,8 +146,26 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._spinDirectionY = random.choice([-1, 1])  # Direction of spin
 
         self._result = result  # Store the number to display after the spin
+        self._strike = strike
+
+        self._timer.start(30)  # Update every 30 milliseconds
+
+    def cancelSpin(self) -> None:
+        self._angleX = 0 # TODO: Could these be stored in radians to save converting each time painting occurs
+        self._angleY = 0
+        self._spinState = DieAnimationWidget._SpinState.Idle
+        self._result = None
+        self._strike = False
+        self._timer.stop()
+
+    def minimumSizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(30, 30)
+
+    def sizeHint(self) -> QtCore.QSize:
+        return QtCore.QSize(100, 100)
 
     def paintEvent(self, event) -> None:
+        # TODO: Should I be calling painter.end
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
@@ -188,7 +225,7 @@ class DieAnimationWidget(QtWidgets.QWidget):
                     frontFaceRect = QtCore.QRect(minX, minY, maxX - minX, maxY - minY)
 
         # After spinning, draw the number on the front face
-        if self.spinState == DieAnimationWidget._SpinState.NOT_SPINNING and self._result is not None:
+        if self._spinState != DieAnimationWidget._SpinState.Spinning and self._result is not None:
             assert(frontFaceRect)
             displayText = str(self._result)
 
@@ -202,7 +239,7 @@ class DieAnimationWidget(QtWidgets.QWidget):
                 rect=QtCore.QRect(0, 0, availableWidth, availableHeight))
             if font:
                 # Set font and color
-                painter.setPen(QtGui.QPen(self._textColour, 1))  # Red color for the number
+                painter.setPen(QtGui.QPen(self._textColour, 1))
                 painter.setFont(font)
 
                 # Calculate the position to center the text in the front face
@@ -211,13 +248,32 @@ class DieAnimationWidget(QtWidgets.QWidget):
                 descent = painter.fontMetrics().descent()
 
                 # Calculate the text opacity based on fade progress
-                painter.setOpacity(self._fadeInProgress)  # Set the painter's opacity
+                painter.setOpacity(self._fadeInProgress)
 
                 # Draw the number in the center of the front face
                 painter.drawText(
                     frontFaceRect.center().x() - textRect.width() // 2,
                     frontFaceRect.center().y() + (ascent - descent) // 2,
                     displayText)
+
+                if self._strike:
+                    painter.setOpacity(self._fadeInProgress * 0.8)
+                    strikeExpand = int(frontFaceRect.width() * 0.1)
+                    stringWidth = int(frontFaceRect.width() * 0.15)
+                    strikeRect = QtCore.QRect(frontFaceRect)
+                    strikeRect.adjust(
+                        -strikeExpand,
+                        -strikeExpand,
+                        strikeExpand,
+                        strikeExpand)
+                    painter.setPen(QtGui.QPen(
+                        self._strikeColour,
+                        stringWidth,
+                        QtCore.Qt.PenStyle.SolidLine,
+                        QtCore.Qt.PenCapStyle.RoundCap))
+                    painter.drawLine(
+                        strikeRect.topRight(),
+                        strikeRect.bottomLeft())
 
                 painter.setOpacity(1.0)  # Reset the painter's opacity
 
@@ -246,32 +302,45 @@ class DieAnimationWidget(QtWidgets.QWidget):
         return 1 - (1 - progress) ** 3  # Smooth out the transition
 
     def _updateAnimation(self) -> None:
-        if self.spinState == DieAnimationWidget._SpinState.SPINNING:
-            elapsedTime = time.time() - self._spinStartTime
+        wasAnimating = self._spinState != DieAnimationWidget._SpinState.Idle
 
-            # Progress of the animation (0.0 to 1.0)
-            animationProgress = min(1.0, elapsedTime / self._spinDuration)
+        try:
+            if self._spinState == DieAnimationWidget._SpinState.Spinning:
+                elapsedTimeMs = (time.time() - self._spinStartTime) * 1000
 
-            # Easing the progress
-            easedProgress = self._easingFunction(animationProgress)
+                # Progress of the animation (0.0 to 1.0)
+                animationProgress = min(1.0, elapsedTimeMs / self._spinDurationMs)
 
-            # Calculate the current angle based on the total rotations, spin direction, and progress
-            self._angleX = self._spinDirectionX * easedProgress * self._totalRotationX
-            self._angleY = self._spinDirectionY * easedProgress * self._totalRotationY
+                # Easing the progress
+                easedProgress = self._easingFunction(animationProgress)
 
-            # Stop spinning when the progress is done
-            if animationProgress >= 1.0:
-                self.spinState = DieAnimationWidget._SpinState.NOT_SPINNING
-                self._angleX = self._snapToNearestFace(self._angleX)
-                self._angleY = self._snapToNearestFace(self._angleY)
-                self._fadeInProgress = 0  # Reset fade-in progress
+                # Calculate the current angle based on the total rotations, spin direction, and progress
+                self._angleX = self._spinDirectionX * easedProgress * self._totalRotationX
+                self._angleY = self._spinDirectionY * easedProgress * self._totalRotationY
 
-        # Update fade-in progress
-        if self.spinState == DieAnimationWidget._SpinState.NOT_SPINNING and self._result is not None:
-            self._fadeInProgress += 1 / (self._fadeDuration * 30)  # Assuming 30 fps
-            self._fadeInProgress = min(self._fadeInProgress, 1.0)  # Clamp to 1.0
+                # Stop spinning when the progress is done
+                if animationProgress >= 1.0:
+                    self._angleX = self._snapToNearestFace(self._angleX)
+                    self._angleY = self._snapToNearestFace(self._angleY)
+                    self._spinState = DieAnimationWidget._SpinState.FadingIn
+
+            if self._spinState == DieAnimationWidget._SpinState.FadingIn:
+                increment = 1 / (self._fadeDurationMs / DieAnimationWidget._UpdateIntervalMs)
+                self._fadeInProgress += increment
+                if self._fadeInProgress >= 1.0:
+                    self._fadeInProgress = 1.0
+                    self._spinState = DieAnimationWidget._SpinState.Idle
+        except Exception as ex:
+            # TODO: Should log this
+            self._angleX = self._angleY = 0
+            self._spinState = DieAnimationWidget._SpinState.Idle
 
         self.update()  # Trigger repaint
+
+        isAnimated = self._spinState != DieAnimationWidget._SpinState.Idle
+        if wasAnimating and not isAnimated:
+            self._timer.stop()
+            self.animationComplete.emit()
 
     def _snapToNearestFace(self, angle: float) -> float:
         """ Snap the angle to the nearest face (multiples of 90 degrees). """

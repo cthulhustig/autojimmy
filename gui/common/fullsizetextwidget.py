@@ -1,5 +1,4 @@
-import common
-import math
+import gui
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -11,6 +10,7 @@ class FullSizeTextWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
         self._text = text
+        self._alignment = QtCore.Qt.AlignmentFlag.AlignCenter
         self._configureFont()
 
     def text(self) -> str:
@@ -21,45 +21,29 @@ class FullSizeTextWidget(QtWidgets.QWidget):
         self._configureFont()
         self.repaint()
 
+    def alignment(self) -> QtCore.Qt.AlignmentFlag:
+        return self._alignment
+
+    def setAlignment(self, align: QtCore.Qt.AlignmentFlag) -> None:
+        self._alignment = align
+
     def resizeEvent(self, a0: QtGui.QResizeEvent | None) -> None:
         super().resizeEvent(a0)
         self._configureFont()
 
     def paintEvent(self, a0: QtGui.QPaintEvent | None) -> None:
         painter = QtGui.QPainter(self)
-
-        usableArea = self.rect()
         painter.drawText(
-            usableArea,
-            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
-            self._text)
+            self.rect(),
+            self.alignment(),
+            self.text())
         painter.end()
 
     def _configureFont(self) -> None:
-        text = self.text()
-        font = self.font()
-        usableArea = self.rect()
-
-        low = 1
-        high = usableArea.height()
-        best = None
-
-        while low <= high:
-            mid = low + ((high - low) // 2)
-            font.setPixelSize(mid)
-            fontMetrics = QtGui.QFontMetrics(font)
-            contentRect = fontMetrics.boundingRect(text)
-            contentRect.moveTo(0, 0)
-
-            contained = usableArea.contains(contentRect)
-            if (best == None or mid > best) and contained:
-                best = mid
-
-            if contained:
-                low = mid + 1
-            else:
-                high = mid - 1
-
-        if best != None:
-            font.setPixelSize(best)
+        font = gui.sizeFontToFit(
+            orig=self.font(),
+            text=self.text(),
+            rect=self.rect(),
+            align=self.alignment())
+        if font:
             self.setFont(font)

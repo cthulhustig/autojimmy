@@ -89,11 +89,6 @@ class DiceRollerWindow(gui.WindowWidget):
         self._roller = None
         self._results = None
 
-        self._updateResultsTimer = QtCore.QTimer()
-        self._updateResultsTimer.setInterval(DiceRollerWindow._ResultsDelay)
-        self._updateResultsTimer.setSingleShot(True)
-        self._updateResultsTimer.timeout.connect(self._resultsTimerFired)
-
         self._createRollerManagerControls()
         self._createRollerConfigControls()
         self._createRollResultsControls()
@@ -134,17 +129,10 @@ class DiceRollerWindow(gui.WindowWidget):
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='RollDisplayModeState',
+            key='ResultsState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._rollDisplayModeTabView.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ProbabilitiesState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._probabilityGraph.restoreState(storedValue)
+            self._resultsWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -160,8 +148,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._settings.setValue('HorzSplitterState', self._horizontalSplitter.saveState())
         self._settings.setValue('VertSplitterState', self._verticalSplitter.saveState())
-        self._settings.setValue('RollDisplayModeState', self._rollDisplayModeTabView.saveState())
-        self._settings.setValue('ProbabilitiesState', self._probabilityGraph.saveState())
+        self._settings.setValue('ResultsState', self._resultsWidget.saveState())
         self._settings.setValue('HistoryState', self._historyWidget.saveState())
 
         self._settings.endGroup()
@@ -200,18 +187,11 @@ class DiceRollerWindow(gui.WindowWidget):
         self._configGroupBox.setLayout(groupLayout)
 
     def _createRollResultsControls(self) -> None:
-        self._simpleResultsWidget = gui.DiceRollResultsWidget()
-        self._detailedResultsWidget = gui.DiceRollResultsTable()
-        self._probabilityGraph = gui.DiceRollerProbabilityGraph()
-
-        self._rollDisplayModeTabView = gui.TabWidgetEx()
-        self._rollDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
-        self._rollDisplayModeTabView.addTab(self._simpleResultsWidget, 'Simple')
-        self._rollDisplayModeTabView.addTab(self._detailedResultsWidget, 'Detailed')
-        self._rollDisplayModeTabView.addTab(self._probabilityGraph, 'Probabilities')
+        self._resultsWidget = gui.DiceRollDisplayWidget()
+        self._resultsWidget.animationComplete.connect(self._resultsAnimationComplete)
 
         groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.addWidget(self._rollDisplayModeTabView)
+        groupLayout.addWidget(self._resultsWidget)
 
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
@@ -236,11 +216,11 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(roller=roller)
 
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.setRoller(roller=roller)
-            self._probabilityGraph.setHighlightRoll(roll=None)
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setRoller(roller=roller)
 
         self._roller = roller
+        self._results = None
 
     def _rollerDeleted(self, roller: diceroller.DiceRollerDatabaseObject) -> None:
         currentRoller = self._rollerConfigWidget.roller()
@@ -250,30 +230,18 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(None)
 
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.setRoller(None)
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setRoller(None)
 
         with gui.SignalBlocker(self._historyWidget):
             self._historyWidget.purgeHistory(roller)
 
         self._roller = None
+        self._results = None
 
     def _configChanged(self) -> None:
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.syncToRoller()
-
-    def _resultsTimerFired(self) -> None:
-        with gui.SignalBlocker(self._simpleResultsWidget):
-            self._simpleResultsWidget.setResults(self._results)
-
-        with gui.SignalBlocker(self._detailedResultsWidget):
-            self._detailedResultsWidget.setResults(self._results)
-
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.setHighlightRoll(self._results.total() if self._results else None)
-
-        with gui.SignalBlocker(self._historyWidget):
-            self._historyWidget.addResult(self._roller, self._results)
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.syncToRoller()
 
     # TODO: This is borked, it's passing the historic roller object to
     # the config, this roller will have the correct parent id set to
@@ -287,34 +255,33 @@ class DiceRollerWindow(gui.WindowWidget):
     def _historySelectionChanged(
             self,
             roller: diceroller.DiceRollerDatabaseObject,
-            result: diceroller.DiceRollResult
+            results: diceroller.DiceRollResult
             ) -> None:
+        self._roller = roller
+        self._results = results
+
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(roller=roller)
 
-        with gui.SignalBlocker(self._simpleResultsWidget):
-            self._simpleResultsWidget.setResults(result)
-
-        with gui.SignalBlocker(self._detailedResultsWidget):
-            self._detailedResultsWidget.setResults(result)
-
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.setRoller(roller=roller)
-            self._probabilityGraph.setHighlightRoll(result.total())
-
-        self._roller = roller
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setRoller(roller=roller)
+            self._resultsWidget.setResults(
+                results=results,
+                animate=False)
 
     def _rollDice(self) -> None:
         roller = self._rollerConfigWidget.roller()
         if not roller:
             # TODO: Do something?
             return
+
         modifiers = []
         for modifier in roller.dynamicDMs():
             assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
             if modifier.enabled():
                 modifiers.append((modifier.name(), modifier.value()))
-        results = diceroller.rollDice(
+
+        self._results = diceroller.rollDice(
             dieCount=roller.dieCount(),
             dieType=roller.dieType(),
             constantDM=roller.constantDM(),
@@ -323,21 +290,13 @@ class DiceRollerWindow(gui.WindowWidget):
             dynamicDMs=modifiers,
             targetNumber=roller.targetNumber())
 
-        self._clearResults()
-        self._results = results
-        self._updateResultsTimer.start()
+        # TODO: Need to prevent user manipulating controls while roll animation is in progress
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setResults(self._results)
 
-    def _clearResults(self) -> None:
-        with gui.SignalBlocker(self._simpleResultsWidget):
-            self._simpleResultsWidget.setResults(results=None)
-
-        with gui.SignalBlocker(self._detailedResultsWidget):
-            self._detailedResultsWidget.setResults(results=None)
-
-        with gui.SignalBlocker(self._probabilityGraph):
-            self._probabilityGraph.setHighlightRoll(roll=None)
-
-        self._results = None
+    def _resultsAnimationComplete(self) -> None:
+        with gui.SignalBlocker(self._historyWidget):
+            self._historyWidget.addResult(self._roller, self._results)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
