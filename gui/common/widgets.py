@@ -698,6 +698,14 @@ class LineEditEx(QtWidgets.QLineEdit):
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
 
+    def setText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+        return super().setText(text)
+
     def enableDelayedTextEdited(
             self,
             msecs: int

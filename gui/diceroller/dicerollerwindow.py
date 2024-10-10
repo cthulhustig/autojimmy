@@ -60,8 +60,6 @@ GROUP BY
 # - It will stop users accidentally double clicking the roll button
 # - It will avoid any oddness with the user changing roller controls or
 # switching to a different roller while the animation is in progress
-# TODO: Need to use delayed edit notifications for text boxes as there
-# is a noticeable lag as it updates the db every time you hit a key
 # TODO: Probability graph needs tool tips to show exact probabilities for
 # the column under the cursor
 # - Will need to take probability type into account (i.e. 'X% change of

@@ -9,6 +9,8 @@ from PyQt5 import QtWidgets, QtCore
 class DiceModifierWidget(QtWidgets.QWidget):
     modifierChanged = QtCore.pyqtSignal()
 
+    _EditModificationDelayMs = 1000
+
     def __init__(
             self,
             modifier: diceroller.DiceModifierDatabaseObject,
@@ -20,7 +22,9 @@ class DiceModifierWidget(QtWidgets.QWidget):
 
         self._nameLineEdit = gui.LineEditEx()
         self._nameLineEdit.setText(self._modifier.name())
-        self._nameLineEdit.textChanged.connect(self._nameChanged)
+        self._nameLineEdit.enableDelayedTextEdited(
+            msecs=DiceModifierWidget._EditModificationDelayMs)
+        self._nameLineEdit.delayedTextEdited.connect(self._nameChanged)
 
         self._enabledCheckBox = gui.CheckBoxEx()
         self._enabledCheckBox.setChecked(self._modifier.enabled())
