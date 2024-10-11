@@ -49,7 +49,6 @@ GROUP BY
 # - It will avoid any oddness with the user changing roller controls or
 # switching to a different roller while the animation is in progress
 # TODO: Ability to reorder modifiers
-# TODO: Need to be able to rename groups and rollers
 # TODO: Need to be able to duplicate rollers (and maybe groups)
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
@@ -167,17 +166,17 @@ class DiceRollerWindow(gui.WindowWidget):
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
-        self._newGroupAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewList), 'New Group', self)
-        self._newGroupAction.triggered.connect(self._newGroupClicked)
-        self._rollerTree.addAction(self._newGroupAction)
-        self._rollerToolbar.addAction(self._newGroupAction)
-
         self._newRollerAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
         self._newRollerAction.triggered.connect(self._newRollerClicked)
         self._rollerTree.addAction(self._newRollerAction)
         self._rollerToolbar.addAction(self._newRollerAction)
+
+        self._newGroupAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.NewList), 'New Group', self)
+        self._newGroupAction.triggered.connect(self._newGroupClicked)
+        self._rollerTree.addAction(self._newGroupAction)
+        self._rollerToolbar.addAction(self._newGroupAction)
 
         self._renameAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
@@ -315,8 +314,11 @@ class DiceRollerWindow(gui.WindowWidget):
         self._roller = roller
         self._results = None
 
-    # TODO: This could create a group if none exist
     def _newRollerClicked(self) -> None:
+        if self._rollerTree.topLevelItemCount() == 0:
+            self._newGroupClicked()
+            return
+
         item = self._rollerTree.currentItem()
         if not item:
             # TODO: Do something
@@ -500,10 +502,6 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.syncToRoller()
 
-    # TODO: There is something not right here but I can't figure out what. Sometimes
-    # if you click back on previous items it's not restoring the correct state (i.e.
-    # it shows the current number of modifiers rather than the number it had when the
-    # roll was made)
     def _historySelectionChanged(
             self,
             roller: diceroller.DiceRollerDatabaseObject,
