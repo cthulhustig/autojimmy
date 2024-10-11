@@ -166,4 +166,36 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             self,
             cursorWidgetPos: QtCore.QPointF
             ) -> None:
-        pass
+        matched = None
+
+        # NOTE: This is hokey as hell. The pyqtgraph api doesn't make the rects
+        # of the bars available over a public API but it does store them in an
+        # internal _rectarray
+        if self._bars and self._bars._rectarray:
+            pos = self._graph.getPlotItem().vb.mapSceneToView(cursorWidgetPos)
+            for index, rect in enumerate(self._bars._rectarray.instances()):
+                assert(isinstance(rect, QtCore.QRectF))
+                x = pos.x()
+                if x >= rect.left() and x <= rect.right():
+                    matched = index
+                    break
+
+        if matched != None:
+            values, probabilities = self._bars.getData()
+            graphType = self._typeComboBox.currentEnum()
+            assert(isinstance(graphType, common.ProbabilityType))
+            toolTip = '{probability}% chance of rolling {type} {value}'.format(
+                probability=common.formatNumber(
+                    number=probabilities[matched],
+                    decimalPlaces=2),
+                type=graphType.value.lower(),
+                value=values[matched])
+
+            self.setToolTip(toolTip)
+            QtWidgets.QToolTip.showText(
+                self._graph.mapToGlobal(cursorWidgetPos.toPoint()),
+                toolTip)
+        else:
+            self.setToolTip(None)
+            QtWidgets.QToolTip.hideText()
+

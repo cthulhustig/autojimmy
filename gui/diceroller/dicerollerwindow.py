@@ -60,10 +60,6 @@ GROUP BY
 # - It will stop users accidentally double clicking the roll button
 # - It will avoid any oddness with the user changing roller controls or
 # switching to a different roller while the animation is in progress
-# TODO: Probability graph needs tool tips to show exact probabilities for
-# the column under the cursor
-# - Will need to take probability type into account (i.e. 'X% change of
-# rolling greater or equal to Y')
 # TODO: Ability to reorder modifiers
 # TODO: Need to be able to rename groups and rollers
 # TODO: Need to be able to duplicate rollers (and maybe groups)

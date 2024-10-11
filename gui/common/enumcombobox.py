@@ -70,10 +70,10 @@ class EnumComboBox(QtWidgets.QComboBox):
         if newSelectedText != oldSelectedText:
             self.currentTextChanged.emit(newSelectedText)
 
-    def currentEnum(self) -> enum.Enum:
+    def currentEnum(self) -> typing.Optional[enum.Enum]:
         return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
 
-    def setCurrentEnum(self, value: enum.Enum) -> None:
+    def setCurrentEnum(self, value: typing.Optional[enum.Enum]) -> None:
         for index in range(self.count()):
             if value == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
                 self.setCurrentIndex(index)
