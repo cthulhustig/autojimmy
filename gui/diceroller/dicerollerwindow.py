@@ -44,8 +44,6 @@ WHERE
 GROUP BY
     dr.id, dr.name, dr.die_count, dr.die_type, dr.constant_dm, dr.has_boon, dr.has_bane, dr.target_number;
 """
-# TODO: Move db update calls out of DiceRollerConfigWidget and into
-# DiceRollerWindow (in response to the config update event)
 # TODO: Need to disable UI while roll animation is taking place
 # - It will stop users accidentally double clicking the roll button
 # - It will avoid any oddness with the user changing roller controls or
@@ -56,6 +54,13 @@ GROUP BY
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
+# TODO: Store historic results in the objectdb?
+# - Would need some kind of max number (fifo) to avoid db bloat
+# - Complicated by the fact they have they hold an instance of a roller but
+# with the config from when the roll was made. It means those objects (which
+# would need stored in the db) will have the same id as the current version
+# of the object that is already in the db
+# - Complicated by the fact they use ScalarCalculations (history would be lost)
 class DiceRollerWindow(gui.WindowWidget):
     # When rolling the dice the rolled value can be calculated instantly,
     # however, displaying it straight away can be problematic.  If the new
@@ -237,10 +242,20 @@ class DiceRollerWindow(gui.WindowWidget):
         self._historyGroupBox.setLayout(groupLayout)
 
     def _syncToManager(self) -> None:
-        self._objectItemMap.clear()
-        with gui.SignalBlocker(self._rollerTree):
+        try:
             groups = objectdb.ObjectDbManager.instance().readObjects(
                 classType=diceroller.DiceRollerGroupDatabaseObject)
+        except Exception as ex:
+            message = 'Failed to read roller groups from objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        self._objectItemMap.clear()
+        with gui.SignalBlocker(self._rollerTree):
             for groupIndex, group in enumerate(groups):
                 assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
                 groupItem = self._rollerTree.topLevelItem(groupIndex)
@@ -320,8 +335,12 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().createObject(
                 object=roller)
         except Exception as ex:
-            # TODO: Do something
-            print(ex)
+            message = f'Failed to create roller {roller.id()} in objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
             return
 
         rollerItem = DiceRollerWindow._createRollerItem(
@@ -343,8 +362,12 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().createObject(
                 object=group)
         except Exception as ex:
-            # TODO: Do something
-            print(ex)
+            message = f'Failed to create roller group {group.id()} in objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
             return
 
         groupItem = DiceRollerWindow._createGroupItem(group=group)
@@ -393,7 +416,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=object)
         except Exception as ex:
-            message = f'Failed to rename {objectType}'
+            message = f'Failed to rename {object.id()} in objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -419,9 +442,13 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().deleteObject(
                 id=object.id())
         except Exception as ex:
-            # TODO: Do something
-            print(ex)
-            pass
+            message = f'Failed to delete roller {object.id()} from objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
         currentRoller = self._rollerConfigWidget.roller()
         clearCurrent = False
@@ -457,6 +484,19 @@ class DiceRollerWindow(gui.WindowWidget):
         self._setCurrentRoller(roller=roller)
 
     def _rollerConfigChanged(self) -> None:
+        try:
+            objectdb.ObjectDbManager.instance().updateObject(
+                object=self._roller)
+        except Exception as ex:
+            message = f'Failed to update roller {self._roller.id()} in objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Continue, may as well sync results even if it
+            # couldn't be written
+
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.syncToRoller()
 
@@ -482,7 +522,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=roller)
         except Exception as ex:
-            message = f'Failed to update roller {roller.id()}'
+            message = f'Failed to restore historic roller {roller.id()} to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

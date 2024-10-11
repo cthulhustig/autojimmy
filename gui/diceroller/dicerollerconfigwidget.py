@@ -310,41 +310,26 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
             self._dieCountSpinBox.value())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
 
     def _dieTypeChanged(self) -> None:
         self._roller.setDieType(
             self._dieTypeComboBox.currentEnum())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
 
     def _constantDMChanged(self) -> None:
         self._roller.setConstantDM(
             self._constantDMSpinBox.value())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
 
     def _hasBoonChanged(self) -> None:
         self._roller.setHasBoon(
             self._hasBoonCheckBox.isChecked())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
 
     def _hasBaneChanged(self) -> None:
         self._roller.setHasBane(
             self._hasBaneCheckBox.isChecked())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:
@@ -353,9 +338,6 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             value=0,
             enabled=True)
         self._roller.addDynamicDM(dynamicDM=modifier)
-        objectdb.ObjectDbManager.instance().createObject(
-            object=modifier)
-
         self._modifierList.addModifier(modifier)
         self._modifierList.setHidden(False)
         self.configChanged.emit()
@@ -364,9 +346,6 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _removeAllModifiersClicked(self) -> None:
         for modifier in self._roller.dynamicDMs():
             self._roller.removeDynamicDM(id=modifier.id())
-            # TODO: Make this more efficient
-            objectdb.ObjectDbManager.instance().deleteObject(
-                id=modifier.id())
 
         # Block signals to prevent multiple config update
         # notifications as modifiers are deleted
@@ -377,22 +356,13 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.configChanged.emit()
 
     def _modifierChanged(self) -> None:
-        # TODO: Probably only need to update the modifier here
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
         self.configChanged.emit()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         self._roller.removeDynamicDM(id=modifier.id())
-        objectdb.ObjectDbManager.instance().deleteObject(
-            id=modifier.id())
-
         self._modifierList.setHidden(self._modifierList.isEmpty())
         self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:
         self._roller.setTargetNumber(self._targetNumberSpinBox.value())
-        objectdb.ObjectDbManager.instance().updateObject(
-            object=self._roller)
-
         self.configChanged.emit()
