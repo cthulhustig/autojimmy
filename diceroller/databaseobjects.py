@@ -259,6 +259,12 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def removeRoller(self, id: str) -> DiceRollerDatabaseObject:
         return self._rollers.remove(id=id)
 
+    def findRoller(self, id: str) -> typing.Optional[DiceRollerDatabaseObject]:
+        return self._rollers.find(id=id)
+
+    def containsRoller(self, id: str) -> bool:
+        return self._rollers.contains(id=id)
+
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(

@@ -143,6 +143,15 @@ class DatabaseList(DatabaseEntity):
                 return obj
         raise ValueError(f'{id} not found in list {self.id()}')
 
+    def find(self, id: str) -> typing.Optional[DatabaseObject]:
+        for obj in self._objects:
+            if id == obj.id():
+                return obj
+        return None
+
+    def contains(self, id: str) -> bool:
+        return self.find(id) != None
+
     def clear(self) -> None:
         for object in self._objects:
             object.setParent(None)

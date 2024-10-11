@@ -1,7 +1,9 @@
 import app
 import common
+import copy
 import diceroller
 import gui
+import logging
 import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -42,20 +44,8 @@ WHERE
 GROUP BY
     dr.id, dr.name, dr.die_count, dr.die_type, dr.constant_dm, dr.has_boon, dr.has_bane, dr.target_number;
 """
-# TODO: It might be better to move the manager widget code into the
-# window and have it construct the tree
-# - I think it makes conceptual sense as it's controlling what the
-#   window is displaying, it should also make fixing the roll history
-#   easier
-# - It would also allow me to move the database updating code out of
-#   the config widget and into the main window so all the database
-#   stuff is handled by it
-#   - Could trigger it in the main window when it gets notified that
-#       the roller has been updated
-# TODO: Need to fix switching to previous roll with the history window
-# - It's not updating the DiceRollerDatabaseObject held by the manager
-#   widget that controls everything
-# - Would be easier if manager stuff was in window (see above)
+# TODO: Move db update calls out of DiceRollerConfigWidget and into
+# DiceRollerWindow (in response to the config update event)
 # TODO: Need to disable UI while roll animation is taking place
 # - It will stop users accidentally double clicking the roll button
 # - It will avoid any oddness with the user changing roller controls or
@@ -82,6 +72,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._roller = None
         self._results = None
+        self._objectItemMap: typing.Dict[str, QtWidgets.QTreeWidgetItem] = {}
 
         self._createRollerManagerControls()
         self._createRollerConfigControls()
@@ -101,6 +92,7 @@ class DiceRollerWindow(gui.WindowWidget):
         windowLayout.addWidget(self._verticalSplitter)
 
         self.setLayout(windowLayout)
+        self._syncToManager()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -150,13 +142,57 @@ class DiceRollerWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _createRollerManagerControls(self) -> None:
-        self._rollerManagerWidget = gui.DiceRollerManagerWidget()
-        self._rollerManagerWidget.rollerSelected.connect(self._rollerSelected)
-        self._rollerManagerWidget.rollerDeleted.connect(self._rollerDeleted)
+        self._rollerTree = gui.TreeWidgetEx()
+        self._rollerTree.setColumnCount(1)
+        self._rollerTree.header().setStretchLastSection(True)
+        self._rollerTree.setHeaderHidden(True)
+        self._rollerTree.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
+        self._rollerTree.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
+        self._rollerTree.setAutoScroll(False)
+        self._rollerTree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        itemDelegate = gui.StyledItemDelegateEx()
+        itemDelegate.setHighlightCurrentItem(enabled=False)
+        self._rollerTree.setItemDelegate(itemDelegate)
+        self._rollerTree.itemSelectionChanged.connect(self._rollerSelectionChanged)
 
-        groupLayout = QtWidgets.QVBoxLayout()
+        self._rollerToolbar = QtWidgets.QToolBar('Toolbar')
+        self._rollerToolbar.setIconSize(QtCore.QSize(32, 32))
+        self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
+        self._rollerToolbar.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Minimum)
+
+        self._newGroupAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.NewList), 'New Group', self)
+        self._newGroupAction.triggered.connect(self._newGroupClicked)
+        self._rollerTree.addAction(self._newGroupAction)
+        self._rollerToolbar.addAction(self._newGroupAction)
+
+        self._newRollerAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
+        self._newRollerAction.triggered.connect(self._newRollerClicked)
+        self._rollerTree.addAction(self._newRollerAction)
+        self._rollerToolbar.addAction(self._newRollerAction)
+
+        self._renameAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
+        self._renameAction.triggered.connect(self._renameClicked)
+        self._rollerTree.addAction(self._renameAction)
+        self._rollerToolbar.addAction(self._renameAction)
+
+        self._deleteAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
+        self._deleteAction.triggered.connect(self._deleteClicked)
+        self._rollerTree.addAction(self._deleteAction)
+        self._rollerToolbar.addAction(self._deleteAction)
+
+        self._rollerTree.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
+
+        groupLayout = QtWidgets.QHBoxLayout()
         groupLayout.setContentsMargins(0, 0, 0, 0)
-        groupLayout.addWidget(self._rollerManagerWidget)
+        groupLayout.addWidget(self._rollerToolbar)
+        groupLayout.addWidget(self._rollerTree)
 
         self._managerGroupBox = QtWidgets.QGroupBox('Dice Rollers')
         self._managerGroupBox.setLayout(groupLayout)
@@ -167,7 +203,7 @@ class DiceRollerWindow(gui.WindowWidget):
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self._rollerConfigWidget.configChanged.connect(
-            self._configChanged)
+            self._rollerConfigChanged)
 
         self._rollButton = QtWidgets.QPushButton('Roll Dice')
         self._rollButton.clicked.connect(self._rollDice)
@@ -200,68 +236,25 @@ class DiceRollerWindow(gui.WindowWidget):
         self._historyGroupBox = QtWidgets.QGroupBox('History')
         self._historyGroupBox.setLayout(groupLayout)
 
-    # NOTE: When a new roller is selected the current results are intentionally
-    # not cleared. This is done to make it easier for the user to add the effect
-    # from the previous roll to the modifiers of the next roll. The exception to
-    # this is the highlight of the rolled result on the probability graph as the
-    # result of the previous roll is irrelevant to the the probability of the
-    # next roll
-    def _rollerSelected(self, roller: diceroller.DiceRollerDatabaseObject) -> None:
-        with gui.SignalBlocker(self._rollerConfigWidget):
-            self._rollerConfigWidget.setRoller(roller=roller)
-
-        with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.setRoller(roller=roller)
-
-        self._roller = roller
-        self._results = None
-
-    def _rollerDeleted(self, roller: diceroller.DiceRollerDatabaseObject) -> None:
-        currentRoller = self._rollerConfigWidget.roller()
-        if not currentRoller or (roller.id() != currentRoller.id()):
-            return
-
-        with gui.SignalBlocker(self._rollerConfigWidget):
-            self._rollerConfigWidget.setRoller(None)
-
-        with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.setRoller(None)
-
-        with gui.SignalBlocker(self._historyWidget):
-            self._historyWidget.purgeHistory(roller)
-
-        self._roller = None
-        self._results = None
-
-    def _configChanged(self) -> None:
-        with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.syncToRoller()
-
-    # TODO: This is borked, it's passing the historic roller object to
-    # the config, this roller will have the correct parent id set to
-    # reference the group it was part of but this instance of the roller
-    # won't be the one in the list of roller instances held by the group
-    # that the manager widget is using.
-    # This means config changes will be made to the historic roller by
-    # the config widget (and written to the db), however if you were then
-    # to write the group held by the manager widget, it would revert the
-    # changes that had been made to the roller.
-    def _historySelectionChanged(
-            self,
-            roller: diceroller.DiceRollerDatabaseObject,
-            results: diceroller.DiceRollResult
-            ) -> None:
-        self._roller = roller
-        self._results = results
-
-        with gui.SignalBlocker(self._rollerConfigWidget):
-            self._rollerConfigWidget.setRoller(roller=roller)
-
-        with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.setRoller(roller=roller)
-            self._resultsWidget.setResults(
-                results=results,
-                animate=False)
+    def _syncToManager(self) -> None:
+        self._objectItemMap.clear()
+        with gui.SignalBlocker(self._rollerTree):
+            groups = objectdb.ObjectDbManager.instance().readObjects(
+                classType=diceroller.DiceRollerGroupDatabaseObject)
+            for groupIndex, group in enumerate(groups):
+                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                groupItem = self._rollerTree.topLevelItem(groupIndex)
+                if not groupItem:
+                    groupItem = DiceRollerWindow._createGroupItem(group=group)
+                    self._rollerTree.addTopLevelItem(groupItem)
+                    self._objectItemMap[group.id()] = groupItem
+                for rollerIndex, roller in enumerate(group.rollers()):
+                    rollerItem = groupItem.child(rollerIndex)
+                    if not rollerItem:
+                        rollerItem = DiceRollerWindow._createRollerItem(
+                            roller=roller,
+                            groupItem=groupItem)
+                        self._objectItemMap[roller.id()] = rollerItem
 
     def _rollDice(self) -> None:
         roller = self._rollerConfigWidget.roller()
@@ -288,6 +281,234 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.setResults(self._results)
 
+    # NOTE: When a new roller is selected the current results are intentionally
+    # not cleared. This is done to make it easier for the user to add the effect
+    # from the previous roll to the modifiers of the next roll. The exception to
+    # this is the highlight of the rolled result on the probability graph as the
+    # result of the previous roll is irrelevant to the the probability of the
+    # next roll
+    def _setCurrentRoller(
+            self,
+            roller: typing.Optional[diceroller.DiceRollerDatabaseObject]
+            ) -> None:
+        with gui.SignalBlocker(self._rollerConfigWidget):
+            self._rollerConfigWidget.setRoller(roller=roller)
+
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setRoller(roller=roller)
+
+        self._roller = roller
+        self._results = None
+
+    # TODO: This could create a group if none exist
+    def _newRollerClicked(self) -> None:
+        item = self._rollerTree.currentItem()
+        if not item:
+            # TODO: Do something
+            return
+        if item.parent() != None:
+            item = item.parent()
+        group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+
+        try:
+            roller = diceroller.DiceRollerDatabaseObject(
+                name='New Roller',
+                dieCount=1,
+                dieType=common.DieType.D6)
+            group.addRoller(roller)
+            objectdb.ObjectDbManager.instance().createObject(
+                object=roller)
+        except Exception as ex:
+            # TODO: Do something
+            print(ex)
+            return
+
+        rollerItem = DiceRollerWindow._createRollerItem(
+            roller=roller,
+            groupItem=item)
+        rollerItem.setSelected(True)
+        self._rollerTree.setCurrentItem(rollerItem)
+
+    def _newGroupClicked(self) -> None:
+        try:
+            roller = diceroller.DiceRollerDatabaseObject(
+                name='New Roller',
+                dieCount=1,
+                dieType=common.DieType.D6)
+            group = diceroller.DiceRollerGroupDatabaseObject(
+                name='New Roller',
+                rollers=[roller])
+
+            objectdb.ObjectDbManager.instance().createObject(
+                object=group)
+        except Exception as ex:
+            # TODO: Do something
+            print(ex)
+            return
+
+        groupItem = DiceRollerWindow._createGroupItem(group=group)
+        self._rollerTree.addTopLevelItem(groupItem)
+
+        rollerItem = DiceRollerWindow._createRollerItem(
+            roller=roller,
+            groupItem=groupItem)
+
+        # It looks like you have to expand after the item has been
+        # added to the control
+        groupItem.setExpanded(True)
+        rollerItem.setSelected(True)
+        self._rollerTree.setCurrentItem(rollerItem)
+
+    def _renameClicked(self) -> None:
+        item = self._rollerTree.currentItem()
+        if not item:
+            # TODO: Do something?
+            return
+
+        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            title = 'Group Name'
+            objectType = 'group'
+            oldName = object.name()
+        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            title = 'Dice Roller Name'
+            objectType = 'dice roller'
+            oldName = object.name()
+        else:
+            return
+
+        newName, result = gui.InputDialogEx.getText(
+            parent=self,
+            title=title,
+            label=f'Enter a name for the {objectType}',
+            text=oldName)
+        if not result:
+            return
+
+        object = copy.deepcopy(object)
+        object.setName(name=newName)
+
+        try:
+            objectdb.ObjectDbManager.instance().updateObject(
+                object=object)
+        except Exception as ex:
+            message = f'Failed to rename {objectType}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        item.setData(0, QtCore.Qt.ItemDataRole.DisplayRole, newName)
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, object)
+
+        if isinstance(object, diceroller.DiceRollerDatabaseObject):
+            self._setCurrentRoller(roller=object)
+
+    def _deleteClicked(self) -> None:
+        item = self._rollerTree.currentItem()
+        if not item:
+            # TODO: Do something?
+            return
+
+        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+
+        try:
+            objectdb.ObjectDbManager.instance().deleteObject(
+                id=object.id())
+        except Exception as ex:
+            # TODO: Do something
+            print(ex)
+            pass
+
+        currentRoller = self._rollerConfigWidget.roller()
+        clearCurrent = False
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            itemIndex = self._rollerTree.indexOfTopLevelItem(item)
+            self._rollerTree.takeTopLevelItem(itemIndex)
+
+            del self._objectItemMap[object.id()]
+            for roller in object.rollers():
+                del self._objectItemMap[roller.id()]
+
+            if currentRoller:
+                clearCurrent = object.containsRoller(id=currentRoller.id())
+        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            parent = item.parent()
+            parent.removeChild(item)
+
+            del self._objectItemMap[object.id()]
+
+            if currentRoller:
+                clearCurrent = object.id() == currentRoller.id()
+
+        if clearCurrent:
+            self._setCurrentRoller(roller=None)
+            with gui.SignalBlocker(self._historyWidget):
+                self._historyWidget.purgeHistory(roller=object)
+
+    def _rollerSelectionChanged(self) -> None:
+        item = self._rollerTree.currentItem()
+        if not item or not item.parent(): # No parent means it's a group
+            return
+        roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        self._setCurrentRoller(roller=roller)
+
+    def _rollerConfigChanged(self) -> None:
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.syncToRoller()
+
+    # TODO: There is something not right here but I can't figure out what. Sometimes
+    # if you click back on previous items it's not restoring the correct state (i.e.
+    # it shows the current number of modifiers rather than the number it had when the
+    # roll was made)
+    def _historySelectionChanged(
+            self,
+            roller: diceroller.DiceRollerDatabaseObject,
+            results: diceroller.DiceRollResult
+            ) -> None:
+        # Make new copies of the historic roller and results. These
+        # will be passed to the things like the configuration widget
+        # so we don't want to modify the instances held by the history
+        # widget
+        if roller != None:
+            roller = copy.deepcopy(roller)
+        if results != None:
+            results = copy.deepcopy(results)
+
+        try:
+            objectdb.ObjectDbManager.instance().updateObject(
+                object=roller)
+        except Exception as ex:
+            message = f'Failed to update roller {roller.id()}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        self._roller = roller
+        self._results = results
+
+        with gui.SignalBlocker(self._rollerTree):
+            item = self._objectItemMap[roller.id()]
+            item.setData(0, QtCore.Qt.ItemDataRole.DisplayRole, roller.name())
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
+            self._rollerTree.clearSelection()
+            item.setSelected(True)
+
+        with gui.SignalBlocker(self._rollerConfigWidget):
+            self._rollerConfigWidget.setRoller(roller=roller)
+
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setRoller(roller=roller)
+            self._resultsWidget.setResults(
+                results=results,
+                animate=False)
+
     def _resultsAnimationComplete(self) -> None:
         with gui.SignalBlocker(self._historyWidget):
             self._historyWidget.addResult(self._roller, self._results)
@@ -299,3 +520,22 @@ class DiceRollerWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='DiceRollerWelcome')
         message.exec()
+
+    @staticmethod
+    def _createGroupItem(
+            group: diceroller.DiceRollerGroupDatabaseObject
+            ) -> QtWidgets.QTreeWidgetItem:
+        item = QtWidgets.QTreeWidgetItem([group.name()])
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, group)
+        return item
+
+    @staticmethod
+    def _createRollerItem(
+            roller: diceroller.DiceRollerDatabaseObject,
+            groupItem: QtWidgets.QTreeWidgetItem,
+            ) -> QtWidgets.QTreeWidgetItem:
+        item = QtWidgets.QTreeWidgetItem([roller.name()])
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
+        if groupItem:
+            groupItem.addChild(item)
+        return item
