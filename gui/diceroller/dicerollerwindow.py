@@ -53,6 +53,7 @@ GROUP BY
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
+# TODO: Automatically create a default roller if one doesn't exist (i.e. new db)
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -350,6 +351,7 @@ class DiceRollerWindow(gui.WindowWidget):
             groupItem=item)
         rollerItem.setSelected(True)
         self._rollerTree.setCurrentItem(rollerItem)
+        self._objectItemMap[roller.id()] = rollerItem
 
     def _newGroupClicked(self) -> None:
         try:
@@ -384,6 +386,9 @@ class DiceRollerWindow(gui.WindowWidget):
         groupItem.setExpanded(True)
         rollerItem.setSelected(True)
         self._rollerTree.setCurrentItem(rollerItem)
+        self._objectItemMap[group.id()] = groupItem
+        self._objectItemMap[roller.id()] = rollerItem
+
 
     def _renameClicked(self) -> None:
         item = self._rollerTree.currentItem()
