@@ -295,6 +295,10 @@ class DiceRollerWindow(gui.WindowWidget):
         self._updateControlEnablement()
 
     def _updateControlEnablement(self) -> None:
+        hasSelection = self._managerTree.currentItem() != None
+        self._renameAction.setEnabled(hasSelection)
+        self._deleteAction.setEnabled(hasSelection)
+
         self._managerGroupBox.setEnabled(not self._rollInProgress)
         self._configGroupBox.setEnabled(self._roller != None and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
