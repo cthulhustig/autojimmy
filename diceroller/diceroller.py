@@ -38,8 +38,7 @@ def _effectValueToType(
     else:
         return DiceRollEffectType.ExceptionalSuccess
 
-# TODO: Ideally this wouldn't use uuid object any more
-class DiceRollResult(common.UuidObject):
+class DiceRollResult(object):
     def __init__(
             self,
             total: common.ScalarCalculation,
@@ -50,10 +49,9 @@ class DiceRollResult(common.UuidObject):
                 str], # Modifier value
             targetNumber: typing.Optional[common.ScalarCalculation],
             effectType: typing.Optional[DiceRollEffectType],
-            effectValue: typing.Optional[common.ScalarCalculation],
-            copyUuid: str = None
+            effectValue: typing.Optional[common.ScalarCalculation]
             ) -> None:
-        super().__init__(copyUuid=copyUuid)
+        super().__init__()
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
