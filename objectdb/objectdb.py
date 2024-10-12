@@ -135,6 +135,14 @@ class DatabaseList(DatabaseEntity):
         object.setParent(self.id())
         self._objects.append(object)
 
+    def insert(self, index: int, object: DatabaseObject) -> None:
+        for current in self._objects:
+            if current.id() == object.id():
+                raise ValueError(f'Object {object.id()} is already in list {self.id()}')
+
+        object.setParent(self.id())
+        self._objects.insert(index, object)
+
     def remove(self, id: str) -> DatabaseObject:
         for obj in self._objects:
             if id == obj.id():
@@ -390,6 +398,13 @@ class ObjectDbManager(object):
             self,
             object: DatabaseObject,
             ) -> str:
+            if object.parent() != None:
+                # The parent should be created/updated rather than creating the child.
+                # The prevents the database become corrupt because there is a parent
+                # set for the object but the parent doesn't refer to it (or possibly
+                # doesn't exit at all)
+                raise ValueError('Object to be created can\'t have a parent')
+
             logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
             with ObjectDbManager._lock:
                 with self._connection:
@@ -576,11 +591,13 @@ class ObjectDbManager(object):
                 parent = row[0]
 
             sql = """
-                SELECT id, table_name
-                FROM {table}
-                WHERE parent = :id;
+                SELECT object, table_name
+                FROM {listsTable}
+                JOIN {entitiesTable} ON {listsTable}.object = {entitiesTable}.id
+                WHERE {listsTable}.id = :id;
                 """.format(
-                    table=ObjectDbManager._EntitiesTableName)
+                    listsTable=ObjectDbManager._ListsTableName,
+                    entitiesTable=ObjectDbManager._EntitiesTableName)
             cursor.execute(sql, {'id': id})
             objects = []
             for row in cursor.fetchall():

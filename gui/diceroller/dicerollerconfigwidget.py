@@ -65,6 +65,7 @@ class DiceModifierWidget(QtWidgets.QWidget):
 class DiceModifierListWidget(gui.ListWidgetEx):
     modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
     modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
+    modifierMoved = QtCore.pyqtSignal([int, diceroller.DiceModifierDatabaseObject])
 
     _ItemSpacing = 10
 
@@ -84,12 +85,33 @@ class DiceModifierListWidget(gui.ListWidgetEx):
                 diceroller.DiceModifierDatabaseObject,
                 QtWidgets.QListWidgetItem]] = {}
 
+    # Return modifiers in list order
+    def modifiers(self) -> None:
+        modifiers = []
+        for index in range(self.count()):
+            item = self.item(index)
+            modifiers.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
+        return modifiers
+
     def addModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+        self.insertModifier(
+            row=self.count(),
+            modifier=modifier)
+
+    def insertModifier(self, row: int, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         modifierWidget = DiceModifierWidget(modifier=modifier)
         modifierWidget.modifierChanged.connect(lambda: self._modifierChanged(modifier))
 
         deleteButton = gui.IconButton(icon=gui.loadIcon(id=gui.Icon.CloseTab))
         deleteButton.clicked.connect(lambda: self._deleteClicked(modifier))
+
+        moveUpButton = QtWidgets.QToolButton()
+        moveUpButton.setArrowType(QtCore.Qt.ArrowType.UpArrow)
+        moveUpButton.clicked.connect(lambda: self._moveUpClicked(modifier))
+
+        moveDownButton = QtWidgets.QToolButton()
+        moveDownButton.setArrowType(QtCore.Qt.ArrowType.DownArrow)
+        moveDownButton.clicked.connect(lambda: self._moveDownClicked(modifier))
 
         itemSpacing = int(DiceModifierListWidget._ItemSpacing * \
             app.Config.instance().interfaceScale())
@@ -97,6 +119,8 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, itemSpacing)
         layout.addWidget(modifierWidget)
+        layout.addWidget(moveUpButton)
+        layout.addWidget(moveDownButton)
         layout.addWidget(deleteButton)
 
         itemWidget = gui.LayoutWrapperWidget(layout)
@@ -107,7 +131,8 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         item = QtWidgets.QListWidgetItem()
         item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsSelectable)
         item.setSizeHint(itemWidget.sizeHint())
-        self.addItem(item)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, modifier)
+        self.insertItem(row, item)
         self.setItemWidget(item, itemWidget)
         self._modifierItemMap[modifier.id()] = (modifier, item)
         self._updateDimensions()
@@ -140,6 +165,38 @@ class DiceModifierListWidget(gui.ListWidgetEx):
     def _deleteClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         # Don't emit modifierDeleted as removeModifier will do that
         self.removeModifier(modifier=modifier)
+
+    def _moveUpClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+        modifier, item = self._modifierItemMap[modifier.id()]
+        index = self.indexFromItem(item)
+        if index.row() <= 0:
+            return # Nothing to do
+
+        self.takeItem(index.row())
+
+        self.insertModifier(
+            row=index.row() - 1,
+            modifier=modifier)
+
+        self.modifierMoved[int, diceroller.DiceModifierDatabaseObject].emit(
+            index.row() - 1,
+            modifier)
+
+    def _moveDownClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+        _, item = self._modifierItemMap[modifier.id()]
+        index = self.indexFromItem(item)
+        if index.row() >= (self.count() - 1):
+            return # Nothing to do
+
+        self.takeItem(index.row())
+
+        self.insertModifier(
+            row=index.row() + 1,
+            modifier=modifier)
+
+        self.modifierMoved[int, diceroller.DiceModifierDatabaseObject].emit(
+            index.row() + 1,
+            modifier)
 
     def _updateDimensions(self) -> None:
         self.updateGeometry()
@@ -227,6 +284,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self._modifierList.modifierChanged.connect(self._modifierChanged)
         self._modifierList.modifierDeleted.connect(self._modifierDeleted)
+        self._modifierList.modifierMoved.connect(self._modifierMoved)
 
         modifierControlLayout = QtWidgets.QHBoxLayout()
         modifierControlLayout.setContentsMargins(0, 0, 0, 0)
@@ -361,6 +419,14 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _modifierDeleted(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
         self._roller.removeDynamicDM(id=modifier.id())
         self._modifierList.setHidden(self._modifierList.isEmpty())
+        self.configChanged.emit()
+
+    def _modifierMoved(self,
+                       index: int,
+                       modifier: diceroller.DiceModifierDatabaseObject
+                       ) -> None:
+        self._roller.removeDynamicDM(id=modifier.id())
+        self._roller.insertDynamicDM(index=index, dynamicDM=modifier)
         self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:

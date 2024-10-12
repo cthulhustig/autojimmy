@@ -168,6 +168,11 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
         self._dynamicDMs.add(object=dynamicDM)
 
+    def insertDynamicDM(self, index: int, dynamicDM: DiceModifierDatabaseObject) -> None:
+        if not isinstance(dynamicDM, DiceModifierDatabaseObject):
+            raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
+        self._dynamicDMs.insert(index=index, object=dynamicDM)
+
     def removeDynamicDM(self, id: str) -> DiceModifierDatabaseObject:
         return self._dynamicDMs.remove(id=id)
 

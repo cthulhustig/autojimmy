@@ -13,7 +13,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Ability to reorder modifiers
 # TODO: Need to be able to duplicate rollers (and maybe groups)
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
@@ -24,6 +23,7 @@ _WelcomeMessage = """
 #   - What was selected
 #   - What was expanded
 # - When a new roller is added it should make sure the parent is expanded (otherwise you can't see where it is)
+# TODO: Better names for new groups/rollers (they always have the same name)
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -323,8 +323,8 @@ class DiceRollerWindow(gui.WindowWidget):
                 dieCount=1,
                 dieType=common.DieType.D6)
             group.addRoller(roller)
-            objectdb.ObjectDbManager.instance().createObject(
-                object=roller)
+            objectdb.ObjectDbManager.instance().updateObject(
+                object=group)
         except Exception as ex:
             message = f'Failed to create roller {roller.id()} in objectdb'
             logging.error(message, exc_info=ex)
@@ -348,7 +348,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 dieCount=1,
                 dieType=common.DieType.D6)
             group = diceroller.DiceRollerGroupDatabaseObject(
-                name='New Roller',
+                name='Roller Group',
                 rollers=[roller])
 
             objectdb.ObjectDbManager.instance().createObject(
