@@ -136,6 +136,9 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
 
     def dynamicDMs(self) -> objectdb.DatabaseList:
         return self._dynamicDMs
+    
+    def dynamicDMCount(self) -> int:
+        return len(self._dynamicDMs)
 
     def setDynamicDMs(
             self,
@@ -224,6 +227,9 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
 
     def rollers(self) -> objectdb.DatabaseList:
         return self._rollers
+
+    def rollerCount(self) -> int:
+        return len(self._rollers)
 
     def setRollers(
             self,

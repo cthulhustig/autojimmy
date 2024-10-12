@@ -150,8 +150,17 @@ class DieAnimationWidget(QtWidgets.QWidget):
 
         self._timer.start(30)  # Update every 30 milliseconds
 
+    def skipSpin(self) -> None:
+        if self._spinState != DieAnimationWidget._SpinState.Spinning:
+            return # Nothing to do
+
+        self._spinState = DieAnimationWidget._SpinState.FadingIn
+        self._angleX = 0
+        self._angleY = 0
+        self.update()  # Trigger repaint
+
     def cancelSpin(self) -> None:
-        self._angleX = 0 # TODO: Could these be stored in radians to save converting each time painting occurs
+        self._angleX = 0
         self._angleY = 0
         self._spinState = DieAnimationWidget._SpinState.Idle
         self._result = None

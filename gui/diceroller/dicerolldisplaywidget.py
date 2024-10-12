@@ -18,15 +18,15 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
         self._roller = None
         self._results = None
 
-        self._simpleResultsWidget = gui.DiceRollResultsWidget()
-        self._simpleResultsWidget.animationComplete.connect(self._animationComplete)
+        self._animatedResultsWidget = gui.DiceRollResultsWidget()
+        self._animatedResultsWidget.animationComplete.connect(self._animationComplete)
         self._detailedResultsWidget = gui.DiceRollResultsTable()
         self._probabilityGraph = gui.DiceRollerProbabilityGraph()
 
         self._displayModeTabView = gui.TabWidgetEx()
         self._displayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
-        self._displayModeTabView.addTab(self._simpleResultsWidget, 'Simple')
-        self._displayModeTabView.addTab(self._detailedResultsWidget, 'Detailed')
+        self._displayModeTabView.addTab(self._animatedResultsWidget, 'Results')
+        self._displayModeTabView.addTab(self._detailedResultsWidget, 'Breakdown')
         self._displayModeTabView.addTab(self._probabilityGraph, 'Probabilities')
 
         layout = QtWidgets.QVBoxLayout()
@@ -46,9 +46,12 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
             animate: bool = True) -> None:
         self._clearResults()
         self._results = results
-        self._simpleResultsWidget.setResults(results=results, animate=animate)
+        self._animatedResultsWidget.setResults(results=results, animate=animate)
 
-        if not animate:
+        if animate:
+            # If we're animating, may as well show it
+            self._displayModeTabView.setCurrentWidget(self._animatedResultsWidget)
+        else:
             self._detailedResultsWidget.setResults(results=results)
             self._probabilityGraph.setHighlightRoll(results.total() if results else None)
 
@@ -99,7 +102,7 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
 
     def _clearResults(self) -> None:
         self._results = None
-        self._simpleResultsWidget.setResults(results=None)
+        self._animatedResultsWidget.setResults(results=None)
         self._detailedResultsWidget.setResults(results=None)
         self._probabilityGraph.setHighlightRoll(roll=None)
 

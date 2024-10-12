@@ -13,47 +13,17 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: This is a possibly useful example query that looks up a list id
-# and returns a comma separated list of all the objects from the list
-# as the value for the column rather than the list id. I believe if
-# other columns required a lookup of an id then it would require a
-# separate LEFT JOIN for that one. I think this would also allow
-# different columns to reference different tables (i.e. if there was
-# a string on integer table). I think I'd still want to get the list
-# id (so objects could be constructed) but I think I could put the
-# list object id's into a new column and return both
-"""
-SELECT
-    dr.id,
-    dr.name,
-    dr.die_count,
-    dr.die_type,
-    dr.constant_dm,
-    dr.has_boon,
-    dr.has_bane,
-    dr.target_number,
-    GROUP_CONCAT(l.object, ',') AS dynamic_dms_list
-FROM
-    dice_rollers dr
-LEFT JOIN
-    lists l
-ON
-    dr.dynamic_dms = l.id
-WHERE
-    dr.id = 'db701681-82ef-4cf3-a77a-61aeafe0f836'
-GROUP BY
-    dr.id, dr.name, dr.die_count, dr.die_type, dr.constant_dm, dr.has_boon, dr.has_bane, dr.target_number;
-"""
-# TODO: Need to disable UI while roll animation is taking place
-# - It will stop users accidentally double clicking the roll button
-# - It will avoid any oddness with the user changing roller controls or
-# switching to a different roller while the animation is in progress
 # TODO: Ability to reorder modifiers
 # TODO: Need to be able to duplicate rollers (and maybe groups)
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
 # TODO: Automatically create a default roller if one doesn't exist (i.e. new db)
+# TODO: Management tree improvements
+# - Save/load previous state
+#   - What was selected
+#   - What was expanded
+# - When a new roller is added it should make sure the parent is expanded (otherwise you can't see where it is)
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -77,6 +47,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._roller = None
         self._results = None
+        self._rollInProgress = False
         self._objectItemMap: typing.Dict[str, QtWidgets.QTreeWidgetItem] = {}
 
         self._createRollerManagerControls()
@@ -98,6 +69,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
         self._syncToManager()
+        self._updateControlEnablement()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -147,57 +119,58 @@ class DiceRollerWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _createRollerManagerControls(self) -> None:
-        self._rollerTree = gui.TreeWidgetEx()
-        self._rollerTree.setColumnCount(1)
-        self._rollerTree.header().setStretchLastSection(True)
-        self._rollerTree.setHeaderHidden(True)
-        self._rollerTree.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
-        self._rollerTree.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
-        self._rollerTree.setAutoScroll(False)
-        self._rollerTree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self._managerTree = gui.TreeWidgetEx()
+        self._managerTree.setColumnCount(1)
+        self._managerTree.header().setStretchLastSection(True)
+        self._managerTree.setHeaderHidden(True)
+        self._managerTree.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
+        self._managerTree.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
+        self._managerTree.setAutoScroll(False)
+        self._managerTree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         itemDelegate = gui.StyledItemDelegateEx()
         itemDelegate.setHighlightCurrentItem(enabled=False)
-        self._rollerTree.setItemDelegate(itemDelegate)
-        self._rollerTree.itemSelectionChanged.connect(self._rollerSelectionChanged)
+        self._managerTree.setItemDelegate(itemDelegate)
+        self._managerTree.itemSelectionChanged.connect(
+            self._managementTreeSelectionChanged)
 
-        self._rollerToolbar = QtWidgets.QToolBar('Toolbar')
-        self._rollerToolbar.setIconSize(QtCore.QSize(32, 32))
-        self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
-        self._rollerToolbar.setSizePolicy(
+        self._managerToolbar = QtWidgets.QToolBar('Toolbar')
+        self._managerToolbar.setIconSize(QtCore.QSize(32, 32))
+        self._managerToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
+        self._managerToolbar.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
         self._newRollerAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
         self._newRollerAction.triggered.connect(self._newRollerClicked)
-        self._rollerTree.addAction(self._newRollerAction)
-        self._rollerToolbar.addAction(self._newRollerAction)
+        self._managerTree.addAction(self._newRollerAction)
+        self._managerToolbar.addAction(self._newRollerAction)
 
         self._newGroupAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewList), 'New Group', self)
         self._newGroupAction.triggered.connect(self._newGroupClicked)
-        self._rollerTree.addAction(self._newGroupAction)
-        self._rollerToolbar.addAction(self._newGroupAction)
+        self._managerTree.addAction(self._newGroupAction)
+        self._managerToolbar.addAction(self._newGroupAction)
 
         self._renameAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
         self._renameAction.triggered.connect(self._renameClicked)
-        self._rollerTree.addAction(self._renameAction)
-        self._rollerToolbar.addAction(self._renameAction)
+        self._managerTree.addAction(self._renameAction)
+        self._managerToolbar.addAction(self._renameAction)
 
         self._deleteAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
         self._deleteAction.triggered.connect(self._deleteClicked)
-        self._rollerTree.addAction(self._deleteAction)
-        self._rollerToolbar.addAction(self._deleteAction)
+        self._managerTree.addAction(self._deleteAction)
+        self._managerToolbar.addAction(self._deleteAction)
 
-        self._rollerTree.setContextMenuPolicy(
+        self._managerTree.setContextMenuPolicy(
             QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
         groupLayout = QtWidgets.QHBoxLayout()
         groupLayout.setContentsMargins(0, 0, 0, 0)
-        groupLayout.addWidget(self._rollerToolbar)
-        groupLayout.addWidget(self._rollerTree)
+        groupLayout.addWidget(self._managerToolbar)
+        groupLayout.addWidget(self._managerTree)
 
         self._managerGroupBox = QtWidgets.QGroupBox('Dice Rollers')
         self._managerGroupBox.setLayout(groupLayout)
@@ -223,7 +196,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _createRollResultsControls(self) -> None:
         self._resultsWidget = gui.DiceRollDisplayWidget()
-        self._resultsWidget.animationComplete.connect(self._resultsAnimationComplete)
+        self._resultsWidget.animationComplete.connect(self._virtualRollComplete)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._resultsWidget)
@@ -255,13 +228,13 @@ class DiceRollerWindow(gui.WindowWidget):
             return
 
         self._objectItemMap.clear()
-        with gui.SignalBlocker(self._rollerTree):
+        with gui.SignalBlocker(self._managerTree):
             for groupIndex, group in enumerate(groups):
                 assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
-                groupItem = self._rollerTree.topLevelItem(groupIndex)
+                groupItem = self._managerTree.topLevelItem(groupIndex)
                 if not groupItem:
                     groupItem = DiceRollerWindow._createGroupItem(group=group)
-                    self._rollerTree.addTopLevelItem(groupItem)
+                    self._managerTree.addTopLevelItem(groupItem)
                     self._objectItemMap[group.id()] = groupItem
                 for rollerIndex, roller in enumerate(group.rollers()):
                     rollerItem = groupItem.child(rollerIndex)
@@ -272,27 +245,27 @@ class DiceRollerWindow(gui.WindowWidget):
                         self._objectItemMap[roller.id()] = rollerItem
 
     def _rollDice(self) -> None:
-        roller = self._rollerConfigWidget.roller()
-        if not roller:
-            # TODO: Do something?
+        if not self._roller or self._rollInProgress:
             return
 
         modifiers = []
-        for modifier in roller.dynamicDMs():
+        for modifier in self._roller.dynamicDMs():
             assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
             if modifier.enabled():
                 modifiers.append((modifier.name(), modifier.value()))
 
         self._results = diceroller.rollDice(
-            dieCount=roller.dieCount(),
-            dieType=roller.dieType(),
-            constantDM=roller.constantDM(),
-            hasBoon=roller.hasBoon(),
-            hasBane=roller.hasBane(),
+            dieCount=self._roller.dieCount(),
+            dieType=self._roller.dieType(),
+            constantDM=self._roller.constantDM(),
+            hasBoon=self._roller.hasBoon(),
+            hasBane=self._roller.hasBane(),
             dynamicDMs=modifiers,
-            targetNumber=roller.targetNumber())
+            targetNumber=self._roller.targetNumber())
 
-        # TODO: Need to prevent user manipulating controls while roll animation is in progress
+        self._rollInProgress = True
+        self._updateControlEnablement()
+
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.setResults(self._results)
 
@@ -312,15 +285,26 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.setRoller(roller=roller)
 
+        with gui.SignalBlocker(self._historyWidget):
+            self._historyWidget.setRoller(roller=roller)
+
         self._roller = roller
         self._results = None
+        self._rollInProgress = False
+
+        self._updateControlEnablement()
+
+    def _updateControlEnablement(self) -> None:
+        self._managerGroupBox.setEnabled(not self._rollInProgress)
+        self._configGroupBox.setEnabled(self._roller != None and not self._rollInProgress)
+        self._historyGroupBox.setEnabled(not self._rollInProgress)
 
     def _newRollerClicked(self) -> None:
-        if self._rollerTree.topLevelItemCount() == 0:
+        if self._managerTree.topLevelItemCount() == 0:
             self._newGroupClicked()
             return
 
-        item = self._rollerTree.currentItem()
+        item = self._managerTree.currentItem()
         if not item:
             # TODO: Do something
             return
@@ -350,7 +334,7 @@ class DiceRollerWindow(gui.WindowWidget):
             roller=roller,
             groupItem=item)
         rollerItem.setSelected(True)
-        self._rollerTree.setCurrentItem(rollerItem)
+        self._managerTree.setCurrentItem(rollerItem)
         self._objectItemMap[roller.id()] = rollerItem
 
     def _newGroupClicked(self) -> None:
@@ -375,7 +359,7 @@ class DiceRollerWindow(gui.WindowWidget):
             return
 
         groupItem = DiceRollerWindow._createGroupItem(group=group)
-        self._rollerTree.addTopLevelItem(groupItem)
+        self._managerTree.addTopLevelItem(groupItem)
 
         rollerItem = DiceRollerWindow._createRollerItem(
             roller=roller,
@@ -385,13 +369,12 @@ class DiceRollerWindow(gui.WindowWidget):
         # added to the control
         groupItem.setExpanded(True)
         rollerItem.setSelected(True)
-        self._rollerTree.setCurrentItem(rollerItem)
+        self._managerTree.setCurrentItem(rollerItem)
         self._objectItemMap[group.id()] = groupItem
         self._objectItemMap[roller.id()] = rollerItem
 
-
     def _renameClicked(self) -> None:
-        item = self._rollerTree.currentItem()
+        item = self._managerTree.currentItem()
         if not item:
             # TODO: Do something?
             return
@@ -438,12 +421,27 @@ class DiceRollerWindow(gui.WindowWidget):
             self._setCurrentRoller(roller=object)
 
     def _deleteClicked(self) -> None:
-        item = self._rollerTree.currentItem()
+        item = self._managerTree.currentItem()
         if not item:
             # TODO: Do something?
             return
 
         object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+
+        confirmation = None
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            rollerCount = object.rollerCount()
+            if rollerCount > 0: # Only ask for confirmation if the group is not empty
+                confirmation = f'Are you sure you want to delete group {object.name()}? This will also delete the {rollerCount} dice rollers it contains.'
+        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            confirmation = f'Are you sure you want to delete dice roller {object.name()}?'
+        else:
+            return
+
+        if confirmation:
+            answer = gui.MessageBoxEx.question(text=confirmation)
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
 
         try:
             objectdb.ObjectDbManager.instance().deleteObject(
@@ -457,37 +455,41 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        currentRoller = self._rollerConfigWidget.roller()
         clearCurrent = False
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
-            itemIndex = self._rollerTree.indexOfTopLevelItem(item)
-            self._rollerTree.takeTopLevelItem(itemIndex)
+            itemIndex = self._managerTree.indexOfTopLevelItem(item)
+            self._managerTree.takeTopLevelItem(itemIndex)
 
             del self._objectItemMap[object.id()]
             for roller in object.rollers():
                 del self._objectItemMap[roller.id()]
 
-            if currentRoller:
-                clearCurrent = object.containsRoller(id=currentRoller.id())
+            if self._roller:
+                clearCurrent = object.containsRoller(id=self._roller.id())
         elif isinstance(object, diceroller.DiceRollerDatabaseObject):
             parent = item.parent()
             parent.removeChild(item)
 
+            group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+            group.removeRoller(object.id())
+
             del self._objectItemMap[object.id()]
 
-            if currentRoller:
-                clearCurrent = object.id() == currentRoller.id()
+            if self._roller:
+                clearCurrent = object.id() == self._roller.id()
 
         if clearCurrent:
             self._setCurrentRoller(roller=None)
             with gui.SignalBlocker(self._historyWidget):
                 self._historyWidget.purgeHistory(roller=object)
 
-    def _rollerSelectionChanged(self) -> None:
-        item = self._rollerTree.currentItem()
-        if not item or not item.parent(): # No parent means it's a group
-            return
-        roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+    def _managementTreeSelectionChanged(self) -> None:
+        item = self._managerTree.currentItem()
+        roller = None
+        if item and item.parent():
+            # It's a roller (rather than a group)
+            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         self._setCurrentRoller(roller=roller)
 
     def _rollerConfigChanged(self) -> None:
@@ -533,28 +535,31 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._roller = roller
-        self._results = results
-
-        with gui.SignalBlocker(self._rollerTree):
+        with gui.SignalBlocker(self._managerTree):
             item = self._objectItemMap[roller.id()]
             item.setData(0, QtCore.Qt.ItemDataRole.DisplayRole, roller.name())
             item.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
-            self._rollerTree.clearSelection()
+            self._managerTree.clearSelection()
             item.setSelected(True)
 
-        with gui.SignalBlocker(self._rollerConfigWidget):
-            self._rollerConfigWidget.setRoller(roller=roller)
+        self._setCurrentRoller(roller=roller)
 
         with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.setRoller(roller=roller)
             self._resultsWidget.setResults(
                 results=results,
                 animate=False)
 
-    def _resultsAnimationComplete(self) -> None:
+        self._results = results
+
+    def _virtualRollComplete(self) -> None:
+        if not self._rollInProgress:
+            return
+
+        self._rollInProgress = False
+        self._updateControlEnablement()
+
         with gui.SignalBlocker(self._historyWidget):
-            self._historyWidget.addResult(self._roller, self._results)
+            self._historyWidget.addResult(self._results)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
