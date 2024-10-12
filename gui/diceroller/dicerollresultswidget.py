@@ -182,11 +182,10 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         lastRowDelta = (xCount * yCount) - len(self._animations)
         lastRowIndentX = indentX
         if lastRowDelta > 0:
+            # If the last row is not a full row, what dice there are
+            # should be centred in horizontally
             lastRowIndentX += (lastRowDelta * size) // 2
 
-        # TODO: The last row might not be fully populated. Rather
-        # than having the dice that are on the last row they
-        # should be centred in the row
         for index, animation in enumerate(self._animations):
             x = index % xCount
             y = index // xCount
