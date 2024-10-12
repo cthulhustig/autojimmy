@@ -136,7 +136,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
 
     def dynamicDMs(self) -> objectdb.DatabaseList:
         return self._dynamicDMs
-    
+
     def dynamicDMCount(self) -> int:
         return len(self._dynamicDMs)
 
