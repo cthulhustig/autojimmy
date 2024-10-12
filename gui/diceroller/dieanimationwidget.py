@@ -1,4 +1,5 @@
 import gui
+import logging
 import math
 import random
 import time
@@ -42,12 +43,14 @@ class DieAnimationWidget(QtWidgets.QWidget):
     _UpdateIntervalMs = 30
     _MinSpins = 4
     _MaxSpins = 10
+    _90DegreesInRadians = math.radians(90)
+    _360DegreesInRadians = math.radians(360)
 
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
         self._result = None
         self._strike = False
-        self._angleX = 0 # TODO: Could these be stored in radians to save converting each time painting occurs
+        self._angleX = 0
         self._angleY = 0
         self._totalRotationX = 0
         self._totalRotationY = 0
@@ -138,10 +141,10 @@ class DieAnimationWidget(QtWidgets.QWidget):
         # Generate a random number of full rotations (1 to 4 rotations for example) and spin direction (-1 or 1)
         self._totalRotationX = random.randint(
             DieAnimationWidget._MinSpins,
-            DieAnimationWidget._MaxSpins) * 360  # Full rotations for the X-axis
+            DieAnimationWidget._MaxSpins) * DieAnimationWidget._360DegreesInRadians  # Full rotations for the X-axis
         self._totalRotationY = random.randint(
             DieAnimationWidget._MinSpins,
-            DieAnimationWidget._MaxSpins) * 360  # Full rotations for the Y-axis
+            DieAnimationWidget._MaxSpins) * DieAnimationWidget._360DegreesInRadians  # Full rotations for the Y-axis
         self._spinDirectionX = random.choice([-1, 1])  # Direction of spin (-1 for counterclockwise, 1 for clockwise)
         self._spinDirectionY = random.choice([-1, 1])  # Direction of spin
 
@@ -174,117 +177,119 @@ class DieAnimationWidget(QtWidgets.QWidget):
         return QtCore.QSize(100, 100)
 
     def paintEvent(self, event) -> None:
-        # TODO: Should I be calling painter.end
         painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        try:
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
-        # Cube rendering settings
-        width = self.width()
-        height = self.height()
+            # Cube rendering settings
+            width = self.width()
+            height = self.height()
 
-        fov = self._calculateFov(width, height)
+            fov = self._calculateFov(width, height)
 
-        # Rotate and project each vertex
-        projectedVertices: typing.List[typing.Tuple[
-            typing.Tuple[float, float, float],
-            typing.Tuple[int, int]]] = []
-        for vertex in DieAnimationWidget._Vertices:
-            rotatedVertex = self._rotatePoint(*vertex)
-            projected2d = self._project3dTo2d(*rotatedVertex, width, height, fov)
-            projectedVertices.append((rotatedVertex, projected2d))
+            # Rotate and project each vertex
+            projectedVertices: typing.List[typing.Tuple[
+                typing.Tuple[float, float, float],
+                typing.Tuple[int, int]]] = []
+            for vertex in DieAnimationWidget._Vertices:
+                rotatedVertex = self._rotatePoint(*vertex)
+                projected2d = self._project3dTo2d(*rotatedVertex, width, height, fov)
+                projectedVertices.append((rotatedVertex, projected2d))
 
-        # Draw each face if visible
-        frontFaceRect = None
-        for face in DieAnimationWidget._Faces:
-            p1_3d, p1_2d = projectedVertices[face[0]]
-            p2_3d, p2_2d = projectedVertices[face[1]]
-            p3_3d, p3_2d = projectedVertices[face[2]]
-            p4_3d, p4_2d = projectedVertices[face[3]]
+            # Draw each face if visible
+            frontFaceRect = None
+            for face in DieAnimationWidget._Faces:
+                p1_3d, p1_2d = projectedVertices[face[0]]
+                p2_3d, p2_2d = projectedVertices[face[1]]
+                p3_3d, p3_2d = projectedVertices[face[2]]
+                p4_3d, p4_2d = projectedVertices[face[3]]
 
-            # Calculate the normal of the face using the transformed 3D vertices
-            normal = self._faceNormal(p1_3d, p2_3d, p3_3d)
+                # Calculate the normal of the face using the transformed 3D vertices
+                normal = self._faceNormal(p1_3d, p2_3d, p3_3d)
 
-            # Check if the face is visible
-            if self._isFaceVisible(normal):
-                # Calculate the light intensity for flat shading
-                intensity = self._calculateLightIntensity(normal)
+                # Check if the face is visible
+                if self._isFaceVisible(normal):
+                    # Calculate the light intensity for flat shading
+                    intensity = self._calculateLightIntensity(normal)
 
-                # Apply the intensity to the base color
-                shadedColor = QtGui.QColor(
-                    min(255, int(self._dieColour.red() * intensity)),
-                    min(255, int(self._dieColour.green() * intensity)),
-                    min(255, int(self._dieColour.blue() * intensity))
-                )
+                    # Apply the intensity to the base color
+                    shadedColor = QtGui.QColor(
+                        min(255, int(self._dieColour.red() * intensity)),
+                        min(255, int(self._dieColour.green() * intensity)),
+                        min(255, int(self._dieColour.blue() * intensity))
+                    )
 
-                # Draw the face as a polygon
-                painter.setBrush(QtGui.QBrush(shadedColor))
-                polygon = QtGui.QPolygon([
-                    QtCore.QPoint(*p1_2d),
-                    QtCore.QPoint(*p2_2d),
-                    QtCore.QPoint(*p3_2d),
-                    QtCore.QPoint(*p4_2d)])
-                painter.drawPolygon(polygon)
+                    # Draw the face as a polygon
+                    painter.setBrush(QtGui.QBrush(shadedColor))
+                    polygon = QtGui.QPolygon([
+                        QtCore.QPoint(*p1_2d),
+                        QtCore.QPoint(*p2_2d),
+                        QtCore.QPoint(*p3_2d),
+                        QtCore.QPoint(*p4_2d)])
+                    painter.drawPolygon(polygon)
 
-                # Capture the front face bounding box for number display later
-                if face == DieAnimationWidget._Faces[0]:  # Front face
-                    xCoords = [p1_2d[0], p2_2d[0], p3_2d[0], p4_2d[0]]
-                    yCoords = [p1_2d[1], p2_2d[1], p3_2d[1], p4_2d[1]]
-                    minX, maxX = min(xCoords), max(xCoords)
-                    minY, maxY = min(yCoords), max(yCoords)
-                    frontFaceRect = QtCore.QRect(minX, minY, maxX - minX, maxY - minY)
+                    # Capture the front face bounding box for number display later
+                    if face == DieAnimationWidget._Faces[0]:  # Front face
+                        xCoords = [p1_2d[0], p2_2d[0], p3_2d[0], p4_2d[0]]
+                        yCoords = [p1_2d[1], p2_2d[1], p3_2d[1], p4_2d[1]]
+                        minX, maxX = min(xCoords), max(xCoords)
+                        minY, maxY = min(yCoords), max(yCoords)
+                        frontFaceRect = QtCore.QRect(minX, minY, maxX - minX, maxY - minY)
 
-        # After spinning, draw the number on the front face
-        if self._spinState != DieAnimationWidget._SpinState.Spinning and self._result is not None:
-            assert(frontFaceRect)
-            displayText = str(self._result)
+            # After spinning, draw the number on the front face
+            if self._spinState != DieAnimationWidget._SpinState.Spinning and self._result is not None:
+                assert(frontFaceRect)
+                displayText = str(self._result)
 
-            # Calculate font size based on the size of the front face
-            margin = 0.1  # 10% margin on each side
-            availableWidth = int(frontFaceRect.width() * (1 - 2 * margin))
-            availableHeight = int(frontFaceRect.height() * (1 - 2 * margin))
-            font = gui.sizeFontToFit(
-                orig=self.font(),
-                text=displayText,
-                rect=QtCore.QRect(0, 0, availableWidth, availableHeight))
-            if font:
-                # Set font and color
-                painter.setPen(QtGui.QPen(self._textColour, 1))
-                painter.setFont(font)
+                # Calculate font size based on the size of the front face
+                margin = 0.1  # 10% margin on each side
+                availableWidth = int(frontFaceRect.width() * (1 - 2 * margin))
+                availableHeight = int(frontFaceRect.height() * (1 - 2 * margin))
+                font = gui.sizeFontToFit(
+                    orig=self.font(),
+                    text=displayText,
+                    rect=QtCore.QRect(0, 0, availableWidth, availableHeight))
+                if font:
+                    # Set font and color
+                    painter.setPen(QtGui.QPen(self._textColour, 1))
+                    painter.setFont(font)
 
-                # Calculate the position to center the text in the front face
-                textRect = painter.fontMetrics().boundingRect(displayText)
-                ascent = painter.fontMetrics().ascent()
-                descent = painter.fontMetrics().descent()
+                    # Calculate the position to center the text in the front face
+                    textRect = painter.fontMetrics().boundingRect(displayText)
+                    ascent = painter.fontMetrics().ascent()
+                    descent = painter.fontMetrics().descent()
 
-                # Calculate the text opacity based on fade progress
-                painter.setOpacity(self._fadeInProgress)
+                    # Calculate the text opacity based on fade progress
+                    painter.setOpacity(self._fadeInProgress)
 
-                # Draw the number in the center of the front face
-                painter.drawText(
-                    frontFaceRect.center().x() - textRect.width() // 2,
-                    frontFaceRect.center().y() + (ascent - descent) // 2,
-                    displayText)
+                    # Draw the number in the center of the front face
+                    painter.drawText(
+                        frontFaceRect.center().x() - textRect.width() // 2,
+                        frontFaceRect.center().y() + (ascent - descent) // 2,
+                        displayText)
 
-                if self._strike:
-                    painter.setOpacity(self._fadeInProgress * 0.8)
-                    strikeExpand = int(frontFaceRect.width() * 0.1)
-                    stringWidth = int(frontFaceRect.width() * 0.15)
-                    strikeRect = QtCore.QRect(frontFaceRect)
-                    strikeRect.adjust(
-                        -strikeExpand,
-                        -strikeExpand,
-                        strikeExpand,
-                        strikeExpand)
-                    painter.setPen(QtGui.QPen(
-                        self._strikeColour,
-                        stringWidth,
-                        QtCore.Qt.PenStyle.SolidLine,
-                        QtCore.Qt.PenCapStyle.RoundCap))
-                    painter.drawLine(
-                        strikeRect.topRight(),
-                        strikeRect.bottomLeft())
+                    if self._strike:
+                        painter.setOpacity(self._fadeInProgress * 0.8)
+                        strikeExpand = int(frontFaceRect.width() * 0.1)
+                        stringWidth = int(frontFaceRect.width() * 0.15)
+                        strikeRect = QtCore.QRect(frontFaceRect)
+                        strikeRect.adjust(
+                            -strikeExpand,
+                            -strikeExpand,
+                            strikeExpand,
+                            strikeExpand)
+                        painter.setPen(QtGui.QPen(
+                            self._strikeColour,
+                            stringWidth,
+                            QtCore.Qt.PenStyle.SolidLine,
+                            QtCore.Qt.PenCapStyle.RoundCap))
+                        painter.drawLine(
+                            strikeRect.topRight(),
+                            strikeRect.bottomLeft())
 
-                painter.setOpacity(1.0)  # Reset the painter's opacity
+                    painter.setOpacity(1.0)  # Reset the painter's opacity
+        finally:
+            painter.end()
 
     """
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -340,7 +345,7 @@ class DieAnimationWidget(QtWidgets.QWidget):
                     self._fadeInProgress = 1.0
                     self._spinState = DieAnimationWidget._SpinState.Idle
         except Exception as ex:
-            # TODO: Should log this
+            logging.error('Failed to update die animation', exc_info=ex)
             self._angleX = self._angleY = 0
             self._spinState = DieAnimationWidget._SpinState.Idle
 
@@ -353,7 +358,8 @@ class DieAnimationWidget(QtWidgets.QWidget):
 
     def _snapToNearestFace(self, angle: float) -> float:
         """ Snap the angle to the nearest face (multiples of 90 degrees). """
-        return round(angle / 90) * 90
+        return round(angle / DieAnimationWidget._90DegreesInRadians) * \
+            DieAnimationWidget._90DegreesInRadians
 
     def _rotatePoint(
             self,
@@ -363,11 +369,11 @@ class DieAnimationWidget(QtWidgets.QWidget):
             ) -> typing.Tuple[float, float, float]:
         """ Apply 3D rotation around X, Y, and Z axes. """
         # Rotate around X-axis
-        cosX, sinX = math.cos(math.radians(self._angleX)), math.sin(math.radians(self._angleX))
+        cosX, sinX = math.cos(self._angleX), math.sin(self._angleX)
         y, z = y * cosX - z * sinX, y * sinX + z * cosX
 
         # Rotate around Y-axis
-        cosY, sinY = math.cos(math.radians(self._angleY)), math.sin(math.radians(self._angleY))
+        cosY, sinY = math.cos(self._angleY), math.sin(self._angleY)
         x, z = x * cosY + z * sinY, -x * sinY + z * cosY
 
         return x, y, z
