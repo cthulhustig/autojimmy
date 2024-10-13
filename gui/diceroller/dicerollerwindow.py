@@ -13,7 +13,10 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Need to be able to duplicate rollers (and maybe groups)
+# TODO: The more I think about it the more I think the history window restoring the
+# config and results is a bad idea
+# - It's confusing for the user if they don't realise how it works
+# - It's going to complicate storing history in the db
 # TODO: Ability to re-order roller tree
 # TODO: Ability to move rollers from one group to another
 # TODO: Need json import/export
@@ -138,7 +141,9 @@ class DiceRollerWindow(gui.WindowWidget):
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self._managerTree.setItemDelegate(itemDelegate)
         self._managerTree.itemSelectionChanged.connect(
-            self._managementTreeSelectionChanged)
+            self._managerTreeSelectionChanged)
+        self._managerTree.itemChanged.connect(
+            self._managerTreeItemChanged)
 
         self._managerToolbar = QtWidgets.QToolBar('Toolbar')
         self._managerToolbar.setIconSize(QtCore.QSize(32, 32))
@@ -262,6 +267,7 @@ class DiceRollerWindow(gui.WindowWidget):
             ) -> QtWidgets.QTreeWidgetItem:
         if groupItem == None:
             groupItem = QtWidgets.QTreeWidgetItem([group.name()])
+            groupItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
             self._managerTree.addTopLevelItem(groupItem)
             groupItem.setExpanded(True)
         else:
@@ -301,6 +307,7 @@ class DiceRollerWindow(gui.WindowWidget):
             ) -> QtWidgets.QTreeWidgetItem:
         if rollerItem == None:
             rollerItem = QtWidgets.QTreeWidgetItem([roller.name()])
+            rollerItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
             if groupItem:
                 groupItem.addChild(rollerItem)
         else:
@@ -584,13 +591,43 @@ class DiceRollerWindow(gui.WindowWidget):
         if clearCurrent:
             self._setCurrentRoller(roller=None)
 
-    def _managementTreeSelectionChanged(self) -> None:
+    def _managerTreeSelectionChanged(self) -> None:
         item = self._managerTree.currentItem()
         roller = None
         if item and item.parent():
             # It's a roller (rather than a group)
             roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         self._setCurrentRoller(roller=roller)
+
+    def _managerTreeItemChanged(
+            self,
+            item: QtWidgets.QTreeWidgetItem,
+            column: int
+            ) -> None:
+        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        typeText = None
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            typeText = 'group'
+        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            typeText = 'dice roller'
+        else:
+            return
+        newName = item.text(0)
+        if (not newName) or (newName == object.name()):
+            return # Nothing to do
+        object.setName(newName)
+
+        try:
+            objectdb.ObjectDbManager.instance().updateObject(
+                object=object)
+        except Exception as ex:
+            message = f'Failed to update {typeText} {object.id()} in objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
     def _rollerConfigChanged(self) -> None:
         try:
