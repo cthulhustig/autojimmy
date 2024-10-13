@@ -1,5 +1,4 @@
 import common
-import enum
 import objectdb
 import typing
 
@@ -42,6 +41,12 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
 
     def setEnabled(self, enabled: bool) -> None:
         self._enabled = enabled
+
+    def copyConfig(self) -> 'DiceModifierDatabaseObject':
+        return DiceModifierDatabaseObject(
+            name=self._name,
+            value=self._value,
+            enabled=self._enabled)
 
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
@@ -182,6 +187,21 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def setTargetNumber(self, targetNumber: typing.Optional[int]) -> None:
         self._targetNumber = targetNumber
 
+    def copyConfig(self) -> 'DiceRollerDatabaseObject':
+        dynamicDMs = objectdb.DatabaseList()
+        for modifier in self._dynamicDMs:
+            assert(isinstance(modifier, DiceModifierDatabaseObject))
+            dynamicDMs.add(modifier.copyConfig())
+        return DiceRollerDatabaseObject(
+            name=self._name,
+            dieCount=self._dieCount,
+            dieType=self._dieType,
+            constantDM=self._constantDM,
+            hasBoon=self._hasBoon,
+            hasBane=self._hasBane,
+            dynamicDMs=dynamicDMs,
+            targetNumber=self._targetNumber)
+
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
@@ -275,6 +295,15 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
 
     def containsRoller(self, id: str) -> bool:
         return self._rollers.contains(id=id)
+
+    def copyConfig(self) -> 'DiceRollerGroupDatabaseObject':
+        rollers = objectdb.DatabaseList()
+        for roller in self._rollers:
+            assert(isinstance(roller, DiceRollerDatabaseObject))
+            rollers.add(roller.copyConfig())
+        return DiceRollerGroupDatabaseObject(
+            name=self._name,
+            rollers=rollers)
 
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:

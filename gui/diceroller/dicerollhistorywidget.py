@@ -26,8 +26,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._roller = None
-
         self._historyTable = gui.ListTable()
         self._historyTable.setColumnHeaders(DiceRollHistoryWidget._ColumnType)
         self._historyTable.setSelectionMode(
@@ -53,20 +51,12 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
-    def setRoller(
-            self,
-            roller: typing.Optional[diceroller.DiceRollerDatabaseObject]
-            ) -> None:
-        self._roller = roller
-        self._historyTable.clearSelection()
-
     def addResult(
         self,
+        roller: diceroller.DiceRollerDatabaseObject,
         result: diceroller.DiceRollResult
         ) -> None:
-        if not self._roller:
-            raise RuntimeError('Unable to add result with no roller configured')
-        roller = copy.deepcopy(self._roller)
+        roller = copy.deepcopy(roller)
         result = copy.deepcopy(result)
         self._historyTable.insertRow(0)
         self._fillTableRow(0, roller, result)
