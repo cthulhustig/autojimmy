@@ -34,6 +34,10 @@ _WelcomeMessage = """
 # - Prompting for the name when the user clicks new would be one option
 # - Another option would be to allow editing of names directly in controls (see how you can edit file names in VS code from the Explorer Window)
 # - Whatever I do, the default group/roller created at startup can have a default name
+# TODO: Need a way to bundle multiple calls to objectdb into a single transaction
+# - This would be used anywhere multiple calls are used to perform an operation (e.g. delete)
+# - This only works because objectdb doesn't maintain any internal state (caches etc) so we don't need to worry about
+# rolling it back
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -41,6 +45,156 @@ _WelcomeMessage = """
 # would need stored in the db) will have the same id as the current version
 # of the object that is already in the db
 # - Complicated by the fact they use ScalarCalculations (history would be lost)
+
+
+class DiceRollerManagerTree(gui.TreeWidgetEx):
+    groupsMoved = QtCore.pyqtSignal()
+    rollersMoved = QtCore.pyqtSignal()
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self.setColumnCount(1)
+        self.header().setStretchLastSection(True)
+        self.setHeaderHidden(True)
+        self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
+        self.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
+        self.setAutoScroll(False)
+        self.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        itemDelegate = gui.StyledItemDelegateEx()
+        self.setItemDelegate(itemDelegate)
+
+    def currentRoller(self) -> typing.Optional[diceroller.DiceRollerDatabaseObject]:
+        currentItem = self.currentItem()
+        if currentItem and currentItem.parent() != None:
+            return currentItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        return None
+
+    def startDrag(self, supportedActions: typing.Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
+        dragItems = self._dragSelection()
+        if not dragItems:
+            return
+
+        hasRollerSelected = False
+        for item in dragItems:
+            if item.parent() != None:
+                hasRollerSelected = True
+                break
+
+        # If there is one ore more rollers selected then they must be dropped
+        # into a group so don't allow dropping into the root item. If no
+        # rollers are selected then it is just groups that are being dragged so
+        # allow dropping into the root item so they can be reordered
+        rootItem = self.invisibleRootItem()
+        if hasRollerSelected:
+            rootItem.setFlags(rootItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+        else:
+            rootItem.setFlags(rootItem.flags() | QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+
+        for groupIndex in range(self.topLevelItemCount()):
+            groupItem = self.topLevelItem(groupIndex)
+
+            # If there is one or more rollers selected then allow them to be
+            # dropped into another group (groups that are also selected will be
+            # flattened when the drop occurs). If there are no rollers selected
+            # then it is just groups being dragged so don't allow them to be
+            # dropped into another group
+            if hasRollerSelected:
+                groupItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+            else:
+                groupItem.setFlags(groupItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+
+            # Never allow dropping into a roller
+            for rollerIndex in range(groupItem.childCount()):
+                rollerItem = groupItem.child(rollerIndex)
+                rollerItem.setFlags(rollerItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+
+        return super().startDrag(supportedActions)
+
+    def dropEvent(self, event):
+        dropItem = self.itemAt(event.pos())
+        if not dropItem:
+            event.ignore()
+            return
+
+        dragItems = self._dragSelection()
+
+        hasRollerSelected = False
+        for item in dragItems:
+            if item.parent() != None:
+                hasRollerSelected = True
+                break
+
+        # If any rollers are selected then the rollers from any groups
+        # that are selected should also be dropped into the drop group
+        if hasRollerSelected:
+            groupItems = []
+            for item in dragItems:
+                if item.parent() == None:
+                    groupItems.append(item)
+
+            rollerItems = []
+            for item in dragItems:
+                if item.parent() != None:
+                    if item.parent() not in groupItems:
+                        rollerItems.append(item)
+                else:
+                    for index in range(item.childCount()):
+                        rollerItems.append(item.child(index))
+            dragItems = rollerItems
+
+        dropIndicatorPos = self.dropIndicatorPosition()
+
+        # Handle dropping the selected items based on the drop indicator
+        validPositions = (QtWidgets.QAbstractItemView.DropIndicatorPosition.AboveItem,
+                          QtWidgets.QAbstractItemView.DropIndicatorPosition.BelowItem,
+                          QtWidgets.QAbstractItemView.DropIndicatorPosition.OnItem)
+        if dropIndicatorPos in validPositions:
+            # Perform the drop for all selected items
+            for item in dragItems:
+                # Remove the item from its original parent
+                parent = item.parent()
+                if parent == None:
+                    parent = self.invisibleRootItem()
+                parent.removeChild(item)
+
+                # Reinsert item at the target location
+                if dropIndicatorPos == QtWidgets.QAbstractItemView.DropIndicatorPosition.OnItem:
+                    # Drop INTO the target item
+                    dropItem.addChild(item)
+                else:
+                    # Drop BETWEEN items (as a sibling)
+                    parent = dropItem.parent()
+                    if parent == None:
+                        parent = self.invisibleRootItem()
+                    index = parent.indexOfChild(dropItem)
+                    if dropIndicatorPos == QtWidgets.QAbstractItemView.DropIndicatorPosition.BelowItem:
+                        parent.insertChild(index + 1, item)
+                        dropItem = item
+                    else:
+                        parent.insertChild(index, item)
+
+            if hasRollerSelected:
+                self.rollersMoved.emit()
+            else:
+                self.groupsMoved.emit()
+
+        event.accept()
+
+    def _dragSelection(self) -> typing.Iterable[QtWidgets.QTreeWidgetItem]:
+        items = []
+        for groupIndex in range(self.topLevelItemCount()):
+            groupItem = self.topLevelItem(groupIndex)
+            if groupItem.isSelected():
+                items.append(groupItem)
+            for rollerIndex in range(groupItem.childCount()):
+                rollerItem = groupItem.child(rollerIndex)
+                if rollerItem.isSelected():
+                    items.append(rollerItem)
+        return items
+
 class DiceRollerWindow(gui.WindowWidget):
     # When rolling the dice the rolled value can be calculated instantly,
     # however, displaying it straight away can be problematic.  If the new
@@ -129,21 +283,15 @@ class DiceRollerWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _createRollerManagerControls(self) -> None:
-        self._managerTree = gui.TreeWidgetEx()
-        self._managerTree.setColumnCount(1)
-        self._managerTree.header().setStretchLastSection(True)
-        self._managerTree.setHeaderHidden(True)
-        self._managerTree.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
-        self._managerTree.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
-        self._managerTree.setAutoScroll(False)
-        self._managerTree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        itemDelegate = gui.StyledItemDelegateEx()
-        itemDelegate.setHighlightCurrentItem(enabled=False)
-        self._managerTree.setItemDelegate(itemDelegate)
-        self._managerTree.itemSelectionChanged.connect(
-            self._managerTreeSelectionChanged)
+        self._managerTree = DiceRollerManagerTree()
+        self._managerTree.currentItemChanged.connect(
+            self._managerTreeCurrentItemChanged)
         self._managerTree.itemChanged.connect(
             self._managerTreeItemChanged)
+        self._managerTree.groupsMoved.connect(
+            self._managerTreeGroupsMoved)
+        self._managerTree.rollersMoved.connect(
+            self._managerTreeRollersMoved)
 
         self._managerToolbar = QtWidgets.QToolBar('Toolbar')
         self._managerToolbar.setIconSize(QtCore.QSize(32, 32))
@@ -245,19 +393,19 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        for index, group in enumerate(groups):
-            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
-            groupItem = self._managerTree.topLevelItem(index)
-            self._syncManagerTreeGroup(
-                group=group,
-                groupItem=groupItem)
-
         while self._managerTree.topLevelItemCount() > len(groups):
             groupItem = self._managerTree.takeTopLevelItem(
                 self._managerTree.topLevelItemCount() - 1)
             group = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
             assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
             del self._objectItemMap[group.id()]
+
+        for index, group in enumerate(groups):
+            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+            groupItem = self._managerTree.topLevelItem(index)
+            self._syncManagerTreeGroup(
+                group=group,
+                groupItem=groupItem)
 
     def _syncManagerTreeGroup(
             self,
@@ -279,18 +427,19 @@ class DiceRollerWindow(gui.WindowWidget):
         self._objectItemMap[group.id()] = groupItem
 
         rollers = group.rollers()
+
+        while groupItem.childCount() > len(rollers):
+            rollerItem = groupItem.takeChild(groupItem.childCount() - 1)
+            roller = rollerItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+            del self._objectItemMap[roller.id()]
+
         for index, roller in enumerate(group.rollers()):
             rollerItem = groupItem.child(index)
             self._syncManagerTreeRoller(
                 roller=roller,
                 rollerItem=rollerItem,
                 groupItem=groupItem)
-
-        while groupItem.childCount() > len(rollers):
-            rollerItem = groupItem.takeChild(groupItem.childCount() - 1)
-            roller = rollerItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(roller, diceroller.DiceRollerGroupDatabaseObject))
-            del self._objectItemMap[roller.id()]
 
         if makeSelected:
             groupItem.setSelected(True)
@@ -323,6 +472,29 @@ class DiceRollerWindow(gui.WindowWidget):
             self._managerTree.setCurrentItem(rollerItem)
 
         return rollerItem
+
+    def _removeManagerTreeGroup(
+            self,
+            item: QtWidgets.QTreeWidgetItem
+            ) -> None:
+        self._managerTree.takeTopLevelItem(
+            self._managerTree.indexOfTopLevelItem(item))
+        group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+        del self._objectItemMap[group.id()]
+
+        for roller in group.rollers():
+            del self._objectItemMap[roller.id()]
+
+    def _removeManagerTreeRoller(
+            self,
+            item: QtWidgets.QTreeWidgetItem
+            ) -> None:
+        parent = item.parent()
+        parent.removeChild(item)
+        roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+        del self._objectItemMap[roller.id()]
 
     def _rollDice(self) -> None:
         if not self._roller or self._rollInProgress:
@@ -525,73 +697,89 @@ class DiceRollerWindow(gui.WindowWidget):
                 makeSelected=True)
 
     def _deleteClicked(self) -> None:
-        item = self._managerTree.currentItem()
-        if not item:
+        selection = self._managerTree.selectedItems()
+        if not selection:
             # TODO: Do something?
             return
 
-        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        groupItems: typing.List[QtWidgets.QTreeWidgetItem] = []
+        for item in selection:
+            if item.parent() == None:
+                groupItems.append(item)
+        rollerItems: typing.List[QtWidgets.QTreeWidgetItem] = []
+        for item in selection:
+            if item.parent() != None and item.parent() not in groupItems:
+                rollerItems.append(item)
 
         confirmation = None
-        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
-            rollerCount = object.rollerCount()
-            if rollerCount > 0: # Only ask for confirmation if the group is not empty
-                confirmation = f'Are you sure you want to delete group {object.name()}? This will also delete the {rollerCount} dice rollers it contains.'
-        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
-            confirmation = f'Are you sure you want to delete dice roller {object.name()}?'
+        if len(groupItems) == 0:
+            if len(rollerItems) == 1:
+                rollerItem = rollerItems[0]
+                roller = rollerItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+                confirmation = 'Are you sure you want to delete dice roller {name}?'.format(
+                    name=roller.name())
+            else:
+                confirmation = 'Are you sure you want to delete {count} dice rollers?'.format(
+                    count=len(rollerItems))
+        if len(rollerItems) == 0:
+            if len(groupItems) == 1:
+                groupItem = groupItems[0]
+                group = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                confirmation = 'Are you sure you want to delete group {name} and the dice rollers it contains?'.format(
+                    name=group.name())
+            else:
+                confirmation = 'Are you sure you want to delete {count} groups and the dice rollers they contain?'.format(
+                    count=len(groupItems))
         else:
-            return
+            confirmation = 'Are you sure you want to delete {count} items?'.format(
+                count=len(rollerItems) + len(groupItems))
 
         if confirmation:
             answer = gui.MessageBoxEx.question(text=confirmation)
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
-        try:
-            objectdb.ObjectDbManager.instance().deleteObject(
-                id=object.id())
-        except Exception as ex:
-            message = f'Failed to delete roller {object.id()} from objectdb'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        clearCurrent = False
-        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
-            itemIndex = self._managerTree.indexOfTopLevelItem(item)
-            self._managerTree.takeTopLevelItem(itemIndex)
-
-            del self._objectItemMap[object.id()]
-
-            with gui.SignalBlocker(self._historyWidget):
-                for roller in object.rollers():
-                    del self._objectItemMap[roller.id()]
-                    self._historyWidget.purgeHistory(roller=roller)
-
-            if self._roller:
-                clearCurrent = object.containsRoller(id=self._roller.id())
-        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
-            parent = item.parent()
-            parent.removeChild(item)
-
-            group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        for item in groupItems:
+            group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
             assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
-            group.removeRoller(object.id())
+            try:
+                objectdb.ObjectDbManager.instance().deleteObject(
+                    id=group.id())
+            except Exception as ex:
+                message = f'Failed to delete group {group.id()} from objectdb'
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
 
-            del self._objectItemMap[object.id()]
-            with gui.SignalBlocker(self._historyWidget):
-                self._historyWidget.purgeHistory(roller=object)
+        for item in rollerItems:
+            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+            try:
+                objectdb.ObjectDbManager.instance().deleteObject(
+                    id=roller.id())
+            except Exception as ex:
+                message = f'Failed to delete dice roller {roller.id()} from objectdb'
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
 
-            if self._roller:
-                clearCurrent = object.id() == self._roller.id()
+        for item in groupItems:
+            self._removeManagerTreeGroup(item=item)
+        for item in rollerItems:
+            self._removeManagerTreeRoller(item=item)
 
-        if clearCurrent:
-            self._setCurrentRoller(roller=None)
+        currentItem = self._managerTree.currentItem()
+        if currentItem:
+            currentItem.setSelected(True)
+        self._setCurrentRoller(roller=self._managerTree.currentRoller())
 
-    def _managerTreeSelectionChanged(self) -> None:
+    def _managerTreeCurrentItemChanged(self) -> None:
         item = self._managerTree.currentItem()
         roller = None
         if item and item.parent():
@@ -627,7 +815,87 @@ class DiceRollerWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+        item.setSelected(True)
+        self._managerTree.setCurrentItem(item)
+        if isinstance(object, diceroller.DiceRollerDatabaseObject):
+            self._setCurrentRoller(roller=object)
+
+    def _managerTreeGroupsMoved(self) -> None:
+        # TODO: Implement me
+        pass
+
+    def _managerTreeRollersMoved(self) -> None:
+        oldGroups: typing.Dict[str, diceroller.DiceRollerGroupDatabaseObject] = {}
+        for groupIndex in range(self._managerTree.topLevelItemCount()):
+            groupItem = self._managerTree.topLevelItem(groupIndex)
+            group = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+            oldGroups[group.id()] = copy.deepcopy(group)
+
+        updatedGroups: typing.Dict[
+            str, # Old group id
+            diceroller.DiceRollerGroupDatabaseObject # New group to replace old (has a different id)
+            ] = {}
+        for groupIndex in range(self._managerTree.topLevelItemCount()):
+            groupItem = self._managerTree.topLevelItem(groupIndex)
+            newGroup = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(newGroup, diceroller.DiceRollerGroupDatabaseObject))
+            newGroup = copy.deepcopy(newGroup)
+            newGroup.clearRollers()
+
+            for rollerIndex in range(groupItem.childCount()):
+                rollerItem = groupItem.child(rollerIndex)
+                roller = rollerItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+                roller = copy.deepcopy(roller)
+                roller.setParent(None)
+                newGroup.addRoller(roller)
+
+            oldGroup = oldGroups[newGroup.id()]
+            if newGroup != oldGroup:
+                updatedGroups[oldGroup.id()] = newGroup.copyConfig()
+
+        if not updatedGroups:
             return
+
+        with gui.SignalBlocker(self._managerTree):
+            for groupIndex in range(self._managerTree.topLevelItemCount()):
+                groupItem = self._managerTree.topLevelItem(groupIndex)
+                oldGroup = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                newGroup = updatedGroups.get(oldGroup.id())
+                if not newGroup:
+                    continue
+                self._syncManagerTreeGroup(
+                    group=newGroup,
+                    groupItem=groupItem)
+
+        for oldGroupId, newGroup in updatedGroups.items():
+            try:
+                objectdb.ObjectDbManager.instance().deleteObject(
+                    id=oldGroupId)
+            except Exception as ex:
+                message = f'Failed to delete group {oldGroupId} from objectdb'
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+
+            try:
+                objectdb.ObjectDbManager.instance().createObject(
+                    object=newGroup)
+            except Exception as ex:
+                message = f'Failed to create group {newGroup.id()} in objectdb'
+                logging.error(message, exc_info=ex)
+                gui.MessageBoxEx.critical(
+                    parent=self,
+                    text=message,
+                    exception=ex)
+
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _rollerConfigChanged(self) -> None:
         try:

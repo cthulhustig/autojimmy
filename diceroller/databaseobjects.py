@@ -287,8 +287,18 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
 
         self._rollers.add(roller)
 
+    def insertRoller(self, index: int, roller: DiceRollerDatabaseObject) -> None:
+        if not isinstance(roller, DiceRollerDatabaseObject):
+            raise ValueError(f'Roller is not a {DiceRollerDatabaseObject}')
+        if roller.parent() != None:
+            raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
+        self._rollers.insert(index=index, object=roller)
+
     def removeRoller(self, id: str) -> DiceRollerDatabaseObject:
         return self._rollers.remove(id=id)
+
+    def clearRollers(self) -> None:
+        self._rollers.clear()
 
     def findRoller(self, id: str) -> typing.Optional[DiceRollerDatabaseObject]:
         return self._rollers.find(id=id)
