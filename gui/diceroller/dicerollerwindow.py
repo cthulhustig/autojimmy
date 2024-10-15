@@ -496,6 +496,14 @@ class DiceRollerWindow(gui.WindowWidget):
         assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
         del self._objectItemMap[roller.id()]
 
+    def _syncToDatabase(self) -> None:
+        try:
+            self._syncManagerTree()
+            self._setCurrentRoller(
+                roller=self._managerTree.currentRoller())
+        except Exception as ex:
+            logging.error('Failed to sync UI to database', exc_info=ex)
+
     def _rollDice(self) -> None:
         if not self._roller or self._rollInProgress:
             return
@@ -565,16 +573,20 @@ class DiceRollerWindow(gui.WindowWidget):
         group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
 
+        roller = diceroller.DiceRollerDatabaseObject(
+            name='Dice Roller',
+            dieCount=1,
+            dieType=common.DieType.D6)
+
         try:
-            roller = diceroller.DiceRollerDatabaseObject(
-                name='New Roller',
-                dieCount=1,
-                dieType=common.DieType.D6)
             group.addRoller(roller)
             objectdb.ObjectDbManager.instance().updateObject(
                 object=group)
         except Exception as ex:
-            message = f'Failed to create roller {roller.id()} in objectdb'
+            if group.containsRoller(id=roller.id()):
+                group.removeRoller(roller)
+
+            message = 'Failed to add roller to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -582,25 +594,28 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncManagerTreeRoller(
-            roller=roller,
-            groupItem=item,
-            makeSelected=True)
+        with gui.SignalBlocker(self._managerTree):
+            self._syncManagerTreeRoller(
+                roller=roller,
+                groupItem=item,
+                makeSelected=True)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _newGroupClicked(self) -> None:
-        try:
-            roller = diceroller.DiceRollerDatabaseObject(
-                name='New Roller',
-                dieCount=1,
-                dieType=common.DieType.D6)
-            group = diceroller.DiceRollerGroupDatabaseObject(
-                name='Roller Group',
-                rollers=[roller])
+        roller = diceroller.DiceRollerDatabaseObject(
+            name='Dice Roller',
+            dieCount=1,
+            dieType=common.DieType.D6)
+        group = diceroller.DiceRollerGroupDatabaseObject(
+            name='Group',
+            rollers=[roller])
 
+        try:
             objectdb.ObjectDbManager.instance().createObject(
                 object=group)
         except Exception as ex:
-            message = f'Failed to create roller group {group.id()} in objectdb'
+            message = 'Failed to create roller group in objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -608,34 +623,35 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        groupItem = self._syncManagerTreeGroup(group=group)
-        rollerItem = groupItem.child(0)
-        if rollerItem:
-            rollerItem.setSelected(True)
-            self._managerTree.setCurrentItem(rollerItem)
+        with gui.SignalBlocker(self._managerTree):
+            groupItem = self._syncManagerTreeGroup(group=group)
+            rollerItem = groupItem.child(0)
+            if rollerItem:
+                rollerItem.setSelected(True)
+                self._managerTree.setCurrentItem(rollerItem)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _renameClicked(self) -> None:
         item = self._managerTree.currentItem()
         if not item:
-            # TODO: Do something?
             return
 
         object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
             title = 'Group Name'
-            objectType = 'group'
-            oldName = object.name()
+            typeString = 'group'
         elif isinstance(object, diceroller.DiceRollerDatabaseObject):
             title = 'Dice Roller Name'
-            objectType = 'dice roller'
-            oldName = object.name()
+            typeString = 'dice roller'
         else:
             return
 
+        oldName = object.name()
         newName, result = gui.InputDialogEx.getText(
             parent=self,
             title=title,
-            label=f'Enter a name for the {objectType}',
+            label=f'Enter a name for the {typeString}',
             text=oldName)
         if not result:
             return
@@ -646,7 +662,9 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=object)
         except Exception as ex:
-            message = f'Failed to rename {object.id()} in objectdb'
+            object.setName(oldName)
+
+            message = f'Failed to rename {typeString} in objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -654,52 +672,68 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        item.setText(0, newName)
-        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, object)
+        with gui.SignalBlocker(self._managerTree):
+            item.setText(0, newName)
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, object)
 
     def _copyClicked(self) -> None:
         item = self._managerTree.currentItem()
         if not item:
-            # TODO: Do something?
             return
 
         object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-
         group = None
         roller = None
-        try:
-            if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
-                group = object.copyConfig()
-                objectdb.ObjectDbManager.instance().createObject(
-                    object=group)
-            elif isinstance(object, diceroller.DiceRollerDatabaseObject):
-                roller = object.copyConfig()
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            group = object.copyConfig()
+            typeString = 'group'
+        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            roller = object.copyConfig()
 
-                groupItem = item.parent()
-                group = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
-                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
-                group.addRoller(roller)
+            groupItem = item.parent()
+            group = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+            group.addRoller(roller)
 
-                objectdb.ObjectDbManager.instance().updateObject(
-                    object=group)
-        except Exception as ex:
-            # TODO: Handle this
+            typeString = 'dice roller'
+        else:
             return
 
-        if roller:
-            self._syncManagerTreeRoller(
-                roller=roller,
-                groupItem=item.parent(),
-                makeSelected=True)
-        elif group:
-            self._syncManagerTreeGroup(
-                group=group,
-                makeSelected=True)
+        try:
+            if roller:
+                objectdb.ObjectDbManager.instance().updateObject(
+                    object=group)
+            else:
+                objectdb.ObjectDbManager.instance().createObject(
+                    object=group)
+        except Exception as ex:
+            if roller:
+                group.removeRoller(roller)
+
+            message = f'Failed to write copied {typeString} to objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        with gui.SignalBlocker(self._managerTree):
+            if roller:
+                self._syncManagerTreeRoller(
+                    roller=roller,
+                    groupItem=item.parent(),
+                    makeSelected=True)
+            elif group:
+                self._syncManagerTreeGroup(
+                    group=group,
+                    makeSelected=True)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _deleteClicked(self) -> None:
         selection = self._managerTree.selectedItems()
         if not selection:
-            # TODO: Do something?
             return
 
         groupItems: typing.List[QtWidgets.QTreeWidgetItem] = []
@@ -741,51 +775,45 @@ class DiceRollerWindow(gui.WindowWidget):
             if answer != QtWidgets.QMessageBox.StandardButton.Yes:
                 return
 
-        for item in groupItems:
-            group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
-            try:
-                objectdb.ObjectDbManager.instance().deleteObject(
-                    id=group.id())
-            except Exception as ex:
-                message = f'Failed to delete group {group.id()} from objectdb'
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
+        try:
+            with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
+                for item in groupItems:
+                    group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                    assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                    objectdb.ObjectDbManager.instance().deleteObject(
+                        id=group.id(),
+                        transaction=transaction)
 
-        for item in rollerItems:
-            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
-            try:
-                objectdb.ObjectDbManager.instance().deleteObject(
-                    id=roller.id())
-            except Exception as ex:
-                message = f'Failed to delete dice roller {roller.id()} from objectdb'
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
+                for item in rollerItems:
+                    roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                    assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+                    objectdb.ObjectDbManager.instance().deleteObject(
+                        id=roller.id(),
+                        transaction=transaction)
+        except Exception as ex:
+            message = f'Failed to delete objects from objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
-        for item in groupItems:
-            self._removeManagerTreeGroup(item=item)
-        for item in rollerItems:
-            self._removeManagerTreeRoller(item=item)
+        with gui.SignalBlocker(self._managerTree):
+            for item in groupItems:
+                self._removeManagerTreeGroup(item=item)
+            for item in rollerItems:
+                self._removeManagerTreeRoller(item=item)
 
-        currentItem = self._managerTree.currentItem()
-        if currentItem:
-            currentItem.setSelected(True)
-        self._setCurrentRoller(roller=self._managerTree.currentRoller())
+            currentItem = self._managerTree.currentItem()
+            if currentItem:
+                currentItem.setSelected(True)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _managerTreeCurrentItemChanged(self) -> None:
-        item = self._managerTree.currentItem()
-        roller = None
-        if item and item.parent():
-            # It's a roller (rather than a group)
-            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-        self._setCurrentRoller(roller=roller)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _managerTreeItemChanged(
             self,
@@ -793,33 +821,43 @@ class DiceRollerWindow(gui.WindowWidget):
             column: int
             ) -> None:
         object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-        typeText = None
+        typeString = None
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
-            typeText = 'group'
+            typeString = 'group'
         elif isinstance(object, diceroller.DiceRollerDatabaseObject):
-            typeText = 'dice roller'
+            typeString = 'dice roller'
         else:
             return
         newName = item.text(0)
-        if (not newName) or (newName == object.name()):
+        oldName = object.name()
+        if (not newName) or (newName == oldName):
             return # Nothing to do
+
         object.setName(newName)
 
         try:
             objectdb.ObjectDbManager.instance().updateObject(
                 object=object)
         except Exception as ex:
-            message = f'Failed to update {typeText} {object.id()} in objectdb'
+            # When reverting the item text a signal blocker is used to
+            # prevent it triggering another item updated signal
+            object.setName(oldName)
+            with gui.SignalBlocker(self._managerTree):
+                item.setText(oldName)
+
+            message = f'Failed to rename {typeString} in objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
+            return
 
-        item.setSelected(True)
-        self._managerTree.setCurrentItem(item)
-        if isinstance(object, diceroller.DiceRollerDatabaseObject):
-            self._setCurrentRoller(roller=object)
+        with gui.SignalBlocker(self._managerTree):
+            item.setSelected(True)
+            self._managerTree.setCurrentItem(item)
+        self._setCurrentRoller(
+            roller=self._managerTree.currentRoller())
 
     def _managerTreeGroupsMoved(self) -> None:
         # TODO: Implement me
@@ -859,41 +897,37 @@ class DiceRollerWindow(gui.WindowWidget):
         if not updatedGroups:
             return
 
+        try:
+            with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
+                for oldGroupId, newGroup in updatedGroups.items():
+                    objectdb.ObjectDbManager.instance().deleteObject(
+                        id=oldGroupId,
+                        transaction=transaction)
+                    objectdb.ObjectDbManager.instance().createObject(
+                        object=newGroup,
+                        transaction=transaction)
+        except Exception as ex:
+            self._syncToDatabase()
+
+            message = 'Failed to move rollers in objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
         with gui.SignalBlocker(self._managerTree):
             for groupIndex in range(self._managerTree.topLevelItemCount()):
                 groupItem = self._managerTree.topLevelItem(groupIndex)
                 oldGroup = groupItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
-                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                assert(isinstance(oldGroup, diceroller.DiceRollerGroupDatabaseObject))
                 newGroup = updatedGroups.get(oldGroup.id())
                 if not newGroup:
                     continue
                 self._syncManagerTreeGroup(
                     group=newGroup,
                     groupItem=groupItem)
-
-        for oldGroupId, newGroup in updatedGroups.items():
-            try:
-                objectdb.ObjectDbManager.instance().deleteObject(
-                    id=oldGroupId)
-            except Exception as ex:
-                message = f'Failed to delete group {oldGroupId} from objectdb'
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-
-            try:
-                objectdb.ObjectDbManager.instance().createObject(
-                    object=newGroup)
-            except Exception as ex:
-                message = f'Failed to create group {newGroup.id()} in objectdb'
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-
         self._setCurrentRoller(
             roller=self._managerTree.currentRoller())
 

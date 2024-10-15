@@ -250,6 +250,35 @@ class ObjectDef(object):
             names.append(paramDef.columnName())
         return names
 
+class Transaction(object):
+    def __init__(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        self._cursor = cursor
+
+    def cursor(self) -> sqlite3.Cursor:
+        return self._cursor
+
+    def begin(self) -> 'Transaction':
+        self._cursor.execute('BEGIN;')
+        return self
+
+    def end(self) -> None:
+        self._cursor.execute('END;')
+
+    def rollback(self) -> None:
+        self._cursor.execute('ROLLBACK;')
+
+    def __enter__(self) -> 'Transaction':
+        return self.begin()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.end()
+        else:
+            self.rollback()
+
 class ObjectDbManager(object):
     _DatabasePath = 'test.db'
     _PragmaScript = """
@@ -394,9 +423,13 @@ class ObjectDbManager(object):
             self._tableObjectDefMap.update(tableObjectDefs)
             self._classObjectDefMap.update(classObjectDefs)
 
+    def createTransaction(self) -> Transaction:
+        return Transaction(cursor=self._connection.cursor())
+
     def createObject(
             self,
             object: DatabaseObject,
+            transaction: typing.Optional[Transaction] = None
             ) -> str:
             if object.parent() != None:
                 # The parent should be created/updated rather than creating the child.
@@ -407,58 +440,87 @@ class ObjectDbManager(object):
 
             logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
             with ObjectDbManager._lock:
-                with self._connection:
+                if transaction != None:
                     self._internalCreateEntity(
                         entity=object,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
+                else:
+                    with self._connection:
+                        self._internalCreateEntity(
+                            entity=object,
+                            cursor=self._connection.cursor())
 
     def readObject(
             self,
-            id: str
+            id: str,
+            transaction: typing.Optional[Transaction] = None
             ) -> DatabaseObject:
         logging.debug(f'ObjectDbManager reading object {id}')
         with ObjectDbManager._lock:
-            # Use a transaction for the read to ensure a consistent
-            # view of the database across multiple selects
-            with self._connection:
+            if transaction != None:
                 return self._internalReadEntity(
                     id=id,
-                    cursor=self._connection.cursor())
+                    cursor=transaction.cursor())
+            else:
+                # Use a transaction for the read to ensure a consistent
+                # view of the database across multiple selects
+                with self._connection:
+                    return self._internalReadEntity(
+                        id=id,
+                        cursor=self._connection.cursor())
 
     def readObjects(
             self,
-            classType: typing.Type[DatabaseObject]
+            classType: typing.Type[DatabaseObject],
+            transaction: typing.Optional[Transaction] = None
             ) -> typing.Iterable[DatabaseObject]:
         logging.debug(f'ObjectDbManager reading object of type {classType}')
         with ObjectDbManager._lock:
-            # Use a transaction for the read to ensure a consistent
-            # view of the database across multiple selects
-            with self._connection:
+            if transaction != None:
                 return self._internalReadEntities(
                     classType=classType,
-                    cursor=self._connection.cursor())
+                    cursor=transaction.cursor())
+            else:
+                # Use a transaction for the read to ensure a consistent
+                # view of the database across multiple selects
+                with self._connection:
+                    return self._internalReadEntities(
+                        classType=classType,
+                        cursor=self._connection.cursor())
 
     def updateObject(
             self,
-            object: DatabaseObject
+            object: DatabaseObject,
+            transaction: typing.Optional[Transaction] = None
             ) -> None:
         logging.debug(f'ObjectDbManager updating object {object.id()} of type {type(object)}')
         with ObjectDbManager._lock:
-            with self._connection:
+            if transaction != None:
                 self._internalUpdateEntity(
                     entity=object,
-                    cursor=self._connection.cursor())
+                    cursor=transaction.cursor())
+            else:
+                with self._connection:
+                    self._internalUpdateEntity(
+                        entity=object,
+                        cursor=self._connection.cursor())
 
     def deleteObject(
             self,
-            id: str
+            id: str,
+            transaction: typing.Optional[Transaction] = None
             ) -> None:
         logging.debug(f'ObjectDbManager deleting object {id}')
         with ObjectDbManager._lock:
-            with self._connection:
+            if transaction != None:
                 self._internalDeleteEntity(
                     id=id,
-                    cursor=self._connection.cursor())
+                    cursor=transaction.cursor())
+            else:
+                with self._connection:
+                    self._internalDeleteEntity(
+                        id=id,
+                        cursor=self._connection.cursor())
 
     def _internalCreateEntity(
             self,
