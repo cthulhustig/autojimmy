@@ -498,7 +498,8 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _syncToDatabase(self) -> None:
         try:
-            self._syncManagerTree()
+            with gui.SignalBlocker(self._managerTree):
+                self._syncManagerTree()
             self._setCurrentRoller(
                 roller=self._managerTree.currentRoller())
         except Exception as ex:
@@ -577,14 +578,13 @@ class DiceRollerWindow(gui.WindowWidget):
             name='Dice Roller',
             dieCount=1,
             dieType=common.DieType.D6)
+        group.addRoller(roller=roller)
 
         try:
-            group.addRoller(roller)
             objectdb.ObjectDbManager.instance().updateObject(
                 object=group)
         except Exception as ex:
-            if group.containsRoller(id=roller.id()):
-                group.removeRoller(roller)
+            group.removeRoller(id=roller.id())
 
             message = 'Failed to add roller to objectdb'
             logging.error(message, exc_info=ex)
