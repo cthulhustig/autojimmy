@@ -17,27 +17,15 @@ _WelcomeMessage = """
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works
 # - It's going to complicate storing history in the db
-# TODO: Ability to re-order roller tree
-# TODO: Ability to move rollers from one group to another
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
-# TODO: Automatically create a default roller if one doesn't exist (i.e. new db)
-# TODO: Management tree improvements
-# - Save/load previous state
-#   - What was selected
-#   - What was expanded
-# - When a new roller is added it should make sure the parent is expanded (otherwise you can't see where it is)
 # TODO: Better names for new groups/rollers (they always have the same name)
 # TODO: The fact naming new groups/rollers is done as a separate operation to creating it is clunky as hell
 # - I expect the user would want to give it some kind of meaningful name the vast a majority of times
 # - Prompting for the name when the user clicks new would be one option
 # - Another option would be to allow editing of names directly in controls (see how you can edit file names in VS code from the Explorer Window)
 # - Whatever I do, the default group/roller created at startup can have a default name
-# TODO: Need a way to bundle multiple calls to objectdb into a single transaction
-# - This would be used anywhere multiple calls are used to perform an operation (e.g. delete)
-# - This only works because objectdb doesn't maintain any internal state (caches etc) so we don't need to worry about
-# rolling it back
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -84,6 +72,8 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
         self._syncToDatabase()
+        if self._managerTree.groupCount() == 0:
+            self._createNewGroup()
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -156,31 +146,31 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._newRollerAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
-        self._newRollerAction.triggered.connect(self._newRollerClicked)
+        self._newRollerAction.triggered.connect(self._createNewRoller)
         self._managerTree.addAction(self._newRollerAction)
         self._managerToolbar.addAction(self._newRollerAction)
 
         self._newGroupAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.NewList), 'New Group', self)
-        self._newGroupAction.triggered.connect(self._newGroupClicked)
+        self._newGroupAction.triggered.connect(self._createNewGroup)
         self._managerTree.addAction(self._newGroupAction)
         self._managerToolbar.addAction(self._newGroupAction)
 
         self._renameAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
-        self._renameAction.triggered.connect(self._renameClicked)
+        self._renameAction.triggered.connect(self._renameObject)
         self._managerTree.addAction(self._renameAction)
         self._managerToolbar.addAction(self._renameAction)
 
         self._copyAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.CopyFile), 'Copy...', self)
-        self._copyAction.triggered.connect(self._copyClicked)
+        self._copyAction.triggered.connect(self._copyObject)
         self._managerTree.addAction(self._copyAction)
         self._managerToolbar.addAction(self._copyAction)
 
         self._deleteAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
-        self._deleteAction.triggered.connect(self._deleteClicked)
+        self._deleteAction.triggered.connect(self._deleteObjects)
         self._managerTree.addAction(self._deleteAction)
         self._managerToolbar.addAction(self._deleteAction)
 
@@ -309,9 +299,9 @@ class DiceRollerWindow(gui.WindowWidget):
         self._configGroupBox.setEnabled(self._roller != None and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
 
-    def _newRollerClicked(self) -> None:
+    def _createNewRoller(self) -> None:
         if self._managerTree.groupCount() == 0:
-            self._newGroupClicked()
+            self._createNewGroup()
             return
 
         group = self._managerTree.currentGroup()
@@ -329,7 +319,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=group)
         except Exception as ex:
-            message = 'Failed to add roller to objectdb'
+            message = 'Failed to write updated group to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -339,7 +329,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._syncToDatabase(currentId=roller.id())
 
-    def _newGroupClicked(self) -> None:
+    def _createNewGroup(self) -> None:
         roller = diceroller.DiceRollerDatabaseObject(
             name='Dice Roller',
             dieCount=1,
@@ -352,7 +342,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().createObject(
                 object=group)
         except Exception as ex:
-            message = 'Failed to create roller group in objectdb'
+            message = 'Failed to add new group to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -362,7 +352,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._syncToDatabase(currentId=roller.id())
 
-    def _renameClicked(self) -> None:
+    def _renameObject(self) -> None:
         object = self._managerTree.currentObject()
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
             title = 'Group Name'
@@ -395,7 +385,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=object)
         except Exception as ex:
-            message = f'Failed to rename {typeString} in objectdb'
+            message = 'Failed to write updated object to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -405,20 +395,17 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._syncToDatabase()
 
-    def _copyClicked(self) -> None:
+    def _copyObject(self) -> None:
         object = self._managerTree.currentObject()
         group = None
         roller = None
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
             group = object.copyConfig()
-            typeString = 'group'
         elif isinstance(object, diceroller.DiceRollerDatabaseObject):
             group = self._managerTree.groupFromRoller(roller=object)
             group = copy.deepcopy(group)
             roller = object.copyConfig()
             group.addRoller(roller)
-
-            typeString = 'dice roller'
         else:
             return
 
@@ -430,7 +417,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 objectdb.ObjectDbManager.instance().createObject(
                     object=group)
         except Exception as ex:
-            message = f'Failed to write copied {typeString} to objectdb'
+            message = 'Failed to write copied object to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -441,7 +428,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._syncToDatabase(
             currentId=roller.id() if roller else group.id())
 
-    def _deleteClicked(self) -> None:
+    def _deleteObjects(self) -> None:
         selection = self._managerTree.selectedObjects()
         if not selection:
             return
@@ -494,7 +481,7 @@ class DiceRollerWindow(gui.WindowWidget):
                         id=group.id(),
                         transaction=transaction)
         except Exception as ex:
-            message = f'Failed to delete objects from objectdb'
+            message = 'Failed to delete objects from objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -553,7 +540,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=self._roller)
         except Exception as ex:
-            message = f'Failed to update roller {self._roller.id()} in objectdb'
+            message = 'Failed to write updated roller to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
@@ -583,7 +570,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().updateObject(
                 object=roller)
         except Exception as ex:
-            message = f'Failed to restore historic roller {roller.id()} to objectdb'
+            message = 'Failed to write historic roller to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
