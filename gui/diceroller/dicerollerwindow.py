@@ -427,13 +427,16 @@ class DiceRollerWindow(gui.WindowWidget):
             currentId=roller.id() if roller else group.id())
 
     def _deleteObjects(self) -> None:
-        selection = self._managerTree.selectedObjects()
-        if not selection:
+        objects = list(self._managerTree.selectedObjects())
+        currentObject = self._managerTree.currentObject()
+        if currentObject and currentObject not in objects:
+            objects.append(currentObject)
+        if not objects:
             return
 
         groups: typing.List[diceroller.DiceRollerGroupDatabaseObject] = []
         rollers: typing.List[diceroller.DiceRollerDatabaseObject] = []
-        for object in selection:
+        for object in objects:
             if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
                 groups.append(object)
             elif isinstance(object, diceroller.DiceRollerDatabaseObject):
