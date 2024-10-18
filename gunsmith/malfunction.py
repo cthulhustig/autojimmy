@@ -156,7 +156,7 @@ def calculateMalfunctionProbability(
     # Calculate the probability of a malfunction occurring due to heat
     malfunctionProbability = common.calculateRollProbability(
         dieCount=_MalfunctionDiceCount,
-        targetType=common.RollTargetType.GreaterOrEqualTo,
+        probability=common.ProbabilityType.GreaterOrEqualTo,
         targetValue=malfunctionTarget)
 
     # Calculate the probability of different types of malfunction occurring if a malfunction was
@@ -164,7 +164,7 @@ def calculateMalfunctionProbability(
     malfunctionTypeProbabilities: typing.Dict[MalfunctionType, common.ScalarCalculation] = {}
     malfunctionTypeProbabilities[MalfunctionType.MalfunctionType1] = common.calculateRollProbability(
         dieCount=_MalfunctionDiceCount,
-        targetType=common.RollTargetType.LessThanOrEqualTo,
+        probability=common.ProbabilityType.LessThanOrEqualTo,
         targetValue=0,
         modifier=malfunctionModifier)
     malfunctionTypeProbabilities[MalfunctionType.MalfunctionType2] = common.calculateRollRangeProbability(
@@ -184,7 +184,7 @@ def calculateMalfunctionProbability(
         modifier=malfunctionModifier)
     malfunctionTypeProbabilities[MalfunctionType.MalfunctionType5] = common.calculateRollProbability(
         dieCount=_MalfunctionDiceCount,
-        targetType=common.RollTargetType.GreaterOrEqualTo,
+        probability=common.ProbabilityType.GreaterOrEqualTo,
         targetValue=10,
         modifier=malfunctionModifier)
 

@@ -10,6 +10,8 @@ class Icon(enum.Enum):
     UnfrozenColumn = 'unfrozen_column.svg'
     CloseTab = 'close_tab.svg'
     NewFile = 'new_file.svg'
+    NewList = 'new_list.svg'
+    NewGrid = 'new_grid.svg'
     SaveFile = 'save_file.svg'
     DeleteFile = 'delete_file.svg'
     CopyFile = 'copy_file.svg'
@@ -25,6 +27,7 @@ class Icon(enum.Enum):
     Reload = 'reload.svg'
     Key = 'key.svg'
     Map = 'map.svg'
+    Plus = 'plus.svg'
 
 
 # Mapping to override colour used for Normal mode variant of the icon. If no override

@@ -111,7 +111,7 @@ class ListTable(gui.TableWidgetEx):
         self.installEventFilter(self)
         self.resizeRowsToContents()
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        itemDelegate = gui.TableViewItemDelegateEx()
+        itemDelegate = gui.StyledItemDelegateEx()
         itemDelegate.setHighlightCurrentItem(enabled=False)
         self.setItemDelegate(itemDelegate)
 
@@ -208,6 +208,11 @@ class ListTable(gui.TableWidgetEx):
 
     def isEmpty(self) -> bool:
         return self.rowCount() <= 0
+
+    def addRow(self) -> int:
+        index = self.rowCount()
+        self.insertRow(index)
+        return index
 
     def hasSelection(self) -> bool:
         return self.selectionModel().hasSelection()
@@ -778,6 +783,12 @@ class FrozenColumnListTable(ListTable):
                 else:
                     self.horizontalHeader().sortIndicatorChanged.disconnect(self._sortIndicatorChanged)
                     self._frozenColumnWidget.horizontalHeader().sortIndicatorChanged.disconnect(self._frozenSortIndicatorChanged)
+        return result
+
+    def addRow(self) -> int:
+        result = super().addRow()
+        self._frozenColumnWidget.addRow()
+        self._updateFrozenWidgetGeometry()
         return result
 
     def insertRow(self, row: int) -> None:
