@@ -40,7 +40,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             if column == DiceRollHistoryWidget._ColumnType.Timestamp:
                 self._historyTable.setColumnWidth(index, 200)
             elif column == DiceRollHistoryWidget._ColumnType.Roller or \
-                column == DiceRollHistoryWidget._ColumnType.Effect:
+                    column == DiceRollHistoryWidget._ColumnType.Effect:
                 self._historyTable.setColumnWidth(index, 300)
         self._historyTable.selectionModel().selectionChanged.connect(
             self._selectionChanged)
@@ -52,10 +52,10 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         self.setLayout(widgetLayout)
 
     def addResult(
-        self,
-        roller: diceroller.DiceRollerDatabaseObject,
-        result: diceroller.DiceRollResult
-        ) -> None:
+            self,
+            roller: diceroller.DiceRollerDatabaseObject,
+            result: diceroller.DiceRollResult
+            ) -> None:
         roller = copy.deepcopy(roller)
         result = copy.deepcopy(result)
         self._historyTable.insertRow(0)
@@ -63,9 +63,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         self._historyTable.selectRow(0)
 
     def purgeHistory(
-        self,
-        roller: diceroller.DiceRollerDatabaseObject
-        ) -> None:
+            self,
+            roller: diceroller.DiceRollerDatabaseObject
+            ) -> None:
         for row in range(self._historyTable.rowCount() - 1, -1, -1):
             item = self._historyTable.item(row, 0)
             if not item:

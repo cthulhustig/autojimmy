@@ -20,6 +20,7 @@ class DieType(enum.Enum):
     D3 = 'D3'
     DD = 'DD' # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
 
+
 _LowestD6Roll = common.ScalarCalculation(
     value=1,
     name='Lowest Roll With One D6')

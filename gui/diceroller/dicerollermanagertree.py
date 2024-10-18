@@ -87,7 +87,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             return
 
         if isinstance(object, diceroller.DiceRollerGroupDatabaseObject) or \
-            isinstance(object, diceroller.DiceRollerDatabaseObject):
+                isinstance(object, diceroller.DiceRollerDatabaseObject):
             object = object.id()
         item = self._objectItemMap.get(object)
         if not item:
@@ -96,8 +96,8 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             self.setCurrentItem(item)
 
     def selectedObjects(self) -> typing.Iterable[typing.Union[
-                diceroller.DiceRollerGroupDatabaseObject,
-                diceroller.DiceRollerDatabaseObject]]:
+            diceroller.DiceRollerGroupDatabaseObject,
+            diceroller.DiceRollerDatabaseObject]]:
         objects = []
         for item in self.selectedItems():
             objects.append(item.data(0, QtCore.Qt.ItemDataRole.UserRole))
@@ -344,7 +344,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             return
         object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if not isinstance(object, diceroller.DiceRollerGroupDatabaseObject) and \
-            not isinstance(object, diceroller.DiceRollerDatabaseObject):
+                not isinstance(object, diceroller.DiceRollerDatabaseObject):
             return
         newName = item.text(0)
         oldName = object.name()

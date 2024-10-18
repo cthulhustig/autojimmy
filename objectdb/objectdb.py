@@ -337,8 +337,8 @@ class ObjectDbManager(object):
                         FOREIGN KEY(object) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
                     );
                     """.format(
-                        table=ObjectDbManager._ListsTableName,
-                        entitiesTable=ObjectDbManager._EntitiesTableName)
+                    table=ObjectDbManager._ListsTableName,
+                    entitiesTable=ObjectDbManager._EntitiesTableName)
                 logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._ListsTableName}\'')
                 cursor.execute(sql)
 
@@ -396,24 +396,24 @@ class ObjectDbManager(object):
             object: DatabaseObject,
             transaction: typing.Optional[Transaction] = None
             ) -> str:
-            if object.parent() != None:
-                # The parent should be created/updated rather than creating the child.
-                # The prevents the database become corrupt because there is a parent
-                # set for the object but the parent doesn't refer to it (or possibly
-                # doesn't exit at all)
-                raise ValueError('Object to be created can\'t have a parent')
+        if object.parent() != None:
+            # The parent should be created/updated rather than creating the child.
+            # The prevents the database become corrupt because there is a parent
+            # set for the object but the parent doesn't refer to it (or possibly
+            # doesn't exit at all)
+            raise ValueError('Object to be created can\'t have a parent')
 
-            logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
-            with ObjectDbManager._lock:
-                if transaction != None:
+        logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
+        with ObjectDbManager._lock:
+            if transaction != None:
+                self._internalCreateEntity(
+                    entity=object,
+                    cursor=transaction.cursor())
+            else:
+                with self._connection:
                     self._internalCreateEntity(
                         entity=object,
-                        cursor=transaction.cursor())
-                else:
-                    with self._connection:
-                        self._internalCreateEntity(
-                            entity=object,
-                            cursor=self._connection.cursor())
+                        cursor=self._connection.cursor())
 
     def readObject(
             self,
@@ -610,7 +610,7 @@ class ObjectDbManager(object):
                     WHERE id = :id
                     LIMIT 1;
                     """.format(
-                        table=ObjectDbManager._EntitiesTableName)
+                    table=ObjectDbManager._EntitiesTableName)
                 cursor.execute(sql, {'id': id})
                 row = cursor.fetchone()
                 if not row:
@@ -623,8 +623,8 @@ class ObjectDbManager(object):
                 JOIN {entitiesTable} ON {listsTable}.object = {entitiesTable}.id
                 WHERE {listsTable}.id = :id;
                 """.format(
-                    listsTable=ObjectDbManager._ListsTableName,
-                    entitiesTable=ObjectDbManager._EntitiesTableName)
+                listsTable=ObjectDbManager._ListsTableName,
+                entitiesTable=ObjectDbManager._EntitiesTableName)
             cursor.execute(sql, {'id': id})
             objects = []
             for row in cursor.fetchall():
@@ -657,9 +657,9 @@ class ObjectDbManager(object):
                 WHERE {dataTable}.id = :id
                 LIMIT 1;
                 """.format(
-                    columns=','.join(columns),
-                    dataTable=table,
-                    entitiesTable=ObjectDbManager._EntitiesTableName)
+                columns=','.join(columns),
+                dataTable=table,
+                entitiesTable=ObjectDbManager._EntitiesTableName)
             cursor.execute(sql, {'id': id})
             row = cursor.fetchone()
             if not row:
@@ -734,9 +734,9 @@ class ObjectDbManager(object):
             FROM {dataTable}
             JOIN {entitiesTable} ON {dataTable}.id = {entitiesTable}.id;
             """.format(
-                columns=','.join(columns),
-                dataTable=objectDef.tableName(),
-                entitiesTable=ObjectDbManager._EntitiesTableName)
+            columns=','.join(columns),
+            dataTable=objectDef.tableName(),
+            entitiesTable=ObjectDbManager._EntitiesTableName)
         cursor.execute(sql)
         objects = []
         for row in cursor.fetchall():
@@ -833,9 +833,9 @@ class ObjectDbManager(object):
                     WHERE id = :id
                     LIMIT 1;
                     """.format(
-                        columns=','.join(columns),
-                        dataTable=objectDef.tableName(),
-                        entitiesTable=ObjectDbManager._EntitiesTableName)
+                    columns=','.join(columns),
+                    dataTable=objectDef.tableName(),
+                    entitiesTable=ObjectDbManager._EntitiesTableName)
                 cursor.execute(sql, {'id': entity.id()})
                 exitingValues = cursor.fetchone()
 
@@ -903,10 +903,10 @@ class ObjectDbManager(object):
                 VALUES (:id, {placeholders})
                 ON CONFLICT(id) DO UPDATE SET {conflict};
                 """.format(
-                    table=objectDef.tableName(),
-                    columns=', '.join(columns),
-                    placeholders=', '.join([f':{col}' for col in columns]),
-                    conflict=', '.join([f'{col} = excluded.{col}' for col in columns]))
+                table=objectDef.tableName(),
+                columns=', '.join(columns),
+                placeholders=', '.join([f':{col}' for col in columns]),
+                conflict=', '.join([f'{col} = excluded.{col}' for col in columns]))
             cursor.execute(sql, values)
         elif isinstance(entity, DatabaseList):
             # Update the entities table for the list
@@ -1022,8 +1022,8 @@ class ObjectDbManager(object):
                     WHERE id = :id
                     LIMIT 1;
                     """.format(
-                        columns=','.join(columns),
-                        table=parentTable)
+                    columns=','.join(columns),
+                    table=parentTable)
                 cursor.execute(fetchDataSql, {'id': parentId})
                 row = cursor.fetchone()
                 if not row:
@@ -1055,8 +1055,8 @@ class ObjectDbManager(object):
                 SET {column} = NULL
                 WHERE id = :id;
                 """.format(
-                    table=parentTable,
-                    column=columnToNull)
+                table=parentTable,
+                column=columnToNull)
             cursor.execute(updateColumnSql, {'id': parentId})
 
         # Delete the object. This deletes the entity table entry and assumes it

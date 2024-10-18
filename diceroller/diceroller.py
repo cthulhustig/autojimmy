@@ -77,7 +77,7 @@ class DiceRollResult(object):
     def ignored(self) -> typing.Optional[common.ScalarCalculation]:
         return self._ignored
 
-    def modifiersTotal(self)-> common.ScalarCalculation:
+    def modifiersTotal(self) -> common.ScalarCalculation:
         modifiers = [modifier for modifier in self._modifiers.keys()]
         return common.Calculator.sum(values=modifiers)
 

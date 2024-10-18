@@ -75,8 +75,8 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             # ': ' to the start of the value.
             labelsText = 'Rolled'
             valuesText = common.formatNumber(
-                    number=self._results.rolledTotal().value(),
-                    prefix=': ')
+                number=self._results.rolledTotal().value(),
+                prefix=': ')
 
             if self._results.modifierCount() > 0:
                 labelsText += '\nModifiers'

@@ -206,32 +206,32 @@ def sizeFontToFit(
         rect: QtCore.QRect,
         align: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignCenter
         ) -> typing.Optional[QtGui.QFont]:
-        # Remove any non-alignment flags
-        align &= int(QtCore.Qt.AlignmentFlag.AlignHorizontal_Mask | QtCore.Qt.AlignmentFlag.AlignVertical_Mask)
+    # Remove any non-alignment flags
+    align &= int(QtCore.Qt.AlignmentFlag.AlignHorizontal_Mask | QtCore.Qt.AlignmentFlag.AlignVertical_Mask)
 
-        font = QtGui.QFont(orig)
-        low = 1
-        high = rect.height()
-        best = None
+    font = QtGui.QFont(orig)
+    low = 1
+    high = rect.height()
+    best = None
 
-        while low <= high:
-            mid = low + ((high - low) // 2)
-            font.setPixelSize(mid)
-            fontMetrics = QtGui.QFontMetrics(font)
-            contentRect = fontMetrics.boundingRect(rect, align, text)
-            contentRect.moveTo(0, 0)
+    while low <= high:
+        mid = low + ((high - low) // 2)
+        font.setPixelSize(mid)
+        fontMetrics = QtGui.QFontMetrics(font)
+        contentRect = fontMetrics.boundingRect(rect, align, text)
+        contentRect.moveTo(0, 0)
 
-            contained = rect.contains(contentRect)
-            if (best == None or mid > best) and contained:
-                best = mid
+        contained = rect.contains(contentRect)
+        if (best == None or mid > best) and contained:
+            best = mid
 
-            if contained:
-                low = mid + 1
-            else:
-                high = mid - 1
+        if contained:
+            low = mid + 1
+        else:
+            high = mid - 1
 
-        if best == None:
-            return None
+    if best == None:
+        return None
 
-        font.setPixelSize(best)
-        return font
+    font.setPixelSize(best)
+    return font

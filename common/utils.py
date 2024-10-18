@@ -8,7 +8,7 @@ import platform
 import re
 import typing
 
-def hasMethod(obj: typing.Any, method: str, includeSubclasses = True) ->  bool:
+def hasMethod(obj: typing.Any, method: str, includeSubclasses=True) -> bool:
     classType = obj if isinstance(obj, type) else type(obj)
     value = classType.__dict__.get(method)
     if includeSubclasses:

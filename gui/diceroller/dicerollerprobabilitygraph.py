@@ -194,4 +194,3 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         else:
             self.setToolTip(None)
             QtWidgets.QToolTip.hideText()
-

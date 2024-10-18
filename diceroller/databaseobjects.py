@@ -20,7 +20,7 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
         if isinstance(other, DiceModifierDatabaseObject):
             return super().__eq__(other) and \
                 self._name == other._name and \
-                self._value ==  other._value and \
+                self._value == other._value and \
                 self._enabled == other._enabled
         return False
 
@@ -94,7 +94,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
         if isinstance(other, DiceRollerDatabaseObject):
             return super().__eq__(other) and \
                 self._name == other._name and \
-                self._dieCount ==  other._dieCount and \
+                self._dieCount == other._dieCount and \
                 self._dieType == other._dieType and \
                 self._constantDM == other._constantDM and \
                 self._hasBoon == other._hasBoon and \
@@ -241,7 +241,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
         if isinstance(other, DiceRollerGroupDatabaseObject):
             return super().__eq__(other) and \
                 self._name == other._name and \
-                self._rollers ==  other._rollers
+                self._rollers == other._rollers
         return False
 
     def name(self) -> str:
