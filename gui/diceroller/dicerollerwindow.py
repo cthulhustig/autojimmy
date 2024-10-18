@@ -17,6 +17,18 @@ _WelcomeMessage = """
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works
 # - It's going to complicate storing history in the db
+# TODO: Store historic results in the objectdb?
+# - Would need some kind of max number (fifo) to avoid db bloat
+# - Complicated by the fact they have they hold an instance of a roller but
+# with the config from when the roll was made. It means those objects (which
+# would need stored in the db) will have the same id as the current version
+# of the object that is already in the db
+# - Complicated by the fact they use ScalarCalculations (history would be lost)
+# TODO: The last rolled results for each roller should be stored so the user
+# can roll one roller, switch to another roller, then switch back to the
+# first and still see the results for that previous roll
+# - This should probably be done after I decide what I'm doing relating to
+# the history widget
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
@@ -26,13 +38,7 @@ _WelcomeMessage = """
 # - Prompting for the name when the user clicks new would be one option
 # - Another option would be to allow editing of names directly in controls (see how you can edit file names in VS code from the Explorer Window)
 # - Whatever I do, the default group/roller created at startup can have a default name
-# TODO: Store historic results in the objectdb?
-# - Would need some kind of max number (fifo) to avoid db bloat
-# - Complicated by the fact they have they hold an instance of a roller but
-# with the config from when the roll was made. It means those objects (which
-# would need stored in the db) will have the same id as the current version
-# of the object that is already in the db
-# - Complicated by the fact they use ScalarCalculations (history would be lost)
+
 
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
