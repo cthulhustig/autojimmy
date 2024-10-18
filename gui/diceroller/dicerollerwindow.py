@@ -35,14 +35,6 @@ _WelcomeMessage = """
 # - Complicated by the fact they use ScalarCalculations (history would be lost)
 
 class DiceRollerWindow(gui.WindowWidget):
-    # When rolling the dice the rolled value can be calculated instantly,
-    # however, displaying it straight away can be problematic.  If the new
-    # result is the same as the previous result as, to the user, it might
-    # not be obvious that the click was registered and a new roll occurred.
-    # To try and avoid this confusion, the various results windows should
-    # be cleared for a short period of time before showing the new results.
-    _ResultsDelay = 700
-
     def __init__(self) -> None:
         super().__init__(
             title='Dice Roller',
