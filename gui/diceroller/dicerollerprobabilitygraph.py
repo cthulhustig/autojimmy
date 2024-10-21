@@ -180,10 +180,14 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             values, probabilities = self._bars.getData()
             graphType = self._typeComboBox.currentEnum()
             assert(isinstance(graphType, common.ProbabilityType))
+            # NOTE: A high decimal place count is used to avoid cases where
+            # rounding can make the tool tip look wrong. For example, with just
+            # 2-3 decimal places it would say there was a 100% probability of
+            # rolling >= 8 with 7 D20 which just seems wrong
             toolTip = '{probability}% chance of rolling {type} {value}'.format(
                 probability=common.formatNumber(
                     number=probabilities[matched],
-                    decimalPlaces=2),
+                    decimalPlaces=10),
                 type=graphType.value.lower(),
                 value=values[matched])
 

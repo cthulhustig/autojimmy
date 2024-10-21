@@ -19,33 +19,17 @@ class DieType(enum.Enum):
     D6 = 'D'
     D3 = 'D3'
     DD = 'DD' # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
+    D20 = 'D20'
 
+_DieSidesMap = {
+    DieType.D6: 6,
+    DieType.D3: 3,
+    DieType.DD: 6, # Result is multiplied by 10
+    DieType.D20: 20
+}
 
-_LowestD6Roll = common.ScalarCalculation(
-    value=1,
-    name='Lowest Roll With One D6')
-_HighestD6Roll = common.ScalarCalculation(
-    value=6,
-    name='Highest Roll With One D6')
-_AverageD6Roll = common.Calculator.average(
-    lhs=_LowestD6Roll,
-    rhs=_HighestD6Roll,
-    name='Average Roll With One D6')
-
-_LowestD3Roll = common.ScalarCalculation(
-    value=1,
-    name='Lowest Roll With One D3')
-_HighestD3Roll = common.ScalarCalculation(
-    value=3,
-    name='Highest Roll With One D3')
-_AverageD3Roll = common.Calculator.average(
-    lhs=_LowestD3Roll,
-    rhs=_HighestD3Roll,
-    name='Average Roll With One D3')
-
-_DDRollMultiplier = common.ScalarCalculation(
-    value=10,
-    name='DD Roll Multiplier')
+def dieSides(dieType: DieType) -> int:
+    return _DieSidesMap[dieType]
 
 def calculateValueRangeForDice(
         dieCount: typing.Union[int, common.ScalarCalculation],
@@ -58,25 +42,28 @@ def calculateValueRangeForDice(
             value=dieCount,
             name='Die Count')
 
-    if dieType == DieType.D3:
-        lowestRoll = _LowestD3Roll
-        highestRoll = _HighestD3Roll
-        averageRoll = _AverageD3Roll
-    else:
-        lowestRoll = _LowestD6Roll
-        highestRoll = _HighestD6Roll
-        averageRoll = _AverageD6Roll
+    lowestRoll = common.ScalarCalculation(
+        value=1,
+        name=f'Lowest {dieType.value} Roll')
+    highestRoll = common.ScalarCalculation(
+        value=dieSides(dieType=dieType),
+        name=f'Highest {dieType.value} Roll')
+    averageRoll = common.Calculator.average(
+        lhs=lowestRoll,
+        rhs=highestRoll,
+        name=f'Average {dieType.value} Roll')
 
     if dieType == DieType.DD:
+        multiplier = common.ScalarCalculation(value=10)
         lowestRoll = common.Calculator.multiply(
             lhs=lowestRoll,
-            rhs=_DDRollMultiplier)
+            rhs=multiplier)
         highestRoll = common.Calculator.multiply(
             lhs=highestRoll,
-            rhs=_DDRollMultiplier)
+            rhs=multiplier)
         averageRoll = common.Calculator.multiply(
             lhs=averageRoll,
-            rhs=_DDRollMultiplier)
+            rhs=multiplier)
 
     if dieCount.value() > 1:
         lowestRoll = common.Calculator.multiply(
@@ -112,6 +99,9 @@ def _calculateBinomial(n: int, k: int) -> int:
     return math.factorial(n) // (math.factorial(k) * math.factorial(n - k))
 
 # https://stackoverflow.com/questions/50690348/calculate-probability-of-a-fair-dice-roll-in-non-exponential-time
+# NOTE: Having this function modifier seems to prevent debugging into this function
+# I could see it only happening once (as the result in the cached) but I was never
+# seeing it hit
 @functools.lru_cache(maxsize=None)
 def _calculateRollProbabilities(
         dieCount: int,
@@ -125,22 +115,22 @@ def _calculateRollProbabilities(
     elif dieSides == 0:
         pass
     else:
-        for count_showing_max in range(dieCount + 1):  # 0..count
+        for countShowingMax in range(dieCount + 1):  # 0..count
             subResults = _calculateRollProbabilities(
-                dieCount=dieCount - count_showing_max,
+                dieCount=dieCount - countShowingMax,
                 dieSides=dieSides - 1,
-                ignoreHighest=max(ignoreHighest - count_showing_max, 0),
+                ignoreHighest=max(ignoreHighest - countShowingMax, 0),
                 ignoreLowest=ignoreLowest)
-            count_showing_max_not_dropped = max(
-                min(count_showing_max - ignoreHighest,
+            countShowingMaxNotDropped = max(
+                min(countShowingMax - ignoreHighest,
                     dieCount - ignoreHighest - ignoreLowest),
                 0)
-            sum_showing_max = count_showing_max_not_dropped * dieSides
+            sumShowingMax = countShowingMaxNotDropped * dieSides
 
-            multiplier = _calculateBinomial(dieCount, count_showing_max)
+            multiplier = _calculateBinomial(dieCount, countShowingMax)
 
             for k, v in subResults.items():
-                masterResults[sum_showing_max + k] += multiplier * v
+                masterResults[sumShowingMax + k] += multiplier * v
     return masterResults
 
 class ProbabilityType(enum.Enum):
@@ -171,7 +161,7 @@ def calculateRollProbabilities(
 
     results = _calculateRollProbabilities(
         dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
-        dieSides=3 if dieType == DieType.D3 else 6,
+        dieSides=dieSides(dieType=dieType),
         ignoreHighest=1 if hasBane else 0,
         ignoreLowest=1 if hasBoon else 0)
 
@@ -180,7 +170,7 @@ def calculateRollProbabilities(
     accumulate = 0
     for value, combinations in results.items():
         if dieType == DieType.DD:
-            value *= _DDRollMultiplier.value()
+            value *= 10
 
         if probability == ProbabilityType.EqualTo:
             enumerator = combinations
@@ -226,7 +216,8 @@ def calculateRollProbability(
         dieCount=dieCount,
         dieType=dieType,
         hasBoon=hasBoon,
-        hasBane=hasBane)
+        hasBane=hasBane,
+        probability=probability)
     assert(probabilities)
 
     minValue = min(probabilities.keys())
@@ -300,7 +291,8 @@ def calculateRollRangeProbability(
         dieCount=dieCount,
         dieType=dieType,
         hasBoon=hasBoon,
-        hasBane=hasBane)
+        hasBane=hasBane,
+        probability=ProbabilityType.EqualTo)
     assert(probabilities)
 
     probabilityString = f'Percentage Probability Of Rolling Between {lowValue} and {highValue}'
@@ -444,10 +436,10 @@ class DiceRoll(object):
         count = self._count.value() if self._count else 0
         if count != 0:
             displayString = f'{count}D'
-            if self._type == DieType.D3:
-                displayString += '3'
-            elif self._type == DieType.DD:
+            if self._type == DieType.DD:
                 displayString += 'D'
+            elif self._type != DieType.D6:
+                displayString += str(dieSides(dieType=self._type))
 
         constant = self._constant.value() if self._constant else 0
         if constant > 0:
@@ -476,6 +468,8 @@ class DiceRoll(object):
                 type = DieType.D3
             elif type == 'DD':
                 type = DieType.DD
+            elif type =='D20':
+                type = DieType.D20
             else:
                 type = DieType.D6
 

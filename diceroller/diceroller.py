@@ -41,6 +41,7 @@ def _effectValueToType(
 class DiceRollResult(object):
     def __init__(
             self,
+            die: common.DieType,
             total: common.ScalarCalculation,
             rolls: typing.Iterable[common.ScalarCalculation],
             ignored: typing.Optional[common.ScalarCalculation], # The same instance MUST appear in rolls
@@ -52,6 +53,7 @@ class DiceRollResult(object):
             effectValue: typing.Optional[common.ScalarCalculation]
             ) -> None:
         super().__init__()
+        self._die = die
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
@@ -59,6 +61,9 @@ class DiceRollResult(object):
         self._targetNumber = targetNumber
         self._effectType = effectType
         self._effectValue = effectValue
+
+    def die(self) -> common.DieType:
+        return self._die
 
     def total(self) -> common.ScalarCalculation:
         return self._total
@@ -166,11 +171,11 @@ def rollDice(
     elif hasBane and not hasBoon:
         boonBaneCount = -1
     totalDieCount = dieCount.value() + abs(boonBaneCount)
-    dieSides = 3 if dieType == common.DieType.D3 else 6
+    dieSides = common.dieSides(dieType=dieType)
     for index in range(0, totalDieCount):
         roll = randomGenerator.randint(1, dieSides)
         if dieType == common.DieType.DD:
-            roll * 10
+            roll *= 10
         originalRolls.append(_makeScalarValue(
             value=roll,
             name=f'{dieType.value} Roll {index + 1}/{totalDieCount}'))
@@ -214,6 +219,7 @@ def rollDice(
         effectType = _effectValueToType(value=effectValue)
 
     return DiceRollResult(
+        die=dieType,
         total=total,
         rolls=originalRolls,
         ignored=ignoredRoll,

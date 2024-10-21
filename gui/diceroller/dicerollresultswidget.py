@@ -17,7 +17,6 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._results = None
         self._animations: typing.List[gui.DieAnimationWidget] = []
         self._pendingAnimationCount = 0
         self._labelsWidget = QtWidgets.QLabel(self)
@@ -36,13 +35,11 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             results: typing.Optional[diceroller.DiceRollResult],
             animate: bool = True
             ) -> None:
-        self._results = results
-
         if results != None:
             for animation in self._animations:
                 animation.cancelSpin()
 
-            dieCount = self._results.rollCount()
+            dieCount = results.rollCount()
             while len(self._animations) > dieCount:
                 animation = self._animations.pop()
                 self._deleteAnimation(widget=animation)
@@ -53,10 +50,11 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
             assert(len(self._animations) == dieCount)
             self._pendingAnimationCount = len(self._animations) if animate else 0
-            for index, diceRoll in enumerate(self._results.yieldRolls()):
+            for index, diceRoll in enumerate(results.yieldRolls()):
                 value = diceRoll[0]
                 ignored = diceRoll[1]
                 animation = self._animations[index]
+                animation.setDieType(results.die())
                 if animate:
                     animation.startSpin(
                         result=value.value(),
@@ -75,27 +73,27 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             # ': ' to the start of the value.
             labelsText = 'Rolled'
             valuesText = common.formatNumber(
-                number=self._results.rolledTotal().value(),
+                number=results.rolledTotal().value(),
                 prefix=': ')
 
-            if self._results.modifierCount() > 0:
+            if results.modifierCount() > 0:
                 labelsText += '\nModifiers'
                 valuesText += common.formatNumber(
-                    number=self._results.modifiersTotal().value(),
+                    number=results.modifiersTotal().value(),
                     alwaysIncludeSign=True,
                     prefix='\n: ')
 
             labelsText += '\nTotal'
             valuesText += common.formatNumber(
-                number=self._results.total().value(),
+                number=results.total().value(),
                 prefix='\n: ')
 
-            effectType = self._results.effectType()
+            effectType = results.effectType()
             if effectType != None:
                 labelsText += '\nEffect'
                 valuesText += '\n: {effectValue} ({effectType})'.format(
                     effectValue=common.formatNumber(
-                        number=self._results.effectValue().value(),
+                        number=results.effectValue().value(),
                         alwaysIncludeSign=True),
                     effectType=effectType.value)
 
