@@ -38,7 +38,8 @@ _WelcomeMessage = """
 # - Prompting for the name when the user clicks new would be one option
 # - Another option would be to allow editing of names directly in controls (see how you can edit file names in VS code from the Explorer Window)
 # - Whatever I do, the default group/roller created at startup can have a default name
-
+# TODO: Support for Flux???
+# - p22 of T5 rules
 
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:

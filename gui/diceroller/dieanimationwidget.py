@@ -24,6 +24,35 @@ _D6Faces = [
     (1, 2, 6, 5)   # Right face
 ]
 
+_D10Vertices = [
+    [-0.000026, -1.187278, -0.448774],
+    [-1.268936, +0.263970, -0.319582],
+    [-0.784286, +0.237544, -1.007959],
+    [+0.784234, +0.237544, -1.007959],
+    [-0.000026, +0.573926, -1.140021],
+    [-0.000026, +1.187281, +0.448717],
+    [+0.784234, -0.237518, +1.007987],
+    [-0.000026, -0.573899, +1.140050],
+    [+1.268974, -0.263966, +0.319525],
+    [+1.268974, +0.263970, -0.319582],
+    [-1.268936, -0.263966, +0.319525],
+    [-0.784286, -0.237518, +1.007987],
+]
+
+_D10Faces = [
+    (0, 2, 4, 3),
+    (0, 3, 9, 8),
+    (0, 10, 1, 2),
+    (0, 8, 6, 7),
+    (0, 7, 11, 10),
+
+    (5, 9, 3, 4),
+    (5, 4, 2, 1),
+    (5, 1, 10, 11),
+    (5, 6, 8, 9),
+    (5, 11, 7, 6)
+]
+
 _D20Vertices = [
     [-1.213522, -0.700616, -0.267640],
     [+0.000001, -0.865941, -1.133683],
@@ -66,6 +95,7 @@ _DieTypeModels = {
     common.DieType.D6: (_D6Vertices, _D6Faces),
     common.DieType.D3: (_D6Vertices, _D6Faces),
     common.DieType.DD: (_D6Vertices, _D6Faces),
+    common.DieType.D10: (_D10Vertices, _D10Faces),
     common.DieType.D20: (_D20Vertices, _D20Faces),
 }
 
@@ -311,9 +341,10 @@ class DieAnimationWidget(QtWidgets.QWidget):
                 displayText = str(self._result)
 
                 displayRect = QtCore.QRect(frontFaceRect)
-                if self._dieType == common.DieType.D20:
-                    # HACK: Don't try to draw the text inside the front face
-                    # of a D20 in the same way as is done for the D6 as the text
+                if self._dieType == common.DieType.D10 or \
+                    self._dieType == common.DieType.D20:
+                    # HACK: Don't try to draw the text inside the front face of a
+                    # D10 & D20 in the same way as is done for the D6 as the text
                     # would need to be to small to fit inside the triangular
                     # face. The side of the text will still be based on the size
                     # of the face (so a bit smaller than the text for the D6) but
@@ -547,10 +578,10 @@ class DieAnimationWidget(QtWidgets.QWidget):
         # The value of -0.26 was derived from looking at what the values
         # were in the debugger at the point edges should have disappeared but
         # haven't. It was originally -0.25 which was fine for a D6 but when
-        # I added D20 support I found I needed to tweak it to -0.26 so that
-        # heavily sloped faces weren't being incorrectly culled.
+        # I added D10 & D20 support I found I needed to tweak it to -0.24 so
+        # that heavily sloped faces weren't being incorrectly culled.
         # NOTE: When using orthogonal projection this value should be set to 0.0
-        return normal[2] < -0.26  # Simple visibility check: face normal pointing towards the camera
+        return normal[2] < -0.24  # Simple visibility check: face normal pointing towards the camera
 
     def _dotProduct(self, v1: typing.Tuple[float, float, float], v2: typing.Tuple[float, float, float]) -> float:
         """ Calculate the dot product of two vectors. """

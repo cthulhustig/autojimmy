@@ -19,12 +19,14 @@ class DieType(enum.Enum):
     D6 = 'D'
     D3 = 'D3'
     DD = 'DD' # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
+    D10 = 'D10'
     D20 = 'D20'
 
 _DieSidesMap = {
     DieType.D6: 6,
     DieType.D3: 3,
     DieType.DD: 6, # Result is multiplied by 10
+    DieType.D10: 10,
     DieType.D20: 20
 }
 
@@ -468,6 +470,8 @@ class DiceRoll(object):
                 type = DieType.D3
             elif type == 'DD':
                 type = DieType.DD
+            elif type =='D10':
+                type = DieType.D10
             elif type =='D20':
                 type = DieType.D20
             else:
