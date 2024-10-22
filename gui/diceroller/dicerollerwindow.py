@@ -57,6 +57,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._results = None
         self._rollInProgress = False
         self._objectItemMap: typing.Dict[str, QtWidgets.QTreeWidgetItem] = {}
+        self._lastResults = {}
 
         self._createRollerManagerControls()
         self._createRollerConfigControls()
@@ -287,6 +288,9 @@ class DiceRollerWindow(gui.WindowWidget):
             group=group.name() if group else 'Unknown',
             roller=roller.name() if roller else 'Unknown'))
 
+        if roller and not results:
+            results = self._lastResults.get(roller.id())
+
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(roller=roller)
 
@@ -507,6 +511,15 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._syncToDatabase()
 
+        for roller in rollers:
+            if roller.id() in self._lastResults:
+                del self._lastResults[roller.id()]
+
+        for group in groups:
+            for roller in group.rollers():
+                if roller.id() in self._lastResults:
+                    del self._lastResults[roller.id()]
+
     def _managerTreeCurrentObjectChanged(self) -> None:
         self._setCurrentRoller(
             roller=self._managerTree.currentRoller())
@@ -603,6 +616,7 @@ class DiceRollerWindow(gui.WindowWidget):
             return
 
         self._rollInProgress = False
+        self._lastResults[self._roller.id()] = self._results
         self._updateControlEnablement()
 
         with gui.SignalBlocker(self._historyWidget):
