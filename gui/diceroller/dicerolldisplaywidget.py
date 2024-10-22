@@ -55,6 +55,9 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
             self._detailedResultsWidget.setResults(results=results)
             self._probabilityGraph.setHighlightRoll(results.total() if results else None)
 
+    def skipAnimation(self) -> None:
+        self._animatedResultsWidget.skipAnimation()
+
     def syncToRoller(self) -> None:
         self._probabilityGraph.syncToRoller()
 

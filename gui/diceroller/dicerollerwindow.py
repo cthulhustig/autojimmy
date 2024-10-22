@@ -40,6 +40,12 @@ _WelcomeMessage = """
 # - Whatever I do, the default group/roller created at startup can have a default name
 # TODO: Support for Flux???
 # - p22 of T5 rules
+# - T5 usually the lower the roll the better but also says some target
+#   numbers are higher is better and even mentions that it could be
+#   you need to roll the target number exactly for it to be a success
+#   - Probably just a drop down on the target number to select the logic
+#   - Would need to update the probability graph code
+# - Flux 
 
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -73,6 +79,14 @@ class DiceRollerWindow(gui.WindowWidget):
         self._syncToDatabase()
         if self._managerTree.groupCount() == 0:
             self._createNewGroup()
+
+    def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]):
+        if event and event.key() == QtCore.Qt.Key.Key_Space and self._rollInProgress:
+            self._resultsWidget.skipAnimation()
+            event.accept()
+            return
+
+        return super().keyPressEvent(event)
 
     def loadSettings(self) -> None:
         super().loadSettings()

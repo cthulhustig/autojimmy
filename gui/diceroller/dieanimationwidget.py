@@ -238,12 +238,17 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._timer.start(30)  # Update every 30 milliseconds
 
     def skipSpin(self) -> None:
-        if self._spinState != DieAnimationWidget._SpinState.Spinning:
+        if self._spinState == DieAnimationWidget._SpinState.Idle:
             return # Nothing to do
 
-        self._spinState = DieAnimationWidget._SpinState.FadingIn
+        self._spinState = DieAnimationWidget._SpinState.Idle
         self._angleX = 0
         self._angleY = 0
+        self._fadeInProgress = 1.0
+
+        self._timer.stop()
+        self.animationComplete.emit()
+
         self.update()  # Trigger repaint
 
     def cancelSpin(self) -> None:
@@ -252,6 +257,7 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._spinState = DieAnimationWidget._SpinState.Idle
         self._result = None
         self._strike = False
+        self._fadeInProgress = 0.0
         self._timer.stop()
 
     def minimumSizeHint(self) -> QtCore.QSize:

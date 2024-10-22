@@ -117,12 +117,20 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
         self._layoutWidget()
 
+    def skipAnimation(self) -> None:
+        for animation in self._animations:
+            animation.skipSpin()
+
     def resizeEvent(self, event: typing.Optional[QtGui.QResizeEvent]) -> None:
         super().resizeEvent(event)
         self._layoutWidget()
 
-    def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent | None) -> None:
-        self._skipSpin()
+    def mouseDoubleClickEvent(self, event: typing.Optional[QtGui.QMouseEvent]) -> None:
+        if event and self._pendingAnimationCount > 0:
+            self.skipAnimation()
+            event.accept()
+            return
+
         return super().mouseDoubleClickEvent(event)
 
     def _createAnimation(self) -> gui.DieAnimationWidget:
@@ -263,10 +271,6 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         self._valuesWidget.move(
             offsetX + labelRect.width(),
             offsetY)
-
-    def _skipSpin(self) -> None:
-        for animation in self._animations:
-            animation.skipSpin()
 
     def _animationComplete(self) -> None:
         assert(self._pendingAnimationCount > 0)
