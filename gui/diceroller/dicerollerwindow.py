@@ -34,6 +34,16 @@ _WelcomeMessage = """
 #   you need to roll the target number exactly for it to be a success
 #   - Probably just a drop down on the target number to select the logic
 #   - Would need to update the probability graph code
+# TODO: I think I should refactor the object db a bit
+# - The ParamDef should define columns (possibly rename to ColumnDef)
+#   - They should specify column name, type and if it's optional
+#   - Importantly, they shouldn't be used to specify a function to call
+# - All database objects should have to implement a single virtual method that
+#   can be used to retrieve a mapping of column name to column content
+# - As well as being generally nicer, it would also mean I could get rid
+#   of the horribleness that means the group.rollers() and roller.dynamicDMs()
+#   returns a database list object. They could return a typed iterator and the
+#   function that gets the map would use the database list object in the map
 
 
 class DiceRollerWindow(gui.WindowWidget):
