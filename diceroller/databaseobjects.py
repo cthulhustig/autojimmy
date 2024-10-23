@@ -222,9 +222,9 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def __init__(
             self,
             name: str,
-            rollers: typing.Union[
+            rollers: typing.Optional[typing.Union[
                 typing.Iterable[DiceRollerDatabaseObject],
-                objectdb.DatabaseList],
+                objectdb.DatabaseList]] = None,
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None
             ) -> None:

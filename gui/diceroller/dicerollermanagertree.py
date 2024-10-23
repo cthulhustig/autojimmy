@@ -125,6 +125,24 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
         parent = item.parent()
         return parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
 
+    def editObjectName(
+            self,
+            object: typing.Union[
+                diceroller.DiceRollerGroupDatabaseObject,
+                diceroller.DiceRollerDatabaseObject,
+                str]
+            ) -> None:
+        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject) or \
+            isinstance(object, diceroller.DiceRollerDatabaseObject):
+            object = object.id()
+        item = self._objectItemMap.get(object)
+        if not item:
+            return
+        modelIndex = self.indexFromItem(item)
+        if not modelIndex:
+            return
+        self.edit(modelIndex)
+
     def syncToDatabase(self) -> None:
         groups = objectdb.ObjectDbManager.instance().readObjects(
             classType=diceroller.DiceRollerGroupDatabaseObject)

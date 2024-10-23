@@ -24,20 +24,9 @@ _WelcomeMessage = """
 # would need stored in the db) will have the same id as the current version
 # of the object that is already in the db
 # - Complicated by the fact they use ScalarCalculations (history would be lost)
-# TODO: The last rolled results for each roller should be stored so the user
-# can roll one roller, switch to another roller, then switch back to the
-# first and still see the results for that previous roll
-# - This should probably be done after I decide what I'm doing relating to
-# the history widget
 # TODO: Need json import/export
 # - Ideally selecting multiple rollers to export to a single file (ideally
 #   from multiple groups)
-# TODO: Better names for new groups/rollers (they always have the same name)
-# TODO: The fact naming new groups/rollers is done as a separate operation to creating it is clunky as hell
-# - I expect the user would want to give it some kind of meaningful name the vast a majority of times
-# - Prompting for the name when the user clicks new would be one option
-# - Another option would be to allow editing of names directly in controls (see how you can edit file names in VS code from the Explorer Window)
-# - Whatever I do, the default group/roller created at startup can have a default name
 # TODO: Support for Flux???
 # - p22 of T5 rules
 # - T5 usually the lower the roll the better but also says some target
@@ -45,7 +34,7 @@ _WelcomeMessage = """
 #   you need to roll the target number exactly for it to be a success
 #   - Probably just a drop down on the target number to select the logic
 #   - Would need to update the probability graph code
-# - Flux 
+
 
 class DiceRollerWindow(gui.WindowWidget):
     def __init__(self) -> None:
@@ -79,7 +68,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self.setLayout(windowLayout)
         self._syncToDatabase()
         if self._managerTree.groupCount() == 0:
-            self._createNewGroup()
+            self._createInitialGroup()
 
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]):
         if event and event.key() == QtCore.Qt.Key.Key_Space and self._rollInProgress:
@@ -316,25 +305,64 @@ class DiceRollerWindow(gui.WindowWidget):
         self._configGroupBox.setEnabled(self._roller != None and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
 
-    def _createNewRoller(self) -> None:
-        if self._managerTree.groupCount() == 0:
-            self._createNewGroup()
-            return
+    def _generateGroupName(self) -> str:
+        groupNames = set([group.name() for group in self._managerTree.groups()])
+        return DiceRollerWindow._generateNewName(
+            baseName='New Group',
+            currentNames=groupNames)
 
-        group = self._managerTree.currentGroup()
-        if not group:
-            return
+    def _generateRollerName(self, group: diceroller.DiceRollerGroupDatabaseObject) -> str:
+        rollerNames = set([roller.name() for roller in group.rollers()])
+        return DiceRollerWindow._generateNewName(
+            baseName='New Roller',
+            currentNames=rollerNames)
 
+    def _createInitialGroup(self) -> None:
+        group = diceroller.DiceRollerGroupDatabaseObject(
+            name=self._generateGroupName())
         roller = diceroller.DiceRollerDatabaseObject(
-            name='Dice Roller',
+            name=self._generateRollerName(group=group),
             dieCount=1,
             dieType=common.DieType.D6)
-        group = copy.deepcopy(group)
+        group.addRoller(roller)
+
+        try:
+            objectdb.ObjectDbManager.instance().createObject(
+                object=group)
+        except Exception as ex:
+            message = 'Failed to add initial group to objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        self._syncToDatabase(currentId=roller.id())
+
+    def _createNewRoller(self) -> None:
+        group = self._managerTree.currentGroup()
+        newGroup = not group
+        if newGroup:
+            group = diceroller.DiceRollerGroupDatabaseObject(
+                name=self._generateGroupName())
+            newGroup = True
+        else:
+            group = copy.deepcopy(group)
+
+        roller = diceroller.DiceRollerDatabaseObject(
+            name=self._generateRollerName(group=group),
+            dieCount=1,
+            dieType=common.DieType.D6)
         group.addRoller(roller=roller)
 
         try:
-            objectdb.ObjectDbManager.instance().updateObject(
-                object=group)
+            if newGroup:
+                objectdb.ObjectDbManager.instance().createObject(
+                    object=group)
+            else:
+                objectdb.ObjectDbManager.instance().updateObject(
+                    object=group)
         except Exception as ex:
             message = 'Failed to write updated group to objectdb'
             logging.error(message, exc_info=ex)
@@ -345,15 +373,11 @@ class DiceRollerWindow(gui.WindowWidget):
             return
 
         self._syncToDatabase(currentId=roller.id())
+        self._managerTree.editObjectName(object=roller)
 
     def _createNewGroup(self) -> None:
-        roller = diceroller.DiceRollerDatabaseObject(
-            name='Dice Roller',
-            dieCount=1,
-            dieType=common.DieType.D6)
         group = diceroller.DiceRollerGroupDatabaseObject(
-            name='Group',
-            rollers=[roller])
+            name=self._generateGroupName())
 
         try:
             objectdb.ObjectDbManager.instance().createObject(
@@ -367,7 +391,8 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(currentId=roller.id())
+        self._syncToDatabase(currentId=group.id())
+        self._managerTree.editObjectName(object=group)
 
     def _renameObject(self) -> None:
         object = self._managerTree.currentObject()
@@ -629,3 +654,15 @@ class DiceRollerWindow(gui.WindowWidget):
             html=_WelcomeMessage,
             noShowAgainId='DiceRollerWelcome')
         message.exec()
+
+    @staticmethod
+    def _generateNewName(
+            baseName: str,
+            currentNames: typing.Iterable[str]
+            ) -> str:
+        index = 1
+        while True:
+            newName = baseName if index < 2 else f'{baseName} {index}'
+            if newName not in currentNames:
+                return newName
+            index += 1
