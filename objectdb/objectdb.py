@@ -131,47 +131,24 @@ class DatabaseList(DatabaseEntity):
         self._objects.clear()
 
 class ParamDef(object):
-    class ColumnType(enum.Enum):
-        Text = 0
-        Integer = 1
-        Float = 2
-        Boolean = 3
-        Enum = 4
-        Object = 5
-        List = 6
-
     def __init__(
             self,
             columnName: str,
-            columnType: ColumnType,
-            isOptional: bool = False,
-            enumType: typing.Optional[typing.Type[enum.Enum]] = None
+            columnType: typing.Type[typing.Any],
+            isOptional: bool = False
             ) -> None:
-        if columnType == ParamDef.ColumnType.Enum:
-            if not enumType:
-                raise ValueError(f'No enum type specified for enum parameter {columnName}')
-            if not issubclass(enumType, enum.Enum):
-                raise ValueError(f'Invalid enum type {enumType} specified for enum parameter {columnName}')
-        else:
-            if enumType:
-                raise ValueError(f'Unexpected enum type specified for non-enum parameter {columnName}')
-
         self._columnName = columnName
         self._columnType = columnType
         self._isOptional = isOptional
-        self._enumType = enumType
 
     def columnName(self) -> str:
         return self._columnName
 
-    def columnType(self) -> ColumnType:
+    def columnType(self) -> typing.Type[typing.Any]:
         return self._columnType
 
     def isOptional(self) -> bool:
         return self._isOptional
-
-    def enumType(self) -> typing.Optional[typing.Type[enum.Enum]]:
-        return self._enumType
 
 class ObjectDef(object):
     def __init__(
@@ -330,19 +307,19 @@ class ObjectDbManager(object):
                         columnString = paramDef.columnName()
                         columnType = paramDef.columnType()
 
-                        if columnType == ParamDef.ColumnType.Text:
+                        if columnType == str:
                             columnString += ' TEXT'
-                        elif columnType == ParamDef.ColumnType.Integer:
+                        elif columnType == int:
                             columnString += ' INTEGER'
-                        elif columnType == ParamDef.ColumnType.Float:
+                        elif columnType == float:
                             columnString += ' REAL'
-                        elif columnType == ParamDef.ColumnType.Boolean:
+                        elif columnType == bool:
                             columnString += ' INTEGER'
-                        elif columnType == ParamDef.ColumnType.Enum:
+                        elif issubclass(columnType, enum.Enum):
                             columnString += ' TEXT'
-                        elif columnType == ParamDef.ColumnType.Object:
+                        elif issubclass(columnType, DatabaseObject):
                             columnString += ' TEXT'
-                        elif columnType == ParamDef.ColumnType.List:
+                        elif issubclass(columnType, DatabaseList):
                             columnString += ' TEXT'
                         else:
                             raise RuntimeError(
@@ -506,27 +483,28 @@ class ObjectDbManager(object):
                 childEntity = None
                 if columnValue != None:
                     columnType = paramDef.columnType()
-                    if columnType == ParamDef.ColumnType.Text:
+                    if columnType == str:
                         columnValue = str(columnValue)
-                    elif columnType == ParamDef.ColumnType.Integer:
+                    elif columnType == int:
                         columnValue = int(columnValue)
-                    elif columnType == ParamDef.ColumnType.Float:
+                    elif columnType == float:
                         columnValue = float(columnValue)
-                    elif columnType == ParamDef.ColumnType.Boolean:
+                    elif columnType == bool:
                         columnValue = 1 if columnValue else 0
-                    elif columnType == ParamDef.ColumnType.Enum:
-                        if not isinstance(columnValue, enum.Enum) and \
-                            not isinstance(columnValue, paramDef.enumType()):
+                    elif issubclass(columnType, enum.Enum):
+                        if not isinstance(columnValue, enum.Enum) or \
+                            not isinstance(columnValue, columnType):
                             raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {paramDef.enumType()}')
+                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {columnType}')
                         columnValue = columnValue.name
-                    elif columnType == ParamDef.ColumnType.Object:
-                        if not isinstance(columnValue, DatabaseObject):
+                    elif issubclass(columnType, DatabaseObject):
+                        if not isinstance(columnValue, DatabaseObject) or \
+                            not isinstance(columnValue, columnType):
                             raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseObject')
+                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         childEntity = columnValue
                         columnValue = columnValue.id()
-                    elif columnType == ParamDef.ColumnType.List:
+                    elif issubclass(columnType, DatabaseList):
                         if not isinstance(columnValue, DatabaseList):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseList')
@@ -663,26 +641,25 @@ class ObjectDbManager(object):
 
                 if columnValue != None:
                     columnType = paramDef.columnType()
-                    if columnType == ParamDef.ColumnType.Text:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Integer:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Float:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Boolean:
+                    if columnType == str:
+                        columnValue = str(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == int:
+                        columnValue = int(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == float:
+                        columnValue = float(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == bool:
                         columnValue = columnValue != 0
-                    elif columnType == ParamDef.ColumnType.Enum:
-                        enumType = paramDef.enumType()
-                        if columnValue not in enumType.__members__:
+                    elif issubclass(columnType, enum.Enum):
+                        if columnValue not in columnType.__members__:
                             raise RuntimeError(
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
-                        columnValue = enumType.__members__[columnValue]
-                    elif columnType == ParamDef.ColumnType.Object:
+                        columnValue = columnType.__members__[columnValue]
+                    elif issubclass(columnType, DatabaseObject):
                         columnValue = self._internalReadEntity(
                             id=columnValue,
                             setParent=False,
                             cursor=cursor)
-                    elif columnType == ParamDef.ColumnType.List:
+                    elif issubclass(columnType, DatabaseList):
                         columnValue = self._internalReadEntity(
                             id=columnValue,
                             table=ObjectDbManager._ListsTableName,
@@ -743,26 +720,25 @@ class ObjectDbManager(object):
 
                 if columnValue != None:
                     columnType = paramDef.columnType()
-                    if columnType == ParamDef.ColumnType.Text:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Integer:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Float:
-                        pass # Nothing to do
-                    elif columnType == ParamDef.ColumnType.Boolean:
+                    if columnType == str:
+                        columnValue = str(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == int:
+                        columnValue = int(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == float:
+                        columnValue = float(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == bool:
                         columnValue = columnValue != 0
-                    elif columnType == ParamDef.ColumnType.Enum:
-                        enumType = paramDef.enumType()
-                        if columnValue not in enumType.__members__:
+                    elif issubclass(columnType, enum.Enum):
+                        if columnValue not in columnType.__members__:
                             raise RuntimeError(
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
-                        columnValue = enumType.__members__[columnValue]
-                    elif columnType == ParamDef.ColumnType.Object:
+                        columnValue = columnType.__members__[columnValue]
+                    elif issubclass(columnType, DatabaseObject):
                         columnValue = self._internalReadEntity(
                             id=columnValue,
                             setParent=False,
                             cursor=cursor)
-                    elif columnType == ParamDef.ColumnType.List:
+                    elif issubclass(columnType, DatabaseList):
                         columnValue = self._internalReadEntity(
                             id=columnValue,
                             table=ObjectDbManager._ListsTableName,
@@ -817,7 +793,7 @@ class ObjectDbManager(object):
             # another entity as they're used to delete the old object if the
             # parameter is being updated to refer to a different object
             hasReference = any(
-                paramDef.columnType() in {ParamDef.ColumnType.Object, ParamDef.ColumnType.List}
+                issubclass(paramDef.columnType(), DatabaseEntity)
                 for paramDef in paramDefs)
             exitingValues = None
             if hasReference:
@@ -849,28 +825,29 @@ class ObjectDbManager(object):
                 childEntity = None
                 if columnValue != None:
                     columnType = paramDef.columnType()
-                    if columnType == ParamDef.ColumnType.Text:
+                    if columnType == str:
                         columnValue = str(columnValue)
-                    elif columnType == ParamDef.ColumnType.Integer:
+                    elif columnType == int:
                         columnValue = int(columnValue)
-                    elif columnType == ParamDef.ColumnType.Float:
+                    elif columnType == float:
                         columnValue = float(columnValue)
-                    elif columnType == ParamDef.ColumnType.Boolean:
+                    elif columnType == bool:
                         columnValue = 1 if columnValue else 0
-                    elif columnType == ParamDef.ColumnType.Enum:
-                        if not isinstance(columnValue, enum.Enum) and \
-                            not isinstance(columnValue, paramDef.enumType()):
+                    elif issubclass(columnType, enum.Enum):
+                        if not isinstance(columnValue, enum.Enum) or \
+                            not isinstance(columnValue, columnType):
                             raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {paramDef.enumType()}')
+                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {columnType}')
                         columnValue = columnValue.name
-                    elif columnType == ParamDef.ColumnType.Object:
-                        if not isinstance(columnValue, DatabaseObject):
+                    elif issubclass(columnType, DatabaseObject):
+                        if not isinstance(columnValue, DatabaseObject) or \
+                            not isinstance(columnValue, columnType):
                             raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseObject')
+                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         isReference = True
                         childEntity = columnValue
                         columnValue = columnValue.id()
-                    elif columnType == ParamDef.ColumnType.List:
+                    elif issubclass(columnType, DatabaseList):
                         if not isinstance(columnValue, DatabaseList):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseList')
@@ -1012,7 +989,7 @@ class ObjectDbManager(object):
 
             columns = []
             for paramDef in objectDef.paramDefs():
-                if (paramDef.columnType() == ParamDef.ColumnType.Object) and paramDef.isOptional():
+                if issubclass(paramDef.columnType(), DatabaseObject) and paramDef.isOptional():
                     columns.append(paramDef.columnName())
             if columns:
                 fetchDataSql = """

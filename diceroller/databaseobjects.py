@@ -60,9 +60,9 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
             tableName='dice_modifiers',
             classType=DiceModifierDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
-                objectdb.ParamDef(columnName='value', columnType=objectdb.ParamDef.ColumnType.Integer),
-                objectdb.ParamDef(columnName='enabled', columnType=objectdb.ParamDef.ColumnType.Boolean)
+                objectdb.ParamDef(columnName='name', columnType=str),
+                objectdb.ParamDef(columnName='value', columnType=int),
+                objectdb.ParamDef(columnName='enabled', columnType=bool)
             ])
 
     @staticmethod
@@ -248,14 +248,14 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             tableName='dice_rollers',
             classType=DiceRollerDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
-                objectdb.ParamDef(columnName='die_count', columnType=objectdb.ParamDef.ColumnType.Integer),
-                objectdb.ParamDef(columnName='die_type', columnType=objectdb.ParamDef.ColumnType.Enum, enumType=common.DieType),
-                objectdb.ParamDef(columnName='constant_dm', columnType=objectdb.ParamDef.ColumnType.Integer),
-                objectdb.ParamDef(columnName='has_boon', columnType=objectdb.ParamDef.ColumnType.Boolean),
-                objectdb.ParamDef(columnName='has_bane', columnType=objectdb.ParamDef.ColumnType.Boolean),
-                objectdb.ParamDef(columnName='dynamic_dms', columnType=objectdb.ParamDef.ColumnType.List),
-                objectdb.ParamDef(columnName='target_number', columnType=objectdb.ParamDef.ColumnType.Integer, isOptional=True),
+                objectdb.ParamDef(columnName='name', columnType=str),
+                objectdb.ParamDef(columnName='die_count', columnType=int),
+                objectdb.ParamDef(columnName='die_type', columnType=common.DieType),
+                objectdb.ParamDef(columnName='constant_dm', columnType=int),
+                objectdb.ParamDef(columnName='has_boon', columnType=bool),
+                objectdb.ParamDef(columnName='has_bane', columnType=bool),
+                objectdb.ParamDef(columnName='dynamic_dms', columnType=objectdb.DatabaseList),
+                objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
             ])
 
     @staticmethod
@@ -409,8 +409,8 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
             tableName='dice_groups',
             classType=DiceRollerGroupDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
-                objectdb.ParamDef(columnName='rollers', columnType=objectdb.ParamDef.ColumnType.List),
+                objectdb.ParamDef(columnName='name', columnType=str),
+                objectdb.ParamDef(columnName='rollers', columnType=objectdb.DatabaseList),
             ])
 
     @staticmethod

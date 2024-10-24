@@ -12,10 +12,10 @@ import typing
 # https://www.lookwhattheshoggothdraggedin.com/post/dice-rolls-in-traveller.html
 # https://anydice.com/
 
+# IMPORTANT: If I ever change the name of the enum (not that value string) then I need
+# to add some kind of value mapping to objectdb as the name of the enum is stored in
+# the database for dice roller db objects
 class DieType(enum.Enum):
-    # IMPORTANT: If I ever change the name of the enum (not that value string) then I need
-    # to add some kind of value mapping to objectdb as the name of the enum is stored in
-    # the database for dice roller db objects
     D6 = 'D'
     D3 = 'D3'
     DD = 'DD' # Roll XD6 and multiply the result by 10 (any constant is added after multiplication)
