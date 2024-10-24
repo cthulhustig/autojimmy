@@ -48,16 +48,45 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
             value=self._value,
             enabled=self._enabled)
 
+    def data(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'name': self._name,
+            'value': self._value,
+            'enabled': self._enabled}
+
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
+            tableName='dice_modifiers',
             classType=DiceModifierDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(paramName='name', paramType=objectdb.ParamDef.ParamType.Text),
-                objectdb.ParamDef(paramName='value', paramType=objectdb.ParamDef.ParamType.Integer),
-                objectdb.ParamDef(paramName='enabled', paramType=objectdb.ParamDef.ParamType.Boolean)
-            ],
-            tableName='dice_modifiers')
+                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
+                objectdb.ParamDef(columnName='value', columnType=objectdb.ParamDef.ColumnType.Integer),
+                objectdb.ParamDef(columnName='enabled', columnType=objectdb.ParamDef.ColumnType.Boolean)
+            ])
+
+    @staticmethod
+    def createObject(
+        id: str,
+        parent: typing.Optional[str],
+        data: typing.Mapping[str, typing.Any]
+        ) -> 'DiceRollerDatabaseObject':
+        name = data.get('name')
+        if not isinstance(name, str):
+            raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a name parameter of type str')
+        value = data.get('value')
+        if not isinstance(value, int):
+            raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a value parameter of type int')
+        enabled = data.get('enabled')
+        if not isinstance(enabled, bool):
+            raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a enabled parameter of type bool')
+
+        return DiceModifierDatabaseObject(
+            id=id,
+            parent=parent,
+            name=name,
+            value=value,
+            enabled=enabled)
 
 class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def __init__(
@@ -139,7 +168,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def setHasBane(self, hasBane: bool) -> None:
         self._hasBane = hasBane
 
-    def dynamicDMs(self) -> objectdb.DatabaseList:
+    def dynamicDMs(self) -> typing.Iterable[DiceModifierDatabaseObject]:
         return self._dynamicDMs
 
     def dynamicDMCount(self) -> int:
@@ -202,21 +231,75 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             dynamicDMs=dynamicDMs,
             targetNumber=self._targetNumber)
 
+    def data(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'name': self._name,
+            'die_count': self._dieCount,
+            'die_type': self._dieType,
+            'constant_dm': self._constantDM,
+            'has_boon': self._hasBoon,
+            'has_bane': self._hasBane,
+            'dynamic_dms': self._dynamicDMs,
+            'target_number': self._targetNumber}
+
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
+            tableName='dice_rollers',
             classType=DiceRollerDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(paramName='name', paramType=objectdb.ParamDef.ParamType.Text),
-                objectdb.ParamDef(paramName='dieCount', columnName='die_count', paramType=objectdb.ParamDef.ParamType.Integer),
-                objectdb.ParamDef(paramName='dieType', columnName='die_type', paramType=objectdb.ParamDef.ParamType.Enum, enumType=common.DieType),
-                objectdb.ParamDef(paramName='constantDM', columnName='constant_dm', paramType=objectdb.ParamDef.ParamType.Integer),
-                objectdb.ParamDef(paramName='hasBoon', columnName='has_boon', paramType=objectdb.ParamDef.ParamType.Integer),
-                objectdb.ParamDef(paramName='hasBane', columnName='has_bane', paramType=objectdb.ParamDef.ParamType.Integer),
-                objectdb.ParamDef(paramName='dynamicDMs', columnName='dynamic_dms', paramType=objectdb.ParamDef.ParamType.List),
-                objectdb.ParamDef(paramName='targetNumber', columnName='target_number', paramType=objectdb.ParamDef.ParamType.Integer, isOptional=True),
-            ],
-            tableName='dice_rollers')
+                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
+                objectdb.ParamDef(columnName='die_count', columnType=objectdb.ParamDef.ColumnType.Integer),
+                objectdb.ParamDef(columnName='die_type', columnType=objectdb.ParamDef.ColumnType.Enum, enumType=common.DieType),
+                objectdb.ParamDef(columnName='constant_dm', columnType=objectdb.ParamDef.ColumnType.Integer),
+                objectdb.ParamDef(columnName='has_boon', columnType=objectdb.ParamDef.ColumnType.Boolean),
+                objectdb.ParamDef(columnName='has_bane', columnType=objectdb.ParamDef.ColumnType.Boolean),
+                objectdb.ParamDef(columnName='dynamic_dms', columnType=objectdb.ParamDef.ColumnType.List),
+                objectdb.ParamDef(columnName='target_number', columnType=objectdb.ParamDef.ColumnType.Integer, isOptional=True),
+            ])
+
+    @staticmethod
+    def createObject(
+        id: str,
+        parent: typing.Optional[str],
+        data: typing.Mapping[str, typing.Any]
+        ) -> 'DiceRollerDatabaseObject':
+        name = data.get('name')
+        if not isinstance(name, str):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a name parameter of type str')
+        dieCount = data.get('die_count')
+        if not isinstance(dieCount, int):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type int')
+        dieType = data.get('die_type')
+        if not isinstance(dieType, common.DieType):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type DieType')
+        constantDM = data.get('constant_dm')
+        if not isinstance(constantDM, int):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type int')
+        hasBoon = data.get('has_boon')
+        if not isinstance(hasBoon, bool):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_boon parameter of type bool')
+        hasBane = data.get('has_bane')
+        if not isinstance(hasBane, bool):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_bane parameter of type bool')
+        dynamicDMs = data.get('dynamic_dms')
+        if not isinstance(dynamicDMs, objectdb.DatabaseList):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a dynamic_dms parameter of type DatabaseList')
+        targetNumber = data.get('target_number')
+        if targetNumber != None and not isinstance(targetNumber, int):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a dynamic_dms parameter of target_number int or None')
+
+        return DiceRollerDatabaseObject(
+            id=id,
+            parent=parent,
+            name=name,
+            dieCount=dieCount,
+            dieType=dieType,
+            constantDM=constantDM,
+            hasBoon=hasBoon,
+            hasBane=hasBane,
+            dynamicDMs=dynamicDMs,
+            targetNumber=targetNumber)
 
 class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def __init__(
@@ -250,7 +333,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def setName(self, name: str) -> None:
         self._name = name
 
-    def rollers(self) -> objectdb.DatabaseList:
+    def rollers(self) -> typing.Iterable[DiceRollerDatabaseObject]:
         return self._rollers
 
     def rollerCount(self) -> int:
@@ -315,12 +398,36 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
             name=self._name,
             rollers=rollers)
 
+    def data(self) -> typing.Mapping[str, typing.Any]:
+        return {
+            'name': self._name,
+            'rollers': self._rollers}
+
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
+            tableName='dice_groups',
             classType=DiceRollerGroupDatabaseObject,
             paramDefs=[
-                objectdb.ParamDef(paramName='name', paramType=objectdb.ParamDef.ParamType.Text),
-                objectdb.ParamDef(paramName='rollers', paramType=objectdb.ParamDef.ParamType.List),
-            ],
-            tableName='dice_groups')
+                objectdb.ParamDef(columnName='name', columnType=objectdb.ParamDef.ColumnType.Text),
+                objectdb.ParamDef(columnName='rollers', columnType=objectdb.ParamDef.ColumnType.List),
+            ])
+
+    @staticmethod
+    def createObject(
+        id: str,
+        parent: typing.Optional[str],
+        data: typing.Mapping[str, typing.Any]
+        ) -> 'DiceRollerGroupDatabaseObject':
+        name = data.get('name')
+        if not isinstance(name, str):
+            raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a name parameter of type str')
+        rollers = data.get('rollers')
+        if not isinstance(rollers, objectdb.DatabaseList):
+            raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a rollers parameter of type DatabaseList')
+
+        return DiceRollerGroupDatabaseObject(
+            id=id,
+            parent=parent,
+            name=name,
+            rollers=rollers)
