@@ -13,6 +13,7 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
+# TODO: The D10 looks a bit small compared to the D6 and D20
 # TODO: The more I think about it the more I think the history window restoring the
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works

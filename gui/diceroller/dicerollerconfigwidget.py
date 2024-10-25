@@ -2,7 +2,6 @@ import app
 import common
 import diceroller
 import gui
-import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore
 

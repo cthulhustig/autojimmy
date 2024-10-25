@@ -1,11 +1,11 @@
 import common
+import enum
 import gui
 import logging
 import math
 import random
 import time
 import typing
-from enum import Enum
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 # Define the 8 vertices of a cube in 3D space
@@ -113,7 +113,7 @@ _360DegreesInRadians = math.radians(360)
 class DieAnimationWidget(QtWidgets.QWidget):
     animationComplete = QtCore.pyqtSignal()
 
-    class _SpinState(Enum):
+    class _SpinState(enum.Enum):
         Idle = 0
         Spinning = 1
         FadingIn = 2
