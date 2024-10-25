@@ -1,2 +1,2 @@
 from .diceroller import *
-from .databaseobjects import *
+from .diceobjects import *

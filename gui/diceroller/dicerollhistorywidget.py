@@ -8,7 +8,7 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class DiceRollHistoryWidget(QtWidgets.QWidget):
-    resultSelected = QtCore.pyqtSignal([diceroller.DiceRollerDatabaseObject, diceroller.DiceRollResult])
+    resultSelected = QtCore.pyqtSignal([diceroller.DiceRoller, diceroller.DiceRollResult])
 
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
@@ -53,7 +53,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def addResult(
             self,
-            roller: diceroller.DiceRollerDatabaseObject,
+            roller: diceroller.DiceRoller,
             result: diceroller.DiceRollResult
             ) -> None:
         roller = copy.deepcopy(roller)
@@ -64,14 +64,14 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def purgeHistory(
             self,
-            roller: diceroller.DiceRollerDatabaseObject
+            roller: diceroller.DiceRoller
             ) -> None:
         for row in range(self._historyTable.rowCount() - 1, -1, -1):
             item = self._historyTable.item(row, 0)
             if not item:
                 continue
             itemRoller, _ = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(itemRoller, diceroller.DiceRollerDatabaseObject))
+            assert(isinstance(itemRoller, diceroller.DiceRoller))
             if roller.id() == itemRoller.id():
                 self._historyTable.removeRow(row)
 
@@ -113,7 +113,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
     def _fillTableRow(
             self,
             row: int,
-            roller: diceroller.DiceRollerDatabaseObject,
+            roller: diceroller.DiceRoller,
             result: diceroller.DiceRollResult
             ) -> None:
         itemData = (roller, result)

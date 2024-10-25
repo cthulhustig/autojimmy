@@ -233,7 +233,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         modifiers = []
         for modifier in self._roller.dynamicDMs():
-            assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
+            assert(isinstance(modifier, diceroller.DiceModifier))
             if modifier.enabled():
                 modifiers.append((modifier.name(), modifier.value()))
 
@@ -268,7 +268,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _setCurrentRoller(
             self,
-            roller: typing.Optional[diceroller.DiceRollerDatabaseObject],
+            roller: typing.Optional[diceroller.DiceRoller],
             results: typing.Optional[diceroller.DiceRollResult] = None
             ) -> None:
         # TODO: Remove temp hack
@@ -311,16 +311,16 @@ class DiceRollerWindow(gui.WindowWidget):
             baseName='New Group',
             currentNames=groupNames)
 
-    def _generateRollerName(self, group: diceroller.DiceRollerGroupDatabaseObject) -> str:
+    def _generateRollerName(self, group: diceroller.DiceRollerGroup) -> str:
         rollerNames = set([roller.name() for roller in group.rollers()])
         return DiceRollerWindow._generateNewName(
             baseName='New Roller',
             currentNames=rollerNames)
 
     def _createInitialGroup(self) -> None:
-        group = diceroller.DiceRollerGroupDatabaseObject(
+        group = diceroller.DiceRollerGroup(
             name=self._generateGroupName())
-        roller = diceroller.DiceRollerDatabaseObject(
+        roller = diceroller.DiceRoller(
             name=self._generateRollerName(group=group),
             dieCount=1,
             dieType=common.DieType.D6)
@@ -344,13 +344,13 @@ class DiceRollerWindow(gui.WindowWidget):
         group = self._managerTree.currentGroup()
         newGroup = not group
         if newGroup:
-            group = diceroller.DiceRollerGroupDatabaseObject(
+            group = diceroller.DiceRollerGroup(
                 name=self._generateGroupName())
             newGroup = True
         else:
             group = copy.deepcopy(group)
 
-        roller = diceroller.DiceRollerDatabaseObject(
+        roller = diceroller.DiceRoller(
             name=self._generateRollerName(group=group),
             dieCount=1,
             dieType=common.DieType.D6)
@@ -376,7 +376,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._managerTree.editObjectName(object=roller)
 
     def _createNewGroup(self) -> None:
-        group = diceroller.DiceRollerGroupDatabaseObject(
+        group = diceroller.DiceRollerGroup(
             name=self._generateGroupName())
 
         try:
@@ -396,10 +396,10 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _renameObject(self) -> None:
         object = self._managerTree.currentObject()
-        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+        if isinstance(object, diceroller.DiceRollerGroup):
             title = 'Group Name'
             typeString = 'group'
-        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+        elif isinstance(object, diceroller.DiceRoller):
             title = 'Dice Roller Name'
             typeString = 'dice roller'
         else:
@@ -441,9 +441,9 @@ class DiceRollerWindow(gui.WindowWidget):
         object = self._managerTree.currentObject()
         group = None
         roller = None
-        if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+        if isinstance(object, diceroller.DiceRollerGroup):
             group = object.copyConfig()
-        elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+        elif isinstance(object, diceroller.DiceRoller):
             group = self._managerTree.groupFromRoller(roller=object)
             group = copy.deepcopy(group)
             roller = object.copyConfig()
@@ -478,19 +478,19 @@ class DiceRollerWindow(gui.WindowWidget):
         if not objects:
             return
 
-        groups: typing.List[diceroller.DiceRollerGroupDatabaseObject] = []
-        rollers: typing.List[diceroller.DiceRollerDatabaseObject] = []
+        groups: typing.List[diceroller.DiceRollerGroup] = []
+        rollers: typing.List[diceroller.DiceRoller] = []
         for object in objects:
-            if isinstance(object, diceroller.DiceRollerGroupDatabaseObject):
+            if isinstance(object, diceroller.DiceRollerGroup):
                 groups.append(object)
-            elif isinstance(object, diceroller.DiceRollerDatabaseObject):
+            elif isinstance(object, diceroller.DiceRoller):
                 rollers.append(object)
 
         confirmation = None
         if len(groups) == 0:
             if len(rollers) == 1:
                 roller = rollers[0]
-                assert(isinstance(roller, diceroller.DiceRollerDatabaseObject))
+                assert(isinstance(roller, diceroller.DiceRoller))
                 confirmation = 'Are you sure you want to delete dice roller {name}?'.format(
                     name=roller.name())
             else:
@@ -499,7 +499,7 @@ class DiceRollerWindow(gui.WindowWidget):
         if len(rollers) == 0:
             if len(groups) == 1:
                 group = groups[0]
-                assert(isinstance(group, diceroller.DiceRollerGroupDatabaseObject))
+                assert(isinstance(group, diceroller.DiceRollerGroup))
                 confirmation = 'Are you sure you want to delete group {name} and the dice rollers it contains?'.format(
                     name=group.name())
             else:
@@ -552,14 +552,14 @@ class DiceRollerWindow(gui.WindowWidget):
     def _managerTreeObjectsChanged(
             self,
             createdObjects: typing.Iterable[typing.Union[
-                diceroller.DiceRollerGroupDatabaseObject,
-                diceroller.DiceRollerDatabaseObject]],
+                diceroller.DiceRollerGroup,
+                diceroller.DiceRoller]],
             updatedObjects: typing.Iterable[typing.Union[
-                diceroller.DiceRollerGroupDatabaseObject,
-                diceroller.DiceRollerDatabaseObject]],
+                diceroller.DiceRollerGroup,
+                diceroller.DiceRoller]],
             deletedObjects: typing.Iterable[typing.Union[
-                diceroller.DiceRollerGroupDatabaseObject,
-                diceroller.DiceRollerDatabaseObject]]
+                diceroller.DiceRollerGroup,
+                diceroller.DiceRoller]]
             ) -> None:
         try:
             with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
@@ -608,7 +608,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _historySelectionChanged(
             self,
-            roller: diceroller.DiceRollerDatabaseObject,
+            roller: diceroller.DiceRoller,
             results: diceroller.DiceRollResult
             ) -> None:
         # Make new copies of the historic roller and results. These

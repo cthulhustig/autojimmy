@@ -1,8 +1,9 @@
 import common
+import json
 import objectdb
 import typing
 
-class DiceModifierDatabaseObject(objectdb.DatabaseObject):
+class DiceModifier(objectdb.DatabaseObject):
     def __init__(
             self,
             name: str,
@@ -17,7 +18,7 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
         self._enabled = enabled
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, DiceModifierDatabaseObject):
+        if isinstance(other, DiceModifier):
             return super().__eq__(other) and \
                 self._name == other._name and \
                 self._value == other._value and \
@@ -42,8 +43,8 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
     def setEnabled(self, enabled: bool) -> None:
         self._enabled = enabled
 
-    def copyConfig(self) -> 'DiceModifierDatabaseObject':
-        return DiceModifierDatabaseObject(
+    def copyConfig(self) -> 'DiceModifier':
+        return DiceModifier(
             name=self._name,
             value=self._value,
             enabled=self._enabled)
@@ -58,7 +59,7 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_modifiers',
-            classType=DiceModifierDatabaseObject,
+            classType=DiceModifier,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),
                 objectdb.ParamDef(columnName='value', columnType=int),
@@ -70,7 +71,7 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
         id: str,
         parent: typing.Optional[str],
         data: typing.Mapping[str, typing.Any]
-        ) -> 'DiceRollerDatabaseObject':
+        ) -> 'DiceRoller':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a name parameter of type str')
@@ -81,14 +82,14 @@ class DiceModifierDatabaseObject(objectdb.DatabaseObject):
         if not isinstance(enabled, bool):
             raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a enabled parameter of type bool')
 
-        return DiceModifierDatabaseObject(
+        return DiceModifier(
             id=id,
             parent=parent,
             name=name,
             value=value,
             enabled=enabled)
 
-class DiceRollerDatabaseObject(objectdb.DatabaseObject):
+class DiceRoller(objectdb.DatabaseObject):
     def __init__(
             self,
             name: str,
@@ -98,7 +99,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             hasBoon: bool = False,
             hasBane: bool = False,
             dynamicDMs: typing.Optional[typing.Union[
-                typing.Iterable[DiceModifierDatabaseObject],
+                typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]] = None,
             targetNumber: typing.Optional[int] = None,
             id: typing.Optional[str] = None,
@@ -120,7 +121,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             self.setDynamicDMs(dynamicDMs=dynamicDMs)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, DiceRollerDatabaseObject):
+        if isinstance(other, DiceRoller):
             return super().__eq__(other) and \
                 self._name == other._name and \
                 self._dieCount == other._dieCount and \
@@ -168,7 +169,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def setHasBane(self, hasBane: bool) -> None:
         self._hasBane = hasBane
 
-    def dynamicDMs(self) -> typing.Iterable[DiceModifierDatabaseObject]:
+    def dynamicDMs(self) -> typing.Iterable[DiceModifier]:
         return self._dynamicDMs
 
     def dynamicDMCount(self) -> int:
@@ -177,12 +178,12 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def setDynamicDMs(
             self,
             dynamicDMs: typing.Union[
-                typing.Iterable[DiceModifierDatabaseObject],
+                typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]
             ) -> None:
         for dynamicDM in dynamicDMs:
-            if not isinstance(dynamicDM, DiceModifierDatabaseObject):
-                raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
+            if not isinstance(dynamicDM, DiceModifier):
+                raise ValueError(f'Dynamic DM is not a {DiceModifier}')
 
         if isinstance(dynamicDMs, objectdb.DatabaseList):
             if dynamicDMs.parent() != None:
@@ -197,17 +198,17 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
                     raise ValueError(f'Dynamic DM {dynamicDM.id()} already has parent {dynamicDM.parent()}')
             self._dynamicDMs.init(objects=dynamicDMs)
 
-    def addDynamicDM(self, dynamicDM: DiceModifierDatabaseObject) -> None:
-        if not isinstance(dynamicDM, DiceModifierDatabaseObject):
-            raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
+    def addDynamicDM(self, dynamicDM: DiceModifier) -> None:
+        if not isinstance(dynamicDM, DiceModifier):
+            raise ValueError(f'Dynamic DM is not a {DiceModifier}')
         self._dynamicDMs.add(object=dynamicDM)
 
-    def insertDynamicDM(self, index: int, dynamicDM: DiceModifierDatabaseObject) -> None:
-        if not isinstance(dynamicDM, DiceModifierDatabaseObject):
-            raise ValueError(f'Dynamic DM is not a {DiceModifierDatabaseObject}')
+    def insertDynamicDM(self, index: int, dynamicDM: DiceModifier) -> None:
+        if not isinstance(dynamicDM, DiceModifier):
+            raise ValueError(f'Dynamic DM is not a {DiceModifier}')
         self._dynamicDMs.insert(index=index, object=dynamicDM)
 
-    def removeDynamicDM(self, id: str) -> DiceModifierDatabaseObject:
+    def removeDynamicDM(self, id: str) -> DiceModifier:
         return self._dynamicDMs.remove(id=id)
 
     def targetNumber(self) -> typing.Optional[int]:
@@ -216,12 +217,12 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def setTargetNumber(self, targetNumber: typing.Optional[int]) -> None:
         self._targetNumber = targetNumber
 
-    def copyConfig(self) -> 'DiceRollerDatabaseObject':
+    def copyConfig(self) -> 'DiceRoller':
         dynamicDMs = objectdb.DatabaseList()
         for modifier in self._dynamicDMs:
-            assert(isinstance(modifier, DiceModifierDatabaseObject))
+            assert(isinstance(modifier, DiceModifier))
             dynamicDMs.add(modifier.copyConfig())
-        return DiceRollerDatabaseObject(
+        return DiceRoller(
             name=self._name,
             dieCount=self._dieCount,
             dieType=self._dieType,
@@ -246,7 +247,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_rollers',
-            classType=DiceRollerDatabaseObject,
+            classType=DiceRoller,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),
                 objectdb.ParamDef(columnName='die_count', columnType=int),
@@ -263,7 +264,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
         id: str,
         parent: typing.Optional[str],
         data: typing.Mapping[str, typing.Any]
-        ) -> 'DiceRollerDatabaseObject':
+        ) -> 'DiceRoller':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a name parameter of type str')
@@ -289,7 +290,7 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
         if targetNumber != None and not isinstance(targetNumber, int):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a dynamic_dms parameter of target_number int or None')
 
-        return DiceRollerDatabaseObject(
+        return DiceRoller(
             id=id,
             parent=parent,
             name=name,
@@ -301,12 +302,12 @@ class DiceRollerDatabaseObject(objectdb.DatabaseObject):
             dynamicDMs=dynamicDMs,
             targetNumber=targetNumber)
 
-class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
+class DiceRollerGroup(objectdb.DatabaseObject):
     def __init__(
             self,
             name: str,
             rollers: typing.Optional[typing.Union[
-                typing.Iterable[DiceRollerDatabaseObject],
+                typing.Iterable[DiceRoller],
                 objectdb.DatabaseList]] = None,
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None
@@ -321,7 +322,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
             self.setRollers(rollers=rollers)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, DiceRollerGroupDatabaseObject):
+        if isinstance(other, DiceRollerGroup):
             return super().__eq__(other) and \
                 self._name == other._name and \
                 self._rollers == other._rollers
@@ -333,7 +334,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def setName(self, name: str) -> None:
         self._name = name
 
-    def rollers(self) -> typing.Iterable[DiceRollerDatabaseObject]:
+    def rollers(self) -> typing.Iterable[DiceRoller]:
         return self._rollers
 
     def rollerCount(self) -> int:
@@ -342,12 +343,12 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def setRollers(
             self,
             rollers: typing.Union[
-                typing.Iterable[DiceRollerDatabaseObject],
+                typing.Iterable[DiceRoller],
                 objectdb.DatabaseList]
             ) -> None:
         for roller in rollers:
-            if not isinstance(roller, DiceRollerDatabaseObject):
-                raise ValueError(f'Roller is not a {DiceRollerDatabaseObject})')
+            if not isinstance(roller, DiceRoller):
+                raise ValueError(f'Roller is not a {DiceRoller})')
 
         if isinstance(rollers, objectdb.DatabaseList):
             if rollers.parent() != None:
@@ -362,39 +363,39 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
                     raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
             self._rollers.init(objects=rollers)
 
-    def addRoller(self, roller: DiceRollerDatabaseObject) -> None:
-        if not isinstance(roller, DiceRollerDatabaseObject):
-            raise ValueError(f'Roller is not a {DiceRollerDatabaseObject}')
+    def addRoller(self, roller: DiceRoller) -> None:
+        if not isinstance(roller, DiceRoller):
+            raise ValueError(f'Roller is not a {DiceRoller}')
         if roller.parent() != None:
             raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
 
         self._rollers.add(roller)
 
-    def insertRoller(self, index: int, roller: DiceRollerDatabaseObject) -> None:
-        if not isinstance(roller, DiceRollerDatabaseObject):
-            raise ValueError(f'Roller is not a {DiceRollerDatabaseObject}')
+    def insertRoller(self, index: int, roller: DiceRoller) -> None:
+        if not isinstance(roller, DiceRoller):
+            raise ValueError(f'Roller is not a {DiceRoller}')
         if roller.parent() != None:
             raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
         self._rollers.insert(index=index, object=roller)
 
-    def removeRoller(self, id: str) -> DiceRollerDatabaseObject:
+    def removeRoller(self, id: str) -> DiceRoller:
         return self._rollers.remove(id=id)
 
     def clearRollers(self) -> None:
         self._rollers.clear()
 
-    def findRoller(self, id: str) -> typing.Optional[DiceRollerDatabaseObject]:
+    def findRoller(self, id: str) -> typing.Optional[DiceRoller]:
         return self._rollers.find(id=id)
 
     def containsRoller(self, id: str) -> bool:
         return self._rollers.contains(id=id)
 
-    def copyConfig(self) -> 'DiceRollerGroupDatabaseObject':
+    def copyConfig(self) -> 'DiceRollerGroup':
         rollers = objectdb.DatabaseList()
         for roller in self._rollers:
-            assert(isinstance(roller, DiceRollerDatabaseObject))
+            assert(isinstance(roller, DiceRoller))
             rollers.add(roller.copyConfig())
-        return DiceRollerGroupDatabaseObject(
+        return DiceRollerGroup(
             name=self._name,
             rollers=rollers)
 
@@ -407,7 +408,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_groups',
-            classType=DiceRollerGroupDatabaseObject,
+            classType=DiceRollerGroup,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),
                 objectdb.ParamDef(columnName='rollers', columnType=objectdb.DatabaseList),
@@ -418,7 +419,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
         id: str,
         parent: typing.Optional[str],
         data: typing.Mapping[str, typing.Any]
-        ) -> 'DiceRollerGroupDatabaseObject':
+        ) -> 'DiceRollerGroup':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a name parameter of type str')
@@ -426,7 +427,7 @@ class DiceRollerGroupDatabaseObject(objectdb.DatabaseObject):
         if not isinstance(rollers, objectdb.DatabaseList):
             raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a rollers parameter of type DatabaseList')
 
-        return DiceRollerGroupDatabaseObject(
+        return DiceRollerGroup(
             id=id,
             parent=parent,
             name=name,

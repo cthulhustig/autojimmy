@@ -57,7 +57,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
     def setRoller(
             self,
-            roller: typing.Optional[diceroller.DiceRollerDatabaseObject] = None
+            roller: typing.Optional[diceroller.DiceRoller] = None
             ) -> None:
         self._roller = roller
         self._updateGraph()
@@ -112,7 +112,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         modifiers = []
         for modifier in self._roller.dynamicDMs():
-            assert(isinstance(modifier, diceroller.DiceModifierDatabaseObject))
+            assert(isinstance(modifier, diceroller.DiceModifier))
             if modifier.enabled():
                 modifiers.append((modifier.name(), modifier.value()))
         probabilities = diceroller.calculateProbabilities(

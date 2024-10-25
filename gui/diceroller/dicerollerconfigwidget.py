@@ -12,7 +12,7 @@ class DiceModifierWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            modifier: diceroller.DiceModifierDatabaseObject,
+            modifier: diceroller.DiceModifier,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -62,9 +62,9 @@ class DiceModifierWidget(QtWidgets.QWidget):
         self.modifierChanged.emit()
 
 class DiceModifierListWidget(gui.ListWidgetEx):
-    modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
-    modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifierDatabaseObject)
-    modifierMoved = QtCore.pyqtSignal([int, diceroller.DiceModifierDatabaseObject])
+    modifierChanged = QtCore.pyqtSignal(diceroller.DiceModifier)
+    modifierDeleted = QtCore.pyqtSignal(diceroller.DiceModifier)
+    modifierMoved = QtCore.pyqtSignal([int, diceroller.DiceModifier])
 
     _ItemSpacing = 10
 
@@ -81,7 +81,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self._modifierItemMap: typing.Dict[
             str,
             typing.Tuple[
-                diceroller.DiceModifierDatabaseObject,
+                diceroller.DiceModifier,
                 QtWidgets.QListWidgetItem]] = {}
 
     # Return modifiers in list order
@@ -92,12 +92,12 @@ class DiceModifierListWidget(gui.ListWidgetEx):
             modifiers.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
         return modifiers
 
-    def addModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def addModifier(self, modifier: diceroller.DiceModifier) -> None:
         self.insertModifier(
             row=self.count(),
             modifier=modifier)
 
-    def insertModifier(self, row: int, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def insertModifier(self, row: int, modifier: diceroller.DiceModifier) -> None:
         modifierWidget = DiceModifierWidget(modifier=modifier)
         modifierWidget.modifierChanged.connect(lambda: self._modifierChanged(modifier))
 
@@ -136,7 +136,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self._modifierItemMap[modifier.id()] = (modifier, item)
         self._updateDimensions()
 
-    def removeModifier(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def removeModifier(self, modifier: diceroller.DiceModifier) -> None:
         _, item = self._modifierItemMap.get(modifier.id(), (None, None))
         if not item:
             return
@@ -158,14 +158,14 @@ class DiceModifierListWidget(gui.ListWidgetEx):
         self._modifierItemMap.clear()
         self._updateDimensions()
 
-    def _modifierChanged(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def _modifierChanged(self, modifier: diceroller.DiceModifier) -> None:
         self.modifierChanged.emit(modifier)
 
-    def _deleteClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def _deleteClicked(self, modifier: diceroller.DiceModifier) -> None:
         # Don't emit modifierDeleted as removeModifier will do that
         self.removeModifier(modifier=modifier)
 
-    def _moveUpClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def _moveUpClicked(self, modifier: diceroller.DiceModifier) -> None:
         modifier, item = self._modifierItemMap[modifier.id()]
         index = self.indexFromItem(item)
         if index.row() <= 0:
@@ -177,11 +177,11 @@ class DiceModifierListWidget(gui.ListWidgetEx):
             row=index.row() - 1,
             modifier=modifier)
 
-        self.modifierMoved[int, diceroller.DiceModifierDatabaseObject].emit(
+        self.modifierMoved[int, diceroller.DiceModifier].emit(
             index.row() - 1,
             modifier)
 
-    def _moveDownClicked(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def _moveDownClicked(self, modifier: diceroller.DiceModifier) -> None:
         _, item = self._modifierItemMap[modifier.id()]
         index = self.indexFromItem(item)
         if index.row() >= (self.count() - 1):
@@ -193,7 +193,7 @@ class DiceModifierListWidget(gui.ListWidgetEx):
             row=index.row() + 1,
             modifier=modifier)
 
-        self.modifierMoved[int, diceroller.DiceModifierDatabaseObject].emit(
+        self.modifierMoved[int, diceroller.DiceModifier].emit(
             index.row() + 1,
             modifier)
 
@@ -217,7 +217,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            roller: typing.Optional[diceroller.DiceRollerDatabaseObject] = None,
+            roller: typing.Optional[diceroller.DiceRoller] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -320,12 +320,12 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.setLayout(widgetLayout)
         self._syncToRoller()
 
-    def roller(self) -> diceroller.DiceRollerDatabaseObject:
+    def roller(self) -> diceroller.DiceRoller:
         return self._roller
 
     def setRoller(
             self,
-            roller: typing.Optional[diceroller.DiceRollerDatabaseObject]
+            roller: typing.Optional[diceroller.DiceRoller]
             ) -> None:
         self._roller = roller
         self._syncToRoller()
@@ -390,7 +390,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:
-        modifier = diceroller.DiceModifierDatabaseObject(
+        modifier = diceroller.DiceModifier(
             name='Modifier',
             value=0,
             enabled=True)
@@ -415,14 +415,14 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _modifierChanged(self) -> None:
         self.configChanged.emit()
 
-    def _modifierDeleted(self, modifier: diceroller.DiceModifierDatabaseObject) -> None:
+    def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
         self._roller.removeDynamicDM(id=modifier.id())
         self._modifierList.setHidden(self._modifierList.isEmpty())
         self.configChanged.emit()
 
     def _modifierMoved(self,
                        index: int,
-                       modifier: diceroller.DiceModifierDatabaseObject
+                       modifier: diceroller.DiceModifier
                        ) -> None:
         self._roller.removeDynamicDM(id=modifier.id())
         self._roller.insertDynamicDM(index=index, dynamicDM=modifier)
