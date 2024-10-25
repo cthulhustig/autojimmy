@@ -13,6 +13,10 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
+# TODO: I don't like the terms dynamicDMs and constantDMs, should change it to
+# dynamicModifiers etc
+# - I think I'd probably also want to update the name of the columns and variables
+# used in serialisation
 # TODO: The more I think about it the more I think the history window restoring the
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works
@@ -176,6 +180,18 @@ class DiceRollerWindow(gui.WindowWidget):
         self._deleteAction.triggered.connect(self._deleteObjects)
         self._managerTree.addAction(self._deleteAction)
         self._managerToolbar.addAction(self._deleteAction)
+
+        self._importAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.ImportFile), 'Import...', self)
+        self._importAction.triggered.connect(self._importObjects)
+        self._managerTree.addAction(self._importAction)
+        self._managerToolbar.addAction(self._importAction)
+
+        self._exportAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.ExportFile), 'Export...', self)
+        self._exportAction.triggered.connect(self._exportObjects)
+        self._managerTree.addAction(self._exportAction)
+        self._managerToolbar.addAction(self._exportAction)
 
         self._managerTree.setContextMenuPolicy(
             QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
@@ -544,6 +560,62 @@ class DiceRollerWindow(gui.WindowWidget):
             for roller in group.rollers():
                 if roller.id() in self._lastResults:
                     del self._lastResults[roller.id()]
+
+    # TODO: Add exception handling and other error stuff
+    def _importObjects(self) -> None:
+        with open('c:\\temp\\rollers.json', 'r', encoding='UTF8') as file:
+            data = file.read()
+
+        groups = diceroller.deserialiseGroups(
+            jsonData=data)
+
+        with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
+            for group in groups:
+                objectdb.ObjectDbManager.instance().createObject(
+                    object=group,
+                    transaction=transaction)
+
+        self._syncToDatabase()
+        # TODO: Select the imported objects
+
+    # TODO: Add exception handling and other error stuff
+    def _exportObjects(self) -> None:
+        selectedObjects = list(self._managerTree.selectedObjects())
+        currentObject = self._managerTree.currentObject()
+        if currentObject and currentObject not in selectedObjects:
+            selectedObjects.append(currentObject)
+        if not selectedObjects:
+            return
+
+        explicitGroupIds = set()
+
+        for object in selectedObjects:
+            if isinstance(object, diceroller.DiceRollerGroup):
+                explicitGroupIds.add(object.id())
+
+        exportGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
+        for object in selectedObjects:
+            if isinstance(object, diceroller.DiceRollerGroup):
+                exportGroups[object.id()] = object.copyConfig(copyIds=True)
+            elif isinstance(object, diceroller.DiceRoller):
+                group = self._managerTree.groupFromRoller(roller=object)
+                if group.id() in explicitGroupIds:
+                    # The full group is going to be exported so no
+                    # need to export the individual roller
+                    continue
+                if group.id() in exportGroups:
+                    group = exportGroups[group.id()]
+                else:
+                    group = group.copyConfig(copyIds=True)
+                    group.clearRollers()
+                    exportGroups[group.id()] = group
+                group.addRoller(object.copyConfig(copyIds=True))
+
+        data = diceroller.serialiseGroups(
+            groups=exportGroups.values())
+
+        with open('c:\\temp\\rollers.json', 'w', encoding='UTF8') as file:
+            file.write(data)
 
     def _managerTreeCurrentObjectChanged(self) -> None:
         self._setCurrentRoller(

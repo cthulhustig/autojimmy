@@ -111,6 +111,11 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
                 diceroller.DiceRoller]:
         return item.data(0, QtCore.Qt.ItemDataRole.UserRole)
 
+    def objectFromId(self, id: str) -> typing.Optional[typing.Union[
+                diceroller.DiceRoller,
+                diceroller.DiceRollerGroup]]:
+        return self._objectItemMap.get(id)
+
     def groupFromRoller(
             self,
             roller: typing.Union[

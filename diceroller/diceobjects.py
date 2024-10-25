@@ -43,8 +43,12 @@ class DiceModifier(objectdb.DatabaseObject):
     def setEnabled(self, enabled: bool) -> None:
         self._enabled = enabled
 
-    def copyConfig(self) -> 'DiceModifier':
+    def copyConfig(
+            self,
+            copyIds: bool = False
+            ) -> 'DiceModifier':
         return DiceModifier(
+            id=self._id if copyIds else None,
             name=self._name,
             value=self._value,
             enabled=self._enabled)
@@ -145,10 +149,10 @@ class DiceRoller(objectdb.DatabaseObject):
     def setDieCount(self, dieCount: int) -> None:
         self._dieCount = dieCount
 
-    def dieType(self) -> str:
+    def dieType(self) -> common.DieType:
         return self._dieType
 
-    def setDieType(self, dieType: str) -> None:
+    def setDieType(self, dieType: common.DieType) -> None:
         self._dieType = dieType
 
     def constantDM(self) -> int:
@@ -217,12 +221,16 @@ class DiceRoller(objectdb.DatabaseObject):
     def setTargetNumber(self, targetNumber: typing.Optional[int]) -> None:
         self._targetNumber = targetNumber
 
-    def copyConfig(self) -> 'DiceRoller':
+    def copyConfig(
+            self,
+            copyIds: bool = False
+            ) -> 'DiceRoller':
         dynamicDMs = objectdb.DatabaseList()
         for modifier in self._dynamicDMs:
             assert(isinstance(modifier, DiceModifier))
-            dynamicDMs.add(modifier.copyConfig())
+            dynamicDMs.add(modifier.copyConfig(copyIds=copyIds))
         return DiceRoller(
+            id=self._id if copyIds else None,
             name=self._name,
             dieCount=self._dieCount,
             dieType=self._dieType,
@@ -390,12 +398,16 @@ class DiceRollerGroup(objectdb.DatabaseObject):
     def containsRoller(self, id: str) -> bool:
         return self._rollers.contains(id=id)
 
-    def copyConfig(self) -> 'DiceRollerGroup':
+    def copyConfig(
+            self,
+            copyIds: bool = False
+            ) -> 'DiceRollerGroup':
         rollers = objectdb.DatabaseList()
         for roller in self._rollers:
             assert(isinstance(roller, DiceRoller))
-            rollers.add(roller.copyConfig())
+            rollers.add(roller.copyConfig(copyIds=copyIds))
         return DiceRollerGroup(
+            id=self._id if copyIds else None,
             name=self._name,
             rollers=rollers)
 
@@ -432,3 +444,109 @@ class DiceRollerGroup(objectdb.DatabaseObject):
             parent=parent,
             name=name,
             rollers=rollers)
+
+def serialiseGroups(
+        groups: typing.Iterable[DiceRollerGroup]
+        ) -> str: # Returns json representation
+    data = []
+    for group in groups:
+        data.append(_serialiseGroup(group=group))
+    return json.dumps(data, indent=4)
+
+def deserialiseGroups(
+        jsonData: str
+        ) -> typing.Iterable[DiceRollerGroup]:
+    data = json.loads(jsonData)
+    if not isinstance(data, list):
+        raise RuntimeError('Invalid data, expected list of DiceRollerGroup')
+    groups = []
+    for groupData in data:
+        groups.append(_deserialiseGroup(groupData=groupData))
+    return groups
+
+def _serialiseGroup(
+        group: DiceRollerGroup,
+        ) -> typing.Mapping[str, typing.Any]:
+    rollers = []
+    for roller in group.rollers():
+        rollers.append(_serialiseRoller(roller=roller))
+
+    return {
+        'name': group.name(),
+        'rollers': rollers}
+
+# TODO: Better error handling
+def _deserialiseGroup(
+        groupData: typing.Mapping[str, typing.Any]
+        ) -> DiceRollerGroup:
+    rollerDataList = groupData['rollers']
+    rollers = []
+    for rollerData in rollerDataList:
+        rollers.append(_deserialiseRoller(
+            rollerData=rollerData))
+
+    return DiceRollerGroup(
+        name=str(groupData['name']),
+        rollers=rollers)
+
+def _serialiseRoller(
+        roller: DiceRoller,
+        ) -> typing.Mapping[str, typing.Any]:
+    dynamicDMs = []
+    for modifier in roller.dynamicDMs():
+        dynamicDMs.append(_serialiseModifier(modifier=modifier))
+    data = {
+        'name': roller.name(),
+        'dieCount': roller.dieCount(),
+        'dieType': roller.dieType().name,
+        'constantDM': roller.constantDM(),
+        'hasBoon': roller.hasBoon(),
+        'hasBane': roller.hasBane(),
+        'dynamicDMs': dynamicDMs}
+
+    if roller.targetNumber() != None:
+        data['targetNumber'] = roller.targetNumber()
+
+    return data
+
+# TODO: Better error handling
+def _deserialiseRoller(
+        rollerData: typing.Mapping[str, typing.Any],
+        ) -> DiceRoller:
+    dynamicDMDataList = rollerData['dynamicDMs']
+    dynamicDMs = []
+    for dynamicDMData in dynamicDMDataList:
+        dynamicDMs.append(_deserialiseModifier(modifierData=dynamicDMData))
+
+    dieType = common.DieType.__members__[rollerData['dieType']]
+
+    targetNumber = rollerData.get('targetNumber')
+    if targetNumber != None:
+        targetNumber = int(targetNumber)
+
+    return DiceRoller(
+        name=str(rollerData['name']),
+        dieCount=int(rollerData['dieCount']),
+        dieType=dieType,
+        constantDM=int(rollerData['constantDM']),
+        hasBoon=bool(rollerData['hasBoon']),
+        hasBane=bool(rollerData['hasBane']),
+        dynamicDMs=dynamicDMs,
+        targetNumber=targetNumber)
+
+def _serialiseModifier(
+        modifier: DiceModifier,
+        ) -> typing.Mapping[str, typing.Any]:
+    return {
+        'name': modifier.name(),
+        'value': modifier.value(),
+        'enabled': modifier.enabled()}
+
+# TODO: Better error handling
+def _deserialiseModifier(
+        modifierData: typing.Mapping[str, typing.Any]
+        ) -> DiceModifier:
+    return DiceModifier(
+        name=str(modifierData['name']),
+        value=int(modifierData['value']),
+        enabled=bool(modifierData['enabled']))
