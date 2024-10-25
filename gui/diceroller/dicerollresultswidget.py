@@ -9,7 +9,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
     _DiceDisplayPercent = 70
     _RollDurationMs = 3000
-    _FadeDurationMs = 700
+    _FadeDurationMs = 400
 
     def __init__(
             self,
