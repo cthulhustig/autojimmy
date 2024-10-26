@@ -5,6 +5,7 @@ import diceroller
 import gui
 import logging
 import objectdb
+import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -561,61 +562,107 @@ class DiceRollerWindow(gui.WindowWidget):
                 if roller.id() in self._lastResults:
                     del self._lastResults[roller.id()]
 
-    # TODO: Add exception handling and other error stuff
     def _importObjects(self) -> None:
-        with open('c:\\temp\\rollers.json', 'r', encoding='UTF8') as file:
-            data = file.read()
+        path, _ = gui.FileDialogEx.getOpenFileName(
+            parent=self,
+            caption='Import Dice Rollers',
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}',
+            lastDirKey='DiceRollerWindowImportExportDir')
+        if not path:
+            return None # User cancelled
 
-        groups = diceroller.deserialiseGroups(
-            jsonData=data)
-
-        with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
-            for group in groups:
-                objectdb.ObjectDbManager.instance().createObject(
-                    object=group,
-                    transaction=transaction)
-
-        self._syncToDatabase()
-        # TODO: Select the imported objects
-
-    # TODO: Add exception handling and other error stuff
-    def _exportObjects(self) -> None:
-        selectedObjects = list(self._managerTree.selectedObjects())
-        currentObject = self._managerTree.currentObject()
-        if currentObject and currentObject not in selectedObjects:
-            selectedObjects.append(currentObject)
-        if not selectedObjects:
+        try:
+            with open(path, 'r', encoding='UTF8') as file:
+                data = file.read()
+            groups = diceroller.deserialiseGroups(
+                jsonData=data)
+        except Exception as ex:
+            message = f'Failed to read \'{path}\''
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
             return
 
-        explicitGroupIds = set()
+        try:
+            with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
+                for group in groups:
+                    objectdb.ObjectDbManager.instance().createObject(
+                        object=group,
+                        transaction=transaction)
+        except Exception as ex:
+            message = 'Failed to import imported groups into objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
-        for object in selectedObjects:
-            if isinstance(object, diceroller.DiceRollerGroup):
-                explicitGroupIds.add(object.id())
+        self._syncToDatabase()
+
+    def _exportObjects(self) -> None:
+        path, _ = gui.FileDialogEx.getSaveFileName(
+            parent=self,
+            caption='Export Dice Rollers',
+            filter=f'{gui.JSONFileFilter};;{gui.AllFileFilter}',
+            lastDirKey='DiceRollerWindowImportExportDir',
+            defaultFileName='rollers.json')
+        if not path:
+            return # User cancelled
 
         exportGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
-        for object in selectedObjects:
-            if isinstance(object, diceroller.DiceRollerGroup):
-                exportGroups[object.id()] = object.copyConfig(copyIds=True)
-            elif isinstance(object, diceroller.DiceRoller):
-                group = self._managerTree.groupFromRoller(roller=object)
-                if group.id() in explicitGroupIds:
-                    # The full group is going to be exported so no
-                    # need to export the individual roller
-                    continue
-                if group.id() in exportGroups:
-                    group = exportGroups[group.id()]
-                else:
-                    group = group.copyConfig(copyIds=True)
-                    group.clearRollers()
-                    exportGroups[group.id()] = group
-                group.addRoller(object.copyConfig(copyIds=True))
+        try:
+            selectedObjects = list(self._managerTree.selectedObjects())
+            currentObject = self._managerTree.currentObject()
+            if currentObject and currentObject not in selectedObjects:
+                selectedObjects.append(currentObject)
+            if not selectedObjects:
+                return
 
-        data = diceroller.serialiseGroups(
-            groups=exportGroups.values())
+            explicitGroupIds = set()
+            for object in selectedObjects:
+                if isinstance(object, diceroller.DiceRollerGroup):
+                    explicitGroupIds.add(object.id())
 
-        with open('c:\\temp\\rollers.json', 'w', encoding='UTF8') as file:
-            file.write(data)
+            for object in selectedObjects:
+                if isinstance(object, diceroller.DiceRollerGroup):
+                    exportGroups[object.id()] = object.copyConfig(copyIds=True)
+                elif isinstance(object, diceroller.DiceRoller):
+                    group = self._managerTree.groupFromRoller(roller=object.id())
+                    if group.id() in explicitGroupIds:
+                        raise RuntimeError(f'Unable to retrieve group for roller {object.id()}')
+                    if group.id() in exportGroups:
+                        group = exportGroups[group.id()]
+                    else:
+                        group = group.copyConfig(copyIds=True)
+                        group.clearRollers()
+                        exportGroups[group.id()] = group
+                    group.addRoller(object.copyConfig(copyIds=True))
+        except Exception as ex:
+            message = 'Failed to clone objects for export'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        try:
+            data = diceroller.serialiseGroups(
+                groups=exportGroups.values())
+
+            with open(path, 'w', encoding='UTF8') as file:
+                file.write(data)
+        except Exception as ex:
+            message = f'Failed to write \'{path}\''
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
 
     def _managerTreeCurrentObjectChanged(self) -> None:
         self._setCurrentRoller(

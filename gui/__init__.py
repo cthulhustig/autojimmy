@@ -8,6 +8,7 @@ from .common.widgets import *
 from .common.togglablewidget import *
 from .common.windowwidget import *
 from .common.dialogex import *
+from .common.filedialogex import *
 from .common.htmlcombobox import *
 from .common.prefixlabel import *
 from .common.messageboxex import *

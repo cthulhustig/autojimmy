@@ -21,6 +21,10 @@ class DiceModifierWidget(QtWidgets.QWidget):
 
         self._nameLineEdit = gui.LineEditEx()
         self._nameLineEdit.setText(self._modifier.name())
+        # Set the cursor position to 0 so that, when the dialog is first
+        # displayed, if the text is longer than size of the edit box, it
+        # shows the start of the string rather than the end of the string
+        self._nameLineEdit.setCursorPosition(0)
         self._nameLineEdit.enableDelayedTextEdited(
             msecs=DiceModifierWidget._EditModificationDelayMs)
         self._nameLineEdit.delayedTextEdited.connect(self._nameChanged)
