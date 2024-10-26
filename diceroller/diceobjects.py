@@ -99,10 +99,10 @@ class DiceRoller(objectdb.DatabaseObject):
             name: str,
             dieCount: int = 1,
             dieType: common.DieType = common.DieType.D6,
-            constantDM: int = 0,
+            constant: int = 0,
             hasBoon: bool = False,
             hasBane: bool = False,
-            dynamicDMs: typing.Optional[typing.Union[
+            modifiers: typing.Optional[typing.Union[
                 typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]] = None,
             targetNumber: typing.Optional[int] = None,
@@ -113,16 +113,16 @@ class DiceRoller(objectdb.DatabaseObject):
         self._name = name
         self._dieCount = dieCount
         self._dieType = dieType
-        self._constantDM = constantDM
+        self._constant = constant
         self._hasBoon = hasBoon
         self._hasBane = hasBane
         self._targetNumber = targetNumber
 
-        self._dynamicDMs = objectdb.DatabaseList(
+        self._modifiers = objectdb.DatabaseList(
             parent=self.id(),
-            id=dynamicDMs.id() if isinstance(dynamicDMs, objectdb.DatabaseList) else None)
-        if dynamicDMs:
-            self.setDynamicDMs(dynamicDMs=dynamicDMs)
+            id=modifiers.id() if isinstance(modifiers, objectdb.DatabaseList) else None)
+        if modifiers:
+            self.setModifiers(modifiers=modifiers)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DiceRoller):
@@ -130,10 +130,10 @@ class DiceRoller(objectdb.DatabaseObject):
                 self._name == other._name and \
                 self._dieCount == other._dieCount and \
                 self._dieType == other._dieType and \
-                self._constantDM == other._constantDM and \
+                self._constant == other._constant and \
                 self._hasBoon == other._hasBoon and \
                 self._hasBane == other._hasBane and \
-                self._dynamicDMs == other._dynamicDMs and \
+                self._modifiers == other._modifiers and \
                 self._targetNumber == other._targetNumber
         return False
 
@@ -155,11 +155,11 @@ class DiceRoller(objectdb.DatabaseObject):
     def setDieType(self, dieType: common.DieType) -> None:
         self._dieType = dieType
 
-    def constantDM(self) -> int:
-        return self._constantDM
+    def constant(self) -> int:
+        return self._constant
 
-    def setConstantDM(self, constantDM: int) -> None:
-        self._constantDM = constantDM
+    def setConstant(self, constant: int) -> None:
+        self._constant = constant
 
     def hasBoon(self) -> bool:
         return self._hasBoon
@@ -173,47 +173,50 @@ class DiceRoller(objectdb.DatabaseObject):
     def setHasBane(self, hasBane: bool) -> None:
         self._hasBane = hasBane
 
-    def dynamicDMs(self) -> typing.Iterable[DiceModifier]:
-        return self._dynamicDMs
+    def modifiers(self) -> typing.Iterable[DiceModifier]:
+        return self._modifiers
 
-    def dynamicDMCount(self) -> int:
-        return len(self._dynamicDMs)
+    def modifierCount(self) -> int:
+        return len(self._modifiers)
 
-    def setDynamicDMs(
+    def setModifiers(
             self,
-            dynamicDMs: typing.Union[
+            modifiers: typing.Union[
                 typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]
             ) -> None:
-        for dynamicDM in dynamicDMs:
-            if not isinstance(dynamicDM, DiceModifier):
-                raise ValueError(f'Dynamic DM is not a {DiceModifier}')
+        for modifier in modifiers:
+            if not isinstance(modifier, DiceModifier):
+                raise ValueError(f'Modifier is not a {DiceModifier}')
 
-        if isinstance(dynamicDMs, objectdb.DatabaseList):
-            if dynamicDMs.parent() != None:
-                raise ValueError(f'List {dynamicDMs.id()} already has parent {dynamicDMs.parent()}')
+        if isinstance(modifiers, objectdb.DatabaseList):
+            if modifiers.parent() != None:
+                raise ValueError(f'List {modifiers.id()} already has parent {modifiers.parent()}')
 
-            self._dynamicDMs.setParent(None)
-            self._dynamicDMs = dynamicDMs
-            self._dynamicDMs.setParent(self.id())
+            self._modifiers.setParent(None)
+            self._modifiers = modifiers
+            self._modifiers.setParent(self.id())
         else:
-            for dynamicDM in dynamicDMs:
-                if dynamicDM.parent() != None:
-                    raise ValueError(f'Dynamic DM {dynamicDM.id()} already has parent {dynamicDM.parent()}')
-            self._dynamicDMs.init(objects=dynamicDMs)
+            for modifier in modifiers:
+                if modifier.parent() != None:
+                    raise ValueError(f'Modifier {modifier.id()} already has parent {modifier.parent()}')
+            self._modifiers.init(objects=modifiers)
 
-    def addDynamicDM(self, dynamicDM: DiceModifier) -> None:
-        if not isinstance(dynamicDM, DiceModifier):
-            raise ValueError(f'Dynamic DM is not a {DiceModifier}')
-        self._dynamicDMs.add(object=dynamicDM)
+    def addModifier(self, modifier: DiceModifier) -> None:
+        if not isinstance(modifier, DiceModifier):
+            raise ValueError(f'Modifier is not a {DiceModifier}')
+        self._modifiers.add(object=modifier)
 
-    def insertDynamicDM(self, index: int, dynamicDM: DiceModifier) -> None:
-        if not isinstance(dynamicDM, DiceModifier):
-            raise ValueError(f'Dynamic DM is not a {DiceModifier}')
-        self._dynamicDMs.insert(index=index, object=dynamicDM)
+    def insertModifier(self, index: int, modifier: DiceModifier) -> None:
+        if not isinstance(modifier, DiceModifier):
+            raise ValueError(f'Modifier is not a {DiceModifier}')
+        self._modifiers.insert(index=index, object=modifier)
 
-    def removeDynamicDM(self, id: str) -> DiceModifier:
-        return self._dynamicDMs.remove(id=id)
+    def removeModifier(self, id: str) -> DiceModifier:
+        return self._modifiers.remove(id=id)
+
+    def clearModifiers(self) -> None:
+        self._modifiers.clear()
 
     def targetNumber(self) -> typing.Optional[int]:
         return self._targetNumber
@@ -225,19 +228,19 @@ class DiceRoller(objectdb.DatabaseObject):
             self,
             copyIds: bool = False
             ) -> 'DiceRoller':
-        dynamicDMs = objectdb.DatabaseList()
-        for modifier in self._dynamicDMs:
+        modifiers = objectdb.DatabaseList()
+        for modifier in self._modifiers:
             assert(isinstance(modifier, DiceModifier))
-            dynamicDMs.add(modifier.copyConfig(copyIds=copyIds))
+            modifiers.add(modifier.copyConfig(copyIds=copyIds))
         return DiceRoller(
             id=self._id if copyIds else None,
             name=self._name,
             dieCount=self._dieCount,
             dieType=self._dieType,
-            constantDM=self._constantDM,
+            constant=self._constant,
             hasBoon=self._hasBoon,
             hasBane=self._hasBane,
-            dynamicDMs=dynamicDMs,
+            modifiers=modifiers,
             targetNumber=self._targetNumber)
 
     def data(self) -> typing.Mapping[str, typing.Any]:
@@ -245,10 +248,10 @@ class DiceRoller(objectdb.DatabaseObject):
             'name': self._name,
             'die_count': self._dieCount,
             'die_type': self._dieType,
-            'constant_dm': self._constantDM,
+            'constant': self._constant,
             'has_boon': self._hasBoon,
             'has_bane': self._hasBane,
-            'dynamic_dms': self._dynamicDMs,
+            'modifiers': self._modifiers,
             'target_number': self._targetNumber}
 
     @staticmethod
@@ -260,10 +263,10 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='name', columnType=str),
                 objectdb.ParamDef(columnName='die_count', columnType=int),
                 objectdb.ParamDef(columnName='die_type', columnType=common.DieType),
-                objectdb.ParamDef(columnName='constant_dm', columnType=int),
+                objectdb.ParamDef(columnName='constant', columnType=int),
                 objectdb.ParamDef(columnName='has_boon', columnType=bool),
                 objectdb.ParamDef(columnName='has_bane', columnType=bool),
-                objectdb.ParamDef(columnName='dynamic_dms', columnType=objectdb.DatabaseList),
+                objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
             ])
 
@@ -282,21 +285,21 @@ class DiceRoller(objectdb.DatabaseObject):
         dieType = data.get('die_type')
         if not isinstance(dieType, common.DieType):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type DieType')
-        constantDM = data.get('constant_dm')
-        if not isinstance(constantDM, int):
-            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type int')
+        constant = data.get('constant')
+        if not isinstance(constant, int):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a constant parameter of type int')
         hasBoon = data.get('has_boon')
         if not isinstance(hasBoon, bool):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_boon parameter of type bool')
         hasBane = data.get('has_bane')
         if not isinstance(hasBane, bool):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_bane parameter of type bool')
-        dynamicDMs = data.get('dynamic_dms')
-        if not isinstance(dynamicDMs, objectdb.DatabaseList):
-            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a dynamic_dms parameter of type DatabaseList')
+        modifiers = data.get('modifiers')
+        if not isinstance(modifiers, objectdb.DatabaseList):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a modifiers parameter of type DatabaseList')
         targetNumber = data.get('target_number')
         if targetNumber != None and not isinstance(targetNumber, int):
-            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a dynamic_dms parameter of target_number int or None')
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a target_number parameter of type int or None')
 
         return DiceRoller(
             id=id,
@@ -304,10 +307,10 @@ class DiceRoller(objectdb.DatabaseObject):
             name=name,
             dieCount=dieCount,
             dieType=dieType,
-            constantDM=constantDM,
+            constant=constant,
             hasBoon=hasBoon,
             hasBane=hasBane,
-            dynamicDMs=dynamicDMs,
+            modifiers=modifiers,
             targetNumber=targetNumber)
 
 class DiceRollerGroup(objectdb.DatabaseObject):
@@ -454,9 +457,9 @@ def serialiseGroups(
     return json.dumps(data, indent=4)
 
 def deserialiseGroups(
-        jsonData: str
+        serialData: str
         ) -> typing.Iterable[DiceRollerGroup]:
-    data = json.loads(jsonData)
+    data = json.loads(serialData)
     if not isinstance(data, list):
         raise RuntimeError('Invalid data, expected list of DiceRollerGroup')
     groups = []
@@ -492,31 +495,31 @@ def _deserialiseGroup(
 def _serialiseRoller(
         roller: DiceRoller,
         ) -> typing.Mapping[str, typing.Any]:
-    dynamicDMs = []
-    for modifier in roller.dynamicDMs():
-        dynamicDMs.append(_serialiseModifier(modifier=modifier))
-    data = {
+    modifierDataList = []
+    for modifier in roller.modifiers():
+        modifierDataList.append(_serialiseModifier(modifier=modifier))
+    rollerData = {
         'name': roller.name(),
         'dieCount': roller.dieCount(),
         'dieType': roller.dieType().name,
-        'constantDM': roller.constantDM(),
+        'constant': roller.constant(),
         'hasBoon': roller.hasBoon(),
         'hasBane': roller.hasBane(),
-        'dynamicDMs': dynamicDMs}
+        'modifiers': modifierDataList}
 
     if roller.targetNumber() != None:
-        data['targetNumber'] = roller.targetNumber()
+        rollerData['targetNumber'] = roller.targetNumber()
 
-    return data
+    return rollerData
 
 # TODO: Better error handling
 def _deserialiseRoller(
         rollerData: typing.Mapping[str, typing.Any],
         ) -> DiceRoller:
-    dynamicDMDataList = rollerData['dynamicDMs']
-    dynamicDMs = []
-    for dynamicDMData in dynamicDMDataList:
-        dynamicDMs.append(_deserialiseModifier(modifierData=dynamicDMData))
+    modifierDataList = rollerData['modifiers']
+    modifiers = []
+    for modifierData in modifierDataList:
+        modifiers.append(_deserialiseModifier(modifierData=modifierData))
 
     dieType = common.DieType.__members__[rollerData['dieType']]
 
@@ -528,10 +531,10 @@ def _deserialiseRoller(
         name=str(rollerData['name']),
         dieCount=int(rollerData['dieCount']),
         dieType=dieType,
-        constantDM=int(rollerData['constantDM']),
+        constant=int(rollerData['constant']),
         hasBoon=bool(rollerData['hasBoon']),
         hasBane=bool(rollerData['hasBane']),
-        dynamicDMs=dynamicDMs,
+        modifiers=modifiers,
         targetNumber=targetNumber)
 
 def _serialiseModifier(

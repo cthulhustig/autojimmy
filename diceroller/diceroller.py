@@ -1,4 +1,5 @@
 import common
+import diceroller
 import enum
 import random
 import typing
@@ -105,72 +106,57 @@ class DiceRollResult(object):
         return self._effectValue
 
 def calculateProbabilities(
-        dieCount: typing.Union[int, common.ScalarCalculation],
-        dieType: common.DieType,
-        constantDM: typing.Union[int, common.ScalarCalculation] = 0,
-        hasBoon: bool = False,
-        hasBane: bool = False,
-        dynamicDMs: typing.Optional[typing.Iterable[typing.Tuple[
-            str, # Modifier name
-            typing.Union[int, common.ScalarCalculation], # Modifier value
-            ]]] = None,
+        roller: diceroller.DiceRoller,
         probability: common.ProbabilityType = common.ProbabilityType.EqualTo,
         ) -> typing.Mapping[int, common.ScalarCalculation]:
+    # NOTE: Modifiers with a value of 0 are included even though they have no
+    # effect on the roll so that they are still included in results
     modifiers = [_makeScalarValue(
-        value=constantDM,
+        value=roller.constant(),
         name='Constant DM')]
-    if dynamicDMs:
-        for modifierName, modifierValue in dynamicDMs:
-            # NOTE: Dynamic modifiers with a value of 0 are intentionally
-            # included so they show up in the detailed report view
+    for modifier in roller.modifiers():
+        if modifier.enabled():
             modifiers.append(_makeScalarValue(
-                value=modifierValue,
-                name=f'{modifierName} Dynamic DM'))
+                value=modifier.value(),
+                name=modifier.name()))
     modifiers = common.Calculator.sum(
         values=modifiers,
         name='Total DM')
 
     return common.calculateRollProbabilities(
-        dieCount=dieCount,
-        dieType=dieType,
-        hasBoon=hasBoon,
-        hasBane=hasBane,
+        dieCount=roller.dieCount(),
+        dieType=roller.dieType(),
+        hasBoon=roller.hasBoon(),
+        hasBane=roller.hasBane(),
         modifier=modifiers,
         probability=probability)
 
 def rollDice(
-        dieCount: typing.Union[int, common.ScalarCalculation],
-        dieType: common.DieType,
-        constantDM: typing.Union[int, common.ScalarCalculation] = 0,
-        hasBoon: bool = False,
-        hasBane: bool = False,
-        dynamicDMs: typing.Optional[typing.Iterable[typing.Tuple[
-            str, # Modifier name
-            typing.Union[int, common.ScalarCalculation], # Modifier value
-            ]]] = None,
-        targetNumber: typing.Optional[typing.Union[int, common.ScalarCalculation]] = None,
+        roller: diceroller.DiceRoller,
         randomGenerator: typing.Optional[random.Random] = None,
         ) -> DiceRollResult:
     dieCount = _makeScalarValue(
-        value=dieCount,
+        value=roller.dieCount(),
         name='Die Count')
-    constantDM = _makeScalarValue(
-        value=constantDM,
+    constant = _makeScalarValue(
+        value=roller.constant(),
         name='Constant DM')
-    if targetNumber != None:
+    targetNumber = None
+    if roller.targetNumber() != None:
         targetNumber = _makeScalarValue(
-            value=targetNumber,
+            value=roller.targetNumber(),
             name='Target Number')
     if randomGenerator == None:
         randomGenerator = random
 
     originalRolls: typing.List[common.ScalarCalculation] = []
     boonBaneCount = 0
-    if hasBoon and not hasBane:
+    if roller.hasBoon() and not roller.hasBane():
         boonBaneCount = 1
-    elif hasBane and not hasBoon:
+    elif roller.hasBane() and not roller.hasBoon():
         boonBaneCount = -1
     totalDieCount = dieCount.value() + abs(boonBaneCount)
+    dieType = roller.dieType()
     dieSides = common.dieSides(dieType=dieType)
     for index in range(0, totalDieCount):
         roll = randomGenerator.randint(1, dieSides)
@@ -193,17 +179,15 @@ def rollDice(
         ignoredRoll = max(usedRolls, key=lambda x: x.value())
         usedRolls.remove(ignoredRoll)
 
-    modifiers = {}
-    if constantDM.value() != 0:
-        modifiers[constantDM] = 'Constant DM'
-    if dynamicDMs:
-        for modifierName, modifierValue in dynamicDMs:
-            # NOTE: Dynamic modifiers with a value of 0 are intentionally
-            # included so they show up in the detailed report view
-            modifierValue = _makeScalarValue(
-                value=modifierValue,
-                name=f'{modifierName} Dynamic DM')
-            modifiers[modifierValue] = modifierName
+    # NOTE: Modifiers with a value of 0 are included even though they have no
+    # effect on the roll so that they are still included in results
+    modifiers = {constant: constant.name()}
+    for modifier in roller.modifiers():
+        if modifier.enabled():
+            value = _makeScalarValue(
+                value=modifier.value(),
+                name=modifier.name())
+            modifiers[value] = modifier.name()
 
     total = common.Calculator.sum(
         values=usedRolls + list(modifiers.keys()),

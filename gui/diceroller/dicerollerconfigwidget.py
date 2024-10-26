@@ -241,19 +241,19 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._dieTypeComboBox.currentIndexChanged.connect(self._dieTypeChanged)
 
-        self._constantDMSpinBox = gui.SpinBoxEx()
-        self._constantDMSpinBox.enableAlwaysShowSign(True)
-        self._constantDMSpinBox.setRange(-100, 100)
-        self._constantDMSpinBox.setSizePolicy(
+        self._constantSpinBox = gui.SpinBoxEx()
+        self._constantSpinBox.enableAlwaysShowSign(True)
+        self._constantSpinBox.setRange(-100, 100)
+        self._constantSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
-        self._constantDMSpinBox.valueChanged.connect(self._constantDMChanged)
+        self._constantSpinBox.valueChanged.connect(self._constantChanged)
 
         diceRollLayout = QtWidgets.QHBoxLayout()
         diceRollLayout.setContentsMargins(0, 0, 0, 0)
         diceRollLayout.addWidget(self._dieCountSpinBox)
         diceRollLayout.addWidget(self._dieTypeComboBox)
-        diceRollLayout.addWidget(self._constantDMSpinBox)
+        diceRollLayout.addWidget(self._constantSpinBox)
         diceRollLayout.addStretch()
 
         self._targetNumberSpinBox = gui.OptionalSpinBox()
@@ -347,8 +347,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._dieTypeComboBox):
             self._dieTypeComboBox.setCurrentEnum(self._roller.dieType())
 
-        with gui.SignalBlocker(self._constantDMSpinBox):
-            self._constantDMSpinBox.setValue(self._roller.constantDM())
+        with gui.SignalBlocker(self._constantSpinBox):
+            self._constantSpinBox.setValue(self._roller.constant())
 
         with gui.SignalBlocker(self._hasBoonCheckBox):
             self._hasBoonCheckBox.setChecked(self._roller.hasBoon())
@@ -358,7 +358,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
-            for modifier in self._roller.dynamicDMs():
+            for modifier in self._roller.modifiers():
                 self._modifierList.addModifier(modifier)
             self._modifierList.setHidden(self._modifierList.isEmpty())
 
@@ -378,9 +378,9 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             self._dieTypeComboBox.currentEnum())
         self.configChanged.emit()
 
-    def _constantDMChanged(self) -> None:
-        self._roller.setConstantDM(
-            self._constantDMSpinBox.value())
+    def _constantChanged(self) -> None:
+        self._roller.setConstant(
+            self._constantSpinBox.value())
         self.configChanged.emit()
 
     def _hasBoonChanged(self) -> None:
@@ -398,15 +398,14 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             name='Modifier',
             value=0,
             enabled=True)
-        self._roller.addDynamicDM(dynamicDM=modifier)
+        self._roller.addModifier(modifier=modifier)
         self._modifierList.addModifier(modifier)
         self._modifierList.setHidden(False)
         self.configChanged.emit()
 
     # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
-        for modifier in self._roller.dynamicDMs():
-            self._roller.removeDynamicDM(id=modifier.id())
+        self._roller.clearModifiers()
 
         # Block signals to prevent multiple config update
         # notifications as modifiers are deleted
@@ -420,7 +419,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.configChanged.emit()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
-        self._roller.removeDynamicDM(id=modifier.id())
+        self._roller.removeModifier(id=modifier.id())
         self._modifierList.setHidden(self._modifierList.isEmpty())
         self.configChanged.emit()
 
@@ -428,8 +427,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                        index: int,
                        modifier: diceroller.DiceModifier
                        ) -> None:
-        self._roller.removeDynamicDM(id=modifier.id())
-        self._roller.insertDynamicDM(index=index, dynamicDM=modifier)
+        self._roller.removeModifier(id=modifier.id())
+        self._roller.insertModifier(index=index, modifier=modifier)
         self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:

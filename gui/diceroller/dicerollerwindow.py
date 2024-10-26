@@ -14,10 +14,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: I don't like the terms dynamicDMs and constantDMs, should change it to
-# dynamicModifiers etc
-# - I think I'd probably also want to update the name of the columns and variables
-# used in serialisation
 # TODO: The more I think about it the more I think the history window restoring the
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works
@@ -29,9 +25,6 @@ _WelcomeMessage = """
 # would need stored in the db) will have the same id as the current version
 # of the object that is already in the db
 # - Complicated by the fact they use ScalarCalculations (history would be lost)
-# TODO: Need json import/export
-# - Ideally selecting multiple rollers to export to a single file (ideally
-#   from multiple groups)
 # TODO: Support for Flux???
 # - p22 of T5 rules
 # - T5 usually the lower the roll the better but also says some target
@@ -248,20 +241,7 @@ class DiceRollerWindow(gui.WindowWidget):
         if not self._roller or self._rollInProgress:
             return
 
-        modifiers = []
-        for modifier in self._roller.dynamicDMs():
-            assert(isinstance(modifier, diceroller.DiceModifier))
-            if modifier.enabled():
-                modifiers.append((modifier.name(), modifier.value()))
-
-        self._results = diceroller.rollDice(
-            dieCount=self._roller.dieCount(),
-            dieType=self._roller.dieType(),
-            constantDM=self._roller.constantDM(),
-            hasBoon=self._roller.hasBoon(),
-            hasBane=self._roller.hasBane(),
-            dynamicDMs=modifiers,
-            targetNumber=self._roller.targetNumber())
+        self._results = diceroller.rollDice(roller=self._roller)
 
         self._rollInProgress = True
         self._updateControlEnablement()
@@ -575,7 +555,7 @@ class DiceRollerWindow(gui.WindowWidget):
             with open(path, 'r', encoding='UTF8') as file:
                 data = file.read()
             groups = diceroller.deserialiseGroups(
-                jsonData=data)
+                serialData=data)
         except Exception as ex:
             message = f'Failed to read \'{path}\''
             logging.error(message, exc_info=ex)
@@ -632,7 +612,9 @@ class DiceRollerWindow(gui.WindowWidget):
                 elif isinstance(object, diceroller.DiceRoller):
                     group = self._managerTree.groupFromRoller(roller=object.id())
                     if group.id() in explicitGroupIds:
-                        raise RuntimeError(f'Unable to retrieve group for roller {object.id()}')
+                        # Group is already being exported so no need to export
+                        # individual roller
+                        continue
                     if group.id() in exportGroups:
                         group = exportGroups[group.id()]
                     else:
