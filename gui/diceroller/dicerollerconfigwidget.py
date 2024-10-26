@@ -256,12 +256,25 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         diceRollLayout.addWidget(self._constantSpinBox)
         diceRollLayout.addStretch()
 
-        self._targetNumberSpinBox = gui.OptionalSpinBox()
+        self._targetTypeComboBox = gui.EnumComboBox(
+            type=common.ComparisonType,
+            value=None,
+            isOptional=True)
+        self._targetTypeComboBox.currentIndexChanged.connect(self._targetTypeChanged)
+
+        self._targetNumberSpinBox = gui.SpinBoxEx()
         self._targetNumberSpinBox.setMinimum(0)
         self._targetNumberSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        self._targetNumberSpinBox.setEnabled(self._targetTypeComboBox.currentEnum() != None)
         self._targetNumberSpinBox.valueChanged.connect(self._targetNumberChanged)
+
+        targetLayout = QtWidgets.QHBoxLayout()
+        targetLayout.setContentsMargins(0, 0, 0, 0)
+        targetLayout.addWidget(self._targetTypeComboBox)
+        targetLayout.addWidget(self._targetNumberSpinBox)
+        targetWidget = gui.LayoutWrapperWidget(layout=targetLayout)
 
         self._hasBoonCheckBox = gui.CheckBoxEx()
         self._hasBoonCheckBox.setSizePolicy(
@@ -301,7 +314,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
-        controlLayout.addRow('Target Number:', self._targetNumberSpinBox)
+        controlLayout.addRow('Target:', targetWidget)
         controlLayout.addRow('Boon:', self._hasBoonCheckBox)
         controlLayout.addRow('Bane:', self._hasBaneCheckBox)
         controlLayout.addRow('Modifiers:', modifiersLayout)
@@ -362,11 +375,16 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                 self._modifierList.addModifier(modifier)
             self._modifierList.setHidden(self._modifierList.isEmpty())
 
+        with gui.SignalBlocker(self._targetTypeComboBox):
+            self._targetTypeComboBox.setCurrentEnum(
+                self._roller.targetType())
+
         with gui.SignalBlocker(self._targetNumberSpinBox):
             targetNumber = self._roller.targetNumber()
-            self._targetNumberSpinBox.setValue(targetNumber)
-            if targetNumber == None:
-                self._targetNumberSpinBox.setSpinBoxValue(8)
+            self._targetNumberSpinBox.setValue(
+                targetNumber if targetNumber != None else 8)
+            self._targetNumberSpinBox.setEnabled(
+                self._roller.targetType() != None)
 
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
@@ -429,6 +447,14 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                        ) -> None:
         self._roller.removeModifier(id=modifier.id())
         self._roller.insertModifier(index=index, modifier=modifier)
+        self.configChanged.emit()
+
+    def _targetTypeChanged(self) -> None:
+        targetType = self._targetTypeComboBox.currentEnum()
+        self._roller.setTargetType(targetType)
+        self._roller.setTargetNumber(
+            self._targetNumberSpinBox.value() if targetType != None else None)
+        self._targetNumberSpinBox.setEnabled(targetType != None)
         self.configChanged.emit()
 
     def _targetNumberChanged(self) -> None:

@@ -49,6 +49,7 @@ class DiceRollResult(object):
             modifiers: typing.Mapping[
                 common.ScalarCalculation, # Modifier name
                 str], # Modifier value
+            targetType: typing.Optional[common.ComparisonType],
             targetNumber: typing.Optional[common.ScalarCalculation],
             effectType: typing.Optional[DiceRollEffectType],
             effectValue: typing.Optional[common.ScalarCalculation]
@@ -59,6 +60,7 @@ class DiceRollResult(object):
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
         self._modifiers = dict(modifiers) if modifiers else {}
+        self._targetType = targetType
         self._targetNumber = targetNumber
         self._effectType = effectType
         self._effectValue = effectValue
@@ -94,8 +96,22 @@ class DiceRollResult(object):
         for pair in self._modifiers.items():
             yield pair
 
+    def targetType(self) -> typing.Optional[common.ComparisonType]:
+        return self._targetType
+
     def targetNumber(self) -> typing.Optional[common.ScalarCalculation]:
         return self._targetNumber
+
+    def hasTarget(self) -> bool:
+        return self._targetType != None and self._targetNumber != None
+
+    def isSuccess(self) -> bool:
+        if self._targetType == None or self._targetNumber == None:
+            return False # No target means no pass
+        return common.ComparisonType.compareValues(
+            lhs=self._total.value(),
+            rhs=self._targetNumber.value(),
+            comparison=self._targetType)
 
     # The effect will only be set if a target number was specified and that
     # target number was met
@@ -107,7 +123,7 @@ class DiceRollResult(object):
 
 def calculateProbabilities(
         roller: diceroller.DiceRoller,
-        probability: common.ProbabilityType = common.ProbabilityType.EqualTo,
+        probability: common.ComparisonType = common.ComparisonType.EqualTo,
         ) -> typing.Mapping[int, common.ScalarCalculation]:
     # NOTE: Modifiers with a value of 0 are included even though they have no
     # effect on the roll so that they are still included in results
@@ -138,14 +154,21 @@ def rollDice(
     dieCount = _makeScalarValue(
         value=roller.dieCount(),
         name='Die Count')
+
     constant = _makeScalarValue(
         value=roller.constant(),
         name='Constant DM')
-    targetNumber = None
-    if roller.targetNumber() != None:
+
+    targetType = roller.targetType()
+    targetNumber = roller.targetNumber()
+    if targetType != None and targetNumber != None:
+        targetType = roller.targetType()
         targetNumber = _makeScalarValue(
             value=roller.targetNumber(),
             name='Target Number')
+    else:
+        targetType = targetNumber = None
+
     if randomGenerator == None:
         randomGenerator = random
 
@@ -194,11 +217,37 @@ def rollDice(
         name='Modified Roll')
 
     effectValue = None
-    effectType = None
-    if targetNumber != None:
+    if targetType == common.ComparisonType.EqualTo:
+        effectValue = common.Calculator.negate(
+            value=common.Calculator.absolute(
+                value=common.Calculator.subtract(
+                    lhs=targetNumber,
+                    rhs=total)))
+    elif targetType == common.ComparisonType.GreaterThan:
         effectValue = common.Calculator.subtract(
             lhs=total,
-            rhs=targetNumber,
+            rhs=common.Calculator.add(
+                lhs=targetNumber,
+                rhs=common.ScalarCalculation(value=1)))
+    elif targetType == common.ComparisonType.GreaterOrEqualTo:
+        effectValue = common.Calculator.subtract(
+            lhs=total,
+            rhs=targetNumber)
+    elif targetType == common.ComparisonType.LessThan:
+        effectValue = common.Calculator.subtract(
+            lhs=common.Calculator.subtract(
+                lhs=targetNumber,
+                rhs=common.ScalarCalculation(value=1)),
+            rhs=total)
+    elif targetType == common.ComparisonType.LessThanOrEqualTo:
+        effectValue = common.Calculator.subtract(
+            lhs=targetNumber,
+            rhs=total)
+
+    effectType = None
+    if effectValue != None:
+        effectValue = common.Calculator.rename(
+            value=effectValue,
             name='Roll Effect')
         effectType = _effectValueToType(value=effectValue)
 
@@ -208,6 +257,7 @@ def rollDice(
         rolls=originalRolls,
         ignored=ignoredRoll,
         modifiers=modifiers,
+        targetType=targetType,
         targetNumber=targetNumber,
         effectType=effectType,
         effectValue=effectValue)

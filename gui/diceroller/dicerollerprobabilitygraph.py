@@ -27,9 +27,9 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         self._highlightRoll = None
 
         self._typeComboBox = gui.EnumComboBox(
-            type=common.ProbabilityType)
+            type=common.ComparisonType)
         self._typeComboBox.setCurrentEnum(
-            value=common.ProbabilityType.EqualTo)
+            value=common.ComparisonType.EqualTo)
         self._typeComboBox.currentIndexChanged.connect(
             self._updateGraph)
 
@@ -122,8 +122,12 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             colour = defaultColour
             if roll == self._highlightRoll:
                 colour = 'b'
-            elif self._roller.targetNumber() != None:
-                colour = 'g' if roll >= self._roller.targetNumber() else 'r'
+            elif self._roller.hasTarget():
+                isSuccess = common.ComparisonType.compareValues(
+                    lhs=roll,
+                    rhs=self._roller.targetNumber(),
+                    comparison=self._roller.targetType())
+                colour = 'g' if isSuccess else 'r'
             colours.append(colour)
 
         xMin = min(xValues)
@@ -169,7 +173,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         if matched != None:
             values, probabilities = self._bars.getData()
             graphType = self._typeComboBox.currentEnum()
-            assert(isinstance(graphType, common.ProbabilityType))
+            assert(isinstance(graphType, common.ComparisonType))
             # NOTE: A high decimal place count is used to avoid cases where
             # rounding can make the tool tip look wrong. For example, with just
             # 2-3 decimal places it would say there was a 100% probability of

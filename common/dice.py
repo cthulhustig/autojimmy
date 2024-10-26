@@ -12,9 +12,11 @@ import typing
 # https://www.lookwhattheshoggothdraggedin.com/post/dice-rolls-in-traveller.html
 # https://anydice.com/
 
-# IMPORTANT: If I ever change the name of the enum (not that value string) then I need
-# to add some kind of value mapping to objectdb as the name of the enum is stored in
-# the database for dice roller db objects
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
 class DieType(enum.Enum):
     D6 = 'D'
     D3 = 'D3'
@@ -135,12 +137,36 @@ def _calculateRollProbabilities(
                 masterResults[sumShowingMax + k] += multiplier * v
     return masterResults
 
-class ProbabilityType(enum.Enum):
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
+class ComparisonType(enum.Enum):
     EqualTo = 'Equal To'
     GreaterThan = 'Greater Than'
     GreaterOrEqualTo = 'Greater Or Equal To'
     LessThan = 'Less Than'
     LessThanOrEqualTo = 'Less Or Equal To'
+
+    @staticmethod
+    def compareValues(
+            lhs: int,
+            rhs: int,
+            comparison: 'ComparisonType'
+            ) -> bool:
+        if comparison == ComparisonType.EqualTo:
+            return lhs == rhs
+        elif comparison == ComparisonType.GreaterThan:
+            return lhs > rhs
+        elif comparison == ComparisonType.GreaterOrEqualTo:
+            return lhs >= rhs
+        elif comparison == ComparisonType.LessThan:
+            return lhs < rhs
+        elif comparison == ComparisonType.LessThanOrEqualTo:
+            return lhs <= rhs
+
+        raise ValueError(f'Invalid comparison type {comparison}')
 
 def calculateRollProbabilities(
         dieCount: typing.Union[int, common.ScalarCalculation],
@@ -148,7 +174,7 @@ def calculateRollProbabilities(
         hasBoon: bool = False,
         hasBane: bool = False,
         modifier: typing.Union[int, common.ScalarCalculation] = 0,
-        probability: ProbabilityType = ProbabilityType.EqualTo
+        probability: ComparisonType = ComparisonType.EqualTo
         ) -> typing.Mapping[int, common.ScalarCalculation]:
     if isinstance(dieCount, common.ScalarCalculation):
         dieCount = dieCount.value()
@@ -174,15 +200,15 @@ def calculateRollProbabilities(
         if dieType == DieType.DD:
             value *= 10
 
-        if probability == ProbabilityType.EqualTo:
+        if probability == ComparisonType.EqualTo:
             enumerator = combinations
-        elif probability == ProbabilityType.LessThan:
+        elif probability == ComparisonType.LessThan:
             enumerator = accumulate
-        elif probability == ProbabilityType.LessThanOrEqualTo:
+        elif probability == ComparisonType.LessThanOrEqualTo:
             enumerator = accumulate + combinations
-        elif probability == ProbabilityType.GreaterOrEqualTo:
+        elif probability == ComparisonType.GreaterOrEqualTo:
             enumerator = denominator - accumulate
-        elif probability == ProbabilityType.GreaterThan:
+        elif probability == ComparisonType.GreaterThan:
             enumerator = denominator - (accumulate + combinations)
 
         probabilities[value + modifier] = common.ScalarCalculation(
@@ -200,7 +226,7 @@ def calculateRollProbability(
         hasBane: bool = False,
         modifier: typing.Union[int, common.ScalarCalculation] = 0,
         dieType: DieType = DieType.D6,
-        probability: ProbabilityType = ProbabilityType.GreaterOrEqualTo,
+        probability: ComparisonType = ComparisonType.GreaterOrEqualTo,
         ) -> common.ScalarCalculation:
     if isinstance(dieCount, common.ScalarCalculation):
         dieCount = dieCount.value()
@@ -225,21 +251,21 @@ def calculateRollProbability(
     minValue = min(probabilities.keys())
     maxValue = max(probabilities.keys())
 
-    if probability == ProbabilityType.EqualTo:
+    if probability == ComparisonType.EqualTo:
         return probabilities[targetValue - modifier]
-    elif probability == ProbabilityType.GreaterThan:
+    elif probability == ComparisonType.GreaterThan:
         startValue = max((targetValue + 1) - modifier, minValue)
         stopValue = maxValue
         typeString = 'Greater Than'
-    elif probability == ProbabilityType.GreaterOrEqualTo:
+    elif probability == ComparisonType.GreaterOrEqualTo:
         startValue = max(targetValue - modifier, minValue)
         stopValue = maxValue
         typeString = 'Greater Than Or Equal To'
-    elif probability == ProbabilityType.LessThan:
+    elif probability == ComparisonType.LessThan:
         startValue = minValue
         stopValue = min((targetValue - 1) - modifier, maxValue)
         typeString = 'Less Than'
-    elif probability == ProbabilityType.LessThanOrEqualTo:
+    elif probability == ComparisonType.LessThanOrEqualTo:
         startValue = minValue
         stopValue = min(targetValue - modifier, maxValue)
         typeString = 'Less Than Or Equal To'
@@ -294,7 +320,7 @@ def calculateRollRangeProbability(
         dieType=dieType,
         hasBoon=hasBoon,
         hasBane=hasBane,
-        probability=ProbabilityType.EqualTo)
+        probability=ComparisonType.EqualTo)
     assert(probabilities)
 
     probabilityString = f'Percentage Probability Of Rolling Between {lowValue} and {highValue}'

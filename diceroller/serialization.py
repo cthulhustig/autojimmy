@@ -70,6 +70,9 @@ def _serialiseRoller(
         'hasBane': roller.hasBane(),
         'modifiers': modifierDataList}
 
+    if roller.targetType() != None:
+        rollerData['targetType'] = roller.targetType().name
+
     if roller.targetNumber() != None:
         rollerData['targetNumber'] = roller.targetNumber()
 
@@ -93,12 +96,9 @@ def _deserialiseRoller(
     dieType = rollerData.get('dieType')
     if dieType == None:
         raise RuntimeError('Dice Roller data must have a dieType attribute')
-    if not isinstance(dieType, str) or \
-        dieType not in common.DieType.__members__:
+    if dieType not in common.DieType.__members__:
         raise RuntimeError('Dice Roller data dieType attribute must be one of {valid}'.format(
             value=common.humanFriendlyListString(strings=common.DieType.__members__.keys())))
-    if dieType not in common.DieType.__members__:
-        raise RuntimeError('Dice Roller data dieType attribute must ')
     dieType = common.DieType.__members__[dieType]
 
     modifierDataList = rollerData.get('modifiers')
@@ -120,6 +120,13 @@ def _deserialiseRoller(
     if not isinstance(hasBane, bool):
         raise RuntimeError('Dice Roller data hasBane attribute must be true or false')
 
+    targetType = rollerData.get('targetType')
+    if targetType != None:
+        if targetType not in common.ComparisonType.__members__:
+            raise RuntimeError('Dice Roller data targetType attribute must be null or one of {valid}'.format(
+                value=common.humanFriendlyListString(strings=common.ComparisonType.__members__.keys())))
+        targetType = common.ComparisonType.__members__[targetType]
+
     targetNumber = rollerData.get('targetNumber')
     if targetNumber != None and not isinstance(targetNumber, int):
         raise RuntimeError('Dice Roller data targetNumber attribute must be an integer')
@@ -132,6 +139,7 @@ def _deserialiseRoller(
         hasBoon=hasBoon,
         hasBane=hasBane,
         modifiers=modifiers,
+        targetType=targetType,
         targetNumber=targetNumber)
 
 def _serialiseModifier(

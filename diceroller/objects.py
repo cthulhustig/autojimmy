@@ -78,9 +78,11 @@ class DiceModifier(objectdb.DatabaseObject):
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a name parameter of type str')
+
         value = data.get('value')
         if not isinstance(value, int):
             raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a value parameter of type int')
+
         enabled = data.get('enabled')
         if not isinstance(enabled, bool):
             raise ValueError(f'Constructing a DiceModifierDatabaseObject requires a enabled parameter of type bool')
@@ -104,7 +106,8 @@ class DiceRoller(objectdb.DatabaseObject):
             modifiers: typing.Optional[typing.Union[
                 typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]] = None,
-            targetNumber: typing.Optional[int] = None,
+            targetType: typing.Optional[common.ComparisonType] = None,
+            targetNumber: typing.Optional[int] = None, # Must be supplied if targetType is supplied
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None
             ) -> None:
@@ -115,7 +118,8 @@ class DiceRoller(objectdb.DatabaseObject):
         self._constant = constant
         self._hasBoon = hasBoon
         self._hasBane = hasBane
-        self._targetNumber = targetNumber
+        self._targetType = targetType if targetType != None and targetNumber != None else None
+        self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
 
         self._modifiers = objectdb.DatabaseList(
             parent=self.id(),
@@ -133,6 +137,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 self._hasBoon == other._hasBoon and \
                 self._hasBane == other._hasBane and \
                 self._modifiers == other._modifiers and \
+                self._targetType == other._targetType and \
                 self._targetNumber == other._targetNumber
         return False
 
@@ -217,11 +222,32 @@ class DiceRoller(objectdb.DatabaseObject):
     def clearModifiers(self) -> None:
         self._modifiers.clear()
 
+    def targetType(self) -> typing.Optional[common.ComparisonType]:
+        return self._targetType
+
+    def setTargetType(self, targetType: typing.Optional[common.ComparisonType]) -> None:
+        self._targetType = targetType
+        if self._targetType == None:
+            self._targetNumber = None
+
     def targetNumber(self) -> typing.Optional[int]:
         return self._targetNumber
 
     def setTargetNumber(self, targetNumber: typing.Optional[int]) -> None:
         self._targetNumber = targetNumber
+        if self._targetNumber == None:
+            self._targetType = None
+
+    def hasTarget(self) -> bool:
+        return self._targetType != None and self._targetNumber != None
+
+    def setTarget(
+            self,
+            targetType: typing.Optional[common.ComparisonType],
+            targetNumber: typing.Optional[int]
+            ) -> None:
+        self._targetType = targetType if targetType != None and targetNumber != None else None
+        self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
 
     def copyConfig(
             self,
@@ -240,6 +266,7 @@ class DiceRoller(objectdb.DatabaseObject):
             hasBoon=self._hasBoon,
             hasBane=self._hasBane,
             modifiers=modifiers,
+            targetType=self._targetType,
             targetNumber=self._targetNumber)
 
     def data(self) -> typing.Mapping[str, typing.Any]:
@@ -251,6 +278,7 @@ class DiceRoller(objectdb.DatabaseObject):
             'has_boon': self._hasBoon,
             'has_bane': self._hasBane,
             'modifiers': self._modifiers,
+            'target_type': self._targetType,
             'target_number': self._targetNumber}
 
     @staticmethod
@@ -266,6 +294,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='has_boon', columnType=bool),
                 objectdb.ParamDef(columnName='has_bane', columnType=bool),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
+                objectdb.ParamDef(columnName='target_type', columnType=common.ComparisonType, isOptional=True),
                 objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
             ])
 
@@ -278,24 +307,35 @@ class DiceRoller(objectdb.DatabaseObject):
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a name parameter of type str')
+
         dieCount = data.get('die_count')
         if not isinstance(dieCount, int):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type int')
+
         dieType = data.get('die_type')
         if not isinstance(dieType, common.DieType):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a die_count parameter of type DieType')
+
         constant = data.get('constant')
         if not isinstance(constant, int):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a constant parameter of type int')
+
         hasBoon = data.get('has_boon')
         if not isinstance(hasBoon, bool):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_boon parameter of type bool')
+
         hasBane = data.get('has_bane')
         if not isinstance(hasBane, bool):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a has_bane parameter of type bool')
+
         modifiers = data.get('modifiers')
         if not isinstance(modifiers, objectdb.DatabaseList):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a modifiers parameter of type DatabaseList')
+
+        targetType = data.get('target_type')
+        if targetType != None and not isinstance(targetType, common.ComparisonType):
+            raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a target_type parameter of type ProbabilityType or None')
+
         targetNumber = data.get('target_number')
         if targetNumber != None and not isinstance(targetNumber, int):
             raise ValueError(f'Constructing a DiceRollerDatabaseObject requires a target_number parameter of type int or None')
@@ -310,6 +350,7 @@ class DiceRoller(objectdb.DatabaseObject):
             hasBoon=hasBoon,
             hasBane=hasBane,
             modifiers=modifiers,
+            targetType=targetType,
             targetNumber=targetNumber)
 
 class DiceRollerGroup(objectdb.DatabaseObject):
@@ -437,6 +478,7 @@ class DiceRollerGroup(objectdb.DatabaseObject):
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a name parameter of type str')
+
         rollers = data.get('rollers')
         if not isinstance(rollers, objectdb.DatabaseList):
             raise ValueError(f'Constructing a DiceRollerGroupDatabaseObject requires a rollers parameter of type DatabaseList')
