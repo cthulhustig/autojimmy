@@ -1,2 +1,3 @@
-from .diceobjects import *
-from .diceroller import *
+from .objects import *
+from .roller import *
+from .serialization import *
