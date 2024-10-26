@@ -46,6 +46,9 @@ class DiceRollerWindow(gui.WindowWidget):
         self._objectItemMap: typing.Dict[str, QtWidgets.QTreeWidgetItem] = {}
         self._lastResults = {}
 
+        self._randomGenerator = common.RandomGenerator()
+        logging.info(f'Dice Roller random generator seed: {self._randomGenerator.usedSeed()}')
+
         self._createRollerManagerControls()
         self._createRollerConfigControls()
         self._createRollResultsControls()
@@ -241,7 +244,9 @@ class DiceRollerWindow(gui.WindowWidget):
         if not self._roller or self._rollInProgress:
             return
 
-        self._results = diceroller.rollDice(roller=self._roller)
+        self._results = diceroller.rollDice(
+            roller=self._roller,
+            randomGenerator=self._randomGenerator)
 
         self._rollInProgress = True
         self._updateControlEnablement()
