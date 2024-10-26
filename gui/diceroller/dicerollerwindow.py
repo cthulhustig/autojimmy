@@ -432,7 +432,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase()
+        self._syncToDatabase(currentId=object.id())
 
     def _copyObject(self) -> None:
         object = self._managerTree.currentObject()
