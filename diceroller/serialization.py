@@ -98,7 +98,8 @@ def _deserialiseRoller(
         raise RuntimeError('Dice Roller data must have a dieType attribute')
     if dieType not in common.DieType.__members__:
         raise RuntimeError('Dice Roller data dieType attribute must be one of {valid}'.format(
-            value=common.humanFriendlyListString(strings=common.DieType.__members__.keys())))
+            valid=common.humanFriendlyListString(
+                strings=list(common.DieType.__members__.keys()))))
     dieType = common.DieType.__members__[dieType]
 
     modifierDataList = rollerData.get('modifiers')
@@ -124,7 +125,8 @@ def _deserialiseRoller(
     if targetType != None:
         if targetType not in common.ComparisonType.__members__:
             raise RuntimeError('Dice Roller data targetType attribute must be null or one of {valid}'.format(
-                value=common.humanFriendlyListString(strings=common.ComparisonType.__members__.keys())))
+                valid=common.humanFriendlyListString(
+                    strings=list(common.ComparisonType.__members__.keys()))))
         targetType = common.ComparisonType.__members__[targetType]
 
     targetNumber = rollerData.get('targetNumber')
