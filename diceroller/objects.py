@@ -62,6 +62,7 @@ class DiceModifier(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_modifiers',
+            tableSchema=1,
             classType=DiceModifier,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),
@@ -285,6 +286,7 @@ class DiceRoller(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_rollers',
+            tableSchema=1,
             classType=DiceRoller,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),
@@ -463,6 +465,7 @@ class DiceRollerGroup(objectdb.DatabaseObject):
     def defineObject() -> objectdb.ObjectDef:
         return objectdb.ObjectDef(
             tableName='dice_groups',
+            tableSchema=1,
             classType=DiceRollerGroup,
             paramDefs=[
                 objectdb.ParamDef(columnName='name', columnType=str),

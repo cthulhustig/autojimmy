@@ -154,15 +154,20 @@ class ObjectDef(object):
     def __init__(
             self,
             tableName: str,
+            tableSchema: int,
             classType: typing.Type['DatabaseObject'],
             paramDefs: typing.Iterable[ParamDef],
             ) -> None:
         self._tableName = tableName
+        self._tableSchema = tableSchema
         self._classType = classType
         self._paramDefs = paramDefs
 
     def tableName(self) -> str:
         return self._tableName
+
+    def tableSchema(self) -> int:
+        return self._tableSchema
 
     def classType(self) -> typing.Type['DatabaseObject']:
         return self._classType
@@ -200,12 +205,18 @@ class Transaction(object):
             self.rollback()
 
 class ObjectDbManager(object):
+    class UnsupportedDatabaseVersion(RuntimeError):
+        pass
+
     _DatabasePath = 'test.db'
     _PragmaScript = """
         PRAGMA foreign_keys = ON;
         """
+    _SchemasTableName = 'schemas'
     _EntitiesTableName = 'entities'
+    _EntitiesTableSchema = 1
     _ListsTableName = 'lists'
+    _ListsTableSchema = 1
 
     _instance = None # Singleton instance
     _lock = threading.Lock()
@@ -274,75 +285,80 @@ class ObjectDbManager(object):
                 tableObjectDefs[objectDef.tableName()] = objectDef
                 classObjectDefs[classType] = objectDef
 
-            with self._connection:
-                cursor = self._connection.cursor()
+            with self.createTransaction() as transaction:
+                cursor = transaction.cursor()
 
+                # Create schema table
                 sql = """
                     CREATE TABLE IF NOT EXISTS {table} (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        parent TEXT,
-                        table_name TEXT NOT NULL,
-                        FOREIGN KEY(parent) REFERENCES {table}(id) ON DELETE CASCADE
+                        table_name TEXT PRIMARY KEY NOT NULL,
+                        schema INTEGER
                     );
-                    """.format(table=ObjectDbManager._EntitiesTableName)
-                logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._EntitiesTableName}\'')
+                    """.format(table=ObjectDbManager._SchemasTableName)
+                logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._SchemasTableName}\'')
                 cursor.execute(sql)
 
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {table} (
-                        id TEXT NOT NULL,
-                        object TEXT NOT NULL,
-                        FOREIGN KEY(id) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
-                        FOREIGN KEY(object) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
-                    );
-                    """.format(
-                    table=ObjectDbManager._ListsTableName,
-                    entitiesTable=ObjectDbManager._EntitiesTableName)
-                logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._ListsTableName}\'')
-                cursor.execute(sql)
-
-                for classType, objectDef in classObjectDefs.items():
-                    columnStrings = ['id TEXT PRIMARY KEY NOT NULL']
-                    for paramDef in objectDef.paramDefs():
-                        columnString = paramDef.columnName()
-                        columnType = paramDef.columnType()
-
-                        if columnType == str:
-                            columnString += ' TEXT'
-                        elif columnType == int:
-                            columnString += ' INTEGER'
-                        elif columnType == float:
-                            columnString += ' REAL'
-                        elif columnType == bool:
-                            columnString += ' INTEGER'
-                        elif issubclass(columnType, enum.Enum):
-                            columnString += ' TEXT'
-                        elif issubclass(columnType, DatabaseObject):
-                            columnString += ' TEXT'
-                        elif issubclass(columnType, DatabaseList):
-                            columnString += ' TEXT'
-                        else:
-                            raise RuntimeError(
-                                f'Parameter definition {classType}.{paramDef.columnName()} has unknown type {columnType}')
-
-                        if not paramDef.isOptional():
-                            columnString += ' NOT NULL'
-
-                        columnStrings.append(columnString)
-
-                    columnStrings.append(
-                        'FOREIGN KEY(id) REFERENCES {entitiesTable}(id) ON DELETE CASCADE'.format(
-                            entitiesTable=ObjectDbManager._EntitiesTableName))
-
-                    # NOTE: This breaks the cardinal rule of not manually formatting
-                    # SQL statements, however, it's acceptable here as what it's
-                    # formatting comes from code (rather than user input) so there is
-                    # no real risk of sql injection
-                    sql = 'CREATE TABLE IF NOT EXISTS {table} ({columns});'.format(
-                        table=objectDef.tableName(),
-                        columns=', '.join(columnStrings))
-                    logging.info(f'ObjectDbManager initialising table \'{objectDef.tableName()}\'')
+                # Create entities table
+                if not self._checkIfTableExists(
+                    tableName=ObjectDbManager._EntitiesTableName,
+                    cursor=cursor):
+                    sql = """
+                        CREATE TABLE IF NOT EXISTS {table} (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            parent TEXT,
+                            table_name TEXT NOT NULL,
+                            FOREIGN KEY(parent) REFERENCES {table}(id) ON DELETE CASCADE
+                        );
+                        """.format(table=ObjectDbManager._EntitiesTableName)
+                    logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._EntitiesTableName}\'')
                     cursor.execute(sql)
+
+                    self._writeSchema(
+                        tableName=ObjectDbManager._EntitiesTableName,
+                        schema=ObjectDbManager._EntitiesTableSchema,
+                        cursor=cursor)
+
+                # Create list table
+                if not self._checkIfTableExists(
+                    tableName=ObjectDbManager._ListsTableName,
+                    cursor=cursor):
+                    sql = """
+                        CREATE TABLE IF NOT EXISTS {table} (
+                            id TEXT NOT NULL,
+                            object TEXT NOT NULL,
+                            FOREIGN KEY(id) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
+                            FOREIGN KEY(object) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
+                        );
+                        """.format(
+                        table=ObjectDbManager._ListsTableName,
+                        entitiesTable=ObjectDbManager._EntitiesTableName)
+                    logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._ListsTableName}\'')
+                    cursor.execute(sql)
+
+                    self._writeSchema(
+                        tableName=ObjectDbManager._ListsTableName,
+                        schema=ObjectDbManager._ListsTableSchema,
+                        cursor=cursor)
+
+                # Check there are no tables with schemas newer than this version supports
+                tableSchemas = self._readSchemas(cursor=cursor)
+                supportedSchemas = {
+                    ObjectDbManager._EntitiesTableName: ObjectDbManager._EntitiesTableSchema,
+                    ObjectDbManager._ListsTableName: ObjectDbManager._ListsTableSchema}
+                for objectDef in classObjectDefs.values():
+                    supportedSchemas[objectDef.tableName()] = objectDef.tableSchema()
+                for tableName, tableSchema in tableSchemas.items():
+                    supportedSchema = supportedSchemas.get(tableName)
+                    if supportedSchema != None and supportedSchema < tableSchema:
+                        raise ObjectDbManager.UnsupportedDatabaseVersion(
+                            f'ObjectDbManager table {tableName} uses schema {tableSchema} but only {supportedSchema} is supported')
+
+                # Create any object tables that don't exist
+                for objectDef in classObjectDefs.values():
+                    if not self._checkIfTableExists(tableName=objectDef.tableName(), cursor=cursor):
+                        self._createObjectTable(
+                            objectDef=objectDef,
+                            cursor=cursor)
 
             self._tableObjectDefMap.update(tableObjectDefs)
             self._classObjectDefMap.update(classObjectDefs)
@@ -365,12 +381,12 @@ class ObjectDbManager(object):
         logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
         with ObjectDbManager._lock:
             if transaction != None:
-                self._internalCreateEntity(
+                self._createEntity(
                     entity=object,
                     cursor=transaction.cursor())
             else:
                 with self._connection:
-                    self._internalCreateEntity(
+                    self._createEntity(
                         entity=object,
                         cursor=self._connection.cursor())
 
@@ -382,14 +398,14 @@ class ObjectDbManager(object):
         logging.debug(f'ObjectDbManager reading object {id}')
         with ObjectDbManager._lock:
             if transaction != None:
-                return self._internalReadEntity(
+                return self._readEntity(
                     id=id,
                     cursor=transaction.cursor())
             else:
                 # Use a transaction for the read to ensure a consistent
                 # view of the database across multiple selects
                 with self._connection:
-                    return self._internalReadEntity(
+                    return self._readEntity(
                         id=id,
                         cursor=self._connection.cursor())
 
@@ -401,14 +417,14 @@ class ObjectDbManager(object):
         logging.debug(f'ObjectDbManager reading object of type {classType}')
         with ObjectDbManager._lock:
             if transaction != None:
-                return self._internalReadEntities(
+                return self._readEntities(
                     classType=classType,
                     cursor=transaction.cursor())
             else:
                 # Use a transaction for the read to ensure a consistent
                 # view of the database across multiple selects
                 with self._connection:
-                    return self._internalReadEntities(
+                    return self._readEntities(
                         classType=classType,
                         cursor=self._connection.cursor())
 
@@ -420,12 +436,12 @@ class ObjectDbManager(object):
         logging.debug(f'ObjectDbManager updating object {object.id()} of type {type(object)}')
         with ObjectDbManager._lock:
             if transaction != None:
-                self._internalUpdateEntity(
+                self._updateEntity(
                     entity=object,
                     cursor=transaction.cursor())
             else:
                 with self._connection:
-                    self._internalUpdateEntity(
+                    self._updateEntity(
                         entity=object,
                         cursor=self._connection.cursor())
 
@@ -437,16 +453,113 @@ class ObjectDbManager(object):
         logging.debug(f'ObjectDbManager deleting object {id}')
         with ObjectDbManager._lock:
             if transaction != None:
-                self._internalDeleteEntity(
+                self._deleteEntity(
                     id=id,
                     cursor=transaction.cursor())
             else:
                 with self._connection:
-                    self._internalDeleteEntity(
+                    self._deleteEntity(
                         id=id,
                         cursor=self._connection.cursor())
 
-    def _internalCreateEntity(
+    def _checkIfTableExists(
+            self,
+            tableName: str,
+            cursor: sqlite3.Cursor
+            ) -> bool:
+        sql = 'SELECT name FROM sqlite_master WHERE type = "table" AND name = :table;'
+        cursor.execute(sql, {'table': tableName})
+        return cursor.fetchone() != None
+
+    def _readSchemas(
+            self,
+            cursor: sqlite3.Cursor
+            ) -> typing.Mapping[str, int]:
+        sql = """
+            SELECT table_name, schema
+            FROM {table};
+            """.format(
+            table=ObjectDbManager._SchemasTableName)
+        cursor.execute(sql)
+        schemas = {}
+        for row in cursor.fetchall():
+            tableName = row[0]
+            schema = int(row[1])
+            schemas[tableName] = schema
+
+        return schemas
+
+    def _writeSchema(
+            self,
+            tableName: str,
+            schema: int,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (table_name, schema)
+            VALUES (:table_name, :schema)
+            ON CONFLICT(table_name) DO UPDATE SET
+                schema = excluded.schema;
+            """.format(table=ObjectDbManager._SchemasTableName)
+        logging.info(f'ObjectDbManager setting table schema for \'{tableName}\' to {schema}')
+        rowData = {
+            'table_name': tableName,
+            'schema': str(schema)}
+        cursor.execute(sql, rowData)
+
+    def _createObjectTable(
+            self,
+            objectDef: ObjectDef,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        columnStrings = ['id TEXT PRIMARY KEY NOT NULL']
+        for paramDef in objectDef.paramDefs():
+            columnString = paramDef.columnName()
+            columnType = paramDef.columnType()
+
+            if columnType == str:
+                columnString += ' TEXT'
+            elif columnType == int:
+                columnString += ' INTEGER'
+            elif columnType == float:
+                columnString += ' REAL'
+            elif columnType == bool:
+                columnString += ' INTEGER'
+            elif issubclass(columnType, enum.Enum):
+                columnString += ' TEXT'
+            elif issubclass(columnType, DatabaseObject):
+                columnString += ' TEXT'
+            elif issubclass(columnType, DatabaseList):
+                columnString += ' TEXT'
+            else:
+                raise RuntimeError(
+                    f'Parameter definition {paramDef.columnName()} for {objectDef.classType()} has unknown type {columnType}')
+
+            if not paramDef.isOptional():
+                columnString += ' NOT NULL'
+
+            columnStrings.append(columnString)
+
+        columnStrings.append(
+            'FOREIGN KEY(id) REFERENCES {entitiesTable}(id) ON DELETE CASCADE'.format(
+                entitiesTable=ObjectDbManager._EntitiesTableName))
+
+        # NOTE: This breaks the cardinal rule of not manually formatting SQL
+        # statements, however, it's acceptable here as what it's formatting
+        # comes from code (rather than user input) so there is no real risk of
+        # an injection attack
+        sql = 'CREATE TABLE IF NOT EXISTS {table} ({columns});'.format(
+            table=objectDef.tableName(),
+            columns=', '.join(columnStrings))
+        logging.info(f'ObjectDbManager initialising table \'{objectDef.tableName()}\'')
+        cursor.execute(sql)
+
+        self._writeSchema(
+            tableName=objectDef.tableName(),
+            schema=objectDef.tableSchema(),
+            cursor=cursor)
+
+    def _createEntity(
             self,
             entity: DatabaseEntity,
             cursor: sqlite3.Cursor
@@ -458,16 +571,16 @@ class ObjectDbManager(object):
 
             sql = 'INSERT INTO {table} VALUES (:id, :parent, :table_name)'.format(
                 table=ObjectDbManager._EntitiesTableName)
-            columnData = {
+            rowData = {
                 'id': entity.id(),
                 'parent': entity.parent(),
                 'table_name': objectDef.tableName()
             }
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
 
             sql = 'INSERT INTO {table} VALUES (:id'.format(
                 table=objectDef.tableName())
-            columnData = {'id': entity.id()}
+            rowData = {'id': entity.id()}
             objectData = entity.data()
             for paramDef in objectDef.paramDefs():
                 columnName = paramDef.columnName()
@@ -514,39 +627,39 @@ class ObjectDbManager(object):
                         raise RuntimeError(
                             f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
 
-                columnData[columnName] = columnValue
+                rowData[columnName] = columnValue
 
                 if childEntity != None:
-                    self._internalCreateEntity(
+                    self._createEntity(
                         entity=childEntity,
                         cursor=cursor)
             sql += ');'
 
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
         elif isinstance(entity, DatabaseList):
             # Always insert list into entity table, even if doesn't
             # have any entries in the list table because it's empty
             sql = 'INSERT INTO {table} VALUES (:id, :parent, :table_name)'.format(
                 table=ObjectDbManager._EntitiesTableName)
-            columnData = {
+            rowData = {
                 'id': entity.id(),
                 'parent': entity.parent(),
                 'table_name': 'lists'
             }
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
 
-            columnData = []
+            rowData = []
             for child in entity:
-                self._internalCreateEntity(entity=child, cursor=cursor)
-                columnData.append((entity.id(), child.id()))
-            if columnData:
+                self._createEntity(entity=child, cursor=cursor)
+                rowData.append((entity.id(), child.id()))
+            if rowData:
                 sql = 'INSERT INTO {table} (id, object) VALUES (?, ?)'.format(
                     table=ObjectDbManager._ListsTableName)
-                cursor.executemany(sql, columnData)
+                cursor.executemany(sql, rowData)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
 
-    def _internalReadEntity(
+    def _readEntity(
             self,
             id: str,
             cursor: sqlite3.Cursor,
@@ -593,7 +706,7 @@ class ObjectDbManager(object):
             cursor.execute(sql, {'id': id})
             objects = []
             for row in cursor.fetchall():
-                objects.append(self._internalReadEntity(
+                objects.append(self._readEntity(
                     id=row[0],
                     table=row[1],
                     setParent=False,
@@ -655,12 +768,12 @@ class ObjectDbManager(object):
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
                         columnValue = columnType.__members__[columnValue]
                     elif issubclass(columnType, DatabaseObject):
-                        columnValue = self._internalReadEntity(
+                        columnValue = self._readEntity(
                             id=columnValue,
                             setParent=False,
                             cursor=cursor)
                     elif issubclass(columnType, DatabaseList):
-                        columnValue = self._internalReadEntity(
+                        columnValue = self._readEntity(
                             id=columnValue,
                             table=ObjectDbManager._ListsTableName,
                             setParent=False,
@@ -677,7 +790,7 @@ class ObjectDbManager(object):
                 parent=parent,
                 data=objectData)
 
-    def _internalReadEntities(
+    def _readEntities(
             self,
             classType: typing.Type[DatabaseObject],
             cursor: sqlite3.Cursor,
@@ -734,12 +847,12 @@ class ObjectDbManager(object):
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
                         columnValue = columnType.__members__[columnValue]
                     elif issubclass(columnType, DatabaseObject):
-                        columnValue = self._internalReadEntity(
+                        columnValue = self._readEntity(
                             id=columnValue,
                             setParent=False,
                             cursor=cursor)
                     elif issubclass(columnType, DatabaseList):
-                        columnValue = self._internalReadEntity(
+                        columnValue = self._readEntity(
                             id=columnValue,
                             table=ObjectDbManager._ListsTableName,
                             setParent=False,
@@ -762,7 +875,7 @@ class ObjectDbManager(object):
     # not handling the error case where an optional object param where
     # the accessor function returns an object that isn't derived from
     # DatabaseObject
-    def _internalUpdateEntity(
+    def _updateEntity(
             self,
             entity: DatabaseEntity,
             cursor: sqlite3.Cursor
@@ -783,11 +896,11 @@ class ObjectDbManager(object):
                     parent = excluded.parent,
                     table_name = excluded.table_name;
                 """.format(table=ObjectDbManager._EntitiesTableName)
-            columnData = {
+            rowData = {
                 'id': entity.id(),
                 'parent': entity.parent(),
                 'table': objectDef.tableName()}
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
 
             # Query existing values if any of the objects parameters refer to
             # another entity as they're used to delete the old object if the
@@ -810,7 +923,7 @@ class ObjectDbManager(object):
                 exitingValues = cursor.fetchone()
 
             objectData = entity.data()
-            columnData = {'id': entity.id()}
+            rowData = {'id': entity.id()}
             for index, paramDef in enumerate(paramDefs):
                 columnName = paramDef.columnName()
                 if columnName not in objectData:
@@ -858,7 +971,7 @@ class ObjectDbManager(object):
                         raise RuntimeError(
                             f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
 
-                columnData[columnName] = columnValue
+                rowData[columnName] = columnValue
 
                 if isReference and (exitingValues != None):
                     oldId = exitingValues[index]
@@ -871,7 +984,7 @@ class ObjectDbManager(object):
 
                 if childEntity != None:
                     # Recursively update the child entity
-                    self._internalUpdateEntity(entity=childEntity, cursor=cursor)
+                    self._updateEntity(entity=childEntity, cursor=cursor)
 
             # Update the object's specific table fields
             sql = """
@@ -883,7 +996,7 @@ class ObjectDbManager(object):
                 columns=', '.join(columnNames),
                 placeholders=', '.join([f':{col}' for col in columnNames]),
                 conflict=', '.join([f'{col} = excluded.{col}' for col in columnNames]))
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
         elif isinstance(entity, DatabaseList):
             # Update the entities table for the list
             sql = """
@@ -893,11 +1006,11 @@ class ObjectDbManager(object):
                     parent = excluded.parent,
                     table_name = excluded.table_name;
                 """.format(table=ObjectDbManager._EntitiesTableName)
-            columnData = {
+            rowData = {
                 'id': entity.id(),
                 'parent': entity.parent(),
                 'table': ObjectDbManager._ListsTableName}
-            cursor.execute(sql, columnData)
+            cursor.execute(sql, rowData)
 
             # Delete any children that were in the list but aren't any more
             contentIds = [child.id() for child in entity]
@@ -913,14 +1026,14 @@ class ObjectDbManager(object):
                 entitiesTable=ObjectDbManager._EntitiesTableName,
                 listsTable=ObjectDbManager._ListsTableName,
                 placeholders=', '.join('?' for _ in contentIds))
-            columnData = [entity.id()] + contentIds
-            cursor.execute(sql, columnData)
+            rowData = [entity.id()] + contentIds
+            cursor.execute(sql, rowData)
 
             # Recursively update list children. This must be done before
             # the inserting items into the list for them in order to
             # avoid failing foreign key checks
             for child in entity:
-                self._internalUpdateEntity(entity=child, cursor=cursor)
+                self._updateEntity(entity=child, cursor=cursor)
 
             # Remove all existing items for the list and add the new ones.
             # This is a bit inefficient if the majority of the same objects
@@ -931,15 +1044,15 @@ class ObjectDbManager(object):
                 table=ObjectDbManager._ListsTableName)
             cursor.execute(sql, {'id': entity.id()})
 
-            columnData = [(entity.id(), child.id()) for child in entity]
-            if columnData:
+            rowData = [(entity.id(), child.id()) for child in entity]
+            if rowData:
                 sql = 'INSERT INTO {table} (id, object) VALUES (?, ?)'.format(
                     table=ObjectDbManager._ListsTableName)
-                cursor.executemany(sql, columnData)
+                cursor.executemany(sql, rowData)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
 
-    def _internalDeleteEntity(
+    def _deleteEntity(
             self,
             id: str,
             cursor: sqlite3.Cursor
