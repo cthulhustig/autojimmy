@@ -17,6 +17,7 @@ class WindowManager(object):
     _travellerMapWindow = None
     _gunsmithWindow = None
     _robotBuilderWindow = None
+    _diceRollerWindow = None
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -58,6 +59,8 @@ class WindowManager(object):
             self._gunsmithWindow.close()
         if self._robotBuilderWindow:
             self._robotBuilderWindow.close()
+        if self._diceRollerWindow:
+            self._diceRollerWindow.close()
 
     def showWorldComparisonWindow(self) -> 'gui.WorldComparisonWindow':
         if not self._worldComparisonWindow:
@@ -136,3 +139,9 @@ class WindowManager(object):
             self._robotBuilderWindow = gui.RobotBuilderWindow()
         self._robotBuilderWindow.bringToFront()
         return self._robotBuilderWindow
+
+    def showDiceRollerWindow(self) -> 'gui.DiceRollerWindow':
+        if not self._diceRollerWindow:
+            self._diceRollerWindow = gui.DiceRollerWindow()
+        self._diceRollerWindow.bringToFront()
+        return self._diceRollerWindow

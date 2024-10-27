@@ -309,6 +309,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._robotBuilderButton = QtWidgets.QPushButton('Robot Builder...', self)
         self._robotBuilderButton.clicked.connect(gui.WindowManager.instance().showRobotBuilderWindow)
 
+        self._diceRollerButton = QtWidgets.QPushButton('Dice Roller...', self)
+        self._diceRollerButton.clicked.connect(gui.WindowManager.instance().showDiceRollerWindow)
+
         generalLayout = QtWidgets.QVBoxLayout()
         generalLayout.addWidget(self._compareWorldsButton)
         generalLayout.addWidget(self._searchWorldsButton)
@@ -318,6 +321,7 @@ class MainWindow(QtWidgets.QMainWindow):
         generalLayout.addWidget(self._simulatorButton)
         generalLayout.addWidget(self._gunsmithButton)
         generalLayout.addWidget(self._robotBuilderButton)
+        generalLayout.addWidget(self._diceRollerButton)
         generalGroupBox = QtWidgets.QGroupBox('General Tools')
         generalGroupBox.setLayout(generalLayout)
 
