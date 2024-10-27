@@ -385,10 +385,10 @@ class ObjectDbManager(object):
                     entity=object,
                     cursor=transaction.cursor())
             else:
-                with self._connection:
+                with self.createTransaction() as transaction:
                     self._createEntity(
                         entity=object,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
 
     def readObject(
             self,
@@ -404,10 +404,10 @@ class ObjectDbManager(object):
             else:
                 # Use a transaction for the read to ensure a consistent
                 # view of the database across multiple selects
-                with self._connection:
+                with self.createTransaction() as transaction:
                     return self._readEntity(
                         id=id,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
 
     def readObjects(
             self,
@@ -423,10 +423,10 @@ class ObjectDbManager(object):
             else:
                 # Use a transaction for the read to ensure a consistent
                 # view of the database across multiple selects
-                with self._connection:
+                with self.createTransaction() as transaction:
                     return self._readEntities(
                         classType=classType,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
 
     def updateObject(
             self,
@@ -440,10 +440,10 @@ class ObjectDbManager(object):
                     entity=object,
                     cursor=transaction.cursor())
             else:
-                with self._connection:
+                with self.createTransaction() as transaction:
                     self._updateEntity(
                         entity=object,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
 
     def deleteObject(
             self,
@@ -457,10 +457,10 @@ class ObjectDbManager(object):
                     id=id,
                     cursor=transaction.cursor())
             else:
-                with self._connection:
+                with self.createTransaction() as transaction:
                     self._deleteEntity(
                         id=id,
-                        cursor=self._connection.cursor())
+                        cursor=transaction.cursor())
 
     def _checkIfTableExists(
             self,
