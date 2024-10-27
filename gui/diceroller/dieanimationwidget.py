@@ -8,14 +8,19 @@ import time
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Convert vertices to tuples instead of vectors (for all dice)
-# Define the 8 vertices of a cube in 3D space
 _D6Vertices = [
-    [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],  # Front face
-    [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]       # Back face
+    # Front face
+    (-1, -1, -1),
+    (+1, -1, -1),
+    (+1, +1, -1),
+    (-1, +1, -1),
+    # Back face
+    (-1, -1, +1),
+    (+1, -1, +1),
+    (+1, +1, +1),
+    (-1, +1, +1)
 ]
 
-# Define the 6 faces of the cube, with counter-clockwise winding order
 _D6Faces = [
     (0, 3, 2, 1),  # Front face
     (4, 5, 6, 7),  # Back face
@@ -26,18 +31,18 @@ _D6Faces = [
 ]
 
 _D10Vertices = [
-    [-0.000031, -1.224734, -0.538529],
-    [-1.522723, +0.516764, -0.383498],
-    [-0.941143, +0.485053, -1.209551],
-    [+0.941081, +0.485053, -1.209551],
-    [-0.000031, +0.888711, -1.368025],
-    [-0.000031, +1.624737, +0.538460],
-    [+0.941081, -0.085022, +1.209584],
-    [-0.000031, -0.488679, +1.368060],
-    [+1.522769, -0.116759, +0.383430],
-    [+1.522769, +0.516764, -0.383498],
-    [-1.522723, -0.116759, +0.383430],
-    [-0.941143, -0.085022, +1.209584],
+    (-0.000031, -1.224734, -0.538529),
+    (-1.522723, +0.516764, -0.383498),
+    (-0.941143, +0.485053, -1.209551),
+    (+0.941081, +0.485053, -1.209551),
+    (-0.000031, +0.888711, -1.368025),
+    (-0.000031, +1.624737, +0.538460),
+    (+0.941081, -0.085022, +1.209584),
+    (-0.000031, -0.488679, +1.368060),
+    (+1.522769, -0.116759, +0.383430),
+    (+1.522769, +0.516764, -0.383498),
+    (-1.522723, -0.116759, +0.383430),
+    (-0.941143, -0.085022, +1.209584),
 ]
 
 _D10Faces = [
@@ -55,18 +60,18 @@ _D10Faces = [
 ]
 
 _D20Vertices = [
-    [-1.213522, -0.700616, -0.267640],
-    [+0.000001, -0.865941, -1.133683],
-    [+0.000001, -1.401276, +0.267473],
-    [-0.750007, +0.433143, -1.133683],
-    [+1.213526, +0.700590, +0.267716],
-    [+0.000001, +0.865930, +1.133700],
-    [+0.750000, -0.433108, +1.133589],
-    [+0.000001, +1.401267, -0.267455],
-    [-0.750007, -0.433108, +1.133589],
-    [-1.213522, +0.700590, +0.267716],
-    [+0.750000, +0.433143, -1.133683],
-    [+1.213526, -0.700616, -0.267640],
+    (-1.213522, -0.700616, -0.267640),
+    (+0.000001, -0.865941, -1.133683),
+    (+0.000001, -1.401276, +0.267473),
+    (-0.750007, +0.433143, -1.133683),
+    (+1.213526, +0.700590, +0.267716),
+    (+0.000001, +0.865930, +1.133700),
+    (+0.750000, -0.433108, +1.133589),
+    (+0.000001, +1.401267, -0.267455),
+    (-0.750007, -0.433108, +1.133589),
+    (-1.213522, +0.700590, +0.267716),
+    (+0.750000, +0.433143, -1.133683),
+    (+1.213526, -0.700616, -0.267640),
 ]
 
 _D20Faces = [
@@ -136,7 +141,8 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._spinDurationMs = 5000
         self._fadeDurationMs = 500
         self._fadeInProgress = 0
-        self._dieColour = QtGui.QColor('#003366')
+        self._dieFillColour = QtGui.QColor('#003366')
+        self._dieEdgeColour = self._dieFillColour.lighter(280)
         self._textColour = QtGui.QColor('#FFCC00')
         self._strikeColour = QtGui.QColor('#FF0000')
         self._spinState = DieAnimationWidget._SpinState.Idle
@@ -161,11 +167,17 @@ class DieAnimationWidget(QtWidgets.QWidget):
         self._dieType = dieType
         self.update() # Trigger redraw
 
-    def dieColour(self) -> QtGui.QColor:
-        return self._dieColour
+    def dieFillColour(self) -> QtGui.QColor:
+        return self._dieFillColour
 
-    def setDieColour(self, colour: QtGui.QColor) -> None:
-        self._dieColour = colour
+    def setDieFillColour(self, colour: QtGui.QColor) -> None:
+        self._dieFillColour = colour
+
+    def dieEdgeColour(self) -> QtGui.QColor:
+        return self._dieEdgeColour
+
+    def setDieEdgeColour(self, colour: QtGui.QColor) -> None:
+        self._dieEdgeColour = colour
 
     def textColour(self) -> QtGui.QColor:
         return self._textColour
@@ -302,20 +314,20 @@ class DieAnimationWidget(QtWidgets.QWidget):
                     intensity = self._calculateLightIntensity(normal)
 
                     # Apply the intensity to the base color
-                    shadedColor = QtGui.QColor(
-                        min(255, int(self._dieColour.red() * intensity)),
-                        min(255, int(self._dieColour.green() * intensity)),
-                        min(255, int(self._dieColour.blue() * intensity))
-                    )
+                    fillColor = self._shadeColour(
+                        colour=self._dieFillColour,
+                        intensity=intensity)
+                    edgeColour = self._shadeColour(
+                        colour=self._dieEdgeColour,
+                        intensity=intensity)
 
                     # Draw the face as a polygon
-                    painter.setBrush(QtGui.QBrush(shadedColor))
-                    # TODO: Edge could should be configurable
-                    painter.setPen(QtGui.QColor(shadedColor).lighter(280))
                     polygon = QtGui.QPolygon()
                     for index in face:
                         _, p_2d = projectedVertices[index]
                         polygon.append(QtCore.QPoint(*p_2d))
+                    painter.setBrush(QtGui.QBrush(fillColor))
+                    painter.setPen(edgeColour)
                     painter.drawPolygon(polygon)
 
                     polyRect = polygon.boundingRect()
@@ -383,11 +395,6 @@ class DieAnimationWidget(QtWidgets.QWidget):
                             strikeRect.topRight())
 
                     painter.setOpacity(1.0)  # Reset the painter's opacity
-        except Exception as ex:
-            # TODO: Log something at Debug level to avoid spam if something
-            # goes wrong. If I ever need someone to debug this I can ask
-            # them to turn up the debug level
-            pass
         finally:
             painter.end()
 
@@ -578,4 +585,13 @@ class DieAnimationWidget(QtWidgets.QWidget):
         """ Calculate the dot product of two vectors. """
         return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
+    @staticmethod
+    def _shadeColour(
+            colour: QtGui.QColor,
+            intensity: float
+            ) -> QtGui.QColor:
+        return QtGui.QColor(
+            min(255, int(colour.red() * intensity)),
+            min(255, int(colour.green() * intensity)),
+            min(255, int(colour.blue() * intensity)))
 

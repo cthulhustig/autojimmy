@@ -14,10 +14,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Add metadata table to objectdb
-# - One row per table
-# - If I need to do migrations in the future it will be easier if I can assume
-#   it's present
 # TODO: The more I think about it the more I think the history window restoring the
 # config and results is a bad idea
 # - It's confusing for the user if they don't realise how it works
