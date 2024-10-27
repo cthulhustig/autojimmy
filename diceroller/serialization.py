@@ -1,24 +1,53 @@
+import packaging.version
 import common
 import diceroller
+import packaging
 import json
 import typing
+
+# Major version changes indicate breaking changes
+# Minor version changes should be backwards compatible with older
+# versions (but new functionality is ignored)
+_FormatVersion = packaging.version.Version('1.0')
 
 def serialiseGroups(
         groups: typing.Iterable[diceroller.DiceRollerGroup]
         ) -> str: # Returns json representation
-    data = []
+    groupListData = []
     for group in groups:
-        data.append(_serialiseGroup(group=group))
+        groupListData.append(_serialiseGroup(group=group))
+    data = {
+        'version': str(_FormatVersion),
+        'groups': groupListData}
     return json.dumps(data, indent=4)
 
 def deserialiseGroups(
         serialData: str
         ) -> typing.Iterable[diceroller.DiceRollerGroup]:
     data = json.loads(serialData)
-    if not isinstance(data, list):
-        raise RuntimeError('Invalid data, expected list of DiceRollerGroup')
+    if not isinstance(data, dict):
+        raise RuntimeError('File has no root object')
+
+    version = data.get('version')
+    if version == None:
+        raise RuntimeError('File has no version property')
+    if not isinstance(version, str):
+        raise RuntimeError('File version property is not a string')
+    try:
+        version = packaging.version.Version(version)
+    except Exception as ex:
+        raise RuntimeError(f'File version property has invalid format ({ex})')
+    if version.major > _FormatVersion.major:
+        raise RuntimeError(f'Unsupported file format {version}')
+
+    groupDataList = data.get('groups')
+    if groupDataList == None:
+        raise RuntimeError('File has no groups property')
+    if not isinstance(groupDataList, list):
+        raise RuntimeError('File groups property is not a list')
+
     groups = []
-    for groupData in data:
+    for groupData in groupDataList:
         groups.append(_deserialiseGroup(groupData=groupData))
     return groups
 
@@ -38,15 +67,15 @@ def _deserialiseGroup(
         ) -> diceroller.DiceRollerGroup:
     name = groupData.get('name')
     if name == None:
-        raise RuntimeError('Dice Roller Group data must have a name attribute')
+        raise RuntimeError('Dice Roller Group has no name property')
     if not isinstance(name, str):
-        raise RuntimeError('Dice Roller Group data name attribute must be a string')
+        raise RuntimeError('Dice Roller Group name property is not a string')
 
     rollerDataList = groupData.get('rollers')
     rollers = []
     if rollerDataList != None:
         if not isinstance(rollerDataList, list):
-            raise RuntimeError('Dice Roller Group data list attribute must be a list')
+            raise RuntimeError('Dice Roller Group rollers property is not a list')
         for rollerData in rollerDataList:
             rollers.append(_deserialiseRoller(
                 rollerData=rollerData))
@@ -83,21 +112,21 @@ def _deserialiseRoller(
         ) -> diceroller.DiceRoller:
     name = rollerData.get('name')
     if name == None:
-        raise RuntimeError('Dice Roller data must have a name attribute')
+        raise RuntimeError('Dice Roller has no name property')
     if not isinstance(name, str):
-        raise RuntimeError('Dice Roller data name attribute must be a string')
+        raise RuntimeError('Dice Roller name property is not a string')
 
     dieCount = rollerData.get('dieCount')
     if dieCount == None:
-        raise RuntimeError('Dice Roller data must have a dieCount attribute')
+        raise RuntimeError('Dice Roller has no dieCount property')
     if not isinstance(dieCount, int):
-        raise RuntimeError('Dice Roller data dieCount attribute must be a integer')
+        raise RuntimeError('Dice Roller dieCount property is not a integer')
 
     dieType = rollerData.get('dieType')
     if dieType == None:
-        raise RuntimeError('Dice Roller data must have a dieType attribute')
+        raise RuntimeError('Dice Roller has no dieType property')
     if dieType not in common.DieType.__members__:
-        raise RuntimeError('Dice Roller data dieType attribute must be one of {valid}'.format(
+        raise RuntimeError('Dice Roller dieType property is not one of {valid}'.format(
             valid=common.humanFriendlyListString(
                 strings=list(common.DieType.__members__.keys()))))
     dieType = common.DieType.__members__[dieType]
@@ -111,27 +140,27 @@ def _deserialiseRoller(
 
     constant = rollerData.get('constant', 0)
     if not isinstance(constant, int):
-        raise RuntimeError('Dice Roller data constant attribute must be a integer')
+        raise RuntimeError('Dice Roller constant property is not an integer')
 
     hasBoon = rollerData.get('hasBoon', False)
     if not isinstance(hasBoon, bool):
-        raise RuntimeError('Dice Roller data hasBoon attribute must be true or false')
+        raise RuntimeError('Dice Roller hasBoon property is not true or false')
 
     hasBane = rollerData.get('hasBane', False)
     if not isinstance(hasBane, bool):
-        raise RuntimeError('Dice Roller data hasBane attribute must be true or false')
+        raise RuntimeError('Dice Roller hasBane property is not true or false')
 
     targetType = rollerData.get('targetType')
     if targetType != None:
         if targetType not in common.ComparisonType.__members__:
-            raise RuntimeError('Dice Roller data targetType attribute must be null or one of {valid}'.format(
+            raise RuntimeError('Dice Roller targetType property is not null or one of {valid}'.format(
                 valid=common.humanFriendlyListString(
                     strings=list(common.ComparisonType.__members__.keys()))))
         targetType = common.ComparisonType.__members__[targetType]
 
     targetNumber = rollerData.get('targetNumber')
     if targetNumber != None and not isinstance(targetNumber, int):
-        raise RuntimeError('Dice Roller data targetNumber attribute must be an integer')
+        raise RuntimeError('Dice Roller targetNumber property is not an integer')
 
     return diceroller.DiceRoller(
         name=name,
@@ -157,19 +186,19 @@ def _deserialiseModifier(
         ) -> diceroller.DiceModifier:
     name = modifierData.get('name')
     if name == None:
-        raise RuntimeError('Dice Modifier data must have a name attribute')
+        raise RuntimeError('Dice Modifier has no name property')
     if not isinstance(name, str):
-        raise RuntimeError('Dice Modifier data name attribute must be a string')
+        raise RuntimeError('Dice Modifier name property is not an string')
 
     value = modifierData.get('value')
     if value == None:
-        raise RuntimeError('Dice Modifier data must have a value attribute')
+        raise RuntimeError('Dice Modifier has no value property')
     if not isinstance(value, int):
-        raise RuntimeError('Dice Modifier data value attribute must be a integer')
+        raise RuntimeError('Dice Modifier value property is not an integer')
 
     enabled = modifierData.get('enabled', True)
     if not isinstance(enabled, bool):
-        raise RuntimeError('Dice Modifier data enabled attribute must be true or false')
+        raise RuntimeError('Dice Modifier enabled property is not true or false')
 
     return diceroller.DiceModifier(
         name=name,
