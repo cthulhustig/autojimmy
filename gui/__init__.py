@@ -36,6 +36,7 @@ from .common.calculationwindow import *
 from .common.licensewidget import *
 from .common.infodialog import *
 from .common.singletonapplication import *
+from .common.plotwidgetex import *
 from .trader.tooltips import *
 from .trader.worldselectcombobox import *
 from .trader.taglevelcombobox import *

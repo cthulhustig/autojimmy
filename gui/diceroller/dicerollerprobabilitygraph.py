@@ -6,14 +6,6 @@ import pyqtgraph
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: This is a duplicate of the one from the malfunction graph
-class _CustomPlotWidget(pyqtgraph.PlotWidget):
-    mouseMoveSignal = QtCore.pyqtSignal([QtCore.QPointF])
-
-    def mouseMoveEvent(self, event: QtGui.QMouseEvent):
-        self.mouseMoveSignal.emit(event.localPos())
-        return super().mouseMoveEvent(event)
-
 class DiceRollerProbabilityGraph(QtWidgets.QWidget):
     _StateVersion = 'DiceRollerProbabilityGraph_v1'
 
@@ -33,7 +25,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
         self._typeComboBox.currentIndexChanged.connect(
             self._updateGraph)
 
-        self._graph = _CustomPlotWidget()
+        self._graph = gui.PlotWidgetEx()
         self._graph.mouseMoveSignal.connect(self._moveCursor)
 
         self._graph.setBackground(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Base))
