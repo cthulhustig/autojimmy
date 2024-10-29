@@ -77,7 +77,7 @@ class DiceRollResultsTable(gui.ListTable):
             total=rollTotal)
 
         usedModifiers = []
-        for modifier, name in self._results.yieldModifiers():
+        for name, modifier in self._results.yieldModifiers():
             row = self.rowCount()
             self.insertRow(row)
             self._fillModifierRow(

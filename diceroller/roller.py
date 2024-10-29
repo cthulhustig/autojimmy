@@ -45,10 +45,10 @@ class DiceRollResult(object):
             die: common.DieType,
             total: common.ScalarCalculation,
             rolls: typing.Iterable[common.ScalarCalculation],
-            ignored: typing.Optional[common.ScalarCalculation], # The same instance MUST appear in rolls
-            modifiers: typing.Mapping[
-                common.ScalarCalculation, # Modifier name
-                str], # Modifier value
+            ignored: typing.Optional[int], # Index of ignored roll in rolls list
+            modifiers: typing.Iterable[typing.Tuple[
+                str, # Modifier value
+                common.ScalarCalculation]],  # Modifier name
             targetType: typing.Optional[common.ComparisonType],
             targetNumber: typing.Optional[common.ScalarCalculation],
             effectType: typing.Optional[DiceRollEffectType],
@@ -59,7 +59,7 @@ class DiceRollResult(object):
         self._total = total
         self._rolls = list(rolls) if rolls else []
         self._ignored = ignored
-        self._modifiers = dict(modifiers) if modifiers else {}
+        self._modifiers = list(modifiers) if modifiers else []
         self._targetType = targetType
         self._targetNumber = targetNumber
         self._effectType = effectType
@@ -72,28 +72,27 @@ class DiceRollResult(object):
         return self._total
 
     def rolledTotal(self) -> common.ScalarCalculation:
-        rolls = [roll for roll in self._rolls if roll is not self._ignored]
+        rolls = [roll for index, roll in enumerate(self._rolls) if self._ignored != index]
         return common.Calculator.sum(values=rolls)
 
     def rollCount(self) -> int:
         return len(self._rolls)
 
     def yieldRolls(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, bool], None, None]:
-        for roll in self._rolls:
-            yield (roll, roll is self._ignored)
-
-    def ignored(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._ignored
+        for index, roll in enumerate(self._rolls):
+            ignored = index == self._ignored
+            yield (roll, ignored)
 
     def modifiersTotal(self) -> common.ScalarCalculation:
-        modifiers = [modifier for modifier in self._modifiers.keys()]
-        return common.Calculator.sum(values=modifiers)
+        modifiers = [modifier for _, modifier in self._modifiers]
+        return common.Calculator.sum(
+            values=modifiers)
 
     def modifierCount(self) -> int:
         return len(self._modifiers)
 
-    def yieldModifiers(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, str], None, None]:
-        for pair in self._modifiers.items():
+    def yieldModifiers(self) -> typing.Generator[typing.Tuple[str, common.ScalarCalculation], None, None]:
+        for pair in self._modifiers:
             yield pair
 
     def targetType(self) -> typing.Optional[common.ComparisonType]:
@@ -172,7 +171,7 @@ def rollDice(
     if randomGenerator == None:
         randomGenerator = random
 
-    originalRolls: typing.List[common.ScalarCalculation] = []
+    rolls: typing.List[common.ScalarCalculation] = []
     boonBaneCount = 0
     if roller.hasBoon() and not roller.hasBane():
         boonBaneCount = 1
@@ -185,35 +184,40 @@ def rollDice(
         roll = randomGenerator.randint(1, dieSides)
         if dieType == common.DieType.DD:
             roll *= 10
-        originalRolls.append(_makeScalarValue(
+        rolls.append(_makeScalarValue(
             value=roll,
             name=f'{dieType.value} Roll {index + 1}/{totalDieCount}'))
 
-    usedRolls = originalRolls
-    ignoredRoll = None
-    if boonBaneCount > 0:
-        # The roll has a boon so remove the lowest value
-        usedRolls = list(originalRolls)
-        ignoredRoll = min(usedRolls, key=lambda x: x.value())
-        usedRolls.remove(ignoredRoll)
-    elif boonBaneCount < 0:
-        # The roll has a bane so remove the largest value
-        usedRolls = list(originalRolls)
-        ignoredRoll = max(usedRolls, key=lambda x: x.value())
-        usedRolls.remove(ignoredRoll)
+    calculationValues = list(rolls)
+    ignoredRollIndex = None
+    if boonBaneCount != 0:
+        # If the boon/bane count count is positive it means the roll has
+        # a boon and the lowest roll should be removed. If the count is
+        # negative it means the roll has a bane and the largest value should
+        # be removed
+        bestValue = None
+        for index, roll in enumerate(calculationValues):
+            isBetter = (bestValue == None) or \
+                ((roll.value() < bestValue) if (boonBaneCount > 0) else (roll.value() > bestValue))
+            if isBetter:
+                bestValue = roll.value()
+                ignoredRollIndex = index
+        del calculationValues[ignoredRollIndex]
 
     # NOTE: Modifiers with a value of 0 are included even though they have no
     # effect on the roll so that they are still included in results
-    modifiers = {constant: constant.name()}
+    modifiers = [(constant.name(), constant)]
     for modifier in roller.modifiers():
         if modifier.enabled():
             value = _makeScalarValue(
                 value=modifier.value(),
                 name=modifier.name())
-            modifiers[value] = modifier.name()
+            modifiers.append(
+                (modifier.name(), value))
+            calculationValues.append(value)
 
     total = common.Calculator.sum(
-        values=usedRolls + list(modifiers.keys()),
+        values=calculationValues,
         name='Modified Roll')
 
     effectValue = None
@@ -254,8 +258,8 @@ def rollDice(
     return DiceRollResult(
         die=dieType,
         total=total,
-        rolls=originalRolls,
-        ignored=ignoredRoll,
+        rolls=rolls,
+        ignored=ignoredRollIndex,
         modifiers=modifiers,
         targetType=targetType,
         targetNumber=targetNumber,

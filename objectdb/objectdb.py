@@ -47,6 +47,18 @@ class DatabaseObject(DatabaseEntity):
     def data(self) -> typing.Mapping[str, typing.Any]:
         raise RuntimeError(f'{type(self)} is derived from DatabaseObject so must implement data')
 
+    @staticmethod
+    def defineObject() -> 'ObjectDef':
+        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement data')
+
+    @staticmethod
+    def createObject(
+            id: str,
+            parent: typing.Optional[str],
+            data: typing.Mapping[str, typing.Any]
+            ) -> 'DatabaseObject':
+        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement data')
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DatabaseObject):
             return super().__eq__(other)
@@ -252,7 +264,7 @@ class ObjectDbManager(object):
             # Uncomment this to have sqlite print the SQL that it executes
             #self._connection.set_trace_callback(print)
 
-            classTypes = common.getSubclasses(
+            classTypes: typing.Iterable[typing.Type[DatabaseObject]] = common.getSubclasses(
                 classType=DatabaseObject,
                 topLevelOnly=True)
             tableObjectDefs: typing.Dict[str, ObjectDef] = {}

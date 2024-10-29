@@ -8,12 +8,11 @@ import typing
 from PyQt5 import QtWidgets, QtCore
 
 class DiceRollHistoryWidget(QtWidgets.QWidget):
-    resultSelected = QtCore.pyqtSignal([diceroller.DiceRoller, diceroller.DiceRollResult])
-
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
         Roller = 'Roller'
         Rolls = 'Rolls'
+        BoonBane = 'Boon/Bane'
         Modifiers = 'Modifiers'
         Result = 'Result'
         Effect = 'Effect'
@@ -42,8 +41,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             elif column == DiceRollHistoryWidget._ColumnType.Roller or \
                     column == DiceRollHistoryWidget._ColumnType.Effect:
                 self._historyTable.setColumnWidth(index, 300)
-        self._historyTable.selectionModel().selectionChanged.connect(
-            self._selectionChanged)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -61,19 +58,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         self._historyTable.insertRow(0)
         self._fillTableRow(0, roller, result)
         self._historyTable.selectRow(0)
-
-    def purgeHistory(
-            self,
-            roller: diceroller.DiceRoller
-            ) -> None:
-        for row in range(self._historyTable.rowCount() - 1, -1, -1):
-            item = self._historyTable.item(row, 0)
-            if not item:
-                continue
-            itemRoller, _ = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(itemRoller, diceroller.DiceRoller))
-            if roller.id() == itemRoller.id():
-                self._historyTable.removeRow(row)
 
     def clearSelection(self) -> None:
         self._historyTable.clearSelection()
@@ -116,7 +100,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             roller: diceroller.DiceRoller,
             result: diceroller.DiceRollResult
             ) -> None:
-        itemData = (roller, result)
         for column in range(self._historyTable.columnCount()):
             columnType = self._historyTable.columnHeader(column)
             tableItem = None
@@ -124,6 +107,8 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 itemText = common.utcnow().astimezone().strftime('%c')
                 tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.Roller:
+                # TODO: This is the only use the roller in the class so should try to
+                # remove the need for it.
                 tableItem = gui.TableWidgetItemEx(roller.name())
             elif columnType == DiceRollHistoryWidget._ColumnType.Rolls:
                 usedRolls = []
@@ -138,9 +123,12 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                     itemText += ' ({ignored})'.format(
                         ignored=','.join(ignoredRolls))
                 tableItem = gui.TableWidgetItemEx(itemText)
+            elif columnType == DiceRollHistoryWidget._ColumnType.BoonBane:
+                # TODO: Implement this column or remove it
+                tableItem = gui.TableWidgetItemEx('')
             elif columnType == DiceRollHistoryWidget._ColumnType.Modifiers:
                 itemText = ''
-                for modifier, _ in result.yieldModifiers():
+                for _, modifier in result.yieldModifiers():
                     itemText += common.formatNumber(
                         number=modifier.value(),
                         alwaysIncludeSign=len(itemText) > 0)
@@ -159,15 +147,4 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
             if tableItem:
                 tableItem.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter))
-                tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, itemData)
                 self._historyTable.setItem(row, column, tableItem)
-
-    def _selectionChanged(self) -> None:
-        rows = self._historyTable.selectedRows()
-        if not rows:
-            return
-        item = self._historyTable.item(rows[0], 0)
-        if not item:
-            return
-        roller, result = item.data(QtCore.Qt.ItemDataRole.UserRole)
-        self.resultSelected.emit(roller, result)

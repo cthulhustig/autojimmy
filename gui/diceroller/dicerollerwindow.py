@@ -5,7 +5,6 @@ import diceroller
 import gui
 import logging
 import objectdb
-import os
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -14,10 +13,19 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: The more I think about it the more I think the history window restoring the
-# config and results is a bad idea
-# - It's confusing for the user if they don't realise how it works
-# - It's going to complicate storing history in the db
+# TODO: Add support for lists containing pod types as as object lists.
+# - Add new columns for each of the supported types (bool, int, float, string, enum, tuples)
+#   - These columns and the existing object column, will need to be nullable
+#   - I think enum could be problematic as I don't know which type of enum to use when reading
+#   - Tuples could be tricky, not as simple as just treating them as lists as they won't have an
+#     id. They probably aren't required
+#   - I think the implementation might get lists of lists for free (not tested)
+# - Will require quite a few changes
+#   - DatabaseList will need updated so it only sets the parent of objects
+#     (and some other stuff) if the object is a DatabaseEntity
+#   - CRUD functions will need updated
+#       - Read will need to read all columns and find the one that's not null to
+#         know the type
 # TODO: Store historic results in the objectdb?
 # - Would need some kind of max number (fifo) to avoid db bloat
 # - Complicated by the fact they have they hold an instance of a roller but
@@ -232,7 +240,6 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _createRollHistoryControls(self) -> None:
         self._historyWidget = gui.DiceRollHistoryWidget()
-        self._historyWidget.resultSelected.connect(self._historySelectionChanged)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._historyWidget)
@@ -251,8 +258,9 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollInProgress = True
         self._updateControlEnablement()
 
-        with gui.SignalBlocker(self._resultsWidget):
-            self._resultsWidget.setResults(self._results)
+        self._setCurrentResults(
+            results=self._results,
+            animate=True)
 
     def _syncToDatabase(
             self,
@@ -288,7 +296,7 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.setRoller(roller=roller)
             if results:
-                self._resultsWidget.setResults(
+                self._setCurrentResults(
                     results=results,
                     animate=False)
 
@@ -297,6 +305,16 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollInProgress = False
 
         self._updateControlEnablement()
+
+    def _setCurrentResults(
+            self,
+            results: typing.Optional[diceroller.DiceRollResult],
+            animate: bool = False
+            ) -> None:
+        with gui.SignalBlocker(self._resultsWidget):
+            self._resultsWidget.setResults(
+                results=results,
+                animate=animate)
 
     def _updateControlEnablement(self) -> None:
         hasSelection = self._managerTree.currentItem() != None
@@ -711,36 +729,6 @@ class DiceRollerWindow(gui.WindowWidget):
 
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.syncToRoller()
-
-    def _historySelectionChanged(
-            self,
-            roller: diceroller.DiceRoller,
-            results: diceroller.DiceRollResult
-            ) -> None:
-        # Make new copies of the historic roller and results. These
-        # will be passed to the things like the configuration widget
-        # so we don't want to modify the instances held by the history
-        # widget
-        if roller != None:
-            roller = copy.deepcopy(roller)
-        if results != None:
-            results = copy.deepcopy(results)
-
-        try:
-            objectdb.ObjectDbManager.instance().updateObject(
-                object=roller)
-        except Exception as ex:
-            message = 'Failed to write historic roller to objectdb'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
-            return
-
-        # TODO: Select the correct roller in the tree
-        self._syncToDatabase()
-        self._setCurrentRoller(roller=self._roller, results=results)
 
     def _virtualRollComplete(self) -> None:
         if not self._rollInProgress:
