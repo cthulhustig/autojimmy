@@ -419,6 +419,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
 
     def _restoreItemStates(self) -> None:
         # Move any groups that are out of order
+        currentItem = self.currentItem()
         requiredIndex = 0
         while requiredIndex < len(self._groupOrdering):
             groupId = self._groupOrdering[requiredIndex]
@@ -426,11 +427,19 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             if not item:
                 self._groupOrdering.remove(groupId)
                 continue
-            currentIndex = self.indexOfTopLevelItem(item)
-            if requiredIndex != currentIndex:
-                self.takeTopLevelItem(currentIndex)
+            itemIndex = self.indexOfTopLevelItem(item)
+            if itemIndex != requiredIndex:
+                self.takeTopLevelItem(itemIndex)
                 self.insertTopLevelItem(requiredIndex, item)
             requiredIndex += 1
+
+        # Reselect the previously selected current item if it's not still the
+        # current item. This can happen if the current item was repositioned or
+        # was a child of an item that was repositioned as the current item would
+        # have been cleared at the point the item was removed from the tree to
+        # reposition it.
+        if currentItem != self.currentItem():
+            self.setCurrentItem(currentItem)
 
         # Add any groups that aren't in the group order list
         for index in range(len(self._groupOrdering), self.topLevelItemCount()):
