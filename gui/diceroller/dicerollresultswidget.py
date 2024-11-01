@@ -176,7 +176,10 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             availableHeight: int,
             offsetX: int,
             offsetY: int
-            ) -> int:
+            ) -> int: # Used height
+        if not availableWidth or not availableHeight:
+            return 0 # No space used
+
         animationCount = len(self._animations)
         xCount, yCount, size = DiceRollResultsWidget._calculateMaxDieSize(
             width=availableWidth,
@@ -311,5 +314,11 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                 if s > bestSize:
                     bestSize = s
                     bestLayout = (xCount, yCount)
+
+        if not bestLayout:
+            # The available area isn't big enough for the dice. This is
+            # known to occur if width or height are 0. Position all dice
+            # in a line with a size of 0
+            return (1, dieCount, 0) if width < height else (dieCount, 1, 0)
 
         return (bestLayout[0], bestLayout[1], int(bestSize))
