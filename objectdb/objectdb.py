@@ -1,5 +1,4 @@
 import common
-import enum
 import logging
 import sqlite3
 import threading
@@ -44,7 +43,9 @@ class DatabaseObject(DatabaseEntity):
             ) -> None:
         super().__init__(id=id, parent=parent)
 
-    def data(self) -> typing.Mapping[str, typing.Any]:
+    def data(self) -> typing.Mapping[
+            str,
+            typing.Optional[typing.Union[bool, int, float, str, DatabaseEntity]]]:
         raise RuntimeError(f'{type(self)} is derived from DatabaseObject so must implement data')
 
     @staticmethod
@@ -55,7 +56,9 @@ class DatabaseObject(DatabaseEntity):
     def createObject(
             id: str,
             parent: typing.Optional[str],
-            data: typing.Mapping[str, typing.Any]
+            data: typing.Mapping[
+                str,
+                typing.Optional[typing.Union[bool, int, float, str, DatabaseEntity]]]
             ) -> 'DatabaseObject':
         raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement data')
 
@@ -67,80 +70,100 @@ class DatabaseObject(DatabaseEntity):
 class DatabaseList(DatabaseEntity):
     def __init__(
             self,
-            objects: typing.Optional[typing.Iterable[DatabaseObject]] = None,
+            content: typing.Optional[typing.Iterable[typing.Union[bool, int, float, str, DatabaseEntity]]] = None,
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None,
             ) -> None:
         super().__init__(id=id, parent=parent)
-        self._objects: typing.List[DatabaseObject] = []
-        if objects:
-            self.init(objects=objects)
+        self._content: typing.List[typing.Union[bool, int, float, str, DatabaseEntity]] = []
+        if content:
+            self.init(content=content)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DatabaseList):
             return super().__eq__(other) and \
-                self._objects == other._objects
+                self._content == other._content
         return False
 
-    def __iter__(self) -> typing.Iterator[DatabaseObject]:
-        return self._objects.__iter__()
+    def __iter__(self) -> typing.Iterator[typing.Union[bool, int, float, str, DatabaseEntity]]:
+        return self._content.__iter__()
 
-    def __next__(self) -> typing.Any:
-        return self._objects.__next__()
+    def __next__(self) -> typing.Union[bool, int, float, str, DatabaseEntity]:
+        return self._content.__next__()
 
     def __len__(self) -> int:
-        return self._objects.__len__()
+        return self._content.__len__()
 
-    def __getitem__(self, index: int) -> DatabaseObject:
-        return self._objects.__getitem__(index)
+    def __getitem__(self, index: int) -> typing.Union[bool, int, float, str, DatabaseEntity]:
+        return self._content.__getitem__(index)
 
-    def init(self, objects: typing.Iterable[DatabaseObject]) -> None:
-        seen = set(obj.id() for obj in objects)
-        if len(seen) != len(objects):
-            raise ValueError(f'Init object list can\'t contain objects with duplicate ids')
+    def init(
+            self,
+            content: typing.Iterable[typing.Union[bool, int, float, str, DatabaseEntity]]
+            ) -> None:
+        seen = set()
+        for item in content:
+            if isinstance(item, DatabaseEntity):
+                if item.id() in seen:
+                    raise ValueError(f'Init content for list {self._id} can\'t contain objects with duplicate ids')
+                seen.add(item.id())
 
         self.clear()
-        for object in objects:
-            object.setParent(self.id())
-            self._objects.append(object)
+        for item in content:
+            if isinstance(item, DatabaseEntity):
+                item.setParent(self.id())
+            self._content.append(item)
 
-    def add(self, object: DatabaseObject) -> None:
-        for current in self._objects:
-            if current.id() == object.id():
-                raise ValueError(f'Object {object.id()} is already in list {self.id()}')
+    def add(
+            self,
+            item: typing.Union[bool, int, float, str, DatabaseEntity]
+            ) -> None:
+        if isinstance(item, DatabaseEntity):
+            for other in self._content:
+                if isinstance(other, DatabaseEntity) and other.id() == item.id():
+                    raise ValueError(f'Duplicate entity {item.id()} can\'t be added to list {self.id()}')
+            item.setParent(self.id())
 
-        object.setParent(self.id())
-        self._objects.append(object)
+        self._content.append(item)
 
-    def insert(self, index: int, object: DatabaseObject) -> None:
-        for current in self._objects:
-            if current.id() == object.id():
-                raise ValueError(f'Object {object.id()} is already in list {self.id()}')
+    def insert(
+            self,
+            index: int,
+            item: typing.Union[bool, int, float, str, DatabaseEntity]
+            ) -> None:
+        if isinstance(item, DatabaseEntity):
+            for other in self._content:
+                if isinstance(other, DatabaseEntity) and other.id() == item.id():
+                    raise ValueError(f'Duplicate entity {item.id()} can\'t be inserted into to list {self.id()}')
+            item.setParent(self.id())
 
-        object.setParent(self.id())
-        self._objects.insert(index, object)
+        self._content.insert(index, item)
 
-    def remove(self, id: str) -> DatabaseObject:
-        for obj in self._objects:
-            if id == obj.id():
-                self._objects.remove(obj)
-                obj.setParent(None)
-                return obj
-        raise ValueError(f'{id} not found in list {self.id()}')
+    def remove(
+            self,
+            index: int
+            ) -> typing.Union[bool, int, float, str, DatabaseEntity]:
+        item = self._content[index]
+        del self._content[index]
 
-    def find(self, id: str) -> typing.Optional[DatabaseObject]:
-        for obj in self._objects:
-            if id == obj.id():
-                return obj
-        return None
+        if isinstance(item, DatabaseEntity):
+            item.setParent(None)
 
-    def contains(self, id: str) -> bool:
-        return self.find(id) != None
+        return item
+
+    def removeById(self, id: str) -> DatabaseEntity:
+        for item in self._content:
+            if isinstance(item, DatabaseEntity) and id == item.id():
+                self._content.remove(item)
+                item.setParent(None)
+                return item
+        raise ValueError(f'Entity {id} not found in list {self.id()}')
 
     def clear(self) -> None:
-        for object in self._objects:
-            object.setParent(None)
-        self._objects.clear()
+        for item in self._content:
+            if isinstance(item, DatabaseEntity):
+                item.setParent(None)
+        self._content.clear()
 
 class ParamDef(object):
     def __init__(
@@ -337,9 +360,13 @@ class ObjectDbManager(object):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             id TEXT NOT NULL,
-                            object TEXT NOT NULL,
+                            bool INTEGER,
+                            integer INTEGER,
+                            float REAL,
+                            string TEXT,
+                            entity TEXT,
                             FOREIGN KEY(id) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
-                            FOREIGN KEY(object) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
+                            FOREIGN KEY(entity) REFERENCES {entitiesTable}(id) ON DELETE CASCADE
                         );
                         """.format(
                         table=ObjectDbManager._ListsTableName,
@@ -537,11 +564,7 @@ class ObjectDbManager(object):
                 columnString += ' REAL'
             elif columnType == bool:
                 columnString += ' INTEGER'
-            elif issubclass(columnType, enum.Enum):
-                columnString += ' TEXT'
-            elif issubclass(columnType, DatabaseObject):
-                columnString += ' TEXT'
-            elif issubclass(columnType, DatabaseList):
+            elif issubclass(columnType, DatabaseEntity):
                 columnString += ' TEXT'
             else:
                 raise RuntimeError(
@@ -616,12 +639,6 @@ class ObjectDbManager(object):
                         columnValue = float(columnValue)
                     elif columnType == bool:
                         columnValue = 1 if columnValue else 0
-                    elif issubclass(columnType, enum.Enum):
-                        if not isinstance(columnValue, enum.Enum) or \
-                            not isinstance(columnValue, columnType):
-                            raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {columnType}')
-                        columnValue = columnValue.name
                     elif issubclass(columnType, DatabaseObject):
                         if not isinstance(columnValue, DatabaseObject) or \
                             not isinstance(columnValue, columnType):
@@ -662,11 +679,21 @@ class ObjectDbManager(object):
 
             rowData = []
             for child in entity:
-                self._createEntity(entity=child, cursor=cursor)
-                rowData.append((entity.id(), child.id()))
+                if isinstance(child, DatabaseEntity):
+                    self._createEntity(entity=child, cursor=cursor)
+
+                rowData.append((
+                    entity.id(),
+                    (1 if child else 0) if isinstance(child, bool) else None,
+                    child if isinstance(child, int) else None,
+                    child if isinstance(child, float) else None,
+                    child if isinstance(child, str) else None,
+                    child.id() if isinstance(child, DatabaseEntity) else None))
             if rowData:
-                sql = 'INSERT INTO {table} (id, object) VALUES (?, ?)'.format(
-                    table=ObjectDbManager._ListsTableName)
+                sql = """
+                    INSERT INTO {table} (id, bool, integer, float, string, entity)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """.format(table=ObjectDbManager._ListsTableName)
                 cursor.executemany(sql, rowData)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
@@ -708,26 +735,32 @@ class ObjectDbManager(object):
                 parent = row[0]
 
             sql = """
-                SELECT object, table_name
-                FROM {listsTable}
-                JOIN {entitiesTable} ON {listsTable}.object = {entitiesTable}.id
-                WHERE {listsTable}.id = :id;
+                SELECT bool, integer, float, string, entity
+                FROM {table}
+                WHERE {table}.id = :id;
                 """.format(
-                listsTable=ObjectDbManager._ListsTableName,
-                entitiesTable=ObjectDbManager._EntitiesTableName)
+                table=ObjectDbManager._ListsTableName)
             cursor.execute(sql, {'id': id})
-            objects = []
+            content = []
             for row in cursor.fetchall():
-                objects.append(self._readEntity(
-                    id=row[0],
-                    table=row[1],
-                    setParent=False,
-                    cursor=cursor))
+                if row[0] != None:
+                    content.append(bool(row[0])) # It's a bool (stored as an int)
+                elif row[1] != None:
+                    content.append(row[1]) # It's an integer
+                elif row[2] != None:
+                    content.append(row[2]) # It's a float
+                elif row[3] != None:
+                    content.append(row[3]) # It's a string
+                elif row[4] != None:
+                    content.append(self._readEntity( # It's an entity
+                        id=row[4],
+                        setParent=False,
+                        cursor=cursor))
 
             return DatabaseList(
                 id=id,
                 parent=parent,
-                objects=objects)
+                content=content)
         else:
             objectDef = self._tableObjectDefMap.get(table)
             if objectDef == None:
@@ -774,11 +807,6 @@ class ObjectDbManager(object):
                         columnValue = float(columnValue) # Should be redundant if table defined correctly
                     elif columnType == bool:
                         columnValue = columnValue != 0
-                    elif issubclass(columnType, enum.Enum):
-                        if columnValue not in columnType.__members__:
-                            raise RuntimeError(
-                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
-                        columnValue = columnType.__members__[columnValue]
                     elif issubclass(columnType, DatabaseObject):
                         columnValue = self._readEntity(
                             id=columnValue,
@@ -853,11 +881,6 @@ class ObjectDbManager(object):
                         columnValue = float(columnValue) # Should be redundant if table defined correctly
                     elif columnType == bool:
                         columnValue = columnValue != 0
-                    elif issubclass(columnType, enum.Enum):
-                        if columnValue not in columnType.__members__:
-                            raise RuntimeError(
-                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has unexpected value {columnValue}')
-                        columnValue = columnType.__members__[columnValue]
                     elif issubclass(columnType, DatabaseObject):
                         columnValue = self._readEntity(
                             id=columnValue,
@@ -958,12 +981,6 @@ class ObjectDbManager(object):
                         columnValue = float(columnValue)
                     elif columnType == bool:
                         columnValue = 1 if columnValue else 0
-                    elif issubclass(columnType, enum.Enum):
-                        if not isinstance(columnValue, enum.Enum) or \
-                            not isinstance(columnValue, columnType):
-                            raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not an enum of type {columnType}')
-                        columnValue = columnValue.name
                     elif issubclass(columnType, DatabaseObject):
                         if not isinstance(columnValue, DatabaseObject) or \
                             not isinstance(columnValue, columnType):
@@ -1025,14 +1042,14 @@ class ObjectDbManager(object):
             cursor.execute(sql, rowData)
 
             # Delete any children that were in the list but aren't any more
-            contentIds = [child.id() for child in entity]
+            contentIds = [child.id() for child in entity if isinstance(child, DatabaseEntity)]
             sql = """
                 DELETE FROM {entitiesTable}
                 WHERE id IN (
-                    SELECT object
+                    SELECT entity
                     FROM {listsTable}
                     WHERE id = ?
-                    AND object NOT IN ({placeholders})
+                    AND entity NOT IN ({placeholders})
                 );
             """.format(
                 entitiesTable=ObjectDbManager._EntitiesTableName,
@@ -1056,10 +1073,20 @@ class ObjectDbManager(object):
                 table=ObjectDbManager._ListsTableName)
             cursor.execute(sql, {'id': entity.id()})
 
-            rowData = [(entity.id(), child.id()) for child in entity]
+            rowData = []
+            for child in entity:
+                rowData.append((
+                    entity.id(),
+                    (1 if child else 0) if isinstance(child, bool) else None,
+                    child if isinstance(child, int) else None,
+                    child if isinstance(child, float) else None,
+                    child if isinstance(child, str) else None,
+                    child.id() if isinstance(child, DatabaseEntity) else None))
             if rowData:
-                sql = 'INSERT INTO {table} (id, object) VALUES (?, ?)'.format(
-                    table=ObjectDbManager._ListsTableName)
+                sql = """
+                    INSERT INTO {table} (id, bool, integer, float, string, entity)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """.format(table=ObjectDbManager._ListsTableName)
                 cursor.executemany(sql, rowData)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')

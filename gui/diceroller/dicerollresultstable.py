@@ -1,8 +1,6 @@
-import common
 import diceroller
 import enum
 import gui
-import logging
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -51,8 +49,7 @@ class DiceRollResultsTable(gui.ListTable):
             self.resizeRowsToContents()
             return
 
-        usedRolls = []
-        for index, (roll, ignored) in enumerate(self._results.yieldRolls()):
+        for index, (roll, ignored) in enumerate(self._results.rolls()):
             row = self.rowCount()
             self.insertRow(row)
             self._fillRollRow(
@@ -60,44 +57,26 @@ class DiceRollResultsTable(gui.ListTable):
                 index=index + 1,
                 value=roll,
                 ignored=ignored)
-            if not ignored:
-                usedRolls.append(roll)
-
-        if usedRolls:
-            rollTotal = common.Calculator.sum(
-                values=usedRolls,
-                name='Dice Roll Total')
-        else:
-            rollTotal = common.ScalarCalculation(value=0)
 
         row = self.rowCount()
         self.insertRow(row)
         self._fillRollTotalRow(
             row=row,
-            total=rollTotal)
+            total=self._results.rolledTotal())
 
-        usedModifiers = []
-        for name, modifier in self._results.yieldModifiers():
+        for name, modifier in self._results.modifiers():
             row = self.rowCount()
             self.insertRow(row)
             self._fillModifierRow(
                 row=row,
                 modifierName=name,
                 modifierValue=modifier)
-            usedModifiers.append(modifier)
-
-        if usedModifiers:
-            modifiersTotal = common.Calculator.sum(
-                values=usedModifiers,
-                name='Modifiers Total')
-        else:
-            modifiersTotal = common.ScalarCalculation(value=0)
 
         row = self.rowCount()
         self.insertRow(row)
         self._fillModifiersTotalRow(
             row=row,
-            total=modifiersTotal)
+            total=self._results.modifiersTotal())
 
         row = self.rowCount()
         self.insertRow(row)
@@ -106,7 +85,7 @@ class DiceRollResultsTable(gui.ListTable):
             total=self._results.total())
 
         effect = self._results.effectValue()
-        if effect:
+        if effect != None:
             row = self.rowCount()
             self.insertRow(row)
             self._fillEffectRow(
@@ -128,7 +107,7 @@ class DiceRollResultsTable(gui.ListTable):
             self,
             row: int,
             index: int,
-            value: common.ScalarCalculation,
+            value: int,
             ignored: bool
             ) -> None:
         for column in range(self.columnCount()):
@@ -138,7 +117,7 @@ class DiceRollResultsTable(gui.ListTable):
                 tableItem = gui.TableWidgetItemEx(f'Die Roll #{index}')
             elif columnType == DiceRollResultsTable.ColumnType.Value:
                 tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=value.value())
+                    value=value)
 
             if tableItem:
                 tableItem.setStrikeOut(ignored)
@@ -148,7 +127,7 @@ class DiceRollResultsTable(gui.ListTable):
     def _fillRollTotalRow(
             self,
             row: int,
-            total: common.ScalarCalculation
+            total: int
             ) -> None:
         self._fillGenericTotalRow(
             row=row,
@@ -159,7 +138,7 @@ class DiceRollResultsTable(gui.ListTable):
             self,
             row: int,
             modifierName: str,
-            modifierValue: common.ScalarCalculation,
+            modifierValue: int,
             ) -> None:
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
@@ -168,7 +147,7 @@ class DiceRollResultsTable(gui.ListTable):
                 tableItem = gui.TableWidgetItemEx(modifierName if modifierName else 'Unnamed Modifier')
             elif columnType == DiceRollResultsTable.ColumnType.Value:
                 tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=modifierValue.value(),
+                    value=modifierValue,
                     alwaysIncludeSign=True)
 
             if tableItem:
@@ -178,7 +157,7 @@ class DiceRollResultsTable(gui.ListTable):
     def _fillModifiersTotalRow(
             self,
             row: int,
-            total: common.ScalarCalculation
+            total: int
             ) -> None:
         self._fillGenericTotalRow(
             row=row,
@@ -188,7 +167,7 @@ class DiceRollResultsTable(gui.ListTable):
     def _fillTotalRow(
             self,
             row: int,
-            total: common.ScalarCalculation
+            total: int
             ) -> None:
         self._fillGenericTotalRow(
             row=row,
@@ -199,7 +178,7 @@ class DiceRollResultsTable(gui.ListTable):
             self,
             row: int,
             name: str,
-            total: common.ScalarCalculation
+            total: int
             ) -> None:
         bkColour = QtWidgets.QApplication.palette().color(
             QtGui.QPalette.ColorRole.AlternateBase)
@@ -209,8 +188,7 @@ class DiceRollResultsTable(gui.ListTable):
             if columnType == DiceRollResultsTable.ColumnType.Name:
                 tableItem = gui.TableWidgetItemEx(name)
             elif columnType == DiceRollResultsTable.ColumnType.Value:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=total.value())
+                tableItem = gui.FormattedNumberTableWidgetItem(value=total)
 
             if tableItem:
                 tableItem.setBold(True)
@@ -221,7 +199,7 @@ class DiceRollResultsTable(gui.ListTable):
     def _fillEffectRow(
             self,
             row: int,
-            effect: common.ScalarCalculation
+            effect: int
             ) -> None:
         bkColour = QtWidgets.QApplication.palette().color(
             QtGui.QPalette.ColorRole.AlternateBase)
@@ -231,8 +209,7 @@ class DiceRollResultsTable(gui.ListTable):
             if columnType == DiceRollResultsTable.ColumnType.Name:
                 tableItem = gui.TableWidgetItemEx(f'Effect')
             elif columnType == DiceRollResultsTable.ColumnType.Value:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=effect.value())
+                tableItem = gui.FormattedNumberTableWidgetItem(value=effect)
 
             if tableItem:
                 tableItem.setBold(True)
@@ -246,11 +223,6 @@ class DiceRollResultsTable(gui.ListTable):
             ) -> None:
         menuItems = [
             gui.MenuItem(
-                text='Show Calculations...',
-                callback=self._showCalculations
-            ),
-            None,
-            gui.MenuItem(
                 text='Copy as HTML',
                 callback=self._copyToClipboard
             )
@@ -260,19 +232,6 @@ class DiceRollResultsTable(gui.ListTable):
             self,
             menuItems,
             self.viewport().mapToGlobal(position))
-
-    def _showCalculations(self) -> None:
-        try:
-            calculationWindow = gui.WindowManager.instance().showCalculationWindow()
-            calculationWindow.showCalculation(
-                calculation=self._results.total())
-        except Exception as ex:
-            message = 'Failed to show calculations'
-            logging.error(message, exc_info=ex)
-            gui.MessageBoxEx.critical(
-                parent=self,
-                text=message,
-                exception=ex)
 
     def _copyToClipboard(self) -> None:
         clipboard = QtWidgets.QApplication.clipboard()

@@ -13,26 +13,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Add support for lists containing pod types as as object lists.
-# - Add new columns for each of the supported types (bool, int, float, string, enum, tuples)
-#   - These columns and the existing object column, will need to be nullable
-#   - I think enum could be problematic as I don't know which type of enum to use when reading
-#   - Tuples could be tricky, not as simple as just treating them as lists as they won't have an
-#     id. They probably aren't required
-#   - I think the implementation might get lists of lists for free (not tested)
-# - Will require quite a few changes
-#   - DatabaseList will need updated so it only sets the parent of objects
-#     (and some other stuff) if the object is a DatabaseEntity
-#   - CRUD functions will need updated
-#       - Read will need to read all columns and find the one that's not null to
-#         know the type
-# TODO: Store historic results in the objectdb?
-# - Would need some kind of max number (fifo) to avoid db bloat
-# - Complicated by the fact they have they hold an instance of a roller but
-# with the config from when the roll was made. It means those objects (which
-# would need stored in the db) will have the same id as the current version
-# of the object that is already in the db
-# - Complicated by the fact they use ScalarCalculations (history would be lost)
 # TODO: Support for Flux???
 # - p22 of T5 rules
 # - T5 usually the lower the roll the better but also says some target
@@ -75,7 +55,8 @@ class DiceRollerWindow(gui.WindowWidget):
         windowLayout.addWidget(self._verticalSplitter)
 
         self.setLayout(windowLayout)
-        self._syncToDatabase()
+        self._syncManagerToDatabase()
+        self._syncHistoryToDatabase()
         if self._managerTree.groupCount() == 0:
             self._createInitialGroup()
 
@@ -251,7 +232,18 @@ class DiceRollerWindow(gui.WindowWidget):
         if not self._roller or self._rollInProgress:
             return
 
+        group = self._managerTree.groupFromRoller(
+            roller=self._roller)
+        if not group:
+            message = 'Failed to find group for dice roller'
+            logging.error(message)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message)
+            return
+
         self._results = diceroller.rollDice(
+            label=f'{group.name()} - {self._roller.name()}',
             roller=self._roller,
             randomGenerator=self._randomGenerator)
 
@@ -262,7 +254,7 @@ class DiceRollerWindow(gui.WindowWidget):
             results=self._results,
             animate=True)
 
-    def _syncToDatabase(
+    def _syncManagerToDatabase(
             self,
             currentId: typing.Optional[str] = None # None means no change (not explicitly set to None)
             ) -> None:
@@ -274,7 +266,18 @@ class DiceRollerWindow(gui.WindowWidget):
             self._setCurrentRoller(
                 roller=self._managerTree.currentRoller())
         except Exception as ex:
-            logging.error('Failed to sync UI to database', exc_info=ex)
+            logging.error('Failed to sync manager to database', exc_info=ex)
+
+    def _syncHistoryToDatabase(self) -> None:
+        try:
+            with gui.SignalBlocker(self._managerTree):
+                self._historyWidget.clearResults()
+                results = objectdb.ObjectDbManager.instance().readObjects(
+                    classType=diceroller.DiceRollResult)
+                for result in results:
+                    self._historyWidget.addResult(result=result)
+        except Exception as ex:
+            logging.error('Failed to sync history to database', exc_info=ex)
 
     def _setCurrentRoller(
             self,
@@ -358,7 +361,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(currentId=roller.id())
+        self._syncManagerToDatabase(currentId=roller.id())
 
     def _createNewRoller(self) -> None:
         group = self._managerTree.currentGroup()
@@ -392,7 +395,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(currentId=roller.id())
+        self._syncManagerToDatabase(currentId=roller.id())
         self._managerTree.editObjectName(object=roller)
 
     def _createNewGroup(self) -> None:
@@ -411,7 +414,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(currentId=group.id())
+        self._syncManagerToDatabase(currentId=group.id())
         self._managerTree.editObjectName(object=group)
 
     def _renameObject(self) -> None:
@@ -455,7 +458,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(currentId=object.id())
+        self._syncManagerToDatabase(currentId=object.id())
 
     def _copyObject(self) -> None:
         object = self._managerTree.currentObject()
@@ -487,7 +490,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase(
+        self._syncManagerToDatabase(
             currentId=roller.id() if roller else group.id())
 
     def _deleteObjects(self) -> None:
@@ -554,7 +557,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase()
+        self._syncManagerToDatabase()
 
         for roller in rollers:
             if roller.id() in self._lastResults:
@@ -603,7 +606,7 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
-        self._syncToDatabase()
+        self._syncManagerToDatabase()
 
     def _exportObjects(self) -> None:
         path, _ = gui.FileDialogEx.getSaveFileName(
@@ -711,7 +714,7 @@ class DiceRollerWindow(gui.WindowWidget):
             # Fall through to sync to database in order to revert ui to a
             # consistent state
 
-        self._syncToDatabase()
+        self._syncManagerToDatabase()
 
     def _rollerConfigChanged(self) -> None:
         try:
@@ -738,8 +741,20 @@ class DiceRollerWindow(gui.WindowWidget):
         self._lastResults[self._roller.id()] = self._results
         self._updateControlEnablement()
 
+        try:
+            objectdb.ObjectDbManager.instance().createObject(
+                object=self._results)
+        except Exception as ex:
+            message = 'Failed to roll results to objectdb'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            # Fall through to to add the result to the history widget
+
         with gui.SignalBlocker(self._historyWidget):
-            self._historyWidget.addResult(self._roller, self._results)
+            self._historyWidget.addResult(result=self._results)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(

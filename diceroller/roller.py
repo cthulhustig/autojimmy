@@ -1,16 +1,7 @@
 import common
 import diceroller
-import enum
 import random
 import typing
-
-class DiceRollEffectType(enum.Enum):
-    ExceptionalFailure = 'Exceptional Failure'
-    AverageFailure = 'Average Failure'
-    MarginalFailure = 'Marginal Failure'
-    MarginalSuccess = 'Marginal Success'
-    AverageSuccess = 'Average Success'
-    ExceptionalSuccess = 'Exceptional Success'
 
 def _makeScalarValue(
         value: typing.Union[common.ScalarCalculation, int],
@@ -20,105 +11,6 @@ def _makeScalarValue(
         return common.Calculator.equals(value=value, name=name)
     else:
         return common.ScalarCalculation(value=int(value), name=name)
-
-def _effectValueToType(
-        value: typing.Union[common.ScalarCalculation, int],
-        ) -> DiceRollEffectType:
-    if isinstance(value, common.ScalarCalculation):
-        value = value.value()
-    if value <= -6:
-        return DiceRollEffectType.ExceptionalFailure
-    elif value <= -2:
-        return DiceRollEffectType.AverageFailure
-    elif value == -1:
-        return DiceRollEffectType.MarginalFailure
-    elif value == 0:
-        return DiceRollEffectType.MarginalSuccess
-    elif value <= 5:
-        return DiceRollEffectType.AverageSuccess
-    else:
-        return DiceRollEffectType.ExceptionalSuccess
-
-class DiceRollResult(object):
-    def __init__(
-            self,
-            die: common.DieType,
-            total: common.ScalarCalculation,
-            rolls: typing.Iterable[common.ScalarCalculation],
-            ignored: typing.Optional[int], # Index of ignored roll in rolls list
-            modifiers: typing.Iterable[typing.Tuple[
-                str, # Modifier value
-                common.ScalarCalculation]],  # Modifier name
-            targetType: typing.Optional[common.ComparisonType],
-            targetNumber: typing.Optional[common.ScalarCalculation],
-            effectType: typing.Optional[DiceRollEffectType],
-            effectValue: typing.Optional[common.ScalarCalculation]
-            ) -> None:
-        super().__init__()
-        self._die = die
-        self._total = total
-        self._rolls = list(rolls) if rolls else []
-        self._ignored = ignored
-        self._modifiers = list(modifiers) if modifiers else []
-        self._targetType = targetType
-        self._targetNumber = targetNumber
-        self._effectType = effectType
-        self._effectValue = effectValue
-
-    def die(self) -> common.DieType:
-        return self._die
-
-    def total(self) -> common.ScalarCalculation:
-        return self._total
-
-    def rolledTotal(self) -> common.ScalarCalculation:
-        rolls = [roll for index, roll in enumerate(self._rolls) if self._ignored != index]
-        return common.Calculator.sum(values=rolls)
-
-    def rollCount(self) -> int:
-        return len(self._rolls)
-
-    def yieldRolls(self) -> typing.Generator[typing.Tuple[common.ScalarCalculation, bool], None, None]:
-        for index, roll in enumerate(self._rolls):
-            ignored = index == self._ignored
-            yield (roll, ignored)
-
-    def modifiersTotal(self) -> common.ScalarCalculation:
-        modifiers = [modifier for _, modifier in self._modifiers]
-        return common.Calculator.sum(
-            values=modifiers)
-
-    def modifierCount(self) -> int:
-        return len(self._modifiers)
-
-    def yieldModifiers(self) -> typing.Generator[typing.Tuple[str, common.ScalarCalculation], None, None]:
-        for pair in self._modifiers:
-            yield pair
-
-    def targetType(self) -> typing.Optional[common.ComparisonType]:
-        return self._targetType
-
-    def targetNumber(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._targetNumber
-
-    def hasTarget(self) -> bool:
-        return self._targetType != None and self._targetNumber != None
-
-    def isSuccess(self) -> bool:
-        if self._targetType == None or self._targetNumber == None:
-            return False # No target means no pass
-        return common.ComparisonType.compareValues(
-            lhs=self._total.value(),
-            rhs=self._targetNumber.value(),
-            comparison=self._targetType)
-
-    # The effect will only be set if a target number was specified and that
-    # target number was met
-    def effectType(self) -> typing.Optional[DiceRollEffectType]:
-        return self._effectType
-
-    def effectValue(self) -> typing.Optional[common.ScalarCalculation]:
-        return self._effectValue
 
 def calculateProbabilities(
         roller: diceroller.DiceRoller,
@@ -147,46 +39,27 @@ def calculateProbabilities(
         probability=probability)
 
 def rollDice(
+        label: str,
         roller: diceroller.DiceRoller,
         randomGenerator: typing.Optional[random.Random] = None,
-        ) -> DiceRollResult:
-    dieCount = _makeScalarValue(
-        value=roller.dieCount(),
-        name='Die Count')
-
-    constant = _makeScalarValue(
-        value=roller.constant(),
-        name='Constant DM')
-
-    targetType = roller.targetType()
-    targetNumber = roller.targetNumber()
-    if targetType != None and targetNumber != None:
-        targetType = roller.targetType()
-        targetNumber = _makeScalarValue(
-            value=roller.targetNumber(),
-            name='Target Number')
-    else:
-        targetType = targetNumber = None
-
+        ) -> diceroller.DiceRollResult:
     if randomGenerator == None:
         randomGenerator = random
 
-    rolls: typing.List[common.ScalarCalculation] = []
+    rolls: typing.List[int] = []
     boonBaneCount = 0
     if roller.hasBoon() and not roller.hasBane():
         boonBaneCount = 1
     elif roller.hasBane() and not roller.hasBoon():
         boonBaneCount = -1
-    totalDieCount = dieCount.value() + abs(boonBaneCount)
+    totalDieCount = roller.dieCount() + abs(boonBaneCount)
     dieType = roller.dieType()
     dieSides = common.dieSides(dieType=dieType)
     for index in range(0, totalDieCount):
         roll = randomGenerator.randint(1, dieSides)
         if dieType == common.DieType.DD:
             roll *= 10
-        rolls.append(_makeScalarValue(
-            value=roll,
-            name=f'{dieType.value} Roll {index + 1}/{totalDieCount}'))
+        rolls.append(roll)
 
     calculationValues = list(rolls)
     ignoredRollIndex = None
@@ -198,70 +71,25 @@ def rollDice(
         bestValue = None
         for index, roll in enumerate(calculationValues):
             isBetter = (bestValue == None) or \
-                ((roll.value() < bestValue) if (boonBaneCount > 0) else (roll.value() > bestValue))
+                ((roll < bestValue) if (boonBaneCount > 0) else (roll > bestValue))
             if isBetter:
-                bestValue = roll.value()
+                bestValue = roll
                 ignoredRollIndex = index
         del calculationValues[ignoredRollIndex]
 
     # NOTE: Modifiers with a value of 0 are included even though they have no
     # effect on the roll so that they are still included in results
-    modifiers = [(constant.name(), constant)]
+    modifiers = [('Constant DM', roller.constant())]
     for modifier in roller.modifiers():
         if modifier.enabled():
-            value = _makeScalarValue(
-                value=modifier.value(),
-                name=modifier.name())
-            modifiers.append(
-                (modifier.name(), value))
-            calculationValues.append(value)
+            modifiers.append((modifier.name(), modifier.value()))
 
-    total = common.Calculator.sum(
-        values=calculationValues,
-        name='Modified Roll')
-
-    effectValue = None
-    if targetType == common.ComparisonType.EqualTo:
-        effectValue = common.Calculator.negate(
-            value=common.Calculator.absolute(
-                value=common.Calculator.subtract(
-                    lhs=targetNumber,
-                    rhs=total)))
-    elif targetType == common.ComparisonType.GreaterThan:
-        effectValue = common.Calculator.subtract(
-            lhs=total,
-            rhs=common.Calculator.add(
-                lhs=targetNumber,
-                rhs=common.ScalarCalculation(value=1)))
-    elif targetType == common.ComparisonType.GreaterOrEqualTo:
-        effectValue = common.Calculator.subtract(
-            lhs=total,
-            rhs=targetNumber)
-    elif targetType == common.ComparisonType.LessThan:
-        effectValue = common.Calculator.subtract(
-            lhs=common.Calculator.subtract(
-                lhs=targetNumber,
-                rhs=common.ScalarCalculation(value=1)),
-            rhs=total)
-    elif targetType == common.ComparisonType.LessThanOrEqualTo:
-        effectValue = common.Calculator.subtract(
-            lhs=targetNumber,
-            rhs=total)
-
-    effectType = None
-    if effectValue != None:
-        effectValue = common.Calculator.rename(
-            value=effectValue,
-            name='Roll Effect')
-        effectType = _effectValueToType(value=effectValue)
-
-    return DiceRollResult(
+    return diceroller.DiceRollResult(
+        timestamp=common.utcnow(),
+        label=label,
         die=dieType,
-        total=total,
         rolls=rolls,
         ignored=ignoredRollIndex,
         modifiers=modifiers,
-        targetType=targetType,
-        targetNumber=targetNumber,
-        effectType=effectType,
-        effectValue=effectValue)
+        targetType=roller.targetType(),
+        targetNumber=roller.targetNumber())

@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets, QtCore
 class DiceRollHistoryWidget(QtWidgets.QWidget):
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
-        Roller = 'Roller'
+        Label = 'Label'
         Rolls = 'Rolls'
         BoonBane = 'Boon/Bane'
         Modifiers = 'Modifiers'
@@ -38,7 +38,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         for index, column in enumerate(DiceRollHistoryWidget._ColumnType):
             if column == DiceRollHistoryWidget._ColumnType.Timestamp:
                 self._historyTable.setColumnWidth(index, 200)
-            elif column == DiceRollHistoryWidget._ColumnType.Roller or \
+            elif column == DiceRollHistoryWidget._ColumnType.Label or \
                     column == DiceRollHistoryWidget._ColumnType.Effect:
                 self._historyTable.setColumnWidth(index, 300)
 
@@ -50,14 +50,15 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
     def addResult(
             self,
-            roller: diceroller.DiceRoller,
             result: diceroller.DiceRollResult
             ) -> None:
-        roller = copy.deepcopy(roller)
         result = copy.deepcopy(result)
         self._historyTable.insertRow(0)
-        self._fillTableRow(0, roller, result)
+        self._fillTableRow(0, result)
         self._historyTable.selectRow(0)
+
+    def clearResults(self) -> None:
+        self._historyTable.removeAllRows()
 
     def clearSelection(self) -> None:
         self._historyTable.clearSelection()
@@ -97,7 +98,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
     def _fillTableRow(
             self,
             row: int,
-            roller: diceroller.DiceRoller,
             result: diceroller.DiceRollResult
             ) -> None:
         for column in range(self._historyTable.columnCount()):
@@ -106,18 +106,16 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             if columnType == DiceRollHistoryWidget._ColumnType.Timestamp:
                 itemText = common.utcnow().astimezone().strftime('%c')
                 tableItem = gui.TableWidgetItemEx(itemText)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Roller:
-                # TODO: This is the only use the roller in the class so should try to
-                # remove the need for it.
-                tableItem = gui.TableWidgetItemEx(roller.name())
+            elif columnType == DiceRollHistoryWidget._ColumnType.Label:
+                tableItem = gui.TableWidgetItemEx(result.label())
             elif columnType == DiceRollHistoryWidget._ColumnType.Rolls:
                 usedRolls = []
                 ignoredRolls = []
-                for roll, ignored in result.yieldRolls():
+                for roll, ignored in result.rolls():
                     if ignored:
-                        ignoredRolls.append(str(roll.value()))
+                        ignoredRolls.append(str(roll))
                     else:
-                        usedRolls.append(str(roll.value()))
+                        usedRolls.append(str(roll))
                 itemText = ','.join(usedRolls)
                 if ignoredRolls:
                     itemText += ' ({ignored})'.format(
@@ -128,9 +126,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 tableItem = gui.TableWidgetItemEx('')
             elif columnType == DiceRollHistoryWidget._ColumnType.Modifiers:
                 itemText = ''
-                for _, modifier in result.yieldModifiers():
+                for _, modifier in result.modifiers():
                     itemText += common.formatNumber(
-                        number=modifier.value(),
+                        number=modifier,
                         alwaysIncludeSign=len(itemText) > 0)
                 tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.Result:
@@ -141,8 +139,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 itemText = ''
                 if effectType:
                     itemText = effectType.value
-                    effectValue = result.effectValue()
-                    itemText += f' (Effect: {effectValue.value()})'
+                    itemText += f' (Effect: {result.effectValue()})'
                 tableItem = gui.TableWidgetItemEx(itemText)
 
             if tableItem:

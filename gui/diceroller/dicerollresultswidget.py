@@ -50,18 +50,16 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
             assert(len(self._animations) == dieCount)
             self._pendingAnimationCount = len(self._animations) if animate else 0
-            for index, diceRoll in enumerate(results.yieldRolls()):
-                value = diceRoll[0]
-                ignored = diceRoll[1]
+            for index, (roll, ignored) in enumerate(results.rolls()):
                 animation = self._animations[index]
                 animation.setDieType(results.die())
                 if animate:
                     animation.startSpin(
-                        result=value.value(),
+                        result=roll,
                         strike=ignored)
                 else:
                     animation.setValue(
-                        result=value.value(),
+                        result=roll,
                         strike=ignored)
 
             # All the animations have completed
@@ -73,19 +71,19 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             # ': ' to the start of the value.
             labelsText = 'Rolled'
             valuesText = common.formatNumber(
-                number=results.rolledTotal().value(),
+                number=results.rolledTotal(),
                 prefix=': ')
 
             if results.modifierCount() > 0:
                 labelsText += '\nModifiers'
                 valuesText += common.formatNumber(
-                    number=results.modifiersTotal().value(),
+                    number=results.modifiersTotal(),
                     alwaysIncludeSign=True,
                     prefix='\n: ')
 
             labelsText += '\nTotal'
             valuesText += common.formatNumber(
-                number=results.total().value(),
+                number=results.total(),
                 prefix='\n: ')
 
             effectType = results.effectType()
@@ -93,7 +91,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                 labelsText += '\nEffect'
                 valuesText += '\n: {effectValue} ({effectType})'.format(
                     effectValue=common.formatNumber(
-                        number=results.effectValue().value(),
+                        number=results.effectValue(),
                         alwaysIncludeSign=True),
                     effectType=effectType.value)
             elif results.hasTarget():
