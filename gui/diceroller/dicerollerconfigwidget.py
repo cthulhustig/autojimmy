@@ -404,11 +404,21 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
     def _hasBoonChanged(self) -> None:
         self._roller.setHasBoon(
             self._hasBoonCheckBox.isChecked())
+
+        self._roller.setHasBane(False)
+        with gui.SignalBlocker(self._hasBaneCheckBox):
+            self._hasBaneCheckBox.setChecked(False)
+
         self.configChanged.emit()
 
     def _hasBaneChanged(self) -> None:
         self._roller.setHasBane(
             self._hasBaneCheckBox.isChecked())
+
+        self._roller.setHasBoon(False)
+        with gui.SignalBlocker(self._hasBoonCheckBox):
+            self._hasBoonCheckBox.setChecked(False)
+
         self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:
