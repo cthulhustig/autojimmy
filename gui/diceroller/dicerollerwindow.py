@@ -13,13 +13,12 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Support for Flux???
-# - p22 of T5 rules
-# - T5 usually the lower the roll the better but also says some target
-#   numbers are higher is better and even mentions that it could be
-#   you need to roll the target number exactly for it to be a success
-#   - Probably just a drop down on the target number to select the logic
-#   - Would need to update the probability graph code
+
+# TODO: It's to easy to accidentally change a modifier value if your
+# using the scroll wheel to move the list of modifiers up and down
+# - I think I solved this problem already for the construction
+# configuration widgets
+# TODO: Replace boon/bane flags with an enum (ExtraDieType?????)
 
 
 class DiceRollerWindow(gui.WindowWidget):

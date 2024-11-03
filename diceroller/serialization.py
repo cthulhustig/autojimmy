@@ -99,6 +99,9 @@ def _serialiseRoller(
         'hasBane': roller.hasBane(),
         'modifiers': modifierDataList}
 
+    if roller.fluxType() != None:
+        rollerData['fluxType'] = roller.fluxType().name
+
     if roller.targetType() != None:
         rollerData['targetType'] = roller.targetType().name
 
@@ -150,6 +153,14 @@ def _deserialiseRoller(
     if not isinstance(hasBane, bool):
         raise RuntimeError('Dice Roller hasBane property is not true or false')
 
+    fluxType = rollerData.get('fluxType')
+    if fluxType != None:
+        if fluxType not in diceroller.FluxType.__members__:
+            raise RuntimeError('Dice Roller fluxType property is not one of {valid}'.format(
+                valid=common.humanFriendlyListString(
+                    strings=list(diceroller.FluxType.__members__.keys()))))
+        fluxType = diceroller.FluxType.__members__[fluxType]
+
     targetType = rollerData.get('targetType')
     if targetType != None:
         if targetType not in common.ComparisonType.__members__:
@@ -169,6 +180,7 @@ def _deserialiseRoller(
         constant=constant,
         hasBoon=hasBoon,
         hasBane=hasBane,
+        fluxType=fluxType,
         modifiers=modifiers,
         targetType=targetType,
         targetNumber=targetNumber)

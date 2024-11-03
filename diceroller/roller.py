@@ -1,42 +1,78 @@
+import collections
 import common
 import diceroller
 import random
 import typing
 
-def _makeScalarValue(
-        value: typing.Union[common.ScalarCalculation, int],
-        name: str
-        ) -> common.ScalarCalculation:
-    if isinstance(value, common.ScalarCalculation):
-        return common.Calculator.equals(value=value, name=name)
-    else:
-        return common.ScalarCalculation(value=int(value), name=name)
-
 def calculateProbabilities(
         roller: diceroller.DiceRoller,
         probability: common.ComparisonType = common.ComparisonType.EqualTo,
-        ) -> typing.Mapping[int, common.ScalarCalculation]:
+        ) -> typing.Mapping[int, int]:
+    dieCount = roller.dieCount()
+    dieType = roller.dieType()
+
     # NOTE: Modifiers with a value of 0 are included even though they have no
     # effect on the roll so that they are still included in results
-    modifiers = [_makeScalarValue(
-        value=roller.constant(),
-        name='Constant DM')]
+    modifierTotal = roller.constant()
     for modifier in roller.modifiers():
         if modifier.enabled():
-            modifiers.append(_makeScalarValue(
-                value=modifier.value(),
-                name=modifier.name()))
-    modifiers = common.Calculator.sum(
-        values=modifiers,
-        name='Total DM')
+            modifierTotal += modifier.value()
 
-    return common.calculateRollProbabilities(
-        dieCount=roller.dieCount(),
-        dieType=roller.dieType(),
+    rollCombinations = common.calculateRollCombinations(
+        dieCount=dieCount,
+        dieType=dieType,
         hasBoon=roller.hasBoon(),
         hasBane=roller.hasBane(),
-        modifier=modifiers,
-        probability=probability)
+        modifier=modifierTotal)
+
+    fluxType = roller.fluxType()
+    if fluxType:
+        baseCombinations = common.calculateRollCombinations(
+            dieCount=2,
+            dieType=dieType)
+        rollOffset = common.dieSides(dieType) + 1
+        if dieType == common.DieType.DD:
+            rollOffset *= 10
+
+        fluxCombinations = collections.defaultdict(int)
+        if fluxType == diceroller.FluxType.Neutral:
+            for roll, count in baseCombinations.items():
+                fluxCombinations[roll - rollOffset] = count
+        elif fluxType == diceroller.FluxType.Good:
+            for roll, count in baseCombinations.items():
+                fluxCombinations[abs(roll - rollOffset)] += count
+        elif fluxType == diceroller.FluxType.Bad:
+            for roll, count in baseCombinations.items():
+                fluxCombinations[-abs(roll - rollOffset)] += count
+
+        combinedCombinations: typing.Dict[int, int] = collections.defaultdict(int)
+        for rollResult, rollCount in rollCombinations.items():
+            for fluxResult, fluxCount in fluxCombinations.items():
+                totalResult = rollResult + fluxResult
+                totalCount = rollCount * fluxCount
+                combinedCombinations[totalResult] += totalCount
+    else:
+        combinedCombinations = rollCombinations
+
+    denominator = sum(combinedCombinations.values())
+    probabilities = {}
+    accumulatedCount = 0
+    for result, count in combinedCombinations.items():
+        if probability == common.ComparisonType.EqualTo:
+            numerator = count
+        elif probability == common.ComparisonType.LessThan:
+            numerator = accumulatedCount
+        elif probability == common.ComparisonType.LessThanOrEqualTo:
+            numerator = accumulatedCount + count
+        elif probability == common.ComparisonType.GreaterOrEqualTo:
+            numerator = denominator - accumulatedCount
+        elif probability == common.ComparisonType.GreaterThan:
+            numerator = denominator - (accumulatedCount + count)
+
+        probabilities[result] = numerator / denominator
+        accumulatedCount += count
+
+    return probabilities
 
 def rollDice(
         label: str,
@@ -52,10 +88,10 @@ def rollDice(
         boonBaneCount = 1
     elif roller.hasBane() and not roller.hasBoon():
         boonBaneCount = -1
-    totalDieCount = roller.dieCount() + abs(boonBaneCount)
+    dieCount = roller.dieCount() + abs(boonBaneCount)
     dieType = roller.dieType()
     dieSides = common.dieSides(dieType=dieType)
-    for index in range(0, totalDieCount):
+    for index in range(0, dieCount):
         roll = randomGenerator.randint(1, dieSides)
         if dieType == common.DieType.DD:
             roll *= 10
@@ -77,6 +113,16 @@ def rollDice(
                 ignoredRollIndex = index
         del calculationValues[ignoredRollIndex]
 
+    fluxType = roller.fluxType()
+    fluxRolls = None
+    if fluxType:
+        fluxRolls = []
+        for _ in range(2):
+            roll = randomGenerator.randint(1, dieSides)
+            if dieType == common.DieType.DD:
+                roll *= 10
+            fluxRolls.append(roll)
+
     # NOTE: Modifiers with a value of 0 are included even though they have no
     # effect on the roll so that they are still included in results
     modifiers = [('Constant DM', roller.constant())]
@@ -87,9 +133,11 @@ def rollDice(
     return diceroller.DiceRollResult(
         timestamp=common.utcnow(),
         label=label,
-        die=dieType,
+        dieType=dieType,
         rolls=rolls,
         ignored=ignoredRollIndex,
+        fluxType=fluxType,
+        fluxRolls=fluxRolls,
         modifiers=modifiers,
         targetType=roller.targetType(),
         targetNumber=roller.targetNumber())

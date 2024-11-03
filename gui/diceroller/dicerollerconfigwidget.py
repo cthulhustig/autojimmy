@@ -227,6 +227,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._roller = roller
+
         self._dieCountSpinBox = gui.SpinBoxEx()
         self._dieCountSpinBox.setRange(0, 100)
         self._dieCountSpinBox.valueChanged.connect(self._dieCountChanged)
@@ -288,6 +289,17 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Fixed)
         self._hasBaneCheckBox.stateChanged.connect(self._hasBaneChanged)
 
+        self._fluxTypeComboBox = gui.EnumComboBox(
+            type=diceroller.FluxType,
+            isOptional=True)
+        self._fluxTypeComboBox.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._fluxTypeComboBox.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        self._fluxTypeComboBox.currentIndexChanged.connect(self._fluxTypeChanged)
+
         self._addModifierButton = QtWidgets.QPushButton('Add')
         self._addModifierButton.clicked.connect(self._addModifierClicked)
 
@@ -317,6 +329,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         controlLayout.addRow('Target:', targetWidget)
         controlLayout.addRow('Boon:', self._hasBoonCheckBox)
         controlLayout.addRow('Bane:', self._hasBaneCheckBox)
+        controlLayout.addRow('Flux:', self._fluxTypeComboBox)
         controlLayout.addRow('Modifiers:', modifiersLayout)
         controlLayout.addStretch()
 
@@ -369,6 +382,9 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._hasBaneCheckBox):
             self._hasBaneCheckBox.setChecked(self._roller.hasBane())
 
+        with gui.SignalBlocker(self._fluxTypeComboBox):
+            self._fluxTypeComboBox.setCurrentEnum(self._roller.fluxType())
+
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
             for modifier in self._roller.modifiers():
@@ -385,6 +401,11 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                 targetNumber if targetNumber != None else 8)
             self._targetNumberSpinBox.setEnabled(
                 self._roller.targetType() != None)
+
+    def _fluxTypeChanged(self) -> None:
+        self._roller.setFluxType(
+            self._fluxTypeComboBox.currentEnum())
+        self.configChanged.emit()
 
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(

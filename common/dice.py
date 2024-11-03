@@ -107,7 +107,7 @@ def _calculateBinomial(n: int, k: int) -> int:
 # I could see it only happening once (as the result in the cached) but I was never
 # seeing it hit
 @functools.lru_cache(maxsize=None)
-def _calculateRollProbabilities(
+def _recursiveRollCombinations(
         dieCount: int,
         dieSides: int,
         ignoreHighest: int = 0,
@@ -120,7 +120,7 @@ def _calculateRollProbabilities(
         pass
     else:
         for countShowingMax in range(dieCount + 1):  # 0..count
-            subResults = _calculateRollProbabilities(
+            subResults = _recursiveRollCombinations(
                 dieCount=dieCount - countShowingMax,
                 dieSides=dieSides - 1,
                 ignoreHighest=max(ignoreHighest - countShowingMax, 0),
@@ -168,26 +168,42 @@ class ComparisonType(enum.Enum):
 
         raise ValueError(f'Invalid comparison type {comparison}')
 
-def calculateRollProbabilities(
-        dieCount: typing.Union[int, common.ScalarCalculation],
+def calculateRollCombinations(
+        dieCount: int,
         dieType: DieType = DieType.D6,
         hasBoon: bool = False,
         hasBane: bool = False,
-        modifier: typing.Union[int, common.ScalarCalculation] = 0,
-        probability: ComparisonType = ComparisonType.EqualTo
-        ) -> typing.Mapping[int, common.ScalarCalculation]:
-    if isinstance(dieCount, common.ScalarCalculation):
-        dieCount = dieCount.value()
-    dieCount = int(dieCount)
-
-    if isinstance(modifier, common.ScalarCalculation):
-        modifier = modifier.value()
-    modifier = int(modifier)
-
+        modifier: int = 0
+        ) -> typing.Mapping[int, int]:
     if hasBoon and hasBane:
         hasBoon = hasBane = False
 
-    results = _calculateRollProbabilities(
+    rollCombinations = _recursiveRollCombinations(
+        dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
+        dieSides=dieSides(dieType=dieType),
+        ignoreHighest=1 if hasBane else 0,
+        ignoreLowest=1 if hasBoon else 0)
+
+    finalCombinations = {}
+    for roll, count in rollCombinations.items():
+        if dieType == DieType.DD:
+            roll *= 10
+
+        finalCombinations[roll + modifier] = count
+    return finalCombinations
+
+def calculateRollProbabilities(
+        dieCount: int,
+        dieType: DieType = DieType.D6,
+        hasBoon: bool = False,
+        hasBane: bool = False,
+        modifier: int = 0,
+        probability: ComparisonType = ComparisonType.EqualTo
+        ) -> typing.Mapping[int, int]:
+    if hasBoon and hasBane:
+        hasBoon = hasBane = False
+
+    results = _recursiveRollCombinations(
         dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
         dieSides=dieSides(dieType=dieType),
         ignoreHighest=1 if hasBane else 0,
@@ -195,126 +211,56 @@ def calculateRollProbabilities(
 
     denominator = sum(results.values())
     probabilities = {}
-    accumulate = 0
-    for value, combinations in results.items():
+    accumulatedCount = 0
+    for roll, count in results.items():
         if dieType == DieType.DD:
-            value *= 10
+            roll *= 10
 
         if probability == ComparisonType.EqualTo:
-            enumerator = combinations
+            enumerator = count
         elif probability == ComparisonType.LessThan:
-            enumerator = accumulate
+            enumerator = accumulatedCount
         elif probability == ComparisonType.LessThanOrEqualTo:
-            enumerator = accumulate + combinations
+            enumerator = accumulatedCount + count
         elif probability == ComparisonType.GreaterOrEqualTo:
-            enumerator = denominator - accumulate
+            enumerator = denominator - accumulatedCount
         elif probability == ComparisonType.GreaterThan:
-            enumerator = denominator - (accumulate + combinations)
+            enumerator = denominator - (accumulatedCount + count)
 
-        probabilities[value + modifier] = common.ScalarCalculation(
-            value=enumerator / denominator,
-            name=f'Normalised Percentage Probability Of Rolling {probability.value} {value}')
-        accumulate += combinations
+        probabilities[roll + modifier] = enumerator / denominator
+        accumulatedCount += count
 
     return probabilities
 
 # NOTE: This function returns a normalised percentage in the range (0->1.0)
 def calculateRollProbability(
-        dieCount: typing.Union[int, common.ScalarCalculation],
-        targetValue: typing.Union[int, common.ScalarCalculation],
+        dieCount: int,
+        targetValue: int,
         hasBoon: bool = False,
         hasBane: bool = False,
-        modifier: typing.Union[int, common.ScalarCalculation] = 0,
+        modifier: int = 0,
         dieType: DieType = DieType.D6,
         probability: ComparisonType = ComparisonType.GreaterOrEqualTo,
-        ) -> common.ScalarCalculation:
-    if isinstance(dieCount, common.ScalarCalculation):
-        dieCount = dieCount.value()
-    dieCount = int(dieCount)
-
-    if isinstance(targetValue, common.ScalarCalculation):
-        targetValue = targetValue.value()
-    targetValue = int(targetValue)
-
-    if isinstance(modifier, common.ScalarCalculation):
-        modifier = modifier.value()
-    modifier = int(modifier)
-
+        ) -> int:
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
         hasBoon=hasBoon,
         hasBane=hasBane,
+        modifier=modifier,
         probability=probability)
-    assert(probabilities)
-
-    minValue = min(probabilities.keys())
-    maxValue = max(probabilities.keys())
-
-    if probability == ComparisonType.EqualTo:
-        return probabilities[targetValue - modifier]
-    elif probability == ComparisonType.GreaterThan:
-        startValue = max((targetValue + 1) - modifier, minValue)
-        stopValue = maxValue
-        typeString = 'Greater Than'
-    elif probability == ComparisonType.GreaterOrEqualTo:
-        startValue = max(targetValue - modifier, minValue)
-        stopValue = maxValue
-        typeString = 'Greater Than Or Equal To'
-    elif probability == ComparisonType.LessThan:
-        startValue = minValue
-        stopValue = min((targetValue - 1) - modifier, maxValue)
-        typeString = 'Less Than'
-    elif probability == ComparisonType.LessThanOrEqualTo:
-        startValue = minValue
-        stopValue = min(targetValue - modifier, maxValue)
-        typeString = 'Less Than Or Equal To'
-    else:
-        raise ValueError('Invalid roll target type')
-
-    values = []
-    for value in range(startValue, stopValue + 1):
-        values.append(probabilities[value])
-
-    probabilityString = f'Percentage Probability Of Rolling {typeString} {targetValue}'
-    if modifier:
-        probabilityString += f' {modifier:+}'
-
-    if not values:
-        return common.ScalarCalculation(
-            value=0,
-            name=probabilityString)
-
-    return common.Calculator.sum(
-        values=values,
-        name=probabilityString)
+    return probabilities.get(targetValue, 0)
 
 # NOTE: This function returns a normalised percentage in the range (0->1.0)
 def calculateRollRangeProbability(
-        dieCount: typing.Union[int, common.ScalarCalculation],
-        lowValue: typing.Union[int, common.ScalarCalculation],
-        highValue: typing.Union[int, common.ScalarCalculation],
+        dieCount: int,
+        lowValue: int,
+        highValue: int,
         hasBoon: bool = False,
         hasBane: bool = False,
-        modifier: typing.Union[int, common.ScalarCalculation] = 0,
+        modifier: int = 0,
         dieType: DieType = DieType.D6
-        ) -> common.ScalarCalculation:
-    if isinstance(dieCount, common.ScalarCalculation):
-        dieCount = dieCount.value()
-    dieCount = int(dieCount)
-
-    if isinstance(lowValue, common.ScalarCalculation):
-        lowValue = lowValue.value()
-    lowValue = int(lowValue)
-
-    if isinstance(highValue, common.ScalarCalculation):
-        highValue = highValue.value()
-    highValue = int(highValue)
-
-    if isinstance(modifier, common.ScalarCalculation):
-        modifier = modifier.value()
-    modifier = int(modifier)
-
+        ) -> int:
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
@@ -323,28 +269,16 @@ def calculateRollRangeProbability(
         probability=ComparisonType.EqualTo)
     assert(probabilities)
 
-    probabilityString = f'Percentage Probability Of Rolling Between {lowValue} and {highValue}'
-    if modifier:
-        probabilityString += f' {modifier:+}'
-
     minValue = min(probabilities.keys())
     maxValue = max(probabilities.keys())
 
     lowValue = max(lowValue - modifier, minValue)
     highValue = min(highValue - modifier, maxValue)
 
-    values = []
+    total = 0
     for value in range(lowValue, highValue + 1):
-        values.append(probabilities[value])
-
-    if not values:
-        return common.ScalarCalculation(
-            value=0,
-            name=probabilityString)
-
-    return common.Calculator.sum(
-        values=values,
-        name=probabilityString)
+        total += probabilities[value]
+    return total
 
 def randomRollDice(
         dieCount: typing.Union[int, common.ScalarCalculation],

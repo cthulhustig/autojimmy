@@ -1,4 +1,3 @@
-import common
 import copy
 import diceroller
 import enum
@@ -11,11 +10,12 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
         Label = 'Label'
-        Rolls = 'Rolls'
-        BoonBane = 'Boon/Bane'
-        Modifiers = 'Modifiers'
         Result = 'Result'
         Effect = 'Effect'
+        Rolled = 'Rolls'
+        BoonBane = 'Boon/Bane'
+        Flux = 'Flux'
+        Modifiers = 'Modifiers'
 
     _StateVersion = 'DiceRollHistoryWidget_v1'
 
@@ -104,33 +104,42 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             columnType = self._historyTable.columnHeader(column)
             tableItem = None
             if columnType == DiceRollHistoryWidget._ColumnType.Timestamp:
-                itemText = common.utcnow().astimezone().strftime('%c')
+                itemText = result.timestamp().astimezone().strftime('%c')
                 tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.Label:
                 tableItem = gui.TableWidgetItemEx(result.label())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Rolls:
+            elif columnType == DiceRollHistoryWidget._ColumnType.Rolled:
                 usedRolls = []
-                ignoredRolls = []
                 for roll, ignored in result.rolls():
-                    if ignored:
-                        ignoredRolls.append(str(roll))
-                    else:
+                    if not ignored:
                         usedRolls.append(str(roll))
-                itemText = ','.join(usedRolls)
-                if ignoredRolls:
-                    itemText += ' ({ignored})'.format(
-                        ignored=','.join(ignoredRolls))
+                itemText = '{total} (Rolls: {rolls})'.format(
+                    total=result.rolledTotal(),
+                    rolls=', '.join(usedRolls))
                 tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.BoonBane:
                 # TODO: Implement this column or remove it
                 tableItem = gui.TableWidgetItemEx('')
+            elif columnType == DiceRollHistoryWidget._ColumnType.Flux:
+                fluxType = result.fluxType()
+                if fluxType != None:
+                    fluxRolls = []
+                    for roll in result.fluxRolls():
+                        fluxRolls.append(str(roll))
+                    itemText = '{total} (Type: {type}, Rolls: {rolls})'.format(
+                        total=result.fluxTotal(),
+                        type='Flux' if fluxType == diceroller.FluxType.Neutral else f'{fluxType.value} Flux',
+                        rolls=', '.join(fluxRolls))
+                    tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.Modifiers:
-                itemText = ''
-                for _, modifier in result.modifiers():
-                    itemText += common.formatNumber(
-                        number=modifier,
-                        alwaysIncludeSign=len(itemText) > 0)
-                tableItem = gui.TableWidgetItemEx(itemText)
+                if result.modifierCount():
+                    modifiers = []
+                    for _, modifier in result.modifiers():
+                        modifiers.append(f'{modifier:+}')
+                    itemText = '{total:+} (DMs: {rolls})'.format(
+                        total=result.modifiersTotal(),
+                        rolls=', '.join(modifiers))
+                    tableItem = gui.TableWidgetItemEx(itemText)
             elif columnType == DiceRollHistoryWidget._ColumnType.Result:
                 tableItem = gui.FormattedNumberTableWidgetItem(
                     value=result.total())

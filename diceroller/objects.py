@@ -4,6 +4,29 @@ import enum
 import objectdb
 import typing
 
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
+class FluxType(enum.Enum):
+    Neutral = 'Neutral'
+    Good = 'Good'
+    Bad = 'Bad'
+
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
+class DiceRollEffectType(enum.Enum):
+    ExceptionalFailure = 'Exceptional Failure'
+    AverageFailure = 'Average Failure'
+    MarginalFailure = 'Marginal Failure'
+    MarginalSuccess = 'Marginal Success'
+    AverageSuccess = 'Average Success'
+    ExceptionalSuccess = 'Exceptional Success'
+
 class DiceModifier(objectdb.DatabaseObject):
     def __init__(
             self,
@@ -110,6 +133,7 @@ class DiceRoller(objectdb.DatabaseObject):
             constant: int = 0,
             hasBoon: bool = False,
             hasBane: bool = False,
+            fluxType: typing.Optional[FluxType] = None,
             modifiers: typing.Optional[typing.Union[
                 typing.Iterable[DiceModifier],
                 objectdb.DatabaseList]] = None,
@@ -125,6 +149,7 @@ class DiceRoller(objectdb.DatabaseObject):
         self._constant = constant
         self._hasBoon = hasBoon
         self._hasBane = hasBane
+        self._fluxType = fluxType
         self._targetType = targetType if targetType != None and targetNumber != None else None
         self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
 
@@ -143,6 +168,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 self._constant == other._constant and \
                 self._hasBoon == other._hasBoon and \
                 self._hasBane == other._hasBane and \
+                self._fluxType == other._fluxType and \
                 self._modifiers == other._modifiers and \
                 self._targetType == other._targetType and \
                 self._targetNumber == other._targetNumber
@@ -183,6 +209,12 @@ class DiceRoller(objectdb.DatabaseObject):
 
     def setHasBane(self, hasBane: bool) -> None:
         self._hasBane = hasBane
+
+    def fluxType(self) -> typing.Optional[FluxType]:
+        return self._fluxType
+
+    def setFluxType(self, fluxType: typing.Optional[FluxType]):
+        self._fluxType = fluxType
 
     def modifiers(self) -> typing.Iterable[DiceModifier]:
         return self._modifiers
@@ -272,6 +304,7 @@ class DiceRoller(objectdb.DatabaseObject):
             constant=self._constant,
             hasBoon=self._hasBoon,
             hasBane=self._hasBane,
+            fluxType=self._fluxType,
             modifiers=modifiers,
             targetType=self._targetType,
             targetNumber=self._targetNumber)
@@ -286,6 +319,7 @@ class DiceRoller(objectdb.DatabaseObject):
             'constant': self._constant,
             'has_boon': self._hasBoon,
             'has_bane': self._hasBane,
+            'flux_type': self._fluxType.name if self._fluxType != None else None,
             'modifiers': self._modifiers,
             'target_type': self._targetType.name if self._targetType != None else None,
             'target_number': self._targetNumber}
@@ -303,6 +337,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='constant', columnType=int),
                 objectdb.ParamDef(columnName='has_boon', columnType=bool),
                 objectdb.ParamDef(columnName='has_bane', columnType=bool),
+                objectdb.ParamDef(columnName='flux_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
@@ -343,6 +378,14 @@ class DiceRoller(objectdb.DatabaseObject):
         if not isinstance(hasBane, bool):
             raise ValueError('DiceRoller construction parameter "has_bane" is not a bool')
 
+        fluxType = data.get('flux_type')
+        if fluxType != None:
+            if not isinstance(fluxType, str):
+                raise ValueError('DiceRoller construction parameter "flux_type" is not a str')
+            if fluxType not in FluxType.__members__:
+                raise ValueError(f'DiceRoller construction parameter "flux_type" has unexpected value "{fluxType}"')
+            fluxType = FluxType.__members__[fluxType]
+
         modifiers = data.get('modifiers')
         if not isinstance(modifiers, objectdb.DatabaseList):
             raise ValueError('DiceRoller construction parameter "modifiers" is not a DatabaseList')
@@ -368,6 +411,7 @@ class DiceRoller(objectdb.DatabaseObject):
             constant=constant,
             hasBoon=hasBoon,
             hasBane=hasBane,
+            fluxType=fluxType,
             modifiers=modifiers,
             targetType=targetType,
             targetNumber=targetNumber)
@@ -507,46 +551,20 @@ class DiceRollerGroup(objectdb.DatabaseObject):
             name=name,
             rollers=rollers)
 
-# IMPORTANT: If I ever change the names of the enum definitions (not their value
-# string) then I need to add some kind of value mapping to objectdb as the name
-# of the enum is stored in the database for dice roller db objects. I will also
-# need some kind of mapping in dice roller serialisation as the names are also
-# used in serialised data
-class DiceRollEffectType(enum.Enum):
-    ExceptionalFailure = 'Exceptional Failure'
-    AverageFailure = 'Average Failure'
-    MarginalFailure = 'Marginal Failure'
-    MarginalSuccess = 'Marginal Success'
-    AverageSuccess = 'Average Success'
-    ExceptionalSuccess = 'Exceptional Success'
-
-    @staticmethod
-    def effectValueToType(value: int) -> 'DiceRollEffectType':
-        if isinstance(value, common.ScalarCalculation):
-            value = value.value()
-        if value <= -6:
-            return DiceRollEffectType.ExceptionalFailure
-        elif value <= -2:
-            return DiceRollEffectType.AverageFailure
-        elif value == -1:
-            return DiceRollEffectType.MarginalFailure
-        elif value == 0:
-            return DiceRollEffectType.MarginalSuccess
-        elif value <= 5:
-            return DiceRollEffectType.AverageSuccess
-        else:
-            return DiceRollEffectType.ExceptionalSuccess
-
 class DiceRollResult(objectdb.DatabaseObject):
     def __init__(
             self,
             timestamp: datetime.datetime,
             label: str,
-            die: common.DieType,
+            dieType: common.DieType,
             rolls: typing.Union[
                 typing.Iterable[int],
                 objectdb.DatabaseList],
             ignored: typing.Optional[int] = None, # Index of ignored roll in rolls list
+            fluxType: typing.Optional[FluxType] = None,
+            fluxRolls: typing.Optional[typing.Union[ # Only used if fluxType is not None
+                typing.Iterable[int],
+                objectdb.DatabaseList]] = None,
             modifiers: typing.Optional[typing.Union[
                 typing.Iterable[typing.Tuple[
                     str, # Modifier name
@@ -558,10 +576,12 @@ class DiceRollResult(objectdb.DatabaseObject):
             parent: typing.Optional[str] = None
             ) -> None:
         super().__init__(id=id, parent=parent)
+
         self._timestamp = timestamp
         self._label = label
-        self._die = die
+        self._dieType = dieType
         self._ignored = ignored
+        self._fluxType = fluxType
         self._targetType = targetType
         self._targetNumber = targetNumber
 
@@ -571,6 +591,17 @@ class DiceRollResult(objectdb.DatabaseObject):
         if rolls != None:
             for roll in rolls:
                 self._rolls.add(roll)
+
+        self._fluxRolls = None
+        if fluxType != None:
+            if not fluxRolls or len(fluxRolls) != 2:
+                raise ValueError('Invalid flux rolls')
+
+            self._fluxRolls = objectdb.DatabaseList(
+                parent=self.id(),
+                id=fluxRolls.id() if isinstance(fluxRolls, objectdb.DatabaseList) else None)
+            for flux in fluxRolls:
+                self._fluxRolls.add(flux)
 
         self._modifiers = objectdb.DatabaseList(
             parent=self.id(),
@@ -587,9 +618,10 @@ class DiceRollResult(objectdb.DatabaseObject):
             return super().__eq__(other) and \
                 self._timestamp == other._timestamp and \
                 self._label == other._label and \
-                self._die == other._die and \
+                self._dieType == other._dieType and \
                 self._rolls == other._rolls and \
                 self._ignored == other._ignored and \
+                self._fluxRolls == other._fluxRolls and \
                 self._modifiers == other._modifiers and \
                 self._targetType == other._targetType and \
                 self._targetNumber == other._targetNumber
@@ -601,11 +633,15 @@ class DiceRollResult(objectdb.DatabaseObject):
     def label(self) -> str:
         return self._label
 
-    def die(self) -> common.DieType:
-        return self._die
+    def dieType(self) -> common.DieType:
+        return self._dieType
 
     def total(self) -> int:
-        return self.rolledTotal() + self.modifiersTotal()
+        total = self.rolledTotal() + self.modifiersTotal()
+        flux = self.fluxTotal()
+        if flux:
+            total += flux
+        return total
 
     def rolls(self) -> typing.Iterable[typing.Tuple[
             int, # Rolled value
@@ -622,6 +658,29 @@ class DiceRollResult(objectdb.DatabaseObject):
             if index != self._ignored:
                 total += roll
         return total
+
+    def fluxType(self) -> typing.Optional[FluxType]:
+        return self._fluxType
+
+    def fluxRolls(self) -> typing.Optional[typing.Iterable[int]]:
+        return self._fluxRolls if self._fluxType != None else None
+
+    def fluxTotal(self) -> typing.Optional[int]:
+        if self._fluxType == FluxType.Neutral:
+            assert(len(self._fluxRolls) == 2)
+            return self._fluxRolls[0] - self._fluxRolls[1]
+        elif self._fluxType == FluxType.Good:
+            assert(len(self._fluxRolls) == 2)
+            minRoll = min(self._fluxRolls[0], self._fluxRolls[1])
+            maxRoll = max(self._fluxRolls[0], self._fluxRolls[1])
+            return maxRoll - minRoll
+        elif self._fluxType == FluxType.Bad:
+            assert(len(self._fluxRolls) == 2)
+            minRoll = min(self._fluxRolls[0], self._fluxRolls[1])
+            maxRoll = max(self._fluxRolls[0], self._fluxRolls[1])
+            return minRoll - maxRoll
+
+        return None
 
     def modifiers(self) -> typing.Iterable[typing.Tuple[str, int]]:
         return [(modifier[0], modifier[1]) for modifier in self._modifiers]
@@ -658,7 +717,7 @@ class DiceRollResult(objectdb.DatabaseObject):
         effectValue = self.effectValue()
         if effectValue == None:
             return None
-        return DiceRollEffectType.effectValueToType(value=effectValue)
+        return DiceRollResult._effectValueToType(value=effectValue)
 
     def effectValue(self) -> typing.Optional[int]:
         if self._targetNumber != None:
@@ -680,9 +739,11 @@ class DiceRollResult(objectdb.DatabaseObject):
         return {
             'timestamp': self._timestamp.isoformat(),
             'label': self._label,
-            'die': self._die.name,
+            'die_type': self._dieType.name,
             'rolls': self._rolls,
             'ignored': self._ignored,
+            'flux_type': self._fluxType.name if self._fluxType != None else None,
+            'flux_rolls': self._fluxRolls,
             'modifiers': self._modifiers,
             'target_type': self._targetType.name if self._targetType != None else None,
             'target_number': self._targetNumber
@@ -697,9 +758,11 @@ class DiceRollResult(objectdb.DatabaseObject):
             paramDefs=[
                 objectdb.ParamDef(columnName='timestamp', columnType=str),
                 objectdb.ParamDef(columnName='label', columnType=str),
-                objectdb.ParamDef(columnName='die', columnType=str),
+                objectdb.ParamDef(columnName='die_type', columnType=str),
                 objectdb.ParamDef(columnName='rolls', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='ignored', columnType=int, isOptional=True),
+                objectdb.ParamDef(columnName='flux_type', columnType=str, isOptional=True),
+                objectdb.ParamDef(columnName='flux_rolls', columnType=objectdb.DatabaseList, isOptional=True),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True)
@@ -718,19 +781,19 @@ class DiceRollResult(objectdb.DatabaseObject):
             raise ValueError('RollResult construction parameter "timestamp" is not a str')
         try:
             timestamp = datetime.datetime.fromisoformat(timestamp)
-        except Exception as ex:
+        except Exception:
             raise ValueError(f'RollResult construction parameter "timestamp" has unexpected value "{timestamp}"')
 
         label = data.get('label')
         if not isinstance(label, str):
             raise ValueError('RollResult construction parameter "label" is not a str')
 
-        die = data.get('die')
-        if not isinstance(die, str):
-            raise ValueError('RollResult construction parameter "die" is not a str')
-        if die not in common.DieType.__members__:
-            raise ValueError(f'RollResult construction parameter "die" has unexpected value "{die}"')
-        die = common.DieType.__members__[die]
+        dieType = data.get('die_type')
+        if not isinstance(dieType, str):
+            raise ValueError('RollResult construction parameter "die_type" is not a str')
+        if dieType not in common.DieType.__members__:
+            raise ValueError(f'RollResult construction parameter "die_type" has unexpected value "{dieType}"')
+        dieType = common.DieType.__members__[dieType]
 
         rolls = data.get('rolls')
         if not isinstance(rolls, objectdb.DatabaseList):
@@ -739,6 +802,18 @@ class DiceRollResult(objectdb.DatabaseObject):
         ignored = data.get('ignored')
         if ignored != None and not isinstance(ignored, int):
             raise ValueError('RollResult construction parameter "ignored" is not an int or None')
+
+        fluxType = data.get('flux_type')
+        if fluxType != None:
+            if not isinstance(fluxType, str):
+                raise ValueError('RollResult construction parameter "flux_type" is not a str')
+            if fluxType not in FluxType.__members__:
+                raise ValueError(f'RollResult construction parameter "flux_type" has unexpected value "{fluxType}"')
+            fluxType = FluxType.__members__[fluxType]
+
+        fluxRolls = data.get('flux_rolls')
+        if fluxType != None and not isinstance(fluxRolls, objectdb.DatabaseList):
+            raise ValueError('RollResult construction parameter "flux_rolls" is not a DatabaseList')
 
         modifiers = data.get('modifiers')
         if not isinstance(modifiers, objectdb.DatabaseList):
@@ -761,9 +836,28 @@ class DiceRollResult(objectdb.DatabaseObject):
             parent=parent,
             timestamp=timestamp,
             label=label,
-            die=die,
+            dieType=dieType,
             rolls=rolls,
             ignored=ignored,
+            fluxType=fluxType,
+            fluxRolls=fluxRolls,
             modifiers=modifiers,
             targetType=targetType,
             targetNumber=targetNumber)
+
+    @staticmethod
+    def _effectValueToType(value: int) -> 'DiceRollEffectType':
+        if isinstance(value, common.ScalarCalculation):
+            value = value.value()
+        if value <= -6:
+            return DiceRollEffectType.ExceptionalFailure
+        elif value <= -2:
+            return DiceRollEffectType.AverageFailure
+        elif value == -1:
+            return DiceRollEffectType.MarginalFailure
+        elif value == 0:
+            return DiceRollEffectType.MarginalSuccess
+        elif value <= 5:
+            return DiceRollEffectType.AverageSuccess
+        else:
+            return DiceRollEffectType.ExceptionalSuccess

@@ -64,6 +64,22 @@ class DiceRollResultsTable(gui.ListTable):
             row=row,
             total=self._results.rolledTotal())
 
+        fluxRolls = self._results.fluxRolls()
+        if fluxRolls:
+            for index, roll in enumerate(fluxRolls):
+                row = self.rowCount()
+                self.insertRow(row)
+                self._fillFluxRow(
+                    row=row,
+                    index=index + 1,
+                    value=roll)
+
+            row = self.rowCount()
+            self.insertRow(row)
+            self._fillFluxTotalRow(
+                row=row,
+                total=self._results.fluxTotal())
+
         for name, modifier in self._results.modifiers():
             row = self.rowCount()
             self.insertRow(row)
@@ -132,6 +148,35 @@ class DiceRollResultsTable(gui.ListTable):
         self._fillGenericTotalRow(
             row=row,
             name=f'Dice Roll Total',
+            total=total)
+
+    def _fillFluxRow(
+            self,
+            row: int,
+            index: int,
+            value: int
+            ) -> None:
+        for column in range(self.columnCount()):
+            columnType = self.columnHeader(column)
+            tableItem = None
+            if columnType == DiceRollResultsTable.ColumnType.Name:
+                tableItem = gui.TableWidgetItemEx(f'Flux Roll #{index}')
+            elif columnType == DiceRollResultsTable.ColumnType.Value:
+                tableItem = gui.FormattedNumberTableWidgetItem(
+                    value=value)
+
+            if tableItem:
+                self.setItem(row, column, tableItem)
+        self.resizeRowToContents(row)
+
+    def _fillFluxTotalRow(
+            self,
+            row: int,
+            total: int
+            ) -> None:
+        self._fillGenericTotalRow(
+            row=row,
+            name=f'Flux Total',
             total=total)
 
     def _fillModifierRow(

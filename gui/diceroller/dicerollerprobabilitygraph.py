@@ -106,7 +106,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
             roller=self._roller,
             probability=self._typeComboBox.currentEnum())
         xValues = list(probabilities.keys())
-        yValues = [value.value() * 100 for value in probabilities.values()]
+        yValues = [value * 100 for value in probabilities.values()]
 
         defaultColour = 'w' if gui.isDarkModeEnabled() else 'k'
         colours = []

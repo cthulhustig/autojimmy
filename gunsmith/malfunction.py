@@ -52,24 +52,12 @@ class MalfunctionType(enum.Enum):
     MalfunctionType5 = 5
 
 
-_MalfunctionDiceCount = common.ScalarCalculation(
-    value=2,
-    name='Dice Count For Malfunction Check')
-_OverheatMalfunctionTarget = common.ScalarCalculation(
-    value=12,
-    name='Overheat Malfunction Threshold')
-_DangerMalfunctionTarget = common.ScalarCalculation(
-    value=9,
-    name='Danger Malfunction Threshold')
-_DangerMalfunctionModifier = common.ScalarCalculation(
-    value=-2,
-    name='Danger Malfunction Modifier')
-_DisasterMalfunctionTarget = common.ScalarCalculation(
-    value=6,
-    name='Disaster Malfunction Threshold')
-_DisasterMalfunctionModifier = common.ScalarCalculation(
-    value=-4,
-    name='Disaster Malfunction Modifier')
+_MalfunctionDiceCount = 2
+_OverheatMalfunctionTarget = 12
+_DangerMalfunctionTarget = 9
+_DangerMalfunctionModifier = -2
+_DisasterMalfunctionTarget = 6
+_DisasterMalfunctionModifier = -4
 
 _MalfunctionTypeDescriptionMap = {
     MalfunctionType.MalfunctionType1: 'Breech explosion or similar disaster. The weapon is ruined and the user receives its normal damage',
@@ -91,53 +79,52 @@ def calculateMalfunctionProbability(
         weaponSkill: typing.Union[int, common.ScalarCalculation],
         currentHeat: typing.Union[int, common.ScalarCalculation]
         ) -> typing.Optional[typing.Mapping[MalfunctionType, common.ScalarCalculation]]:
-    if not isinstance(weaponSkill, common.ScalarCalculation):
-        weaponSkill = common.ScalarCalculation(
-            value=weaponSkill,
-            name='Weapon Skill')
+    if isinstance(weaponSkill, common.ScalarCalculation):
+        weaponSkill = weaponSkill.value()
 
-    if not isinstance(currentHeat, common.ScalarCalculation):
-        currentHeat = common.ScalarCalculation(
-            value=currentHeat,
-            name='Current Heat')
+    if isinstance(currentHeat, common.ScalarCalculation):
+        currentHeat = currentHeat.value()
 
     overheatThreshold = weapon.attributeValue(
         sequence=sequence,
         attributeId=gunsmith.WeaponAttributeId.OverheatThreshold)
     if not isinstance(overheatThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have an ScalarCalculation OverheatThreshold attribute')
+    overheatThreshold = overheatThreshold.value()
 
     dangerThreshold = weapon.attributeValue(
         sequence=sequence,
         attributeId=gunsmith.WeaponAttributeId.DangerHeatThreshold)
     if not isinstance(dangerThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation DangerHeatThreshold attribute')
+    dangerThreshold = dangerThreshold.value()
 
     disasterThreshold = weapon.attributeValue(
         sequence=sequence,
         attributeId=gunsmith.WeaponAttributeId.DisasterHeatThreshold)
     if not isinstance(disasterThreshold, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation DisasterHeatThreshold attribute')
+    disasterThreshold = disasterThreshold.value()
 
-    if not (overheatThreshold.value() < dangerThreshold.value() < disasterThreshold.value()):
-        raise ValueError(f'Invalid heat threshold values {overheatThreshold.value()} {dangerThreshold.value()} {disasterThreshold.value()}')
+    if not (overheatThreshold < dangerThreshold < disasterThreshold):
+        raise ValueError(f'Invalid heat threshold values {overheatThreshold} {dangerThreshold} {disasterThreshold}')
 
     malfunctionDm = weapon.attributeValue(
         sequence=sequence,
         attributeId=gunsmith.WeaponAttributeId.MalfunctionDM)
     if not isinstance(malfunctionDm, common.ScalarCalculation):
         raise RuntimeError('Weapon doesn\'t have a ScalarCalculation MalfunctionDM attribute')
+    malfunctionDm = malfunctionDm.value()
 
-    malfunctionModifiers = [weaponSkill, malfunctionDm]
-
+    malfunctionModifier = weaponSkill + malfunctionDm
     malfunctionTarget = None
-    if currentHeat.value() >= disasterThreshold.value():
+    if currentHeat >= disasterThreshold:
         malfunctionTarget = _DisasterMalfunctionTarget
-        malfunctionModifiers.append(_DisasterMalfunctionModifier)
-    elif currentHeat.value() >= dangerThreshold.value():
+        malfunctionModifier += _DisasterMalfunctionModifier
+    elif currentHeat >= dangerThreshold:
         malfunctionTarget = _DangerMalfunctionTarget
-        malfunctionModifiers.append(_DangerMalfunctionModifier)
-    elif currentHeat.value() >= overheatThreshold.value():
+        malfunctionModifier += _DangerMalfunctionModifier
+    elif currentHeat >= overheatThreshold:
         malfunctionTarget = _OverheatMalfunctionTarget
     else:
         malfunctionTypeProbabilities: typing.Dict[MalfunctionType, common.ScalarCalculation] = {}
@@ -149,42 +136,29 @@ def calculateMalfunctionProbability(
 
     assert(malfunctionTarget)
 
-    malfunctionModifier = common.Calculator.sum(
-        values=malfunctionModifiers,
-        name='Total Malfunction Modifier')
-
     # Calculate the probability of a malfunction occurring due to heat
-    malfunctionProbability = common.calculateRollProbability(
-        dieCount=_MalfunctionDiceCount,
-        probability=common.ComparisonType.GreaterOrEqualTo,
+    malfunctionProbability = _calculateGreaterOrEqualProbability(
         targetValue=malfunctionTarget)
 
     # Calculate the probability of different types of malfunction occurring if a malfunction was
     # to occur
     malfunctionTypeProbabilities: typing.Dict[MalfunctionType, common.ScalarCalculation] = {}
-    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType1] = common.calculateRollProbability(
-        dieCount=_MalfunctionDiceCount,
-        probability=common.ComparisonType.LessThanOrEqualTo,
+    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType1] = _calculateLessOrEqualProbability(
         targetValue=0,
         modifier=malfunctionModifier)
-    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType2] = common.calculateRollRangeProbability(
-        dieCount=_MalfunctionDiceCount,
+    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType2] = _calculateRangeProbability(
         lowValue=1,
         highValue=3,
         modifier=malfunctionModifier)
-    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType3] = common.calculateRollRangeProbability(
-        dieCount=_MalfunctionDiceCount,
+    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType3] = _calculateRangeProbability(
         lowValue=4,
         highValue=6,
         modifier=malfunctionModifier)
-    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType4] = common.calculateRollRangeProbability(
-        dieCount=_MalfunctionDiceCount,
+    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType4] = _calculateRangeProbability(
         lowValue=7,
         highValue=9,
         modifier=malfunctionModifier)
-    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType5] = common.calculateRollProbability(
-        dieCount=_MalfunctionDiceCount,
-        probability=common.ComparisonType.GreaterOrEqualTo,
+    malfunctionTypeProbabilities[MalfunctionType.MalfunctionType5] = _calculateGreaterOrEqualProbability(
         targetValue=10,
         modifier=malfunctionModifier)
 
@@ -196,3 +170,62 @@ def calculateMalfunctionProbability(
             name=f'Probability Of Type {type.value} Malfunction Occurring')
 
     return malfunctionTypeProbabilities
+
+def _calculateLessOrEqualProbability(
+        targetValue: int,
+        modifier: int = 0,
+        ) -> common.ScalarCalculation:
+    resultName = 'Probability Of Rolling Less Than Or Equal To {value} Inclusive With {dice}D'.format(
+        value=targetValue,
+        dice=_MalfunctionDiceCount)
+    if modifier:
+        resultName += f'{modifier:+}'
+
+    return common.ScalarCalculation(
+        value=common.calculateRollProbability(
+            targetValue=targetValue,
+            dieCount=_MalfunctionDiceCount,
+            dieType=common.DieType.D6,
+            modifier=modifier,
+            probability=common.ComparisonType.LessThanOrEqualTo),
+        name=resultName)
+
+def _calculateGreaterOrEqualProbability(
+        targetValue: int,
+        modifier: int = 0
+        ) -> common.ScalarCalculation:
+    resultName = 'Probability Of Rolling Greater Than Or Equal To {value} With {dice}D'.format(
+        value=targetValue,
+        dice=_MalfunctionDiceCount)
+    if modifier:
+        resultName += f'{modifier:+}'
+
+    return common.ScalarCalculation(
+        value=common.calculateRollProbability(
+            targetValue=targetValue,
+            dieCount=_MalfunctionDiceCount,
+            dieType=common.DieType.D6,
+            modifier=modifier,
+            probability=common.ComparisonType.GreaterOrEqualTo),
+        name=resultName)
+
+def _calculateRangeProbability(
+        lowValue: int,
+        highValue: int,
+        modifier: int = 0
+        ) -> common.ScalarCalculation:
+    resultName = 'Probability Of Rolling Between {low} And {high} Inclusive With {dice}D'.format(
+        low=lowValue,
+        high=highValue,
+        dice=_MalfunctionDiceCount)
+    if modifier:
+        resultName += f'{modifier:+}'
+
+    return common.ScalarCalculation(
+        value=common.calculateRollRangeProbability(
+            lowValue=lowValue,
+            highValue=highValue,
+            dieCount=_MalfunctionDiceCount,
+            dieType=common.DieType.D6,
+            modifier=modifier),
+        name=resultName)

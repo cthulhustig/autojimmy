@@ -11,6 +11,10 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
     _RollDurationMs = 3000
     _FadeDurationMs = 400
 
+    _StandardDieColour = QtGui.QColor('#003366')
+    _FirstFluxDieColour = QtGui.QColor('#FFFFFF')
+    _SecondFluxDieColour = QtGui.QColor('#FF0000')
+
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
@@ -40,6 +44,10 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                 animation.cancelSpin()
 
             dieCount = results.rollCount()
+            fluxRolls = results.fluxRolls()
+            if fluxRolls:
+                dieCount += len(fluxRolls)
+
             while len(self._animations) > dieCount:
                 animation = self._animations.pop()
                 self._deleteAnimation(widget=animation)
@@ -48,11 +56,34 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
             self._layoutWidget()
 
+            animationConfig: typing.List[typing.Tuple[
+                int, # Rolled value
+                bool, # Ignored boon/bane roll
+                int # Flux (0 = not flux, 1 = first flux, 2 = second flux)
+            ]] = []
+            for roll, ignored in results.rolls():
+                animationConfig.append((roll, ignored, 0))
+            if fluxRolls:
+                for index, roll in enumerate(fluxRolls):
+                    animationConfig.append((roll, False, index + 1))
+
             assert(len(self._animations) == dieCount)
             self._pendingAnimationCount = len(self._animations) if animate else 0
-            for index, (roll, ignored) in enumerate(results.rolls()):
+            for index, (roll, ignored, flux) in enumerate(animationConfig):
                 animation = self._animations[index]
-                animation.setDieType(results.die())
+                animation.setDieType(results.dieType())
+
+                if flux:
+                    animation.setDieFillColour(
+                        DiceRollResultsWidget._FirstFluxDieColour
+                        if flux == 1 else
+                        DiceRollResultsWidget._SecondFluxDieColour)
+                else:
+                    # Reset standard colour as animation may have
+                    # previously been a flux die
+                    animation.setDieFillColour(
+                        DiceRollResultsWidget._StandardDieColour)
+
                 if animate:
                     animation.startSpin(
                         result=roll,
@@ -73,6 +104,13 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             valuesText = common.formatNumber(
                 number=results.rolledTotal(),
                 prefix=': ')
+
+            if fluxRolls:
+                labelsText += '\nFlux'
+                valuesText += common.formatNumber(
+                    number=results.fluxTotal(),
+                    alwaysIncludeSign=True,
+                    prefix='\n: ')
 
             if results.modifierCount() > 0:
                 labelsText += '\nModifiers'
