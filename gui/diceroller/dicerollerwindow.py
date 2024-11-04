@@ -13,11 +13,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Boon/Bane and Flux selection controls would probably be better
-# as radio buttons
-# - Would need to handle the fact None is a valid option
-# - Create a generic EnumRadioWidget that generates radio buttons for
-#   all the values in an enum
 # TODO: Limit the number of roll results that are stored in the DB
 
 
@@ -283,12 +278,6 @@ class DiceRollerWindow(gui.WindowWidget):
             roller: typing.Optional[diceroller.DiceRoller],
             results: typing.Optional[diceroller.DiceRollResult] = None
             ) -> None:
-        # TODO: Remove temp hack
-        group = self._managerTree.groupFromRoller(roller=roller) if roller else None
-        print('Current Roller: {group} - {roller}'.format(
-            group=group.name() if group else 'Unknown',
-            roller=roller.name() if roller else 'Unknown'))
-
         if roller and not results:
             results = self._lastResults.get(roller.id())
 

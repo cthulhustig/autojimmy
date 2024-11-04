@@ -23,7 +23,6 @@ class EnumRadioWidget(QtWidgets.QWidget):
         self._type = None
         self._controlMap: typing.Dict[enum.Enum, QtWidgets.QRadioButton] = {}
 
-        # TODO: Support vertical or horizontal
         self._layout = QtWidgets.QHBoxLayout()
         self._layout.setContentsMargins(0, 0, 0, 0)
 
