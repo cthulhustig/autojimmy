@@ -12,10 +12,12 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         Label = 'Label'
         Result = 'Result'
         Effect = 'Effect'
+        DieType = 'Die Type'
         Rolled = 'Rolls'
         BoonBane = 'Boon/Bane'
         Flux = 'Flux'
         Modifiers = 'Modifiers'
+        Target = 'Target'
 
     _StateVersion = 'DiceRollHistoryWidget_v1'
 
@@ -117,6 +119,18 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                     total=result.rolledTotal(),
                     rolls=', '.join(usedRolls))
                 tableItem = gui.TableWidgetItemEx(itemText)
+            elif columnType == DiceRollHistoryWidget._ColumnType.Result:
+                tableItem = gui.FormattedNumberTableWidgetItem(
+                    value=result.total())
+            elif columnType == DiceRollHistoryWidget._ColumnType.Effect:
+                effectType = result.effectType()
+                itemText = ''
+                if effectType:
+                    itemText = effectType.value
+                    itemText += f' (Effect: {result.effectValue()})'
+                tableItem = gui.TableWidgetItemEx(itemText)
+            elif columnType == DiceRollHistoryWidget._ColumnType.DieType:
+                tableItem = gui.TableWidgetItemEx(result.dieType().value)
             elif columnType == DiceRollHistoryWidget._ColumnType.BoonBane:
                 # TODO: Implement this column or remove it
                 tableItem = gui.TableWidgetItemEx('')
@@ -140,16 +154,11 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                         total=result.modifiersTotal(),
                         rolls=', '.join(modifiers))
                     tableItem = gui.TableWidgetItemEx(itemText)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Result:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=result.total())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Effect:
-                effectType = result.effectType()
-                itemText = ''
-                if effectType:
-                    itemText = effectType.value
-                    itemText += f' (Effect: {result.effectValue()})'
-                tableItem = gui.TableWidgetItemEx(itemText)
+            elif columnType == DiceRollHistoryWidget._ColumnType.Target:
+                targetType = result.targetType()
+                targetNumber = result.targetNumber()
+                if targetType != None and targetNumber != None:
+                    tableItem = gui.TableWidgetItemEx(f'{targetType.value} {targetNumber}')
 
             if tableItem:
                 tableItem.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter))
