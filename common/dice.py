@@ -24,6 +24,46 @@ class DieType(enum.Enum):
     D10 = 'D10'
     D20 = 'D20'
 
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
+class ExtraDie(enum.Enum):
+    Boon = 'Boon'
+    Bane = 'Bane'
+
+# IMPORTANT: If I ever change the names of the enum definitions (not their value
+# string) then I need to add some kind of value mapping to objectdb as the name
+# of the enum is stored in the database for dice roller db objects. I will also
+# need some kind of mapping in dice roller serialisation as the names are also
+# used in serialised data
+class ComparisonType(enum.Enum):
+    EqualTo = 'Equal To'
+    GreaterThan = 'Greater Than'
+    GreaterOrEqualTo = 'Greater Or Equal To'
+    LessThan = 'Less Than'
+    LessThanOrEqualTo = 'Less Or Equal To'
+
+    @staticmethod
+    def compareValues(
+            lhs: int,
+            rhs: int,
+            comparison: 'ComparisonType'
+            ) -> bool:
+        if comparison == ComparisonType.EqualTo:
+            return lhs == rhs
+        elif comparison == ComparisonType.GreaterThan:
+            return lhs > rhs
+        elif comparison == ComparisonType.GreaterOrEqualTo:
+            return lhs >= rhs
+        elif comparison == ComparisonType.LessThan:
+            return lhs < rhs
+        elif comparison == ComparisonType.LessThanOrEqualTo:
+            return lhs <= rhs
+
+        raise ValueError(f'Invalid comparison type {comparison}')
+
 _DieSidesMap = {
     DieType.D6: 6,
     DieType.D3: 3,
@@ -137,52 +177,17 @@ def _recursiveRollCombinations(
                 masterResults[sumShowingMax + k] += multiplier * v
     return masterResults
 
-# IMPORTANT: If I ever change the names of the enum definitions (not their value
-# string) then I need to add some kind of value mapping to objectdb as the name
-# of the enum is stored in the database for dice roller db objects. I will also
-# need some kind of mapping in dice roller serialisation as the names are also
-# used in serialised data
-class ComparisonType(enum.Enum):
-    EqualTo = 'Equal To'
-    GreaterThan = 'Greater Than'
-    GreaterOrEqualTo = 'Greater Or Equal To'
-    LessThan = 'Less Than'
-    LessThanOrEqualTo = 'Less Or Equal To'
-
-    @staticmethod
-    def compareValues(
-            lhs: int,
-            rhs: int,
-            comparison: 'ComparisonType'
-            ) -> bool:
-        if comparison == ComparisonType.EqualTo:
-            return lhs == rhs
-        elif comparison == ComparisonType.GreaterThan:
-            return lhs > rhs
-        elif comparison == ComparisonType.GreaterOrEqualTo:
-            return lhs >= rhs
-        elif comparison == ComparisonType.LessThan:
-            return lhs < rhs
-        elif comparison == ComparisonType.LessThanOrEqualTo:
-            return lhs <= rhs
-
-        raise ValueError(f'Invalid comparison type {comparison}')
-
 def calculateRollCombinations(
         dieCount: int,
         dieType: DieType = DieType.D6,
-        hasBoon: bool = False,
-        hasBane: bool = False,
+        extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0
         ) -> typing.Mapping[int, int]:
-    if hasBoon and hasBane:
-        hasBoon = hasBane = False
-
     rollCombinations = _recursiveRollCombinations(
-        dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
+        dieCount=dieCount + (1 if extraDie != None else 0),
         dieSides=dieSides(dieType=dieType),
-        ignoreHighest=1 if hasBane else 0,
-        ignoreLowest=1 if hasBoon else 0)
+        ignoreHighest=1 if extraDie == ExtraDie.Bane else 0,
+        ignoreLowest=1 if extraDie == ExtraDie.Boon else 0)
 
     finalCombinations = {}
     for roll, count in rollCombinations.items():
@@ -195,19 +200,15 @@ def calculateRollCombinations(
 def calculateRollProbabilities(
         dieCount: int,
         dieType: DieType = DieType.D6,
-        hasBoon: bool = False,
-        hasBane: bool = False,
+        extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0,
         probability: ComparisonType = ComparisonType.EqualTo
         ) -> typing.Mapping[int, int]:
-    if hasBoon and hasBane:
-        hasBoon = hasBane = False
-
     results = _recursiveRollCombinations(
-        dieCount=dieCount + 1 if hasBoon or hasBane else dieCount,
+        dieCount=dieCount + (1 if extraDie != None else 0),
         dieSides=dieSides(dieType=dieType),
-        ignoreHighest=1 if hasBane else 0,
-        ignoreLowest=1 if hasBoon else 0)
+        ignoreHighest=1 if extraDie == ExtraDie.Bane else 0,
+        ignoreLowest=1 if extraDie == ExtraDie.Boon else 0)
 
     denominator = sum(results.values())
     probabilities = {}
@@ -236,8 +237,7 @@ def calculateRollProbabilities(
 def calculateRollProbability(
         dieCount: int,
         targetValue: int,
-        hasBoon: bool = False,
-        hasBane: bool = False,
+        extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0,
         dieType: DieType = DieType.D6,
         probability: ComparisonType = ComparisonType.GreaterOrEqualTo,
@@ -245,8 +245,7 @@ def calculateRollProbability(
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
-        hasBoon=hasBoon,
-        hasBane=hasBane,
+        extraDie=extraDie,
         modifier=modifier,
         probability=probability)
     return probabilities.get(targetValue, 0)
@@ -256,16 +255,14 @@ def calculateRollRangeProbability(
         dieCount: int,
         lowValue: int,
         highValue: int,
-        hasBoon: bool = False,
-        hasBane: bool = False,
+        extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0,
         dieType: DieType = DieType.D6
         ) -> int:
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
-        hasBoon=hasBoon,
-        hasBane=hasBane,
+        extraDie=extraDie,
         probability=ComparisonType.EqualTo)
     assert(probabilities)
 

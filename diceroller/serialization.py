@@ -95,9 +95,10 @@ def _serialiseRoller(
         'dieCount': roller.dieCount(),
         'dieType': roller.dieType().name,
         'constant': roller.constant(),
-        'hasBoon': roller.hasBoon(),
-        'hasBane': roller.hasBane(),
         'modifiers': modifierDataList}
+
+    if roller.extraDie() != None:
+        rollerData['extraDie'] = roller.extraDie().name
 
     if roller.fluxType() != None:
         rollerData['fluxType'] = roller.fluxType().name
@@ -145,13 +146,13 @@ def _deserialiseRoller(
     if not isinstance(constant, int):
         raise RuntimeError('Dice Roller constant property is not an integer')
 
-    hasBoon = rollerData.get('hasBoon', False)
-    if not isinstance(hasBoon, bool):
-        raise RuntimeError('Dice Roller hasBoon property is not true or false')
-
-    hasBane = rollerData.get('hasBane', False)
-    if not isinstance(hasBane, bool):
-        raise RuntimeError('Dice Roller hasBane property is not true or false')
+    extraDie = rollerData.get('extraDie')
+    if extraDie != None:
+        if extraDie not in common.ExtraDie.__members__:
+            raise RuntimeError('Dice Roller extraDie property is not one of {valid}'.format(
+                valid=common.humanFriendlyListString(
+                    strings=list(common.ExtraDie.__members__.keys()))))
+        extraDie = common.ExtraDie.__members__[extraDie]
 
     fluxType = rollerData.get('fluxType')
     if fluxType != None:
@@ -178,8 +179,7 @@ def _deserialiseRoller(
         dieCount=dieCount,
         dieType=dieType,
         constant=constant,
-        hasBoon=hasBoon,
-        hasBane=hasBane,
+        extraDie=extraDie,
         fluxType=fluxType,
         modifiers=modifiers,
         targetType=targetType,

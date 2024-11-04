@@ -131,8 +131,7 @@ class DiceRoller(objectdb.DatabaseObject):
             dieCount: int = 1,
             dieType: common.DieType = common.DieType.D6,
             constant: int = 0,
-            hasBoon: bool = False,
-            hasBane: bool = False,
+            extraDie: typing.Optional[common.ExtraDie] = None,
             fluxType: typing.Optional[FluxType] = None,
             modifiers: typing.Optional[typing.Union[
                 typing.Iterable[DiceModifier],
@@ -147,8 +146,7 @@ class DiceRoller(objectdb.DatabaseObject):
         self._dieCount = dieCount
         self._dieType = dieType
         self._constant = constant
-        self._hasBoon = hasBoon
-        self._hasBane = hasBane
+        self._extraDie = extraDie
         self._fluxType = fluxType
         self._targetType = targetType if targetType != None and targetNumber != None else None
         self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
@@ -166,8 +164,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 self._dieCount == other._dieCount and \
                 self._dieType == other._dieType and \
                 self._constant == other._constant and \
-                self._hasBoon == other._hasBoon and \
-                self._hasBane == other._hasBane and \
+                self._extraDie == other._extraDie and \
                 self._fluxType == other._fluxType and \
                 self._modifiers == other._modifiers and \
                 self._targetType == other._targetType and \
@@ -198,17 +195,11 @@ class DiceRoller(objectdb.DatabaseObject):
     def setConstant(self, constant: int) -> None:
         self._constant = constant
 
-    def hasBoon(self) -> bool:
-        return self._hasBoon
+    def extraDie(self) -> typing.Optional[common.ExtraDie]:
+        return self._extraDie
 
-    def setHasBoon(self, hasBoon: bool) -> None:
-        self._hasBoon = hasBoon
-
-    def hasBane(self) -> bool:
-        return self._hasBane
-
-    def setHasBane(self, hasBane: bool) -> None:
-        self._hasBane = hasBane
+    def setExtraDie(self, extraDie: typing.Optional[common.ExtraDie]) -> None:
+        self._extraDie = extraDie
 
     def fluxType(self) -> typing.Optional[FluxType]:
         return self._fluxType
@@ -302,8 +293,7 @@ class DiceRoller(objectdb.DatabaseObject):
             dieCount=self._dieCount,
             dieType=self._dieType,
             constant=self._constant,
-            hasBoon=self._hasBoon,
-            hasBane=self._hasBane,
+            extraDie=self._extraDie,
             fluxType=self._fluxType,
             modifiers=modifiers,
             targetType=self._targetType,
@@ -317,8 +307,7 @@ class DiceRoller(objectdb.DatabaseObject):
             'die_count': self._dieCount,
             'die_type': self._dieType.name,
             'constant': self._constant,
-            'has_boon': self._hasBoon,
-            'has_bane': self._hasBane,
+            'extra_die': self._extraDie.name if self._extraDie != None else None,
             'flux_type': self._fluxType.name if self._fluxType != None else None,
             'modifiers': self._modifiers,
             'target_type': self._targetType.name if self._targetType != None else None,
@@ -335,8 +324,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='die_count', columnType=int),
                 objectdb.ParamDef(columnName='die_type', columnType=str),
                 objectdb.ParamDef(columnName='constant', columnType=int),
-                objectdb.ParamDef(columnName='has_boon', columnType=bool),
-                objectdb.ParamDef(columnName='has_bane', columnType=bool),
+                objectdb.ParamDef(columnName='extra_die', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='flux_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_type', columnType=str, isOptional=True),
@@ -370,13 +358,13 @@ class DiceRoller(objectdb.DatabaseObject):
         if not isinstance(constant, int):
             raise ValueError('DiceRoller construction parameter "constant" is not an int')
 
-        hasBoon = data.get('has_boon')
-        if not isinstance(hasBoon, bool):
-            raise ValueError('DiceRoller construction parameter "has_boon" is not a bool')
-
-        hasBane = data.get('has_bane')
-        if not isinstance(hasBane, bool):
-            raise ValueError('DiceRoller construction parameter "has_bane" is not a bool')
+        extraDie = data.get('extra_die')
+        if extraDie != None:
+            if not isinstance(extraDie, str):
+                raise ValueError('DiceRoller construction parameter "extra_die" is not a str')
+            if extraDie not in common.ExtraDie.__members__:
+                raise ValueError(f'DiceRoller construction parameter "extra_die" has unexpected value "{extraDie}"')
+            extraDie = common.ExtraDie.__members__[extraDie]
 
         fluxType = data.get('flux_type')
         if fluxType != None:
@@ -409,8 +397,7 @@ class DiceRoller(objectdb.DatabaseObject):
             dieCount=dieCount,
             dieType=dieType,
             constant=constant,
-            hasBoon=hasBoon,
-            hasBane=hasBane,
+            extraDie=extraDie,
             fluxType=fluxType,
             modifiers=modifiers,
             targetType=targetType,
@@ -561,6 +548,7 @@ class DiceRollResult(objectdb.DatabaseObject):
                 typing.Iterable[int],
                 objectdb.DatabaseList],
             ignored: typing.Optional[int] = None, # Index of ignored roll in rolls list
+            extraDie: typing.Optional[common.ExtraDie] = None,
             fluxType: typing.Optional[FluxType] = None,
             fluxRolls: typing.Optional[typing.Union[ # Only used if fluxType is not None
                 typing.Iterable[int],
@@ -581,6 +569,7 @@ class DiceRollResult(objectdb.DatabaseObject):
         self._label = label
         self._dieType = dieType
         self._ignored = ignored
+        self._extraDie = extraDie
         self._fluxType = fluxType
         self._targetType = targetType
         self._targetNumber = targetNumber
@@ -619,6 +608,7 @@ class DiceRollResult(objectdb.DatabaseObject):
                 self._timestamp == other._timestamp and \
                 self._label == other._label and \
                 self._dieType == other._dieType and \
+                self._extraDie == other._extraDie and \
                 self._rolls == other._rolls and \
                 self._ignored == other._ignored and \
                 self._fluxRolls == other._fluxRolls and \
@@ -658,6 +648,9 @@ class DiceRollResult(objectdb.DatabaseObject):
             if index != self._ignored:
                 total += roll
         return total
+
+    def extraDie(self) -> common.ExtraDie:
+        return self._extraDie
 
     def fluxType(self) -> typing.Optional[FluxType]:
         return self._fluxType
@@ -742,6 +735,7 @@ class DiceRollResult(objectdb.DatabaseObject):
             'die_type': self._dieType.name,
             'rolls': self._rolls,
             'ignored': self._ignored,
+            'extra_die': self._extraDie.name if self._extraDie != None else None,
             'flux_type': self._fluxType.name if self._fluxType != None else None,
             'flux_rolls': self._fluxRolls,
             'modifiers': self._modifiers,
@@ -761,6 +755,7 @@ class DiceRollResult(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='die_type', columnType=str),
                 objectdb.ParamDef(columnName='rolls', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='ignored', columnType=int, isOptional=True),
+                objectdb.ParamDef(columnName='extra_die', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='flux_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='flux_rolls', columnType=objectdb.DatabaseList, isOptional=True),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
@@ -803,6 +798,14 @@ class DiceRollResult(objectdb.DatabaseObject):
         if ignored != None and not isinstance(ignored, int):
             raise ValueError('RollResult construction parameter "ignored" is not an int or None')
 
+        extraDie = data.get('extra_die')
+        if extraDie != None:
+            if not isinstance(extraDie, str):
+                raise ValueError('RollResult construction parameter "extra_die" is not a str')
+            if extraDie not in common.ExtraDie.__members__:
+                raise ValueError(f'RollResult construction parameter "extra_die" has unexpected value "{extraDie}"')
+            extraDie = common.ExtraDie.__members__[extraDie]
+
         fluxType = data.get('flux_type')
         if fluxType != None:
             if not isinstance(fluxType, str):
@@ -839,6 +842,7 @@ class DiceRollResult(objectdb.DatabaseObject):
             dieType=dieType,
             rolls=rolls,
             ignored=ignored,
+            extraDie=extraDie,
             fluxType=fluxType,
             fluxRolls=fluxRolls,
             modifiers=modifiers,

@@ -132,8 +132,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             elif columnType == DiceRollHistoryWidget._ColumnType.DieType:
                 tableItem = gui.TableWidgetItemEx(result.dieType().value)
             elif columnType == DiceRollHistoryWidget._ColumnType.BoonBane:
-                # TODO: Implement this column or remove it
-                tableItem = gui.TableWidgetItemEx('')
+                extraDie = result.extraDie()
+                if extraDie:
+                    tableItem = gui.TableWidgetItemEx(extraDie.value)
             elif columnType == DiceRollHistoryWidget._ColumnType.Flux:
                 fluxType = result.fluxType()
                 if fluxType != None:

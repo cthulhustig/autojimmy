@@ -21,8 +21,7 @@ def calculateProbabilities(
     rollCombinations = common.calculateRollCombinations(
         dieCount=dieCount,
         dieType=dieType,
-        hasBoon=roller.hasBoon(),
-        hasBane=roller.hasBane(),
+        extraDie=roller.extraDie(),
         modifier=modifierTotal)
 
     fluxType = roller.fluxType()
@@ -82,15 +81,14 @@ def rollDice(
     if randomGenerator == None:
         randomGenerator = random
 
-    rolls: typing.List[int] = []
-    boonBaneCount = 0
-    if roller.hasBoon() and not roller.hasBane():
-        boonBaneCount = 1
-    elif roller.hasBane() and not roller.hasBoon():
-        boonBaneCount = -1
-    dieCount = roller.dieCount() + abs(boonBaneCount)
+    dieCount = roller.dieCount()
+    extraDie = roller.extraDie()
+    if extraDie:
+        dieCount += 1
+
     dieType = roller.dieType()
     dieSides = common.dieSides(dieType=dieType)
+    rolls: typing.List[int] = []
     for index in range(0, dieCount):
         roll = randomGenerator.randint(1, dieSides)
         if dieType == common.DieType.DD:
@@ -99,15 +97,11 @@ def rollDice(
 
     calculationValues = list(rolls)
     ignoredRollIndex = None
-    if boonBaneCount != 0:
-        # If the boon/bane count count is positive it means the roll has
-        # a boon and the lowest roll should be removed. If the count is
-        # negative it means the roll has a bane and the largest value should
-        # be removed
+    if extraDie:
         bestValue = None
         for index, roll in enumerate(calculationValues):
             isBetter = (bestValue == None) or \
-                ((roll < bestValue) if (boonBaneCount > 0) else (roll > bestValue))
+                ((roll < bestValue) if (extraDie == common.ExtraDie.Boon) else (roll > bestValue))
             if isBetter:
                 bestValue = roll
                 ignoredRollIndex = index

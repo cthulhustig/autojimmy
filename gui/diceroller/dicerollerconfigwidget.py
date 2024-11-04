@@ -285,28 +285,15 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         targetLayout.addWidget(self._targetNumberSpinBox)
         targetWidget = gui.LayoutWrapperWidget(layout=targetLayout)
 
-        self._hasBoonCheckBox = gui.CheckBoxEx()
-        self._hasBoonCheckBox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._hasBoonCheckBox.stateChanged.connect(self._hasBoonChanged)
+        self._extraDieRadioWidget = gui.EnumRadioWidget(
+            type=common.ExtraDie,
+            isOptional=True)
+        self._extraDieRadioWidget.enumChanged.connect(self._extraDieChanged)
 
-        self._hasBaneCheckBox = gui.CheckBoxEx()
-        self._hasBaneCheckBox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._hasBaneCheckBox.stateChanged.connect(self._hasBaneChanged)
-
-        self._fluxTypeComboBox = gui.EnumComboBox(
+        self._fluxTypeRadioWidget = gui.EnumRadioWidget(
             type=diceroller.FluxType,
             isOptional=True)
-        self._fluxTypeComboBox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._fluxTypeComboBox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Fixed,
-            QtWidgets.QSizePolicy.Policy.Fixed)
-        self._fluxTypeComboBox.currentIndexChanged.connect(self._fluxTypeChanged)
+        self._fluxTypeRadioWidget.enumChanged.connect(self._fluxTypeChanged)
 
         self._addModifierButton = QtWidgets.QPushButton('Add')
         self._addModifierButton.clicked.connect(self._addModifierClicked)
@@ -335,9 +322,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
         controlLayout.addRow('Target:', targetWidget)
-        controlLayout.addRow('Boon:', self._hasBoonCheckBox)
-        controlLayout.addRow('Bane:', self._hasBaneCheckBox)
-        controlLayout.addRow('Flux:', self._fluxTypeComboBox)
+        controlLayout.addRow('Extra Die:', self._extraDieRadioWidget)
+        controlLayout.addRow('Flux:', self._fluxTypeRadioWidget)
         controlLayout.addRow('Modifiers:', modifiersLayout)
         controlLayout.addStretch()
 
@@ -384,14 +370,11 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._constantSpinBox):
             self._constantSpinBox.setValue(self._roller.constant())
 
-        with gui.SignalBlocker(self._hasBoonCheckBox):
-            self._hasBoonCheckBox.setChecked(self._roller.hasBoon())
+        with gui.SignalBlocker(self._extraDieRadioWidget):
+            self._extraDieRadioWidget.setCurrentEnum(self._roller.extraDie())
 
-        with gui.SignalBlocker(self._hasBaneCheckBox):
-            self._hasBaneCheckBox.setChecked(self._roller.hasBane())
-
-        with gui.SignalBlocker(self._fluxTypeComboBox):
-            self._fluxTypeComboBox.setCurrentEnum(self._roller.fluxType())
+        with gui.SignalBlocker(self._fluxTypeRadioWidget):
+            self._fluxTypeRadioWidget.setCurrentEnum(self._roller.fluxType())
 
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
@@ -412,7 +395,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def _fluxTypeChanged(self) -> None:
         self._roller.setFluxType(
-            self._fluxTypeComboBox.currentEnum())
+            self._fluxTypeRadioWidget.currentEnum())
         self.configChanged.emit()
 
     def _dieCountChanged(self) -> None:
@@ -430,24 +413,9 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             self._constantSpinBox.value())
         self.configChanged.emit()
 
-    def _hasBoonChanged(self) -> None:
-        self._roller.setHasBoon(
-            self._hasBoonCheckBox.isChecked())
-
-        self._roller.setHasBane(False)
-        with gui.SignalBlocker(self._hasBaneCheckBox):
-            self._hasBaneCheckBox.setChecked(False)
-
-        self.configChanged.emit()
-
-    def _hasBaneChanged(self) -> None:
-        self._roller.setHasBane(
-            self._hasBaneCheckBox.isChecked())
-
-        self._roller.setHasBoon(False)
-        with gui.SignalBlocker(self._hasBoonCheckBox):
-            self._hasBoonCheckBox.setChecked(False)
-
+    def _extraDieChanged(self) -> None:
+        self._roller.setExtraDie(
+            self._extraDieRadioWidget.currentEnum())
         self.configChanged.emit()
 
     def _addModifierClicked(self) -> None:

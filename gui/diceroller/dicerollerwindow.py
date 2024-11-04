@@ -13,8 +13,11 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-
-# TODO: Replace boon/bane flags with an enum (ExtraDieType?????)
+# TODO: Boon/Bane and Flux selection controls would probably be better
+# as radio buttons
+# - Would need to handle the fact None is a valid option
+# - Create a generic EnumRadioWidget that generates radio buttons for
+#   all the values in an enum
 # TODO: Limit the number of roll results that are stored in the DB
 
 
