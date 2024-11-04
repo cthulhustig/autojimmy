@@ -19,6 +19,8 @@ class DiceModifierWidget(QtWidgets.QWidget):
 
         self._modifier = modifier
 
+        self._noWheelFilter = gui.NoWheelEventUnlessFocusedFilter()
+
         self._nameLineEdit = gui.LineEditEx()
         self._nameLineEdit.setText(self._modifier.name())
         # Set the cursor position to 0 so that, when the dialog is first
@@ -43,6 +45,12 @@ class DiceModifierWidget(QtWidgets.QWidget):
         self._modifierSpinBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
+        # NOTE: Change focus policy and install event filter to prevent
+        # accidental changes to the value if, while scrolling the list the
+        # widget is contained in, the spin box happens to move under the
+        # cursor
+        self._modifierSpinBox.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self._modifierSpinBox.installEventFilter(self._noWheelFilter)
         self._modifierSpinBox.valueChanged.connect(self._modifierChanged)
 
         widgetLayout = QtWidgets.QHBoxLayout()

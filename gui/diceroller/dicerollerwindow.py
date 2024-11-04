@@ -14,11 +14,8 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 
-# TODO: It's to easy to accidentally change a modifier value if your
-# using the scroll wheel to move the list of modifiers up and down
-# - I think I solved this problem already for the construction
-# configuration widgets
 # TODO: Replace boon/bane flags with an enum (ExtraDieType?????)
+# TODO: Limit the number of roll results that are stored in the DB
 
 
 class DiceRollerWindow(gui.WindowWidget):
