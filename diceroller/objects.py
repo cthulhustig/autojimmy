@@ -649,8 +649,11 @@ class DiceRollResult(objectdb.DatabaseObject):
                 total += roll
         return total
 
-    def extraDie(self) -> common.ExtraDie:
+    def extraDie(self) -> typing.Optional[common.ExtraDie]:
         return self._extraDie
+
+    def extraDieRoll(self) -> typing.Optional[int]:
+        return self._rolls[self._ignored] if self._extraDie != None else None
 
     def fluxType(self) -> typing.Optional[FluxType]:
         return self._fluxType

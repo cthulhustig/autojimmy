@@ -1,4 +1,5 @@
 import common
+import datetime
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -119,3 +120,31 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
         # None, either way this value is not considered less than the other
         # (at best they're equal if both None)
         return False
+
+class LocalTimestampTableWidgetItem(TableWidgetItemEx):
+    def __init__(
+            self,
+            timestamp: datetime.datetime,
+            other: typing.Optional['LocalTimestampTableWidgetItem'] = None
+            ) -> None:
+        super().__init__(other)
+        self._timestamp = None
+        self.setTimestamp(timestamp)
+
+    def timestamp(self) -> datetime.datetime:
+        return self._timestamp
+
+    def setTimestamp(self, timestamp: datetime.datetime):
+        self._timestamp = timestamp
+        self.setText(timestamp.astimezone().strftime('%c'))
+
+    def clone(self) -> 'LocalTimestampTableWidgetItem':
+        return LocalTimestampTableWidgetItem(other=self)
+
+    def __lt__(
+            self,
+            other: 'LocalTimestampTableWidgetItem'
+            ) -> bool:
+        if isinstance(other, LocalTimestampTableWidgetItem):
+            return self._timestamp < other._timestamp
+        return NotImplemented

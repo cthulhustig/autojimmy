@@ -14,6 +14,11 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 # TODO: Limit the number of roll results that are stored in the DB
+# TODO: Ability to manually clear history
+# TODO: Test that history timestamps are shown in local time not utc
+# TODO: Support for 2 being an auto fail
+# - Would be cool to put a skull or something over the top of the
+#   dice if you roll it
 
 
 class DiceRollerWindow(gui.WindowWidget):

@@ -10,14 +10,21 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
     class _ColumnType(enum.Enum):
         Timestamp = 'Timestamp'
         Label = 'Label'
-        Result = 'Result'
-        Effect = 'Effect'
+        Total = 'Total'
+        EffectType = 'Effect Type'
+        EffectValue = 'Effect Value'
         DieType = 'Die Type'
-        Rolled = 'Rolls'
-        BoonBane = 'Boon/Bane'
-        Flux = 'Flux'
-        Modifiers = 'Modifiers'
-        Target = 'Target'
+        RollTotal = 'Roll Total'
+        RollDetails = 'Roll Details'
+        ExtraDieType = 'Extra Die Type'
+        ExtraDieRoll = 'Extra Die Roll'
+        FluxType = 'Flux Type'
+        FluxTotal = 'Flux Total'
+        FluxRoll = 'Flux Roll'
+        ModifiersTotal = 'DM Total'
+        ModifiersDetails = 'DM Details'
+        TargetType = 'Target Type'
+        TargetNumber = 'Target Number'
 
     _StateVersion = 'DiceRollHistoryWidget_v1'
 
@@ -32,16 +39,19 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         self._historyTable.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self._historyTable.setAlternatingRowColors(False)
-        self._historyTable.setSortingEnabled(False)
+        self._historyTable.setSortingEnabled(True)
         self._historyTable.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Expanding)
         self._historyTable.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
+        self._historyTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._historyTable.customContextMenuRequested.connect(self._showContextMenu)
+
         for index, column in enumerate(DiceRollHistoryWidget._ColumnType):
-            if column == DiceRollHistoryWidget._ColumnType.Timestamp:
+            if column == DiceRollHistoryWidget._ColumnType.Timestamp or \
+                    column == DiceRollHistoryWidget._ColumnType.EffectType:
                 self._historyTable.setColumnWidth(index, 200)
-            elif column == DiceRollHistoryWidget._ColumnType.Label or \
-                    column == DiceRollHistoryWidget._ColumnType.Effect:
+            elif column == DiceRollHistoryWidget._ColumnType.Label:
                 self._historyTable.setColumnWidth(index, 300)
 
         widgetLayout = QtWidgets.QVBoxLayout()
@@ -106,61 +116,102 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             columnType = self._historyTable.columnHeader(column)
             tableItem = None
             if columnType == DiceRollHistoryWidget._ColumnType.Timestamp:
-                itemText = result.timestamp().astimezone().strftime('%c')
-                tableItem = gui.TableWidgetItemEx(itemText)
+                tableItem = gui.LocalTimestampTableWidgetItem(
+                    timestamp=result.timestamp())
             elif columnType == DiceRollHistoryWidget._ColumnType.Label:
                 tableItem = gui.TableWidgetItemEx(result.label())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Rolled:
-                usedRolls = []
-                for roll, ignored in result.rolls():
-                    if not ignored:
-                        usedRolls.append(str(roll))
-                itemText = '{total} (Rolls: {rolls})'.format(
-                    total=result.rolledTotal(),
-                    rolls=', '.join(usedRolls))
-                tableItem = gui.TableWidgetItemEx(itemText)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Result:
+            elif columnType == DiceRollHistoryWidget._ColumnType.Total:
                 tableItem = gui.FormattedNumberTableWidgetItem(
                     value=result.total())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Effect:
+            elif columnType == DiceRollHistoryWidget._ColumnType.EffectType:
                 effectType = result.effectType()
-                itemText = ''
-                if effectType:
-                    itemText = effectType.value
-                    itemText += f' (Effect: {result.effectValue()})'
-                tableItem = gui.TableWidgetItemEx(itemText)
+                if effectType != None:
+                    tableItem = gui.TableWidgetItemEx(effectType.value)
+            elif columnType == DiceRollHistoryWidget._ColumnType.EffectValue:
+                effectValue = result.effectValue()
+                if effectValue != None:
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        value=effectValue)
             elif columnType == DiceRollHistoryWidget._ColumnType.DieType:
                 tableItem = gui.TableWidgetItemEx(result.dieType().value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.BoonBane:
+            elif columnType == DiceRollHistoryWidget._ColumnType.RollTotal:
+                tableItem = gui.FormattedNumberTableWidgetItem(
+                    value=result.rolledTotal())
+            elif columnType == DiceRollHistoryWidget._ColumnType.RollDetails:
+                rollStrings = []
+                for roll, ignored in result.rolls():
+                    if not ignored:
+                        rollStrings.append(str(roll))
+                if rollStrings:
+                    tableItem = gui.TableWidgetItemEx(', '.join(rollStrings))
+            elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieType:
                 extraDie = result.extraDie()
-                if extraDie:
+                if extraDie != None:
                     tableItem = gui.TableWidgetItemEx(extraDie.value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Flux:
+            elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieRoll:
+                extraDieRoll = result.extraDieRoll()
+                if extraDieRoll != None:
+                    gui.FormattedNumberTableWidgetItem(
+                        value=extraDieRoll)
+            elif columnType == DiceRollHistoryWidget._ColumnType.FluxType:
                 fluxType = result.fluxType()
                 if fluxType != None:
-                    fluxRolls = []
-                    for roll in result.fluxRolls():
-                        fluxRolls.append(str(roll))
-                    itemText = '{total} (Type: {type}, Rolls: {rolls})'.format(
-                        total=result.fluxTotal(),
-                        type='Flux' if fluxType == diceroller.FluxType.Neutral else f'{fluxType.value} Flux',
-                        rolls=', '.join(fluxRolls))
-                    tableItem = gui.TableWidgetItemEx(itemText)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Modifiers:
-                if result.modifierCount():
-                    modifiers = []
-                    for _, modifier in result.modifiers():
-                        modifiers.append(f'{modifier:+}')
-                    itemText = '{total:+} (DMs: {rolls})'.format(
-                        total=result.modifiersTotal(),
-                        rolls=', '.join(modifiers))
-                    tableItem = gui.TableWidgetItemEx(itemText)
-            elif columnType == DiceRollHistoryWidget._ColumnType.Target:
+                    tableItem = gui.TableWidgetItemEx(fluxType.value)
+            elif columnType == DiceRollHistoryWidget._ColumnType.FluxTotal:
+                fluxTotal = result.fluxTotal()
+                if fluxTotal != None:
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        value=fluxTotal)
+            elif columnType == DiceRollHistoryWidget._ColumnType.FluxRoll:
+                fluxRolls = result.fluxRolls()
+                if fluxRolls != None:
+                    rollStrings = []
+                    for roll in fluxRolls:
+                        rollStrings.append(str(roll))
+                    if rollStrings:
+                        tableItem = gui.TableWidgetItemEx(', '.join(rollStrings))
+            elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersTotal:
+                tableItem = gui.FormattedNumberTableWidgetItem(
+                    value=result.modifiersTotal())
+            elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersDetails:
+                modifierStrings = []
+                for _, modifier in result.modifiers():
+                    modifierStrings.append(f'{modifier:+}')
+                if modifierStrings:
+                    tableItem = gui.TableWidgetItemEx(', '.join(modifierStrings))
+            elif columnType == DiceRollHistoryWidget._ColumnType.TargetType:
                 targetType = result.targetType()
+                if targetType != None:
+                    tableItem = gui.TableWidgetItemEx(targetType.value)
+            elif columnType == DiceRollHistoryWidget._ColumnType.TargetNumber:
                 targetNumber = result.targetNumber()
-                if targetType != None and targetNumber != None:
-                    tableItem = gui.TableWidgetItemEx(f'{targetType.value} {targetNumber}')
+                if targetNumber != None:
+                    tableItem = gui.FormattedNumberTableWidgetItem(
+                        value=targetNumber)
 
             if tableItem:
                 tableItem.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter))
                 self._historyTable.setItem(row, column, tableItem)
+
+    def _showContextMenu(
+            self,
+            position: QtCore.QPoint
+            ) -> None:
+        menuItems = [
+            gui.MenuItem(
+                text='Copy as HTML',
+                callback=self._copyToClipboard)]
+
+        gui.displayMenu(
+            self,
+            menuItems,
+            self._historyTable.viewport().mapToGlobal(position))
+
+    def _copyToClipboard(self) -> None:
+        clipboard = QtWidgets.QApplication.clipboard()
+        if not clipboard:
+            return
+
+        content = self._historyTable.contentToHtml()
+        if content:
+            clipboard.setText(content)
