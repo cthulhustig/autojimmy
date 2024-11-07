@@ -735,11 +735,20 @@ class ObjectDbManager(object):
                 parent = row[0]
 
             sql = """
-                SELECT bool, integer, float, string, entity
-                FROM {table}
-                WHERE {table}.id = :id;
+                SELECT
+                    {listTable}.bool,
+                    {listTable}.integer,
+                    {listTable}.float,
+                    {listTable}.string,
+                    {listTable}.entity,
+                    {entitiesTable}.table_name AS entity_table
+                FROM {listTable}
+                LEFT JOIN {entitiesTable}
+                    ON {listTable}.entity = {entitiesTable}.id
+                WHERE {listTable}.id = :id;
                 """.format(
-                table=ObjectDbManager._ListsTableName)
+                listTable=ObjectDbManager._ListsTableName,
+                entitiesTable=ObjectDbManager._EntitiesTableName)
             cursor.execute(sql, {'id': id})
             content = []
             for row in cursor.fetchall():
@@ -754,6 +763,7 @@ class ObjectDbManager(object):
                 elif row[4] != None:
                     content.append(self._readEntity( # It's an entity
                         id=row[4],
+                        table=row[5],
                         setParent=False,
                         cursor=cursor))
 
@@ -771,6 +781,11 @@ class ObjectDbManager(object):
                     table=table,
                     column=paramDef.columnName()))
 
+            # TODO: Update this to retrieve the table name for any object/list params
+            # in a similar way to how the equivalent list read query is doing it for
+            # the entity column. According to chatgpt this can be done with multiple
+            # LEFT JOINs
+            # https://chatgpt.com/c/672c2695-d710-8002-b7e1-3fb49140e2fe
             sql = """
                 SELECT {columns}
                 FROM {dataTable}
