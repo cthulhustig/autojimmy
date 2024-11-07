@@ -106,20 +106,23 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
             self,
             other: 'FormattedNumberTableWidgetItem'
             ) -> bool:
-        selfValue = self.numericValue()
-        otherValue = other.numericValue()
-        if selfValue != None and otherValue != None:
-            return selfValue < otherValue
-        elif selfValue == None and otherValue != None:
-            # This value is None and the other value isn't so this value is
-            # considered less than the other
-            return True
+        if isinstance(other, FormattedNumberTableWidgetItem):
+            selfValue = self.numericValue()
+            otherValue = other.numericValue()
+            if selfValue != None and otherValue != None:
+                return selfValue < otherValue
 
-        assert(otherValue == None)
-        # Either this value is not None and the other is _or_ they're both
-        # None, either way this value is not considered less than the other
-        # (at best they're equal if both None)
-        return False
+            # This covers 3 cases
+            # - If this object has no value and the other object has
+            #   a value, then this object is considered less than the
+            #   other object
+            # - If this object has a value and the other doesn't,
+            #   then this object is not considered less than the other
+            #   object
+            # - If this and the other object have no value, then this
+            #   instance is not considered less than the other
+            return selfValue == None and otherValue != None
+        return super().__lt__(other)
 
 class LocalTimestampTableWidgetItem(TableWidgetItemEx):
     def __init__(
@@ -147,4 +150,4 @@ class LocalTimestampTableWidgetItem(TableWidgetItemEx):
             ) -> bool:
         if isinstance(other, LocalTimestampTableWidgetItem):
             return self._timestamp < other._timestamp
-        return NotImplemented
+        return super().__lt__(other)
