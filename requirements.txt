@@ -10,3 +10,4 @@ aiosqlite>=0.19.0
 qasync>=0.26.0
 xmlschema>=2.5.0
 CairoSVG>=2.7.1
+numpy>=2.1.3

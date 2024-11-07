@@ -12,7 +12,7 @@ class CairoSvgState(enum.Enum):
 # NOTE: This script works on the assumption it's in the root of the install directory
 _InstallPath = os.path.dirname(os.path.realpath(__file__))
 
-# Mapping of library friendly name to the module to import to test it
+# Library names to import when testing for dependencies
 _Requirements = [
     'PyQt5',
     'PyQt5.QtWebEngineWidgets',
@@ -25,7 +25,8 @@ _Requirements = [
     'aiosqlite',
     'qasync',
     'xmlschema',
-    'cairosvg']
+    'cairosvg',
+    'numpy']
 _RequirementsFile = 'requirements.txt'
 _CairoModuleName = 'cairosvg'
 
