@@ -36,7 +36,7 @@ _WelcomeMessage = """
 
 
 class DiceRollerWindow(gui.WindowWidget):
-    _MaxRollResults = 100
+    _MaxRollResults = 500
 
     def __init__(self) -> None:
         super().__init__(
