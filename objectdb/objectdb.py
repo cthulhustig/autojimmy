@@ -246,11 +246,13 @@ class ObjectDbManager(object):
     _DatabasePath = 'test.db'
     _PragmaScript = """
         PRAGMA foreign_keys = ON;
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
         """
-    _SchemasTableName = 'schemas'
-    _EntitiesTableName = 'entities'
+    _SchemasTableName = 'objectdb_table_schemas'
+    _EntitiesTableName = 'objectdb_entities'
     _EntitiesTableSchema = 1
-    _ListsTableName = 'lists'
+    _ListsTableName = 'objectdb_lists'
     _ListsTableSchema = 1
 
     _instance = None # Singleton instance
@@ -324,14 +326,17 @@ class ObjectDbManager(object):
                 cursor = transaction.cursor()
 
                 # Create schema table
-                sql = """
-                    CREATE TABLE IF NOT EXISTS {table} (
-                        table_name TEXT PRIMARY KEY NOT NULL,
-                        schema INTEGER
-                    );
-                    """.format(table=ObjectDbManager._SchemasTableName)
-                logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._SchemasTableName}\'')
-                cursor.execute(sql)
+                if not self._checkIfTableExists(
+                    tableName=ObjectDbManager._SchemasTableName,
+                    cursor=cursor):
+                    sql = """
+                        CREATE TABLE IF NOT EXISTS {table} (
+                            table_name TEXT PRIMARY KEY NOT NULL,
+                            schema INTEGER
+                        );
+                        """.format(table=ObjectDbManager._SchemasTableName)
+                    logging.info(f'ObjectDbManager creating \'{ObjectDbManager._SchemasTableName}\' table')
+                    cursor.execute(sql)
 
                 # Create entities table
                 if not self._checkIfTableExists(
@@ -343,14 +348,28 @@ class ObjectDbManager(object):
                             parent TEXT,
                             table_name TEXT NOT NULL,
                             FOREIGN KEY(parent) REFERENCES {table}(id) ON DELETE CASCADE
-                        );
+                        ) WITHOUT ROWID;
                         """.format(table=ObjectDbManager._EntitiesTableName)
-                    logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._EntitiesTableName}\'')
+                    logging.info(f'ObjectDbManager creating \'{ObjectDbManager._EntitiesTableName}\' table')
                     cursor.execute(sql)
 
                     self._writeSchema(
-                        tableName=ObjectDbManager._EntitiesTableName,
+                        table=ObjectDbManager._EntitiesTableName,
                         schema=ObjectDbManager._EntitiesTableSchema,
+                        cursor=cursor)
+
+                    # Create schema table indexes for id and parent columns. The id
+                    # index is needed as, even though it's the primary key, it's of
+                    # type TEXT so doesn't automatically get indexes
+                    self._createColumnIndex(
+                        table=ObjectDbManager._EntitiesTableName,
+                        column='id',
+                        unique=True,
+                        cursor=cursor)
+                    self._createColumnIndex(
+                        table=ObjectDbManager._EntitiesTableName,
+                        column='parent',
+                        unique=False,
                         cursor=cursor)
 
                 # Create list table
@@ -371,12 +390,19 @@ class ObjectDbManager(object):
                         """.format(
                         table=ObjectDbManager._ListsTableName,
                         entitiesTable=ObjectDbManager._EntitiesTableName)
-                    logging.info(f'ObjectDbManager initialising table \'{ObjectDbManager._ListsTableName}\'')
+                    logging.info(f'ObjectDbManager creating \'{ObjectDbManager._ListsTableName}\' table')
                     cursor.execute(sql)
 
                     self._writeSchema(
-                        tableName=ObjectDbManager._ListsTableName,
+                        table=ObjectDbManager._ListsTableName,
                         schema=ObjectDbManager._ListsTableSchema,
+                        cursor=cursor)
+
+                    # Create schema table indexes for id columns
+                    self._createColumnIndex(
+                        table=ObjectDbManager._ListsTableName,
+                        column='id',
+                        unique=False,
                         cursor=cursor)
 
                 # Check there are no tables with schemas newer than this version supports
@@ -453,7 +479,7 @@ class ObjectDbManager(object):
             classType: typing.Type[DatabaseObject],
             transaction: typing.Optional[Transaction] = None
             ) -> typing.Iterable[DatabaseObject]:
-        logging.debug(f'ObjectDbManager reading object of type {classType}')
+        logging.debug(f'ObjectDbManager reading objects of type {classType}')
         with ObjectDbManager._lock:
             if transaction != None:
                 return self._readEntities(
@@ -530,7 +556,7 @@ class ObjectDbManager(object):
 
     def _writeSchema(
             self,
-            tableName: str,
+            table: str,
             schema: int,
             cursor: sqlite3.Cursor
             ) -> None:
@@ -540,11 +566,25 @@ class ObjectDbManager(object):
             ON CONFLICT(table_name) DO UPDATE SET
                 schema = excluded.schema;
             """.format(table=ObjectDbManager._SchemasTableName)
-        logging.info(f'ObjectDbManager setting table schema for \'{tableName}\' to {schema}')
+        logging.info(f'ObjectDbManager setting table schema for \'{table}\' to {schema}')
         rowData = {
-            'table_name': tableName,
+            'table_name': table,
             'schema': str(schema)}
         cursor.execute(sql, rowData)
+
+    def _createColumnIndex(
+            self,
+            table: str,
+            column: str,
+            unique: bool,
+            cursor: sqlite3.Cursor
+            ) -> None:
+            if unique:
+                sql = f'CREATE UNIQUE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
+            else:
+                sql = f'CREATE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
+            logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
+            cursor.execute(sql)
 
     def _createObjectTable(
             self,
@@ -583,15 +623,26 @@ class ObjectDbManager(object):
         # statements, however, it's acceptable here as what it's formatting
         # comes from code (rather than user input) so there is no real risk of
         # an injection attack
-        sql = 'CREATE TABLE IF NOT EXISTS {table} ({columns});'.format(
+        sql = """
+            CREATE TABLE IF NOT EXISTS {table} ({columns}) WITHOUT ROWID;
+            """.format(
             table=objectDef.tableName(),
             columns=', '.join(columnStrings))
-        logging.info(f'ObjectDbManager initialising table \'{objectDef.tableName()}\'')
+        logging.info(f'ObjectDbManager creating \'{objectDef.tableName()}\' table')
         cursor.execute(sql)
 
         self._writeSchema(
-            tableName=objectDef.tableName(),
+            table=objectDef.tableName(),
             schema=objectDef.tableSchema(),
+            cursor=cursor)
+
+        # Create schema table indexes for id columns. This is needed as.
+        # even though it's  the primary key, it's of type TEXT so doesn't
+        # automatically get indexes
+        self._createColumnIndex(
+            table=objectDef.tableName(),
+            column='id',
+            unique=True,
             cursor=cursor)
 
     def _createEntity(
@@ -671,7 +722,7 @@ class ObjectDbManager(object):
             rowData = {
                 'id': entity.id(),
                 'parent': entity.parent(),
-                'table_name': 'lists'
+                'table_name': ObjectDbManager._ListsTableName
             }
             cursor.execute(sql, rowData)
 
