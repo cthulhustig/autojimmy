@@ -3,6 +3,7 @@ import diceroller
 import enum
 import gui
 import logging
+import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -60,20 +61,71 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
-    def addResult(
-            self,
-            result: diceroller.DiceRollResult
-            ) -> None:
-        result = copy.deepcopy(result)
-        self._historyTable.insertRow(0)
-        self._fillTableRow(0, result)
-        self._historyTable.selectRow(0)
+    def results(self) -> typing.Iterable[diceroller.DiceRollResult]:
+        results = []
+        for index in range(self._historyTable.rowCount()):
+            item = self._historyTable.item(index, 0)
+            result = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            if result:
+                results.append(result)
+        return results
+
+    def resultCount(self) -> int:
+        return self._historyTable.rowCount()
+
+    def purgeResults(self, allowedResults: int) -> typing.Iterable[diceroller.DiceRollResult]:
+        results:typing.List[typing.Tuple[diceroller.DiceRollResult, int]] = []
+        for row in range(self._historyTable.rowCount()):
+            item = self._historyTable.item(row, 0)
+            result = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            results.append((result, row))
+        results.sort(
+            key=lambda pair: pair[0].timestamp(),
+            reverse=True)
+
+        excess = results[allowedResults:]
+        excess.sort(
+            key=lambda pair: pair[1],
+            reverse=True)
+
+        removed = []
+        for result, row in excess:
+            self._historyTable.removeRow(row)
+            removed.append(result)
+        return removed
 
     def clearResults(self) -> None:
         self._historyTable.removeAllRows()
 
     def clearSelection(self) -> None:
         self._historyTable.clearSelection()
+
+    def syncToDatabase(self) -> None:
+        results = objectdb.ObjectDbManager.instance().readObjects(
+            classType=diceroller.DiceRollResult)
+
+        selection = set()
+        for item in self._historyTable.selectedItems():
+            result = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(result, diceroller.DiceRollResult))
+            selection.add(result.id())
+        self._historyTable.clearSelection()
+
+        sortingEnabled = self._historyTable.isSortingEnabled()
+        self._historyTable.setSortingEnabled(False)
+        try:
+            for row, result in enumerate(reversed(results)):
+                if row >= self._historyTable.rowCount():
+                    self._historyTable.insertRow(row)
+                self._fillTableRow(row, result)
+                assert(isinstance(result, diceroller.DiceRollResult))
+                if result.id() in selection:
+                    self._historyTable.selectRow(row)
+
+            while self._historyTable.rowCount() > len(results):
+                self._historyTable.removeRow(self._historyTable.rowCount() - 1)
+        finally:
+            self._historyTable.setSortingEnabled(sortingEnabled)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -111,87 +163,108 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             self,
             row: int,
             result: diceroller.DiceRollResult
-            ) -> None:
-        for column in range(self._historyTable.columnCount()):
-            columnType = self._historyTable.columnHeader(column)
-            tableItem = None
-            if columnType == DiceRollHistoryWidget._ColumnType.Timestamp:
-                tableItem = gui.LocalTimestampTableWidgetItem(
-                    timestamp=result.timestamp())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Label:
-                tableItem = gui.TableWidgetItemEx(result.label())
-            elif columnType == DiceRollHistoryWidget._ColumnType.Total:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=result.total())
-            elif columnType == DiceRollHistoryWidget._ColumnType.EffectType:
-                effectType = result.effectType()
-                if effectType != None:
-                    tableItem = gui.TableWidgetItemEx(effectType.value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.EffectValue:
-                effectValue = result.effectValue()
-                if effectValue != None:
+            ) -> int:
+        # Workaround for the issue covered here, re-enabled after setting items
+        # https://stackoverflow.com/questions/7960505/strange-qtablewidget-behavior-not-all-cells-populated-after-sorting-followed-b
+        sortingEnabled = self._historyTable.isSortingEnabled()
+        self._historyTable.setSortingEnabled(False)
+
+        try:
+            for column in range(self._historyTable.columnCount()):
+                columnType = self._historyTable.columnHeader(column)
+                tableItem = None
+                if columnType == DiceRollHistoryWidget._ColumnType.Timestamp:
+                    tableItem = gui.LocalTimestampTableWidgetItem(
+                        timestamp=result.timestamp())
+                elif columnType == DiceRollHistoryWidget._ColumnType.Label:
+                    tableItem = gui.TableWidgetItemEx(result.label())
+                elif columnType == DiceRollHistoryWidget._ColumnType.Total:
                     tableItem = gui.FormattedNumberTableWidgetItem(
-                        value=effectValue)
-            elif columnType == DiceRollHistoryWidget._ColumnType.DieType:
-                tableItem = gui.TableWidgetItemEx(result.dieType().value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.RollTotal:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=result.rolledTotal())
-            elif columnType == DiceRollHistoryWidget._ColumnType.RollDetails:
-                rollStrings = []
-                for roll, ignored in result.rolls():
-                    if not ignored:
-                        rollStrings.append(str(roll))
-                if rollStrings:
-                    tableItem = gui.TableWidgetItemEx(', '.join(rollStrings))
-            elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieType:
-                extraDie = result.extraDie()
-                if extraDie != None:
-                    tableItem = gui.TableWidgetItemEx(extraDie.value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieRoll:
-                extraDieRoll = result.extraDieRoll()
-                if extraDieRoll != None:
-                    gui.FormattedNumberTableWidgetItem(
-                        value=extraDieRoll)
-            elif columnType == DiceRollHistoryWidget._ColumnType.FluxType:
-                fluxType = result.fluxType()
-                if fluxType != None:
-                    tableItem = gui.TableWidgetItemEx(fluxType.value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.FluxTotal:
-                fluxTotal = result.fluxTotal()
-                if fluxTotal != None:
+                        value=result.total())
+                elif columnType == DiceRollHistoryWidget._ColumnType.EffectType:
+                    effectType = result.effectType()
+                    if effectType != None:
+                        tableItem = gui.TableWidgetItemEx(effectType.value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.EffectValue:
+                    effectValue = result.effectValue()
+                    if effectValue != None:
+                        tableItem = gui.FormattedNumberTableWidgetItem(
+                            value=effectValue)
+                elif columnType == DiceRollHistoryWidget._ColumnType.DieType:
+                    tableItem = gui.TableWidgetItemEx(result.dieType().value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.RollTotal:
                     tableItem = gui.FormattedNumberTableWidgetItem(
-                        value=fluxTotal)
-            elif columnType == DiceRollHistoryWidget._ColumnType.FluxRoll:
-                fluxRolls = result.fluxRolls()
-                if fluxRolls != None:
+                        value=result.rolledTotal())
+                elif columnType == DiceRollHistoryWidget._ColumnType.RollDetails:
                     rollStrings = []
-                    for roll in fluxRolls:
-                        rollStrings.append(str(roll))
+                    for roll, ignored in result.rolls():
+                        if not ignored:
+                            rollStrings.append(str(roll))
                     if rollStrings:
                         tableItem = gui.TableWidgetItemEx(', '.join(rollStrings))
-            elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersTotal:
-                tableItem = gui.FormattedNumberTableWidgetItem(
-                    value=result.modifiersTotal())
-            elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersDetails:
-                modifierStrings = []
-                for _, modifier in result.modifiers():
-                    modifierStrings.append(f'{modifier:+}')
-                if modifierStrings:
-                    tableItem = gui.TableWidgetItemEx(', '.join(modifierStrings))
-            elif columnType == DiceRollHistoryWidget._ColumnType.TargetType:
-                targetType = result.targetType()
-                if targetType != None:
-                    tableItem = gui.TableWidgetItemEx(targetType.value)
-            elif columnType == DiceRollHistoryWidget._ColumnType.TargetNumber:
-                targetNumber = result.targetNumber()
-                if targetNumber != None:
+                elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieType:
+                    extraDie = result.extraDie()
+                    if extraDie != None:
+                        tableItem = gui.TableWidgetItemEx(extraDie.value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieRoll:
+                    extraDieRoll = result.extraDieRoll()
+                    if extraDieRoll != None:
+                        gui.FormattedNumberTableWidgetItem(
+                            value=extraDieRoll)
+                elif columnType == DiceRollHistoryWidget._ColumnType.FluxType:
+                    fluxType = result.fluxType()
+                    if fluxType != None:
+                        tableItem = gui.TableWidgetItemEx(fluxType.value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.FluxTotal:
+                    fluxTotal = result.fluxTotal()
+                    if fluxTotal != None:
+                        tableItem = gui.FormattedNumberTableWidgetItem(
+                            value=fluxTotal)
+                elif columnType == DiceRollHistoryWidget._ColumnType.FluxRoll:
+                    fluxRolls = result.fluxRolls()
+                    if fluxRolls != None:
+                        rollStrings = []
+                        for roll in fluxRolls:
+                            rollStrings.append(str(roll))
+                        if rollStrings:
+                            tableItem = gui.TableWidgetItemEx(', '.join(rollStrings))
+                elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersTotal:
                     tableItem = gui.FormattedNumberTableWidgetItem(
-                        value=targetNumber)
+                        value=result.modifiersTotal())
+                elif columnType == DiceRollHistoryWidget._ColumnType.ModifiersDetails:
+                    modifierStrings = []
+                    for _, modifier in result.modifiers():
+                        modifierStrings.append(f'{modifier:+}')
+                    if modifierStrings:
+                        tableItem = gui.TableWidgetItemEx(', '.join(modifierStrings))
+                elif columnType == DiceRollHistoryWidget._ColumnType.TargetType:
+                    targetType = result.targetType()
+                    if targetType != None:
+                        tableItem = gui.TableWidgetItemEx(targetType.value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.TargetNumber:
+                    targetNumber = result.targetNumber()
+                    if targetNumber != None:
+                        tableItem = gui.FormattedNumberTableWidgetItem(
+                            value=targetNumber)
 
-            if tableItem:
+                if not tableItem:
+                    tableItem = gui.TableWidgetItemEx()
                 tableItem.setTextAlignment(int(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter))
+                tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, result)
                 self._historyTable.setItem(row, column, tableItem)
+
+            # Take note of the sort column item so we can determine which row index after the table
+            # has been sorted
+            sortItem = self._historyTable.item(
+                row,
+                self._historyTable.horizontalHeader().sortIndicatorSection())
+        finally:
+            self._historyTable.setSortingEnabled(sortingEnabled)
+
+        # If we don't have a sort item we assume a derived class has overridden _fillRow to add custom
+        # columns and the table is currently sorted by one of those columns. In this the expectation is
+        # the derived class will be handling working out the post sort row index.
+        return sortItem.row() if sortItem else row
 
     def _showContextMenu(
             self,
