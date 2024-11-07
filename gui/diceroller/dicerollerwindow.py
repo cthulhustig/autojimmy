@@ -36,7 +36,7 @@ _WelcomeMessage = """
 
 
 class DiceRollerWindow(gui.WindowWidget):
-    _MaxRollResults = 500
+    _MaxRollResults = 1000
 
     def __init__(self) -> None:
         super().__init__(
@@ -753,6 +753,16 @@ class DiceRollerWindow(gui.WindowWidget):
             logging.error(message, exc_info=ex)
 
     def _virtualRollComplete(self) -> None:
+        # NOTE: Handling of the roll completion is delayed to allow the event
+        # loop to process. This notification may have been triggered by the user
+        # skipping the roll animation. If that is the case then we want the
+        # event loop to process so that the animation control can redraw so the
+        # roll result is displayed. If we were to handle the roll completion
+        # immediately, the animation would freeze in place for a noticeable
+        # amount of time (a few 100 ms) before the results were displayed.
+        QtCore.QTimer.singleShot(1, self._delayedRollComplete)
+
+    def _delayedRollComplete(self) -> None:
         if not self._rollInProgress:
             return
 
