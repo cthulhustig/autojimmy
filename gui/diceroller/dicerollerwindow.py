@@ -51,7 +51,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._lastResults = {}
 
         self._randomGenerator = common.RandomGenerator()
-        logging.info(f'Dice Roller random generator seed: {self._randomGenerator.usedSeed()}')
+        logging.info(f'Dice Roller random generator seed: {self._randomGenerator.seed()}')
 
         self._createRollerManagerControls()
         self._createRollerConfigControls()
