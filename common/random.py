@@ -1,38 +1,48 @@
 import numpy
+import random
 import secrets
 import typing
 
 class RandomGenerator(object):
     def __init__(
             self,
-            seed: typing.Optional[int] = None
+            seed: typing.Optional[int] = None,
+            legacy: bool = False
             ) -> None:
         super().__init__()
-        self.init(seed=seed)
+        self.init(seed=seed, legacy=legacy)
 
     def init(
             self,
-            seed: typing.Optional[int] = None
+            seed: typing.Optional[int] = None,
+            legacy: bool = False
             ) -> None:
         self._seed = seed if seed != None else RandomGenerator._randomSeed()
+        self._legacy = legacy
 
-        # Use PCG64 rather than the default MT19937 (Mersenne Twister) as it provides
-        # better initial diffusion (i.e. more random when first used) and generally
-        # better randomness overall. I'm not sure if I was seeing patterns where there
-        # were none but I could swear when using MT19937 (or at least the default
-        # python random implementation) to generate the result of a 2D6 roll, the
-        # chance of the result of both die being the same value was significantly
-        # higher than the 1/6 it should be for the first few rolls
-        self._rng = numpy.random.RandomState(numpy.random.PCG64(numpy.random.SeedSequence(self._seed)))
+        if self._legacy:
+            self._rng = random.Random(self._seed)
+        else:
+            # Use PCG64 rather than the default MT19937 (Mersenne Twister) as it provides
+            # better initial diffusion (i.e. more random when first used) and generally
+            # better randomness overall. I'm not sure if I was seeing patterns where there
+            # were none but I could swear when using MT19937 (or at least the default
+            # python random implementation) to generate the result of a 2D6 roll, the
+            # chance of the result of both die being the same value was significantly
+            # higher than the 1/6 it should be for the first few rolls
+            self._rng = numpy.random.RandomState(numpy.random.PCG64(numpy.random.SeedSequence(self._seed)))
 
     def random(self) -> float:
         return self._rng.random()
 
     def randint(self, low: int, high: int) -> int:
-        # NOTE: High value is +1 to make interface compatible with the standard
-        # python random.randint as Numpy has high as exclusive where as the
-        # default python implementation has it as inclusive
-        return self._rng.randint(low, high + 1)
+        if self._legacy:
+            return self._rng.randint(low, high)
+        else:
+            # NOTE: High value is +1 to make interface compatible with the standard
+            # python random.randint as Numpy has high as exclusive where as the
+            # default python implementation has it as inclusive
+            return self._rng.randint(low, high + 1)
 
     # NOTE: This is different to the api for the standard python random where
     # seed sets the new seed rather than retrieving the current seed as it

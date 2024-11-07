@@ -92,6 +92,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
             title='Sale Calculator',
             configSection='SaleCalculatorWindow')
 
+        self._randomGenerator = common.RandomGenerator()
+
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
         self._setupCargoControls()
@@ -655,7 +657,8 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text=f'You must have some {"illegal" if blackMarket else "legal"} cargo to deal with a {"black market" if blackMarket else "legal"} buyer')
             return
 
-        diceRoller = common.DiceRoller()
+        diceRoller = common.DiceRoller(
+            randomGenerator=self._randomGenerator)
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
             rules=app.Config.instance().rules(),

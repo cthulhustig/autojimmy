@@ -279,7 +279,10 @@ def calculateRollRangeProbability(
 
 def randomRollDice(
         dieCount: typing.Union[int, common.ScalarCalculation],
-        randomGenerator: typing.Optional[random.Random] = None
+        randomGenerator: typing.Optional[typing.Union[
+            random.Random,
+            common.RandomGenerator
+            ]] = None
         ) -> common.ScalarCalculation:
     if randomGenerator == None:
         randomGenerator = random
@@ -321,9 +324,12 @@ class DiceRollResult(object):
 class DiceRoller(object):
     def __init__(
             self,
-            randomGenerator: typing.Optional[random.Random] = None
+            randomGenerator: typing.Optional[typing.Union[
+                random.Random,
+                common.RandomGenerator
+                ]] = None
             ) -> None:
-        self._randomGenerator = randomGenerator
+        self._randomGenerator = randomGenerator if randomGenerator != None else common.RandomGenerator()
         self._rolls = []
 
     def makeRoll(

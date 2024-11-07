@@ -104,7 +104,11 @@ class Simulator(object):
         self._maxSellerDm = maxSellerDm
         self._minBuyerDm = minBuyerDm
         self._maxBuyerDm = maxBuyerDm
-        self._randomGenerator = random.Random(randomSeed) if randomSeed != None else random
+        self._randomGenerator = common.RandomGenerator(
+            seed=randomSeed,
+            # Use legacy mode so seeds result in the same random
+            # sequence as previous versions
+            legacy=True)
 
         self._simulationTime = 0
 

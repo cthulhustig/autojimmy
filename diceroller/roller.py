@@ -76,7 +76,10 @@ def calculateProbabilities(
 def rollDice(
         label: str,
         roller: diceroller.DiceRoller,
-        randomGenerator: typing.Optional[random.Random] = None,
+        randomGenerator: typing.Optional[typing.Union[
+            random.Random,
+            common.RandomGenerator
+            ]] = None,
         ) -> diceroller.DiceRollResult:
     if randomGenerator == None:
         randomGenerator = random
