@@ -629,32 +629,30 @@ class ObjectDbManager(object):
                 sql += ', :' + columnName
 
                 childEntity = None
-                if columnValue != None:
-                    columnType = paramDef.columnType()
-                    if columnType == str:
+                columnType = paramDef.columnType()
+                if columnType == str:
+                    if columnValue != None:
                         columnValue = str(columnValue)
-                    elif columnType == int:
+                elif columnType == int:
+                    if columnValue != None:
                         columnValue = int(columnValue)
-                    elif columnType == float:
+                elif columnType == float:
+                    if columnValue != None:
                         columnValue = float(columnValue)
-                    elif columnType == bool:
+                elif columnType == bool:
+                    if columnValue != None:
                         columnValue = 1 if columnValue else 0
-                    elif issubclass(columnType, DatabaseObject):
-                        if not isinstance(columnValue, DatabaseObject) or \
+                elif issubclass(columnType, DatabaseEntity):
+                    if columnValue != None:
+                        if not isinstance(columnValue, DatabaseEntity) or \
                             not isinstance(columnValue, columnType):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         childEntity = columnValue
                         columnValue = columnValue.id()
-                    elif issubclass(columnType, DatabaseList):
-                        if not isinstance(columnValue, DatabaseList):
-                            raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseList')
-                        childEntity = columnValue
-                        columnValue = columnValue.id()
-                    else:
-                        raise RuntimeError(
-                            f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
+                else:
+                    raise RuntimeError(
+                        f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
 
                 rowData[columnName] = columnValue
 
@@ -776,26 +774,38 @@ class ObjectDbManager(object):
             if objectDef == None:
                 raise ValueError(f'Object {id} uses unknown table {table}')
             columns = ['{table}.parent'.format(table=ObjectDbManager._EntitiesTableName)]
+            entityJoins = ''
             for paramDef in objectDef.paramDefs():
                 columns.append('{table}.{column}'.format(
                     table=table,
                     column=paramDef.columnName()))
+                if issubclass(paramDef.columnType(), DatabaseEntity):
+                    # If the parameter type is a database entity then add an additional
+                    # column and setup a join so the column will be filled with the table
+                    # for the entity
+                    columns.append('{column}_entity_table.table_name AS {column}_entity_table'.format(
+                        column=paramDef.columnName()))
+                    entityJoins += \
+                        """
+                        LEFT JOIN {entitiesTable} AS {column}_entity_table
+                            ON {objectTable}.{column} = {column}_entity_table.id
+                        """.format(
+                            entitiesTable=ObjectDbManager._EntitiesTableName,
+                            objectTable=table,
+                            column=paramDef.columnName())
 
-            # TODO: Update this to retrieve the table name for any object/list params
-            # in a similar way to how the equivalent list read query is doing it for
-            # the entity column. According to chatgpt this can be done with multiple
-            # LEFT JOINs
-            # https://chatgpt.com/c/672c2695-d710-8002-b7e1-3fb49140e2fe
             sql = """
                 SELECT {columns}
                 FROM {dataTable}
                 JOIN {entitiesTable} ON {dataTable}.id = {entitiesTable}.id
+                {entityJoins}
                 WHERE {dataTable}.id = :id
                 LIMIT 1;
                 """.format(
                 columns=','.join(columns),
                 dataTable=table,
-                entitiesTable=ObjectDbManager._EntitiesTableName)
+                entitiesTable=ObjectDbManager._EntitiesTableName,
+                entityJoins=entityJoins)
             cursor.execute(sql, {'id': id})
             row = cursor.fetchone()
             if not row:
@@ -803,39 +813,44 @@ class ObjectDbManager(object):
 
             parent = row[0] if setParent else None
             objectData = {}
-            index = 1
+            columnIndex = 1
             for paramDef in objectDef.paramDefs():
                 columnName = paramDef.columnName()
-                columnValue = row[index]
+                columnValue = row[columnIndex]
                 if columnValue == None and not paramDef.isOptional():
                     raise RuntimeError(
                         f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
-                index += 1
+                columnIndex += 1
 
-                if columnValue != None:
-                    columnType = paramDef.columnType()
-                    if columnType == str:
+                columnType = paramDef.columnType()
+                if columnType == str:
+                    if columnValue != None:
                         columnValue = str(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == int:
+                elif columnType == int:
+                    if columnValue != None:
                         columnValue = int(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == float:
+                elif columnType == float:
+                    if columnValue != None:
                         columnValue = float(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == bool:
+                elif columnType == bool:
+                    if columnValue != None:
                         columnValue = columnValue != 0
-                    elif issubclass(columnType, DatabaseObject):
+                elif issubclass(columnType, DatabaseEntity):
+                    entityTable = row[columnIndex]
+                    columnIndex += 1 # Entity table was read from row
+
+                    if columnValue != None:
+                        if entityTable == None:
+                            raise RuntimeError(
+                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
                         columnValue = self._readEntity(
                             id=columnValue,
+                            table=entityTable,
                             setParent=False,
                             cursor=cursor)
-                    elif issubclass(columnType, DatabaseList):
-                        columnValue = self._readEntity(
-                            id=columnValue,
-                            table=ObjectDbManager._ListsTableName,
-                            setParent=False,
-                            cursor=cursor)
-                    else:
-                        raise RuntimeError(
-                            f'Parameter {columnName} for object {id} of type {objectDef.classType()} has unknown type {columnType}')
+                else:
+                    raise RuntimeError(
+                        f'Parameter {columnName} for object {id} of type {objectDef.classType()} has unknown type {columnType}')
 
                 objectData[columnName] = columnValue
 
@@ -858,58 +873,80 @@ class ObjectDbManager(object):
             '{table}.id'.format(table=objectDef.tableName()),
             '{table}.parent'.format(table=ObjectDbManager._EntitiesTableName)
             ]
+        entityJoins = ''
         for paramDef in objectDef.paramDefs():
             columns.append('{table}.{column}'.format(
                 table=objectDef.tableName(),
                 column=paramDef.columnName()))
+            if issubclass(paramDef.columnType(), DatabaseEntity):
+                # If the parameter type is a database entity then add an additional
+                # column and setup a join so the column will be filled with the table
+                # for the entity
+                columns.append('{column}_entity_table.table_name AS {column}_entity_table'.format(
+                    column=paramDef.columnName()))
+                entityJoins += \
+                    """
+                    LEFT JOIN {entitiesTable} AS {column}_entity_table
+                        ON {objectTable}.{column} = {column}_entity_table.id
+                    """.format(
+                        entitiesTable=ObjectDbManager._EntitiesTableName,
+                        objectTable=objectDef.tableName(),
+                        column=paramDef.columnName())
 
         sql = """
             SELECT {columns}
             FROM {dataTable}
-            JOIN {entitiesTable} ON {dataTable}.id = {entitiesTable}.id;
+            JOIN {entitiesTable} ON {dataTable}.id = {entitiesTable}.id
+            {entityJoins};
             """.format(
             columns=','.join(columns),
             dataTable=objectDef.tableName(),
-            entitiesTable=ObjectDbManager._EntitiesTableName)
+            entitiesTable=ObjectDbManager._EntitiesTableName,
+            entityJoins=entityJoins)
         cursor.execute(sql)
         objects = []
         for row in cursor.fetchall():
             id = row[0]
             parent = row[1]
             objectData = {}
-            index = 2
+            columnIndex = 2
             for paramDef in objectDef.paramDefs():
                 columnName = paramDef.columnName()
-                columnValue = row[index]
+                columnValue = row[columnIndex]
                 if columnValue == None and not paramDef.isOptional():
                     raise RuntimeError(
                         f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
-                index += 1
+                columnIndex += 1
 
-                if columnValue != None:
-                    columnType = paramDef.columnType()
-                    if columnType == str:
+                columnType = paramDef.columnType()
+                if columnType == str:
+                    if columnValue != None:
                         columnValue = str(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == int:
+                elif columnType == int:
+                    if columnValue != None:
                         columnValue = int(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == float:
+                elif columnType == float:
+                    if columnValue != None:
                         columnValue = float(columnValue) # Should be redundant if table defined correctly
-                    elif columnType == bool:
+                elif columnType == bool:
+                    if columnValue != None:
                         columnValue = columnValue != 0
-                    elif issubclass(columnType, DatabaseObject):
+                elif issubclass(columnType, DatabaseEntity):
+                    entityTable = row[columnIndex]
+                    columnIndex += 1 # Entity table was read from row
+
+                    if columnValue != None:
+                        if entityTable == None:
+                            raise RuntimeError(
+                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
                         columnValue = self._readEntity(
                             id=columnValue,
+                            table=entityTable,
                             setParent=False,
                             cursor=cursor)
-                    elif issubclass(columnType, DatabaseList):
-                        columnValue = self._readEntity(
-                            id=columnValue,
-                            table=ObjectDbManager._ListsTableName,
-                            setParent=False,
-                            cursor=cursor)
-                    else:
-                        raise RuntimeError(
-                            f'Parameter definition {objectDef.classType()}.{columnName} has unknown type {columnType}')
+                else:
+                    raise RuntimeError(
+                        f'Parameter definition {objectDef.classType()}.{columnName} has unknown type {columnType}')
 
                 objectData[columnName] = columnValue
 
@@ -986,34 +1023,31 @@ class ObjectDbManager(object):
 
                 isReference = False
                 childEntity = None
-                if columnValue != None:
-                    columnType = paramDef.columnType()
-                    if columnType == str:
+                columnType = paramDef.columnType()
+                if columnType == str:
+                    if columnValue != None:
                         columnValue = str(columnValue)
-                    elif columnType == int:
+                elif columnType == int:
+                    if columnValue != None:
                         columnValue = int(columnValue)
-                    elif columnType == float:
+                elif columnType == float:
+                    if columnValue != None:
                         columnValue = float(columnValue)
-                    elif columnType == bool:
+                elif columnType == bool:
+                    if columnValue != None:
                         columnValue = 1 if columnValue else 0
-                    elif issubclass(columnType, DatabaseObject):
-                        if not isinstance(columnValue, DatabaseObject) or \
+                elif issubclass(columnType, DatabaseEntity):
+                    if columnValue != None:
+                        if not isinstance(columnValue, DatabaseEntity) or \
                             not isinstance(columnValue, columnType):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         isReference = True
                         childEntity = columnValue
                         columnValue = columnValue.id()
-                    elif issubclass(columnType, DatabaseList):
-                        if not isinstance(columnValue, DatabaseList):
-                            raise RuntimeError(
-                                f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not of type DatabaseList')
-                        isReference = True
-                        childEntity = columnValue
-                        columnValue = columnValue.id()
-                    else:
-                        raise RuntimeError(
-                            f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
+                else:
+                    raise RuntimeError(
+                        f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
 
                 rowData[columnName] = columnValue
 

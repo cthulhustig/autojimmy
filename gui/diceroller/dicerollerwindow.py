@@ -13,7 +13,6 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Limit the number of roll results that are stored in the DB
 # TODO: Ability to manually clear history
 # TODO: Test that history timestamps are shown in local time not utc
 # TODO: Support for 2 being an auto fail
