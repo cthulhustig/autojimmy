@@ -209,7 +209,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 elif columnType == DiceRollHistoryWidget._ColumnType.ExtraDieRoll:
                     extraDieRoll = result.extraDieRoll()
                     if extraDieRoll != None:
-                        gui.FormattedNumberTableWidgetItem(
+                        tableItem = gui.FormattedNumberTableWidgetItem(
                             value=extraDieRoll)
                 elif columnType == DiceRollHistoryWidget._ColumnType.FluxType:
                     fluxType = result.fluxType()
