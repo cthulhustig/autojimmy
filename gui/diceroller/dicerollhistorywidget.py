@@ -94,9 +94,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             removed.append(result)
         return removed
 
-    def clearResults(self) -> None:
-        self._historyTable.removeAllRows()
-
     def clearSelection(self) -> None:
         self._historyTable.clearSelection()
 
@@ -273,7 +270,11 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         menuItems = [
             gui.MenuItem(
                 text='Copy as HTML',
-                callback=self._copyToClipboard)]
+                callback=self._copyToClipboard),
+            None,
+            gui.MenuItem(
+                text='Clear History...',
+                callback=self._promptClearResults)]
 
         gui.displayMenu(
             self,
@@ -288,3 +289,26 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         content = self._historyTable.contentToHtml()
         if content:
             clipboard.setText(content)
+
+    def _promptClearResults(self) -> None:
+        results = self.results()
+        if not results:
+            return # Nothing to do
+        count = len(results)
+        answer = gui.AutoSelectMessageBox.question(
+            text=f'This will permanently delete {count} historic results.\nDo you want to continue?',
+            stateKey='DiceRollHistoryWidgetClearResults',
+            rememberState=QtWidgets.QMessageBox.StandardButton.Yes)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return # User cancelled
+
+        try:
+            objectdb.ObjectDbManager.instance().deleteObjects(
+                type=diceroller.DiceRollResult)
+        except Exception as ex:
+            gui.MessageBoxEx.critical(
+                text='Failed to clear history',
+                exception=ex)
+            return
+
+        self.syncToDatabase()
