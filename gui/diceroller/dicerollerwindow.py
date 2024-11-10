@@ -13,27 +13,11 @@ _WelcomeMessage = """
     TODO
 """.format(name=app.AppName)
 
-# TODO: Ability to manually clear history
+
 # TODO: Test that history timestamps are shown in local time not utc
 # TODO: Support for 2 being an auto fail
 # - Would be cool to put a skull or something over the top of the
 #   dice if you roll it
-# TODO: Use sqlite triggers to log cascade deletes so I can make the
-# objectdb generate create/update/delete events that things can
-# register for
-# - https://chatgpt.com/c/672803d9-f5ac-8002-b5a1-12ceee635ba2
-# - Would let observers register for notifications for specific
-#   object ids
-# - Would just need to send the object id in the notification call
-# - The chatgpt discussion requires a table that an trigger writes
-#   to when operations take place, effectively creating a log
-#   - Not sure how to prevent it growing indefinitely
-#   - Would probably just need to trigger to execute based on
-#   deletes from the entities table. I think this might also
-#   be possible for a create trigger but I think update triggers
-#   would need to be set on each object table (not sure about list
-#   table)
-
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
@@ -71,7 +55,6 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
         self._syncManagerToDatabase()
-        self._syncHistoryToDatabase()
         if self._managerTree.groupCount() == 0:
             self._createInitialGroup()
 
@@ -282,14 +265,6 @@ class DiceRollerWindow(gui.WindowWidget):
                 roller=self._managerTree.currentRoller())
         except Exception as ex:
             logging.error('Failed to sync manager to database', exc_info=ex)
-
-    def _syncHistoryToDatabase(self) -> None:
-        try:
-            with gui.SignalBlocker(self._historyWidget):
-                self._historyWidget.syncToDatabase()
-            self._limitHistoryCount()
-        except Exception as ex:
-            logging.error('Failed to sync history to database', exc_info=ex)
 
     def _setCurrentRoller(
             self,
@@ -739,19 +714,6 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._resultsWidget):
             self._resultsWidget.syncToRoller()
 
-    def _limitHistoryCount(self) -> None:
-        purged = self._historyWidget.purgeResults(
-            allowedResults=DiceRollerWindow._MaxRollResults)
-        try:
-            with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
-                for result in purged:
-                    objectdb.ObjectDbManager.instance().deleteObject(
-                        id=result.id(),
-                        transaction=transaction)
-        except Exception as ex:
-            message = 'Failed to delete result from objectdb'
-            logging.error(message, exc_info=ex)
-
     def _virtualRollComplete(self) -> None:
         # NOTE: Handling of the roll completion is delayed to allow the event
         # loop to process. This notification may have been triggered by the user
@@ -774,15 +736,34 @@ class DiceRollerWindow(gui.WindowWidget):
             objectdb.ObjectDbManager.instance().createObject(
                 object=self._results)
         except Exception as ex:
-            message = 'Failed to roll results to objectdb'
+            message = 'Failed to add roll results to objectdb'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,
                 text=message,
                 exception=ex)
-            # Fall through to to add the result to the history widget
 
-        self._syncHistoryToDatabase()
+        # Enforce a max number of historic results
+        self._purgeHistory()
+
+    def _purgeHistory(self) -> None:
+        try:
+            results = list(self._historyWidget.results())
+            if len(results) <= DiceRollerWindow._MaxRollResults:
+                return
+
+            results.sort(
+                key=lambda result: result.timestamp(),
+                reverse=True)
+            results = results[DiceRollerWindow._MaxRollResults:]
+            with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
+                for result in results:
+                    objectdb.ObjectDbManager.instance().deleteObject(
+                        id=result.id(),
+                        transaction=transaction)
+        except Exception as ex:
+            message = 'Failed to purge old history from objectdb'
+            logging.error(message, exc_info=ex)
 
     def _showWelcomeMessage(self) -> None:
         message = gui.InfoDialog(
