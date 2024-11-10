@@ -733,11 +733,12 @@ class ObjectDbManager(object):
             ) -> sqlite3.Connection:
         with ObjectDbManager._lock:
             if self._connectionPool:
-                logging.debug(f'ObjectDbManager reusing cached connection')
-                return self._connectionPool.pop()
+                connection = self._connectionPool.pop()
+                logging.debug(f'ObjectDbManager reusing cached connection {connection}')
+                return connection
 
-        logging.debug(f'ObjectDbManager creating new connection to {databasePath}')
         connection = sqlite3.connect(databasePath)
+        logging.debug(f'ObjectDbManager created new connection {connection} to \'{databasePath}\'')
         connection.executescript(ObjectDbManager._PragmaScript)
         # Uncomment this to have sqlite print the SQL that it executes
         #connection.set_trace_callback(print)
@@ -750,6 +751,7 @@ class ObjectDbManager(object):
         with ObjectDbManager._lock:
             if len(self._connectionPool) < self._maxConnectionPoolSize:
                 self._connectionPool.append(connection)
+                logging.debug(f'ObjectDbManager added connection {connection} to pool')
                 return
 
         connection.close()
