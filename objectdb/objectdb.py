@@ -1,9 +1,15 @@
 import common
+import enum
 import logging
 import sqlite3
 import threading
 import typing
 import uuid
+
+class ObjectDbOperation(enum.Enum):
+    Insert = 'insert'
+    Update = 'update'
+    Delete = 'delete'
 
 class DatabaseEntity(object):
     def __init__(
@@ -213,33 +219,101 @@ class ObjectDef(object):
 class Transaction(object):
     def __init__(
             self,
-            cursor: sqlite3.Cursor
+            connection: sqlite3.Connection,
+            beginCallback: typing.Callable[[sqlite3.Cursor], None],
+            endCallback: typing.Callable[[sqlite3.Cursor], None],
+            rollbackCallback: typing.Callable[[sqlite3.Cursor], None]
             ) -> None:
-        self._cursor = cursor
+        self._connection = connection
+        self._beginCallback = beginCallback
+        self._endCallback = endCallback
+        self._rollbackCallback = rollbackCallback
 
-    def cursor(self) -> sqlite3.Cursor:
-        return self._cursor
+    def connection(self) -> sqlite3.Connection:
+        return self._connection
 
     def begin(self) -> 'Transaction':
-        self._cursor.execute('BEGIN;')
+        if not self._beginCallback:
+            raise RuntimeError('Invalid state to begin transaction')
+
+        try:
+            self._beginCallback(self._connection)
+            # Clear begin callback to indicate transaction has begun. This catches
+            # logic errors and is used as an indicator of if the destructor should
+            # teardown a transaction that is in progress
+            self._beginCallback = None
+        except:
+            self._teardown()
+            raise
+
         return self
 
     def end(self) -> None:
-        self._cursor.execute('END;')
+        if not self._endCallback:
+            raise RuntimeError('Invalid state to end transaction')
+
+        try:
+            self._endCallback(self._connection)
+        finally:
+            self._teardown()
 
     def rollback(self) -> None:
-        self._cursor.execute('ROLLBACK;')
+        if not self._rollbackCallback:
+            raise RuntimeError('Invalid state to roll back transaction')
+
+        try:
+            self._rollbackCallback(self._connection)
+        finally:
+            self._teardown()
 
     def __enter__(self) -> 'Transaction':
         return self.begin()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if exc_type is None:
             self.end()
         else:
             self.rollback()
 
+    def __del__(self) -> None:
+        if not self._beginCallback and self._endCallback:
+            # A transaction is in progress so roll it back
+            self.rollback()
+
+    def _teardown(self) -> None:
+        self._endCallback = None
+        self._beginCallback = None
+        self._rollbackCallback = None
+        self._connection = None
+
+class ChangeCallbackToken():
+    def __init__(
+            self,
+            handle: typing.Any,
+            detachCallback: typing.Callable[[typing.Any], None]
+            ):
+        self._handle = handle
+        self._detachCallback = detachCallback
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.detach()
+
+    def __del__(self) -> None:
+        self.detach()
+
+    def detach(self) -> None:
+        try:
+            if self._detachCallback:
+                self._detachCallback(self._handle)
+        finally:
+            self._handle = None
+            self._detachCallback = None
+
 class ObjectDbManager(object):
+    class SchemaType(enum.Enum):
+        Table = 'table'
+        Trigger = 'trigger'
+
     class UnsupportedDatabaseVersion(RuntimeError):
         pass
 
@@ -249,17 +323,48 @@ class ObjectDbManager(object):
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
         """
-    _SchemasTableName = 'objectdb_table_schemas'
+    _SchemasTableName = 'objectdb_schemas'
     _EntitiesTableName = 'objectdb_entities'
     _EntitiesTableSchema = 1
     _ListsTableName = 'objectdb_lists'
     _ListsTableSchema = 1
+    _ChangeLogTableName = 'objectdb_change_log'
+    _ChangeLogTableSchema = 1
+    _EntityTriggerSchemaVersion = 1
 
     _instance = None # Singleton instance
-    _lock = threading.Lock()
-    _connection = None
+    _lock = threading.RLock() # Reentrant lock
+    _databasePath = None
     _tableObjectDefMap: typing.Dict[str, ObjectDef] = {}
     _classObjectDefMap: typing.Dict[typing.Type[DatabaseObject], ObjectDef] = {}
+    _changeTypeCallbackMap: typing.Dict[
+        typing.Tuple[
+            typing.Optional[ObjectDbOperation],
+            typing.Optional[typing.Union[
+                str, # Entity id
+                typing.Type[DatabaseEntity] # Entity type
+                ]]
+        ],
+        typing.Dict[
+            str, # Callback handle
+            typing.Callable[ # Notification callback
+                [
+                    ObjectDbOperation,
+                    str, # Entity id
+                    typing.Type[DatabaseEntity] # Entity type
+                ],
+                None]]
+        ] = {}
+    _handleChangeTypeMap: typing.Dict[
+        str, # Callback handle
+        typing.Tuple[
+            typing.Optional[ObjectDbOperation],
+            typing.Optional[typing.Union[
+                str, # Entity id
+                typing.Type[DatabaseEntity]] # Entity type
+        ]]] = {}
+    _connectionPool: typing.List[sqlite3.Connection] = []
+    _maxConnectionPoolSize = 10
 
     def __init__(self) -> None:
         raise RuntimeError('Call instance() instead')
@@ -274,6 +379,9 @@ class ObjectDbManager(object):
                     cls._instance = cls.__new__(cls)
         return cls._instance
 
+    def __del__(self) -> None:
+        self._clearConnectionPool()
+
     def initialise(
             self,
             databasePath: str
@@ -281,14 +389,6 @@ class ObjectDbManager(object):
         logging.info(f'ObjectDbManager connecting to {databasePath}')
 
         with ObjectDbManager._lock:
-            if self._connection:
-                raise RuntimeError('ObjectDbManager singleton has already been initialised')
-
-            self._connection = sqlite3.connect(databasePath)
-            self._connection.executescript(ObjectDbManager._PragmaScript)
-            # Uncomment this to have sqlite print the SQL that it executes
-            #self._connection.set_trace_callback(print)
-
             classTypes: typing.Iterable[typing.Type[DatabaseObject]] = common.getSubclasses(
                 classType=DatabaseObject,
                 topLevelOnly=True)
@@ -322,8 +422,16 @@ class ObjectDbManager(object):
                 tableObjectDefs[objectDef.tableName()] = objectDef
                 classObjectDefs[classType] = objectDef
 
-            with self.createTransaction() as transaction:
-                cursor = transaction.cursor()
+            # Clear the connection pool as any cached connections may be for a different db
+            self._clearConnectionPool()
+
+            connection = None
+            cursor = None
+            try:
+                connection = self._createConnection(databasePath)
+
+                cursor = connection.cursor()
+                cursor.execute('BEGIN;')
 
                 # Create schema table
                 if not self._checkIfTableExists(
@@ -331,9 +439,11 @@ class ObjectDbManager(object):
                     cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
-                            table_name TEXT PRIMARY KEY NOT NULL,
-                            schema INTEGER
-                        );
+                            name TEXT NOT NULL,
+                            type TEXT NOT NULL,
+                            version INTEGER,
+                            PRIMARY KEY (name, type)
+                        ) WITHOUT ROWID;
                         """.format(table=ObjectDbManager._SchemasTableName)
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._SchemasTableName}\' table')
                     cursor.execute(sql)
@@ -353,9 +463,10 @@ class ObjectDbManager(object):
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._EntitiesTableName}\' table')
                     cursor.execute(sql)
 
-                    self._writeSchema(
-                        table=ObjectDbManager._EntitiesTableName,
-                        schema=ObjectDbManager._EntitiesTableSchema,
+                    self._writeSchemaVersion(
+                        name=ObjectDbManager._EntitiesTableName,
+                        type=ObjectDbManager.SchemaType.Table,
+                        version=ObjectDbManager._EntitiesTableSchema,
                         cursor=cursor)
 
                     # Create schema table indexes for id and parent columns. The id
@@ -393,9 +504,10 @@ class ObjectDbManager(object):
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._ListsTableName}\' table')
                     cursor.execute(sql)
 
-                    self._writeSchema(
-                        table=ObjectDbManager._ListsTableName,
-                        schema=ObjectDbManager._ListsTableSchema,
+                    self._writeSchemaVersion(
+                        name=ObjectDbManager._ListsTableName,
+                        type=ObjectDbManager.SchemaType.Table,
+                        version=ObjectDbManager._ListsTableSchema,
                         cursor=cursor)
 
                     # Create schema table indexes for id columns
@@ -405,8 +517,29 @@ class ObjectDbManager(object):
                         unique=False,
                         cursor=cursor)
 
+                # Create change log table
+                if not self._checkIfTableExists(
+                    tableName=ObjectDbManager._ChangeLogTableName,
+                    cursor=cursor):
+                    sql = """
+                        CREATE TABLE IF NOT EXISTS {table} (
+                            operation TEXT NOT NULL,
+                            entity TEXT NOT NULL,
+                            table_name TEXT NOT NULL
+                        );
+                        """.format(
+                        table=ObjectDbManager._ChangeLogTableName)
+                    logging.info(f'ObjectDbManager creating \'{ObjectDbManager._ChangeLogTableName}\' table')
+                    cursor.execute(sql)
+
+                    self._writeSchemaVersion(
+                        name=ObjectDbManager._ChangeLogTableName,
+                        type=ObjectDbManager.SchemaType.Table,
+                        version=ObjectDbManager._ChangeLogTableSchema,
+                        cursor=cursor)
+
                 # Check there are no tables with schemas newer than this version supports
-                tableSchemas = self._readSchemas(cursor=cursor)
+                tableSchemas = self._readTableSchemaVersions(cursor=cursor)
                 supportedSchemas = {
                     ObjectDbManager._EntitiesTableName: ObjectDbManager._EntitiesTableSchema,
                     ObjectDbManager._ListsTableName: ObjectDbManager._ListsTableSchema}
@@ -425,11 +558,42 @@ class ObjectDbManager(object):
                             objectDef=objectDef,
                             cursor=cursor)
 
+                # Create insert, update & delete triggers on entities table
+                self._createEntityTrigger(
+                    operation=ObjectDbOperation.Insert,
+                    cursor=cursor)
+                self._createEntityTrigger(
+                    operation=ObjectDbOperation.Update,
+                    cursor=cursor)
+                self._createEntityTrigger(
+                    operation=ObjectDbOperation.Delete,
+                    cursor=cursor)
+
+                cursor.execute('END;')
+            except:
+                if cursor:
+                    try:
+                        cursor.execute('ROLLBACK;')
+                    except:
+                        pass
+                if connection:
+                    connection.close()
+                raise
+
+            self._poolReusableConnection(connection=connection)
+
+            self._databasePath = databasePath
             self._tableObjectDefMap.update(tableObjectDefs)
             self._classObjectDefMap.update(classObjectDefs)
 
     def createTransaction(self) -> Transaction:
-        return Transaction(cursor=self._connection.cursor())
+        connection = self._createConnection(
+            databasePath=self._databasePath)
+        return Transaction(
+            connection=connection,
+            beginCallback=self._handleBeginTransaction,
+            endCallback=self._handleEndTransaction,
+            rollbackCallback=self._handleRollbackTransaction)
 
     def createObject(
             self,
@@ -444,16 +608,17 @@ class ObjectDbManager(object):
             raise ValueError('Object to be created can\'t have a parent')
 
         logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
-        with ObjectDbManager._lock:
-            if transaction != None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._createEntity(
+                entity=object,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
                 self._createEntity(
                     entity=object,
-                    cursor=transaction.cursor())
-            else:
-                with self.createTransaction() as transaction:
-                    self._createEntity(
-                        entity=object,
-                        cursor=transaction.cursor())
+                    cursor=connection.cursor())
 
     def readObject(
             self,
@@ -461,18 +626,19 @@ class ObjectDbManager(object):
             transaction: typing.Optional[Transaction] = None
             ) -> DatabaseObject:
         logging.debug(f'ObjectDbManager reading object {id}')
-        with ObjectDbManager._lock:
-            if transaction != None:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._readEntity(
+                id=id,
+                cursor=connection.cursor())
+        else:
+            # Use a transaction for the read to ensure a consistent
+            # view of the database across multiple selects
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
                 return self._readEntity(
                     id=id,
-                    cursor=transaction.cursor())
-            else:
-                # Use a transaction for the read to ensure a consistent
-                # view of the database across multiple selects
-                with self.createTransaction() as transaction:
-                    return self._readEntity(
-                        id=id,
-                        cursor=transaction.cursor())
+                    cursor=connection.cursor())
 
     def readObjects(
             self,
@@ -480,18 +646,19 @@ class ObjectDbManager(object):
             transaction: typing.Optional[Transaction] = None
             ) -> typing.Iterable[DatabaseObject]:
         logging.debug(f'ObjectDbManager reading objects of type {classType}')
-        with ObjectDbManager._lock:
-            if transaction != None:
+        if transaction != None:
+            connection = transaction.connection()
+            return self._readEntities(
+                classType=classType,
+                cursor=connection.cursor())
+        else:
+            # Use a transaction for the read to ensure a consistent
+            # view of the database across multiple selects
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
                 return self._readEntities(
                     classType=classType,
-                    cursor=transaction.cursor())
-            else:
-                # Use a transaction for the read to ensure a consistent
-                # view of the database across multiple selects
-                with self.createTransaction() as transaction:
-                    return self._readEntities(
-                        classType=classType,
-                        cursor=transaction.cursor())
+                    cursor=connection.cursor())
 
     def updateObject(
             self,
@@ -499,16 +666,17 @@ class ObjectDbManager(object):
             transaction: typing.Optional[Transaction] = None
             ) -> None:
         logging.debug(f'ObjectDbManager updating object {object.id()} of type {type(object)}')
-        with ObjectDbManager._lock:
-            if transaction != None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._updateEntity(
+                entity=object,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
                 self._updateEntity(
                     entity=object,
-                    cursor=transaction.cursor())
-            else:
-                with self.createTransaction() as transaction:
-                    self._updateEntity(
-                        entity=object,
-                        cursor=transaction.cursor())
+                    cursor=connection.cursor())
 
     def deleteObject(
             self,
@@ -516,16 +684,86 @@ class ObjectDbManager(object):
             transaction: typing.Optional[Transaction] = None
             ) -> None:
         logging.debug(f'ObjectDbManager deleting object {id}')
-        with ObjectDbManager._lock:
-            if transaction != None:
+        if transaction != None:
+            connection = transaction.connection()
+            self._deleteEntity(
+                id=id,
+                cursor=connection.cursor())
+        else:
+            with self.createTransaction() as transaction:
+                connection = transaction.connection()
                 self._deleteEntity(
                     id=id,
-                    cursor=transaction.cursor())
-            else:
-                with self.createTransaction() as transaction:
-                    self._deleteEntity(
-                        id=id,
-                        cursor=transaction.cursor())
+                    cursor=connection.cursor())
+
+    def connectChangeCallback(
+            self,
+            callback: typing.Callable[
+                [
+                    ObjectDbOperation,
+                    str, # Entity id
+                    typing.Type[DatabaseEntity] # Entity type
+                ],
+                None],
+            operation: typing.Optional[ObjectDbOperation] = None,
+            key: typing.Optional[typing.Union[
+                    str, # Entity id
+                    typing.Type[DatabaseEntity] # Type of entity
+                ]] = None,
+            ) -> ChangeCallbackToken:
+        handle = str(uuid.uuid4())
+        changeType = (operation, key)
+
+        with ObjectDbManager._lock:
+            callbackMap = self._changeTypeCallbackMap.get(changeType)
+            if not callbackMap:
+                callbackMap = {}
+                self._changeTypeCallbackMap[changeType] = callbackMap
+            callbackMap[handle] = callback
+
+            self._handleChangeTypeMap[handle] = changeType
+
+        return ChangeCallbackToken(
+            handle=handle,
+            detachCallback=self._handleDisconnectChangeCallback)
+
+    def _createConnection(
+            self,
+            databasePath: str
+            ) -> sqlite3.Connection:
+        with ObjectDbManager._lock:
+            if self._connectionPool:
+                logging.debug(f'ObjectDbManager reusing cached connection')
+                return self._connectionPool.pop()
+
+        logging.debug(f'ObjectDbManager creating new connection to {databasePath}')
+        connection = sqlite3.connect(databasePath)
+        connection.executescript(ObjectDbManager._PragmaScript)
+        # Uncomment this to have sqlite print the SQL that it executes
+        #connection.set_trace_callback(print)
+        return connection
+
+    def _poolReusableConnection(
+            self,
+            connection: sqlite3.Connection
+            ) -> None:
+        with ObjectDbManager._lock:
+            if len(self._connectionPool) < self._maxConnectionPoolSize:
+                self._connectionPool.append(connection)
+                return
+
+        connection.close()
+
+    def _clearConnectionPool(self) -> None:
+        with ObjectDbManager._lock:
+            for connection in self._connectionPool:
+                try:
+                    connection.close()
+                except Exception as ex:
+                    logging.error(
+                        'ObjectDbManager failed to close connection when clearing pool', exc_info=ex)
+                    continue
+            self._connectionPool.clear()
 
     def _checkIfTableExists(
             self,
@@ -536,41 +774,72 @@ class ObjectDbManager(object):
         cursor.execute(sql, {'table': tableName})
         return cursor.fetchone() != None
 
-    def _readSchemas(
+    def _checkIfTriggerExists(
+            self,
+            triggerName: str,
+            cursor: sqlite3.Cursor
+            ) -> bool:
+        sql = 'SELECT name  FROM sqlite_master  WHERE type = "trigger" AND name = :trigger;'
+        cursor.execute(sql, {'trigger': triggerName})
+        return cursor.fetchone() != None
+
+    def _readSchemaVersion(
+            self,
+            name: str,
+            type: 'ObjectDbManager.SchemaType',
+            cursor: sqlite3.Cursor
+            ) -> typing.Optional[int]:
+        sql = """
+            SELECT version
+            FROM {table}
+            WHERE name = :name AND type = :type
+            LIMIT 1;
+            """.format(
+            table=ObjectDbManager._SchemasTableName)
+        cursor.execute(sql, {'name': name, 'type': type.value})
+        row = cursor.fetchone()
+        return int(row[0]) if row != None else None
+
+    def _writeSchemaVersion(
+            self,
+            name: str,
+            type: 'ObjectDbManager.SchemaType',
+            version: int,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        sql = """
+            INSERT INTO {table} (name, type, version)
+            VALUES (:name, :type, :version)
+            ON CONFLICT(name, type) DO UPDATE SET
+                version = excluded.version;
+            """.format(table=ObjectDbManager._SchemasTableName)
+        logging.info(f'ObjectDbManager setting schema for {type.value} \'{name}\' to {version}')
+        rowData = {
+            'name': name,
+            'type': type.value,
+            'version': version}
+        cursor.execute(sql, rowData)
+
+    def _readTableSchemaVersions(
             self,
             cursor: sqlite3.Cursor
             ) -> typing.Mapping[str, int]:
         sql = """
-            SELECT table_name, schema
-            FROM {table};
+            SELECT name, version
+            FROM {table}
+            WHERE type = "{type}";
             """.format(
-            table=ObjectDbManager._SchemasTableName)
+            table=ObjectDbManager._SchemasTableName,
+            type=ObjectDbManager.SchemaType.Table.value)
         cursor.execute(sql)
-        schemas = {}
+
+        schemaVersions = {}
         for row in cursor.fetchall():
             tableName = row[0]
-            schema = int(row[1])
-            schemas[tableName] = schema
+            schemaVersion = int(row[1])
+            schemaVersions[tableName] = schemaVersion
 
-        return schemas
-
-    def _writeSchema(
-            self,
-            table: str,
-            schema: int,
-            cursor: sqlite3.Cursor
-            ) -> None:
-        sql = """
-            INSERT INTO {table} (table_name, schema)
-            VALUES (:table_name, :schema)
-            ON CONFLICT(table_name) DO UPDATE SET
-                schema = excluded.schema;
-            """.format(table=ObjectDbManager._SchemasTableName)
-        logging.info(f'ObjectDbManager setting table schema for \'{table}\' to {schema}')
-        rowData = {
-            'table_name': table,
-            'schema': str(schema)}
-        cursor.execute(sql, rowData)
+        return schemaVersions
 
     def _createColumnIndex(
             self,
@@ -585,6 +854,52 @@ class ObjectDbManager(object):
                 sql = f'CREATE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
             logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
             cursor.execute(sql)
+
+    def _createEntityTrigger(
+            self,
+            operation: ObjectDbOperation,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        triggerName = '{operation}_entity_trigger'.format(
+            operation=operation.value.lower())
+
+        if self._checkIfTriggerExists(triggerName=triggerName, cursor=cursor):
+            schemaVersion = self._readSchemaVersion(
+                name=triggerName,
+                type=ObjectDbManager.SchemaType.Trigger,
+                cursor=cursor)
+            if schemaVersion == ObjectDbManager._EntityTriggerSchemaVersion:
+                return # Correct version trigger already exists so nothing to do
+
+            # Delete the old trigger and create the new one
+            sql = 'DROP TRIGGER {triggerName};'.format(triggerName=triggerName)
+            if schemaVersion == None:
+                logging.info(f'ObjectDbManager deleting \'{triggerName}\' trigger with unknown version')
+            else:
+                logging.info(f'ObjectDbManager deleting version {schemaVersion} \'{triggerName}\' trigger')
+            cursor.execute(sql)
+
+        sql = """
+            CREATE TRIGGER {triggerName}
+            AFTER {operation} ON {entitiesTable}
+            BEGIN
+                INSERT INTO {logTable} (operation, entity, table_name)
+                VALUES ("{operation}", {dataTable}.id, {dataTable}.table_name);
+            END;
+            """.format(
+                triggerName=triggerName,
+                operation=operation.value,
+                entitiesTable=ObjectDbManager._EntitiesTableName,
+                logTable=ObjectDbManager._ChangeLogTableName,
+                dataTable='OLD' if operation == ObjectDbOperation.Delete else 'NEW')
+        logging.info(f'ObjectDbManager creating \'{triggerName}\' trigger')
+        cursor.execute(sql)
+
+        self._writeSchemaVersion(
+            name=triggerName,
+            type=ObjectDbManager.SchemaType.Trigger,
+            version=ObjectDbManager._EntityTriggerSchemaVersion,
+            cursor=cursor)
 
     def _createObjectTable(
             self,
@@ -631,9 +946,10 @@ class ObjectDbManager(object):
         logging.info(f'ObjectDbManager creating \'{objectDef.tableName()}\' table')
         cursor.execute(sql)
 
-        self._writeSchema(
-            table=objectDef.tableName(),
-            schema=objectDef.tableSchema(),
+        self._writeSchemaVersion(
+            name=objectDef.tableName(),
+            type=ObjectDbManager.SchemaType.Table,
+            version=objectDef.tableSchema(),
             cursor=cursor)
 
         # Create schema table indexes for id columns. This is needed as.
@@ -1295,3 +1611,162 @@ class ObjectDbManager(object):
             WHERE id = :id;
             """.format(table=ObjectDbManager._EntitiesTableName)
         cursor.execute(deleteEntitySql, {'id': deleteId})
+
+    def _handleBeginTransaction(
+            self,
+            connection: sqlite3.Connection
+            ) -> None:
+        cursor = connection.cursor()
+        try:
+            cursor.execute('BEGIN;')
+
+            # Clear out change table so it can capture changes made during the
+            # transaction. This needs to be done, even though it gets cleared
+            # out at the end of the transacting, in case an operation external
+            # to the system has left entries lying around (e.g. from a manual
+            # edit with the db browser)
+            sql = """
+                DELETE FROM {table};
+                """.format(
+                    table=self._ChangeLogTableName)
+            cursor.execute(sql)
+        except:
+            connection.close()
+            raise
+
+    def _handleEndTransaction(
+            self,
+            connection: sqlite3.Connection
+            ) -> None:
+        cursor = connection.cursor()
+        try:
+            # Read changes
+            sql = """
+                SELECT operation, entity, table_name FROM {table};
+                """.format(
+                    table=self._ChangeLogTableName)
+            cursor.execute(sql)
+            changes: typing.List[typing.Tuple[ObjectDbOperation, str, typing.Type[DatabaseEntity]]] = []
+            results = cursor.fetchall()
+            for changeData in results:
+                operation, entity, tableName = changeData
+                operation = common.enumFromValue(
+                    enumType=ObjectDbOperation,
+                    value=operation)
+                if not operation:
+                    logging.warning(
+                        f'ObjectDbManager ignoring change {changeData} as operation type is unknown')
+                    continue
+
+                if tableName == ObjectDbManager._ListsTableName:
+                    entityType = DatabaseList
+                elif tableName in self._tableObjectDefMap:
+                    objectDef = self._tableObjectDefMap[tableName]
+                    entityType = objectDef.classType()
+                else:
+                    logging.warning(
+                        f'ObjectDbManager ignoring change {changeData} as table is unknown')
+                    continue
+
+                changes.append((operation, entity, entityType))
+
+            # Clear changes
+            sql = """
+                DELETE FROM {table};
+                """.format(
+                    table=self._ChangeLogTableName)
+            cursor.execute(sql)
+
+            # End the transaction
+            cursor.execute('END;')
+        except:
+            try:
+                # Not sure if an explicit rollback is actually needed
+                # when an uncommitted transaction has failed but but
+                # give it a shot just in case
+                cursor.execute('ROLLBACK;')
+            except Exception as ex:
+                logging.debug(
+                    f'ObjectDbManager failed to roll back failed transaction', exc_info=ex)
+            connection.close()
+            raise
+
+        # Only reuse the connection if the transaction completed
+        # successfully
+        self._poolReusableConnection(connection=connection)
+
+        # Determine which notification callbacks need to be made. The
+        # calls aren't actually made here as we want to release the
+        # lock while making them but determining which calls to make
+        # must be done with the lock held
+        callsToMake = []
+        with ObjectDbManager._lock:
+            for changeData in changes:
+                operation, entity, entityType = changeData
+                callbackList = None
+
+                for callbackType in self._changeTypeCallbackMap.keys():
+                    registeredOperation, registeredKey = callbackType
+                    matched = True
+                    if registeredOperation != None and registeredKey != None:
+                        matched = (operation == registeredOperation) and \
+                            ((entity == registeredKey) or (entityType == registeredKey))
+                    elif registeredOperation != None:
+                        matched = operation == registeredOperation
+                    elif registeredKey != None:
+                        matched = (entity == registeredKey) or (entityType == registeredKey)
+
+                    if matched:
+                        callbackMap = self._changeTypeCallbackMap[callbackType]
+
+                        if not callbackList:
+                            callbackList = []
+                        callbackList.extend(callbackMap.values())
+
+                if callbackList:
+                    callsToMake.append((changeData, callbackList))
+
+        # Call change callbacks. This MUST be done after END has been executed
+        # as observers may make new transactions when notified
+        if callsToMake:
+            for changeData, callbackList in callsToMake:
+                operation, entity, entityType = changeData
+                for callback in callbackList:
+                    try:
+                        callback(operation, entity, entityType)
+                    except Exception as ex:
+                        logging.error(
+                            'ObjectDbManager caught exception thrown by change callback', exc_info=ex)
+                        continue
+
+    def _handleRollbackTransaction(
+            self,
+            connection: sqlite3.Connection
+            ) -> None:
+        cursor = connection.cursor()
+        try:
+            cursor.execute('ROLLBACK;')
+        finally:
+            # Never add connections back to the pool if they've been
+            # rolled back as we can't be sure what state they're in.
+            # I suspect it's ok if the rollback completes successful
+            # but it's better to be safe than have some horrible bug
+            connection.close()
+
+    def _handleDisconnectChangeCallback(
+            self,
+            handle: str
+            ) -> None:
+        with ObjectDbManager._lock:
+            changeType = self._handleChangeTypeMap.get(handle)
+            if not changeType:
+                raise ValueError(f'Unknown change handle {handle}')
+            del self._handleChangeTypeMap[handle]
+
+            callbackMap = self._changeTypeCallbackMap.get(changeType)
+            if handle not in callbackMap:
+                raise RuntimeError(f'Change handle {handle} was not in the callback map')
+            del callbackMap[handle]
+
+            if not callbackMap:
+                del self._changeTypeCallbackMap[changeType]

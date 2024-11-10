@@ -44,6 +44,15 @@ def enumToIndex(value: enum.Enum) -> int:
     valueList = list(type(value))
     return valueList.index(value)
 
+def enumFromValue(
+        enumType: typing.Type[enum.Enum],
+        value: typing.Any
+        ) -> enum.Enum:
+    try:
+        return enumType(value)
+    except ValueError:
+        return None
+
 def incrementEnum(
         value: enum.Enum,
         count: int
