@@ -26,7 +26,8 @@ _Requirements = [
     'qasync',
     'xmlschema',
     'cairosvg',
-    'numpy']
+    'numpy',
+    'packaging']
 _RequirementsFile = 'requirements.txt'
 _CairoModuleName = 'cairosvg'
 
