@@ -1,8 +1,158 @@
+import app
 import common
 import diceroller
 import gui
+import math
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
+
+class _SnakeEyesWidget(QtWidgets.QWidget):
+    _DisplayText = 'Snake Eyes!'
+    _TextOutlineWidth = 1.5
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget]):
+        super().__init__(parent)
+        self._textSize = QtCore.QSize()
+        self._handleResize()
+
+    def paintEvent(self, event):
+        textAngle = math.degrees(self._calculateTextAngle())
+
+        font = self.font()
+
+        path = QtGui.QPainterPath()
+        path.addText(0, 0, font, _SnakeEyesWidget._DisplayText)
+
+        interfaceScale = app.Config.instance().interfaceScale()
+
+        pen = QtGui.QPen()
+        pen.setWidthF(_SnakeEyesWidget._TextOutlineWidth * interfaceScale)
+        pen.setColor(QtCore.Qt.black)
+
+        brush = QtGui.QBrush()
+        brush.setStyle(QtCore.Qt.BrushStyle.SolidPattern)
+        brush.setColor(QtCore.Qt.red)
+
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.translate(
+            self.width() / 2,
+            self.height() / 2)
+        painter.rotate(textAngle)
+        painter.translate(
+            -self._textSize.width() / 2,
+            self._textSize.height() / 4)
+        painter.drawPath(path)
+        painter.end()
+
+    def resizeEvent(self, event: typing.Optional[QtGui.QResizeEvent]) -> None:
+        super().resizeEvent(event)
+        self._handleResize()
+
+    def _handleResize(self) -> None:
+        textAngle = self._calculateTextAngle()
+
+        availableRect = self._calculateUsableRect()
+
+        # Calculate the OBB for the required text at an arbitrary font size
+        # given "infinite" space. The font size is unimportant as long as
+        # it's big enough to render and small enough the size of 65535 is
+        # big enough to render the text without wrapping or cropping
+        font = self.font()
+        font.setPixelSize(10)
+        fontMetrics = QtGui.QFontMetrics(font)
+        textRect = fontMetrics.boundingRect(
+            QtCore.QRect(0, 0, 65535, 65535),
+            QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            _SnakeEyesWidget._DisplayText)
+
+        cosTextAngle = math.cos(textAngle)
+        sinTextAngle = math.sin(textAngle)
+
+        # Calculate the x/y size of the AABB that contains the text OBB once
+        # it's been rotated along with the ratio of how much of the width of the
+        # box comes from the width of the text compared to the height of the
+        # text and how much of the height of the box comes from the height of
+        # the text compared to the width of the text.
+        boxWidthFromTextWidth = abs(cosTextAngle * textRect.width())
+        boxWidthFromTextHeight = abs(sinTextAngle * textRect.height())
+        boxHeightFromTextHeight = abs(cosTextAngle * textRect.height())
+        boxHeightFromTextWidth = abs(sinTextAngle * textRect.width())
+        rotatedTextBounds = QtCore.QSizeF(
+            boxWidthFromTextWidth + boxWidthFromTextHeight,
+            boxHeightFromTextHeight + boxHeightFromTextWidth)
+        textWidthRatio = boxWidthFromTextWidth / rotatedTextBounds.width()
+        textHeightRatio = boxHeightFromTextHeight / rotatedTextBounds.height()
+
+        # Calculate the value required to scale the text AABB so that it best
+        # fits inside the available space while maintaining aspect ratio
+        scale = min(availableRect.width() / rotatedTextBounds.width(),
+                    availableRect.height() / rotatedTextBounds.height())
+
+        # Calculate the size of the scaled text AABB
+        rotatedTextBounds = QtCore.QSizeF(
+            rotatedTextBounds.width() * scale,
+            rotatedTextBounds.height() * scale)
+
+        # Calculate the portions of the scaled text AABB width and height that
+        # can be attributed to the width and height of the text OBB
+        # can be attributed to the width and height of the rotated text
+        # respectively
+        boxWidthFromTextWidth = rotatedTextBounds.width() * textWidthRatio
+        boxHeightFromTextHeight = rotatedTextBounds.height() * textHeightRatio
+
+        # Calculate the width and heigh of the OBB that contains the scaled text
+        scaledTextSize = QtCore.QSizeF(
+            boxWidthFromTextWidth / cosTextAngle,
+            boxHeightFromTextHeight / cosTextAngle)
+
+        # Calculate the font size that will best fill the text rect
+        font = gui.sizeFontToFit(
+            orig=self.font(),
+            text=_SnakeEyesWidget._DisplayText,
+            rect=QtCore.QRect(
+                0,
+                0,
+                math.floor(scaledTextSize.width()),
+                math.floor(scaledTextSize.height())),
+            align=QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter)
+        if font != None:
+            self.setFont(font)
+
+        # Get the size of the text when rendered with the selected font size
+        fontMetrics = QtGui.QFontMetrics(self.font())
+        textRect = fontMetrics.boundingRect(
+            textRect,
+            QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            _SnakeEyesWidget._DisplayText)
+        self._textSize = textRect.size()
+
+    def _calculateTextAngle(self) -> float:
+        width = self.width()
+        if width == 0:
+            return 0
+        height = self.height()
+        return -math.atan(height / width)
+
+    def _calculateUsableRect(self) -> QtCore.QRect:
+        width = self.width()
+        height = self.height()
+        horzPadding = int(width * 0.1)
+        vertPadding = int(height * 0.1)
+        horzPadding = vertPadding = 0
+        return QtCore.QRect(
+            horzPadding,
+            vertPadding,
+            width - (horzPadding * 2),
+            height - (vertPadding * 2))
+
+    @staticmethod
+    def _normaliseSize(size: typing.Union[QtCore.QSizeF, QtCore.QSize]) -> QtCore.QSizeF:
+        length = math.sqrt((size.width() * size.width()) + (size.height() * size.height()))
+        # TODO: Handle potential divide by 0
+        return QtCore.QSizeF(size.width() / length, size.height() / length)
 
 class DiceRollResultsWidget(QtWidgets.QWidget):
     animationComplete = QtCore.pyqtSignal()
@@ -21,6 +171,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
+        self._results = None
         self._animations: typing.List[gui.DieAnimationWidget] = []
         self._pendingAnimationCount = 0
         self._labelsWidget = QtWidgets.QLabel(self)
@@ -29,6 +180,8 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         self._valuesWidget = QtWidgets.QLabel(self)
         self._valuesWidget.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
         self._valuesWidget.hide()
+        self._snakeEyesWidget = _SnakeEyesWidget(self)
+        self._snakeEyesWidget.hide()
 
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.MinimumExpanding,
@@ -39,6 +192,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             results: typing.Optional[diceroller.DiceRollResult],
             animate: bool = True
             ) -> None:
+        self._results = results
         if results != None:
             for animation in self._animations:
                 animation.cancelSpin()
@@ -54,6 +208,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             while len(self._animations) < dieCount:
                 self._animations.append(self._createAnimation())
 
+            # TODO: Why is this needed when it's called at the end of the function?
             self._layoutWidget()
 
             animationConfig: typing.List[typing.Tuple[
@@ -93,49 +248,53 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                         result=roll,
                         strike=ignored)
 
-            # All the animations have completed
-            # NOTE: The odd way strings are formatted (with ': ' being part
-            # of the value) is down to an issue I was seeing where something
-            # in the Qt text rendering strips white space immediately before
-            # a \n. This is a problem because it's needed as spacing between
-            # the colon and the value. To work around this I've moved the
-            # ': ' to the start of the value.
-            labelsText = 'Rolled'
-            valuesText = common.formatNumber(
-                number=results.rolledTotal(),
-                prefix=': ')
+            labelsText = ''
+            valuesText = ''
+            resultType = results.resultType()
+            # Don't display any results text if the result is snake eyes as
+            # it's all meaningless
+            if resultType != diceroller.DiceRollResultType.SnakeEyesFailure:
+                # NOTE: The odd way strings are formatted (with ': ' being part
+                # of the value) is down to an issue I was seeing where something
+                # in the Qt text rendering strips white space immediately before
+                # a \n. This is a problem because it's needed as spacing between
+                # the colon and the value. To work around this I've moved the
+                # ': ' to the start of the value.
+                labelsText = 'Rolled'
+                valuesText = common.formatNumber(
+                    number=results.rolledTotal(),
+                    prefix=': ')
 
-            if fluxRolls:
-                labelsText += '\nFlux'
+                if fluxRolls:
+                    labelsText += '\nFlux'
+                    valuesText += common.formatNumber(
+                        number=results.fluxTotal(),
+                        alwaysIncludeSign=True,
+                        prefix='\n: ')
+
+                if results.modifierCount() > 0:
+                    labelsText += '\nModifiers'
+                    valuesText += common.formatNumber(
+                        number=results.modifiersTotal(),
+                        alwaysIncludeSign=True,
+                        prefix='\n: ')
+
+                labelsText += '\nTotal'
                 valuesText += common.formatNumber(
-                    number=results.fluxTotal(),
-                    alwaysIncludeSign=True,
+                    number=results.total(),
                     prefix='\n: ')
 
-            if results.modifierCount() > 0:
-                labelsText += '\nModifiers'
-                valuesText += common.formatNumber(
-                    number=results.modifiersTotal(),
-                    alwaysIncludeSign=True,
-                    prefix='\n: ')
-
-            labelsText += '\nTotal'
-            valuesText += common.formatNumber(
-                number=results.total(),
-                prefix='\n: ')
-
-            effectType = results.effectType()
-            if effectType != None:
-                labelsText += '\nEffect'
-                valuesText += '\n: {effectValue} ({effectType})'.format(
-                    effectValue=common.formatNumber(
-                        number=results.effectValue(),
-                        alwaysIncludeSign=True),
-                    effectType=effectType.value)
-            elif results.hasTarget():
-                labelsText += '\nTarget'
-                valuesText += '\n: {result}'.format(
-                    result='Pass' if results.isSuccess() else 'Fail')
+                if resultType != None:
+                    labelsText += '\nEffect'
+                    valuesText += '\n: {effectValue} ({effectType})'.format(
+                        effectValue=common.formatNumber(
+                            number=results.effectValue(),
+                            alwaysIncludeSign=True),
+                        effectType=resultType.value)
+                elif results.hasTarget():
+                    labelsText += '\nTarget'
+                    valuesText += '\n: {result}'.format(
+                        result='Pass' if results.isSuccess() else 'Fail')
 
             self._labelsWidget.setText(labelsText)
             self._valuesWidget.setText(valuesText)
@@ -143,9 +302,12 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             if animate:
                 self._labelsWidget.hide()
                 self._valuesWidget.hide()
+                self._snakeEyesWidget.hide()
             else:
                 self._labelsWidget.show()
                 self._valuesWidget.show()
+                if results.isSnakeEyes():
+                    self._snakeEyesWidget.show()
         else:
             for animation in self._animations:
                 self._deleteAnimation(widget=animation)
@@ -154,6 +316,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             self._valuesWidget.setText('')
             self._labelsWidget.hide()
             self._valuesWidget.hide()
+            self._snakeEyesWidget.hide()
 
         self._layoutWidget()
 
@@ -177,6 +340,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         widget = gui.DieAnimationWidget(self)
         widget.setSpinDuration(durationMs=DiceRollResultsWidget._RollDurationMs)
         widget.setFadeDuration(durationMs=DiceRollResultsWidget._FadeDurationMs)
+        widget.stackUnder(self._snakeEyesWidget)
         widget.animationComplete.connect(self._animationComplete)
         return widget
 
@@ -197,6 +361,12 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         usedHeight = self._updateDiceLayout(
             availableWidth=availableWidth,
             availableHeight=availableHeight * (DiceRollResultsWidget._DiceDisplayPercent / 100),
+            offsetX=0,
+            offsetY=0)
+
+        self._updateSnakeEyesLayout(
+            availableWidth=availableWidth,
+            availableHeight=usedHeight, # Should overlay dice layout
             offsetX=0,
             offsetY=0)
 
@@ -250,14 +420,29 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
         return usedHeight
 
+    def _updateSnakeEyesLayout(
+            self,
+            availableWidth: int,
+            availableHeight: int,
+            offsetX: int,
+            offsetY: int
+            ) -> None:
+        self._snakeEyesWidget.move(offsetX, offsetY)
+        self._snakeEyesWidget.resize(availableWidth, availableHeight)
+
     def _updateTextLayout(
             self,
             availableWidth: int,
             availableHeight: int,
             offsetX: int,
             offsetY: int
-            ) -> int:
-        fontMetrics = QtGui.QFontMetrics(self.font())
+            ) -> None:
+        if availableWidth == 0 or availableHeight == 0:
+            return
+
+        defaultFont = self.font()
+
+        fontMetrics = QtGui.QFontMetrics(defaultFont)
         testLabelRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
             self._labelsWidget.alignment(),
@@ -276,7 +461,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         labelAvailableRect = QtCore.QRect(
             0, 0, int(availableWidth * labelScale), availableHeight)
         labelFont = gui.sizeFontToFit(
-            orig=self.font(),
+            orig=defaultFont,
             text=self._labelsWidget.text(),
             rect=labelAvailableRect,
             align=self._labelsWidget.alignment())
@@ -284,17 +469,16 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         valueAvailableRect = QtCore.QRect(
             0, 0, int(availableWidth * valueScale), availableHeight)
         valueFont = gui.sizeFontToFit(
-            orig=self.font(),
+            orig=defaultFont,
             text=self._valuesWidget.text(),
             rect=valueAvailableRect,
             align=self._valuesWidget.alignment())
 
         if not labelFont or not valueFont:
-            self._labelsWidget.hide()
-            self._valuesWidget.hide()
-            return
-
-        if labelFont.pixelSize() > valueFont.pixelSize():
+            fallbackFont = QtGui.QFont(defaultFont)
+            fallbackFont.setPixelSize(1)
+            labelFont = valueFont = fallbackFont
+        elif labelFont.pixelSize() > valueFont.pixelSize():
             labelFont = valueFont
         else:
             valueFont = labelFont
@@ -315,6 +499,9 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             offsetX + labelRect.width(),
             offsetY)
 
+    # TODO: Should this be renamed _rollComplete?
+    # - If so there are probably other places that it make sense to make
+    # the same change
     def _animationComplete(self) -> None:
         assert(self._pendingAnimationCount > 0)
         self._pendingAnimationCount -= 1
@@ -325,6 +512,9 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         # All the animations have completed
         self._labelsWidget.show()
         self._valuesWidget.show()
+
+        if self._results != None and self._results.isSnakeEyes():
+            self._snakeEyesWidget.show()
 
         self.animationComplete.emit()
 

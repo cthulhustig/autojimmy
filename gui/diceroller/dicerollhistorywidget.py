@@ -11,7 +11,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         Timestamp = 'Timestamp'
         Label = 'Label'
         Total = 'Total'
-        EffectType = 'Effect Type'
+        ResultType = 'Result Type'
         EffectValue = 'Effect Value'
         DieType = 'Die Type'
         RollTotal = 'Roll Total'
@@ -49,7 +49,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         for index, column in enumerate(DiceRollHistoryWidget._ColumnType):
             if column == DiceRollHistoryWidget._ColumnType.Timestamp or \
-                    column == DiceRollHistoryWidget._ColumnType.EffectType:
+                    column == DiceRollHistoryWidget._ColumnType.ResultType:
                 self._historyTable.setColumnWidth(index, 200)
             elif column == DiceRollHistoryWidget._ColumnType.Label:
                 self._historyTable.setColumnWidth(index, 300)
@@ -139,10 +139,10 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 elif columnType == DiceRollHistoryWidget._ColumnType.Total:
                     tableItem = gui.FormattedNumberTableWidgetItem(
                         value=result.total())
-                elif columnType == DiceRollHistoryWidget._ColumnType.EffectType:
-                    effectType = result.effectType()
-                    if effectType != None:
-                        tableItem = gui.TableWidgetItemEx(effectType.value)
+                elif columnType == DiceRollHistoryWidget._ColumnType.ResultType:
+                    resultType = result.resultType()
+                    if resultType != None:
+                        tableItem = gui.TableWidgetItemEx(resultType.value)
                 elif columnType == DiceRollHistoryWidget._ColumnType.EffectValue:
                     effectValue = result.effectValue()
                     if effectValue != None:

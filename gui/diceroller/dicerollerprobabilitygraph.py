@@ -32,7 +32,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         styles = {'color': gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Text))}
         self._graph.setLabel('left', 'Probability (%)', **styles)
-        self._graph.setLabel('bottom', 'Dice Roll', **styles)
+        self._graph.setLabel('bottom', 'Dice Roll + Modifiers', **styles)
 
         # Prevent the mouse from panning/scaling the graph
         self._graph.setMouseEnabled(x=False, y=False)
@@ -110,10 +110,15 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         defaultColour = 'w' if gui.isDarkModeEnabled() else 'k'
         colours = []
-        for roll in xValues:
+        for index, roll in enumerate(xValues):
             colour = defaultColour
+            isSnakeEyes = self._roller.dieCount() > 0 and \
+                self._roller.snakeEyesRule() and \
+                index == 0 # Assumes lowest roll is first probability
             if roll == self._highlightRoll:
                 colour = 'b'
+            elif isSnakeEyes:
+                colour = 'r'
             elif self._roller.hasTarget():
                 isSuccess = common.ComparisonType.compareValues(
                     lhs=roll,

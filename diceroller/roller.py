@@ -138,4 +138,5 @@ def rollDice(
         fluxRolls=fluxRolls,
         modifiers=modifiers,
         targetType=roller.targetType(),
-        targetNumber=roller.targetNumber())
+        targetNumber=roller.targetNumber(),
+        snakeEyesRule=roller.snakeEyesRule())

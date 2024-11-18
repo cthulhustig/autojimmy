@@ -285,6 +285,9 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         targetLayout.addWidget(self._targetNumberSpinBox)
         targetWidget = gui.LayoutWrapperWidget(layout=targetLayout)
 
+        self._snakeEyesRuleCheckBox = gui.CheckBoxEx()
+        self._snakeEyesRuleCheckBox.stateChanged.connect(self._snakeEyesRuleChanged)
+
         self._extraDieRadioWidget = gui.EnumRadioWidget(
             type=common.ExtraDie,
             isOptional=True)
@@ -322,6 +325,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         controlLayout = gui.FormLayoutEx()
         controlLayout.addRow('Dice Roll:', diceRollLayout)
         controlLayout.addRow('Target:', targetWidget)
+        controlLayout.addRow('Snake Eyes Rule:', self._snakeEyesRuleCheckBox)
         controlLayout.addRow('Extra Die:', self._extraDieRadioWidget)
         controlLayout.addRow('Flux:', self._fluxTypeRadioWidget)
         controlLayout.addRow('Modifiers:', modifiersLayout)
@@ -392,6 +396,10 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                 targetNumber if targetNumber != None else 8)
             self._targetNumberSpinBox.setEnabled(
                 self._roller.targetType() != None)
+
+        with gui.SignalBlocker(self._snakeEyesRuleCheckBox):
+            self._snakeEyesRuleCheckBox.setChecked(
+                self._roller.snakeEyesRule())
 
     def _fluxTypeChanged(self) -> None:
         self._roller.setFluxType(
@@ -466,4 +474,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
 
     def _targetNumberChanged(self) -> None:
         self._roller.setTargetNumber(self._targetNumberSpinBox.value())
+        self.configChanged.emit()
+
+    def _snakeEyesRuleChanged(self) -> None:
+        self._roller.setSnakeEyesRule(enabled=self._snakeEyesRuleCheckBox.isChecked())
         self.configChanged.emit()

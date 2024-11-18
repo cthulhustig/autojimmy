@@ -19,7 +19,8 @@ class FluxType(enum.Enum):
 # of the enum is stored in the database for dice roller db objects. I will also
 # need some kind of mapping in dice roller serialisation as the names are also
 # used in serialised data
-class DiceRollEffectType(enum.Enum):
+class DiceRollResultType(enum.Enum):
+    SnakeEyesFailure = 'Snake Eyes'
     ExceptionalFailure = 'Exceptional Failure'
     AverageFailure = 'Average Failure'
     MarginalFailure = 'Marginal Failure'
@@ -138,6 +139,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.DatabaseList]] = None,
             targetType: typing.Optional[common.ComparisonType] = None,
             targetNumber: typing.Optional[int] = None, # Must be supplied if targetType is supplied
+            snakeEyesRule: bool = False,
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None
             ) -> None:
@@ -150,6 +152,7 @@ class DiceRoller(objectdb.DatabaseObject):
         self._fluxType = fluxType
         self._targetType = targetType if targetType != None and targetNumber != None else None
         self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
+        self._snakeEyesRule = snakeEyesRule
 
         self._modifiers = objectdb.DatabaseList(
             parent=self.id(),
@@ -168,7 +171,8 @@ class DiceRoller(objectdb.DatabaseObject):
                 self._fluxType == other._fluxType and \
                 self._modifiers == other._modifiers and \
                 self._targetType == other._targetType and \
-                self._targetNumber == other._targetNumber
+                self._targetNumber == other._targetNumber and \
+                self._snakeEyesRule == other._snakeEyesRule
         return False
 
     def name(self) -> str:
@@ -279,6 +283,15 @@ class DiceRoller(objectdb.DatabaseObject):
         self._targetType = targetType if targetType != None and targetNumber != None else None
         self._targetNumber = targetNumber if targetType != None and targetNumber != None else None
 
+    def snakeEyesRule(self) -> bool:
+        return self._snakeEyesRule
+
+    def setSnakeEyesRule(
+            self,
+            enabled: bool
+            ) -> None:
+        self._snakeEyesRule = enabled
+
     def copyConfig(
             self,
             copyIds: bool = False
@@ -297,7 +310,8 @@ class DiceRoller(objectdb.DatabaseObject):
             fluxType=self._fluxType,
             modifiers=modifiers,
             targetType=self._targetType,
-            targetNumber=self._targetNumber)
+            targetNumber=self._targetNumber,
+            snakeEyesRule=self._snakeEyesRule)
 
     def data(self) -> typing.Mapping[
             str,
@@ -311,7 +325,8 @@ class DiceRoller(objectdb.DatabaseObject):
             'flux_type': self._fluxType.name if self._fluxType != None else None,
             'modifiers': self._modifiers,
             'target_type': self._targetType.name if self._targetType != None else None,
-            'target_number': self._targetNumber}
+            'target_number': self._targetNumber,
+            'snake_eyes_rule': self._snakeEyesRule}
 
     @staticmethod
     def defineObject() -> objectdb.ObjectDef:
@@ -329,6 +344,7 @@ class DiceRoller(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_type', columnType=str, isOptional=True),
                 objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
+                objectdb.ParamDef(columnName='snake_eyes_rule', columnType=bool)
             ])
 
     @staticmethod
@@ -390,6 +406,10 @@ class DiceRoller(objectdb.DatabaseObject):
         if targetNumber != None and not isinstance(targetNumber, int):
             raise ValueError('DiceRoller construction parameter "target_number" is not an int or None')
 
+        snakeEyesRule = data.get('snake_eyes_rule')
+        if not isinstance(snakeEyesRule, bool):
+            raise ValueError('DiceRoller construction parameter "snake_eyes_rule" is not a bool')
+
         return DiceRoller(
             id=id,
             parent=parent,
@@ -401,7 +421,8 @@ class DiceRoller(objectdb.DatabaseObject):
             fluxType=fluxType,
             modifiers=modifiers,
             targetType=targetType,
-            targetNumber=targetNumber)
+            targetNumber=targetNumber,
+            snakeEyesRule=snakeEyesRule)
 
 class DiceRollerGroup(objectdb.DatabaseObject):
     def __init__(
@@ -560,6 +581,7 @@ class DiceRollResult(objectdb.DatabaseObject):
                 objectdb.DatabaseList]] = None,
             targetType: typing.Optional[common.ComparisonType] = None,
             targetNumber: typing.Optional[int] = None,
+            snakeEyesRule: bool = False,
             id: typing.Optional[str] = None,
             parent: typing.Optional[str] = None
             ) -> None:
@@ -573,6 +595,7 @@ class DiceRollResult(objectdb.DatabaseObject):
         self._fluxType = fluxType
         self._targetType = targetType
         self._targetNumber = targetNumber
+        self._snakeEyesRule = snakeEyesRule
 
         self._rolls = objectdb.DatabaseList(
             parent=self.id(),
@@ -615,7 +638,8 @@ class DiceRollResult(objectdb.DatabaseObject):
                 self._fluxRolls == other._fluxRolls and \
                 self._modifiers == other._modifiers and \
                 self._targetType == other._targetType and \
-                self._targetNumber == other._targetNumber
+                self._targetNumber == other._targetNumber and \
+                self._snakeEyesRule == other._snakeEyesRule
         return False
 
     def timestamp(self) -> datetime.datetime:
@@ -700,23 +724,70 @@ class DiceRollResult(objectdb.DatabaseObject):
     def hasTarget(self) -> bool:
         return self._targetType != None and self._targetNumber != None
 
+    def snakeEyesRule(self) -> bool:
+        return self._snakeEyesRule
+
+    # The extra die should be ignored as it's already been taken into account
+    # when the index of the extra die was chosen at roll time. If the roll had a
+    # bane and the roll was say 1, 2, 1, the 2 will be the the discard die (i.e.
+    # the extra index) and the remaining rolls will be all 1 and therefore snake
+    # eyes. If the roll had a boon then with the same example the discard die
+    # will be one of the 1's (generally the first) and the remaining rolls will
+    # be 2, 1 and not snake eyes.
+    # It's not obvious if snake eyes when rolling 1 die makes sense. I've chosen
+    # to allow it at the object level at least (but may disable it in the UI)
+    # It's also not obvious if rolls that have flux enabled and the snake eyes
+    # rule, would require the flux rolls to also be 1 for it to be classed as
+    # snake eyes. I don't think that would make sense as, with the way flux
+    # works, the standard 1 == bad isn't always the case so it's not obvious the
+    # logic should apply to them.
+    # It's not obvious how different roll types could/should affect the snake
+    # eyes rule. For example, if the target type is LessThan, rolling all ones is
+    # actually good as it would give the lowest possible result. I've gone with
+    # the logic that the term snake eyes specifically refers to rolling all ones
+    # so that should be the case no mater what the target type is.
+    def isSnakeEyes(self) -> bool:
+        if not self._rolls or not self._snakeEyesRule:
+            # It can't be all ones if no dice were rolled and it's only technically
+            # classed as snake eyes if the snake eyes rule is enabled
+            return False
+
+        target = 1 if self._dieType != common.DieType.DD else 10
+        for index, roll in enumerate(self._rolls):
+            if index == self._extraIndex:
+                continue
+            if roll != target:
+                # At least one die was not a one so it can't be snake eyes
+                return False
+        return True
+
     def isSuccess(self) -> bool:
         if self._targetType == None or self._targetNumber == None:
-            return False # No target means no pass
+            return False # No target means nothing to succeed at
+        if self._snakeEyesRule and self.isSnakeEyes():
+            return False # Snake eyes is always a failure if the rule is enabled
         return common.ComparisonType.compareValues(
             lhs=self.total(),
             rhs=self._targetNumber,
             comparison=self._targetType)
 
-    # The effect will only be set if a target number was specified and that
-    # target number was met
-    def effectType(self) -> typing.Optional[DiceRollEffectType]:
+    def resultType(self) -> typing.Optional[DiceRollResultType]:
+        if self._snakeEyesRule and self.isSnakeEyes():
+            return DiceRollResultType.SnakeEyesFailure
+
         effectValue = self.effectValue()
         if effectValue == None:
             return None
         return DiceRollResult._effectValueToType(value=effectValue)
 
+    # The effect will only be set if a target number was specified and that
+    # target number was met
     def effectValue(self) -> typing.Optional[int]:
+        if self._snakeEyesRule and self.isSnakeEyes():
+            # There if snake eyes is rolled when the rule is enabled as it's
+            # an automatic failure so the effect seems meaningless
+            return None
+
         if self._targetNumber != None:
             if self._targetType == common.ComparisonType.EqualTo:
                 return -abs(self._targetNumber - self.total())
@@ -744,7 +815,8 @@ class DiceRollResult(objectdb.DatabaseObject):
             'flux_rolls': self._fluxRolls,
             'modifiers': self._modifiers,
             'target_type': self._targetType.name if self._targetType != None else None,
-            'target_number': self._targetNumber
+            'target_number': self._targetNumber,
+            'snake_eyes_rule': self._snakeEyesRule
             }
 
     @staticmethod
@@ -764,7 +836,8 @@ class DiceRollResult(objectdb.DatabaseObject):
                 objectdb.ParamDef(columnName='flux_rolls', columnType=objectdb.DatabaseList, isOptional=True),
                 objectdb.ParamDef(columnName='modifiers', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='target_type', columnType=str, isOptional=True),
-                objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True)
+                objectdb.ParamDef(columnName='target_number', columnType=int, isOptional=True),
+                objectdb.ParamDef(columnName='snake_eyes_rule', columnType=bool)
             ])
 
     @staticmethod
@@ -838,6 +911,10 @@ class DiceRollResult(objectdb.DatabaseObject):
         if targetNumber != None and not isinstance(targetNumber, int):
             raise ValueError('RollResult construction parameter "target_number" is not an int or None')
 
+        snakeEyesRule = data.get('snake_eyes_rule')
+        if not isinstance(snakeEyesRule, bool):
+            raise ValueError('RollResult construction parameter "snake_eyes_rule" is not a bool')
+
         return DiceRollResult(
             id=id,
             parent=parent,
@@ -851,21 +928,22 @@ class DiceRollResult(objectdb.DatabaseObject):
             fluxRolls=fluxRolls,
             modifiers=modifiers,
             targetType=targetType,
-            targetNumber=targetNumber)
+            targetNumber=targetNumber,
+            snakeEyesRule=snakeEyesRule)
 
     @staticmethod
-    def _effectValueToType(value: int) -> 'DiceRollEffectType':
+    def _effectValueToType(value: int) -> 'DiceRollResultType':
         if isinstance(value, common.ScalarCalculation):
             value = value.value()
         if value <= -6:
-            return DiceRollEffectType.ExceptionalFailure
+            return DiceRollResultType.ExceptionalFailure
         elif value <= -2:
-            return DiceRollEffectType.AverageFailure
+            return DiceRollResultType.AverageFailure
         elif value == -1:
-            return DiceRollEffectType.MarginalFailure
+            return DiceRollResultType.MarginalFailure
         elif value == 0:
-            return DiceRollEffectType.MarginalSuccess
+            return DiceRollResultType.MarginalSuccess
         elif value <= 5:
-            return DiceRollEffectType.AverageSuccess
+            return DiceRollResultType.AverageSuccess
         else:
-            return DiceRollEffectType.ExceptionalSuccess
+            return DiceRollResultType.ExceptionalSuccess

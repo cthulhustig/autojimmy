@@ -215,7 +215,7 @@ def sizeFontToFit(
     best = None
 
     while low <= high:
-        mid = low + ((high - low) // 2)
+        mid = int(low + ((high - low) // 2))
         font.setPixelSize(mid)
         fontMetrics = QtGui.QFontMetrics(font)
         contentRect = fontMetrics.boundingRect(rect, align, text)

@@ -87,21 +87,24 @@ def _deserialiseGroup(
 def _serialiseRoller(
         roller: diceroller.DiceRoller,
         ) -> typing.Mapping[str, typing.Any]:
-    modifierDataList = []
-    for modifier in roller.modifiers():
-        modifierDataList.append(_serialiseModifier(modifier=modifier))
     rollerData = {
         'name': roller.name(),
         'dieCount': roller.dieCount(),
         'dieType': roller.dieType().name,
         'constant': roller.constant(),
-        'modifiers': modifierDataList}
+        'snakeEyesRule': roller.snakeEyesRule()}
 
     if roller.extraDie() != None:
         rollerData['extraDie'] = roller.extraDie().name
 
     if roller.fluxType() != None:
         rollerData['fluxType'] = roller.fluxType().name
+
+    modifierDataList = []
+    for modifier in roller.modifiers():
+        modifierDataList.append(_serialiseModifier(modifier=modifier))
+    if modifierDataList:
+        rollerData['modifiers'] = modifierDataList
 
     if roller.targetType() != None:
         rollerData['targetType'] = roller.targetType().name
@@ -174,6 +177,10 @@ def _deserialiseRoller(
     if targetNumber != None and not isinstance(targetNumber, int):
         raise RuntimeError('Dice Roller targetNumber property is not an integer')
 
+    snakeEyesRule = rollerData.get('snakeEyesRule', False)
+    if not isinstance(snakeEyesRule, bool):
+        raise RuntimeError('Dice Roller snakeEyesRule property is not a boolean')
+
     return diceroller.DiceRoller(
         name=name,
         dieCount=dieCount,
@@ -183,7 +190,8 @@ def _deserialiseRoller(
         fluxType=fluxType,
         modifiers=modifiers,
         targetType=targetType,
-        targetNumber=targetNumber)
+        targetNumber=targetNumber,
+        snakeEyesRule=snakeEyesRule)
 
 def _serialiseModifier(
         modifier: diceroller.DiceModifier,
