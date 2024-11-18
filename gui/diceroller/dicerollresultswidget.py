@@ -65,7 +65,7 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
         fontMetrics = QtGui.QFontMetrics(font)
         textRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
-            QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            QtCore.Qt.AlignmentFlag.AlignCenter,
             _SnakeEyesWidget._DisplayText)
 
         cosTextAngle = math.cos(textAngle)
@@ -117,7 +117,7 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
                 0,
                 math.floor(scaledTextSize.width()),
                 math.floor(scaledTextSize.height())),
-            align=QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter)
+            align=QtCore.Qt.AlignmentFlag.AlignCenter)
         if font != None:
             self.setFont(font)
 
@@ -125,7 +125,7 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
         fontMetrics = QtGui.QFontMetrics(self.font())
         textRect = fontMetrics.boundingRect(
             textRect,
-            QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter,
+            QtCore.Qt.AlignmentFlag.AlignCenter,
             _SnakeEyesWidget._DisplayText)
         self._textSize = textRect.size()
 
@@ -445,11 +445,11 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         fontMetrics = QtGui.QFontMetrics(defaultFont)
         testLabelRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
-            self._labelsWidget.alignment(),
+            int(self._labelsWidget.alignment()), # Convert Alignment object to flags
             self._labelsWidget.text())
         testValueRect = fontMetrics.boundingRect(
             QtCore.QRect(0, 0, 65535, 65535),
-            self._valuesWidget.alignment(),
+            int(self._valuesWidget.alignment()), # Convert Alignment object to flags
             self._valuesWidget.text())
 
         labelScale = valueScale = 0.5
@@ -493,7 +493,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         fontMetrics = QtGui.QFontMetrics(labelFont)
         labelRect = fontMetrics.boundingRect(
             labelAvailableRect,
-            self._labelsWidget.alignment(),
+            int(self._labelsWidget.alignment()), # Convert Alignment object to flags
             self._labelsWidget.text())
         self._valuesWidget.move(
             offsetX + labelRect.width(),

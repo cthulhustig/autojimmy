@@ -204,10 +204,14 @@ def sizeFontToFit(
         orig: QtGui.QFont,
         text: str,
         rect: QtCore.QRect,
-        align: QtCore.Qt.AlignmentFlag = QtCore.Qt.AlignmentFlag.AlignCenter
+        align: typing.Union[QtCore.Qt.Alignment, QtCore.Qt.AlignmentFlag] = QtCore.Qt.AlignmentFlag.AlignCenter
         ) -> typing.Optional[QtGui.QFont]:
     # Remove any non-alignment flags
     align &= int(QtCore.Qt.AlignmentFlag.AlignHorizontal_Mask | QtCore.Qt.AlignmentFlag.AlignVertical_Mask)
+
+    # Force align to an int as older versions of QtGui.QFontMetrics.boundingRect
+    # will throw an exception if they're passed a QtCore.Qt.Alignment
+    align = int(align)
 
     font = QtGui.QFont(orig)
     low = 1
