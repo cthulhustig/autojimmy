@@ -208,9 +208,6 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             while len(self._animations) < dieCount:
                 self._animations.append(self._createAnimation())
 
-            # TODO: Why is this needed when it's called at the end of the function?
-            self._layoutWidget()
-
             animationConfig: typing.List[typing.Tuple[
                 int, # Rolled value
                 bool, # Ignored boon/bane roll
