@@ -155,7 +155,7 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
         return QtCore.QSizeF(size.width() / length, size.height() / length)
 
 class DiceRollResultsWidget(QtWidgets.QWidget):
-    animationComplete = QtCore.pyqtSignal()
+    rollComplete = QtCore.pyqtSignal()
 
     _DiceDisplayPercent = 70
     _RollDurationMs = 3000
@@ -173,7 +173,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
 
         self._results = None
         self._animations: typing.List[gui.DieAnimationWidget] = []
-        self._pendingAnimationCount = 0
+        self._pendingRollCount = 0
         self._labelsWidget = QtWidgets.QLabel(self)
         self._labelsWidget.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
         self._labelsWidget.hide()
@@ -223,7 +223,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                     animationConfig.append((roll, False, index + 1))
 
             assert(len(self._animations) == dieCount)
-            self._pendingAnimationCount = len(self._animations) if animate else 0
+            self._pendingRollCount = len(self._animations) if animate else 0
             for index, (roll, ignored, flux) in enumerate(animationConfig):
                 animation = self._animations[index]
                 animation.setDieType(results.dieType())
@@ -329,7 +329,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         self._layoutWidget()
 
     def mouseDoubleClickEvent(self, event: typing.Optional[QtGui.QMouseEvent]) -> None:
-        if event and self._pendingAnimationCount > 0:
+        if event and self._pendingRollCount > 0:
             self.skipAnimation()
             event.accept()
             return
@@ -341,14 +341,14 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         widget.setSpinDuration(durationMs=DiceRollResultsWidget._RollDurationMs)
         widget.setFadeDuration(durationMs=DiceRollResultsWidget._FadeDurationMs)
         widget.stackUnder(self._snakeEyesWidget)
-        widget.animationComplete.connect(self._animationComplete)
+        widget.animationComplete.connect(self._rollComplete)
         return widget
 
     def _deleteAnimation(
             self,
             widget: gui.DieAnimationWidget
             ) -> None:
-        widget.animationComplete.disconnect(self._animationComplete)
+        widget.animationComplete.disconnect(self._rollComplete)
         widget.hide()
         widget.deleteLater()
 
@@ -499,14 +499,11 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
             offsetX + labelRect.width(),
             offsetY)
 
-    # TODO: Should this be renamed _rollComplete?
-    # - If so there are probably other places that it make sense to make
-    # the same change
-    def _animationComplete(self) -> None:
-        assert(self._pendingAnimationCount > 0)
-        self._pendingAnimationCount -= 1
+    def _rollComplete(self) -> None:
+        assert(self._pendingRollCount > 0)
+        self._pendingRollCount -= 1
 
-        if self._pendingAnimationCount > 0:
+        if self._pendingRollCount > 0:
             return
 
         # All the animations have completed
@@ -516,7 +513,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
         if self._results != None and self._results.isSnakeEyes():
             self._snakeEyesWidget.show()
 
-        self.animationComplete.emit()
+        self.rollComplete.emit()
 
     @staticmethod
     def _calculateMaxDieSize(

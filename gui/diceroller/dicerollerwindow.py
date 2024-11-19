@@ -209,7 +209,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _createRollResultsControls(self) -> None:
         self._resultsWidget = gui.DiceRollDisplayWidget()
-        self._resultsWidget.animationComplete.connect(self._virtualRollComplete)
+        self._resultsWidget.rollComplete.connect(self._virtualRollComplete)
 
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._resultsWidget)

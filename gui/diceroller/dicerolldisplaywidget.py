@@ -5,7 +5,7 @@ import typing
 from PyQt5 import QtCore, QtWidgets
 
 class DiceRollDisplayWidget(QtWidgets.QWidget):
-    animationComplete = QtCore.pyqtSignal()
+    rollComplete = QtCore.pyqtSignal()
 
     _StateVersion = 'DiceRollDisplayWidget_v1'
 
@@ -19,7 +19,7 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
         self._results = None
 
         self._animatedResultsWidget = gui.DiceRollResultsWidget()
-        self._animatedResultsWidget.animationComplete.connect(self._animationComplete)
+        self._animatedResultsWidget.rollComplete.connect(self._rollComplete)
         self._detailedResultsWidget = gui.DiceRollResultsTable()
         self._probabilityGraph = gui.DiceRollerProbabilityGraph()
 
@@ -109,7 +109,7 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
         self._detailedResultsWidget.setResults(results=None)
         self._probabilityGraph.setHighlightRoll(roll=None)
 
-    def _animationComplete(self) -> None:
+    def _rollComplete(self) -> None:
         self._detailedResultsWidget.setResults(results=self._results)
         self._probabilityGraph.setHighlightRoll(self._results.total() if self._results else None)
-        self.animationComplete.emit()
+        self.rollComplete.emit()
