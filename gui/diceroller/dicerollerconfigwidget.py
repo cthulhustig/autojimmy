@@ -302,6 +302,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._addModifierButton.clicked.connect(self._addModifierClicked)
 
         self._removeModifiersButton = QtWidgets.QPushButton('Remove All')
+        self._removeModifiersButton.setEnabled(False)
         self._removeModifiersButton.clicked.connect(self._removeAllModifiersClicked)
 
         self._modifierList = DiceModifierListWidget()
@@ -401,30 +402,32 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             self._snakeEyesRuleCheckBox.setChecked(
                 self._roller.snakeEyesRule())
 
+        self._updateControlDisplay()
+
     def _fluxTypeChanged(self) -> None:
         self._roller.setFluxType(
             self._fluxTypeRadioWidget.currentEnum())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _dieCountChanged(self) -> None:
         self._roller.setDieCount(
             self._dieCountSpinBox.value())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _dieTypeChanged(self) -> None:
         self._roller.setDieType(
             self._dieTypeComboBox.currentEnum())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _constantChanged(self) -> None:
         self._roller.setConstant(
             self._constantSpinBox.value())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _extraDieChanged(self) -> None:
         self._roller.setExtraDie(
             self._extraDieRadioWidget.currentEnum())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _addModifierClicked(self) -> None:
         modifier = diceroller.DiceModifier(
@@ -433,11 +436,16 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
             enabled=True)
         self._roller.addModifier(modifier=modifier)
         self._modifierList.addModifier(modifier)
-        self._modifierList.setHidden(False)
-        self.configChanged.emit()
+        self._updateAndEmit()
 
-    # TODO: This should probably have an 'are you sure' prompt
     def _removeAllModifiersClicked(self) -> None:
+        if not self._roller.modifierCount():
+            return # Nothing to do
+
+        answer = gui.MessageBoxEx.question(text='Are you sure you want to remove all modifiers?')
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+
         self._roller.clearModifiers()
 
         # Block signals to prevent multiple config update
@@ -445,16 +453,15 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._modifierList):
             self._modifierList.clear()
 
-        self._modifierList.setHidden(True)
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _modifierChanged(self) -> None:
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _modifierDeleted(self, modifier: diceroller.DiceModifier) -> None:
         self._roller.removeModifier(id=modifier.id())
         self._modifierList.setHidden(self._modifierList.isEmpty())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _modifierMoved(self,
                        index: int,
@@ -462,7 +469,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
                        ) -> None:
         self._roller.removeModifier(id=modifier.id())
         self._roller.insertModifier(index=index, modifier=modifier)
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _targetTypeChanged(self) -> None:
         targetType = self._targetTypeComboBox.currentEnum()
@@ -470,12 +477,21 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._roller.setTargetNumber(
             self._targetNumberSpinBox.value() if targetType != None else None)
         self._targetNumberSpinBox.setEnabled(targetType != None)
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _targetNumberChanged(self) -> None:
         self._roller.setTargetNumber(self._targetNumberSpinBox.value())
-        self.configChanged.emit()
+        self._updateAndEmit()
 
     def _snakeEyesRuleChanged(self) -> None:
         self._roller.setSnakeEyesRule(enabled=self._snakeEyesRuleCheckBox.isChecked())
+        self._updateAndEmit()
+
+    def _updateControlDisplay(self) -> None:
+        hasModifiers = self._roller and self._roller.modifierCount() > 0
+        self._removeModifiersButton.setEnabled(hasModifiers)
+        self._modifierList.setHidden(not hasModifiers)
+
+    def _updateAndEmit(self) -> None:
+        self._updateControlDisplay()
         self.configChanged.emit()
