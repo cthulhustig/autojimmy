@@ -76,13 +76,10 @@ def calculateProbabilities(
 def rollDice(
         label: str,
         roller: diceroller.DiceRoller,
-        randomGenerator: typing.Optional[typing.Union[
-            random.Random,
-            common.RandomGenerator
-            ]] = None,
+        seed: typing.Optional[int] = None
         ) -> diceroller.DiceRollResult:
-    if randomGenerator == None:
-        randomGenerator = random
+    randomGenerator = common.RandomGenerator(seed=seed)
+    seed = randomGenerator.seed()
 
     dieCount = roller.dieCount()
     extraDie = roller.extraDie()
@@ -130,6 +127,7 @@ def rollDice(
     return diceroller.DiceRollResult(
         timestamp=common.utcnow(),
         label=label,
+        seed=seed,
         dieType=dieType,
         rolls=rolls,
         extraDie=extraDie,

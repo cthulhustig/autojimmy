@@ -44,6 +44,17 @@ class RandomGenerator(object):
             # default python implementation has it as inclusive
             return self._rng.randint(low, high + 1)
 
+    def randbits(self, bits: int) -> int:
+        # This overly complicated implementation is because randint is
+        # limited to generating signed 32 bit values
+        bytes = (bits + 7) // 8
+        result = int.from_bytes(
+            bytes=self._rng.bytes(bytes),
+            byteorder='big')
+
+        # Only return the requested number of bits
+        return result & ((1 << bits) - 1)
+
     # NOTE: This is different to the api for the standard python random where
     # seed sets the new seed rather than retrieving the current seed as it
     # does here

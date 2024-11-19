@@ -564,6 +564,7 @@ class DiceRollResult(objectdb.DatabaseObject):
             self,
             timestamp: datetime.datetime,
             label: str,
+            seed: int,
             dieType: common.DieType,
             rolls: typing.Union[
                 typing.Iterable[int],
@@ -589,6 +590,7 @@ class DiceRollResult(objectdb.DatabaseObject):
 
         self._timestamp = timestamp
         self._label = label
+        self._seed = seed
         self._dieType = dieType
         self._extraDie = extraDie
         self._extraIndex = extraIndex
@@ -630,6 +632,7 @@ class DiceRollResult(objectdb.DatabaseObject):
             return super().__eq__(other) and \
                 self._timestamp == other._timestamp and \
                 self._label == other._label and \
+                self._seed == other._seed and \
                 self._dieType == other._dieType and \
                 self._rolls == other._rolls and \
                 self._extraDie == other._extraDie and \
@@ -647,6 +650,9 @@ class DiceRollResult(objectdb.DatabaseObject):
 
     def label(self) -> str:
         return self._label
+
+    def seed(self) -> int:
+        return self._seed
 
     def dieType(self) -> common.DieType:
         return self._dieType
@@ -807,6 +813,10 @@ class DiceRollResult(objectdb.DatabaseObject):
         return {
             'timestamp': self._timestamp.isoformat(),
             'label': self._label,
+            # The seed is stored as a string as it's larger than the signed 64
+            # bit number that can be stored in sqlite. Encode it as hex to make
+            # it obvious that it's not just an int when looking at the raw db
+            'seed': '{:x}'.format(self._seed),
             'die_type': self._dieType.name,
             'rolls': self._rolls,
             'extra_die': self._extraDie.name if self._extraDie != None else None,
@@ -828,6 +838,9 @@ class DiceRollResult(objectdb.DatabaseObject):
             paramDefs=[
                 objectdb.ParamDef(columnName='timestamp', columnType=str),
                 objectdb.ParamDef(columnName='label', columnType=str),
+                # NOTE: The seed is stored as a string as it can be large (128 bit) and
+                # sqlite can only store up to 64 bit values (and only signed ones at that).
+                objectdb.ParamDef(columnName='seed', columnType=str),
                 objectdb.ParamDef(columnName='die_type', columnType=str),
                 objectdb.ParamDef(columnName='rolls', columnType=objectdb.DatabaseList),
                 objectdb.ParamDef(columnName='extra_die', columnType=str, isOptional=True),
@@ -853,12 +866,20 @@ class DiceRollResult(objectdb.DatabaseObject):
             raise ValueError('RollResult construction parameter "timestamp" is not a str')
         try:
             timestamp = datetime.datetime.fromisoformat(timestamp)
-        except Exception:
+        except:
             raise ValueError(f'RollResult construction parameter "timestamp" has unexpected value "{timestamp}"')
 
         label = data.get('label')
         if not isinstance(label, str):
             raise ValueError('RollResult construction parameter "label" is not a str')
+
+        seed = data.get('seed')
+        if not isinstance(seed, str):
+            raise ValueError('RollResult construction parameter "seed" is not an str')
+        try:
+            seed = int(seed, base=16)
+        except:
+            raise ValueError(f'RollResult construction parameter "seed" has unexpected value "{seed}"')
 
         dieType = data.get('die_type')
         if not isinstance(dieType, str):
@@ -920,6 +941,7 @@ class DiceRollResult(objectdb.DatabaseObject):
             parent=parent,
             timestamp=timestamp,
             label=label,
+            seed=seed,
             dieType=dieType,
             rolls=rolls,
             extraDie=extraDie,

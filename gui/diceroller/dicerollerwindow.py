@@ -243,7 +243,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._results = diceroller.rollDice(
             label=f'{group.name()} - {self._roller.name()}',
             roller=self._roller,
-            randomGenerator=self._randomGenerator)
+            seed=self._randomGenerator.randbits(128))
 
         self._rollInProgress = True
         self._updateControlEnablement()
