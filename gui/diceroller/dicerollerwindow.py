@@ -57,10 +57,22 @@ class DiceRollerWindow(gui.WindowWidget):
             self._createInitialGroup()
 
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]):
-        if event and event.key() == QtCore.Qt.Key.Key_Space and self._rollInProgress:
-            self._resultsWidget.skipAnimation()
-            event.accept()
-            return
+        if event:
+            key = event.key()
+            if self._rollInProgress:
+                isSkipKey  = key == QtCore.Qt.Key.Key_Space or \
+                    key == QtCore.Qt.Key.Key_Escape or \
+                    key == QtCore.Qt.Key.Key_Return
+                if isSkipKey:
+                    self._resultsWidget.skipAnimation()
+                    event.accept()
+                    return
+            else:
+                isRollKey = key == QtCore.Qt.Key.Key_Return
+                if isRollKey:
+                    self._rollDice()
+                    event.accept()
+                    return
 
         return super().keyPressEvent(event)
 
