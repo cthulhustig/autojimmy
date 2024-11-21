@@ -15,9 +15,7 @@ _WelcomeMessage = """
 
 
 # TODO: Test that history timestamps are shown in local time not utc
-# TODO: Support for 2 being an auto fail
-# - Would be cool to put a skull or something over the top of the
-#   dice if you roll it
+# TODO: Undo/redo stack
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
