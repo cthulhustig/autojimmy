@@ -152,6 +152,21 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
         groups = objectdb.ObjectDbManager.instance().readObjects(
             classType=diceroller.DiceRollerGroup)
 
+        if self._groupOrdering:
+            groupMap = {group.id(): group for group in groups}
+            orderedGroups = []
+            for groupId in list(self._groupOrdering):
+                group = groupMap.get(groupId)
+                if group:
+                    orderedGroups.append(group)
+                else:
+                    self._groupOrdering.remove(groupId)
+            for group in groups:
+                if group.id() not in self._groupOrdering:
+                    orderedGroups.append(group)
+                    self._groupOrdering.append(group.id())
+            groups = orderedGroups
+
         selectionIds = set([object.id() for object in self.selectedObjects()])
         currentObject = self.currentObject()
 
@@ -351,7 +366,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
         for _ in range(count):
             self._collapsedGroups.add(stream.readQString())
 
-        self._restoreItemStates()
+        self.syncToDatabase()
 
         return True
 
@@ -418,36 +433,6 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
         return items
 
     def _restoreItemStates(self) -> None:
-        # Move any groups that are out of order
-        currentItem = self.currentItem()
-        requiredIndex = 0
-        while requiredIndex < len(self._groupOrdering):
-            groupId = self._groupOrdering[requiredIndex]
-            item = self._objectItemMap.get(groupId)
-            if not item:
-                self._groupOrdering.remove(groupId)
-                continue
-            itemIndex = self.indexOfTopLevelItem(item)
-            if itemIndex != requiredIndex:
-                self.takeTopLevelItem(itemIndex)
-                self.insertTopLevelItem(requiredIndex, item)
-            requiredIndex += 1
-
-        # Reselect the previously selected current item if it's not still the
-        # current item. This can happen if the current item was repositioned or
-        # was a child of an item that was repositioned as the current item would
-        # have been cleared at the point the item was removed from the tree to
-        # reposition it.
-        if currentItem != self.currentItem():
-            self.setCurrentItem(currentItem)
-
-        # Add any groups that aren't in the group order list
-        for index in range(len(self._groupOrdering), self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(group, diceroller.DiceRollerGroup))
-            self._groupOrdering.append(group.id())
-
         # Set expansion/collapsed state of groups
         for index in range(self.topLevelItemCount()):
             item = self.topLevelItem(index)
@@ -510,9 +495,10 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
                 assert(len(rollers) == groupItem.childCount())
                 for rollerIndex, roller in enumerate(rollers):
                     assert(isinstance(roller, diceroller.DiceRoller))
-                    rollerItem = self._objectItemMap[roller.id()]
+                    rollerItem = groupItem.child(rollerIndex)
                     rollerItem.setText(0, roller.name())
                     rollerItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
+                    self._objectItemMap[roller.id()] = rollerItem
 
         newCurrentObject = self.currentObject()
         if newCurrentObject:
