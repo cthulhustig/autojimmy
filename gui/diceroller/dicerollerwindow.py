@@ -10,12 +10,75 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 # TODO: Welcome message
 _WelcomeMessage = """
-    TODO
+    <html>
+    <p></p>
+    </html>
 """.format(name=app.AppName)
 
 
 # TODO: Test that history timestamps are shown in local time not utc
-# TODO: Undo/redo stack
+# TODO: Switch to explicit saving rather than live saving
+# - Would be good to make it optional
+# - Should only be changes to the roller config, renaming and changing
+#   ordering should still be saved live
+#   - Doing this will require changes so the config widget is NOT using
+#     the same instance of the roller that is held by the tree widget,
+#     otherwise the updated config will be "saved" if the roller (or its
+#     group is renamed). This has a downside however as any changes to the
+#     roller held by the tree (e.g. renames or changes to the parent from moving
+#     it to a different group) won't automatically be reflected in the
+#     instance held by the config widget. It's not as simple as just giving
+#     the config widget a new copy of the roller when ever the copy in the
+#     tree changes as that would nuke any unsaved changes made by the config
+#     widget.
+# - Would need a way to indicate unsaved rollers in the tree
+# - Would need a save button added to the toolbar
+# - Would need a revert button added to the toolbar
+# - Would need prompt to save anything modified when closing the window
+# - I think this needs a refactor
+#   - Update the window to be the thing that loads the list of groups at
+#     startup and maintains it. Conceptually this copy should mirror what
+#     is currently saved.
+#   - Tree widget is passed the list groups to display (in sorted order) but
+#     rather than holding groups/rollers in the user data it just holds the
+#     object id
+#   - Move the stuff that stores the order of groups between sessions into
+#     the window. It should pass the list to the tree in the order it should
+#     be listed.
+#   - Update tree widget so it sends an explicit renamed event when an object
+#     is renamed by double clicking on the item in the tree.
+#     - Event sends the id of the renamed object
+#     - Window listens for event and updates the name on the object in its
+#       cache then writes it to the database.
+#     - IMPORTANT: If the renamed object is the roller being edited the window
+#       will also need to set the new name on the instance of the roller held
+#       by the config widget
+#   - Update tree widget so it sends an explicit objects moved event when
+#     objects are dragged and dropped (groups or rollers)
+#     - I'm not sure what if any parameters make sense for this event
+#     - Main window would listen for the event and retrieve the new
+#       order of things from the tree widget and compare it with it's cached
+#       copy of the objects to work out the new state. At which point it will
+#       update it's cached copy of the objects and update the database (or
+#       ini file if group order has changed)
+#       - This will probably be very similar to what the tree currently does
+#         in _handleMovedRollers (I think it's basically moving that code
+#     - IMPORTANT: If the roller currently being edited was moved then the
+#       window will need to update the parent of the instance held by the
+#       config widget.
+#       - VERY IMPORTANT: Remember the parent of the roller will actually
+#         be the id of a list object rather than the group so i'll need to
+#         copy the parent id from the roller in the windows cache rather
+#         than just taking the id from the group
+
+# - IDEA: I think this could be simplified if I update the management tree
+#   to deal with object ids rather than holding instances of the object.
+#   - Would need the event used to notify of rename and position move split
+#     into separate events that would notify the main window
+#     - Rename would read the new name back from the tree, read
+# - IDEA: It might be easier if I split the roller config out of the main
+#   roller and into its own db object. With the result being the roller
+#   becomes just a name and single mandatory config
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
@@ -75,6 +138,10 @@ class DiceRollerWindow(gui.WindowWidget):
                     return
 
         return super().keyPressEvent(event)
+
+    def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
+        QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
+        super().firstShowEvent(e)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -675,17 +742,15 @@ class DiceRollerWindow(gui.WindowWidget):
             updatedObjects: typing.Iterable[typing.Union[
                 diceroller.DiceRollerGroup,
                 diceroller.DiceRoller]],
-            deletedObjects: typing.Iterable[typing.Union[
-                diceroller.DiceRollerGroup,
-                diceroller.DiceRoller]]
+            deletedObjectIds: typing.Iterable[str]
             ) -> None:
         try:
             with objectdb.ObjectDbManager.instance().createTransaction() as transaction:
                 # Delete objects first to avoid foreign key errors if objects are
                 # being moved from one parent to anther
-                for object in deletedObjects:
+                for objectId in deletedObjectIds:
                     objectdb.ObjectDbManager.instance().deleteObject(
-                        id=object.id(),
+                        id=objectId,
                         transaction=transaction)
                 for object in createdObjects:
                     objectdb.ObjectDbManager.instance().createObject(

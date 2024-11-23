@@ -219,35 +219,31 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             return
 
         hasRollerSelected = False
+        hasGroupSelected = False
         for item in dragItems:
             if item.parent() != None:
                 hasRollerSelected = True
-                break
+            else:
+                hasGroupSelected = True
 
-        # If there is one ore more rollers selected then they must be dropped
-        # into a group so don't allow dropping into the root item. If no
-        # rollers are selected then it is just groups that are being dragged so
-        # allow dropping into the root item so they can be reordered
+        # If groups are selected allow them to be dropped into a different position
         rootItem = self.invisibleRootItem()
-        if hasRollerSelected:
-            rootItem.setFlags(rootItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
-        else:
+        if hasGroupSelected and not hasRollerSelected:
             rootItem.setFlags(rootItem.flags() | QtCore.Qt.ItemFlag.ItemIsDropEnabled)
+        else:
+            rootItem.setFlags(rootItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
 
         for groupIndex in range(self.topLevelItemCount()):
             groupItem = self.topLevelItem(groupIndex)
 
-            # If there is one or more rollers selected then allow them to be
-            # dropped into another group (groups that are also selected will be
-            # flattened when the drop occurs). If there are no rollers selected
-            # then it is just groups being dragged so don't allow them to be
-            # dropped into another group
-            if hasRollerSelected:
+            # If rollers are selected then allow them to be dropped into a different
+            # group or a new position within its current group
+            if hasRollerSelected and not hasGroupSelected:
                 groupItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsDropEnabled)
             else:
                 groupItem.setFlags(groupItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
 
-            # Never allow dropping into a roller
+            # Never allow dropping onto a roller
             for rollerIndex in range(groupItem.childCount()):
                 rollerItem = groupItem.child(rollerIndex)
                 rollerItem.setFlags(rollerItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsDropEnabled)
@@ -260,6 +256,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             event.ignore()
             return
 
+        preMoveGroups = self.groups()
         dragItems = self._dragSelection()
 
         hasRollerSelected = False
@@ -274,6 +271,8 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             groupItems = []
             for item in dragItems:
                 if item.parent() == None:
+                    index = self.indexOfTopLevelItem(item)
+                    self.takeTopLevelItem(index)
                     groupItems.append(item)
 
             rollerItems = []
@@ -320,7 +319,7 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
                 item.setExpanded(wasExpanded)
 
             if hasRollerSelected:
-                self._handleMovedRollers()
+                self._handleMovedRollers(preMoveGroups)
             else:
                 self._handleMovedGroups()
 
@@ -453,12 +452,16 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
             assert(isinstance(group, diceroller.DiceRollerGroup))
             self._groupOrdering.append(group.id())
 
-    def _handleMovedRollers(self) -> None:
-        oldGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
-        for group in self.groups():
-            oldGroups[group.id()] = copy.deepcopy(group)
+    def _handleMovedRollers(
+            self,
+            preMoveGroups: typing.Iterable[diceroller.DiceRollerGroup]
+            ) -> None:
+        sourceGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
+        for group in preMoveGroups:
+            sourceGroups[group.id()] = copy.deepcopy(group)
 
         updatedGroups: typing.List[diceroller.DiceRollerGroup] = []
+        currentGroupIds: typing.Set[str] = set()
         for groupIndex in range(self.topLevelItemCount()):
             groupItem = self.topLevelItem(groupIndex)
             newGroup = self.objectFromItem(groupItem)
@@ -474,7 +477,8 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
                 roller.setParent(None)
                 newGroup.addRoller(roller)
 
-            oldGroup = oldGroups[newGroup.id()]
+            currentGroupIds.add(newGroup.id())
+            oldGroup = sourceGroups[newGroup.id()]
             if newGroup != oldGroup:
                 updatedGroups.append(newGroup)
 
@@ -507,7 +511,25 @@ class DiceRollerManagerTree(gui.TreeWidgetEx):
         if oldCurrentObject != newCurrentObject:
             self.currentObjectChanged.emit()
 
+        # TODO: There is a bug here. If you select a group and a roller from
+        # another group then drag them all into a third group. The group that
+        # is now empty (because all it's rollers were moved) is removed from
+        # the tree but isn't being deleted from the db. If you then add another
+        # group or roller the empty group will re-appear
+        deleteGroupIds = []
+        for groupId in sourceGroups.keys():
+            if groupId not in currentGroupIds:
+                deleteGroupIds.append(groupId)
+
+        # TODO: This is a hack needed to prevent foreign key failure if
+        # the group a roller was moved to is written before the group it
+        # was remove from. At a minimum it needs moved as it doesn't make
+        # sense for it to be here. Hopefully will come as part of planned
+        # refactor
+        for group in updatedGroups:
+            deleteGroupIds.append(group.id())
+
         self.objectsChanged.emit(
             updatedGroups, # New version of object created
             [], # No objects updated
-            updatedGroups) # Old version of object deleted
+            deleteGroupIds) # Old version of object deleted
