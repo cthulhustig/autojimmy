@@ -443,7 +443,7 @@ class ObjectDbManager(object):
                             type TEXT NOT NULL,
                             version INTEGER,
                             PRIMARY KEY (name, type)
-                        ) WITHOUT ROWID;
+                        );
                         """.format(table=ObjectDbManager._SchemasTableName)
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._SchemasTableName}\' table')
                     cursor.execute(sql)
@@ -458,7 +458,7 @@ class ObjectDbManager(object):
                             parent TEXT,
                             table_name TEXT NOT NULL,
                             FOREIGN KEY(parent) REFERENCES {table}(id) ON DELETE CASCADE
-                        ) WITHOUT ROWID;
+                        );
                         """.format(table=ObjectDbManager._EntitiesTableName)
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._EntitiesTableName}\' table')
                     cursor.execute(sql)
@@ -959,7 +959,7 @@ class ObjectDbManager(object):
         # comes from code (rather than user input) so there is no real risk of
         # an injection attack
         sql = """
-            CREATE TABLE IF NOT EXISTS {table} ({columns}) WITHOUT ROWID;
+            CREATE TABLE IF NOT EXISTS {table} ({columns});
             """.format(
             table=objectDef.tableName(),
             columns=', '.join(columnStrings))
