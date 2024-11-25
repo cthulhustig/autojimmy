@@ -88,8 +88,6 @@ class DiceRollerWindow(gui.WindowWidget):
             title='Dice Roller',
             configSection='DiceRoller')
 
-        self._currentRoller = None
-        self._currentResults = None
         self._rollInProgress = False
         self._objectMap: typing.Dict[
             str,
@@ -315,11 +313,11 @@ class DiceRollerWindow(gui.WindowWidget):
         self._historyGroupBox.setLayout(groupLayout)
 
     def _rollDice(self) -> None:
-        if not self._currentRoller or self._rollInProgress:
+        roller = self._currentRoller()
+        if not roller or self._rollInProgress:
             return
 
-        groupId = self._rollerGroupMap.get(self._currentRoller.id())
-        group = self._objectMap.get(groupId)
+        group = self._groupFromRoller(roller)
         if not group:
             message = 'Failed to find group for dice roller'
             logging.error(message)
@@ -328,16 +326,16 @@ class DiceRollerWindow(gui.WindowWidget):
                 text=message)
             return
 
-        self._currentResults = diceroller.rollDice(
-            label=f'{group.name()} - {self._currentRoller.name()}',
-            roller=self._currentRoller,
+        results = diceroller.rollDice(
+            label=f'{group.name()} - {roller.name()}',
+            roller=roller,
             seed=self._randomGenerator.randbits(128))
 
         self._rollInProgress = True
         self._updateControlEnablement()
 
         self._setCurrentResults(
-            results=self._currentResults,
+            results=results,
             animate=True)
 
     def _syncToDatabase(
@@ -361,7 +359,6 @@ class DiceRollerWindow(gui.WindowWidget):
                 self._objectMap[roller.id()] = roller
                 self._rollerGroupMap[roller.id()] = group.id()
 
-        # TODO: Should apply the group ordering to the list that is passed to the tree
         with gui.SignalBlocker(self._rollerTree):
             self._rollerTree.setGroups(groups)
             if currentId != None:
@@ -380,6 +377,10 @@ class DiceRollerWindow(gui.WindowWidget):
         if roller and not results:
             results = self._lastResults.get(roller.id())
 
+        if roller:
+            with gui.SignalBlocker(self._rollerTree):
+                self._rollerTree.setCurrentObject(objectId=roller.id())
+
         with gui.SignalBlocker(self._rollerConfigWidget):
             self._rollerConfigWidget.setRoller(roller=roller)
 
@@ -390,8 +391,6 @@ class DiceRollerWindow(gui.WindowWidget):
                     results=results,
                     animate=False)
 
-        self._currentRoller = roller
-        self._currentResults = results
         self._rollInProgress = False
 
         self._updateControlEnablement()
@@ -421,18 +420,71 @@ class DiceRollerWindow(gui.WindowWidget):
             None,
             None
             ]:
+        seenIds = set()
         for objectId in self._rollerTree.selectedObjects():
             object = self._objectMap.get(objectId)
             if object:
+                seenIds.add(objectId)
                 yield object
+        # Due to the way selection in the tree widget it's possible for the
+        # current item to be set but not part of the selection. For example
+        # if you delete an item one of the remaining items will become the
+        # current item but it won't be selected. When in this state the item
+        # has a fainter highlight but it is highlighted. From the point of
+        # view of the item is considered selected when in this state so this
+        # code yields the current object if it's set and hasn't already been
+        # yielded
+        currentId = self._rollerTree.currentObject()
+        if currentId and currentId not in seenIds:
+            currentObject = self._objectMap.get(currentId)
+            if currentObject:
+                yield currentObject
+
+    def _currentObject(self) -> typing.Optional[typing.Union[diceroller.DiceRoller, diceroller.DiceRollerGroup]]:
+        return self._objectMap.get(self._rollerTree.currentObject())
+
+    def _currentGroup(self) -> typing.Optional[diceroller.DiceRollerGroup]:
+        currentObject = self._currentObject()
+        if not currentObject:
+            return None
+        if isinstance(currentObject, diceroller.DiceRollerGroup):
+            return currentObject
+        assert(isinstance(currentObject, diceroller.DiceRoller))
+        return self._groupFromRoller(roller=currentObject)
+
+    def _currentRoller(self) -> typing.Optional[diceroller.DiceRoller]:
+        currentObject = self._currentObject()
+        if isinstance(currentObject, diceroller.DiceRoller):
+            return currentObject
+        return None
+
+    def _objectFromId(
+            self,
+            objectId: str
+            ) -> typing.Optional[typing.Union[diceroller.DiceRoller, diceroller.DiceRollerGroup]]:
+        return self._objectMap.get(objectId)
+
+    def _groupFromRoller(
+            self,
+            roller: diceroller.DiceRoller
+            ) -> typing.Optional[diceroller.DiceRollerGroup]:
+        groupId = self._rollerGroupMap.get(roller.id())
+        if not groupId:
+            return None
+        return self._objectMap.get(groupId)
+
+    def _currentResults(self) -> typing.Optional[diceroller.DiceRollResult]:
+        return self._resultsWidget.results()
 
     def _updateControlEnablement(self) -> None:
-        hasSelection = self._rollerTree.currentItem() != None
+        currentObject = self._currentObject()
+        hasSelection = currentObject != None
         self._renameAction.setEnabled(hasSelection)
         self._deleteAction.setEnabled(hasSelection)
 
+        hasCurrentRoller = isinstance(currentObject, diceroller.DiceRoller)
         self._managerGroupBox.setEnabled(not self._rollInProgress)
-        self._configGroupBox.setEnabled(self._currentRoller != None and not self._rollInProgress)
+        self._configGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
 
     def _generateGroupName(self) -> str:
@@ -471,8 +523,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._syncToDatabase(currentId=roller.id())
 
     def _createNewRoller(self) -> None:
-        group = self._objectMap.get(
-            self._rollerTree.currentGroup())
+        group = self._currentGroup()
         isNewGroup = not group
         if isNewGroup:
             group = diceroller.DiceRollerGroup(
@@ -525,8 +576,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.editObjectName(objectId=group.id())
 
     def _renameObject(self) -> None:
-        currentId = self._rollerTree.currentObject()
-        currentObject = self._objectMap.get(currentId)
+        currentObject = self._currentObject()
         if isinstance(currentObject, diceroller.DiceRollerGroup):
             title = 'Group Name'
             typeString = 'group'
@@ -569,15 +619,15 @@ class DiceRollerWindow(gui.WindowWidget):
         self._syncToDatabase(currentId=currentObject.id())
 
     def _copyObject(self) -> None:
-        currentId = self._rollerTree.currentObject()
-        currentObject = self._objectMap.get(currentId)
+        currentObject = self._currentObject()
         group = None
         roller = None
         if isinstance(currentObject, diceroller.DiceRollerGroup):
+            # Make a copy of the group and all its rollers
             group = currentObject.copyConfig()
         elif isinstance(currentObject, diceroller.DiceRoller):
-            groupId = self._rollerGroupMap.get(currentId)
-            group = self._objectMap.get(groupId)
+            # Make a copy of the current roller within its current group
+            group = self._groupFromRoller(currentObject)
             group = copy.deepcopy(group)
             roller = currentObject.copyConfig()
             group.addRoller(roller)
@@ -604,18 +654,9 @@ class DiceRollerWindow(gui.WindowWidget):
             currentId=roller.id() if roller else group.id())
 
     def _deleteObjects(self) -> None:
-        selectedObjects = {object.id(): object for object in self._yieldSelectedObjects()}
-        currentId = self._rollerTree.currentObject()
-        if currentId and currentId not in selectedObjects:
-            currentObject = self._objectMap.get(currentId)
-            if currentObject:
-                selectedObjects[currentObject.id()] = currentObject
-        if not selectedObjects:
-            return
-
         groups: typing.List[diceroller.DiceRollerGroup] = []
         rollers: typing.List[diceroller.DiceRoller] = []
-        for object in selectedObjects.values():
+        for object in self._yieldSelectedObjects():
             if isinstance(object, diceroller.DiceRollerGroup):
                 groups.append(object)
             elif isinstance(object, diceroller.DiceRoller):
@@ -732,33 +773,24 @@ class DiceRollerWindow(gui.WindowWidget):
 
         exportGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
         try:
-            selectedObjects = {object.id(): object for object in self._yieldSelectedObjects()}
-            currentId = self._rollerTree.currentObject()
-            if currentId and currentId not in selectedObjects:
-                currentObject = self._objectMap.get(currentId)
-                if currentObject:
-                    selectedObjects[currentId] = currentObject
-            if not selectedObjects:
-                return
-
+            selectedObjects = list(self._yieldSelectedObjects())
             explicitGroupIds = set()
-            for object in selectedObjects.values():
+            for object in selectedObjects:
                 if isinstance(object, diceroller.DiceRollerGroup):
                     explicitGroupIds.add(object.id())
 
-            for object in selectedObjects.values():
+            for object in selectedObjects:
                 if isinstance(object, diceroller.DiceRollerGroup):
                     exportGroups[object.id()] = object.copyConfig(copyIds=True)
                 elif isinstance(object, diceroller.DiceRoller):
-                    groupId = self._rollerGroupMap.get(object.id())
-                    if groupId in explicitGroupIds:
+                    group = self._groupFromRoller(roller=object)
+                    if group.id() in explicitGroupIds:
                         # Group is already being exported so no need to export
                         # individual roller
                         continue
-                    if groupId in exportGroups:
-                        group = exportGroups[groupId]
+                    if group.id() in exportGroups:
+                        group = exportGroups[group.id()]
                     else:
-                        group = self._objectMap[groupId]
                         group = group.copyConfig(copyIds=True)
                         group.clearRollers()
                         exportGroups[group.id()] = group
@@ -791,7 +823,7 @@ class DiceRollerWindow(gui.WindowWidget):
             self,
             objectId: typing.Optional[str]
             ) -> None:
-        currentObject = self._objectMap.get(objectId)
+        currentObject = self._objectFromId(objectId)
         currentRoller = None
         if isinstance(currentObject, diceroller.DiceRoller):
             currentRoller = currentObject
@@ -802,7 +834,7 @@ class DiceRollerWindow(gui.WindowWidget):
             objectId: str,
             newName: str
             ) -> None:
-        renamedObject = self._objectMap.get(objectId)
+        renamedObject = self._objectFromId(objectId=objectId)
         if not renamedObject:
             # TODO: Handle this
             return
@@ -827,19 +859,19 @@ class DiceRollerWindow(gui.WindowWidget):
     def _rollerTreeOrderChanged(self) -> None:
         updatedGroups: typing.List[diceroller.DiceRollerGroup] = []
         for groupId in self._rollerTree.groups():
-            oldGroup = self._objectMap[groupId]
+            oldGroup = self._objectFromId(objectId=groupId)
             assert(isinstance(oldGroup, diceroller.DiceRollerGroup))
             newGroup = copy.deepcopy(oldGroup)
             newGroup.clearRollers()
 
             for rollerId in self._rollerTree.rollers(groupId=groupId):
-                oldRoller = self._objectMap[rollerId]
+                oldRoller = self._objectFromId(objectId=rollerId)
                 assert(isinstance(oldRoller, diceroller.DiceRoller))
                 newRoller = copy.deepcopy(oldRoller)
                 newRoller.setParent(None)
                 newGroup.addRoller(newRoller)
 
-            oldGroup = self._objectMap[newGroup.id()]
+            oldGroup = self._objectFromId(newGroup.id())
             if newGroup != oldGroup:
                 updatedGroups.append(newGroup)
 
@@ -871,9 +903,13 @@ class DiceRollerWindow(gui.WindowWidget):
         self._syncToDatabase()
 
     def _rollerConfigChanged(self) -> None:
+        roller = self._currentRoller()
+        if not roller:
+            return
+
         try:
             objectdb.ObjectDbManager.instance().updateObject(
-                object=self._currentRoller)
+                object=roller)
         except Exception as ex:
             message = 'Failed to write updated roller to objectdb'
             logging.error(message, exc_info=ex)
@@ -898,16 +934,18 @@ class DiceRollerWindow(gui.WindowWidget):
         QtCore.QTimer.singleShot(1, self._delayedRollComplete)
 
     def _delayedRollComplete(self) -> None:
-        if not self._rollInProgress:
+        roller = self._currentRoller()
+        results = self._currentResults()
+        if not roller or not results or not self._rollInProgress:
             return
 
         self._rollInProgress = False
-        self._lastResults[self._currentRoller.id()] = self._currentResults
+        self._lastResults[roller.id()] = results
         self._updateControlEnablement()
 
         try:
             objectdb.ObjectDbManager.instance().createObject(
-                object=self._currentResults)
+                object=results)
         except Exception as ex:
             message = 'Failed to add roll results to objectdb'
             logging.error(message, exc_info=ex)

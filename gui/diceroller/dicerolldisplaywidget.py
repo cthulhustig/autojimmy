@@ -34,11 +34,17 @@ class DiceRollDisplayWidget(QtWidgets.QWidget):
         layout.addWidget(self._displayModeTabView)
         self.setLayout(layout)
 
+    def roller(self) -> typing.Optional[diceroller.DiceRoller]:
+        return self._roller
+
     def setRoller(self, roller: typing.Optional[diceroller.DiceRoller]) -> None:
         self._clearResults()
         self._roller = roller
         self._probabilityGraph.setRoller(roller=roller)
         self._probabilityGraph.setHighlightRoll(roll=None)
+
+    def results(self) -> typing.Optional[diceroller.DiceRollResult]:
+        return self._results
 
     def setResults(
             self,
