@@ -79,6 +79,25 @@ _WelcomeMessage = """
 # - IDEA: It might be easier if I split the roller config out of the main
 #   roller and into its own db object. With the result being the roller
 #   becomes just a name and single mandatory config
+#
+# TODO: This trigger might be useful to prevent loops being created in the
+# hierarchy table
+"""
+CREATE TRIGGER prevent_loop
+BEFORE INSERT ON hierarchyTable
+BEGIN
+    -- Check if the new relationship creates a loop
+    WITH RECURSIVE check_cte(id, child) AS (
+        SELECT NEW.id, NEW.child
+        UNION ALL
+        SELECT h.id, h.child
+        FROM hierarchyTable h
+        JOIN check_cte cte ON h.child = cte.id
+    )
+    SELECT RAISE(ABORT, 'Loop detected')
+    WHERE EXISTS (SELECT 1 FROM check_cte WHERE child = NEW.id);
+END;
+"""
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
@@ -868,7 +887,6 @@ class DiceRollerWindow(gui.WindowWidget):
                 oldRoller = self._objectFromId(objectId=rollerId)
                 assert(isinstance(oldRoller, diceroller.DiceRoller))
                 newRoller = copy.deepcopy(oldRoller)
-                newRoller.setParent(None)
                 newGroup.addRoller(newRoller)
 
             oldGroup = self._objectFromId(newGroup.id())

@@ -34,10 +34,9 @@ class DiceModifier(objectdb.DatabaseObject):
             name: str,
             value: int,
             enabled: bool,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
         self._name = name
         self._value = value
         self._enabled = enabled
@@ -101,7 +100,6 @@ class DiceModifier(objectdb.DatabaseObject):
     @staticmethod
     def createObject(
         id: str,
-        parent: typing.Optional[str],
         data: typing.Mapping[
             str,
             typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
@@ -120,7 +118,6 @@ class DiceModifier(objectdb.DatabaseObject):
 
         return DiceModifier(
             id=id,
-            parent=parent,
             name=name,
             value=value,
             enabled=enabled)
@@ -140,10 +137,9 @@ class DiceRoller(objectdb.DatabaseObject):
             targetType: typing.Optional[common.ComparisonType] = None,
             targetNumber: typing.Optional[int] = None, # Must be supplied if targetType is supplied
             snakeEyesRule: bool = False,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
         self._name = name
         self._dieCount = dieCount
         self._dieType = dieType
@@ -155,7 +151,6 @@ class DiceRoller(objectdb.DatabaseObject):
         self._snakeEyesRule = snakeEyesRule
 
         self._modifiers = objectdb.DatabaseList(
-            parent=self.id(),
             id=modifiers.id() if isinstance(modifiers, objectdb.DatabaseList) else None)
         if modifiers:
             self.setModifiers(modifiers=modifiers)
@@ -228,16 +223,8 @@ class DiceRoller(objectdb.DatabaseObject):
                 raise ValueError(f'Modifier is not a {DiceModifier}')
 
         if isinstance(modifiers, objectdb.DatabaseList):
-            if modifiers.parent() != None:
-                raise ValueError(f'List {modifiers.id()} already has parent {modifiers.parent()}')
-
-            self._modifiers.setParent(None)
             self._modifiers = modifiers
-            self._modifiers.setParent(self.id())
         else:
-            for modifier in modifiers:
-                if modifier.parent() != None:
-                    raise ValueError(f'Modifier {modifier.id()} already has parent {modifier.parent()}')
             self._modifiers.init(content=modifiers)
 
     def addModifier(self, modifier: DiceModifier) -> None:
@@ -250,8 +237,8 @@ class DiceRoller(objectdb.DatabaseObject):
             raise ValueError(f'Modifier is not a {DiceModifier}')
         self._modifiers.insert(index=index, item=modifier)
 
-    def removeModifier(self, id: str) -> DiceModifier:
-        return self._modifiers.removeById(id=id)
+    def removeModifier(self, id: str) -> None:
+        self._modifiers.removeById(id=id)
 
     def clearModifiers(self) -> None:
         self._modifiers.clear()
@@ -350,7 +337,6 @@ class DiceRoller(objectdb.DatabaseObject):
     @staticmethod
     def createObject(
         id: str,
-        parent: typing.Optional[str],
         data: typing.Mapping[
             str,
             typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
@@ -412,7 +398,6 @@ class DiceRoller(objectdb.DatabaseObject):
 
         return DiceRoller(
             id=id,
-            parent=parent,
             name=name,
             dieCount=dieCount,
             dieType=dieType,
@@ -431,14 +416,12 @@ class DiceRollerGroup(objectdb.DatabaseObject):
             rollers: typing.Optional[typing.Union[
                 typing.Iterable[DiceRoller],
                 objectdb.DatabaseList]] = None,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
         self._name = name
 
         self._rollers = objectdb.DatabaseList(
-            parent=self.id(),
             id=rollers.id() if isinstance(rollers, objectdb.DatabaseList) else None)
         if rollers:
             self.setRollers(rollers=rollers)
@@ -473,35 +456,22 @@ class DiceRollerGroup(objectdb.DatabaseObject):
                 raise ValueError(f'Roller is not a {DiceRoller})')
 
         if isinstance(rollers, objectdb.DatabaseList):
-            if rollers.parent() != None:
-                raise ValueError(f'List {rollers.id()} already has parent {rollers.parent()}')
-
-            self._rollers.setParent(None)
             self._rollers = rollers
-            self._rollers.setParent(self.id())
         else:
-            for roller in rollers:
-                if roller.parent() != None:
-                    raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
             self._rollers.init(content=rollers)
 
     def addRoller(self, roller: DiceRoller) -> None:
         if not isinstance(roller, DiceRoller):
             raise ValueError(f'Roller is not a {DiceRoller}')
-        if roller.parent() != None:
-            raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
-
         self._rollers.add(roller)
 
     def insertRoller(self, index: int, roller: DiceRoller) -> None:
         if not isinstance(roller, DiceRoller):
             raise ValueError(f'Roller is not a {DiceRoller}')
-        if roller.parent() != None:
-            raise ValueError(f'Roller {roller.id()} already has parent {roller.parent()}')
         self._rollers.insert(index=index, item=roller)
 
-    def removeRoller(self, id: str) -> DiceRoller:
-        return self._rollers.removeById(id=id)
+    def removeRoller(self, id: str) -> None:
+        self._rollers.removeById(id=id)
 
     def clearRollers(self) -> None:
         self._rollers.clear()
@@ -540,7 +510,6 @@ class DiceRollerGroup(objectdb.DatabaseObject):
     @staticmethod
     def createObject(
         id: str,
-        parent: typing.Optional[str],
         data: typing.Mapping[
             str,
             typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
@@ -555,7 +524,6 @@ class DiceRollerGroup(objectdb.DatabaseObject):
 
         return DiceRollerGroup(
             id=id,
-            parent=parent,
             name=name,
             rollers=rollers)
 
@@ -583,10 +551,9 @@ class DiceRollResult(objectdb.DatabaseObject):
             targetType: typing.Optional[common.ComparisonType] = None,
             targetNumber: typing.Optional[int] = None,
             snakeEyesRule: bool = False,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
 
         self._timestamp = timestamp
         self._label = label
@@ -600,7 +567,6 @@ class DiceRollResult(objectdb.DatabaseObject):
         self._snakeEyesRule = snakeEyesRule
 
         self._rolls = objectdb.DatabaseList(
-            parent=self.id(),
             id=rolls.id() if isinstance(rolls, objectdb.DatabaseList) else None)
         if rolls != None:
             for roll in rolls:
@@ -612,13 +578,11 @@ class DiceRollResult(objectdb.DatabaseObject):
                 raise ValueError('Invalid flux rolls')
 
             self._fluxRolls = objectdb.DatabaseList(
-                parent=self.id(),
                 id=fluxRolls.id() if isinstance(fluxRolls, objectdb.DatabaseList) else None)
             for flux in fluxRolls:
                 self._fluxRolls.add(flux)
 
         self._modifiers = objectdb.DatabaseList(
-            parent=self.id(),
             id=modifiers.id() if isinstance(modifiers, objectdb.DatabaseList) else None)
         if modifiers != None:
             for name, value in modifiers:
@@ -856,7 +820,6 @@ class DiceRollResult(objectdb.DatabaseObject):
     @staticmethod
     def createObject(
         id: str,
-        parent: typing.Optional[str],
         data: typing.Mapping[
             str,
             typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
@@ -938,7 +901,6 @@ class DiceRollResult(objectdb.DatabaseObject):
 
         return DiceRollResult(
             id=id,
-            parent=parent,
             timestamp=timestamp,
             label=label,
             seed=seed,

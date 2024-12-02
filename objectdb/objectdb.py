@@ -11,20 +11,28 @@ class ObjectDbOperation(enum.Enum):
     Update = 'update'
     Delete = 'delete'
 
+class ObjectDbTriggerType(enum.Enum):
+    Before = 'before'
+    After = 'after'
+
 class DatabaseEntity(object):
+    _Hack = 1 # TODO: Remove this
     def __init__(
             self,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
         super().__init__()
+
+        # TODO: Remove this
+        if id == None:
+            id = str(DatabaseEntity._Hack)
+            DatabaseEntity._Hack += 1
+
         self._id = id if id != None else str(uuid.uuid4())
-        self._parent = parent
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DatabaseEntity):
-            return self._id == other._id and \
-                self._parent == other._parent
+            return self._id == other._id
         return False
 
     def id(self) -> str:
@@ -33,21 +41,12 @@ class DatabaseEntity(object):
     def setId(self, id: str) -> None:
         self._id = id
 
-    def parent(self) -> typing.Optional[str]:
-        return self._parent
-
-    def setParent(self, parent: typing.Optional[str]) -> None:
-        if parent and self._parent:
-            raise RuntimeError(f'Object {self._id} already has a parent')
-        self._parent = parent
-
 class DatabaseObject(DatabaseEntity):
     def __init__(
             self,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
 
     def data(self) -> typing.Mapping[
             str,
@@ -61,7 +60,6 @@ class DatabaseObject(DatabaseEntity):
     @staticmethod
     def createObject(
             id: str,
-            parent: typing.Optional[str],
             data: typing.Mapping[
                 str,
                 typing.Optional[typing.Union[bool, int, float, str, DatabaseEntity]]]
@@ -77,10 +75,9 @@ class DatabaseList(DatabaseEntity):
     def __init__(
             self,
             content: typing.Optional[typing.Iterable[typing.Union[bool, int, float, str, DatabaseEntity]]] = None,
-            id: typing.Optional[str] = None,
-            parent: typing.Optional[str] = None,
+            id: typing.Optional[str] = None
             ) -> None:
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id)
         self._content: typing.List[typing.Union[bool, int, float, str, DatabaseEntity]] = []
         if content:
             self.init(content=content)
@@ -107,29 +104,13 @@ class DatabaseList(DatabaseEntity):
             self,
             content: typing.Iterable[typing.Union[bool, int, float, str, DatabaseEntity]]
             ) -> None:
-        seen = set()
-        for item in content:
-            if isinstance(item, DatabaseEntity):
-                if item.id() in seen:
-                    raise ValueError(f'Init content for list {self._id} can\'t contain objects with duplicate ids')
-                seen.add(item.id())
-
         self.clear()
-        for item in content:
-            if isinstance(item, DatabaseEntity):
-                item.setParent(self.id())
-            self._content.append(item)
+        self._content.extend(content)
 
     def add(
             self,
             item: typing.Union[bool, int, float, str, DatabaseEntity]
             ) -> None:
-        if isinstance(item, DatabaseEntity):
-            for other in self._content:
-                if isinstance(other, DatabaseEntity) and other.id() == item.id():
-                    raise ValueError(f'Duplicate entity {item.id()} can\'t be added to list {self.id()}')
-            item.setParent(self.id())
-
         self._content.append(item)
 
     def insert(
@@ -137,12 +118,6 @@ class DatabaseList(DatabaseEntity):
             index: int,
             item: typing.Union[bool, int, float, str, DatabaseEntity]
             ) -> None:
-        if isinstance(item, DatabaseEntity):
-            for other in self._content:
-                if isinstance(other, DatabaseEntity) and other.id() == item.id():
-                    raise ValueError(f'Duplicate entity {item.id()} can\'t be inserted into to list {self.id()}')
-            item.setParent(self.id())
-
         self._content.insert(index, item)
 
     def remove(
@@ -151,24 +126,14 @@ class DatabaseList(DatabaseEntity):
             ) -> typing.Union[bool, int, float, str, DatabaseEntity]:
         item = self._content[index]
         del self._content[index]
-
-        if isinstance(item, DatabaseEntity):
-            item.setParent(None)
-
         return item
 
-    def removeById(self, id: str) -> DatabaseEntity:
-        for item in self._content:
+    def removeById(self, id: str) -> None:
+        for item in list(self._content):
             if isinstance(item, DatabaseEntity) and id == item.id():
                 self._content.remove(item)
-                item.setParent(None)
-                return item
-        raise ValueError(f'Entity {id} not found in list {self.id()}')
 
     def clear(self) -> None:
-        for item in self._content:
-            if isinstance(item, DatabaseEntity):
-                item.setParent(None)
         self._content.clear()
 
 class ParamDef(object):
@@ -324,13 +289,19 @@ class ObjectDbManager(object):
         PRAGMA synchronous = NORMAL;
         """
     _SchemasTableName = 'objectdb_schemas'
+
     _EntitiesTableName = 'objectdb_entities'
     _EntitiesTableSchema = 1
+    _EntityTriggerSchemaVersion = 1
+
+    _HierarchyTableName = 'objectdb_hierarchy'
+    _HierarchyTableSchema = 1
+
     _ListsTableName = 'objectdb_lists'
     _ListsTableSchema = 1
+
     _ChangeLogTableName = 'objectdb_change_log'
     _ChangeLogTableSchema = 1
-    _EntityTriggerSchemaVersion = 1
 
     _instance = None # Singleton instance
     _lock = threading.RLock() # Reentrant lock
@@ -455,9 +426,7 @@ class ObjectDbManager(object):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             id TEXT PRIMARY KEY NOT NULL,
-                            parent TEXT,
-                            table_name TEXT NOT NULL,
-                            FOREIGN KEY(parent) REFERENCES {table}(id) ON DELETE CASCADE
+                            table_name TEXT NOT NULL
                         );
                         """.format(table=ObjectDbManager._EntitiesTableName)
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._EntitiesTableName}\' table')
@@ -469,17 +438,49 @@ class ObjectDbManager(object):
                         version=ObjectDbManager._EntitiesTableSchema,
                         cursor=cursor)
 
-                    # Create schema table indexes for id and parent columns. The id
-                    # index is needed as, even though it's the primary key, it's of
-                    # type TEXT so doesn't automatically get indexes
+                    # Create schema table indexes for id column. The id index is
+                    # needed as, even though it's the primary key, it's of type
+                    # TEXT so doesn't automatically get indexes
                     self._createColumnIndex(
                         table=ObjectDbManager._EntitiesTableName,
                         column='id',
                         unique=True,
                         cursor=cursor)
+
+                # Create hierarchy table
+                if not self._checkIfTableExists(
+                    tableName=ObjectDbManager._HierarchyTableName,
+                    cursor=cursor):
+                    # TODO: Should rename id column to parent
+                    sql = """
+                        CREATE TABLE IF NOT EXISTS {hierarchyTable} (
+                            id TEXT NOT NULL,
+                            child TEXT,
+                            FOREIGN KEY(id) REFERENCES {entityTable}(id) ON DELETE CASCADE
+                            FOREIGN KEY(child) REFERENCES {entityTable}(id) ON DELETE CASCADE
+                        );
+                        """.format(
+                            hierarchyTable=ObjectDbManager._HierarchyTableName,
+                            entityTable=ObjectDbManager._EntitiesTableName
+                            )
+                    logging.info(f'ObjectDbManager creating \'{ObjectDbManager._HierarchyTableName}\' table')
+                    cursor.execute(sql)
+
+                    self._writeSchemaVersion(
+                        name=ObjectDbManager._HierarchyTableName,
+                        type=ObjectDbManager.SchemaType.Table,
+                        version=ObjectDbManager._HierarchyTableSchema,
+                        cursor=cursor)
+
+                    # Create schema table indexes for id and child columns.
                     self._createColumnIndex(
-                        table=ObjectDbManager._EntitiesTableName,
-                        column='parent',
+                        table=ObjectDbManager._HierarchyTableName,
+                        column='id',
+                        unique=False,
+                        cursor=cursor)
+                    self._createColumnIndex(
+                        table=ObjectDbManager._HierarchyTableName,
+                        column='child',
                         unique=False,
                         cursor=cursor)
 
@@ -558,15 +559,39 @@ class ObjectDbManager(object):
                             objectDef=objectDef,
                             cursor=cursor)
 
-                # Create insert, update & delete triggers on entities table
-                self._createEntityTrigger(
+                # Create entity table triggers
+                self._createEntityTableTrigger(
+                    type=ObjectDbTriggerType.After,
                     operation=ObjectDbOperation.Insert,
+                    sqlFragment="""
+                        -- Log entity creation
+                        INSERT INTO {logTable} (operation, entity, table_name)
+                        VALUES ("{operation}", NEW.id, NEW.table_name);
+                        """.format(
+                            logTable=ObjectDbManager._ChangeLogTableName,
+                            operation=ObjectDbOperation.Insert.value),
                     cursor=cursor)
-                self._createEntityTrigger(
+                self._createEntityTableTrigger(
+                    type=ObjectDbTriggerType.After,
                     operation=ObjectDbOperation.Update,
+                    sqlFragment="""
+                        -- Log entity update
+                        INSERT INTO {logTable} (operation, entity, table_name)
+                        VALUES ("{operation}", NEW.id, NEW.table_name);
+                        """.format(
+                            logTable=ObjectDbManager._ChangeLogTableName,
+                            operation=ObjectDbOperation.Update.value),
                     cursor=cursor)
-                self._createEntityTrigger(
+                self._createEntityTableTrigger(
+                    type=ObjectDbTriggerType.After,
                     operation=ObjectDbOperation.Delete,
+                    sqlFragment="""
+                        -- Log entity deletion
+                        INSERT INTO {logTable} (operation, entity, table_name)
+                        VALUES ("{operation}", OLD.id, OLD.table_name);
+                        """.format(
+                            logTable=ObjectDbManager._ChangeLogTableName,
+                            operation=ObjectDbOperation.Delete.value),
                     cursor=cursor)
 
                 cursor.execute('END;')
@@ -600,13 +625,6 @@ class ObjectDbManager(object):
             object: DatabaseObject,
             transaction: typing.Optional[Transaction] = None
             ) -> str:
-        if object.parent() != None:
-            # The parent should be created/updated rather than creating the child.
-            # The prevents the database become corrupt because there is a parent
-            # set for the object but the parent doesn't refer to it (or possibly
-            # doesn't exit at all)
-            raise ValueError('Object to be created can\'t have a parent')
-
         logging.debug(f'ObjectDbManager creating object {object.id()} of type {type(object)}')
         if transaction != None:
             connection = transaction.connection()
@@ -875,12 +893,15 @@ class ObjectDbManager(object):
             logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
             cursor.execute(sql)
 
-    def _createEntityTrigger(
+    def _createEntityTableTrigger(
             self,
+            type: ObjectDbTriggerType,
             operation: ObjectDbOperation,
+            sqlFragment: str,
             cursor: sqlite3.Cursor
             ) -> None:
-        triggerName = '{operation}_entity_trigger'.format(
+        triggerName = '{type}_{operation}_entity_trigger'.format(
+            type=type.value.lower(),
             operation=operation.value.lower())
 
         if self._checkIfTriggerExists(triggerName=triggerName, cursor=cursor):
@@ -892,26 +913,25 @@ class ObjectDbManager(object):
                 return # Correct version trigger already exists so nothing to do
 
             # Delete the old trigger and create the new one
-            sql = 'DROP TRIGGER {triggerName};'.format(triggerName=triggerName)
-            if schemaVersion == None:
-                logging.info(f'ObjectDbManager deleting \'{triggerName}\' trigger with unknown version')
-            else:
-                logging.info(f'ObjectDbManager deleting version {schemaVersion} \'{triggerName}\' trigger')
-            cursor.execute(sql)
+            self._dropTrigger(
+                triggerName=triggerName,
+                schemaVersion=schemaVersion,
+                cursor=cursor)
 
         sql = """
             CREATE TRIGGER {triggerName}
-            AFTER {operation} ON {entitiesTable}
+            {type} {operation} ON {entitiesTable}
+            FOR EACH ROW
             BEGIN
-                INSERT INTO {logTable} (operation, entity, table_name)
-                VALUES ("{operation}", {dataTable}.id, {dataTable}.table_name);
+            {sql}
             END;
             """.format(
                 triggerName=triggerName,
-                operation=operation.value,
+                type=type.value.upper(),
+                operation=operation.value.upper(),
                 entitiesTable=ObjectDbManager._EntitiesTableName,
-                logTable=ObjectDbManager._ChangeLogTableName,
-                dataTable='OLD' if operation == ObjectDbOperation.Delete else 'NEW')
+                sql=sqlFragment)
+
         logging.info(f'ObjectDbManager creating \'{triggerName}\' trigger')
         cursor.execute(sql)
 
@@ -920,6 +940,19 @@ class ObjectDbManager(object):
             type=ObjectDbManager.SchemaType.Trigger,
             version=ObjectDbManager._EntityTriggerSchemaVersion,
             cursor=cursor)
+
+    def _dropTrigger(
+            self,
+            triggerName: str,
+            schemaVersion: typing.Optional[str],
+            cursor: sqlite3.Cursor
+            ) -> None:
+        sql = 'DROP TRIGGER {triggerName};'.format(triggerName=triggerName)
+        if schemaVersion == None:
+            logging.info(f'ObjectDbManager deleting \'{triggerName}\' trigger with unknown version')
+        else:
+            logging.info(f'ObjectDbManager deleting version {schemaVersion} \'{triggerName}\' trigger')
+        cursor.execute(sql)
 
     def _createObjectTable(
             self,
@@ -986,20 +1019,22 @@ class ObjectDbManager(object):
             entity: DatabaseEntity,
             cursor: sqlite3.Cursor
             ) -> None:
+        children: typing.List[DatabaseEntity] = []
         if isinstance(entity, DatabaseObject):
             objectDef = self._classObjectDefMap.get(type(entity))
             if objectDef == None:
                 raise ValueError(f'Failed to create {type(entity)} (Unknown object type)')
 
-            sql = 'INSERT INTO {table} VALUES (:id, :parent, :table_name)'.format(
+            # Add object to entity table
+            sql = 'INSERT INTO {table} VALUES (:id, :table_name);'.format(
                 table=ObjectDbManager._EntitiesTableName)
             rowData = {
                 'id': entity.id(),
-                'parent': entity.parent(),
                 'table_name': objectDef.tableName()
             }
             cursor.execute(sql, rowData)
 
+            # Add object to its object table
             sql = 'INSERT INTO {table} VALUES (:id'.format(
                 table=objectDef.tableName())
             rowData = {'id': entity.id()}
@@ -1015,8 +1050,8 @@ class ObjectDbManager(object):
                         f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has null value for mandatory parameter')
                 sql += ', :' + columnName
 
-                childEntity = None
                 columnType = paramDef.columnType()
+                childEntity = None
                 if columnType == str:
                     if columnValue != None:
                         columnValue = str(columnValue)
@@ -1044,51 +1079,74 @@ class ObjectDbManager(object):
                 rowData[columnName] = columnValue
 
                 if childEntity != None:
-                    self._createEntity(
+                    # NOTE: Use of _updateEntity rather than recursively calling
+                    # _createEntity is intentional as children entities may
+                    # already be in the database
+                    self._updateEntity(
                         entity=childEntity,
                         cursor=cursor)
-            sql += ');'
+                    children.append(childEntity)
 
+            sql += ');'
             cursor.execute(sql, rowData)
         elif isinstance(entity, DatabaseList):
-            # Always insert list into entity table, even if doesn't
-            # have any entries in the list table because it's empty
-            sql = 'INSERT INTO {table} VALUES (:id, :parent, :table_name)'.format(
+            # Add list to entity table. This is always done, even if the list is
+            # empty
+            sql = 'INSERT INTO {table} VALUES (:id, :table_name);'.format(
                 table=ObjectDbManager._EntitiesTableName)
             rowData = {
                 'id': entity.id(),
-                'parent': entity.parent(),
                 'table_name': ObjectDbManager._ListsTableName
             }
             cursor.execute(sql, rowData)
 
+            # Add list entries to list table. This is only done if the list has
+            # content
             rowData = []
-            for child in entity:
-                if isinstance(child, DatabaseEntity):
-                    self._createEntity(entity=child, cursor=cursor)
+            for childEntity in entity:
+                if isinstance(childEntity, DatabaseEntity):
+                    # Add child entities to database. This must be done before
+                    # adding the list to the list table to avoid foreign key
+                    # issues
+                    # NOTE: Use of _updateEntity rather than recursively calling
+                    # _createEntity is intentional as children entities may
+                    # already be in the database
+                    self._updateEntity(
+                        entity=childEntity,
+                        cursor=cursor)
+                    children.append(childEntity)
 
                 rowData.append((
                     entity.id(),
-                    (1 if child else 0) if isinstance(child, bool) else None,
-                    child if isinstance(child, int) else None,
-                    child if isinstance(child, float) else None,
-                    child if isinstance(child, str) else None,
-                    child.id() if isinstance(child, DatabaseEntity) else None))
+                    (1 if childEntity else 0) if isinstance(childEntity, bool) else None,
+                    childEntity if isinstance(childEntity, int) else None,
+                    childEntity if isinstance(childEntity, float) else None,
+                    childEntity if isinstance(childEntity, str) else None,
+                    childEntity.id() if isinstance(childEntity, DatabaseEntity) else None))
             if rowData:
                 sql = """
                     INSERT INTO {table} (id, bool, integer, float, string, entity)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?);
                     """.format(table=ObjectDbManager._ListsTableName)
                 cursor.executemany(sql, rowData)
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
 
+        if children:
+            # Add child entries to hierarchy table
+            sql = """
+                INSERT INTO {table} (id, child)
+                VALUES (?, ?);
+                """.format(table=ObjectDbManager._HierarchyTableName)
+            cursor.executemany(
+                sql,
+                [(entity.id(), childEntity.id()) for childEntity in children])
+
     def _readEntity(
             self,
             id: str,
             cursor: sqlite3.Cursor,
-            table: typing.Optional[str] = None,
-            setParent: bool = True
+            table: typing.Optional[str] = None
             ) -> DatabaseEntity:
         if not table:
             sql = """
@@ -1104,21 +1162,6 @@ class ObjectDbManager(object):
             table = row[0]
 
         if table == ObjectDbManager._ListsTableName:
-            parent = None
-            if setParent:
-                sql = """
-                    SELECT parent
-                    FROM {table}
-                    WHERE id = :id
-                    LIMIT 1;
-                    """.format(
-                    table=ObjectDbManager._EntitiesTableName)
-                cursor.execute(sql, {'id': id})
-                row = cursor.fetchone()
-                if not row:
-                    raise RuntimeError(f'Parent for {id} not found in entity table')
-                parent = row[0]
-
             sql = """
                 SELECT
                     {listTable}.bool,
@@ -1149,18 +1192,16 @@ class ObjectDbManager(object):
                     content.append(self._readEntity( # It's an entity
                         id=row[4],
                         table=row[5],
-                        setParent=False,
                         cursor=cursor))
 
             return DatabaseList(
                 id=id,
-                parent=parent,
                 content=content)
         else:
             objectDef = self._tableObjectDefMap.get(table)
             if objectDef == None:
                 raise ValueError(f'Object {id} uses unknown table {table}')
-            columns = ['{table}.parent'.format(table=ObjectDbManager._EntitiesTableName)]
+            columns = []
             entityJoins = ''
             for paramDef in objectDef.paramDefs():
                 columns.append('{table}.{column}'.format(
@@ -1198,9 +1239,8 @@ class ObjectDbManager(object):
             if not row:
                 raise RuntimeError(f'Object {id} not found in table {table}')
 
-            parent = row[0] if setParent else None
             objectData = {}
-            columnIndex = 1
+            columnIndex = 0
             for paramDef in objectDef.paramDefs():
                 columnName = paramDef.columnName()
                 columnValue = row[columnIndex]
@@ -1233,7 +1273,6 @@ class ObjectDbManager(object):
                         columnValue = self._readEntity(
                             id=columnValue,
                             table=entityTable,
-                            setParent=False,
                             cursor=cursor)
                 else:
                     raise RuntimeError(
@@ -1244,7 +1283,6 @@ class ObjectDbManager(object):
             classType = objectDef.classType()
             return classType.createObject(
                 id=id,
-                parent=parent,
                 data=objectData)
 
     def _readEntities(
@@ -1257,8 +1295,7 @@ class ObjectDbManager(object):
             raise ValueError(f'{classType} has no object definition')
 
         columns = [
-            '{table}.id'.format(table=objectDef.tableName()),
-            '{table}.parent'.format(table=ObjectDbManager._EntitiesTableName)
+            '{table}.id'.format(table=objectDef.tableName())
             ]
         entityJoins = ''
         for paramDef in objectDef.paramDefs():
@@ -1294,9 +1331,8 @@ class ObjectDbManager(object):
         objects = []
         for row in cursor.fetchall():
             id = row[0]
-            parent = row[1]
             objectData = {}
-            columnIndex = 2
+            columnIndex = 1
             for paramDef in objectDef.paramDefs():
                 columnName = paramDef.columnName()
                 columnValue = row[columnIndex]
@@ -1329,7 +1365,6 @@ class ObjectDbManager(object):
                         columnValue = self._readEntity(
                             id=columnValue,
                             table=entityTable,
-                            setParent=False,
                             cursor=cursor)
                 else:
                     raise RuntimeError(
@@ -1340,7 +1375,6 @@ class ObjectDbManager(object):
             classType = objectDef.classType()
             objects.append(classType.createObject(
                 id=id,
-                parent=parent,
                 data=objectData))
         return objects
 
@@ -1354,6 +1388,7 @@ class ObjectDbManager(object):
             entity: DatabaseEntity,
             cursor: sqlite3.Cursor
             ) -> None:
+        children: typing.List[DatabaseEntity] = []
         if isinstance(entity, DatabaseObject):
             objectDef = self._classObjectDefMap.get(type(entity))
             if objectDef == None:
@@ -1364,15 +1399,13 @@ class ObjectDbManager(object):
 
             # Update the entities table metadata
             sql = """
-                INSERT INTO {table} (id, parent, table_name)
-                VALUES (:id, :parent, :table)
+                INSERT INTO {table} (id, table_name)
+                VALUES (:id, :table)
                 ON CONFLICT(id) DO UPDATE SET
-                    parent = excluded.parent,
                     table_name = excluded.table_name;
                 """.format(table=ObjectDbManager._EntitiesTableName)
             rowData = {
                 'id': entity.id(),
-                'parent': entity.parent(),
                 'table': objectDef.tableName()}
             cursor.execute(sql, rowData)
 
@@ -1408,9 +1441,9 @@ class ObjectDbManager(object):
                     raise RuntimeError(
                         f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has null value for mandatory parameter')
 
+                columnType = paramDef.columnType()
                 isReference = False
                 childEntity = None
-                columnType = paramDef.columnType()
                 if columnType == str:
                     if columnValue != None:
                         columnValue = str(columnValue)
@@ -1431,7 +1464,7 @@ class ObjectDbManager(object):
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         isReference = True
                         childEntity = columnValue
-                        columnValue = columnValue.id()
+                        columnValue = str(columnValue.id())
                 else:
                     raise RuntimeError(
                         f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} has unknown type {columnType}')
@@ -1441,15 +1474,15 @@ class ObjectDbManager(object):
                 if isReference and (exitingValues != None):
                     oldId = exitingValues[index]
                     if oldId != None and oldId != columnValue:
-                        sql = """
-                            DELETE FROM {table}
-                            WHERE id = :id;
-                            """.format(table=ObjectDbManager._EntitiesTableName)
-                        cursor.execute(sql, {'id': oldId})
+                        self._deleteIfOnlyReference(
+                            entityId=oldId,
+                            parentId=entity.id(),
+                            cursor=cursor)
 
                 if childEntity != None:
                     # Recursively update the child entity
                     self._updateEntity(entity=childEntity, cursor=cursor)
+                    children.append(childEntity)
 
             # Update the object's specific table fields
             sql = """
@@ -1457,54 +1490,59 @@ class ObjectDbManager(object):
                 VALUES (:id, {placeholders})
                 ON CONFLICT(id) DO UPDATE SET {conflict};
                 """.format(
-                table=objectDef.tableName(),
-                columns=', '.join(columnNames),
-                placeholders=', '.join([f':{col}' for col in columnNames]),
-                conflict=', '.join([f'{col} = excluded.{col}' for col in columnNames]))
+                    table=objectDef.tableName(),
+                    columns=', '.join(columnNames),
+                    placeholders=', '.join([f':{col}' for col in columnNames]),
+                    conflict=', '.join([f'{col} = excluded.{col}' for col in columnNames]))
             cursor.execute(sql, rowData)
         elif isinstance(entity, DatabaseList):
             # Update the entities table for the list
             sql = """
-                INSERT INTO {table} (id, parent, table_name)
-                VALUES (:id, :parent, :table)
+                INSERT INTO {table} (id, table_name)
+                VALUES (:id, :table)
                 ON CONFLICT(id) DO UPDATE SET
-                    parent = excluded.parent,
                     table_name = excluded.table_name;
                 """.format(table=ObjectDbManager._EntitiesTableName)
             rowData = {
                 'id': entity.id(),
-                'parent': entity.parent(),
                 'table': ObjectDbManager._ListsTableName}
             cursor.execute(sql, rowData)
 
             # Delete any children that were in the list but aren't any more
+            # NOTE: The SQL query only gets unique entities from the list table
+            # (i.e. if the list contains multiple references to the the same
+            # child, the query will only return it's id once). This is done to
+            # prevent the same entity being deleted twice.
             contentIds = [child.id() for child in entity if isinstance(child, DatabaseEntity)]
             sql = """
-                DELETE FROM {entitiesTable}
-                WHERE id IN (
-                    SELECT entity
-                    FROM {listsTable}
-                    WHERE id = ?
-                    AND entity NOT IN ({placeholders})
-                );
-            """.format(
-                entitiesTable=ObjectDbManager._EntitiesTableName,
-                listsTable=ObjectDbManager._ListsTableName,
-                placeholders=', '.join('?' for _ in contentIds))
+                SELECT DISTINCT entity
+                FROM {listsTable}
+                WHERE id = ?
+                AND entity NOT IN ({placeholders})
+                """.format(
+                    listsTable=ObjectDbManager._ListsTableName,
+                    placeholders=', '.join('?' for _ in contentIds))
             rowData = [entity.id()] + contentIds
             cursor.execute(sql, rowData)
+            for row in cursor.fetchall():
+                childId = row[0]
+                self._deleteIfOnlyReference(
+                    entityId=childId,
+                    parentId=entity.id(),
+                    cursor=cursor)
 
             # Recursively update list children. This must be done before
-            # the inserting items into the list for them in order to
-            # avoid failing foreign key checks
+            # inserting the parent to avoid foreign key issues
             for child in entity:
-                self._updateEntity(entity=child, cursor=cursor)
+                if isinstance(child, DatabaseEntity):
+                    self._updateEntity(entity=child, cursor=cursor)
+                    children.append(child)
 
-            # Remove all existing items for the list and add the new ones.
-            # This is a bit inefficient if the majority of the same objects
-            # are still in the list, however it has the advantage that it
-            # keeps the order of the items in the db the same as the order
-            # the list object has them
+            # Remove all existing entries in the list table for this list and
+            # add the new ones. This is a bit inefficient if the majority of the
+            # same objects are still in the list, however it has the advantage
+            # that it keeps the order of the items in the db the same as the
+            # order the list object has them
             sql = 'DELETE FROM {table} WHERE id = :id'.format(
                 table=ObjectDbManager._ListsTableName)
             cursor.execute(sql, {'id': entity.id()})
@@ -1527,6 +1565,25 @@ class ObjectDbManager(object):
         else:
             raise RuntimeError(f'Unexpected entity type {type(entity)}')
 
+        # Delete all child entries from the hierarchy table then add the new
+        # entries. The delete is always done as, even if an entity doesn't have
+        # any children now, it doesn't mean it didn't before it was updated
+        # Removing and readding is inefficient but it avoids problems if the
+        # parent has multiple references to a given child.
+        sql = """
+            DELETE FROM {table} WHERE id = :id;
+            """.format(table=ObjectDbManager._HierarchyTableName)
+        cursor.execute(sql, {'id': entity.id()})
+
+        if children:
+            sql = """
+                INSERT INTO {table} (id, child)
+                VALUES (?, ?);
+                """.format(table=ObjectDbManager._HierarchyTableName)
+            cursor.executemany(
+                sql,
+                [(entity.id(), childEntity.id()) for childEntity in children])
+
     def _deleteEntity(
             self,
             id: str,
@@ -1534,107 +1591,142 @@ class ObjectDbManager(object):
             ) -> None:
         # This beast of a query was generated by chat-gpt as an optimisation
         # on my implementation that did the recursion in code with multiple
-        # queries. It retrieves entity data from entity with the supplied id
-        # _AND_ the entity data for its parent hierarchy
-        fetchHierarchySql = """
-            WITH RECURSIVE ParentHierarchy(id, parent, table_name) AS (
-                SELECT id, parent, table_name
-                FROM {table}
-                WHERE id = :id
+        # queries. It retrieves entity entity data for the parent hierarchy
+        # of the objected with the specified id
+        sql = """
+            WITH RECURSIVE parent_hierarchy(id, child, table_name) AS (
+                -- Anchor: Start with the given child ID
+                SELECT h.id, h.child, e.table_name
+                FROM {hierarchyTable} h
+                JOIN {entitiesTable} e ON h.id = e.id
+                WHERE h.child = :id
+
                 UNION ALL
-                SELECT e.id, e.parent, e.table_name
-                FROM {table} e
-                JOIN ParentHierarchy ph ON e.id = ph.parent
+
+                -- Recursive step: Find all parents and their table_name
+                SELECT h.id, h.child, e.table_name
+                FROM {hierarchyTable} h
+                JOIN {entitiesTable} e ON h.id = e.id
+                INNER JOIN parent_hierarchy cte
+                ON h.child = cte.id
             )
-            SELECT id, parent, table_name
-            FROM ParentHierarchy;
-            """.format(table=ObjectDbManager._EntitiesTableName)
-        cursor.execute(fetchHierarchySql, {'id': id})
-        hierarchy = cursor.fetchall()
+            SELECT id, child, table_name FROM parent_hierarchy;
+            """.format(
+                hierarchyTable=ObjectDbManager._HierarchyTableName,
+                entitiesTable=ObjectDbManager._EntitiesTableName)
+        cursor.execute(sql, {'id': id})
+        results = cursor.fetchall()
 
-        if not hierarchy:
-            # Entity not found in entity table so nothing to do. This can happen
-            # if _deleteEntity is being called by _deleteEntities and a previous
-            # call has already caused the entity to be deleted
-            return
+        idToTableMap = {}
+        childToParentsMap = {}
+        for row in results:
+            parent = row[0]
+            child = row[1]
+            table = row[2]
 
-        idToParentMap = {row[0]: (row[1], row[2]) for row in hierarchy}
-        deleteId = id
-        parentId, parentTable = idToParentMap.get(id)
-        columnToNull = None
+            idToTableMap[parent] = table
 
-        # If this object is a mandatory part of its parent then deleting
-        # the object must also delete the parent
-        while parentId != None:
-            nextParentId, parentTable = idToParentMap.get(parentId, (None, None))
+            parentList = childToParentsMap.get(child)
+            if not parentList:
+                parentList = []
+                childToParentsMap[child] = parentList
+            parentList.append(parent)
 
-            if parentTable == ObjectDbManager._ListsTableName:
-                # The parent is a list so the current deleteId can be deleted,
-                # resulting in it being removed from the list
-                break
+        hierarchies = self._constructParentHierarchies(
+            entityId=id,
+            childToParentsMap=childToParentsMap)
 
-            # Get the object definition for this parent table
-            objectDef = self._tableObjectDefMap.get(parentTable)
-            if objectDef == None:
-                raise RuntimeError(
-                    f'Parent object {parentId} uses table {parentTable} but has no object description')
+        toDelete = set()
+        for hierarchy in hierarchies:
+            deleteId = id
+            parentTable = None
+            columnsToNull = []
 
-            columns = []
-            for paramDef in objectDef.paramDefs():
-                if issubclass(paramDef.columnType(), DatabaseObject) and paramDef.isOptional():
-                    columns.append(paramDef.columnName())
-            if columns:
-                fetchDataSql = """
-                    SELECT {columns}
-                    FROM {table}
-                    WHERE id = :id
-                    LIMIT 1;
-                    """.format(
-                    columns=','.join(columns),
-                    table=parentTable)
-                cursor.execute(fetchDataSql, {'id': parentId})
-                row = cursor.fetchone()
-                if not row:
-                    raise RuntimeError(f'Parent object {parentId} not found in {parentTable}')
+            # If this object is a mandatory part of its parent then deleting
+            # the object must also delete the parent
+            for parentId in hierarchy:
+                parentTable = idToTableMap.get(parentId)
 
-                for index, value in enumerate(row):
-                    if value == deleteId:
-                        columnToNull = columns[index]
-                        break
-
-                if columnToNull:
-                    # The parentId parameter that refers to the current deleteId is
-                    # an optional object reference so the column can be nulled and
-                    # deleteId deleted
+                if parentTable == ObjectDbManager._ListsTableName:
+                    # The parent is a list so the current deleteId can be deleted,
+                    # resulting in it being removed from the list
                     break
 
-            # The deleteId entity is a mandatory part of the of the parentId
-            # entity so deleting it also deletes the parent
-            deleteId = parentId
-            parentId = nextParentId
+                # Get the object definition for this parent table
+                objectDef = self._tableObjectDefMap.get(parentTable)
+                if objectDef == None:
+                    raise RuntimeError(
+                        f'Parent object {parentId} uses table {parentTable} but has no object description')
 
-        if deleteId != id:
-            logging.debug(f'ObjectDbManager deleting object {id} requires deleting object {deleteId}')
+                referenceColumns: typing.Dict[
+                    str, # Column name
+                    bool # Is optional
+                    ] = {}
+                for paramDef in objectDef.paramDefs():
+                    if issubclass(paramDef.columnType(), DatabaseObject):
+                        referenceColumns[paramDef.columnName()] = paramDef.isOptional()
+                if referenceColumns:
+                    sql = """
+                        SELECT {columns}
+                        FROM {table}
+                        WHERE id = :id
+                        LIMIT 1;
+                        """.format(
+                        columns=','.join(referenceColumns.keys()),
+                        table=parentTable)
+                    cursor.execute(sql, {'id': parentId})
+                    row = cursor.fetchone()
+                    if not row:
+                        raise RuntimeError(f'Parent object {parentId} not found in {parentTable}')
 
-        if parentTable and columnToNull:
-            # Null the column that refers to the object being deleted
-            updateColumnSql = """
-                UPDATE {table}
-                SET {column} = NULL
-                WHERE id = :id;
-                """.format(
-                table=parentTable,
-                column=columnToNull)
-            cursor.execute(updateColumnSql, {'id': parentId})
+                    columnsToNull = []
+                    for index, (column, isOptional) in enumerate(referenceColumns.items()):
+                        value = row[index]
+                        if value == deleteId:
+                            if not isOptional:
+                                # This parameter is not optional so deleting the child means
+                                # the parent must also be deleted. As it's going to be deleted
+                                # there is no point nulling any parameters on the parent
+                                columnsToNull.clear()
+                                break
+                            columnsToNull.append(column)
 
-        # Delete the object. This deletes the entity table entry and assumes it
-        # will trigger a delete cascade in the relevant entity tables that will
-        # delete the object and its child entity hierarchy
-        deleteEntitySql = """
-            DELETE FROM {table}
-            WHERE id = :id;
-            """.format(table=ObjectDbManager._EntitiesTableName)
-        cursor.execute(deleteEntitySql, {'id': deleteId})
+                    if columnsToNull:
+                        # The parentId parameter that refers to the current deleteId is
+                        # an optional object reference so the column can be nulled and
+                        # deleteId deleted
+                        break
+
+                # The deleteId entity is a mandatory part of the of the parentId
+                # entity so deleting it also deletes the parent
+                deleteId = parentId
+
+            if deleteId != id:
+                logging.debug(f'ObjectDbManager deleting object {id} requires deleting object {deleteId}')
+
+            if parentTable and columnsToNull:
+                # Null the column that refers to the object being deleted
+                setStrings = [f'{column} = NULL' for column in columnsToNull]
+                sql = """
+                    UPDATE {table}
+                    SET {sets}
+                    WHERE id = :id;
+                    """.format(
+                        table=parentTable,
+                        sets=', '.join(setStrings))
+                cursor.execute(sql, {'id': parentId})
+
+            toDelete.add(deleteId)
+
+        if not toDelete:
+            # Specified object has no parent hierarchies so just delete the object
+            assert(not hierarchies)
+            toDelete.add(id)
+
+        for entityId in toDelete:
+            self._unsafeDeleteHierarchy(
+                entityId=entityId,
+                cursor=cursor)
 
     def _deleteEntities(
             self,
@@ -1655,12 +1747,28 @@ class ObjectDbManager(object):
         # deleted). This will trigger a cascade delete that will delete
         # remove the deleted objects and their children from all tables
         sql = """
-            DELETE FROM {entityTable}
-            WHERE parent IS NULL AND table_name = "{objectTable}";
+            WITH has_parent AS (
+                SELECT DISTINCT h1.id
+                FROM {hierarchyTable} h1
+                LEFT JOIN {hierarchyTable} h2 ON h1.id = h2.child
+                WHERE h2.child IS NULL
+            )
+            SELECT id FROM {entityTable}
+            WHERE table_name = "{objectTable}"
+            AND id IN (
+                SELECT id
+                FROM has_parent
+            );
             """.format(
                 entityTable=ObjectDbManager._EntitiesTableName,
+                hierarchyTable=ObjectDbManager._HierarchyTableName,
                 objectTable=objectDef.tableName())
         cursor.execute(sql)
+        for row in cursor.fetchall():
+            entityId = row[0]
+            self._unsafeDeleteHierarchy(
+                entityId=entityId,
+                cursor=cursor)
 
         # Check to see if there are any entries with parents left.
         # If there are call _deleteEntity on them
@@ -1674,6 +1782,127 @@ class ObjectDbManager(object):
         cursor.execute(sql)
         for rowData in cursor.fetchall():
             self._deleteEntity(id=rowData[0], cursor=cursor)
+
+    def _deleteIfOnlyReference(
+            self,
+            entityId: str,
+            parentId: str,
+            cursor: sqlite3.Cursor
+            ) -> bool:
+        refCount = self._calculateReferenceCount(
+            entityId=entityId,
+            ignoreId=parentId,
+            cursor=cursor)
+        if refCount != 0:
+            return False
+
+        self._unsafeDeleteHierarchy(
+            entityId=entityId,
+            cursor=cursor)
+        return True
+
+    # This function is classed as unsafe as it deletes the specified entity
+    # without checking if it's referenced by any other objects (child reference
+    # counting is performed). It's assumed that the caller has already checked
+    # that the entity is safe to delete. This means the specified entity will
+    # always be deleted (if it exists) and any parts of the child hierarchy that
+    # aren't referenced by other entities will also be deleted. The entities
+    # parent hierarchy isn't modified. If the entity has a parent hierarchy it
+    # is assumed the caller will take appropriate action to prevent dangling
+    # references
+    def _unsafeDeleteHierarchy(
+            self,
+            entityId: str,
+            cursor: sqlite3.Cursor
+            ) -> None:
+        # This beast of a query was generated by chat-gpt with a fair bit of
+        # wrangling and tweaking by me. It does a recursive of the specified
+        # entity and any parts of it's hierarchy where the only thing
+        # referring to them are the entity being deleted
+        # TODO: There is a bug here where if 2 objects in the hierarchy
+        # holding references to a child and those are the only references to it,
+        # then the child won't be deleted as there will be another entity holding
+        # a reference to it.
+        sql = """
+            WITH RECURSIVE child_hierarchy AS (
+                -- Anchor member: Start with the given ID and its exclusive children.
+                -- This DOESN'T check the reference count of the entity.
+                SELECT id AS child, NULL AS parent
+                FROM {entitiesTable}
+                WHERE id = :id
+
+                UNION ALL
+
+                -- Recursive member: Find exclusive children of the current level
+                SELECT h.child, h.id AS parent
+                FROM {hierarchyTable} h
+                JOIN child_hierarchy cte ON h.id = cte.child
+                WHERE (
+                    -- Calculate reference count of the child not including references
+                    -- held by the parent that is being deleted
+                    SELECT COUNT(*)
+                    FROM {hierarchyTable}
+                    WHERE child = h.child
+                    AND id != h.id
+                ) = 0
+            )
+            DELETE FROM {entitiesTable}
+            WHERE id IN (
+                SELECT child
+                FROM child_hierarchy
+            );
+            """.format(
+                entitiesTable=ObjectDbManager._EntitiesTableName,
+                hierarchyTable=ObjectDbManager._HierarchyTableName)
+        cursor.execute(sql, {"id": entityId})
+
+    def _constructParentHierarchies(
+            self,
+            entityId: str,
+            childToParentsMap: typing.Mapping[str, str],
+            currentHierarchy: typing.Optional[typing.List[str]] = None
+            ) -> typing.Iterable[typing.Iterable[str]]:
+        parentList = childToParentsMap.get(entityId)
+        if not parentList:
+            return [currentHierarchy] if currentHierarchy else []
+
+        results = []
+        for parentId in parentList:
+            if currentHierarchy != None and parentId in currentHierarchy:
+                raise RuntimeError(f'Entity {parentId} is part of its own hierarchy')
+
+            newHierarchy = list(currentHierarchy) if currentHierarchy else list()
+            newHierarchy.append(parentId)
+
+            results.extend(self._constructParentHierarchies(
+                entityId=parentId,
+                childToParentsMap=childToParentsMap,
+                currentHierarchy=newHierarchy))
+        return results
+
+    def _calculateReferenceCount(
+            self,
+            entityId: str,
+            cursor: sqlite3.Cursor,
+            ignoreId: typing.Optional[str] = None
+            ) -> int:
+        if ignoreId != None:
+            sql = """
+                SELECT COUNT(*)
+                FROM {table}
+                WHERE child = :id
+                AND id != :ignoreId;
+                """.format(table=ObjectDbManager._HierarchyTableName)
+            cursor.execute(sql, {'id': entityId, 'ignoreId': ignoreId})
+        else:
+            sql = """
+                SELECT COUNT(*)
+                FROM {table}
+                WHERE child = :id;
+                """.format(table=ObjectDbManager._HierarchyTableName)
+            cursor.execute(sql, {'id': entityId})
+        result = cursor.fetchone()
+        return result[0]
 
     def _handleBeginTransaction(
             self,
@@ -1711,6 +1940,7 @@ class ObjectDbManager(object):
             cursor.execute(sql)
             changes: typing.List[typing.Tuple[ObjectDbOperation, str, typing.Type[DatabaseEntity]]] = []
             results = cursor.fetchall()
+
             for changeData in results:
                 operation, entity, tableName = changeData
                 operation = common.enumFromValue(
@@ -1731,6 +1961,7 @@ class ObjectDbManager(object):
                         f'ObjectDbManager ignoring change {changeData} as table is unknown')
                     continue
 
+                logging.debug(f'ObjectDbManager transaction {operation.name} {entity} in {tableName}')
                 changes.append((operation, entity, entityType))
 
             # Clear changes
