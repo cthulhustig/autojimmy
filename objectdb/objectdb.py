@@ -16,18 +16,11 @@ class ObjectDbTriggerType(enum.Enum):
     After = 'after'
 
 class DatabaseEntity(object):
-    _Hack = 1 # TODO: Remove this
     def __init__(
             self,
             id: typing.Optional[str] = None
             ) -> None:
         super().__init__()
-
-        # TODO: Remove this
-        if id == None:
-            id = str(DatabaseEntity._Hack)
-            DatabaseEntity._Hack += 1
-
         self._id = id if id != None else str(uuid.uuid4())
 
     def __eq__(self, other: object) -> bool:
