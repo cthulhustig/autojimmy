@@ -254,6 +254,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._renameAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
+        self._renameAction.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key.Key_F2))
         self._renameAction.triggered.connect(self._renameObject)
         self._rollerTree.addAction(self._renameAction)
         self._rollerToolbar.addAction(self._renameAction)
@@ -267,6 +268,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._deleteAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
         self._deleteAction.triggered.connect(self._deleteObjects)
+        self._deleteAction.setShortcut(QtGui.QKeySequence.StandardKey.Delete)
         self._rollerTree.addAction(self._deleteAction)
         self._rollerToolbar.addAction(self._deleteAction)
 
