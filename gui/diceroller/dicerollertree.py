@@ -439,6 +439,8 @@ class DiceRollerTree(gui.TreeWidgetEx):
         return items
 
     def _restoreGroupOrdering(self) -> None:
+        currentItem = self.currentItem()
+
         items = {}
         while self.topLevelItemCount() > 0:
             item = self.takeTopLevelItem(0)
@@ -451,6 +453,10 @@ class DiceRollerTree(gui.TreeWidgetEx):
                 del items[groupId]
         for item in items.values():
             self.addTopLevelItem(item)
+
+        if currentItem:
+            with gui.SignalBlocker(self):
+                self.setCurrentItem(currentItem)
 
     def _restoreExpandStates(self) -> None:
         # Set expansion/collapsed state of groups
