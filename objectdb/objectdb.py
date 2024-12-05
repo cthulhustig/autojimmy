@@ -444,7 +444,6 @@ class ObjectDbManager(object):
                 if not self._checkIfTableExists(
                     tableName=ObjectDbManager._HierarchyTableName,
                     cursor=cursor):
-                    # TODO: Should rename id column to parent
                     sql = """
                         CREATE TABLE IF NOT EXISTS {hierarchyTable} (
                             id TEXT NOT NULL,
