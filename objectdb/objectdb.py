@@ -1138,8 +1138,12 @@ class ObjectDbManager(object):
             self,
             id: str,
             cursor: sqlite3.Cursor,
-            table: typing.Optional[str] = None
+            table: typing.Optional[str] = None,
+            entityCache: typing.Optional[typing.Dict[str, DatabaseEntity]] = None
             ) -> DatabaseEntity:
+        if entityCache == None:
+            entityCache = {}
+
         if not table:
             sql = """
                 SELECT table_name
@@ -1181,10 +1185,16 @@ class ObjectDbManager(object):
                 elif row[3] != None:
                     content.append(row[3]) # It's a string
                 elif row[4] != None:
-                    content.append(self._readEntity( # It's an entity
-                        id=row[4],
-                        table=row[5],
-                        cursor=cursor))
+                    # It's an entity
+                    child = entityCache.get(row[4])
+                    if not child:
+                        child = self._readEntity(
+                            id=row[4],
+                            table=row[5],
+                            entityCache=entityCache,
+                            cursor=cursor)
+                        entityCache[child.id()] = child
+                    content.append(child)
 
             return DatabaseList(
                 id=id,
@@ -1262,10 +1272,15 @@ class ObjectDbManager(object):
                         if entityTable == None:
                             raise RuntimeError(
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
-                        columnValue = self._readEntity(
-                            id=columnValue,
-                            table=entityTable,
-                            cursor=cursor)
+                        childId = columnValue
+                        columnValue = entityCache.get(childId)
+                        if not columnValue:
+                            columnValue = self._readEntity(
+                                id=childId,
+                                table=entityTable,
+                                entityCache=entityCache,
+                                cursor=cursor)
+                            entityCache[columnValue.id()] = columnValue
                 else:
                     raise RuntimeError(
                         f'Parameter {columnName} for object {id} of type {objectDef.classType()} has unknown type {columnType}')
@@ -1321,6 +1336,7 @@ class ObjectDbManager(object):
             entityJoins=entityJoins)
         cursor.execute(sql)
         objects = []
+        entityCache = {}
         for row in cursor.fetchall():
             id = row[0]
             objectData = {}
@@ -1354,10 +1370,15 @@ class ObjectDbManager(object):
                         if entityTable == None:
                             raise RuntimeError(
                                 f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
-                        columnValue = self._readEntity(
-                            id=columnValue,
-                            table=entityTable,
-                            cursor=cursor)
+                        childId = columnValue
+                        columnValue = entityCache.get(childId)
+                        if not columnValue:
+                            columnValue = self._readEntity(
+                                id=childId,
+                                table=entityTable,
+                                entityCache=entityCache,
+                                cursor=cursor)
+                            entityCache[columnValue.id()] = columnValue
                 else:
                     raise RuntimeError(
                         f'Parameter definition {objectDef.classType()}.{columnName} has unknown type {columnType}')
