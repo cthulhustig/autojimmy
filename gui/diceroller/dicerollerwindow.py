@@ -35,47 +35,9 @@ _WelcomeMessage = """
 # - Would need a save button added to the toolbar
 # - Would need a revert button added to the toolbar
 # - Would need prompt to save anything modified when closing the window
-# - I think this needs a refactor
-#   - Update the window to be the thing that loads the list of groups at
-#     startup and maintains it. Conceptually this copy should mirror what
-#     is currently saved.
-#   - Tree widget is passed the list groups to display (in sorted order) but
-#     rather than holding groups/rollers in the user data it just holds the
-#     object id
-#   - Move the stuff that stores the order of groups between sessions into
-#     the window. It should pass the list to the tree in the order it should
-#     be listed.
-#   - Update tree widget so it sends an explicit renamed event when an object
-#     is renamed by double clicking on the item in the tree.
-#     - Event sends the id of the renamed object
-#     - Window listens for event and updates the name on the object in its
-#       cache then writes it to the database.
-#     - IMPORTANT: If the renamed object is the roller being edited the window
-#       will also need to set the new name on the instance of the roller held
-#       by the config widget
-#   - Update tree widget so it sends an explicit objects moved event when
-#     objects are dragged and dropped (groups or rollers)
-#     - I'm not sure what if any parameters make sense for this event
-#     - Main window would listen for the event and retrieve the new
-#       order of things from the tree widget and compare it with it's cached
-#       copy of the objects to work out the new state. At which point it will
-#       update it's cached copy of the objects and update the database (or
-#       ini file if group order has changed)
-#       - This will probably be very similar to what the tree currently does
-#         in _handleMovedRollers (I think it's basically moving that code
-#     - IMPORTANT: If the roller currently being edited was moved then the
-#       window will need to update the parent of the instance held by the
-#       config widget.
-#       - VERY IMPORTANT: Remember the parent of the roller will actually
-#         be the id of a list object rather than the group so i'll need to
-#         copy the parent id from the roller in the windows cache rather
-#         than just taking the id from the group
-
-# - IDEA: I think this could be simplified if I update the management tree
-#   to deal with object ids rather than holding instances of the object.
-#   - Would need the event used to notify of rename and position move split
-#     into separate events that would notify the main window
-#     - Rename would read the new name back from the tree, read
+# - IMPORTANT: If the renamed object is the roller being edited the window
+#   will also need to set the new name on the instance of the roller held
+#   by the config widget
 # - IDEA: It might be easier if I split the roller config out of the main
 #   roller and into its own db object. With the result being the roller
 #   becomes just a name and single mandatory config
@@ -351,6 +313,21 @@ class DiceRollerWindow(gui.WindowWidget):
             label=f'{group.name()} - {roller.name()}',
             roller=roller,
             seed=self._randomGenerator.randbits(128))
+
+
+        # TODO: Remove hack
+        """
+        count = 1000
+        for index in range(count):
+            hackResult = diceroller.rollDice(
+                label=f'HACK {index}',
+                roller=roller,
+                seed=self._randomGenerator.randbits(128))
+            objectdb.ObjectDbManager.instance().createObject(
+                object=hackResult)
+        self._purgeHistory()
+        """
+
 
         self._rollInProgress = True
         self._updateControlEnablement()
