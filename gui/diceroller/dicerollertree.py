@@ -18,6 +18,10 @@ class _CustomValidator(QtGui.QValidator):
 class _CustomItemDelegate(gui.StyledItemDelegateEx):
     itemEdited = QtCore.pyqtSignal(QtCore.QModelIndex)
 
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setHighlightCurrentItem(False)
+
     def createEditor(
             self,
             parent: typing.Optional[QtWidgets.QWidget],
@@ -49,6 +53,11 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
     _StateVersion = 'DiceRollerTree_v1'
 
+    _ColumnNames = [
+        'Dice Rollers',
+        'Modified'
+    ]
+
     def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -56,9 +65,12 @@ class DiceRollerTree(gui.TreeWidgetEx):
         self._groupOrdering: typing.List[str] = []
         self._collapsedGroups: typing.Set[str] = set()
 
-        self.setColumnCount(1)
-        self.header().setStretchLastSection(True)
-        self.setHeaderHidden(True)
+        self.setColumnCount(len(DiceRollerTree._ColumnNames))
+        self.setHeaderLabels(DiceRollerTree._ColumnNames)
+        self.header().setStretchLastSection(False)
+        self.header().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.header().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.header().setDefaultAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.setVerticalScrollMode(QtWidgets.QTreeView.ScrollMode.ScrollPerPixel)
         self.verticalScrollBar().setSingleStep(10) # This seems to give a decent scroll speed without big jumps
         self.setAutoScroll(False)
@@ -81,6 +93,36 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
     def groupCount(self) -> int:
         return self.topLevelItemCount()
+
+    def addGroup(self, group: diceroller.DiceRollerGroup) -> None:
+        item = self._createItem(object=group)
+        self.addTopLevelItem(item)
+        item.setExpanded(True)
+        self._objectItemMap[group.id()] = item
+
+        for roller in group.rollers():
+            child = self._createItem(object=roller)
+            item.addChild(child)
+            self._objectItemMap[roller.id()] = child
+
+        self._captureGroupOrdering()
+
+    def insertGroup(
+            self,
+            index: int,
+            group: diceroller.DiceRollerGroup
+            ) -> None:
+        item = self._createItem(object=group)
+        self.insertTopLevelItem(index, item)
+        item.setExpanded(True)
+        self._objectItemMap[group.id()] = item
+
+        for roller in group.rollers():
+            child = self._createItem(object=roller)
+            item.addChild(child)
+            self._objectItemMap[roller.id()] = child
+
+        self._captureGroupOrdering()
 
     def rollers(
             self,
@@ -108,6 +150,111 @@ class DiceRollerTree(gui.TreeWidgetEx):
         if not groupItem:
             return 0
         return groupItem.childCount()
+
+    def addRoller(
+            self,
+            groupId: str,
+            roller: diceroller.DiceRoller
+            ) -> None:
+        parent = self._objectItemMap.get(groupId)
+        if parent.parent():
+            raise ValueError(f'ID {groupId} doesn\'t map to a group')
+
+        group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroup))
+        assert(parent.childCount() == group.rollerCount())
+        group.addRoller(roller)
+
+        item = self._createItem(object=roller)
+        parent.addChild(item)
+        self._objectItemMap[roller.id()] = item
+
+    def insertRoller(
+            self,
+            groupId: str,
+            index: int,
+            roller: diceroller.DiceRoller
+            ) -> None:
+        parent = self._objectItemMap.get(groupId)
+        if parent.parent():
+            raise ValueError(f'ID {groupId} doesn\'t map to a group')
+
+        group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroup))
+        assert(parent.childCount() == group.rollerCount())
+        group.insertRoller(index, roller)
+
+        item = self._createItem(object=roller)
+        parent.insertChild(index, item)
+        self._objectItemMap[roller.id()] = item
+
+    def modifiedRollers(self) -> typing.Iterable[diceroller.DiceRoller]:
+        rollers = []
+        for item in self._objectItemMap.values():
+            if not item.parent():
+                continue # Skip groups
+            if item.text(1):
+                roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(roller, diceroller.DiceRoller))
+                rollers.append(roller)
+        return rollers
+
+    def setRollerModified(
+            self,
+            rollerId: str,
+            modified: bool
+            ) -> None:
+        item = self._objectItemMap.get(rollerId)
+        if not item:
+            raise ValueError(f'ID {rollerId} doesn\'t map to an object')
+
+        parent = item.parent()
+        if not parent:
+            raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
+
+        item.setText(1, '*' if modified else '')
+
+    def isRollerModified(self, rollerId: str) -> bool:
+        item = self._objectItemMap.get(rollerId)
+        if not item:
+            raise ValueError(f'ID {rollerId} doesn\'t map to an object')
+
+        parent = item.parent()
+        if not parent:
+            raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
+
+        return not not item.text(1)
+
+    def hasModifiedRoller(self) -> bool:
+        for item in self._objectItemMap.values():
+            if not item.parent():
+                continue # Skip groups
+
+            if item.text(1):
+                return True
+        return False
+
+    def replaceRoller(
+            self,
+            rollerId: str,
+            roller: diceroller.DiceRoller
+            ) -> None:
+        item = self._objectItemMap.get(rollerId)
+        if not item:
+            raise ValueError(f'ID {rollerId} doesn\'t map to an object')
+
+        parent = item.parent()
+        if not parent:
+            raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
+
+        index = parent.indexOfChild(item)
+
+        group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(group, diceroller.DiceRollerGroup))
+        assert(parent.childCount() == group.rollerCount())
+        group.replaceRoller(index, roller)
+
+        self._configureItem(item=item, object=roller)
 
     def setContents(
             self,
@@ -142,14 +289,19 @@ class DiceRollerTree(gui.TreeWidgetEx):
         for index, group in enumerate(groups):
             assert(isinstance(group, diceroller.DiceRollerGroup))
             groupItem = self.topLevelItem(index)
-            if groupItem == None:
-                groupItem = QtWidgets.QTreeWidgetItem()
-                groupItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
+            shouldSelect = group.id() in selectionIds
+            if groupItem:
+                self._configureItem(
+                    item=groupItem,
+                    object=group,
+                    selected=shouldSelect)
+            else:
+                groupItem = self._createItem(
+                    object=group,
+                    selected=shouldSelect)
                 self.addTopLevelItem(groupItem)
                 groupItem.setExpanded(True)
-            groupItem.setText(0, group.name())
-            groupItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, group)
-            groupItem.setSelected(group.id() in selectionIds)
+
             self._objectItemMap[group.id()] = groupItem
 
             rollers = group.rollers()
@@ -160,18 +312,50 @@ class DiceRollerTree(gui.TreeWidgetEx):
             for index, roller in enumerate(rollers):
                 assert(isinstance(roller, diceroller.DiceRoller))
                 rollerItem = groupItem.child(index)
-                if rollerItem == None:
-                    rollerItem = QtWidgets.QTreeWidgetItem([roller.name()])
-                    rollerItem.setFlags(groupItem.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
+                shouldSelect = roller.id() in selectionIds
+                if rollerItem:
+                    self._configureItem(
+                        item=rollerItem,
+                        object=roller,
+                        selected=shouldSelect)
+                else:
+                    rollerItem = self._createItem(
+                        object=roller,
+                        selected=shouldSelect)
                     groupItem.addChild(rollerItem)
-                rollerItem.setText(0, roller.name())
-                rollerItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, roller)
-                rollerItem.setSelected(roller.id() in selectionIds)
+
                 self._objectItemMap[roller.id()] = rollerItem
 
-        self.setCurrentObject(object=currentId)
+        self.setCurrentObject(objectId=currentId)
 
         self._restoreExpandStates()
+
+    def renameObject(self, objectId: str, newName: str) -> None:
+        item = self._objectItemMap.get(objectId)
+        if not item:
+            raise ValueError(f'ID {objectId} doesn\'t map to an object')
+
+        object = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        assert(isinstance(object, diceroller.DiceRoller) or
+               isinstance(object, diceroller.DiceRollerGroup))
+        object.setName(newName)
+        item.setText(0, newName)
+
+    def deleteObject(self, objectId: str) -> None:
+        item = self._objectItemMap.get(objectId)
+        if not item:
+            raise ValueError(f'ID {objectId} doesn\'t map to an object')
+        parent = item.parent()
+        if parent:
+            parent.removeChild(item)
+
+            group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(group, diceroller.DiceRollerGroup))
+            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(roller, diceroller.DiceRoller))
+            group.removeRoller(roller.id())
+        else:
+            self.takeTopLevelItem(self.indexOfTopLevelItem(item))
 
     def objectFromId(self, id: str) -> typing.Optional[typing.Union[
             diceroller.DiceRoller,
@@ -227,21 +411,13 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
     def setCurrentObject(
             self,
-            object: typing.Optional[typing.Union[
-                diceroller.DiceRoller,
-                diceroller.DiceRollerGroup,
-                str # Object id
-                ]]
+            objectId: typing.Optional[str],
             ) -> None:
-        if isinstance(object, diceroller.DiceRoller) or \
-            isinstance(object, diceroller.DiceRollerGroup):
-            object = object.id()
-
         if object is None:
             self.setCurrentItem(None)
             return
 
-        item = self._objectItemMap.get(object)
+        item = self._objectItemMap.get(objectId)
         if not item:
             return
         if item != self.currentItem():
@@ -258,19 +434,12 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
     def editObjectName(
             self,
-            object: typing.Optional[typing.Union[
-                diceroller.DiceRoller,
-                diceroller.DiceRollerGroup,
-                str # Object id
-                ]]
+            objectId: str
             ) -> None:
-        if isinstance(object, diceroller.DiceRoller) or \
-            isinstance(object, diceroller.DiceRollerGroup):
-            object = object.id()
-
-        item = self._objectItemMap.get(object)
+        item = self._objectItemMap.get(objectId)
         if not item:
-            return
+            raise ValueError(f'ID {object} doesn\'t map to an object')
+
         modelIndex = self.indexFromItem(item)
         if not modelIndex:
             return
@@ -433,12 +602,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
             item.setExpanded(wasExpanded)
 
-        self._groupOrdering.clear()
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-            assert(isinstance(group, diceroller.DiceRollerGroup))
-            self._groupOrdering.append(group.id())
+        self._captureGroupOrdering()
 
         if updatedGroups or deletedGroups:
             self.orderChanged.emit(updatedGroups, deletedGroups)
@@ -471,7 +635,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
         currentId = stream.readQString()
         if currentId:
-            self.setCurrentObject(object=currentId)
+            self.setCurrentObject(objectId=currentId)
 
         count = stream.readUInt32()
         self._groupOrdering.clear()
@@ -487,6 +651,43 @@ class DiceRollerTree(gui.TreeWidgetEx):
         self._restoreExpandStates()
 
         return True
+
+    # NOTE: This function intentionally doesn't support expanding the
+    # created item as you can't do that until after the item has been
+    # added to the tree. Having the function add the item to the tree
+    # isn't really an option either as it varies if the item is to be
+    # added or inserted
+    def _createItem(
+            self,
+            object: typing.Union[
+                diceroller.DiceRoller,
+                diceroller.DiceRollerGroup],
+            selected: bool = False
+            ) -> QtWidgets.QTreeWidgetItem:
+        item = QtWidgets.QTreeWidgetItem()
+        self._configureItem(
+            item=item,
+            object=object,
+            selected=selected)
+        return item
+
+    def _configureItem(
+            self,
+            item: QtWidgets.QTreeWidgetItem,
+            object: typing.Union[
+                diceroller.DiceRoller,
+                diceroller.DiceRollerGroup],
+            selected: typing.Optional[bool] = None, # None means don't change
+            expanded: typing.Optional[bool] = None # None means don't change
+            ):
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
+        item.setText(0, object.name())
+        item.setTextAlignment(1, int(QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter))
+        item.setData(0, QtCore.Qt.ItemDataRole.UserRole, object)
+        if selected != None:
+            item.setSelected(selected)
+        if expanded != None:
+            item.setExpanded(expanded)
 
     def _currentItemChanged(
             self,
@@ -542,6 +743,14 @@ class DiceRollerTree(gui.TreeWidgetEx):
                 if rollerItem.isSelected():
                     items.append(rollerItem)
         return items
+
+    def _captureGroupOrdering(self) -> None:
+        self._groupOrdering.clear()
+        for index in range(self.topLevelItemCount()):
+            item = self.topLevelItem(index)
+            group = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(group, diceroller.DiceRollerGroup))
+            self._groupOrdering.append(group.id())
 
     def _restoreGroupOrdering(self) -> None:
         currentItem = self.currentItem()

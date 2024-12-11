@@ -90,8 +90,11 @@ class DatabaseList(DatabaseEntity):
     def __len__(self) -> int:
         return self._content.__len__()
 
-    def __getitem__(self, index: int) -> typing.Union[bool, int, float, str, DatabaseEntity]:
-        return self._content.__getitem__(index)
+    def __getitem__(self, key: int) -> typing.Union[bool, int, float, str, DatabaseEntity]:
+        return self._content.__getitem__(key)
+
+    def __setitem__(self, key: int, value: typing.Union[bool, int, float, str, DatabaseEntity]):
+        self._content.__setitem__(key, value)
 
     def init(
             self,

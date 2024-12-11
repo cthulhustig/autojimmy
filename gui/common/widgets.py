@@ -1677,3 +1677,79 @@ class LayoutWrapperWidget(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setLayout(layout)
+
+class GroupBoxEx(QtWidgets.QGroupBox):
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, title: typing.Optional[str], parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._menuButton = QtWidgets.QToolButton(self)
+        self._menuButton.setStyleSheet('QToolButton { border: none; }')
+        self._menuButton.setArrowType(QtCore.Qt.ArrowType.DownArrow)
+        self._menuButton.setHidden(True)
+        self._menuButton.clicked.connect(self._menuRequested)
+
+        self._updateMenuButtonPosition()
+
+    def enableMenuButton(self, enabled: bool) -> None:
+        self._menuButton.setHidden(not enabled)
+
+    def setMenuButtonToolTip(self, text: str) -> None:
+        self._menuButton.setToolTip(text)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._updateMenuButtonPosition()
+
+    def _updateMenuButtonPosition(self) -> None:
+        fontMetrics = QtGui.QFontMetrics(self.font())
+        titleHeight = fontMetrics.height()
+        titleWidth = fontMetrics.width(self.title())
+
+        style = self.style()
+        topPadding = style.pixelMetric(
+            QtWidgets.QStyle.PixelMetric.PM_LayoutTopMargin,
+            None,
+            self) // 2
+
+        iconSize = titleHeight + topPadding
+        self._menuButton.setFixedSize(iconSize, iconSize)
+        self._menuButton.move(titleWidth, 0)
+
+    def _menuRequested(self) -> None:
+        actions = self.actions()
+        if not actions:
+            return
+
+        menu = QtWidgets.QMenu(self)
+        for action in actions:
+            menu.addAction(action)
+        menu.exec(QtGui.QCursor.pos())
+
+class ActionEx(QtWidgets.QAction):
+    _StateVersion = 'ActionEx_v1'
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(ActionEx._StateVersion)
+        stream.writeBool(self.isChecked())
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != ActionEx._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore ActionEx state (Incorrect version)')
+            return False
+
+        self.setChecked(stream.readBool())
+        return True

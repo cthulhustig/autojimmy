@@ -67,12 +67,8 @@ class DiceModifier(objectdb.DatabaseObject):
     def setEnabled(self, enabled: bool) -> None:
         self._enabled = enabled
 
-    def copyConfig(
-            self,
-            copyIds: bool = False
-            ) -> 'DiceModifier':
+    def copyConfig(self) -> 'DiceModifier':
         return DiceModifier(
-            id=self._id if copyIds else None,
             name=self._name,
             value=self._value,
             enabled=self._enabled)
@@ -237,6 +233,11 @@ class DiceRoller(objectdb.DatabaseObject):
             raise ValueError(f'Modifier is not a {DiceModifier}')
         self._modifiers.insert(index=index, item=modifier)
 
+    def replaceModifier(self, index: int, modifier: DiceModifier) -> None:
+        if not isinstance(modifier, DiceModifier):
+            raise ValueError(f'Modifier is not a {DiceModifier}')
+        self._modifiers[index] = modifier
+
     def removeModifier(self, id: str) -> None:
         self._modifiers.removeById(id=id)
 
@@ -279,16 +280,12 @@ class DiceRoller(objectdb.DatabaseObject):
             ) -> None:
         self._snakeEyesRule = enabled
 
-    def copyConfig(
-            self,
-            copyIds: bool = False
-            ) -> 'DiceRoller':
+    def copyConfig(self) -> 'DiceRoller':
         modifiers = objectdb.DatabaseList()
         for modifier in self._modifiers:
             assert(isinstance(modifier, DiceModifier))
-            modifiers.add(modifier.copyConfig(copyIds=copyIds))
+            modifiers.add(modifier.copyConfig())
         return DiceRoller(
-            id=self._id if copyIds else None,
             name=self._name,
             dieCount=self._dieCount,
             dieType=self._dieType,
@@ -470,22 +467,23 @@ class DiceRollerGroup(objectdb.DatabaseObject):
             raise ValueError(f'Roller is not a {DiceRoller}')
         self._rollers.insert(index=index, item=roller)
 
+    def replaceRoller(self, index: int, roller: DiceRoller) -> None:
+        if not isinstance(roller, DiceRoller):
+            raise ValueError(f'Roller is not a {DiceRoller}')
+        self._rollers[index] = roller
+
     def removeRoller(self, id: str) -> None:
         self._rollers.removeById(id=id)
 
     def clearRollers(self) -> None:
         self._rollers.clear()
 
-    def copyConfig(
-            self,
-            copyIds: bool = False
-            ) -> 'DiceRollerGroup':
+    def copyConfig(self) -> 'DiceRollerGroup':
         rollers = objectdb.DatabaseList()
         for roller in self._rollers:
             assert(isinstance(roller, DiceRoller))
-            rollers.add(roller.copyConfig(copyIds=copyIds))
+            rollers.add(roller.copyConfig())
         return DiceRollerGroup(
-            id=self._id if copyIds else None,
             name=self._name,
             rollers=rollers)
 
