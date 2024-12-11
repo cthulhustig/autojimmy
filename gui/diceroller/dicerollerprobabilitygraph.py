@@ -32,7 +32,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         styles = {'color': gui.colourToString(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Text))}
         self._graph.setLabel('left', 'Probability (%)', **styles)
-        self._graph.setLabel('bottom', 'Dice Roll + Modifiers', **styles)
+        self._graph.setLabel('bottom', 'Total Roll Result', **styles)
 
         # Prevent the mouse from panning/scaling the graph
         self._graph.setMouseEnabled(x=False, y=False)
