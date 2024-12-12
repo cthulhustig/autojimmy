@@ -27,9 +27,7 @@ _WelcomeMessage = """
 # - By default clicking the button should add a roller
 #   - This will already causes a group to be added if there is none
 # - There should be menu options for add group and add roller
-# TODO: Test that history timestamps are shown in local time not utc
 # TODO: Switch to explicit saving rather than live saving
-# - Would need a revert button added to the toolbar
 # - Would need prompt to save anything modified when closing the window
 #
 # TODO: This trigger might be useful to prevent loops being created in the
