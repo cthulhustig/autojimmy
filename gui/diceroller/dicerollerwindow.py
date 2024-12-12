@@ -481,7 +481,7 @@ class DiceRollerWindow(gui.WindowWidget):
         with gui.SignalBlocker(self._rollerTree):
             self._rollerTree.addGroup(group=group)
 
-        self._setCurrentObject(rollerId=roller.id())
+        self._setCurrentObject(objectId=roller.id())
 
     def _createNewRoller(self) -> None:
         group = self._rollerTree.currentGroup()
@@ -522,7 +522,7 @@ class DiceRollerWindow(gui.WindowWidget):
                     groupId=group.id(),
                     roller=roller)
 
-        self._setCurrentObject(rollerId=roller.id())
+        self._setCurrentObject(objectId=roller.id())
         self._rollerTree.editObjectName(object=roller.id())
 
     def _createNewGroup(self) -> None:
