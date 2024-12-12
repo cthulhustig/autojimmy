@@ -523,7 +523,7 @@ class DiceRollerWindow(gui.WindowWidget):
                     roller=roller)
 
         self._setCurrentObject(objectId=roller.id())
-        self._rollerTree.editObjectName(object=roller.id())
+        self._rollerTree.editObjectName(objectId=roller.id())
 
     def _createNewGroup(self) -> None:
         group = diceroller.DiceRollerGroup(
@@ -545,7 +545,7 @@ class DiceRollerWindow(gui.WindowWidget):
             self._rollerTree.addGroup(group=group)
 
         self._setCurrentObject(objectId=group.id())
-        self._rollerTree.editObjectName(object=group.id())
+        self._rollerTree.editObjectName(objectId=group.id())
 
     def _renameCurrentObject(self) -> None:
         currentObject = self._rollerTree.currentObject()
