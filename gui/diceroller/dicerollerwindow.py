@@ -16,6 +16,11 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 
+# TODO: The current behaviour if there is an error in the database isn't great
+# - If there is any error with one object it doesn't read anything
+# - It should probably try to load as much as possible and return any errors
+#   along with what it could load
+#   - Might make sense to have this behaviour as optional
 # TODO: Get rid of separate group/roller add buttons and have a single button
 #   with the document icon (or maybe a plus icon)
 # - Switch to having one of those buttons with an arrow to get multiple options
@@ -24,29 +29,8 @@ _WelcomeMessage = """
 # - There should be menu options for add group and add roller
 # TODO: Test that history timestamps are shown in local time not utc
 # TODO: Switch to explicit saving rather than live saving
-# - Would be good to make it optional
-# - Should only be changes to the roller config, renaming and changing
-#   ordering should still be saved live
-#   - Doing this will require changes so the config widget is NOT using
-#     the same instance of the roller that is held by the tree widget,
-#     otherwise the updated config will be "saved" if the roller (or its
-#     group is renamed). This has a downside however as any changes to the
-#     roller held by the tree (e.g. renames or changes to the parent from moving
-#     it to a different group) won't automatically be reflected in the
-#     instance held by the config widget. It's not as simple as just giving
-#     the config widget a new copy of the roller when ever the copy in the
-#     tree changes as that would nuke any unsaved changes made by the config
-#     widget.
-# - Would need a way to indicate unsaved rollers in the tree
-# - Would need a save button added to the toolbar
 # - Would need a revert button added to the toolbar
 # - Would need prompt to save anything modified when closing the window
-# - IMPORTANT: If the renamed object is the roller being edited the window
-#   will also need to set the new name on the instance of the roller held
-#   by the config widget
-# - IDEA: It might be easier if I split the roller config out of the main
-#   roller and into its own db object. With the result being the roller
-#   becomes just a name and single mandatory config
 #
 # TODO: This trigger might be useful to prevent loops being created in the
 # hierarchy table
@@ -438,7 +422,6 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._renameAction.setEnabled(hasSelection)
         self._deleteAction.setEnabled(hasSelection)
-        # TODO: This needs update to only enable the save button if the roller has actually been edited
         self._saveAction.setEnabled(hasModified)
 
         self._managerGroupBox.setEnabled(not self._rollInProgress)
@@ -984,12 +967,6 @@ class DiceRollerWindow(gui.WindowWidget):
         currentObject = self._rollerTree.currentObject()
         self._setCurrentObject(objectId=currentObject.id() if currentObject else None)
 
-    # TODO: This will need a few updates
-    # - It shouldn't update the db unless auto saving is enabled
-    # - When it is updating the database it should get the edit version of the current roller
-    # - If auto save is disabled it should mark the tree entry for the roller as modified
-    # - There shouldn't be any need to update the edit objects as the config window should
-    #   be updating the instance that is stored in the cache
     def _rollerConfigChanged(self) -> None:
         editRoller = self._rollerConfigWidget.roller()
         if not editRoller:
