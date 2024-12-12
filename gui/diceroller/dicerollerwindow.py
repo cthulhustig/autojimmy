@@ -236,6 +236,12 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.addAction(self._renameAction)
         self._rollerToolbar.addAction(self._renameAction)
 
+        self._revertAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.Reload), 'Revert...', self)
+        self._revertAction.triggered.connect(self._revertSelectedRollers)
+        self._rollerTree.addAction(self._revertAction)
+        self._rollerToolbar.addAction(self._revertAction)
+
         self._copyAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.CopyFile), 'Copy...', self)
         self._copyAction.triggered.connect(self._copyCurrentObject)
@@ -433,6 +439,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._renameAction.setEnabled(hasSelection)
         self._deleteAction.setEnabled(hasSelection)
         self._saveAction.setEnabled(hasModified)
+        self._revertAction.setEnabled(hasModified)
 
         self._managerGroupBox.setEnabled(not self._rollInProgress)
         self._configGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
@@ -909,6 +916,39 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._updateControlEnablement()
 
+    def _revertSelectedRollers(self) -> None:
+        rollersToRevert: typing.List[diceroller.DiceRoller] = []
+        for object in self._selectedObjects():
+            if isinstance(object, diceroller.DiceRoller):
+                if self._rollerTree.isRollerModified(rollerId=object.id()):
+                    rollersToRevert.append(object)
+            elif isinstance(object, diceroller.DiceRollerGroup):
+                for roller in object.rollers():
+                    if self._rollerTree.isRollerModified(rollerId=roller.id()):
+                        rollersToRevert.append(roller)
+
+        rollerCount = len(rollersToRevert)
+        if rollerCount == 1:
+            singleRoller = rollersToRevert[0]
+            prompt = f'Are you sure you want to revert \'{singleRoller.name()}\'?'
+        else:
+            prompt = f'Are you sure you want to revert {rollerCount} dice rollers?'
+
+        answer = gui.MessageBoxEx.question(parent=self, text=prompt)
+        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+
+        for roller in rollersToRevert:
+            if roller.id() in self._editRollers:
+                del self._editRollers[roller.id()]
+            self._rollerTree.setRollerModified(
+                rollerId=roller.id(),
+                modified=False)
+
+        currentRoller = self._rollerConfigWidget.roller()
+        self._setCurrentObject(
+            objectId=currentRoller.id() if currentRoller else None)
+
     def _autoSaveToggled(self, value: int) -> None:
         if value:
             self._saveAllRollers()
@@ -919,8 +959,15 @@ class DiceRollerWindow(gui.WindowWidget):
                 diceroller.DiceRoller,
                 diceroller.DiceRollerGroup
             ]]) -> None:
-        self._setCurrentObject(
-            objectId=currentObject.id() if currentObject else None)
+        # Post the update to set the current object as the tree generates this
+        # notification after the current item is updated but before the current
+        # selection is updated (i.e. the previous current object is still
+        # selected). This would cause issues as updating the current object
+        # causes actions to be enabled/disabled and some of them do this based
+        # on the "current" selection which needs to be the selection as it will
+        # be once the tree has finished updating.
+        objectId = currentObject.id() if currentObject else None
+        QtCore.QTimer.singleShot(0, lambda: self._setCurrentObject(objectId))
 
     def _rollerTreeObjectRenamed(
             self,

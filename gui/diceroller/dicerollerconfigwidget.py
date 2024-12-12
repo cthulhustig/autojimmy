@@ -349,7 +349,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self.setLayout(widgetLayout)
         self._syncToRoller()
 
-    def roller(self) -> diceroller.DiceRoller:
+    def roller(self) -> typing.Optional[diceroller.DiceRoller]:
         return self._roller
 
     def setRoller(
