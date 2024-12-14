@@ -16,6 +16,7 @@ from .common.autoselectmessagebox import *
 from .common.inputdialogex import *
 from .common.textwindow import *
 from .common.listtable import *
+from .common.listselectdialog import *
 from .common.fullsizetextwidget import *
 from .common.flowlayout import *
 from .common.colourdialogex import *

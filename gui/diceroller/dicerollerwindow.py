@@ -89,17 +89,6 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self.setLayout(windowLayout)
 
-        try:
-            groups = objectdb.ObjectDbManager.instance().readObjects(
-                classType=diceroller.DiceRollerGroup)
-        except Exception as ex:
-            # TODO: Not sure what to do here, possibly just let the exception pass up
-            logging.error('Failed to sync manager to database', exc_info=ex)
-
-        self._rollerTree.setContents(groups)
-        if not self._rollerTree.groupCount():
-            self._createInitialGroup()
-
     def keyPressEvent(self, event: typing.Optional[QtGui.QKeyEvent]):
         if event:
             key = event.key()
@@ -127,6 +116,18 @@ class DiceRollerWindow(gui.WindowWidget):
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         super().firstShowEvent(e)
+
+    def showEvent(self, e):
+        if not e.spontaneous():
+            self._loadData()
+        return super().showEvent(e)
+
+    def closeEvent(self, e: QtGui.QCloseEvent):
+        if not self._saveOnClose():
+            e.ignore()
+            return # User cancelled so don't close the window
+
+        return super().closeEvent(e)
 
     def loadSettings(self) -> None:
         super().loadSettings()
@@ -321,13 +322,32 @@ class DiceRollerWindow(gui.WindowWidget):
         self._historyGroupBox = QtWidgets.QGroupBox('History')
         self._historyGroupBox.setLayout(groupLayout)
 
+    def _loadData(self) -> None:
+        try:
+            groups = objectdb.ObjectDbManager.instance().readObjects(
+                classType=diceroller.DiceRollerGroup)
+        except Exception as ex:
+            # TODO: Not sure what to do here, possibly just let the exception pass up
+            logging.error('Failed to sync manager to database', exc_info=ex)
+
+        self._editRollers.clear()
+
+        with gui.SignalBlocker(self._rollerTree):
+            self._rollerTree.clearModifiedRollers()
+            self._rollerTree.setContents(groups=groups)
+
+        if not self._rollerTree.groupCount():
+            self._createInitialGroup()
+        currentObject = self._rollerTree.currentObject()
+        self._setCurrentObject(objectId=currentObject.id() if currentObject else None)
+
     def _rollDice(self) -> None:
         # NOTE: Get the current EDIT roller from the config widget
         roller = self._rollerConfigWidget.roller()
         if not roller or self._rollInProgress:
             return
 
-        group = self._rollerTree.groupFromRoller(roller=roller.id())
+        group = self._rollerTree.groupFromRoller(rollerId=roller.id())
         if not group:
             message = 'Failed to find group for dice roller'
             logging.error(message)
@@ -620,7 +640,8 @@ class DiceRollerWindow(gui.WindowWidget):
             # Make a hierarchical copy of the group the source roller is in. The
             # objects in this hierarchy will have the same ids as the object
             # they were copied from
-            newGroup = self._rollerTree.groupFromRoller(currentObject)
+            newGroup = self._rollerTree.groupFromRoller(
+                rollerId=currentObject.id())
             newGroup = copy.deepcopy(newGroup)
 
             # If there is an edit version of the selected roller it should be used
@@ -817,7 +838,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
                     exportGroups[group.id()] = group
                 elif isinstance(object, diceroller.DiceRoller):
-                    group = self._rollerTree.groupFromRoller(object)
+                    group = self._rollerTree.groupFromRoller(rollerId=object.id())
                     if group.id() in explicitGroups:
                         # Group is already being exported so no need to export
                         # individual roller
@@ -905,18 +926,60 @@ class DiceRollerWindow(gui.WindowWidget):
 
         with gui.SignalBlocker(self._rollerTree):
             for roller in rollersToSave:
-                self._rollerTree.replaceRoller(
-                    rollerId=roller.id(),
-                    roller=roller)
+                self._rollerTree.replaceRoller(roller=roller)
                 self._rollerTree.setRollerModified(
                     rollerId=roller.id(),
                     modified=False)
 
         self._updateControlEnablement()
 
+    def _saveOnClose(self) -> bool: # False if the user cancelled, otherwise True
+        modified = self._rollerTree.modifiedRollers()
+        nameMap: typing.Dict[
+            str,
+            diceroller.DiceRoller
+            ] = {}
+        for roller in modified:
+            group = self._rollerTree.groupFromRoller(rollerId=roller.id())
+            if group:
+                name = f'{group.name()} > {roller.name()}'
+                nameMap[name] = roller
+
+        if not nameMap:
+            return True
+
+        prompt = gui.ListSelectDialog(
+            title='Modified Dice Rollers',
+            text='Do you want to save these modified dice rollers?',
+            selectable=nameMap.keys(),
+            showYesNoCancel=True,
+            defaultState=QtCore.Qt.CheckState.Checked)
+        if prompt.exec() == QtWidgets.QDialog.DialogCode.Rejected:
+            return False # The use cancelled
+
+        toSave = []
+        for name in prompt.selected():
+            roller = nameMap.get(name)
+            if roller:
+                toSave.append(roller)
+
+        self._saveRollers(objects=toSave)
+        self._rollerTree.clearModifiedRollers()
+
+        return True
+
     def _revertSelectedRollers(self) -> None:
+        self._revertRollers(objects=self._selectedObjects())
+
+    def _revertRollers(
+            self,
+            objects: typing.Iterable[typing.Union[
+                diceroller.DiceRoller,
+                diceroller.DiceRollerGroup]],
+            promptConfirm: bool = True
+            ) -> None:
         rollersToRevert: typing.List[diceroller.DiceRoller] = []
-        for object in self._selectedObjects():
+        for object in objects:
             if isinstance(object, diceroller.DiceRoller):
                 if self._rollerTree.isRollerModified(rollerId=object.id()):
                     rollersToRevert.append(object)
@@ -925,16 +988,17 @@ class DiceRollerWindow(gui.WindowWidget):
                     if self._rollerTree.isRollerModified(rollerId=roller.id()):
                         rollersToRevert.append(roller)
 
-        rollerCount = len(rollersToRevert)
-        if rollerCount == 1:
-            singleRoller = rollersToRevert[0]
-            prompt = f'Are you sure you want to revert \'{singleRoller.name()}\'?'
-        else:
-            prompt = f'Are you sure you want to revert {rollerCount} dice rollers?'
+        if promptConfirm:
+            rollerCount = len(rollersToRevert)
+            if rollerCount == 1:
+                singleRoller = rollersToRevert[0]
+                prompt = f'Are you sure you want to revert \'{singleRoller.name()}\'?'
+            else:
+                prompt = f'Are you sure you want to revert {rollerCount} dice rollers?'
 
-        answer = gui.MessageBoxEx.question(parent=self, text=prompt)
-        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
+            answer = gui.MessageBoxEx.question(parent=self, text=prompt)
+            if answer != QtWidgets.QMessageBox.StandardButton.Yes:
+                return
 
         for roller in rollersToRevert:
             if roller.id() in self._editRollers:

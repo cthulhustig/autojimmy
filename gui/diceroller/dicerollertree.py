@@ -64,6 +64,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
         self._objectItemMap: typing.Dict[str, QtWidgets.QTreeWidgetItem] = {}
         self._groupOrdering: typing.List[str] = []
         self._collapsedGroups: typing.Set[str] = set()
+        self._modifiedRollers: typing.Set[str] = set()
 
         self.setColumnCount(len(DiceRollerTree._ColumnNames))
         self.setHeaderLabels(DiceRollerTree._ColumnNames)
@@ -193,9 +194,9 @@ class DiceRollerTree(gui.TreeWidgetEx):
         for item in self._objectItemMap.values():
             if not item.parent():
                 continue # Skip groups
-            if item.text(1):
-                roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-                assert(isinstance(roller, diceroller.DiceRoller))
+            roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(roller, diceroller.DiceRoller))
+            if roller.id() in self._modifiedRollers:
                 rollers.append(roller)
         return rollers
 
@@ -213,39 +214,37 @@ class DiceRollerTree(gui.TreeWidgetEx):
             raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
 
         item.setText(1, '*' if modified else '')
+        if modified:
+            self._modifiedRollers.add(rollerId)
+        elif rollerId in self._modifiedRollers:
+            self._modifiedRollers.remove(rollerId)
 
     def isRollerModified(self, rollerId: str) -> bool:
-        item = self._objectItemMap.get(rollerId)
-        if not item:
-            raise ValueError(f'ID {rollerId} doesn\'t map to an object')
-
-        parent = item.parent()
-        if not parent:
-            raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
-
-        return not not item.text(1)
+        return rollerId in self._modifiedRollers
 
     def hasModifiedRoller(self) -> bool:
-        for item in self._objectItemMap.values():
-            if not item.parent():
-                continue # Skip groups
+        return len(self._modifiedRollers) > 0
 
-            if item.text(1):
-                return True
-        return False
+    def clearModifiedRollers(self) -> None:
+        for rollerId in self._modifiedRollers:
+            item = self._objectItemMap.get(rollerId)
+            if item:
+                item.setText(1, '')
+        self._modifiedRollers.clear()
 
+    # NOTE: This expects the new roller to have the same id as an existing
+    # roller instance.
     def replaceRoller(
             self,
-            rollerId: str,
             roller: diceroller.DiceRoller
             ) -> None:
-        item = self._objectItemMap.get(rollerId)
+        item = self._objectItemMap.get(roller.id())
         if not item:
-            raise ValueError(f'ID {rollerId} doesn\'t map to an object')
+            raise ValueError(f'ID {roller.id()} doesn\'t map to an object')
 
         parent = item.parent()
         if not parent:
-            raise ValueError(f'ID {rollerId} doesn\'t map to a roller')
+            raise ValueError(f'ID {roller.id()} doesn\'t map to a roller')
 
         index = parent.indexOfChild(item)
 
@@ -278,7 +277,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
         selectionIds = []
         for item in self.selectedItems():
             selectionIds.append(item.data(0, QtCore.Qt.ItemDataRole.UserRole))
-        currentId = self.currentObject()
+        currentObject = self.currentObject()
 
         self._objectItemMap.clear()
 
@@ -326,7 +325,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
                 self._objectItemMap[roller.id()] = rollerItem
 
-        self.setCurrentObject(objectId=currentId)
+        self.setCurrentObject(objectId=currentObject.id() if currentObject else None)
 
         self._restoreExpandStates()
 
@@ -345,17 +344,49 @@ class DiceRollerTree(gui.TreeWidgetEx):
         item = self._objectItemMap.get(objectId)
         if not item:
             raise ValueError(f'ID {objectId} doesn\'t map to an object')
+
+        # Remove object from item map
+        del self._objectItemMap[objectId]
+
         parent = item.parent()
         if parent:
+            # Remove roller item from group item
             parent.removeChild(item)
 
+            # Remove roller from group
             group = parent.data(0, QtCore.Qt.ItemDataRole.UserRole)
             assert(isinstance(group, diceroller.DiceRollerGroup))
             roller = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
             assert(isinstance(roller, diceroller.DiceRoller))
             group.removeRoller(roller.id())
+
+            # Remove roller from modified rollers
+            if objectId in self._modifiedRollers:
+                self._modifiedRollers.remove(objectId)
         else:
+            # Remove group item from tree
             self.takeTopLevelItem(self.indexOfTopLevelItem(item))
+
+            # Remove group from group ordering
+            if objectId in self._groupOrdering:
+                self._groupOrdering.remove(objectId)
+
+            # Remove group from collapsed groups
+            if objectId in self._collapsedGroups:
+                self._collapsedGroups.remove(objectId)
+
+            for index in range(item.childCount()):
+                child = item.child(index)
+                roller = child.data(0, QtCore.Qt.ItemDataRole.UserRole)
+                assert(isinstance(roller, diceroller.DiceRoller))
+
+                # Remove roller from item map
+                if roller.id() in self._objectItemMap:
+                    del self._objectItemMap[roller.id()]
+
+                # Remove roller from modified rollers
+                if roller.id() in self._modifiedRollers:
+                    self._modifiedRollers.remove(roller.id())
 
     def objectFromId(self, id: str) -> typing.Optional[typing.Union[
             diceroller.DiceRoller,
@@ -368,13 +399,9 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
     def groupFromRoller(
             self,
-            roller: typing.Union[
-                diceroller.DiceRoller,
-                str
-            ]) -> typing.Optional[diceroller.DiceRollerGroup]:
-        if isinstance(roller, diceroller.DiceRoller):
-            roller = roller.id()
-        item = self._objectItemMap.get(roller)
+            rollerId: str
+            ) -> typing.Optional[diceroller.DiceRollerGroup]:
+        item = self._objectItemMap.get(rollerId)
         if not item:
             return None
         parent = item.parent()
@@ -682,6 +709,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
             ):
         item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
         item.setText(0, object.name())
+        item.setText(1, '*' if object.id() in self._modifiedRollers else '')
         item.setTextAlignment(1, int(QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter))
         item.setData(0, QtCore.Qt.ItemDataRole.UserRole, object)
         if selected != None:
