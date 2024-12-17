@@ -197,8 +197,16 @@ class ToolButtonEx(QtWidgets.QToolButton):
         super().__init__(parent)
 
         self._isPushButton = isPushButton
+        self._disableMenuItem = False
         if text != None:
             self.setText(text)
+
+    def isMenuIconDisabled(self) -> bool:
+        return self._disableMenuItem
+
+    def setDisableMenuIcon(self, disable: bool):
+        self._disableMenuItem = disable
+        self.update()
 
     # By default a QToolButton will appear significantly smaller than a
     # QPushButton with the same text due to the two controls using different
@@ -239,6 +247,18 @@ class ToolButtonEx(QtWidgets.QToolButton):
             QtCore.QSize(w, max(h + ToolButtonEx._SizeHintHeightModifier, 0)),
             self)
         return baseHint.expandedTo(pushSize)
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        if not self._disableMenuItem:
+            return super().paintEvent(event)
+        option = QtWidgets.QStyleOptionToolButton()
+        self.initStyleOption(option)
+
+        option.features &= ~QtWidgets.QStyleOptionToolButton.ToolButtonFeature.HasMenu
+        painter = QtWidgets.QStylePainter(self)
+        painter.drawComplexControl(
+            QtWidgets.QStyle.ComplexControl.CC_ToolButton,
+            option)
 
 class IconButton(QtWidgets.QPushButton):
     def __init__(
@@ -1753,3 +1773,12 @@ class ActionEx(QtWidgets.QAction):
 
         self.setChecked(stream.readBool())
         return True
+
+class WidgetActionEx(QtWidgets.QWidgetAction):
+    def __init__(self,
+                 text: typing.Optional[str] = None,
+                 parent: typing.Optional[QtWidgets.QWidget] = None
+                 ) -> None:
+        super().__init__(parent)
+        if text != None:
+            self.setText(text)

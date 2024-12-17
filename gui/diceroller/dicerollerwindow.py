@@ -21,15 +21,6 @@ _WelcomeMessage = """
 # - It should probably try to load as much as possible and return any errors
 #   along with what it could load
 #   - Might make sense to have this behaviour as optional
-# TODO: Get rid of separate group/roller add buttons and have a single button
-#   with the document icon (or maybe a plus icon)
-# - Switch to having one of those buttons with an arrow to get multiple options
-# - By default clicking the button should add a roller
-#   - This will already causes a group to be added if there is none
-# - There should be menu options for add group and add roller
-# TODO: Switch to explicit saving rather than live saving
-# - Would need prompt to save anything modified when closing the window
-#
 # TODO: This trigger might be useful to prevent loops being created in the
 # hierarchy table
 """
@@ -48,6 +39,40 @@ BEGIN
     WHERE EXISTS (SELECT 1 FROM check_cte WHERE child = NEW.id);
 END;
 """
+
+class _DropdownWidgetAction(gui.WidgetActionEx):
+    def __init__(
+            self,
+            menu: QtWidgets.QMenu,
+            text: typing.Optional[str] = None,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(
+            text=text,
+            parent=parent)
+        self._menu = menu
+
+    def createWidget(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget]
+            ) -> QtWidgets.QWidget:
+        widget = gui.ToolButtonEx(parent=parent)
+        widget.setArrowType(QtCore.Qt.ArrowType.DownArrow)
+        widget.setDisableMenuIcon(True)
+        widget.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
+        widget.setMenu(self._menu)
+        widget.setFixedWidth(10) # TODO: Apply interface scaling
+        return widget
+
+class _MenuAction(gui.ActionEx):
+    def __init__(
+            self,
+            menu: QtWidgets.QMenu,
+            text: str,
+            parent: QtWidgets.QWidget
+            ) -> None:
+        super().__init__(text, parent)
+        self.setMenu(menu)
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
@@ -201,33 +226,59 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.orderChanged.connect(
             self._rollerTreeOrderChanged)
 
-        self._rollerToolbar = QtWidgets.QToolBar('Toolbar')
-        self._rollerToolbar.setIconSize(QtCore.QSize(32, 32))
-        self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
+        self._rollerToolbar = QtWidgets.QToolBar()
+        self._rollerToolbar.setIconSize(QtCore.QSize(24, 24))
+        self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self._rollerToolbar.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
 
+        #
+        # New
+        #
         self._newRollerAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewGrid), 'New Roller', self)
+            gui.loadIcon(gui.Icon.NewFile),
+            'New Dice Roller',
+            self)
+        self._newRollerAction.setShortcut(QtGui.QKeySequence.StandardKey.New)
         self._newRollerAction.triggered.connect(self._createNewRoller)
-        self._rollerTree.addAction(self._newRollerAction)
-        self._rollerToolbar.addAction(self._newRollerAction)
 
-        self._newGroupAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.NewList), 'New Group', self)
+        self._newGroupAction = QtWidgets.QAction('New Group', self)
         self._newGroupAction.triggered.connect(self._createNewGroup)
-        self._rollerTree.addAction(self._newGroupAction)
-        self._rollerToolbar.addAction(self._newGroupAction)
 
-        # TODO: I should probably have a save keyboard short cut but it should
-        # only save the current config not all the selected ones
-        self._saveAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.SaveFile), 'Save...', self)
-        self._saveAction.triggered.connect(self._saveSelectedRollers)
-        self._rollerTree.addAction(self._saveAction)
-        self._rollerToolbar.addAction(self._saveAction)
+        menu = QtWidgets.QMenu()
+        menu.addAction(self._newRollerAction)
+        menu.addAction(self._newGroupAction)
 
+        self._rollerToolbar.addAction(self._newRollerAction)
+        self._rollerToolbar.addAction(_DropdownWidgetAction(menu=menu, text='New', parent=self))
+        self._rollerTree.addAction(_MenuAction(menu, 'New', self))
+
+        #
+        # Save
+        #
+        self._saveSelectedAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.SaveFile),
+            'Save Selected Dice Rollers',
+            self)
+        self._saveSelectedAction.setShortcut(QtGui.QKeySequence.StandardKey.Save)
+        self._saveSelectedAction.triggered.connect(self._saveSelectedRollers)
+
+        self._saveAllAction = QtWidgets.QAction('Save All Dice Rollers', self)
+        self._saveAllAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+S'))
+        self._saveAllAction.triggered.connect(self._saveAllRollers)
+
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(self._saveSelectedAction)
+        menu.addAction(self._saveAllAction)
+
+        self._rollerToolbar.addAction(self._saveSelectedAction)
+        self._rollerToolbar.addAction(_DropdownWidgetAction(menu, 'Save', self))
+        self._rollerTree.addAction(_MenuAction(menu, 'Save', self))
+
+        #
+        # Rename
+        #
         self._renameAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.RenameFile), 'Rename...', self)
         self._renameAction.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key.Key_F2))
@@ -235,18 +286,40 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.addAction(self._renameAction)
         self._rollerToolbar.addAction(self._renameAction)
 
-        self._revertAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.Reload), 'Revert...', self)
-        self._revertAction.triggered.connect(self._revertSelectedRollers)
-        self._rollerTree.addAction(self._revertAction)
-        self._rollerToolbar.addAction(self._revertAction)
+        #
+        # Revert
+        #
+        self._revertSelectedAction = QtWidgets.QAction(
+            gui.loadIcon(gui.Icon.Reload),
+            'Revert Selected Dice Rollers...',
+            self)
+        self._revertSelectedAction.setShortcut(QtGui.QKeySequence('Ctrl+R'))
+        self._revertSelectedAction.triggered.connect(self._revertSelectedRollers)
 
+        self._revertAllAction = QtWidgets.QAction('Revert All Dice Rollers...', self)
+        self._revertAllAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+R'))
+        self._revertAllAction.triggered.connect(self._revertAllRollers)
+
+        menu = QtWidgets.QMenu()
+        menu.addAction(self._revertSelectedAction)
+        menu.addAction(self._revertAllAction)
+
+        self._rollerToolbar.addAction(self._revertSelectedAction)
+        self._rollerToolbar.addAction(_DropdownWidgetAction(menu, 'Revert', self))
+        self._rollerTree.addAction(_MenuAction(menu, 'Revert', self))
+
+        #
+        # Copy
+        #
         self._copyAction = QtWidgets.QAction(
-            gui.loadIcon(gui.Icon.CopyFile), 'Copy...', self)
+            gui.loadIcon(gui.Icon.CopyFile), 'Copy', self)
         self._copyAction.triggered.connect(self._copyCurrentObject)
         self._rollerTree.addAction(self._copyAction)
         self._rollerToolbar.addAction(self._copyAction)
 
+        #
+        # Delete
+        #
         self._deleteAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.DeleteFile), 'Delete...', self)
         self._deleteAction.triggered.connect(self._deleteSelectedObjects)
@@ -254,12 +327,18 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.addAction(self._deleteAction)
         self._rollerToolbar.addAction(self._deleteAction)
 
+        #
+        # Import
+        #
         self._importAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.ImportFile), 'Import...', self)
         self._importAction.triggered.connect(self._importObjects)
         self._rollerTree.addAction(self._importAction)
         self._rollerToolbar.addAction(self._importAction)
 
+        #
+        # Export
+        #
         self._exportAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.ExportFile), 'Export...', self)
         self._exportAction.triggered.connect(self._exportSelectedObjects)
@@ -269,7 +348,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.setContextMenuPolicy(
             QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
-        groupLayout = QtWidgets.QHBoxLayout()
+        groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.setContentsMargins(0, 0, 0, 0)
         groupLayout.addWidget(self._rollerToolbar)
         groupLayout.addWidget(self._rollerTree)
@@ -418,46 +497,28 @@ class DiceRollerWindow(gui.WindowWidget):
 
         self._updateControlEnablement()
 
-    def _selectedObjects(self) -> typing.Iterable[typing.Union[
-            diceroller.DiceRoller,
-            diceroller.DiceRollerGroup
-            ]]:
-        selection = []
-        seen = set()
-        for selected in self._rollerTree.selectedObjects():
-            seen.add(selected.id())
-            selection.append(selected)
-        # Due to the way selection in the tree widget it's possible for the
-        # current item to be set but not part of the selection. For example
-        # if you delete an item one of the remaining items will become the
-        # current item but it won't be selected. When in this state the item
-        # has a fainter highlight but it is highlighted. From the point of
-        # view of the item is considered selected when in this state so this
-        # code yields the current object if it's set and hasn't already been
-        # yielded
-        current = self._rollerTree.currentObject()
-        if current and current.id() not in seen:
-            selection.append(current)
-
-        return selection
-
     def _updateControlEnablement(self) -> None:
         currentObject = self._rollerTree.currentObject()
         hasSelection = currentObject != None
         hasCurrentRoller = isinstance(currentObject, diceroller.DiceRoller)
-        hasModified = False
-        for selectedObject in self._selectedObjects():
+        isAnyModified = self._rollerTree.hasModifiedRoller()
+        isSelectionModified = False
+        for selectedObject in self._rollerTree.selectedObjects():
             if isinstance(selectedObject, diceroller.DiceRoller):
-                hasModified = self._rollerTree.isRollerModified(rollerId=selectedObject.id())
+                isSelectionModified = self._rollerTree.isRollerModified(rollerId=selectedObject.id())
             elif isinstance(selectedObject, diceroller.DiceRollerGroup):
-                hasModified = any(self._rollerTree.isRollerModified(rollerId=roller.id()) for roller in selectedObject.rollers())
-            if hasModified:
+                isSelectionModified = any(self._rollerTree.isRollerModified(rollerId=roller.id()) for roller in selectedObject.rollers())
+            if isSelectionModified:
                 break
 
         self._renameAction.setEnabled(hasSelection)
         self._deleteAction.setEnabled(hasSelection)
-        self._saveAction.setEnabled(hasModified)
-        self._revertAction.setEnabled(hasModified)
+
+        self._saveSelectedAction.setEnabled(isSelectionModified)
+        self._saveAllAction.setEnabled(isAnyModified)
+
+        self._revertSelectedAction.setEnabled(isSelectionModified)
+        self._revertAllAction.setEnabled(isAnyModified)
 
         self._managerGroupBox.setEnabled(not self._rollInProgress)
         self._configGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
@@ -685,7 +746,7 @@ class DiceRollerWindow(gui.WindowWidget):
     def _deleteSelectedObjects(self) -> None:
         groups: typing.List[diceroller.DiceRollerGroup] = []
         rollers: typing.List[diceroller.DiceRoller] = []
-        for object in self._selectedObjects():
+        for object in self._rollerTree.selectedObjects():
             if isinstance(object, diceroller.DiceRollerGroup):
                 groups.append(object)
             elif isinstance(object, diceroller.DiceRoller):
@@ -818,7 +879,7 @@ class DiceRollerWindow(gui.WindowWidget):
 
         exportGroups: typing.Dict[str, diceroller.DiceRollerGroup] = {}
         try:
-            selectedObjects = list(self._selectedObjects())
+            selectedObjects = self._rollerTree.selectedObjects()
             explicitGroups: typing.Set[str] = set()
             for object in selectedObjects:
                 if isinstance(object, diceroller.DiceRollerGroup):
@@ -880,8 +941,13 @@ class DiceRollerWindow(gui.WindowWidget):
                 exception=ex)
             return
 
+    def _saveCurrentRoller(self) -> None:
+        currentRoller = self._rollerTree.currentRoller()
+        if currentRoller:
+            self._saveRollers(objects=[currentRoller])
+
     def _saveSelectedRollers(self) -> None:
-        self._saveRollers(objects=self._selectedObjects())
+        self._saveRollers(objects=self._rollerTree.selectedObjects())
 
     def _saveAllRollers(self) -> None:
         modifiedRollers = self._rollerTree.modifiedRollers()
@@ -968,8 +1034,18 @@ class DiceRollerWindow(gui.WindowWidget):
 
         return True
 
+    def _revertCurrentRoller(self) -> None:
+        currentRoller = self._rollerTree.currentRoller()
+        if currentRoller:
+            self._revertRollers(objects=[currentRoller])
+
     def _revertSelectedRollers(self) -> None:
-        self._revertRollers(objects=self._selectedObjects())
+        self._revertRollers(objects=self._rollerTree.selectedObjects())
+
+    def _revertAllRollers(self) -> None:
+        revertRollers = self._rollerTree.modifiedRollers()
+        if revertRollers:
+            self._revertRollers(objects=revertRollers)
 
     def _revertRollers(
             self,
@@ -987,6 +1063,9 @@ class DiceRollerWindow(gui.WindowWidget):
                 for roller in object.rollers():
                     if self._rollerTree.isRollerModified(rollerId=roller.id()):
                         rollersToRevert.append(roller)
+
+        if not rollersToRevert:
+            return
 
         if promptConfirm:
             rollerCount = len(rollersToRevert)

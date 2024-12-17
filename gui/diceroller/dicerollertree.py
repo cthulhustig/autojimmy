@@ -15,12 +15,8 @@ class _CustomValidator(QtGui.QValidator):
             return (QtGui.QValidator.State.Intermediate, input, pos)
         return (QtGui.QValidator.State.Acceptable, input, pos)
 
-class _CustomItemDelegate(gui.StyledItemDelegateEx):
+class _CustomItemDelegate(QtWidgets.QStyledItemDelegate):
     itemEdited = QtCore.pyqtSignal(QtCore.QModelIndex)
-
-    def __init__(self, parent = None):
-        super().__init__(parent)
-        self.setHighlightCurrentItem(False)
 
     def createEditor(
             self,
@@ -78,6 +74,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
         self.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setAllColumnsShowFocus(True)
         itemDelegate = _CustomItemDelegate()
         itemDelegate.itemEdited.connect(self._itemEdited)
         self.setItemDelegate(itemDelegate)
@@ -633,6 +630,24 @@ class DiceRollerTree(gui.TreeWidgetEx):
 
         if updatedGroups or deletedGroups:
             self.orderChanged.emit(updatedGroups, deletedGroups)
+
+    def selectionChanged(
+            self,
+            selected: QtCore.QItemSelection,
+            deselected: QtCore.QItemSelection
+            ) -> None:
+        super().selectionChanged(selected, deselected)
+
+        # Select the current item if it's not already selected. This can happen
+        # if the user clicks in an area of the tree where there are no items or
+        # after the currently active item is removed from the tree
+        # TODO: This need tested on different OS
+        current = self.currentIndex()
+        if not selected.contains(current):
+            item = self.itemFromIndex(current)
+            if item:
+                with gui.SignalBlocker(self):
+                    item.setSelected(True)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
