@@ -62,6 +62,7 @@ class _DropdownWidgetAction(gui.WidgetActionEx):
         widget.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
         widget.setMenu(self._menu)
         widget.setFixedWidth(10) # TODO: Apply interface scaling
+        widget.setToolTip(self.text())
         return widget
 
 class _MenuAction(gui.ActionEx):
@@ -259,12 +260,12 @@ class DiceRollerWindow(gui.WindowWidget):
         #
         self._saveSelectedAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.SaveFile),
-            'Save Selected Dice Rollers',
+            'Save',
             self)
         self._saveSelectedAction.setShortcut(QtGui.QKeySequence.StandardKey.Save)
         self._saveSelectedAction.triggered.connect(self._saveSelectedRollers)
 
-        self._saveAllAction = QtWidgets.QAction('Save All Dice Rollers', self)
+        self._saveAllAction = QtWidgets.QAction('Save All', self)
         self._saveAllAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+S'))
         self._saveAllAction.triggered.connect(self._saveAllRollers)
 
@@ -298,12 +299,12 @@ class DiceRollerWindow(gui.WindowWidget):
         #
         self._revertSelectedAction = QtWidgets.QAction(
             gui.loadIcon(gui.Icon.Reload),
-            'Revert Selected Dice Rollers...',
+            'Revert...',
             self)
         self._revertSelectedAction.setShortcut(QtGui.QKeySequence('Ctrl+R'))
         self._revertSelectedAction.triggered.connect(self._revertSelectedRollers)
 
-        self._revertAllAction = QtWidgets.QAction('Revert All Dice Rollers...', self)
+        self._revertAllAction = QtWidgets.QAction('Revert All...', self)
         self._revertAllAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+R'))
         self._revertAllAction.triggered.connect(self._revertAllRollers)
 
