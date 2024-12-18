@@ -42,7 +42,7 @@ class DiceRollerProbabilityGraph(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(gui.createLabelledWidgetLayout('Probability Type', self._typeComboBox))
+        layout.addLayout(gui.createLabelledWidgetLayout('Probability Type:', self._typeComboBox))
         layout.addWidget(self._graph)
 
         self.setLayout(layout)
