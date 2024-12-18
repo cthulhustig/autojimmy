@@ -268,9 +268,16 @@ class DiceRollerWindow(gui.WindowWidget):
         self._saveAllAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+S'))
         self._saveAllAction.triggered.connect(self._saveAllRollers)
 
+        self._autoSaveAction = gui.ActionEx('Autosave', self)
+        self._autoSaveAction.setCheckable(True)
+        self._autoSaveAction.setChecked(False) # Should work like construction windows by default
+        self._autoSaveAction.triggered.connect(self._autoSaveToggled)
+
         menu = QtWidgets.QMenu(self)
         menu.addAction(self._saveSelectedAction)
         menu.addAction(self._saveAllAction)
+        menu.addSeparator()
+        menu.addAction(self._autoSaveAction)
 
         self._rollerToolbar.addAction(self._saveSelectedAction)
         self._rollerToolbar.addAction(_DropdownWidgetAction(menu, 'Save', self))
@@ -367,19 +374,12 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollButton = QtWidgets.QPushButton('Roll Dice')
         self._rollButton.clicked.connect(self._rollDice)
 
-        self._autoSaveAction = gui.ActionEx('Autosave', self)
-        self._autoSaveAction.setCheckable(True)
-        self._autoSaveAction.setChecked(False) # Works like construction windows by default
-        self._autoSaveAction.triggered.connect(self._autoSaveToggled)
-
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.setContentsMargins(0, 0, 0, 0)
         groupLayout.addWidget(self._rollerConfigWidget)
         groupLayout.addWidget(self._rollButton)
 
-        self._configGroupBox = gui.GroupBoxEx('Configuration')
-        self._configGroupBox.enableMenuButton(True)
-        self._configGroupBox.addAction(self._autoSaveAction)
+        self._configGroupBox = QtWidgets.QGroupBox('Configuration')
         self._configGroupBox.setLayout(groupLayout)
 
     def _createRollResultsControls(self) -> None:
