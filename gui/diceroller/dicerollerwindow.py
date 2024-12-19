@@ -349,12 +349,9 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerConfigWidget.configChanged.connect(
             self._rollerConfigChanged)
 
-        self._rollButton = QtWidgets.QPushButton('Roll Dice')
-        self._rollButton.clicked.connect(self._rollDice)
-
         groupLayout = QtWidgets.QVBoxLayout()
+        groupLayout.setContentsMargins(0, 0, 0, 0)
         groupLayout.addWidget(self._rollerConfigWidget)
-        groupLayout.addWidget(self._rollButton)
 
         self._configGroupBox = QtWidgets.QGroupBox('Configuration')
         self._configGroupBox.setLayout(groupLayout)
@@ -363,8 +360,12 @@ class DiceRollerWindow(gui.WindowWidget):
         self._resultsWidget = gui.DiceRollDisplayWidget()
         self._resultsWidget.rollComplete.connect(self._virtualRollComplete)
 
+        self._rollButton = QtWidgets.QPushButton('Roll Dice')
+        self._rollButton.clicked.connect(self._rollDice)
+
         groupLayout = QtWidgets.QVBoxLayout()
         groupLayout.addWidget(self._resultsWidget)
+        groupLayout.addWidget(self._rollButton)
 
         self._resultsGroupBox = QtWidgets.QGroupBox('Roll')
         self._resultsGroupBox.setLayout(groupLayout)
@@ -509,6 +510,8 @@ class DiceRollerWindow(gui.WindowWidget):
         self._managerGroupBox.setEnabled(not self._rollInProgress)
         self._configGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
+
+        self._rollButton.setEnabled(hasCurrentRoller and not self._rollInProgress)
 
     def _generateGroupName(self) -> str:
         groupNames = set([group.name() for group in self._rollerTree.groups()])
