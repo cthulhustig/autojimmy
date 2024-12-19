@@ -16,6 +16,8 @@ _WelcomeMessage = """
 """.format(name=app.AppName)
 
 class _DropdownWidgetAction(gui.WidgetActionEx):
+    _WidgetWidth = 10
+
     def __init__(
             self,
             menu: QtWidgets.QMenu,
@@ -31,12 +33,13 @@ class _DropdownWidgetAction(gui.WidgetActionEx):
             self,
             parent: typing.Optional[QtWidgets.QWidget]
             ) -> QtWidgets.QWidget:
+        width = int(_DropdownWidgetAction._WidgetWidth * app.Config.instance().interfaceScale())
         widget = gui.ToolButtonEx(parent=parent)
         widget.setArrowType(QtCore.Qt.ArrowType.DownArrow)
         widget.setDisableMenuIcon(True)
         widget.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
         widget.setMenu(self._menu)
-        widget.setFixedWidth(10) # TODO: Apply interface scaling
+        widget.setFixedWidth(width)
         widget.setToolTip(self.text())
         return widget
 
