@@ -341,6 +341,7 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._scrollArea = gui.ScrollAreaEx()
         self._scrollArea.setWidgetResizable(True)
         self._scrollArea.setWidget(wrapperWidget)
+        self._scrollArea.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
