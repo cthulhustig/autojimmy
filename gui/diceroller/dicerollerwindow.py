@@ -427,21 +427,6 @@ class DiceRollerWindow(gui.WindowWidget):
             roller=roller,
             seed=self._randomGenerator.randbits(128))
 
-
-        # TODO: Remove hack
-        """
-        count = 1000
-        for index in range(count):
-            hackResult = diceroller.rollDice(
-                label=f'HACK {index}',
-                roller=roller,
-                seed=self._randomGenerator.randbits(128))
-            objectdb.ObjectDbManager.instance().createObject(
-                object=hackResult)
-        self._purgeHistory()
-        """
-
-
         self._rollInProgress = True
         self._updateControlEnablement()
 
