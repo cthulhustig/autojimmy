@@ -335,7 +335,6 @@ class DiceRollerWindow(gui.WindowWidget):
             QtCore.Qt.ContextMenuPolicy.ActionsContextMenu)
 
         groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.setContentsMargins(0, 0, 0, 0)
         groupLayout.addWidget(self._rollerToolbar)
         groupLayout.addWidget(self._rollerTree)
 
@@ -354,7 +353,6 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollButton.clicked.connect(self._rollDice)
 
         groupLayout = QtWidgets.QVBoxLayout()
-        groupLayout.setContentsMargins(0, 0, 0, 0)
         groupLayout.addWidget(self._rollerConfigWidget)
         groupLayout.addWidget(self._rollButton)
 
