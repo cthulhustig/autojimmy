@@ -60,7 +60,7 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
-        self._syncToDatabase()
+        self._loadData()
         self._insertedCbToken = objectdb.ObjectDbManager.instance().connectChangeCallback(
             operation=objectdb.ObjectDbOperation.Insert,
             key=diceroller.DiceRollResult,
@@ -224,35 +224,46 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
-    def _syncToDatabase(self) -> None:
+    def _loadData(self) -> None:
         try:
+            exceptionList: typing.List[Exception] = []
             results = objectdb.ObjectDbManager.instance().readObjects(
-                classType=diceroller.DiceRollResult)
+                classType=diceroller.DiceRollResult,
+                bestEffort=True,
+                exceptionList=exceptionList)
 
-            selection = set()
-            for item in self._historyTable.selectedItems():
-                result = item.data(QtCore.Qt.ItemDataRole.UserRole)
-                assert(isinstance(result, diceroller.DiceRollResult))
-                selection.add(result.id())
-            self._historyTable.clearSelection()
-
-            sortingEnabled = self._historyTable.isSortingEnabled()
-            self._historyTable.setSortingEnabled(False)
-            try:
-                for row, result in enumerate(reversed(results)):
-                    if row >= self._historyTable.rowCount():
-                        self._historyTable.insertRow(row)
-                    self._fillTableRow(row, result)
-                    assert(isinstance(result, diceroller.DiceRollResult))
-                    if result.id() in selection:
-                        self._historyTable.selectRow(row)
-
-                while self._historyTable.rowCount() > len(results):
-                    self._historyTable.removeRow(self._historyTable.rowCount() - 1)
-            finally:
-                self._historyTable.setSortingEnabled(sortingEnabled)
+            if exceptionList:
+                for ex in exceptionList:
+                    logging.error('An error occurred while loading roll history from the database', exc_info=ex)
+                gui.MessageBoxEx.critical(f'Failed to load some roll history data from database, consult log for more details.')
         except Exception as ex:
-            logging.error('Failed to sync history widget to database', exc_info=ex)
+            message = 'Failed to load roll history from database'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
+            return
+
+        selection = set()
+        for item in self._historyTable.selectedItems():
+            result = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            assert(isinstance(result, diceroller.DiceRollResult))
+            selection.add(result.id())
+        self._historyTable.clearSelection()
+
+        sortingEnabled = self._historyTable.isSortingEnabled()
+        self._historyTable.setSortingEnabled(False)
+        try:
+            for row, result in enumerate(reversed(results)):
+                if row >= self._historyTable.rowCount():
+                    self._historyTable.insertRow(row)
+                self._fillTableRow(row, result)
+                assert(isinstance(result, diceroller.DiceRollResult))
+                if result.id() in selection:
+                    self._historyTable.selectRow(row)
+
+            while self._historyTable.rowCount() > len(results):
+                self._historyTable.removeRow(self._historyTable.rowCount() - 1)
+        finally:
+            self._historyTable.setSortingEnabled(sortingEnabled)
 
     def _handleDatabaseInsert(
             self,
@@ -271,7 +282,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
             finally:
                 self._historyTable.setSortingEnabled(sortingEnabled)
         except Exception as ex:
-            logging.error(f'Failed update history widget in response to insert of result {entity}', exc_info=ex)
+            message = f'Failed update history widget in response to insert of result {entity}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
 
     def _handleDatabaseDelete(
             self,
@@ -288,7 +301,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                     self._historyTable.removeRow(row)
                     return
         except Exception as ex:
-            logging.error(f'Failed update history widget in response to delete of result {entity}', exc_info=ex)
+            message = f'Failed update history widget in response to delete of result {entity}'
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(parent=self, text=message, exception=ex)
 
     def _showContextMenu(
             self,
@@ -335,8 +350,9 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         except Exception as ex:
             logging.error('Failed to clear history', exc_info=ex)
             gui.MessageBoxEx.critical(
+                parent=self,
                 text='Failed to clear history',
                 exception=ex)
             return
 
-        self._syncToDatabase()
+        self._loadData()

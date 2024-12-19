@@ -15,31 +15,6 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
-
-# TODO: The current behaviour if there is an error in the database isn't great
-# - If there is any error with one object it doesn't read anything
-# - It should probably try to load as much as possible and return any errors
-#   along with what it could load
-#   - Might make sense to have this behaviour as optional
-# TODO: This trigger might be useful to prevent loops being created in the
-# hierarchy table
-"""
-CREATE TRIGGER prevent_loop
-BEFORE INSERT ON hierarchyTable
-BEGIN
-    -- Check if the new relationship creates a loop
-    WITH RECURSIVE check_cte(id, child) AS (
-        SELECT NEW.id, NEW.child
-        UNION ALL
-        SELECT h.id, h.child
-        FROM hierarchyTable h
-        JOIN check_cte cte ON h.child = cte.id
-    )
-    SELECT RAISE(ABORT, 'Loop detected')
-    WHERE EXISTS (SELECT 1 FROM check_cte WHERE child = NEW.id);
-END;
-"""
-
 class _DropdownWidgetAction(gui.WidgetActionEx):
     def __init__(
             self,
@@ -404,11 +379,20 @@ class DiceRollerWindow(gui.WindowWidget):
 
     def _loadData(self) -> None:
         try:
+            exceptionList: typing.List[Exception] = []
             groups = objectdb.ObjectDbManager.instance().readObjects(
-                classType=diceroller.DiceRollerGroup)
+                classType=diceroller.DiceRollerGroup,
+                bestEffort=True,
+                exceptionList=exceptionList)
+
+            if exceptionList:
+                for ex in exceptionList:
+                    logging.error('An error occurred while loading dice roller groups from the database', exc_info=ex)
+                gui.MessageBoxEx.critical(f'Failed to load some dice roller data from database, consult log for more details.')
         except Exception as ex:
-            # TODO: Not sure what to do here, possibly just let the exception pass up
-            logging.error('Failed to sync manager to database', exc_info=ex)
+            message = 'Failed to load dice roller data from database'
+            logging.error(message, exc_info=ex)
+            return
 
         self._editRollers.clear()
 

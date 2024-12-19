@@ -636,6 +636,8 @@ class ObjectDbManager(object):
     def readObject(
             self,
             id: str,
+            bestEffort: bool = False,
+            exceptionList: typing.Optional[typing.List[Exception]] = None,
             transaction: typing.Optional[Transaction] = None
             ) -> DatabaseObject:
         logging.debug(f'ObjectDbManager reading object {id}')
@@ -643,7 +645,9 @@ class ObjectDbManager(object):
             connection = transaction.connection()
             return self._readEntity(
                 id=id,
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                bestEffort=bestEffort,
+                exceptionList=exceptionList)
         else:
             # Use a transaction for the read to ensure a consistent
             # view of the database across multiple selects
@@ -651,11 +655,15 @@ class ObjectDbManager(object):
                 connection = transaction.connection()
                 return self._readEntity(
                     id=id,
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    bestEffort=bestEffort,
+                    exceptionList=exceptionList)
 
     def readObjects(
             self,
             classType: typing.Type[DatabaseObject],
+            bestEffort: bool = False,
+            exceptionList: typing.Optional[typing.List[Exception]] = None,
             transaction: typing.Optional[Transaction] = None
             ) -> typing.Iterable[DatabaseObject]:
         logging.debug(f'ObjectDbManager reading objects of type {classType}')
@@ -663,7 +671,9 @@ class ObjectDbManager(object):
             connection = transaction.connection()
             return self._readEntities(
                 classType=classType,
-                cursor=connection.cursor())
+                cursor=connection.cursor(),
+                bestEffort=bestEffort,
+                exceptionList=exceptionList)
         else:
             # Use a transaction for the read to ensure a consistent
             # view of the database across multiple selects
@@ -671,7 +681,9 @@ class ObjectDbManager(object):
                 connection = transaction.connection()
                 return self._readEntities(
                     classType=classType,
-                    cursor=connection.cursor())
+                    cursor=connection.cursor(),
+                    bestEffort=bestEffort,
+                    exceptionList=exceptionList)
 
     def updateObject(
             self,
@@ -1145,7 +1157,9 @@ class ObjectDbManager(object):
             id: str,
             cursor: sqlite3.Cursor,
             table: typing.Optional[str] = None,
-            entityCache: typing.Optional[typing.Dict[str, DatabaseEntity]] = None
+            entityCache: typing.Optional[typing.Dict[str, DatabaseEntity]] = None,
+            bestEffort: bool = False,
+            exceptionList: typing.Optional[typing.List[Exception]] = None,
             ) -> DatabaseEntity:
         if entityCache == None:
             entityCache = {}
@@ -1164,47 +1178,69 @@ class ObjectDbManager(object):
             table = row[0]
 
         if table == ObjectDbManager._ListsTableName:
-            sql = """
-                SELECT
-                    {listTable}.bool,
-                    {listTable}.integer,
-                    {listTable}.float,
-                    {listTable}.string,
-                    {listTable}.entity,
-                    {entitiesTable}.table_name AS entity_table
-                FROM {listTable}
-                LEFT JOIN {entitiesTable}
-                    ON {listTable}.entity = {entitiesTable}.id
-                WHERE {listTable}.id = :id;
-                """.format(
-                listTable=ObjectDbManager._ListsTableName,
-                entitiesTable=ObjectDbManager._EntitiesTableName)
-            cursor.execute(sql, {'id': id})
-            content = []
-            for row in cursor.fetchall():
-                if row[0] != None:
-                    content.append(bool(row[0])) # It's a bool (stored as an int)
-                elif row[1] != None:
-                    content.append(row[1]) # It's an integer
-                elif row[2] != None:
-                    content.append(row[2]) # It's a float
-                elif row[3] != None:
-                    content.append(row[3]) # It's a string
-                elif row[4] != None:
-                    # It's an entity
-                    child = entityCache.get(row[4])
-                    if not child:
-                        child = self._readEntity(
-                            id=row[4],
-                            table=row[5],
-                            entityCache=entityCache,
-                            cursor=cursor)
-                        entityCache[child.id()] = child
-                    content.append(child)
+            try:
+                sql = """
+                    SELECT
+                        {listTable}.bool,
+                        {listTable}.integer,
+                        {listTable}.float,
+                        {listTable}.string,
+                        {listTable}.entity,
+                        {entitiesTable}.table_name AS entity_table
+                    FROM {listTable}
+                    LEFT JOIN {entitiesTable}
+                        ON {listTable}.entity = {entitiesTable}.id
+                    WHERE {listTable}.id = :id;
+                    """.format(
+                    listTable=ObjectDbManager._ListsTableName,
+                    entitiesTable=ObjectDbManager._EntitiesTableName)
+                cursor.execute(sql, {'id': id})
+                content = []
+                for row in cursor.fetchall():
+                    try:
+                        if row[0] != None:
+                            content.append(bool(row[0])) # It's a bool (stored as an int)
+                        elif row[1] != None:
+                            content.append(row[1]) # It's an integer
+                        elif row[2] != None:
+                            content.append(row[2]) # It's a float
+                        elif row[3] != None:
+                            content.append(row[3]) # It's a string
+                        elif row[4] != None:
+                            # It's an entity
+                            child = entityCache.get(row[4])
+                            if not child:
+                                child = self._readEntity(
+                                    id=row[4],
+                                    table=row[5],
+                                    entityCache=entityCache,
+                                    cursor=cursor,
+                                    bestEffort=bestEffort,
+                                    exceptionList=exceptionList)
+                                entityCache[child.id()] = child
+                            content.append(child)
+                    except Exception as ex:
+                        # When performing a best effort load a list items that fail
+                        # to load can be ignored
+                        if not bestEffort:
+                            raise
+                        if exceptionList != None:
+                            exceptionList.append(ex)
+                        # Continue trying to load list entries
+                        continue
 
-            return DatabaseList(
-                id=id,
-                content=content)
+                return DatabaseList(
+                    id=id,
+                    content=content)
+            except Exception as ex:
+                # When performing a best effort load, if the list fails to load
+                # completely (e.g. doesn't exist in list table), return an empty
+                # list
+                if not bestEffort:
+                    raise
+                if exceptionList != None:
+                    exceptionList.append(ex)
+                return DatabaseList(id)
         else:
             objectDef = self._tableObjectDefMap.get(table)
             if objectDef == None:
@@ -1250,46 +1286,59 @@ class ObjectDbManager(object):
             objectData = {}
             columnIndex = 0
             for paramDef in objectDef.paramDefs():
-                columnName = paramDef.columnName()
-                columnValue = row[columnIndex]
-                if columnValue == None and not paramDef.isOptional():
-                    raise RuntimeError(
-                        f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
-                columnIndex += 1
+                try:
+                    columnName = paramDef.columnName()
+                    columnValue = row[columnIndex]
+                    if columnValue == None and not paramDef.isOptional():
+                        raise RuntimeError(
+                            f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
+                    columnIndex += 1
 
-                columnType = paramDef.columnType()
-                if columnType == str:
-                    if columnValue != None:
-                        columnValue = str(columnValue) # Should be redundant if table defined correctly
-                elif columnType == int:
-                    if columnValue != None:
-                        columnValue = int(columnValue) # Should be redundant if table defined correctly
-                elif columnType == float:
-                    if columnValue != None:
-                        columnValue = float(columnValue) # Should be redundant if table defined correctly
-                elif columnType == bool:
-                    if columnValue != None:
-                        columnValue = columnValue != 0
-                elif issubclass(columnType, DatabaseEntity):
-                    entityTable = row[columnIndex]
-                    columnIndex += 1 # Entity table was read from row
+                    columnType = paramDef.columnType()
+                    if columnType == str:
+                        if columnValue != None:
+                            columnValue = str(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == int:
+                        if columnValue != None:
+                            columnValue = int(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == float:
+                        if columnValue != None:
+                            columnValue = float(columnValue) # Should be redundant if table defined correctly
+                    elif columnType == bool:
+                        if columnValue != None:
+                            columnValue = columnValue != 0
+                    elif issubclass(columnType, DatabaseEntity):
+                        entityTable = row[columnIndex]
+                        columnIndex += 1 # Entity table was read from row
 
-                    if columnValue != None:
-                        if entityTable == None:
-                            raise RuntimeError(
-                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
-                        childId = columnValue
-                        columnValue = entityCache.get(childId)
-                        if not columnValue:
-                            columnValue = self._readEntity(
-                                id=childId,
-                                table=entityTable,
-                                entityCache=entityCache,
-                                cursor=cursor)
-                            entityCache[columnValue.id()] = columnValue
-                else:
-                    raise RuntimeError(
-                        f'Parameter {columnName} for object {id} of type {objectDef.classType()} has unknown type {columnType}')
+                        if columnValue != None:
+                            if entityTable == None:
+                                raise RuntimeError(
+                                    f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
+                            childId = columnValue
+                            columnValue = entityCache.get(childId)
+                            if not columnValue:
+                                columnValue = self._readEntity(
+                                    id=childId,
+                                    table=entityTable,
+                                    entityCache=entityCache,
+                                    cursor=cursor,
+                                    bestEffort=bestEffort,
+                                    exceptionList=exceptionList)
+                                entityCache[columnValue.id()] = columnValue
+                    else:
+                        raise RuntimeError(
+                            f'Parameter {columnName} for object {id} of type {objectDef.classType()} has unknown type {columnType}')
+                except Exception as ex:
+                    # When performing a best effort read only optional params
+                    # can be ignored when errors occur
+                    if not bestEffort or not paramDef.isOptional():
+                        raise
+                    if exceptionList != None:
+                        exceptionList.append(ex)
+
+                    # Set the optional object parameter to null
+                    columnValue = None
 
                 objectData[columnName] = columnValue
 
@@ -1302,6 +1351,8 @@ class ObjectDbManager(object):
             self,
             classType: typing.Type[DatabaseObject],
             cursor: sqlite3.Cursor,
+            bestEffort: bool = False,
+            exceptionList: typing.Optional[typing.List[Exception]] = None
             ) -> typing.Iterable[DatabaseObject]:
         objectDef = self._classObjectDefMap.get(classType)
         if objectDef == None:
@@ -1344,57 +1395,81 @@ class ObjectDbManager(object):
         objects = []
         entityCache = {}
         for row in cursor.fetchall():
-            id = row[0]
-            objectData = {}
-            columnIndex = 1
-            for paramDef in objectDef.paramDefs():
-                columnName = paramDef.columnName()
-                columnValue = row[columnIndex]
-                if columnValue == None and not paramDef.isOptional():
-                    raise RuntimeError(
-                        f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
-                columnIndex += 1
-
-                columnType = paramDef.columnType()
-                if columnType == str:
-                    if columnValue != None:
-                        columnValue = str(columnValue) # Should be redundant if table defined correctly
-                elif columnType == int:
-                    if columnValue != None:
-                        columnValue = int(columnValue) # Should be redundant if table defined correctly
-                elif columnType == float:
-                    if columnValue != None:
-                        columnValue = float(columnValue) # Should be redundant if table defined correctly
-                elif columnType == bool:
-                    if columnValue != None:
-                        columnValue = columnValue != 0
-                elif issubclass(columnType, DatabaseEntity):
-                    entityTable = row[columnIndex]
-                    columnIndex += 1 # Entity table was read from row
-
-                    if columnValue != None:
-                        if entityTable == None:
+            try:
+                id = row[0]
+                objectData = {}
+                columnIndex = 1
+                for paramDef in objectDef.paramDefs():
+                    try:
+                        columnName = paramDef.columnName()
+                        columnValue = row[columnIndex]
+                        if columnValue == None and not paramDef.isOptional():
                             raise RuntimeError(
-                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
-                        childId = columnValue
-                        columnValue = entityCache.get(childId)
-                        if not columnValue:
-                            columnValue = self._readEntity(
-                                id=childId,
-                                table=entityTable,
-                                entityCache=entityCache,
-                                cursor=cursor)
-                            entityCache[columnValue.id()] = columnValue
-                else:
-                    raise RuntimeError(
-                        f'Parameter definition {objectDef.classType()}.{columnName} has unknown type {columnType}')
+                                f'Database column {columnName} for object {id} of type {objectDef.classType()} has null value for mandatory parameter')
+                        columnIndex += 1
 
-                objectData[columnName] = columnValue
+                        columnType = paramDef.columnType()
+                        if columnType == str:
+                            if columnValue != None:
+                                columnValue = str(columnValue) # Should be redundant if table defined correctly
+                        elif columnType == int:
+                            if columnValue != None:
+                                columnValue = int(columnValue) # Should be redundant if table defined correctly
+                        elif columnType == float:
+                            if columnValue != None:
+                                columnValue = float(columnValue) # Should be redundant if table defined correctly
+                        elif columnType == bool:
+                            if columnValue != None:
+                                columnValue = columnValue != 0
+                        elif issubclass(columnType, DatabaseEntity):
+                            entityTable = row[columnIndex]
+                            columnIndex += 1 # Entity table was read from row
 
-            classType = objectDef.classType()
-            objects.append(classType.createObject(
-                id=id,
-                data=objectData))
+                            if columnValue != None:
+                                if entityTable == None:
+                                    raise RuntimeError(
+                                        f'Database column {columnName} for object {id} of type {objectDef.classType()} has null entity table')
+                                childId = columnValue
+                                columnValue = entityCache.get(childId)
+                                if not columnValue:
+                                    columnValue = self._readEntity(
+                                        id=childId,
+                                        table=entityTable,
+                                        entityCache=entityCache,
+                                        cursor=cursor,
+                                        bestEffort=bestEffort,
+                                        exceptionList=exceptionList)
+                                    entityCache[columnValue.id()] = columnValue
+                        else:
+                            raise RuntimeError(
+                                f'Parameter definition {objectDef.classType()}.{columnName} has unknown type {columnType}')
+                    except Exception as ex:
+                        # When performing a best effort read only optional params
+                        # can be ignored when errors occur
+                        if not bestEffort or not paramDef.isOptional():
+                            raise
+                        if exceptionList != None:
+                            exceptionList.append(ex)
+
+                        # Set the optional object parameter to null
+                        columnValue = None
+
+                    objectData[columnName] = columnValue
+
+                classType = objectDef.classType()
+                objects.append(classType.createObject(
+                    id=id,
+                    data=objectData))
+            except Exception as ex:
+                # When performing a best effort load any objects that fail to
+                # load can be ignored
+                if not bestEffort:
+                    raise
+                if exceptionList != None:
+                    exceptionList.append(ex)
+                # Continue trying to load objects
+                continue
+
         return objects
 
     def _updateEntity(
