@@ -11,7 +11,20 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 # TODO: Welcome message
 _WelcomeMessage = """
     <html>
-    <p></p>
+    <p>The Dice Roller window allows you to configure dice rollers for different
+    situations. Die types for most traveller variants are supported, along with
+    customisable modifiers, boons/banes and flux. Dice rollers are arranged in
+    groups to allow easy management of dice rollers for different characters or
+    games.</p>
+    <p>Tip: The modifiers that are added to a dice roller have check boxes that
+    can be used to turn them on and off depending on if they apply for the roll
+    you're about to make. The main reason I added the dice roller to {name} was
+    to speed up combat when using weapons created with the Mongoose 2e Field
+    Catalogue rules. Some of the weapons created with these rules can have a lot
+    of modifiers that apply in different situations, so I wanted a system that
+    would allow me to pre-configure modifiers, then in game I can just enable
+    the ones that apply for the situation at hand, for example the modifiers
+    that apply based on the target's range.</p>
     </html>
 """.format(name=app.AppName)
 
