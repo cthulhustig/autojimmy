@@ -1,6 +1,7 @@
 from .common.qtutils import *
 from .common.filefilters import *
 from .common.style import *
+from .common.stylehelper import *
 from .common.windowsettings import *
 from .common.icons import *
 from .common.eventfilters import *

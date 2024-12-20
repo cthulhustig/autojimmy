@@ -28,6 +28,47 @@ _WelcomeMessage = """
     </html>
 """.format(name=app.AppName)
 
+# This code is intended to draw a button with an downwards arrow. The way the
+# arrow is drawn is intended to mimic how Qt would normally draw the drop down
+# arrow for a QToolButton that has a menu attached to it. The stock QToolButton
+# implementation uses the Text colour for the drop down arrow, but, it sets the
+# alpha on the colour to 160. The result of this is the drop down arrow is
+# noticeably dimmer than the icons for other buttons in the toolbar (to the
+# point it looks like it's disabled)
+# https://codebrowser.dev/qt5/qtbase/src/widgets/styles/qfusionstyle.cpp.html#560
+# https://codebrowser.dev/qt5/qtbase/src/widgets/styles/qfusionstyle.cpp.html#_ZL20qt_fusion_draw_arrowN2Qt9ArrowTypeEP8QPainterPK12QStyleOptionRK5QRectRK6QColor
+class _DropdownButton(QtWidgets.QToolButton):
+    def paintEvent(self, event):
+        option = QtWidgets.QStyleOptionToolButton()
+        self.initStyleOption(option)
+
+        dpi = gui.QStyleHelper.dpi(option) * app.Config.instance().interfaceScale()
+        arrowWidth = int(gui.QStyleHelper.dpiScaled(14, dpi))
+        arrowHeight = int(gui.QStyleHelper.dpiScaled(8, dpi))
+        arrowMax = min(arrowWidth, arrowHeight)
+        rectMax = min(self.width(), self.height())
+        size = min(arrowMax, rectMax)
+
+        arrowRect = QtCore.QRectF()
+        arrowRect.setWidth(size)
+        arrowRect.setHeight(arrowHeight * size / arrowWidth)
+        arrowRect.moveTo(
+            (self.width() - arrowRect.width()) / 2.0,
+            (self.height() - arrowRect.height()) / 2.0)
+
+        triangle = QtGui.QPolygonF()
+        triangle.append(arrowRect.topLeft())
+        triangle.append(arrowRect.topRight())
+        triangle.append(QtCore.QPointF(arrowRect.center().x(), arrowRect.bottom()))
+
+        colour = self.palette().color(QtGui.QPalette.ColorRole.Text)
+
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.setBrush(colour)
+        painter.drawPolygon(triangle)
+
 class _DropdownWidgetAction(gui.WidgetActionEx):
     _WidgetWidth = 10
 
@@ -47,9 +88,7 @@ class _DropdownWidgetAction(gui.WidgetActionEx):
             parent: typing.Optional[QtWidgets.QWidget]
             ) -> QtWidgets.QWidget:
         width = int(_DropdownWidgetAction._WidgetWidth * app.Config.instance().interfaceScale())
-        widget = gui.ToolButtonEx(parent=parent)
-        widget.setArrowType(QtCore.Qt.ArrowType.DownArrow)
-        widget.setDisableMenuIcon(True)
+        widget = _DropdownButton(parent=parent)
         widget.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
         widget.setMenu(self._menu)
         widget.setFixedWidth(width)
