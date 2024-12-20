@@ -61,8 +61,8 @@ class RandomGenerator(object):
     def seed(self) -> int:
         return self._seed
 
+    # Generate a true random 128 bit seed to init the pseudo random number
+    # generator
     @staticmethod
     def _randomSeed() -> int:
-        # Use a 128 bit cryptographically secure random number
-        # to init the pseudo random number generator
         return secrets.randbits(128)
