@@ -12,7 +12,11 @@ class QStyleHelper():
 
         if option:
             fontMetrics: QtGui.QFontMetrics = option.fontMetrics
-            return fontMetrics.fontDpi()
+            # NOTE: Check QFontMetrics has a fontDpi method before calling it as
+            # it doesn't look like the method is available on macOS (or at least
+            # older macOS as I'm not seeing it when testing on Sierra)
+            if fontMetrics and hasattr(fontMetrics, 'fontDpi'):
+                return fontMetrics.fontDpi()
 
         return QStyleHelper._baseDpi()
 
