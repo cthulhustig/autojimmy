@@ -641,7 +641,6 @@ class DiceRollerTree(gui.TreeWidgetEx):
         # Select the current item if it's not already selected. This can happen
         # if the user clicks in an area of the tree where there are no items or
         # after the currently active item is removed from the tree
-        # TODO: This need tested on different OS
         current = self.currentIndex()
         if not selected.contains(current):
             item = self.itemFromIndex(current)

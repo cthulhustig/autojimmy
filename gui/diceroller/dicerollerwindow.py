@@ -8,7 +8,6 @@ import objectdb
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: Welcome message
 _WelcomeMessage = """
     <html>
     <p>The Dice Roller window allows you to configure dice rollers for different
