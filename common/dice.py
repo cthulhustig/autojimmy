@@ -204,7 +204,7 @@ def calculateRollProbabilities(
         extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0,
         probability: ComparisonType = ComparisonType.EqualTo
-        ) -> typing.Mapping[int, int]:
+        ) -> typing.Mapping[int, float]:
     results = _recursiveRollCombinations(
         dieCount=dieCount + (1 if extraDie != None else 0),
         dieSides=dieSides(dieType=dieType),
@@ -242,7 +242,7 @@ def calculateRollProbability(
         modifier: int = 0,
         dieType: DieType = DieType.D6,
         probability: ComparisonType = ComparisonType.GreaterOrEqualTo,
-        ) -> int:
+        ) -> float:
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
@@ -259,7 +259,7 @@ def calculateRollRangeProbability(
         extraDie: typing.Optional[ExtraDie] = None,
         modifier: int = 0,
         dieType: DieType = DieType.D6
-        ) -> int:
+        ) -> float:
     probabilities = calculateRollProbabilities(
         dieCount=dieCount,
         dieType=dieType,
