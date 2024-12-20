@@ -1,4 +1,3 @@
-from .uuidobject import *
 from .utils import *
 from .calculator import *
 from .random import *
