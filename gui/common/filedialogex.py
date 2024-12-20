@@ -116,4 +116,3 @@ class FileDialogEx(QtWidgets.QFileDialog):
         settings.beginGroup(FileDialogEx._SettingSection)
         settings.setValue(key, dir)
         settings.endGroup()
-

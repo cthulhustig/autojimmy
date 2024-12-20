@@ -95,11 +95,11 @@ class DiceModifier(objectdb.DatabaseObject):
 
     @staticmethod
     def createObject(
-        id: str,
-        data: typing.Mapping[
-            str,
-            typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
-        ) -> 'DiceRoller':
+            id: str,
+            data: typing.Mapping[
+                str,
+                typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
+            ) -> 'DiceRoller':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError('DiceModifier construction parameter "name" is not a str')
@@ -333,11 +333,11 @@ class DiceRoller(objectdb.DatabaseObject):
 
     @staticmethod
     def createObject(
-        id: str,
-        data: typing.Mapping[
-            str,
-            typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
-        ) -> 'DiceRoller':
+            id: str,
+            data: typing.Mapping[
+                str,
+                typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
+            ) -> 'DiceRoller':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError('DiceRoller construction parameter "name" is not a str')
@@ -507,11 +507,11 @@ class DiceRollerGroup(objectdb.DatabaseObject):
 
     @staticmethod
     def createObject(
-        id: str,
-        data: typing.Mapping[
-            str,
-            typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
-        ) -> 'DiceRollerGroup':
+            id: str,
+            data: typing.Mapping[
+                str,
+                typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
+            ) -> 'DiceRollerGroup':
         name = data.get('name')
         if not isinstance(name, str):
             raise ValueError('DiceRollerGroup construction parameter "name" is not a str')
@@ -817,11 +817,11 @@ class DiceRollResult(objectdb.DatabaseObject):
 
     @staticmethod
     def createObject(
-        id: str,
-        data: typing.Mapping[
-            str,
-            typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
-        ) -> 'DiceRollerGroup':
+            id: str,
+            data: typing.Mapping[
+                str,
+                typing.Optional[typing.Union[bool, int, float, str, objectdb.DatabaseEntity]]]
+            ) -> 'DiceRollerGroup':
         timestamp = data.get('timestamp')
         if not isinstance(timestamp, str):
             raise ValueError('RollResult construction parameter "timestamp" is not a str')

@@ -599,7 +599,7 @@ class DiceRollerTree(gui.TreeWidgetEx):
                 parent = dropItem
                 index = parent.childCount()
             else:
-                 # Drop BETWEEN items (as a sibling)
+                # Drop BETWEEN items (as a sibling)
                 parent = dropItem.parent()
                 if parent == None:
                     parent = self.invisibleRootItem()

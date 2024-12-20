@@ -152,7 +152,7 @@ class _SnakeEyesWidget(QtWidgets.QWidget):
     def _normaliseSize(size: typing.Union[QtCore.QSizeF, QtCore.QSize]) -> QtCore.QSizeF:
         length = math.sqrt((size.width() * size.width()) + (size.height() * size.height()))
         if length == 0:
-           return QtCore.QSizeF(0, 0)
+            return QtCore.QSizeF(0, 0)
         return QtCore.QSizeF(size.width() / length, size.height() / length)
 
 class DiceRollResultsWidget(QtWidgets.QWidget):

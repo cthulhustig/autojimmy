@@ -517,22 +517,22 @@ class DieAnimationWidget(QtWidgets.QWidget):
             height: int,
             fov: float
             ) -> typing.Tuple[int, int]:
-            # Convert FoV from degrees to radians
-            fov = math.radians(55)
+        # Convert FoV from degrees to radians
+        fov = math.radians(55)
 
-            # Compute the focal length from the FoV
-            focalLength = width / (2 * math.tan(fov / 2))
+        # Compute the focal length from the FoV
+        focalLength = width / (2 * math.tan(fov / 2))
 
-            # Avoid division by zero for points at z = 0
-            z += 4
-            if z == 0:
-                z = 1e-5
+        # Avoid division by zero for points at z = 0
+        z += 4
+        if z == 0:
+            z = 1e-5
 
-            # Perspective projection formula using focal length derived from FoV
-            x_2d = ((focalLength * x) / z) + (width / 2)
-            y_2d = ((focalLength * -y) / z) + (height / 2)
+        # Perspective projection formula using focal length derived from FoV
+        x_2d = ((focalLength * x) / z) + (width / 2)
+        y_2d = ((focalLength * -y) / z) + (height / 2)
 
-            return int(x_2d), int(y_2d)
+        return int(x_2d), int(y_2d)
 
     @staticmethod
     def _faceNormal(
@@ -594,4 +594,3 @@ class DieAnimationWidget(QtWidgets.QWidget):
             min(255, int(colour.red() * intensity)),
             min(255, int(colour.green() * intensity)),
             min(255, int(colour.blue() * intensity)))
-

@@ -64,6 +64,7 @@ class ComparisonType(enum.Enum):
 
         raise ValueError(f'Invalid comparison type {comparison}')
 
+
 _DieSidesMap = {
     DieType.D6: 6,
     DieType.D3: 3,
@@ -433,9 +434,9 @@ class DiceRoll(object):
                 type = DieType.D3
             elif type == 'DD':
                 type = DieType.DD
-            elif type =='D10':
+            elif type == 'D10':
                 type = DieType.D10
-            elif type =='D20':
+            elif type == 'D20':
                 type = DieType.D20
             else:
                 type = DieType.D6

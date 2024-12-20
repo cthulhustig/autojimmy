@@ -149,7 +149,7 @@ class DiceRollerWindow(gui.WindowWidget):
         if event:
             key = event.key()
             if self._rollInProgress:
-                isSkipKey  = key == QtCore.Qt.Key.Key_Space or \
+                isSkipKey = key == QtCore.Qt.Key.Key_Space or \
                     key == QtCore.Qt.Key.Key_Escape or \
                     key == QtCore.Qt.Key.Key_Return
                 if isSkipKey:

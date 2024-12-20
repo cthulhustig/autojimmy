@@ -329,7 +329,7 @@ class ObjectDbManager(object):
             typing.Optional[typing.Union[
                 str, # Entity id
                 typing.Type[DatabaseEntity]] # Entity type
-        ]]] = {}
+                ]]] = {}
     _connectionPool: typing.List[sqlite3.Connection] = []
     _maxConnectionPoolSize = 10
 
@@ -402,8 +402,8 @@ class ObjectDbManager(object):
 
                 # Create schema table
                 if not self._checkIfTableExists(
-                    tableName=ObjectDbManager._SchemasTableName,
-                    cursor=cursor):
+                        tableName=ObjectDbManager._SchemasTableName,
+                        cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             name TEXT NOT NULL,
@@ -417,8 +417,8 @@ class ObjectDbManager(object):
 
                 # Create entities table
                 if not self._checkIfTableExists(
-                    tableName=ObjectDbManager._EntitiesTableName,
-                    cursor=cursor):
+                        tableName=ObjectDbManager._EntitiesTableName,
+                        cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             id TEXT PRIMARY KEY NOT NULL,
@@ -445,8 +445,8 @@ class ObjectDbManager(object):
 
                 # Create hierarchy table
                 if not self._checkIfTableExists(
-                    tableName=ObjectDbManager._HierarchyTableName,
-                    cursor=cursor):
+                        tableName=ObjectDbManager._HierarchyTableName,
+                        cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {hierarchyTable} (
                             id TEXT NOT NULL,
@@ -455,9 +455,9 @@ class ObjectDbManager(object):
                             FOREIGN KEY(child) REFERENCES {entityTable}(id) ON DELETE CASCADE
                         );
                         """.format(
-                            hierarchyTable=ObjectDbManager._HierarchyTableName,
-                            entityTable=ObjectDbManager._EntitiesTableName
-                            )
+                        hierarchyTable=ObjectDbManager._HierarchyTableName,
+                        entityTable=ObjectDbManager._EntitiesTableName
+                        )
                     logging.info(f'ObjectDbManager creating \'{ObjectDbManager._HierarchyTableName}\' table')
                     cursor.execute(sql)
 
@@ -481,8 +481,8 @@ class ObjectDbManager(object):
 
                 # Create list table
                 if not self._checkIfTableExists(
-                    tableName=ObjectDbManager._ListsTableName,
-                    cursor=cursor):
+                        tableName=ObjectDbManager._ListsTableName,
+                        cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             id TEXT NOT NULL,
@@ -515,8 +515,8 @@ class ObjectDbManager(object):
 
                 # Create change log table
                 if not self._checkIfTableExists(
-                    tableName=ObjectDbManager._ChangeLogTableName,
-                    cursor=cursor):
+                        tableName=ObjectDbManager._ChangeLogTableName,
+                        cursor=cursor):
                     sql = """
                         CREATE TABLE IF NOT EXISTS {table} (
                             operation TEXT NOT NULL,
@@ -563,8 +563,8 @@ class ObjectDbManager(object):
                         INSERT INTO {logTable} (operation, entity, table_name)
                         VALUES ("{operation}", NEW.id, NEW.table_name);
                         """.format(
-                            logTable=ObjectDbManager._ChangeLogTableName,
-                            operation=ObjectDbOperation.Insert.value),
+                        logTable=ObjectDbManager._ChangeLogTableName,
+                        operation=ObjectDbOperation.Insert.value),
                     cursor=cursor)
                 self._createEntityTableTrigger(
                     type=ObjectDbTriggerType.After,
@@ -574,8 +574,8 @@ class ObjectDbManager(object):
                         INSERT INTO {logTable} (operation, entity, table_name)
                         VALUES ("{operation}", NEW.id, NEW.table_name);
                         """.format(
-                            logTable=ObjectDbManager._ChangeLogTableName,
-                            operation=ObjectDbOperation.Update.value),
+                        logTable=ObjectDbManager._ChangeLogTableName,
+                        operation=ObjectDbOperation.Update.value),
                     cursor=cursor)
                 self._createEntityTableTrigger(
                     type=ObjectDbTriggerType.After,
@@ -585,8 +585,8 @@ class ObjectDbManager(object):
                         INSERT INTO {logTable} (operation, entity, table_name)
                         VALUES ("{operation}", OLD.id, OLD.table_name);
                         """.format(
-                            logTable=ObjectDbManager._ChangeLogTableName,
-                            operation=ObjectDbOperation.Delete.value),
+                        logTable=ObjectDbManager._ChangeLogTableName,
+                        operation=ObjectDbOperation.Delete.value),
                     cursor=cursor)
 
                 cursor.execute('END;')
@@ -750,8 +750,8 @@ class ObjectDbManager(object):
                 None],
             operation: typing.Optional[ObjectDbOperation] = None,
             key: typing.Optional[typing.Union[
-                    str, # Entity id
-                    typing.Type[DatabaseEntity] # Type of entity
+                str, # Entity id
+                typing.Type[DatabaseEntity] # Type of entity
                 ]] = None,
             ) -> ChangeCallbackToken:
         handle = str(uuid.uuid4())
@@ -893,12 +893,12 @@ class ObjectDbManager(object):
             unique: bool,
             cursor: sqlite3.Cursor
             ) -> None:
-            if unique:
-                sql = f'CREATE UNIQUE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
-            else:
-                sql = f'CREATE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
-            logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
-            cursor.execute(sql)
+        if unique:
+            sql = f'CREATE UNIQUE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
+        else:
+            sql = f'CREATE INDEX IF NOT EXISTS {table}_{column}_index ON {table}({column});'
+        logging.info(f'ObjectDbManager creating \'{table}\' {column} index')
+        cursor.execute(sql)
 
     def _createEntityTableTrigger(
             self,
@@ -933,11 +933,11 @@ class ObjectDbManager(object):
             {sql}
             END;
             """.format(
-                triggerName=triggerName,
-                type=type.value.upper(),
-                operation=operation.value.upper(),
-                entitiesTable=ObjectDbManager._EntitiesTableName,
-                sql=sqlFragment)
+            triggerName=triggerName,
+            type=type.value.upper(),
+            operation=operation.value.upper(),
+            entitiesTable=ObjectDbManager._EntitiesTableName,
+            sql=sqlFragment)
 
         logging.info(f'ObjectDbManager creating \'{triggerName}\' trigger')
         cursor.execute(sql)
@@ -1075,7 +1075,7 @@ class ObjectDbManager(object):
                 elif issubclass(columnType, DatabaseEntity):
                     if columnValue != None:
                         if not isinstance(columnValue, DatabaseEntity) or \
-                            not isinstance(columnValue, columnType):
+                                not isinstance(columnValue, columnType):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         childEntity = columnValue
@@ -1558,7 +1558,7 @@ class ObjectDbManager(object):
                 elif issubclass(columnType, DatabaseEntity):
                     if columnValue != None:
                         if not isinstance(columnValue, DatabaseEntity) or \
-                            not isinstance(columnValue, columnType):
+                                not isinstance(columnValue, columnType):
                             raise RuntimeError(
                                 f'Parameter {columnName} for object {entity.id()} of type {objectDef.classType()} is not a database object of type {columnType}')
                         isReference = True
@@ -1592,10 +1592,10 @@ class ObjectDbManager(object):
                 VALUES (:id, {placeholders})
                 ON CONFLICT(id) DO UPDATE SET {conflict};
                 """.format(
-                    table=objectDef.tableName(),
-                    columns=', '.join(columnNames),
-                    placeholders=', '.join([f':{col}' for col in columnNames]),
-                    conflict=', '.join([f'{col} = excluded.{col}' for col in columnNames]))
+                table=objectDef.tableName(),
+                columns=', '.join(columnNames),
+                placeholders=', '.join([f':{col}' for col in columnNames]),
+                conflict=', '.join([f'{col} = excluded.{col}' for col in columnNames]))
             cursor.execute(sql, rowData)
         elif isinstance(entity, DatabaseList):
             # Update the entities table for the list
@@ -1622,8 +1622,8 @@ class ObjectDbManager(object):
                 WHERE id = ?
                 AND entity NOT IN ({placeholders})
                 """.format(
-                    listsTable=ObjectDbManager._ListsTableName,
-                    placeholders=', '.join('?' for _ in contentIds))
+                listsTable=ObjectDbManager._ListsTableName,
+                placeholders=', '.join('?' for _ in contentIds))
             rowData = [entity.id()] + contentIds
             cursor.execute(sql, rowData)
             for row in cursor.fetchall():
@@ -1717,8 +1717,8 @@ class ObjectDbManager(object):
             )
             SELECT id, child, table_name FROM parent_hierarchy;
             """.format(
-                hierarchyTable=ObjectDbManager._HierarchyTableName,
-                entitiesTable=ObjectDbManager._EntitiesTableName)
+            hierarchyTable=ObjectDbManager._HierarchyTableName,
+            entitiesTable=ObjectDbManager._EntitiesTableName)
         cursor.execute(sql, {'id': id})
         results = cursor.fetchall()
 
@@ -1817,8 +1817,8 @@ class ObjectDbManager(object):
                     SET {sets}
                     WHERE id = :id;
                     """.format(
-                        table=parentTable,
-                        sets=', '.join(setStrings))
+                    table=parentTable,
+                    sets=', '.join(setStrings))
                 cursor.execute(sql, {'id': parentId})
 
             toDelete.add(deleteId)
@@ -1865,9 +1865,9 @@ class ObjectDbManager(object):
                 FROM has_parent
             );
             """.format(
-                entityTable=ObjectDbManager._EntitiesTableName,
-                hierarchyTable=ObjectDbManager._HierarchyTableName,
-                objectTable=objectDef.tableName())
+            entityTable=ObjectDbManager._EntitiesTableName,
+            hierarchyTable=ObjectDbManager._HierarchyTableName,
+            objectTable=objectDef.tableName())
         cursor.execute(sql)
         for row in cursor.fetchall():
             entityId = row[0]
@@ -1882,8 +1882,8 @@ class ObjectDbManager(object):
             FROM {entityTable}
             WHERE table_name = "{objectTable}";
             """.format(
-                entityTable=ObjectDbManager._EntitiesTableName,
-                objectTable=objectDef.tableName())
+            entityTable=ObjectDbManager._EntitiesTableName,
+            objectTable=objectDef.tableName())
         cursor.execute(sql)
         for rowData in cursor.fetchall():
             self._deleteEntity(id=rowData[0], cursor=cursor)
@@ -1982,8 +1982,8 @@ class ObjectDbManager(object):
                 FROM {hierarchyTable}
             )
             """.format(
-                entitiesTable=ObjectDbManager._EntitiesTableName,
-                hierarchyTable=ObjectDbManager._HierarchyTableName)
+            entitiesTable=ObjectDbManager._EntitiesTableName,
+            hierarchyTable=ObjectDbManager._HierarchyTableName)
         cursor.execute(sql, {"id": entityId})
         childMap: typing.Dict[str, typing.List[str]] = {}
         refCountMap: typing.Dict[str, int] = {}
@@ -2013,8 +2013,8 @@ class ObjectDbManager(object):
             DELETE FROM {entityTable}
             WHERE id IN ({placeholders})
             """.format(
-                entityTable=ObjectDbManager._EntitiesTableName,
-                placeholders=', '.join('?' for _ in toDelete))
+            entityTable=ObjectDbManager._EntitiesTableName,
+            placeholders=', '.join('?' for _ in toDelete))
         cursor.execute(sql, list(toDelete))
 
     def _recursiveDeleteCheck(
@@ -2150,7 +2150,7 @@ class ObjectDbManager(object):
             sql = """
                 DELETE FROM {table};
                 """.format(
-                    table=self._ChangeLogTableName)
+                table=self._ChangeLogTableName)
             cursor.execute(sql)
         except:
             connection.close()
@@ -2166,7 +2166,7 @@ class ObjectDbManager(object):
             sql = """
                 SELECT operation, entity, table_name FROM {table};
                 """.format(
-                    table=self._ChangeLogTableName)
+                table=self._ChangeLogTableName)
             cursor.execute(sql)
             changes: typing.List[typing.Tuple[ObjectDbOperation, str, typing.Type[DatabaseEntity]]] = []
             results = cursor.fetchall()
@@ -2198,7 +2198,7 @@ class ObjectDbManager(object):
             sql = """
                 DELETE FROM {table};
                 """.format(
-                    table=self._ChangeLogTableName)
+                table=self._ChangeLogTableName)
             cursor.execute(sql)
 
             # End the transaction
