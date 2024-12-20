@@ -52,12 +52,9 @@ class EnumComboBox(QtWidgets.QComboBox):
             if not options:
                 options = type
             for entry in options:
-                text = None
+                text = str(entry.value)
                 if textMap:
-                    text = textMap.get(entry)
-                if not text:
-                    text = str(entry.value)
-
+                    text = textMap.get(entry, text)
                 self.addItem(text, entry)
 
             self.setCurrentEnum(value=oldSelectedEnum)

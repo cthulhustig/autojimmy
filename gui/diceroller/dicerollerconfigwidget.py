@@ -241,7 +241,8 @@ class DiceRollerConfigWidget(QtWidgets.QWidget):
         self._dieCountSpinBox.valueChanged.connect(self._dieCountChanged)
 
         self._dieTypeComboBox = gui.EnumComboBox(
-            type=common.DieType)
+            type=common.DieType,
+            textMap={common.DieType.D6: 'D6'}) # Use D6 rather than just D
         self._dieTypeComboBox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Fixed,
             QtWidgets.QSizePolicy.Policy.Fixed)
