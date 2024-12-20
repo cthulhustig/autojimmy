@@ -107,6 +107,7 @@ class _MenuAction(gui.ActionEx):
 
 class DiceRollerWindow(gui.WindowWidget):
     _MaxRollResults = 1000
+    _IconSize = 24
 
     def __init__(self) -> None:
         super().__init__(
@@ -257,8 +258,9 @@ class DiceRollerWindow(gui.WindowWidget):
         self._rollerTree.orderChanged.connect(
             self._rollerTreeOrderChanged)
 
+        iconSize = int(DiceRollerWindow._IconSize * app.Config.instance().interfaceScale())
         self._rollerToolbar = QtWidgets.QToolBar()
-        self._rollerToolbar.setIconSize(QtCore.QSize(24, 24))
+        self._rollerToolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
         self._rollerToolbar.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self._rollerToolbar.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
