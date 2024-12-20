@@ -122,3 +122,4 @@ class RecentWorlds(object):
                 continue
 
             yield world
+
