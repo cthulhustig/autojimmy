@@ -760,7 +760,7 @@ class DiceRollResult(objectdb.DatabaseObject):
                 return self.total() - self._targetNumber
             elif self._targetType == common.ComparisonType.LessThan:
                 return (self._targetNumber - 1) - self.total()
-            elif self._targetType == common.ComparisonType.LessThanOrEqualTo:
+            elif self._targetType == common.ComparisonType.LessOrEqualTo:
                 return self._targetNumber - self.total()
         return None
 

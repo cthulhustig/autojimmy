@@ -61,7 +61,7 @@ def calculateProbabilities(
             numerator = count
         elif probability == common.ComparisonType.LessThan:
             numerator = accumulatedCount
-        elif probability == common.ComparisonType.LessThanOrEqualTo:
+        elif probability == common.ComparisonType.LessOrEqualTo:
             numerator = accumulatedCount + count
         elif probability == common.ComparisonType.GreaterOrEqualTo:
             numerator = denominator - accumulatedCount

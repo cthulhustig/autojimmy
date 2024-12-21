@@ -41,9 +41,9 @@ class ExtraDie(enum.Enum):
 class ComparisonType(enum.Enum):
     EqualTo = 'Equal To'
     GreaterThan = 'Greater Than'
-    GreaterOrEqualTo = 'Greater Or Equal To'
+    GreaterOrEqualTo = 'Greater Than or Equal To'
     LessThan = 'Less Than'
-    LessThanOrEqualTo = 'Less Or Equal To'
+    LessOrEqualTo = 'Less Than or Equal To'
 
     @staticmethod
     def compareValues(
@@ -59,7 +59,7 @@ class ComparisonType(enum.Enum):
             return lhs >= rhs
         elif comparison == ComparisonType.LessThan:
             return lhs < rhs
-        elif comparison == ComparisonType.LessThanOrEqualTo:
+        elif comparison == ComparisonType.LessOrEqualTo:
             return lhs <= rhs
 
         raise ValueError(f'Invalid comparison type {comparison}')
@@ -222,7 +222,7 @@ def calculateRollProbabilities(
             enumerator = count
         elif probability == ComparisonType.LessThan:
             enumerator = accumulatedCount
-        elif probability == ComparisonType.LessThanOrEqualTo:
+        elif probability == ComparisonType.LessOrEqualTo:
             enumerator = accumulatedCount + count
         elif probability == ComparisonType.GreaterOrEqualTo:
             enumerator = denominator - accumulatedCount

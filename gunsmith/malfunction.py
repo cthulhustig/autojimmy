@@ -187,7 +187,7 @@ def _calculateLessOrEqualProbability(
             dieCount=_MalfunctionDiceCount,
             dieType=common.DieType.D6,
             modifier=modifier,
-            probability=common.ComparisonType.LessThanOrEqualTo),
+            probability=common.ComparisonType.LessOrEqualTo),
         name=resultName)
 
 def _calculateGreaterOrEqualProbability(
