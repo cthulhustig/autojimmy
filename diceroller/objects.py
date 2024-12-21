@@ -14,11 +14,6 @@ class FluxType(enum.Enum):
     Good = 'Good'
     Bad = 'Bad'
 
-# IMPORTANT: If I ever change the names of the enum definitions (not their value
-# string) then I need to add some kind of value mapping to objectdb as the name
-# of the enum is stored in the database for dice roller db objects. I will also
-# need some kind of mapping in dice roller serialisation as the names are also
-# used in serialised data
 class DiceRollResultType(enum.Enum):
     SnakeEyesFailure = 'Snake Eyes'
     ExceptionalFailure = 'Exceptional Failure'
@@ -695,13 +690,13 @@ class DiceRollResult(objectdb.DatabaseObject):
     def snakeEyesRule(self) -> bool:
         return self._snakeEyesRule
 
-    # The extra die should be ignored as it's already been taken into account
-    # when the index of the extra die was chosen at roll time. If the roll had a
-    # bane and the roll was say 1, 2, 1, the 2 will be the the discard die (i.e.
-    # the extra index) and the remaining rolls will be all 1 and therefore snake
-    # eyes. If the roll had a boon then with the same example the discard die
-    # will be one of the 1's (generally the first) and the remaining rolls will
-    # be 2, 1 and not snake eyes.
+    # When calculating if a roll is snake eys any extra die should be ignored as
+    # it's already been taken into account when the index of the extra die was
+    # chosen at roll time. If the roll had a bane and the roll was say 1, 2, 1,
+    # the 2 will be the the discard die (i.e. the extra index) and the remaining
+    # rolls will be all 1 and therefore snake eyes. If the roll had a boon then
+    # with the same example the discard die will be one of the 1's (generally
+    # the first) and the remaining rolls will be 2, 1 and not snake eyes.
     # It's not obvious if snake eyes when rolling 1 die makes sense. I've chosen
     # to allow it at the object level at least (but may disable it in the UI)
     # It's also not obvious if rolls that have flux enabled and the snake eyes
@@ -716,8 +711,8 @@ class DiceRollResult(objectdb.DatabaseObject):
     # so that should be the case no mater what the target type is.
     def isSnakeEyes(self) -> bool:
         if not self._rolls or not self._snakeEyesRule:
-            # It can't be all ones if no dice were rolled and it's only technically
-            # classed as snake eyes if the snake eyes rule is enabled
+            # If no dice were rolled or the snake eye rule is not enabled then
+            # it can't be snake eyes
             return False
 
         target = 1 if self._dieType != common.DieType.DD else 10
