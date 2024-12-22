@@ -50,13 +50,13 @@ def calculateProbabilities(
                 totalResult = rollResult + fluxResult
                 totalCount = rollCount * fluxCount
                 combinedCombinations[totalResult] += totalCount
-    else:
-        combinedCombinations = rollCombinations
+        rollCombinations = combinedCombinations
 
-    denominator = sum(combinedCombinations.values())
+    denominator = sum(rollCombinations.values())
     probabilities = {}
     accumulatedCount = 0
-    for result, count in combinedCombinations.items():
+    for result in sorted(rollCombinations):
+        count = rollCombinations[result]
         if probability == common.ComparisonType.EqualTo:
             numerator = count
         elif probability == common.ComparisonType.LessThan:
