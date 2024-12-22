@@ -132,7 +132,7 @@ class LocalTimestampTableWidgetItem(TableWidgetItemEx):
             ) -> None:
         super().__init__(other)
         self._timestamp = None
-        self.setTimestamp(timestamp)
+        self.setTimestamp(other.timestamp() if other else timestamp)
 
     def timestamp(self) -> datetime.datetime:
         return self._timestamp
