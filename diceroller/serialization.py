@@ -179,7 +179,7 @@ def _deserialiseRoller(
 
     snakeEyesRule = rollerData.get('snakeEyesRule', False)
     if not isinstance(snakeEyesRule, bool):
-        raise RuntimeError('Dice Roller snakeEyesRule property is not a boolean')
+        raise RuntimeError('Dice Roller snakeEyesRule property is not true or false')
 
     return diceroller.DiceRoller(
         name=name,
