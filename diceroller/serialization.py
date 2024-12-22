@@ -152,7 +152,7 @@ def _deserialiseRoller(
     extraDie = rollerData.get('extraDie')
     if extraDie != None:
         if extraDie not in common.ExtraDie.__members__:
-            raise RuntimeError('Dice Roller extraDie property is not one of {valid}'.format(
+            raise RuntimeError('Dice Roller extraDie property is not null or one of {valid}'.format(
                 valid=common.humanFriendlyListString(
                     strings=list(common.ExtraDie.__members__.keys()))))
         extraDie = common.ExtraDie.__members__[extraDie]
@@ -160,7 +160,7 @@ def _deserialiseRoller(
     fluxType = rollerData.get('fluxType')
     if fluxType != None:
         if fluxType not in diceroller.FluxType.__members__:
-            raise RuntimeError('Dice Roller fluxType property is not one of {valid}'.format(
+            raise RuntimeError('Dice Roller fluxType property is not null or one of {valid}'.format(
                 valid=common.humanFriendlyListString(
                     strings=list(diceroller.FluxType.__members__.keys()))))
         fluxType = diceroller.FluxType.__members__[fluxType]
