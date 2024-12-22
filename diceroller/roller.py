@@ -98,17 +98,15 @@ def rollDice(
             roll *= 10
         rolls.append(roll)
 
-    calculationValues = list(rolls)
     extraIndex = None
     if extraDie:
-        bestValue = None
-        for index, roll in enumerate(calculationValues):
-            isBetter = (bestValue == None) or \
-                ((roll < bestValue) if (extraDie == common.ExtraDie.Boon) else (roll > bestValue))
+        extraValue = None
+        for index, roll in enumerate(rolls):
+            isBetter = (extraValue == None) or \
+                ((roll < extraValue) if (extraDie == common.ExtraDie.Boon) else (roll > extraValue))
             if isBetter:
-                bestValue = roll
+                extraValue = roll
                 extraIndex = index
-        del calculationValues[extraIndex]
 
     fluxType = roller.fluxType()
     fluxRolls = None
