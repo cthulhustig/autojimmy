@@ -55,6 +55,9 @@ def calculateProbabilities(
     denominator = sum(rollCombinations.values())
     probabilities = {}
     accumulatedCount = 0
+    # NOTE: This code requires the possible roll results to be processed in
+    # ascending order. In most cases this is the natural order of
+    # rollCombinations but it isn't when good flux is applied
     for result in sorted(rollCombinations):
         count = rollCombinations[result]
         if probability == common.ComparisonType.EqualTo:
