@@ -54,11 +54,9 @@ class EnumRadioWidget(QtWidgets.QWidget):
             if not options:
                 options = type
             for value in options:
-                text = None
+                text = str(value.value)
                 if textMap:
-                    text = textMap.get(value)
-                if not text:
-                    text = str(value.value)
+                    text = textMap.get(value, text)
                 self._addControl(text=text, value=value)
 
         self.enumChanged.emit()
