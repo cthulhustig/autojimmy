@@ -127,7 +127,7 @@ class FormattedNumberTableWidgetItem(TableWidgetItemEx):
 class LocalTimestampTableWidgetItem(TableWidgetItemEx):
     def __init__(
             self,
-            timestamp: datetime.datetime,
+            timestamp: typing.Optional[datetime.datetime] = None,
             other: typing.Optional['LocalTimestampTableWidgetItem'] = None
             ) -> None:
         super().__init__(other)
@@ -137,8 +137,11 @@ class LocalTimestampTableWidgetItem(TableWidgetItemEx):
     def timestamp(self) -> datetime.datetime:
         return self._timestamp
 
-    def setTimestamp(self, timestamp: datetime.datetime):
-        self._timestamp = timestamp
+    def setTimestamp(
+            self,
+            timestamp: typing.Optional[datetime.datetime] = None
+            ):
+        self._timestamp = timestamp if timestamp else common.utcnow()
         self.setText(timestamp.astimezone().strftime('%c'))
 
     def clone(self) -> 'LocalTimestampTableWidgetItem':
