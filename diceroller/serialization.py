@@ -175,7 +175,7 @@ def _deserialiseRoller(
 
     targetNumber = rollerData.get('targetNumber')
     if targetNumber != None and not isinstance(targetNumber, int):
-        raise RuntimeError('Dice Roller targetNumber property is not an integer')
+        raise RuntimeError('Dice Roller targetNumber property is not null or an integer')
 
     snakeEyesRule = rollerData.get('snakeEyesRule', False)
     if not isinstance(snakeEyesRule, bool):
