@@ -283,16 +283,22 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                     prefix='\n: ')
 
                 if resultType != None:
-                    labelsText += '\nEffect'
-                    valuesText += '\n: {effectValue} ({effectType})'.format(
-                        effectValue=common.formatNumber(
-                            number=results.effectValue(),
-                            alwaysIncludeSign=True),
-                        effectType=resultType.value)
+                    labelsText += '\nResult'
+                    valuesText += '\n: {result}'.format(
+                        result=resultType.value)
                 elif results.hasTarget():
                     labelsText += '\nTarget'
                     valuesText += '\n: {result}'.format(
                         result='Pass' if results.isSuccess() else 'Fail')
+
+                effectValue = results.effectValue()
+                if effectValue != None:
+                    labelsText += '\nEffect'
+                    valuesText += '\n: {effect}'.format(
+                        effect=common.formatNumber(
+                            number=effectValue,
+                            alwaysIncludeSign=True),
+                        effectType=resultType.value)
 
             self._labelsWidget.setText(labelsText)
             self._valuesWidget.setText(valuesText)
