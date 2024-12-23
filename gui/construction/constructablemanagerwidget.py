@@ -1,3 +1,4 @@
+import app
 import common
 import copy
 import construction
@@ -77,6 +78,7 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
     currentChanged = QtCore.pyqtSignal()
 
     _StateVersion = 'ConstructableManagerWidget_v1'
+    _IconSize = 32
 
     def __init__(
             self,
@@ -93,8 +95,9 @@ class ConstructableManagerWidget(QtWidgets.QWidget):
         self._exampleSection = self._sectionList.addSection(f'Example {self._constructableStore.typeString()}s')
         self._sectionList.currentChanged.connect(self._handleCurrentChanged)
 
+        iconSize = int(ConstructableManagerWidget._IconSize * app.Config.instance().interfaceScale())
         self._toolbar = QtWidgets.QToolBar('Toolbar')
-        self._toolbar.setIconSize(QtCore.QSize(32, 32))
+        self._toolbar.setIconSize(QtCore.QSize(iconSize, iconSize))
         self._toolbar.setOrientation(QtCore.Qt.Orientation.Vertical)
         self._toolbar.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,

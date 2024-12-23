@@ -1,6 +1,7 @@
 from .common.qtutils import *
 from .common.filefilters import *
 from .common.style import *
+from .common.stylehelper import *
 from .common.windowsettings import *
 from .common.icons import *
 from .common.eventfilters import *
@@ -8,6 +9,7 @@ from .common.widgets import *
 from .common.togglablewidget import *
 from .common.windowwidget import *
 from .common.dialogex import *
+from .common.filedialogex import *
 from .common.htmlcombobox import *
 from .common.prefixlabel import *
 from .common.messageboxex import *
@@ -15,6 +17,8 @@ from .common.autoselectmessagebox import *
 from .common.inputdialogex import *
 from .common.textwindow import *
 from .common.listtable import *
+from .common.listselectdialog import *
+from .common.fullsizetextwidget import *
 from .common.flowlayout import *
 from .common.colourdialogex import *
 from .common.colourbutton import *
@@ -22,6 +26,7 @@ from .common.togglebutton import *
 from .common.dualtextbutton import *
 from .common.rangespinboxwidget import *
 from .common.enumcombobox import *
+from .common.enumradiowidget import *
 from .common.sectionwidget import *
 from .common.expander import *
 from .common.sectionlist import *
@@ -34,6 +39,7 @@ from .common.calculationwindow import *
 from .common.licensewidget import *
 from .common.infodialog import *
 from .common.singletonapplication import *
+from .common.plotwidgetex import *
 from .trader.tooltips import *
 from .trader.worldselectcombobox import *
 from .trader.taglevelcombobox import *
@@ -92,6 +98,15 @@ from .robots.robotmanifesttable import *
 from .robots.robotsheetwidget import *
 from .robots.robotinfowidget import *
 from .robots.robotbuilderwindow import *
+from .diceroller.dicerollertree import *
+from .diceroller.dieanimationwidget import *
+from .diceroller.dicerollresultswidget import *
+from .diceroller.dicerollresultstable import *
+from .diceroller.dicerollerprobabilitygraph import *
+from .diceroller.dicerolldisplaywidget import *
+from .diceroller.dicerollerconfigwidget import *
+from .diceroller.dicerollhistorywidget import *
+from .diceroller.dicerollerwindow import *
 from .startupprogressdialog import *
 from .downloadprogressdialog import *
 from .windowmanager import *

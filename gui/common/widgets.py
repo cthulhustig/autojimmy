@@ -66,6 +66,14 @@ class FormLayoutEx(QtWidgets.QFormLayout):
             widget = item.widget()
             widget.setHidden(hidden)
 
+    def addStretch(self) -> None:
+        spacer = QtWidgets.QSpacerItem(
+            0,
+            0,
+            QtWidgets.QSizePolicy.Policy.Minimum,
+            QtWidgets.QSizePolicy.Policy.Expanding)
+        self.addItem(spacer)
+
 class TabWidgetEx(QtWidgets.QTabWidget):
     _StateVersion = 'TabWidgetEx_v1'
 
@@ -189,8 +197,16 @@ class ToolButtonEx(QtWidgets.QToolButton):
         super().__init__(parent)
 
         self._isPushButton = isPushButton
+        self._disableMenuItem = False
         if text != None:
             self.setText(text)
+
+    def isMenuIconDisabled(self) -> bool:
+        return self._disableMenuItem
+
+    def setDisableMenuIcon(self, disable: bool):
+        self._disableMenuItem = disable
+        self.update()
 
     # By default a QToolButton will appear significantly smaller than a
     # QPushButton with the same text due to the two controls using different
@@ -232,6 +248,18 @@ class ToolButtonEx(QtWidgets.QToolButton):
             self)
         return baseHint.expandedTo(pushSize)
 
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        if not self._disableMenuItem:
+            return super().paintEvent(event)
+        option = QtWidgets.QStyleOptionToolButton()
+        self.initStyleOption(option)
+
+        option.features &= ~QtWidgets.QStyleOptionToolButton.ToolButtonFeature.HasMenu
+        painter = QtWidgets.QStylePainter(self)
+        painter.drawComplexControl(
+            QtWidgets.QStyle.ComplexControl.CC_ToolButton,
+            option)
+
 class IconButton(QtWidgets.QPushButton):
     def __init__(
             self,
@@ -268,6 +296,25 @@ class RadioButtonEx(QtWidgets.QRadioButton):
 class SpinBoxEx(QtWidgets.QSpinBox):
     _StateVersion = 'SpinBoxEx_v1'
 
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
+
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
@@ -291,6 +338,25 @@ class SpinBoxEx(QtWidgets.QSpinBox):
 
 class DoubleSpinBoxEx(QtWidgets.QDoubleSpinBox):
     _StateVersion = 'DoubleSpinBoxEx_v1'
+
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self._alwaysShowSign = False
+
+    def alwaysShowSign(self) -> bool:
+        return self._alwaysShowSign
+
+    def enableAlwaysShowSign(self, enable: bool) -> None:
+        self._alwaysShowSign = enable
+
+    def textFromValue(self, value):
+        if value >= 0 and self._alwaysShowSign:
+            return f"+{value}"
+        else:
+            return f"{value}"
 
     # Set the number of decimal places to the minimum number needed to represent
     # the supplied value, with the number of decimal places clamped to the
@@ -437,6 +503,9 @@ class _BaseOptionalSpinBox(QtWidgets.QWidget):
 
     def setLayoutDirection(self, direction: QtCore.Qt.LayoutDirection) -> None:
         self._checkBox.setLayoutDirection(direction)
+
+    def setSpinBoxValue(self, value: int) -> None:
+        self._spinBox.setValue(value)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
@@ -648,6 +717,14 @@ class LineEditEx(QtWidgets.QLineEdit):
     # Return compiled regex if regex checking is enabled
     def regex(self) -> typing.Optional[re.Pattern]:
         return self._regexPattern
+
+    def setText(self, text: typing.Optional[str]) -> None:
+        # The delayed edit timer is cancelled when the text is
+        # programmatically set as this overrides any user edit
+        # that may have taken place
+        if self._delayedTextEditedTimer:
+            self._delayedTextEditedTimer.stop()
+        return super().setText(text)
 
     def enableDelayedTextEdited(
             self,
@@ -1145,6 +1222,35 @@ class TableWidgetEx(QtWidgets.QTableWidget):
             style=f' style="{headerAlignment}"' if headerAlignment else '',
             headerText=headerText)
 
+class TreeWidgetEx(QtWidgets.QTreeWidget):
+    # https://stackoverflow.com/questions/20203443/right-align-a-button-in-a-qtreeview-column
+    def setAlignedIndexWidget(
+            self,
+            index: QtCore.QModelIndex,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setIndexWidget(index, container)
+
+    def setAlignedItemWidget(
+            self,
+            item: QtWidgets.QTreeWidgetItem,
+            column: int,
+            widget: typing.Optional[QtWidgets.QWidget],
+            align=QtCore.Qt.AlignmentFlag.AlignLeft
+            ) -> None:
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(align)
+        layout.addWidget(widget)
+        self.setItemWidget(item, column, container)
+
 class ScrollAreaEx(QtWidgets.QScrollArea):
     _StateVersion = 'ScrollAreaEx_v1'
 
@@ -1181,6 +1287,30 @@ class ScrollAreaEx(QtWidgets.QScrollArea):
             scrollBar.setValue(stream.readInt())
 
         return True
+
+class HorizontalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+
+class VerticalSeparator(QtWidgets.QFrame):
+    def __init__(
+            self,
+            parent: typing.Optional[QtWidgets.QWidget] = None
+            ) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        self.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Expanding)
 
 # NOTE: This intentionally doesn't inherit from ScrollAreaEx as it
 # doesn't make logical sense to save scrollbar state for an auto
@@ -1298,6 +1428,16 @@ class ListWidgetEx(QtWidgets.QListWidget):
             if item.isSelected():
                 count += 1
         return count
+
+    def itemFromWidget(
+            self,
+            widget: QtWidgets.QWidget
+            ) -> typing.Optional[QtWidgets.QListWidgetItem]:
+        for item in self.items():
+            itemWidget = self.itemWidget(item)
+            if itemWidget == widget:
+                return item
+        return None
 
 class VBoxLayoutEx(QtWidgets.QVBoxLayout):
     @typing.overload
@@ -1557,3 +1697,88 @@ class LayoutWrapperWidget(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setLayout(layout)
+
+class GroupBoxEx(QtWidgets.QGroupBox):
+    @typing.overload
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+    @typing.overload
+    def __init__(self, title: typing.Optional[str], parent: typing.Optional[QtWidgets.QWidget] = ...) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._menuButton = QtWidgets.QToolButton(self)
+        self._menuButton.setStyleSheet('QToolButton { border: none; }')
+        self._menuButton.setArrowType(QtCore.Qt.ArrowType.DownArrow)
+        self._menuButton.setHidden(True)
+        self._menuButton.clicked.connect(self._menuRequested)
+
+        self._updateMenuButtonPosition()
+
+    def enableMenuButton(self, enabled: bool) -> None:
+        self._menuButton.setHidden(not enabled)
+
+    def setMenuButtonToolTip(self, text: str) -> None:
+        self._menuButton.setToolTip(text)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._updateMenuButtonPosition()
+
+    def _updateMenuButtonPosition(self) -> None:
+        fontMetrics = QtGui.QFontMetrics(self.font())
+        titleHeight = fontMetrics.height()
+        titleWidth = fontMetrics.width(self.title())
+
+        style = self.style()
+        topPadding = style.pixelMetric(
+            QtWidgets.QStyle.PixelMetric.PM_LayoutTopMargin,
+            None,
+            self) // 2
+
+        iconSize = titleHeight + topPadding
+        self._menuButton.setFixedSize(iconSize, iconSize)
+        self._menuButton.move(titleWidth, 0)
+
+    def _menuRequested(self) -> None:
+        actions = self.actions()
+        if not actions:
+            return
+
+        menu = QtWidgets.QMenu(self)
+        for action in actions:
+            menu.addAction(action)
+        menu.exec(QtGui.QCursor.pos())
+
+class ActionEx(QtWidgets.QAction):
+    _StateVersion = 'ActionEx_v1'
+
+    def saveState(self) -> QtCore.QByteArray:
+        state = QtCore.QByteArray()
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
+        stream.writeQString(ActionEx._StateVersion)
+        stream.writeBool(self.isChecked())
+        return state
+
+    def restoreState(
+            self,
+            state: QtCore.QByteArray
+            ) -> bool:
+        stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
+        version = stream.readQString()
+        if version != ActionEx._StateVersion:
+            # Wrong version so unable to restore state safely
+            logging.debug(f'Failed to restore ActionEx state (Incorrect version)')
+            return False
+
+        self.setChecked(stream.readBool())
+        return True
+
+class WidgetActionEx(QtWidgets.QWidgetAction):
+    def __init__(self,
+                 text: typing.Optional[str] = None,
+                 parent: typing.Optional[QtWidgets.QWidget] = None
+                 ) -> None:
+        super().__init__(parent)
+        if text != None:
+            self.setText(text)

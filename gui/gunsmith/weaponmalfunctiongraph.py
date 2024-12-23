@@ -6,13 +6,6 @@ import pyqtgraph
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-class _CustomPlotWidget(pyqtgraph.PlotWidget):
-    mouseMoveSignal = QtCore.pyqtSignal([QtCore.QPointF])
-
-    def mouseMoveEvent(self, event: QtGui.QMouseEvent):
-        self.mouseMoveSignal.emit(event.localPos())
-        return super().mouseMoveEvent(event)
-
 class WeaponMalfunctionGraph(QtWidgets.QWidget):
     _LightMalfunctionTypeColourMap = {
         gunsmith.MalfunctionType.MalfunctionType1: QtGui.QColor(255, 0, 0),
@@ -44,7 +37,7 @@ class WeaponMalfunctionGraph(QtWidgets.QWidget):
         self._skill = skill
         self._plots: typing.List[pyqtgraph.PlotDataItem] = []
 
-        self._graph = _CustomPlotWidget()
+        self._graph = gui.PlotWidgetEx()
         self._graph.mouseMoveSignal.connect(self._moveCursor)
 
         self._graph.setBackground(QtWidgets.QApplication.palette().color(QtGui.QPalette.ColorRole.Base))

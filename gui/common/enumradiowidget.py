@@ -2,10 +2,12 @@ import enum
 import gui
 import logging
 import typing
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtGui, QtCore
 
-class EnumComboBox(QtWidgets.QComboBox):
-    _StateVersion = 'EnumComboBox_v1'
+class EnumRadioWidget(QtWidgets.QWidget):
+    enumChanged = QtCore.pyqtSignal()
+
+    _StateVersion = 'EnumRadioWidget_v1'
 
     def __init__(
             self,
@@ -15,10 +17,16 @@ class EnumComboBox(QtWidgets.QComboBox):
             textMap: typing.Optional[typing.Mapping[enum.Enum, str]] = None,
             isOptional: bool = False,
             parent: typing.Optional[QtWidgets.QWidget] = None
-            ) -> None:
+            ):
         super().__init__(parent)
 
         self._type = None
+        self._controlMap: typing.Dict[enum.Enum, QtWidgets.QRadioButton] = {}
+
+        self._layout = QtWidgets.QHBoxLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+
+        self.setLayout(self._layout)
 
         self.setEnumType(
             type=type,
@@ -35,52 +43,40 @@ class EnumComboBox(QtWidgets.QComboBox):
             textMap: typing.Optional[typing.Mapping[enum.Enum, str]] = None,
             isOptional: bool = False,
             ) -> None:
-        oldSelectedIndex = self.currentIndex()
-        oldSelectedText = self.currentText()
-        oldSelectedEnum = self.currentEnum()
-
         self._type = type
 
-        # Block signals while we update. Signal will be manually generated if the selection actually
-        # changes
         with gui.SignalBlocker(widget=self):
-            self.clear()
+            self._removeControls()
 
             if isOptional:
-                self.addItem('None', None)
+                self._addControl(text='None', value=None)
 
             if not options:
                 options = type
-            for entry in options:
-                text = str(entry.value)
+            for value in options:
+                text = str(value.value)
                 if textMap:
-                    text = textMap.get(entry, text)
-                self.addItem(text, entry)
+                    text = textMap.get(value, text)
+                self._addControl(text=text, value=value)
 
-            self.setCurrentEnum(value=oldSelectedEnum)
-
-        newSelectedIndex = self.currentIndex()
-        if newSelectedIndex != oldSelectedIndex:
-            self.currentIndexChanged.emit(newSelectedIndex)
-
-        newSelectedText = self.currentText()
-        if newSelectedText != oldSelectedText:
-            self.currentTextChanged.emit(newSelectedText)
+        self.enumChanged.emit()
 
     def currentEnum(self) -> typing.Optional[enum.Enum]:
-        return self.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        for value, control in self._controlMap.items():
+            if control.isChecked():
+                return value
+        return None
 
     def setCurrentEnum(self, value: typing.Optional[enum.Enum]) -> None:
-        for index in range(self.count()):
-            if value == self.itemData(index, QtCore.Qt.ItemDataRole.UserRole):
-                self.setCurrentIndex(index)
-                return
+        control = self._controlMap.get(value)
+        if control:
+            control.setChecked(True)
 
     def saveState(self) -> QtCore.QByteArray:
         value = self.currentEnum()
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(EnumComboBox._StateVersion)
+        stream.writeQString(EnumRadioWidget._StateVersion)
         stream.writeQString(value.name)
         return state
 
@@ -90,14 +86,35 @@ class EnumComboBox(QtWidgets.QComboBox):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != EnumComboBox._StateVersion:
+        if version != EnumRadioWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore EnumComboBox state (Incorrect version)')
+            logging.debug(f'Failed to restore EnumRadioWidget state (Incorrect version)')
             return False
 
         name = stream.readQString()
         if name not in self._type.__members__:
-            logging.warning(f'Failed to restore EnumComboBox state (Unknown enum "{name}")')
+            logging.warning(f'Failed to restore EnumRadioWidget state (Unknown enum "{name}")')
             return False
         self.setCurrentEnum(self._type.__members__[name])
         return True
+
+    def _addControl(self, text: str, value: typing.Optional[enum.Enum]) -> None:
+        control = gui.RadioButtonEx(text)
+        control.toggled.connect(self._controlToggled)
+        self._layout.addWidget(control)
+        self._controlMap[value] = control
+
+    def _removeControls(self) -> None:
+        for control in self._controlMap.values():
+            self._layout.removeWidget(control)
+            control.setParent(None)
+            control.setHidden(True)
+            control.deleteLater()
+        self._controlMap.clear()
+
+    def _controlToggled(
+            self,
+            checked: bool
+            ) -> None:
+        if checked:
+            self.enumChanged.emit()

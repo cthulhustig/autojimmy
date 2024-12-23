@@ -24,6 +24,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             title='Purchase Calculator',
             configSection='PurchaseCalculatorWindow')
 
+        self._randomGenerator = common.RandomGenerator()
+
         self._setupWorldSelectControls()
         self._setupConfigurationControls()
         self._setupAvailableCargoControls()
@@ -305,7 +307,8 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
     def _generateAvailableCargo(self) -> None:
         self._cargoTable.removeAllRows()
 
-        diceRoller = common.DiceRoller()
+        diceRoller = common.DiceRoller(
+            randomGenerator=self._randomGenerator)
 
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
             rules=app.Config.instance().rules(),

@@ -199,3 +199,43 @@ def textToHtmlContent(text: str, font: typing.Optional[QtGui.QFont]) -> str:
         if font.italic():
             text = f'<i>{text}</i>'
     return text
+
+def sizeFontToFit(
+        orig: QtGui.QFont,
+        text: str,
+        rect: QtCore.QRect,
+        align: typing.Union[QtCore.Qt.Alignment, QtCore.Qt.AlignmentFlag] = QtCore.Qt.AlignmentFlag.AlignCenter
+        ) -> typing.Optional[QtGui.QFont]:
+    # Remove any non-alignment flags
+    align &= int(QtCore.Qt.AlignmentFlag.AlignHorizontal_Mask | QtCore.Qt.AlignmentFlag.AlignVertical_Mask)
+
+    # Force align to an int as older versions of QtGui.QFontMetrics.boundingRect
+    # will throw an exception if they're passed a QtCore.Qt.Alignment
+    align = int(align)
+
+    font = QtGui.QFont(orig)
+    low = 1
+    high = rect.height()
+    best = None
+
+    while low <= high:
+        mid = int(low + ((high - low) // 2))
+        font.setPixelSize(mid)
+        fontMetrics = QtGui.QFontMetrics(font)
+        contentRect = fontMetrics.boundingRect(rect, align, text)
+        contentRect.moveTo(0, 0)
+
+        contained = rect.contains(contentRect)
+        if (best == None or mid > best) and contained:
+            best = mid
+
+        if contained:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    if best == None:
+        return None
+
+    font.setPixelSize(best)
+    return font

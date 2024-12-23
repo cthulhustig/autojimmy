@@ -8,6 +8,15 @@ import platform
 import re
 import typing
 
+def hasMethod(obj: typing.Any, method: str, includeSubclasses=True) -> bool:
+    classType = obj if isinstance(obj, type) else type(obj)
+    value = classType.__dict__.get(method)
+    if includeSubclasses:
+        for subClass in classType.__subclasses__():
+            if hasMethod(obj=subClass, method=method, includeSubclasses=True):
+                return True
+    return value != None
+
 def extendEnum(
         baseEnum: typing.Type[enum.Enum],
         names: typing.List[str],
@@ -34,6 +43,15 @@ def enumFromIndex(
 def enumToIndex(value: enum.Enum) -> int:
     valueList = list(type(value))
     return valueList.index(value)
+
+def enumFromValue(
+        enumType: typing.Type[enum.Enum],
+        value: typing.Any
+        ) -> enum.Enum:
+    try:
+        return enumType(value)
+    except ValueError:
+        return None
 
 def incrementEnum(
         value: enum.Enum,
@@ -266,3 +284,15 @@ def pythonVersionCheck(
     except:
         # If something goes wrong assume we don't meet the min version
         return False
+
+class DebugTimer():
+    def __init__(self, string: str = 'Timer'):
+        self._string = string
+
+    def __enter__(self) -> 'DebugTimer':
+        self._startTime = utcnow()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        delta = utcnow() - self._startTime
+        print(f'{self._string}: {delta.microseconds / 1000}ms')
