@@ -1226,6 +1226,7 @@ class ObjectDbManager(object):
                             raise
                         if exceptionList != None:
                             exceptionList.append(ex)
+                        logging.warning(f'Ignoring entry from list {id}', ex=ex)
                         # Continue trying to load list entries
                         continue
 
@@ -1240,6 +1241,7 @@ class ObjectDbManager(object):
                     raise
                 if exceptionList != None:
                     exceptionList.append(ex)
+                logging.warning(f'Ignoring contents of list {id}', ex=ex)
                 return DatabaseList(id)
         else:
             objectDef = self._tableObjectDefMap.get(table)
@@ -1286,8 +1288,8 @@ class ObjectDbManager(object):
             objectData = {}
             columnIndex = 0
             for paramDef in objectDef.paramDefs():
+                columnName = paramDef.columnName()
                 try:
-                    columnName = paramDef.columnName()
                     columnValue = row[columnIndex]
                     if columnValue == None and not paramDef.isOptional():
                         raise RuntimeError(
@@ -1336,6 +1338,7 @@ class ObjectDbManager(object):
                         raise
                     if exceptionList != None:
                         exceptionList.append(ex)
+                    logging.warning(f'Ignoring {columnName} for object {id}', ex=ex)
 
                     # Set the optional object parameter to null
                     columnValue = None
@@ -1395,13 +1398,13 @@ class ObjectDbManager(object):
         objects = []
         entityCache = {}
         for row in cursor.fetchall():
+            id = row[0]
             try:
-                id = row[0]
                 objectData = {}
                 columnIndex = 1
                 for paramDef in objectDef.paramDefs():
+                    columnName = paramDef.columnName()
                     try:
-                        columnName = paramDef.columnName()
                         columnValue = row[columnIndex]
                         if columnValue == None and not paramDef.isOptional():
                             raise RuntimeError(
@@ -1450,6 +1453,7 @@ class ObjectDbManager(object):
                             raise
                         if exceptionList != None:
                             exceptionList.append(ex)
+                        logging.warning(f'Ignoring {columnName} for object {id}', ex=ex)
 
                         # Set the optional object parameter to null
                         columnValue = None
@@ -1467,6 +1471,7 @@ class ObjectDbManager(object):
                     raise
                 if exceptionList != None:
                     exceptionList.append(ex)
+                logging.warning(f'Ignoring object {id}', ex=ex)
                 # Continue trying to load objects
                 continue
 
