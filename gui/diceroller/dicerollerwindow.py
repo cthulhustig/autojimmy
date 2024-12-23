@@ -555,9 +555,7 @@ class DiceRollerWindow(gui.WindowWidget):
         # It seems to have something to do with the roll button being in that
         # group as it was working without disabling the results group when the
         # button was in the config group
-        self._resultsGroupBox.setEnabled(not self._rollInProgress)
-
-        self._rollButton.setEnabled(hasCurrentRoller and not self._rollInProgress)
+        self._resultsGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
 
     def _generateGroupName(self) -> str:
         groupNames = set([group.name() for group in self._rollerTree.groups()])
