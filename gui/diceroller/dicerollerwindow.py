@@ -548,6 +548,14 @@ class DiceRollerWindow(gui.WindowWidget):
         self._managerGroupBox.setEnabled(not self._rollInProgress)
         self._configGroupBox.setEnabled(hasCurrentRoller and not self._rollInProgress)
         self._historyGroupBox.setEnabled(not self._rollInProgress)
+        # NOTE: Disabling the results group when a roll is in progress is
+        # important. If it's not disabled then for reasons I can't figure out
+        # the DiceRollerWindow doesn't get an event when the space key is
+        # pressed to skip the roll animation (other key events are received).
+        # It seems to have something to do with the roll button being in that
+        # group as it was working without disabling the results group when the
+        # button was in the config group
+        self._resultsGroupBox.setEnabled(not self._rollInProgress)
 
         self._rollButton.setEnabled(hasCurrentRoller and not self._rollInProgress)
 
