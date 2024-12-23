@@ -528,7 +528,7 @@ class DiceRollResultsWidget(QtWidgets.QWidget):
                 int, # x count
                 int, # y count
                 int]: # size
-        """Calculate the maximum size of squares that can fit into the rectangle."""
+        # Calculate the maximum size of squares that can fit into the rectangle
         bestSize = 0
         bestLayout = []
 
