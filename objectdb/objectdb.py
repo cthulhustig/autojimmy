@@ -48,7 +48,7 @@ class DatabaseObject(DatabaseEntity):
 
     @staticmethod
     def defineObject() -> 'ObjectDef':
-        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement data')
+        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement defineObject')
 
     @staticmethod
     def createObject(
@@ -57,7 +57,7 @@ class DatabaseObject(DatabaseEntity):
                 str,
                 typing.Optional[typing.Union[bool, int, float, str, DatabaseEntity]]]
             ) -> 'DatabaseObject':
-        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement data')
+        raise RuntimeError(f'{__class__} is derived from DatabaseObject so must implement createObject')
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, DatabaseObject):
