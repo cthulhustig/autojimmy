@@ -344,6 +344,11 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
         if answer != QtWidgets.QMessageBox.StandardButton.Yes:
             return # User cancelled
 
+        # Remove all rows before deleting from the database so the db delete
+        # handler doesn't have to remove rows individually. If the delete fails
+        # old results will be reloaded
+        self._historyTable.removeAllRows()
+
         try:
             objectdb.ObjectDbManager.instance().deleteObjects(
                 type=diceroller.DiceRollResult)
@@ -353,6 +358,6 @@ class DiceRollHistoryWidget(QtWidgets.QWidget):
                 parent=self,
                 text='Failed to clear history',
                 exception=ex)
-            return
+            # Continue to reload the original data
 
         self._loadData()
