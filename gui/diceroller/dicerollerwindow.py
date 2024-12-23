@@ -276,6 +276,7 @@ class DiceRollerWindow(gui.WindowWidget):
         self._newRollerAction.triggered.connect(self._createNewRoller)
 
         self._newGroupAction = QtWidgets.QAction('New Group', self)
+        self._newGroupAction.setShortcut(QtGui.QKeySequence('Ctrl+Shift+N'))
         self._newGroupAction.triggered.connect(self._createNewGroup)
 
         menu = QtWidgets.QMenu()
