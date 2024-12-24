@@ -206,6 +206,8 @@ class Simulator(object):
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.worldCount():
                 # Not reached the end of the jump route yet so move on to the next world
+                # TODO: This will need updating as indexing into a jump route will return a
+                # node rather than a world
                 nextWorld = jumpRoute[self._jumpRouteIndex]
                 self._logMessage(f'Travelling from {self._currentWorld.name(includeSubsector=True)} to {nextWorld.name(includeSubsector=True)}')
 
@@ -223,6 +225,8 @@ class Simulator(object):
                 self._actualLogisticsCost += jumpOverheads
 
             # We've reached the sale world
+            # TODO: This will need updated to handle the fact this will return the
+            # finish node rather than a world.
             assert(self._currentWorld == jumpRoute.finishWorld())
             assert(self._actualLogisticsCost <= routeLogistics.totalCosts().worstCaseValue())
             assert(self._actualLogisticsCost >= routeLogistics.totalCosts().bestCaseValue())

@@ -216,6 +216,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         self._loadMap()
 
+    # TODO: Will probably need a centerOnHexes variant
     def centerOnWorld(
             self,
             world: traveller.World,
@@ -327,6 +328,9 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 radius=highlightRadius,
                 colour=highlightColour)
 
+    # TODO: This will need updated to allow jump routes to contain dead space.
+    # Based on how other function world it probably makes sense for it to be
+    # a list of tuples containing sector x/y & world x/y integer positions
     def showJumpRoute(
             self,
             jumpRoute: typing.Iterable[traveller.World],
@@ -341,6 +345,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             # jump route overlay (otherwise that will be cleared as well)
             self.clearOverlays()
 
+        # TODO: This should probably be making a copy of the route
         self._jumpRoute = jumpRoute
         if self._loaded:
             self._runJumpRouteScript(jumpRoute)
@@ -688,6 +693,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         self._mapWidget.load(url)
 
+    # TODO: This will need updated to allow jump routes to contain dead space
     def _runJumpRouteScript(
             self,
             jumpRoute: typing.Iterable[traveller.World],

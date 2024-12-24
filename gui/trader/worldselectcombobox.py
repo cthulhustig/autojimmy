@@ -64,6 +64,8 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
+# TODO: This will need updating to (optionally) allow the user to select
+# dead space hexes
 class WorldSelectComboBox(gui.ComboBoxEx):
     worldChanged = QtCore.pyqtSignal(object)
 

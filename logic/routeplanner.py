@@ -6,6 +6,8 @@ import traveller
 import travellermap
 import typing
 
+# TODO: This will need updated to allow jump routes to pass through
+# dead space.
 class _RouteNode(object):
     def __init__(
             self,
@@ -176,16 +178,34 @@ class RoutePlanner(object):
     # specified refuelling strategy. Not that this on it's own doesn't make any claims about how
     # cost effective the route will be (compared to other possible routes), that will be determined
     # by the supplied jump cost calculator.
+    # TODO: Algorithm wise I think jumping through dead space should be _relatively_ simple. If
+    # dead space routing is enabled, whenever yieldWorldsInArea is currently being called I need
+    # to also process the hexes that form a ring round the current position with a radius of the
+    # ship jump rating (limited by available fuel and distance to target world). The thinking
+    # being there is no reason to jump less than that.
+    # - IMPORTANT: This ring logic is slightly flawed. The one reason there could be a benefit
+    #   for looking at dead space that is closer than this outer ring is if I allow the user
+    #   to specify dead space hexes to avoid and one of those hexes is on the ring. In that case
+    #   we may need to check closer dead space hexes as they may give a better route
+    # - IMPORTANT: This thinking may be even more flawed. If I'm saying the costing function will
+    #   be passed nodes rather than worlds and can return whatever cost it wants then it could
+    #   return different costs for different dead space hexes
     def _calculateRoute(
             self,
+            # TODO: This will need updated to take a list of nodes. It should probably also be
+            # be an abstract type rather than a List
             worldSequence: typing.List[traveller.World],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
+            # TODO: The cost calculator will need updated to deal with nodes rather than worlds
+            # It might make sense for them to take either and handle the difference internally
             jumpCostCalculator: JumpCostCalculatorInterface,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
+            # TODO: The world filter will need updated to deal with nodes rather than worlds.
+            # It might make sense for them to take either and handle the difference internally
             worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
@@ -219,6 +239,9 @@ class RoutePlanner(object):
         finishWorld = worldSequence[finishWorldIndex]
 
         if pitCostCalculator:
+            # TODO: This will need updated to only check for fuel type if
+            # the start node contains a world. The rest of the code is still
+            # valid
             startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
             isCurrentFuelWorld = startWorldFuelType != None
             maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
@@ -274,8 +297,10 @@ class RoutePlanner(object):
 
                 fuelToFinish = distance * shipFuelPerParsec
                 if fuelToFinish <= availableFuel:
+                    # TODO: This will need updated to return a list of 2 nodes
                     return [startWorld, finishWorld]
 
+        # TODO: This typing stuff will need updated to deal with nodes
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
             typing.Tuple[
@@ -286,6 +311,7 @@ class RoutePlanner(object):
                     int]], # Parsecs from world to target (note target not necessarily finish)
                 int # Min parsecs from target to finish (going via all waypoints)
                 ]] = []
+        # TODO: This will need updated to be a set of nodes
         excludedWorlds: typing.Set[traveller.World] = set()
 
         minRouteParsecs = 0
@@ -554,6 +580,7 @@ class RoutePlanner(object):
 
         return None # No route found
 
+    # TODO: This will need updated to return a list of nodes rather than worlds
     def _finaliseRoute(
             self,
             finishNode: _RouteNode,

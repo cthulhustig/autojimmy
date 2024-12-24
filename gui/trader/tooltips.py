@@ -632,6 +632,8 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         for pitStop in refuellingPlan:
             pitStopMap[pitStop.jumpIndex()] = pitStop
 
+    # TODO: This will need updated to account for the fact the jump route
+    # will contain nodes not worlds
     for index, world in enumerate(jumpRoute):
         tagColour = app.tagColour(app.calculateWorldTagLevel(world))
         style = ""

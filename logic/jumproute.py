@@ -2,6 +2,7 @@ import traveller
 import travellermap
 import typing
 
+# TODO: This will need updated to deal with nodes rather than worlds
 class JumpRoute(object):
     def __init__(
             self,

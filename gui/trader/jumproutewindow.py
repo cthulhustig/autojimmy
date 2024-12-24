@@ -78,6 +78,7 @@ def _formatBerthingTypeString(
 
     return 'No Star Port'
 
+# TODO: This will need updated to allow avoiding dead space sectors
 class _WorldFilter(object):
     def __init__(
             self,
@@ -633,6 +634,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._travellerMapWidget.show()
 
     def _setupJumpWorldsControls(self) -> None:
+        # TODO: I will probably need to update this to allow the start/finish to be
+        # in dead space
         self._startFinishWorldsWidget = _StartFinishWorldsSelectWidget()
         self._startFinishWorldsWidget.selectionChanged.connect(self._startFinishWorldsChanged)
         self._startFinishWorldsWidget.showWorldRequested.connect(self._showWorldInTravellerMap)
@@ -738,6 +741,9 @@ class JumpRouteWindow(gui.WindowWidget):
         self._configurationGroupBox.setLayout(configurationLayout)
 
     def _setupWaypointWorldsControls(self) -> None:
+        # TODO: This will need updated to handle waypoints in dead space
+        # - IMPORTANT: Need to handle the case where users have waypoint lists already
+        #   configured
         self._waypointWorldTable = gui.WorldBerthingTable()
         self._waypointWorldsWidget = gui.WorldTableManagerWidget(
             worldTable=self._waypointWorldTable,
@@ -757,6 +763,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._waypointWorldsGroupBox.setLayout(layout)
 
     def _setupAvoidWorldsControls(self) -> None:
+        # TODO: Not sure if it make sense to allow avoiding dead space hexes
         self._avoidWorldsWidget = gui.WorldTableManagerWidget(
             allowWorldCallback=self._allowAvoidWorld,
             showSelectInTravellerMapButton=False) # The windows Traveller Map widget should be used to select worlds
@@ -804,6 +811,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRouteDisplayModeTabBar = gui.WorldTableTabBar()
         self._jumpRouteDisplayModeTabBar.currentChanged.connect(self._updateWorldTableColumns)
 
+        # TODO: This will need a new table type that deals with nodes instead of worlds
         self._jumpRouteTable = gui.WorldTable()
         self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
         self._jumpRouteTable.setMinimumHeight(100)
@@ -900,6 +908,8 @@ class JumpRouteWindow(gui.WindowWidget):
             assert(False) # I missed a case
         self._waypointWorldsWidget.setVisibleColumns(columns)
 
+    # TODO: This will need various updates to allow the start/finish/waypoints to be
+    # in dead space
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
             # A trade option job is already running so cancel it
@@ -1067,6 +1077,9 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I missed a case
 
+    # TODO: This will need updated to account for the fact the "jump worlds table"
+    # will actually be dealing with nodes so some options might not apply (e.g.
+    # show world details only makes sense if a world node is selected)
     def _showJumpWorldsTableContextMenu(self, position: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
@@ -1162,6 +1175,8 @@ class JumpRouteWindow(gui.WindowWidget):
             self._refuellingPlanTable.viewport().mapToGlobal(position)
         )
 
+    # TODO: This will need updated to allow setting start/finish/waypoints
+    # to dead space
     def _showTravellerMapContextMenu(
             self,
             sectorHex: str
@@ -1256,6 +1271,8 @@ class JumpRouteWindow(gui.WindowWidget):
         if not hoverWorld:
             return None
 
+        # TODO: This will need updated to account for the fact start/finish/waypoints
+        # can be in dead space
         if not self._jumpRoute:
             toolTip = ''
             if hoverWorld == self._startFinishWorldsWidget.startWorld() and \
@@ -1271,6 +1288,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
             return None
 
+        # TODO: This will need updated to get the world for the node
+        # and use it for the comparison
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
         for node in range(self._jumpRoute.worldCount()):
             if self._jumpRoute[node] == hoverWorld:
@@ -1324,6 +1343,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
+            # TODO: This will need updated to account for the fact waypoints can be dead space
             if self._waypointWorldsWidget.containsWorld(hoverWorld):
                 return gui.createStringToolTip('<nobr>Waypoint World</nobr>', escape=False)
 
@@ -1563,6 +1583,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 radius=0.3)
 
         if self._jumpRoute:
+            # TODO: The showJumpRoute method will need updated to take a list of nodes
+            # rather than a list of worlds
             self._travellerMapWidget.showJumpRoute(
                 jumpRoute=self._jumpRoute,
                 refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None,
@@ -1630,6 +1652,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 text='Ship\'s current fuel can\'t be larger than its fuel capacity')
             return
 
+        # TODO: This will need updated as the jump route table will be dealing
+        # with nodes
         self._jumpRouteTable.addWorlds(worlds=self._jumpRoute)
         self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
         self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
@@ -1661,6 +1685,8 @@ class JumpRouteWindow(gui.WindowWidget):
                         parent=self,
                         text='Unable to calculate logistics for jump route')
             except Exception as ex:
+                # TODO: This will need updated to account for the fact the start/finish world
+                # could be dead space
                 startWorld = self._jumpRoute.startWorld()
                 finishWorld = self._jumpRoute.finishWorld()
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
@@ -1705,6 +1731,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         waypoints = []
 
+        # TODO: This will need updated to account for the fact the start/finish world
+        # could be in dead space
         waypoints.append((self._jumpRoute.startWorld(), self._includeStartWorldBerthingCheckBox.isChecked()))
 
         for row in range(self._waypointWorldTable.rowCount()):
@@ -1727,6 +1755,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         waypointIndex = 0
         for jumpIndex in range(self._jumpRoute.worldCount()):
+            # TODO: This will need updated to account for the fact indexing
+            # the jump route will get a node not a world
             if self._jumpRoute[jumpIndex] == waypoints[waypointIndex][0]:
                 # We've found the current waypoint on the jump route
                 if waypoints[waypointIndex][1]:

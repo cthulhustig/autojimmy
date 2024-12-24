@@ -798,6 +798,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._initOptionActions()
 
         self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
+        # TODO: This probably needs updated to (optionally) allow the user
+        # to select dead space hexes
         self._selectedWorlds: typing.List[traveller.World] = []
 
         self._infoWorld = None

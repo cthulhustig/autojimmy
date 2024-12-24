@@ -39,6 +39,13 @@ def deserialiseWorldList(
         worlds.append(deserialiseWorld(data=item))
     return worlds
 
+# TODO: This is going to be a bit of a pain to update as I need to keep
+# backwards compatibility with routes users may have already saved. I
+# suspect this is going to need a new v2 format with version checked on
+# load.
+# - IMPORTANT: I only need to keep the v1 read code going forward. After
+#   the v2 format is added there shouldn't be any need to write the V1
+#   format
 def serialiseJumpRoute(
         jumpRoute: logic.JumpRoute
         ) -> typing.Mapping[str, typing.Any]:

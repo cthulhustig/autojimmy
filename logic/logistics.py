@@ -33,6 +33,8 @@ class RouteLogistics(object):
                 rhs=jumpCount,
                 name='Total Overheads')
 
+    # TODO: These will need updated to allow the start/finish worlds to
+    # be in dead space
     def startWorld(self) -> traveller.World:
         return self._jumpRoute.startWorld()
 
@@ -104,6 +106,7 @@ def calculateRouteLogistics(
         requireFinishWorldBerthing = requiredBerthingIndices and (jumpRoute.worldCount() - 1) in requiredBerthingIndices
 
         if requireStartWorldBerthing or requireFinishWorldBerthing:
+            # TODO: This will need updated to allow start/finish to be in dead space
             startWorld = jumpRoute.startWorld()
 
             berthingCost = pitCostCalculator.berthingCost(
