@@ -28,68 +28,65 @@ HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX
 
 # Implementation taken from https://travellermap.com/doc/api
 def relativeHexToAbsoluteHex(
-        sectorX: int,
-        sectorY: int,
-        offsetX: int,
-        offsetY: int
+        pos: typing.Tuple[int, int, int, int],
         ) -> typing.Tuple[int, int]:
-    absoluteX = (sectorX - ReferenceSectorX) * \
+    absoluteX = (pos[0] - ReferenceSectorX) * \
         SectorWidth + \
-        (offsetX - ReferenceHexX)
-    absoluteY = (sectorY - ReferenceSectorY) * \
+        (pos[2] - ReferenceHexX)
+    absoluteY = (pos[1] - ReferenceSectorY) * \
         SectorHeight + \
-        (offsetY - ReferenceHexY)
+        (pos[3] - ReferenceHexY)
     return (absoluteX, absoluteY)
 
 # Reimplementation of code from Traveller Map source code.
 # CoordinatesToLocation in Astrometrics.cs
 def absoluteHexToRelativeHex(
-        absoluteX: int,
-        absoluteY: int
+        pos: typing.Tuple[int, int]
         ) -> typing.Tuple[int, int, int, int]:
-    absoluteX += ReferenceHexX - 1
-    absoluteY += ReferenceHexY - 1
+    absoluteX = pos[0] + (ReferenceHexX - 1)
+    absoluteY = pos[1] + (ReferenceHexY - 1)
     sectorX = absoluteX // SectorWidth
     sectorY = absoluteY // SectorHeight
-    worldX = absoluteX - (sectorX * SectorWidth) + 1
-    worldY = absoluteY - (sectorY * SectorHeight) + 1
-    return (sectorX, sectorY, worldX, worldY)
+    offsetX = absoluteX - (sectorX * SectorWidth) + 1
+    offsetY = absoluteY - (sectorY * SectorHeight) + 1
+    return (sectorX, sectorY, offsetX, offsetY)
 
 def absoluteHexToMapSpace(
-        absoluteX: int,
-        absoluteY: int
+        pos: typing.Tuple[int, int]
         ) -> typing.Tuple[float, float]:
-    ix = absoluteX - 0.5
-    iy = absoluteY - 0.5 if (absoluteX % 2) == 0 else absoluteY
+    ix = pos[0] - 0.5
+    iy = pos[1] - 0.5 if (pos[0] % 2) == 0 else pos[1]
     x = ix * ParsecScaleX
     y = iy * -ParsecScaleY
     return x, y
 
+def relativeToMapSpace(
+        pos: typing.Tuple[int, int, int, int]
+        ) -> typing.Tuple[float, float]:
+    return absoluteHexToMapSpace(pos=relativeHexToAbsoluteHex(pos=pos))
+
 def mapSpaceToTileSpace(
-        mapX: int,
-        mapY: int,
+        pos: typing.Tuple[float, float],
         scale: float
-        ) -> typing.Tuple[int, int]:
+        ) -> typing.Tuple[float, float]:
     scalar = scale / TravellerMapTileSize
-    return (mapX * scalar, -mapY * scalar)
+    return (pos[0] * scalar, -pos[1] * scalar)
 
 def tileSpaceToMapSpace(
-        tileX,
-        tileY,
+        pos: typing.Tuple[float, float],
         scale: float
-        ) -> typing.Tuple[int, int]:
+        ) -> typing.Tuple[float, float]:
     scalar = scale / TravellerMapTileSize
-    return (tileX / scalar, -tileY / scalar)
+    return (pos[0] / scalar, -pos[1] / scalar)
 
 # This gets the bounding rect of a sector in absolute coordinates (world coordinates in Traveller
 # Map parlance). It's based on Bounds from Traveller Map (Sector.cs) but I've updated it so it
 # returns a bounding box that contains the full extent of all hexes in the sector.
 def sectorBoundingRect(
-        sectorX: int,
-        sectorY: int
+        sector: typing.Tuple[int, int],
         ) -> typing.Tuple[int, int, int, int]:
-    left = (sectorX * SectorWidth) - ReferenceHexX
-    bottom = (sectorY * SectorHeight) - ReferenceHexY
+    left = (sector[0] * SectorWidth) - ReferenceHexX
+    bottom = (sector[1] * SectorHeight) - ReferenceHexY
     width = SectorWidth
     height = SectorHeight
 
@@ -105,11 +102,10 @@ def sectorBoundingRect(
 # useful as any rect that falls completely inside this rect is guaranteed to only cover
 # this sector
 def sectorInteriorRect(
-        sectorX: int,
-        sectorY: int
+        sector: typing.Tuple[int, int],
         ) -> typing.Tuple[int, int, int, int]:
-    left = (sectorX * SectorWidth) - ReferenceHexX
-    bottom = (sectorY * SectorHeight) - ReferenceHexY
+    left = (sector[0] * SectorWidth) - ReferenceHexX
+    bottom = (sector[1] * SectorHeight) - ReferenceHexY
     width = SectorWidth
     height = SectorHeight
 
@@ -124,19 +120,17 @@ def sectorInteriorRect(
 # Reimplementation of code from Traveller Map source code.
 # HexDistance in Astrometrics.cs
 def hexDistance(
-        absoluteX1: int,
-        absoluteY1: int,
-        absoluteX2: int,
-        absoluteY2: int
+        absolute1: typing.Tuple[int, int],
+        absolute2: typing.Tuple[int, int]
         ) -> int:
-    dx = absoluteX2 - absoluteX1
-    dy = absoluteY2 - absoluteY1
+    dx = absolute2[0] - absolute1[0]
+    dy = absolute2[1] - absolute1[1]
 
     adx = dx if dx >= 0 else -dx
 
     ody = dy + (adx // 2)
 
-    if ((absoluteX1 & 0b1) == 0) and ((absoluteX2 & 0b1) != 0):
+    if ((absolute1[0] & 0b1) == 0) and ((absolute2[0] & 0b1) != 0):
         ody += 1
 
     max = ody if ody > adx else adx
@@ -226,15 +220,14 @@ def neighbourRelativeHex(
     return (sectorX, sectorY, hexX, hexY)
 
 def absoluteRadiusHexes(
-        centerX: int,
-        centerY: int,
+        center: typing.Tuple[int, int],
         radius: int
         ) -> typing.Generator[typing.Tuple[int, int], None, None]:
     if radius == 0:
-        yield (centerX, centerY)
+        yield center
         return
 
-    current = (centerX, centerY + radius)
+    current = (center[0], center[1] + radius)
 
     for _ in range(radius):
         current = neighbourAbsoluteHex(current, NeighbourDirection.UpperRight)
@@ -261,24 +254,16 @@ def absoluteRadiusHexes(
         yield current
 
 def relativeRadiusHexes(
-        centerSectorX: int,
-        centerSectorY: int,
-        centerOffsetX: int,
-        centerOffsetY: int,
+        center: typing.Tuple[int, int, int, int],
         radius: int
         ) -> typing.Generator[typing.Tuple[int, int, int, int], None, None]:
     if radius == 0:
-        yield (centerSectorX, centerSectorY, centerOffsetX, centerOffsetY)
+        yield center
         return
 
-    absoluteCenter = relativeHexToAbsoluteHex(
-        sectorX=centerSectorX,
-        sectorY=centerSectorY,
-        offsetX=centerOffsetX,
-        offsetY=centerOffsetY)
+    absoluteCenter = relativeHexToAbsoluteHex(pos=center)
     current = absoluteHexToRelativeHex(
-        absoluteX=absoluteCenter[0],
-        absoluteY=absoluteCenter[1] + radius)
+        pos=(absoluteCenter[0], absoluteCenter[1] + radius))
 
     for _ in range(radius):
         current = neighbourRelativeHex(current, NeighbourDirection.UpperRight)
@@ -322,97 +307,112 @@ class HexPosition(object):
             raise ValueError('Hex position can\'t be absolute and relative')
 
         if isAbsolute:
-            self._absoluteX = int(absoluteX)
-            self._absoluteY = int(absoluteY)
-            self._sectorX, self._sectorY, self._offsetX, self._offsetY = \
-                absoluteHexToRelativeHex(
-                    absoluteX=self._absoluteX,
-                    absoluteY=self._absoluteY)
+            self._absolute = (int(absoluteX), int(absoluteY))
+            self._relative = None
         else:
-            self._sectorX = int(sectorX)
-            self._sectorY = int(sectorY)
-            self._offsetX = int(offsetX)
-            self._offsetY = int(offsetY)
-            self._absoluteX, self._absoluteY = \
-                relativeHexToAbsoluteHex(
-                    sectorX=self._sectorX,
-                    sectorY=self._sectorY,
-                    offsetX=self._offsetX,
-                    offsetY=self._offsetY)
+            self._relative = (int(sectorX), int(sectorY), int(offsetX), int(offsetY))
+            self._absolute = None
 
     def __eq__(self, other):
         if isinstance(other, HexPosition):
             # Only need to compare absolute position
-            return self._absoluteX == other._absoluteX and \
-                self._absoluteY == other._absoluteY
+            return self.absolute() == other.absolute()
         return super().__eq__(other)
 
     def __lt__(self, other: 'HexPosition') -> bool:
         if isinstance(other, HexPosition):
-            if self._absoluteY < other._absoluteY:
+            thisX, thisY = self.absolute()
+            otherX, otherY = other.absolute()
+            if thisY < otherY:
                 return True
-            elif self._absoluteY > other._absoluteY:
+            elif thisY > otherY:
                 return False
-            return self._absoluteX < other._absoluteX
+            return thisX < otherX
         return super().__lt__(other)
 
     def absoluteX(self) -> int:
-        return self._absoluteX
+        if not self._absolute:
+            self._calculateAbsolute()
+        return self._absolute[0]
 
     def absoluteY(self) -> int:
-        return self._absoluteY
+        if not self._absolute:
+            self._calculateAbsolute()
+        return self._absolute[1]
 
     def absolute(self) -> typing.Tuple[int, int]:
-        return (self._absoluteX, self._absoluteY)
+        if not self._absolute:
+            self._calculateAbsolute()
+        return self._absolute
 
     def sectorX(self) -> int:
-        return self._sectorX
+        if not self._relative:
+            self._calculateRelative()
+        return self._relative[0]
 
     def sectorY(self) -> int:
-        return self._sectorY
+        if not self._relative:
+            self._calculateRelative()
+        return self._relative[1]
 
     def offsetX(self) -> int:
-        return self._offsetX
+        if not self._relative:
+            self._calculateRelative()
+        return self._relative[2]
 
     def offsetY(self) -> int:
-        return self._offsetY
+        if not self._relative:
+            self._calculateRelative()
+        return self._relative[3]
 
     def relative(self) -> typing.Tuple[int, int, int, int]:
-        return (self._sectorX, self._sectorY, self._offsetX, self._offsetY)
+        if not self._relative:
+            self._calculateRelative()
+        return self._relative
 
     def mapSpace(self) -> typing.Tuple[float, float]:
-        return absoluteHexToMapSpace(
-            absoluteX=self._absoluteX,
-            absoluteY=self._absoluteY)
+        if not self._absolute:
+            self._calculateAbsolute()
+        return absoluteHexToMapSpace(pos=self._absolute)
 
     def parsecsTo(
             self,
             other: 'HexPosition'
             ) -> int:
         return hexDistance(
-            absoluteX1=self._absoluteX,
-            absoluteY1=self._absoluteY,
-            absoluteX2=other._absoluteX,
-            absoluteY2=other._absoluteY)
+            absolute1=self.absolute(),
+            absolute2=other.absolute())
 
     def neighbourHex(
             self,
             direction: NeighbourDirection
             ) -> 'HexPosition':
-        neighbourX, neighbourY = neighbourAbsoluteHex(
-            origin=(self._absoluteX, self._absoluteY),
-            direction=direction)
-        return HexPosition(absoluteX=neighbourX, absoluteY=neighbourY)
+        if self._absolute:
+            absoluteX, absoluteY = neighbourAbsoluteHex(
+                origin=self._absolute,
+                direction=direction)
+            return HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
+        else:
+            sectorX, sectorY, offsetX, offsetY = neighbourRelativeHex(
+                origin=self._relative,
+                direction=direction)
+            return HexPosition(
+                sectorX=sectorX,
+                sectorY=sectorY,
+                offsetX=offsetX,
+                offsetY=offsetY)
 
     def yieldRadiusHexes(
             self,
             radius: int,
             maxOnly: bool = False
             ) -> typing.Generator['HexPosition', None, None]:
+        if not self._absolute:
+            self._calculateAbsolute()
+
         while radius >= 0:
             generator = absoluteRadiusHexes(
-                centerX=self._absoluteX,
-                centerY=self._absoluteY,
+                center=self._absolute,
                 radius=radius)
             for absoluteX, absoluteY in generator:
                 yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
@@ -420,3 +420,9 @@ class HexPosition(object):
             if maxOnly:
                 return
             radius -= 1
+
+    def _calculateRelative(self) -> None:
+        self._relative = absoluteHexToRelativeHex(pos=self._absolute)
+
+    def _calculateAbsolute(self) -> None:
+        self._absolute = relativeHexToAbsoluteHex(pos=self._relative)

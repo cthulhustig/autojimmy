@@ -195,26 +195,28 @@ class _CustomSector(object):
         self._mapPosters = list(mapPosters) if mapPosters else []
         self._mapPosters.sort() # Sorting is important for map selection algorithm
 
-        absoluteRect = travellermap.sectorBoundingRect(position[0], position[1])
-        mapSpaceUL = travellermap.absoluteHexToMapSpace(
+        absoluteRect = travellermap.sectorBoundingRect(
+            sector=position)
+        mapSpaceUL = travellermap.absoluteHexToMapSpace((
             absoluteRect[0],
-            absoluteRect[1] + absoluteRect[3])
-        mapSpaceBR = travellermap.absoluteHexToMapSpace(
+            absoluteRect[1] + absoluteRect[3]))
+        mapSpaceBR = travellermap.absoluteHexToMapSpace((
             absoluteRect[0] + absoluteRect[2],
-            absoluteRect[1])
+            absoluteRect[1]))
         self._boundingRect = (
             mapSpaceUL[0], # Left
             mapSpaceUL[1], # Top
             mapSpaceBR[0], # Right
             mapSpaceBR[1]) # Bottom
 
-        absoluteRect = travellermap.sectorInteriorRect(position[0], position[1])
-        mapSpaceUL = travellermap.absoluteHexToMapSpace(
+        absoluteRect = travellermap.sectorInteriorRect(
+            sector=position)
+        mapSpaceUL = travellermap.absoluteHexToMapSpace((
             absoluteRect[0],
-            absoluteRect[1] + absoluteRect[3])
-        mapSpaceBR = travellermap.absoluteHexToMapSpace(
+            absoluteRect[1] + absoluteRect[3]))
+        mapSpaceBR = travellermap.absoluteHexToMapSpace((
             absoluteRect[0] + absoluteRect[2],
-            absoluteRect[1])
+            absoluteRect[1]))
         self._interiorRect = (
             mapSpaceUL[0], # Left
             mapSpaceUL[1], # Top
@@ -414,12 +416,10 @@ class Compositor(object):
 
         # Calculate tile rect in map space
         tileMapUL = travellermap.tileSpaceToMapSpace(
-            tileX=tileX,
-            tileY=tileY + 1,
+            pos=(tileX, tileY + 1),
             scale=tileScale)
         tileMapBR = travellermap.tileSpaceToMapSpace(
-            tileX=tileX + 1,
-            tileY=tileY,
+            pos=(tileX + 1, tileY),
             scale=tileScale)
         tileMapRect = (
             tileMapUL[0], # Left
@@ -463,12 +463,10 @@ class Compositor(object):
             return # Nothing to do (shouldn't happen if correctly checking which operation to use)
 
         tileMapUL = travellermap.tileSpaceToMapSpace(
-            tileX=tileX,
-            tileY=tileY + 1,
+            pos=(tileX, tileY + 1),
             scale=tileScale)
         tileMapBR = travellermap.tileSpaceToMapSpace(
-            tileX=tileX + 1,
-            tileY=tileY,
+            pos=(tileX + 1, tileY),
             scale=tileScale)
         tileMapRect = (
             tileMapUL[0], # Left
@@ -568,12 +566,10 @@ class Compositor(object):
             return None # Nothing to do (shouldn't happen if correctly checking which operation to use)
 
         tileMapUL = travellermap.tileSpaceToMapSpace(
-            tileX=tileX,
-            tileY=tileY + 1,
+            pos=(tileX, tileY + 1),
             scale=tileScale)
         tileMapBR = travellermap.tileSpaceToMapSpace(
-            tileX=tileX + 1,
-            tileY=tileY,
+            pos=(tileX + 1, tileY),
             scale=tileScale)
         tileMapRect = (
             tileMapUL[0], # Left
