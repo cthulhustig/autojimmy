@@ -632,6 +632,9 @@ def _processRoute(
 
     worldContexts: typing.List[_WorldContext] = []
     for worldIndex in range(len(jumpRoute)):
+        # TODO: This needs updated as indexing into a jump route will return
+        # a node. I also don't think it's used right now so should be moved
+        # to after the while loop where it is used
         world = jumpRoute[worldIndex]
 
         # Find the worlds that match the refuelling requirements (i.e. have a
@@ -639,6 +642,17 @@ def _processRoute(
         # refuelling. Worlds that don't match the refuelling requirements are
         # ignored as they don't affect where refuelling can take place (only
         # how much fuel needs taken on)
+        # TODO: This will need updated to handle the fact the jump route can
+        # contain dead space.
+        # - Rename fromWorld/toWorld to fromNode/toNode
+        # - Rename reachableWorldIndex to reachableNodeIndex
+        # - Rename reachableWorlds to reachableNodes. It will generally only
+        # contain the indices of nodes that contain worlds but it could be
+        # the index of a dead space node if the finish node is a dead space
+        # node
+        # - Only add reachableWorldIndex to reachableWorlds if the node
+        # contains a world that matches the refuelling strategy or it's the
+        # finish node
         reachableWorlds = []
         totalParsecs = 0
         parsecsToNextWorld = None
@@ -663,6 +677,9 @@ def _processRoute(
 
             reachableWorldIndex += 1
 
+        # TODO: _WorldContext needs updated to deal with nodes and there
+        # needs to be one for EVERY node in the jump route later code
+        # uses jump route indices to index into worldContexts
         mandatoryBerthing = (requiredBerthingIndices != None) and \
             (worldIndex in requiredBerthingIndices)
         worldContexts.append(_WorldContext(
@@ -690,6 +707,11 @@ def _processRoute(
 
     return calculationContext
 
+# TODO: I think this will need a lot or renaming as it's mostly going
+# to be dealing with nodes instead of worlds. Apart from that I think
+# it might "just work" as long as _WorldContext has been updated to
+# deal with nodes and estimateRefuellingCosts returns None if the node
+# is dead space
 def _processWorld(
         calculationContext: _CalculationContext,
         fromWorldContext: _WorldContext,
@@ -819,6 +841,10 @@ def _createRefuellingPlan(
 
     pitStops = []
     for worldContext in calculationContext.worldContexts():
+        # TODO: This will need updated to handle the fact it will
+        # be a node rather than a world. If the node doesn't
+        # contain a world then I think all the code here can be
+        # skipped
         world = worldContext.world()
 
         fuelAmount = fuelMap.get(worldContext.index())

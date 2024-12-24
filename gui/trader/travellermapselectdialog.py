@@ -3,6 +3,8 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This will probably need updated so it can (optionally) allow the
+# user to select hexes with no worlds in them
 class TravellerMapSelectDialog(gui.DialogEx):
     def __init__(
             self,

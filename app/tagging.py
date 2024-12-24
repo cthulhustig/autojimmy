@@ -110,6 +110,9 @@ def calculateWorldTagLevel(world: traveller.World) -> app.TagLevel:
 def calculateJumpRouteTagLevel(jumpRoute: logic.JumpRoute) -> app.TagLevel:
     routeTagLevel = None
 
+    # TODO: This will need updated to check if there is a world at
+    # the node position. It might also make sense to tag any routes
+    # that pass through dead space as dangerous
     for world in jumpRoute:
         worldTagLevel = calculateWorldTagLevel(world)
         if not routeTagLevel or (worldTagLevel > routeTagLevel):
