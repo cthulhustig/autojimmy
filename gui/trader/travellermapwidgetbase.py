@@ -1,6 +1,5 @@
 import app
 import common
-import enum
 import gui
 import logic
 import logging
@@ -12,7 +11,7 @@ import traveller
 import travellermap
 import typing
 import uuid
-from PyQt5 import QtWebEngineCore, QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
+from PyQt5 import QtWebEngineWidgets, QtCore, QtGui, QtWidgets, sip
 
 class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     # Massive Hack: This message is expected as a local snapshot of the Traveller Map web interface
@@ -63,21 +62,22 @@ class _CustomWebEnginePage(QtWebEngineWidgets.QWebEnginePage):
 class _HexOverlay(object):
     def __init__(
             self,
-            absoluteX: int,
-            absoluteY: int,
+            hexPos: travellermap.HexPosition,
             radius: float,
             colour: str
             ) -> None:
-        self._absoluteX = absoluteX
-        self._absoluteY = absoluteY
+        self._hexPos = hexPos
         self._radius = radius
         self._colour = colour
 
+    def hexPosition(self) -> travellermap.HexPosition:
+        return self._hexPos
+
     def absoluteX(self) -> int:
-        return self._absoluteX
+        return self._hexPos.absoluteX()
 
     def absoluteY(self) -> int:
-        return self._absoluteY
+        return self._hexPos.absoluteY()
 
     def radius(self) -> float:
         return self._radius
@@ -227,10 +227,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             highlightColour: str = '#8080FF'
             ) -> None:
         self.centerOnHex(
-            sectorX=world.sectorX(),
-            sectorY=world.sectorY(),
-            worldX=world.x(),
-            worldY=world.y(),
+            hexPos=world.hexPosition(),
             linearScale=linearScale,
             clearOverlays=clearOverlays,
             highlightHex=highlightWorld,
@@ -263,8 +260,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         minX = maxX = minY = maxY = None
         for world in worlds:
-            worldX = world.absoluteX()
-            worldY = world.absoluteY()
+            worldPos = world.hexPosition()
+            worldX, worldY = worldPos.absolute()
             if minX == None or worldX < minX:
                 minX = worldX
             if maxX == None or worldX > maxX:
@@ -295,25 +292,23 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def centerOnHex(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int,
+            hexPos: travellermap.HexPosition,
             linearScale: typing.Optional[float] = 64, # None keeps current scale
             clearOverlays: bool = False,
             highlightHex: bool = False,
             highlightRadius: float = 0.5,
             highlightColour: str = '#8080FF'
             ) -> None:
+        sectorX, sectorY, offsetX, offsetY = hexPos.relative()
         if linearScale != None:
-            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {worldX}, {worldY}, {{scale: {linearScale}}})'
+            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: {linearScale}}})'
         else:
             # When keeping the current scale, it's important to use map.scale rather than extracting
             # the scale from the current url. This is required in order for movements to be animated
             # rather than hard cuts to the new location. The implementation of CenterAtSectorHex
             # will only animate if the new scale is exactly the same as current scale. As the scale
             # is a float the only reliable way to do this is to use the current value.
-            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {worldX}, {worldY}, {{scale: map.scale}})'
+            script = f'map.CenterAtSectorHex({sectorX}, {sectorY}, {offsetX}, {offsetY}, {{scale: map.scale}})'
 
         self._runScript(script)
 
@@ -321,10 +316,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self.clearOverlays()
         if highlightHex:
             self.highlightHex(
-                sectorX=sectorX,
-                sectorY=sectorY,
-                worldX=worldX,
-                worldY=worldY,
+                hexPos=hexPos,
                 radius=highlightRadius,
                 colour=highlightColour)
 
@@ -379,26 +371,18 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             colour: str = '#8080FF'
             ) -> None:
         self.highlightHex(
-            sectorX=world.sectorX(),
-            sectorY=world.sectorY(),
-            worldX=world.x(),
-            worldY=world.y(),
+            hexPos=world.hexPosition(),
             radius=radius,
             colour=colour)
 
     def highlightHex(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int,
+            hexPos: travellermap.HexPosition,
             radius: float = 0.5,
             colour: str = '#8080FF'
             ) -> None:
-        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
         overlay = _HexOverlay(
-            absoluteX=absoluteX,
-            absoluteY=absoluteY,
+            hexPos=hexPos,
             radius=radius,
             colour=colour)
         self._hexOverlays.append(overlay)
@@ -410,23 +394,16 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             world: traveller.World
             ) -> None:
-        self.clearHexHighlight(
-            sectorX=world.sectorX(),
-            sectorY=world.sectorY(),
-            worldX=world.x(),
-            worldY=world.y())
+        self.clearHexHighlight(hexPos=world.hexPosition())
 
     def clearHexHighlight(
             self,
-            sectorX: int,
-            sectorY: int,
-            worldX: int,
-            worldY: int
+            hexPos: travellermap.HexPosition
             ) -> None:
-        absoluteX, absoluteY = travellermap.relativeHexToAbsoluteHex(sectorX, sectorY, worldX, worldY)
-        self._hexOverlays = [overlay for overlay in self._hexOverlays if (overlay.absoluteX() != absoluteX or overlay.absoluteY() != absoluteY)]
+        self._hexOverlays = [overlay for overlay in self._hexOverlays if overlay.hexPosition() != hexPos]
 
         if self._loaded:
+            absoluteX, absoluteY = hexPos.absolute()
             script = """
                 var worldX = {x}, worldY = {y};
                 var filterCallback = (overlay) => {{
@@ -448,8 +425,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         group = _OverlayGroups()
         for world, colour in worlds:
             overlay = _HexOverlay(
-                absoluteX=world.absoluteX(),
-                absoluteY=world.absoluteY(),
+                hexPos=world.hexPosition(),
                 radius=radius,
                 colour=colour)
             group.addOverlay(overlay)
@@ -462,23 +438,15 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def createHexBorderOverlayGroup(
             self,
-            hexes: typing.Iterable[typing.Tuple[int, int, int, int]], # Sector/hex positions
+            hexes: typing.Iterable[travellermap.HexPosition],
             fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
             lineWidth: typing.Optional[int] = None
             ) -> str:
-        absoluteHexes = []
-        for sectorX, sectorY, hexX, hexY in hexes:
-            absoluteHexes.append(travellermap.relativeHexToAbsoluteHex(
-                sectorX=sectorX,
-                sectorY=sectorY,
-                worldX=hexX,
-                worldY=hexY))
-
         group = _OverlayGroups()
         self._overlayGroups[group.handle()] = group
 
-        borders = logic.calculateHexBorders(hexes=absoluteHexes)
+        borders = logic.calculateHexBorders(hexes=hexes)
         if not borders:
             # Still return the group even if there were no borders, but there
             # is no point running a script
@@ -499,21 +467,15 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def createHexRadiusOverlayGroup(
             self,
-            centerSectorX: int,
-            centerSectorY: int,
-            centerWorldX: int,
-            centerWorldY: int,
+            centerPos: travellermap.HexPosition,
             radius: int,
             fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
             lineWidth: typing.Optional[int] = None
             ) -> str:
-        radiusHexes = travellermap.relativeRadiusHexes(
-            centerSectorX=centerSectorX,
-            centerSectorY=centerSectorY,
-            centerHexX=centerWorldX,
-            centerHexY=centerWorldY,
-            radius=radius)
+        radiusHexes = list(centerPos.yieldRadiusHexes(
+            radius=radius,
+            maxOnly=True))
         return self.createHexBorderOverlayGroup(
             hexes=radiusHexes,
             fillColour=fillColour,
@@ -529,10 +491,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             lineWidth: typing.Optional[int] = None
             ) -> str:
         return self.createHexRadiusOverlayGroup(
-            centerSectorX=centerWorld.sectorX(),
-            centerSectorY=centerWorld.sectorY(),
-            centerWorldX=centerWorld.x(),
-            centerWorldY=centerWorld.y(),
+            centerPos=centerWorld.hexPosition(),
             radius=radius,
             fillColour=fillColour,
             lineColour=lineColour,
@@ -700,7 +659,9 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             ) -> None:
         script = 'map.SetRoute(['
         for world in jumpRoute:
-            script += f'{{hx:{world.x()}, hy:{world.y()}, sx:{world.sectorX()}, sy:{world.sectorY()}}},'
+            hexPos = world.hexPosition()
+            sectorX, sectorY, offsetX, offsetY = hexPos.relative()
+            script += f'{{hx:{offsetX}, hy:{offsetY}, sx:{sectorX}, sy:{sectorY}}},'
         script = script.strip(',')
         script += ']);'
         self._runScript(script)
@@ -709,14 +670,15 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             overlay: _HexOverlay
             ) -> None:
+        hexPos = overlay.hexPosition()
         script = """
             var worldX = {x}, worldY = {y};
             var mapPosition = Traveller.Astrometrics.worldToMap(worldX, worldY);
             var overlay = {{type: 'circle', x:mapPosition.x, y:mapPosition.y, r:{radius}, style:'{colour}'}};
             map.AddOverlay(overlay);
             """.format(
-            x=overlay.absoluteX(),
-            y=overlay.absoluteY(),
+            x=hexPos.absoluteX(),
+            y=hexPos.absoluteY(),
             radius=overlay.radius(),
             colour=overlay.colour())
         self._runScript(script)
@@ -729,9 +691,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         polyData = []
         for overlay in group.overlays():
             if isinstance(overlay, _HexOverlay):
+                hexPos = overlay.hexPosition()
                 hexData.append('[{x}, {y}, {radius}, "{colour}"]'.format(
-                    x=overlay.absoluteX(),
-                    y=overlay.absoluteY(),
+                    x=hexPos.absoluteX(),
+                    y=hexPos.absoluteY(),
                     radius=overlay.radius(),
                     colour=overlay.colour()))
             elif isinstance(overlay, _PolygonOverlay):

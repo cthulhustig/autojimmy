@@ -696,11 +696,7 @@ class SimulatorWindow(gui.WindowWidget):
             # Data is the new world object
             world: traveller.World = event.data()
             if self._currentWorld and self._currentWorld != world:
-                self._parsecsTravelled += travellermap.hexDistance(
-                    self._currentWorld.absoluteX(),
-                    self._currentWorld.absoluteY(),
-                    world.absoluteX(),
-                    world.absoluteY())
+                self._parsecsTravelled += self._currentWorld.parsecsTo(world)
             self._currentWorld = world
             self._jumpRoute.append(world)
             self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')

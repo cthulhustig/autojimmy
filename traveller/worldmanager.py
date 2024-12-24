@@ -135,7 +135,8 @@ class WorldManager(object):
                     subsectorList.append(subsector)
 
                 for world in sector.worlds():
-                    self._absoluteWorldMap[(world.absoluteX(), world.absoluteY())] = world
+                    hexPos = world.hexPosition()
+                    self._absoluteWorldMap[(hexPos.absoluteX(), hexPos.absoluteY())] = world
 
     def sectorName(
             self,
@@ -202,30 +203,26 @@ class WorldManager(object):
 
         return None
 
-    def worldByAbsolutePosition(
+    def worldByPosition(
             self,
-            absoluteX: int,
-            absoluteY: int
+            hexPos: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        return self._absoluteWorldMap.get((absoluteX, absoluteY))
+        return self._absoluteWorldMap.get(hexPos.absolute())
 
     def worldsInArea(
             self,
-            centerX: int,
-            centerY: int,
+            centerPos: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInArea(
-            centerX=centerX,
-            centerY=centerY,
+            centerPos=centerPos,
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
     def yieldWorldsInArea(
             self,
-            centerX: int,
-            centerY: int,
+            centerPos: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.Generator[traveller.World, None, None]:
@@ -233,6 +230,7 @@ class WorldManager(object):
         maxLength = (searchRadius * 2) + 1
         deltaLength = int(math.floor((maxLength - minLength) / 2))
 
+        centerX, centerY = centerPos.absolute()
         startX = centerX - searchRadius
         finishX = centerX + searchRadius
         startY = (centerY - searchRadius) + deltaLength

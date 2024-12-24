@@ -660,11 +660,7 @@ def _processRoute(
         while reachableWorldIndex <= finishWorldIndex:
             fromWorld = jumpRoute[reachableWorldIndex - 1]
             toWorld = jumpRoute[reachableWorldIndex]
-            parsecs = travellermap.hexDistance(
-                absoluteX1=fromWorld.absoluteX(),
-                absoluteY1=fromWorld.absoluteY(),
-                absoluteX2=toWorld.absoluteX(),
-                absoluteY2=toWorld.absoluteY())
+            parsecs = fromWorld.parsecsTo(toWorld)
             totalParsecs += parsecs
             if parsecsToNextWorld == None:
                 parsecsToNextWorld = parsecs

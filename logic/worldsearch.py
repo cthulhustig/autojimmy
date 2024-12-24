@@ -2,6 +2,7 @@ import app
 import enum
 import re
 import traveller
+import travellermap
 import typing
 
 class ComparisonFilterOperation(enum.Enum):
@@ -937,13 +938,11 @@ class WorldSearch(object):
 
     def searchArea(
             self,
-            centerX: int,
-            centerY: int,
+            centerPos: travellermap.HexPosition,
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
         return traveller.WorldManager.instance().worldsInArea(
-            centerX=centerX,
-            centerY=centerY,
+            centerPos=centerPos,
             searchRadius=searchRadius,
             worldFilterCallback=self.checkWorld)
 

@@ -295,8 +295,7 @@ def createWorldToolTip(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                absoluteX=world.absoluteX(),
-                absoluteY=world.absoluteY(),
+                hexPos=world.hexPosition(),
                 width=256,
                 height=256,
                 timeout=3)
@@ -319,12 +318,13 @@ def createWorldToolTip(
     #
     # World
     #
+    hexPos = world.hexPosition()
     toolTip += f'<h1>{html.escape(world.name())}</h1>'
 
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(world.subsectorName())}<li>'
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
-    toolTip += f'<li>Sector Position: ({world.sectorX()}, {world.sectorY()})<li>'
+    toolTip += f'<li>Sector Position: ({hexPos.sectorX()}, {hexPos.sectorY()})<li>'
 
     allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
     tagLevel = app.calculateAllegianceTagLevel(world)

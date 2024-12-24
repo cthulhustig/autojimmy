@@ -45,15 +45,11 @@ class World(object):
         # There is always 1 system world (the main world)
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
         self._bases = traveller.Bases(bases)
-        self._x = int(self._hex[:2])
-        self._y = int(self._hex[-2:])
-        self._sectorX = sectorX
-        self._sectorY = sectorY
-        self._absoluteX, self._absoluteY = travellermap.relativeHexToAbsoluteHex(
-            sectorX=self._sectorX,
-            sectorY=self._sectorY,
-            worldX=self._x,
-            worldY=self._y)
+        self._hexPosition = travellermap.HexPosition(
+            sectorX=sectorX,
+            sectorY=sectorY,
+            offsetX=int(self._hex[:2]),
+            offsetY=int(self._hex[-2:]))
 
     def name(self, includeSubsector: bool = False) -> str:
         if includeSubsector:
@@ -68,6 +64,9 @@ class World(object):
 
     def hex(self) -> str:
         return self._hex
+
+    def hexPosition(self) -> travellermap.HexPosition:
+        return self._hexPosition
 
     def sectorHex(self) -> str:
         return f'{self._sectorName} {self._hex}'
@@ -232,23 +231,15 @@ class World(object):
     def hasWildernessRefuelling(self) -> bool:
         return self.hasGasGiantRefuelling() or self.hasWaterRefuelling()
 
-    def x(self) -> int:
-        return self._x
-
-    def y(self) -> int:
-        return self._y
-
-    def sectorX(self) -> int:
-        return self._sectorX
-
-    def sectorY(self) -> int:
-        return self._sectorY
-
-    def absoluteX(self) -> int:
-        return self._absoluteX
-
-    def absoluteY(self) -> int:
-        return self._absoluteY
+    def parsecsTo(
+            self,
+            dest: typing.Union[
+                'World',
+                travellermap.HexPosition
+            ]
+            ) -> int:
+        return self._hexPosition.parsecsTo(
+            dest.hexPosition() if isinstance(dest, World) else dest)
 
     # Prevent deep and shallow copies of world objects some code
     # (specifically the jump route calculations) expect there to

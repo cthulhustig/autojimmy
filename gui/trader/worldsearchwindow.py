@@ -622,8 +622,7 @@ class WorldSearchWindow(gui.WindowWidget):
                         text='Select a world to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
-                    centerX=world.absoluteX(),
-                    centerY=world.absoluteY(),
+                    centerPos=world.hexPosition(),
                     searchRadius=self._worldRadiusSearchWidget.radius())
         except Exception as ex:
             message = 'Failed to find nearby worlds'

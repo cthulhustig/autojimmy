@@ -10,9 +10,12 @@ class Subsector(object):
         self._name = name
         self._worlds = worlds
 
+        # TODO: This map should probably use HexPosition as the key
         self._worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
         for world in self._worlds:
-            self._worldPositionMap[(world.x(), world.y())] = world
+            hexPos = world.hexPosition()
+            _, _, offsetX, offsetY = hexPos.relative()
+            self._worldPositionMap[(offsetX, offsetY)] = world
 
     def name(self) -> str:
         return self._name
@@ -63,7 +66,9 @@ class Sector(object):
             subsectorWorlds[subsectorName] = []
 
         for world in self._worlds:
-            self._worldPositionMap[(world.x(), world.y())] = world
+            hexPos = world.hexPosition()
+            _, _, offsetX, offsetY = hexPos.relative()
+            self._worldPositionMap[(offsetX, offsetY)] = world
 
             assert(world.subsectorName() in subsectorWorlds)
             worldList = subsectorWorlds[world.subsectorName()]

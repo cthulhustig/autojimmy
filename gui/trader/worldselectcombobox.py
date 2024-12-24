@@ -4,6 +4,7 @@ import html
 import logging
 import math
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -206,8 +207,9 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         world = self.currentWorld()
         stream.writeBool(world != None)
         if world:
-            stream.writeInt32(world.absoluteX())
-            stream.writeInt32(world.absoluteY())
+            worldPos = world.hexPosition()
+            stream.writeInt32(worldPos.absoluteX())
+            stream.writeInt32(worldPos.absoluteY())
 
         return state
 
@@ -223,12 +225,11 @@ class WorldSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            absoluteX = stream.readInt32()
-            absoluteY = stream.readInt32()
+            hexPos = travellermap.HexPosition(
+                absoluteX=stream.readInt32(),
+                absoluteY=stream.readInt32())
             try:
-                world = traveller.WorldManager.instance().worldByAbsolutePosition(
-                    absoluteX=absoluteX,
-                    absoluteY=absoluteY)
+                world = traveller.WorldManager.instance().worldByPosition(hexPos=hexPos)
             except Exception as ex:
                 logging.error(
                     'Failed to restore WorldSearchComboBox selected world',

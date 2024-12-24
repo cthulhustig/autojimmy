@@ -38,11 +38,7 @@ class JumpRoute(object):
                 break
             fromWorld = self._worldList[index]
             toWorld = self._worldList[index + 1]
-            parsecs += travellermap.hexDistance(
-                fromWorld.absoluteX(),
-                fromWorld.absoluteY(),
-                toWorld.absoluteX(),
-                toWorld.absoluteY())
+            parsecs += fromWorld.parsecsTo(toWorld)
         return parsecs
 
     def totalParsecs(self) -> int:

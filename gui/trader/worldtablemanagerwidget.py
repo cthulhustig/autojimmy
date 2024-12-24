@@ -294,8 +294,7 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
 
         try:
             worlds = traveller.WorldManager.instance().worldsInArea(
-                centerX=searchWorld.absoluteX(),
-                centerY=searchWorld.absoluteY(),
+                centerPos=searchWorld.hexPosition(),
                 searchRadius=searchRadius)
         except Exception as ex:
             message = 'Failed to find nearby worlds'

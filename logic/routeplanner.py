@@ -273,11 +273,7 @@ class RoutePlanner(object):
             # be better to jump to a world where fuel is cheaper to first,
             # whereas adding an extra jump will never result in a shorter
             # distance or time.
-            distance = travellermap.hexDistance(
-                startWorld.absoluteX(),
-                startWorld.absoluteY(),
-                finishWorld.absoluteX(),
-                finishWorld.absoluteY())
+            distance = startWorld.parsecsTo(finishWorld)
             if distance <= shipJumpRating:
                 if not pitCostCalculator:
                     # Fuel based routing is disabled so use ships fuel capacity
@@ -318,11 +314,7 @@ class RoutePlanner(object):
         for index in range(sequenceLength - 1):
             currentWorld = worldSequence[index]
             targetWorld = worldSequence[index + 1]
-            minRouteParsecs += travellermap.hexDistance(
-                absoluteX1=currentWorld.absoluteX(),
-                absoluteY1=currentWorld.absoluteY(),
-                absoluteX2=targetWorld.absoluteX(),
-                absoluteY2=targetWorld.absoluteY())
+            minRouteParsecs += currentWorld.parsecsTo(targetWorld)
 
         startToCurrentParsecs = 0
         for index in range(sequenceLength):
@@ -331,11 +323,7 @@ class RoutePlanner(object):
             if index != finishWorldIndex:
                 currentWorld = worldSequence[index]
                 targetWorld = worldSequence[index + 1]
-                startToCurrentParsecs += travellermap.hexDistance(
-                    absoluteX1=currentWorld.absoluteX(),
-                    absoluteY1=currentWorld.absoluteY(),
-                    absoluteX2=targetWorld.absoluteX(),
-                    absoluteY2=targetWorld.absoluteY())
+                startToCurrentParsecs += currentWorld.parsecsTo(targetWorld)
 
         # Add the starting node to the open list
         fuelParsecs = math.floor(maxStartingFuel / shipFuelPerParsec)
@@ -351,11 +339,7 @@ class RoutePlanner(object):
         heapq.heappush(openQueue, startNode)
 
         targetWorld = worldSequence[1]
-        currentToTargetParsecs = travellermap.hexDistance(
-            absoluteX1=startWorld.absoluteX(),
-            absoluteY1=startWorld.absoluteY(),
-            absoluteX2=targetWorld.absoluteX(),
-            absoluteY2=targetWorld.absoluteY())
+        currentToTargetParsecs = startWorld.parsecsTo(targetWorld)
         targetStates[1][1][startWorld] = (0, fuelParsecs, currentToTargetParsecs)
 
         # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
@@ -422,11 +406,7 @@ class RoutePlanner(object):
                     max(currentNode.fuelParsecs(), currentWorldBestFuelParsecs)
 
                 if currentToTargetParsecs == None:
-                    currentToTargetParsecs = travellermap.hexDistance(
-                        absoluteX1=currentWorld.absoluteX(),
-                        absoluteY1=currentWorld.absoluteY(),
-                        absoluteX2=targetWorld.absoluteX(),
-                        absoluteY2=targetWorld.absoluteY())
+                    currentToTargetParsecs = currentWorld.parsecsTo(targetWorld)
 
                 targetWorldData[currentWorld] = \
                     (currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs)
@@ -457,19 +437,14 @@ class RoutePlanner(object):
                 searchRadius = shipJumpRating
 
             adjacentIterator = worldManager.yieldWorldsInArea(
-                centerX=currentWorld.absoluteX(),
-                centerY=currentWorld.absoluteY(),
+                centerPos=currentWorld.hexPosition(),
                 searchRadius=searchRadius)
             possibleRoutes = 0
             addedRoutes = 0
             for adjacentWorld in adjacentIterator:
                 possibleRoutes += 1
 
-                adjacentParsecs = travellermap.hexDistance(
-                    absoluteX1=currentWorld.absoluteX(),
-                    absoluteY1=currentWorld.absoluteY(),
-                    absoluteX2=adjacentWorld.absoluteX(),
-                    absoluteY2=adjacentWorld.absoluteY())
+                adjacentParsecs = currentWorld.parsecsTo(adjacentWorld)
 
                 # Work out the max amount of fuel the ship can have in the tank after completing
                 # the jump from the current world to the adjacent world.
@@ -549,11 +524,7 @@ class RoutePlanner(object):
                         max(fuelParsecs, adjacentWorldBestFuelParsecs)
 
                     if adjacentToTargetMinParsecs == None:
-                        adjacentToTargetMinParsecs = travellermap.hexDistance(
-                            absoluteX1=adjacentWorld.absoluteX(),
-                            absoluteY1=adjacentWorld.absoluteY(),
-                            absoluteX2=targetWorld.absoluteX(),
-                            absoluteY2=targetWorld.absoluteY())
+                        adjacentToTargetMinParsecs = adjacentWorld.parsecsTo(targetWorld)
 
                     targetWorldData[adjacentWorld] = \
                         (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs)

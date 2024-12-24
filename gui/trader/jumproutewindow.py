@@ -1519,8 +1519,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if showWorldTaggingOverlay:
             try:
                 worlds = traveller.WorldManager.instance().worldsInArea(
-                    centerX=startWorld.absoluteX(),
-                    centerY=startWorld.absoluteY(),
+                    centerPos=startWorld.hexPosition(),
                     searchRadius=jumpRating)
             except Exception as ex:
                 logging.warning(
