@@ -27,7 +27,7 @@ HexWidthOffset = math.tan(math.pi / 6) / 4 / ParsecScaleX
 #            +-*------------*-+
 
 # Implementation taken from https://travellermap.com/doc/api
-def relativeHexToAbsoluteHex(
+def relativeSpaceToAbsoluteSpace(
         pos: typing.Tuple[int, int, int, int],
         ) -> typing.Tuple[int, int]:
     absoluteX = (pos[0] - ReferenceSectorX) * \
@@ -40,7 +40,7 @@ def relativeHexToAbsoluteHex(
 
 # Reimplementation of code from Traveller Map source code.
 # CoordinatesToLocation in Astrometrics.cs
-def absoluteHexToRelativeHex(
+def absoluteSpaceToRelativeSpace(
         pos: typing.Tuple[int, int]
         ) -> typing.Tuple[int, int, int, int]:
     absoluteX = pos[0] + (ReferenceHexX - 1)
@@ -51,7 +51,7 @@ def absoluteHexToRelativeHex(
     offsetY = absoluteY - (sectorY * SectorHeight) + 1
     return (sectorX, sectorY, offsetX, offsetY)
 
-def absoluteHexToMapSpace(
+def absoluteSpaceToMapSpace(
         pos: typing.Tuple[int, int]
         ) -> typing.Tuple[float, float]:
     ix = pos[0] - 0.5
@@ -60,10 +60,10 @@ def absoluteHexToMapSpace(
     y = iy * -ParsecScaleY
     return x, y
 
-def relativeToMapSpace(
+def relativeSpaceToMapSpace(
         pos: typing.Tuple[int, int, int, int]
         ) -> typing.Tuple[float, float]:
-    return absoluteHexToMapSpace(pos=relativeHexToAbsoluteHex(pos=pos))
+    return absoluteSpaceToMapSpace(pos=relativeSpaceToAbsoluteSpace(pos=pos))
 
 def mapSpaceToTileSpace(
         pos: typing.Tuple[float, float],
@@ -261,8 +261,8 @@ def relativeRadiusHexes(
         yield center
         return
 
-    absoluteCenter = relativeHexToAbsoluteHex(pos=center)
-    current = absoluteHexToRelativeHex(
+    absoluteCenter = relativeSpaceToAbsoluteSpace(pos=center)
+    current = absoluteSpaceToRelativeSpace(
         pos=(absoluteCenter[0], absoluteCenter[1] + radius))
 
     for _ in range(radius):
@@ -373,7 +373,7 @@ class HexPosition(object):
     def mapSpace(self) -> typing.Tuple[float, float]:
         if not self._absolute:
             self._calculateAbsolute()
-        return absoluteHexToMapSpace(pos=self._absolute)
+        return absoluteSpaceToMapSpace(pos=self._absolute)
 
     def parsecsTo(
             self,
@@ -422,7 +422,7 @@ class HexPosition(object):
             radius -= 1
 
     def _calculateRelative(self) -> None:
-        self._relative = absoluteHexToRelativeHex(pos=self._absolute)
+        self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)
 
     def _calculateAbsolute(self) -> None:
-        self._absolute = relativeHexToAbsoluteHex(pos=self._relative)
+        self._absolute = relativeSpaceToAbsoluteSpace(pos=self._relative)

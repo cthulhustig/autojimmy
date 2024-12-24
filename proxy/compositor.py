@@ -197,10 +197,10 @@ class _CustomSector(object):
 
         absoluteRect = travellermap.sectorBoundingRect(
             sector=position)
-        mapSpaceUL = travellermap.absoluteHexToMapSpace((
+        mapSpaceUL = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0],
             absoluteRect[1] + absoluteRect[3]))
-        mapSpaceBR = travellermap.absoluteHexToMapSpace((
+        mapSpaceBR = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0] + absoluteRect[2],
             absoluteRect[1]))
         self._boundingRect = (
@@ -211,10 +211,10 @@ class _CustomSector(object):
 
         absoluteRect = travellermap.sectorInteriorRect(
             sector=position)
-        mapSpaceUL = travellermap.absoluteHexToMapSpace((
+        mapSpaceUL = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0],
             absoluteRect[1] + absoluteRect[3]))
-        mapSpaceBR = travellermap.absoluteHexToMapSpace((
+        mapSpaceBR = travellermap.absoluteSpaceToMapSpace((
             absoluteRect[0] + absoluteRect[2],
             absoluteRect[1]))
         self._interiorRect = (
