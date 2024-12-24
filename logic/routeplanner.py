@@ -152,20 +152,22 @@ class RoutePlanner(object):
             # The world sequence is a single world so it's the "jump route"
             return worldSequence
 
-        worldList = self._calculateRoute(
-            worldSequence=worldSequence,
-            shipTonnage=shipTonnage,
-            shipJumpRating=shipJumpRating,
-            shipFuelCapacity=shipFuelCapacity,
-            shipCurrentFuel=shipCurrentFuel,
-            shipFuelPerParsec=shipFuelPerParsec,
-            jumpCostCalculator=jumpCostCalculator,
-            pitCostCalculator=pitCostCalculator,
-            worldFilterCallback=worldFilterCallback,
-            progressCallback=progressCallback,
-            isCancelledCallback=isCancelledCallback)
-        if not worldList:
-            return None # No route found
+        # TODO: Remove debug timer
+        with common.DebugTimer('calculateSequenceRoute'):
+            worldList = self._calculateRoute(
+                worldSequence=worldSequence,
+                shipTonnage=shipTonnage,
+                shipJumpRating=shipJumpRating,
+                shipFuelCapacity=shipFuelCapacity,
+                shipCurrentFuel=shipCurrentFuel,
+                shipFuelPerParsec=shipFuelPerParsec,
+                jumpCostCalculator=jumpCostCalculator,
+                pitCostCalculator=pitCostCalculator,
+                worldFilterCallback=worldFilterCallback,
+                progressCallback=progressCallback,
+                isCancelledCallback=isCancelledCallback)
+            if not worldList:
+                return None # No route found
 
         return logic.JumpRoute(worldList)
 
@@ -436,12 +438,14 @@ class RoutePlanner(object):
                 # rating
                 searchRadius = shipJumpRating
 
-            adjacentIterator = worldManager.yieldWorldsInArea(
+            adjacentIterator = self._yieldNearbyHexes(
                 centerPos=currentWorld.hexPosition(),
-                searchRadius=searchRadius)
+                radius=searchRadius,
+                worldManager=worldManager,
+                includeDeadSpace=False)
             possibleRoutes = 0
             addedRoutes = 0
-            for adjacentWorld in adjacentIterator:
+            for hexPos, adjacentWorld in adjacentIterator:
                 possibleRoutes += 1
 
                 adjacentParsecs = currentWorld.parsecsTo(adjacentWorld)
@@ -550,6 +554,27 @@ class RoutePlanner(object):
             closedRoutes += possibleRoutes - addedRoutes
 
         return None # No route found
+
+    def _yieldNearbyHexes(
+            self,
+            centerPos: travellermap.HexPosition,
+            radius: int,
+            worldManager: traveller.WorldManager,
+            includeDeadSpace: bool = False
+            ) -> typing.Generator[
+                typing.Tuple[
+                    travellermap.HexPosition,
+                    typing.Optional[traveller.World]
+                ],
+                None,
+                None]:
+        if includeDeadSpace:
+            for hexPos in centerPos.yieldRadiusHexes(radius=radius):
+                world = worldManager.worldByPosition(hexPos=hexPos)
+                yield (hexPos, world)
+        else:
+            for world in worldManager.yieldWorldsInArea(centerPos=centerPos, searchRadius=radius):
+                yield (world.hexPosition(), world)
 
     # TODO: This will need updated to return a list of nodes rather than worlds
     def _finaliseRoute(

@@ -219,75 +219,75 @@ def neighbourRelativeHex(
 
     return (sectorX, sectorY, hexX, hexY)
 
-def absoluteRadiusHexes(
+def yieldAbsoluteRadiusHexes(
         center: typing.Tuple[int, int],
-        radius: int
+        radius: int,
+        includeInterior: bool = True
         ) -> typing.Generator[typing.Tuple[int, int], None, None]:
     if radius == 0:
         yield center
         return
 
-    current = (center[0], center[1] + radius)
+    if includeInterior:
+        minLength = radius + 1
+        maxLength = (radius * 2) + 1
+        deltaLength = int(math.floor((maxLength - minLength) / 2))
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.UpperRight)
-        yield current
+        centerX = center[0]
+        centerY = center[1]
+        startX = centerX - radius
+        finishX = centerX + radius
+        startY = (centerY - radius) + deltaLength
+        finishY = (centerY + radius) - deltaLength
+        if (startX & 0b1) != 0:
+            startY += 1
+            if (radius & 0b1) != 0:
+                finishY -= 1
+        else:
+            if (radius & 0b1) != 0:
+                startY += 1
+            finishY -= 1
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.Upper)
-        yield current
+        for x in range(startX, finishX + 1):
+            if (x & 0b1) != 0:
+                if x <= centerX:
+                    startY -= 1
+                else:
+                    finishY -= 1
+            else:
+                if x <= centerX:
+                    finishY += 1
+                else:
+                    startY += 1
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.UpperLeft)
-        yield current
+            for y in range(startY, finishY + 1):
+                yield (x, y)
+    else:
+        current = (center[0], center[1] + radius)
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.LowerLeft)
-        yield current
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.UpperRight)
+            yield current
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.Lower)
-        yield current
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.Upper)
+            yield current
 
-    for _ in range(radius):
-        current = neighbourAbsoluteHex(current, NeighbourDirection.LowerRight)
-        yield current
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.UpperLeft)
+            yield current
 
-def relativeRadiusHexes(
-        center: typing.Tuple[int, int, int, int],
-        radius: int
-        ) -> typing.Generator[typing.Tuple[int, int, int, int], None, None]:
-    if radius == 0:
-        yield center
-        return
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.LowerLeft)
+            yield current
 
-    absoluteCenter = relativeSpaceToAbsoluteSpace(pos=center)
-    current = absoluteSpaceToRelativeSpace(
-        pos=(absoluteCenter[0], absoluteCenter[1] + radius))
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.Lower)
+            yield current
 
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.UpperRight)
-        yield current
-
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.Upper)
-        yield current
-
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.UpperLeft)
-        yield current
-
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.LowerLeft)
-        yield current
-
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.Lower)
-        yield current
-
-    for _ in range(radius):
-        current = neighbourRelativeHex(current, NeighbourDirection.LowerRight)
-        yield current
+        for _ in range(radius):
+            current = neighbourAbsoluteHex(current, NeighbourDirection.LowerRight)
+            yield current
 
 class HexPosition(object):
     def __init__(
@@ -405,21 +405,17 @@ class HexPosition(object):
     def yieldRadiusHexes(
             self,
             radius: int,
-            maxOnly: bool = False
+            includeInterior: bool = True
             ) -> typing.Generator['HexPosition', None, None]:
         if not self._absolute:
             self._calculateAbsolute()
 
-        while radius >= 0:
-            generator = absoluteRadiusHexes(
-                center=self._absolute,
-                radius=radius)
-            for absoluteX, absoluteY in generator:
-                yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
-
-            if maxOnly:
-                return
-            radius -= 1
+        generator = yieldAbsoluteRadiusHexes(
+            center=self._absolute,
+            radius=radius,
+            includeInterior=includeInterior)
+        for absoluteX, absoluteY in generator:
+            yield HexPosition(absoluteX=absoluteX, absoluteY=absoluteY)
 
     def _calculateRelative(self) -> None:
         self._relative = absoluteSpaceToRelativeSpace(pos=self._absolute)

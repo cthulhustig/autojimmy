@@ -475,7 +475,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             ) -> str:
         radiusHexes = list(centerPos.yieldRadiusHexes(
             radius=radius,
-            maxOnly=True))
+            includeInterior=False))
         return self.createHexBorderOverlayGroup(
             hexes=radiusHexes,
             fillColour=fillColour,
