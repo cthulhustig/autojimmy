@@ -205,24 +205,24 @@ class WorldManager(object):
 
     def worldByPosition(
             self,
-            hexPos: travellermap.HexPosition
+            pos: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        return self._absoluteWorldMap.get(hexPos.absolute())
+        return self._absoluteWorldMap.get(pos.absolute())
 
     def worldsInArea(
             self,
-            centerPos: travellermap.HexPosition,
+            center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.List[traveller.World]:
         return list(self.yieldWorldsInArea(
-            centerPos=centerPos,
+            center=center,
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
     def yieldWorldsInArea(
             self,
-            centerPos: travellermap.HexPosition,
+            center: travellermap.HexPosition,
             searchRadius: int,
             worldFilterCallback: typing.Callable[[traveller.World], bool] = None
             ) -> typing.Generator[traveller.World, None, None]:
@@ -230,7 +230,7 @@ class WorldManager(object):
         maxLength = (searchRadius * 2) + 1
         deltaLength = int(math.floor((maxLength - minLength) / 2))
 
-        centerX, centerY = centerPos.absolute()
+        centerX, centerY = center.absolute()
         startX = centerX - searchRadius
         finishX = centerX + searchRadius
         startY = (centerY - searchRadius) + deltaLength

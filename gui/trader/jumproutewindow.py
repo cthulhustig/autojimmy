@@ -79,7 +79,7 @@ def _formatBerthingTypeString(
     return 'No Star Port'
 
 # TODO: This will need updated to allow avoiding dead space sectors
-class _WorldFilter(object):
+class _HexFilter(logic.HexFilterInterface):
     def __init__(
             self,
             avoidWorlds: typing.List[traveller.World],
@@ -102,7 +102,16 @@ class _WorldFilter(object):
             self._avoidFilter = None
 
     # IMPORTANT: This will be called from the route planner job thread
-    def filter(self, world : traveller.World) -> bool:
+    def match(
+            self,
+            hex: travellermap.HexPosition,
+            world: typing.Optional[traveller.World]
+            ) -> bool:
+        # TODO: This will need updated for avoiding dead space hexes
+        if not world:
+            # No world so nothing to filter
+            return True
+
         if self._avoidWorlds and world in self._avoidWorlds:
             # Filter out worlds on the avoid list
             return False
@@ -1003,7 +1012,7 @@ class JumpRouteWindow(gui.WindowWidget):
         else:
             assert(False) # I've missed an enum
 
-        worldFilter = _WorldFilter(
+        hexFilter = _HexFilter(
             avoidWorlds=self._avoidWorldsWidget.worlds(),
             avoidFilters=self._avoidWorldsFilterWidget.filters(),
             avoidFilterLogic=self._avoidWorldsFilterWidget.filterLogic())
@@ -1019,7 +1028,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                worldFilterCallback=worldFilter.filter,
+                hexFilter=hexFilter,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
@@ -1519,7 +1528,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if showWorldTaggingOverlay:
             try:
                 worlds = traveller.WorldManager.instance().worldsInArea(
-                    centerPos=startWorld.hexPosition(),
+                    center=startWorld.hexPosition(),
                     searchRadius=jumpRating)
             except Exception as ex:
                 logging.warning(

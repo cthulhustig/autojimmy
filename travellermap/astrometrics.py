@@ -330,6 +330,9 @@ class HexPosition(object):
             return thisX < otherX
         return super().__lt__(other)
 
+    def __hash__(self) -> int:
+        return hash(self.absolute())
+
     def absoluteX(self) -> int:
         if not self._absolute:
             self._calculateAbsolute()

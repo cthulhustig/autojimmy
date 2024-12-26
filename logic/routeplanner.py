@@ -12,7 +12,8 @@ class _RouteNode(object):
     def __init__(
             self,
             targetIndex: int,
-            world: traveller.World,
+            hex: travellermap.HexPosition,
+            world: typing.Optional[traveller.World],
             gScore: float,
             fScore: float,
             isFuelWorld: bool,
@@ -21,6 +22,7 @@ class _RouteNode(object):
             parent: typing.Optional['_RouteNode'] = None,
             ) -> None:
         self._targetIndex = targetIndex
+        self._hex = hex
         self._world = world
         self._gScore = gScore
         self._fScore = fScore
@@ -32,7 +34,10 @@ class _RouteNode(object):
     def targetIndex(self) -> int:
         return self._targetIndex
 
-    def world(self) -> traveller.World:
+    def hex(self) -> travellermap.HexPosition:
+        return self._hex
+
+    def world(self) -> typing.Optional[traveller.World]:
         return self._world
 
     def gScore(self) -> float:
@@ -73,15 +78,18 @@ class _RouteNode(object):
 class JumpCostCalculatorInterface(object):
     def initialise(
             self,
-            startWorld: traveller.World
+            startHex: travellermap.HexPosition,
+            startWorld: typing.Optional[traveller.World]
             ) -> typing.Any:
         raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement initialise')
 
     # Calculate the cost of the jump from the current world to the next world
     def calculate(
             self,
-            currentWorld: traveller.World,
-            nextWorld: traveller.World,
+            currentHex: travellermap.HexPosition,
+            currentWorld: typing.Optional[traveller.World],
+            nextHex: travellermap.HexPosition,
+            nextWorld: typing.Optional[traveller.World],
             jumpParsecs: int,
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -99,6 +107,14 @@ class JumpCostCalculatorInterface(object):
             ) -> float:
         raise RuntimeError(f'{type(self)} is derived from JumpCostCalculatorInterface so must implement estimate')
 
+class HexFilterInterface(object):
+    def match(
+            self,
+            hex: travellermap.HexPosition,
+            world: typing.Optional[traveller.World]
+            ) -> float:
+        raise RuntimeError(f'{type(self)} is derived from HexFilterInterface so must implement match')
+
 class RoutePlanner(object):
     def calculateDirectRoute(
             self,
@@ -111,7 +127,8 @@ class RoutePlanner(object):
             jumpCostCalculator: JumpCostCalculatorInterface,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
-            worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
+            hexFilter: typing.Optional[HexFilterInterface] = None,
+            includeDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -124,7 +141,8 @@ class RoutePlanner(object):
             shipFuelPerParsec=shipFuelPerParsec,
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
-            worldFilterCallback=worldFilterCallback,
+            hexFilter=hexFilter,
+            includeDeadSpace=includeDeadSpace,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
         if not worldList:
@@ -142,7 +160,8 @@ class RoutePlanner(object):
             jumpCostCalculator: JumpCostCalculatorInterface,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
-            worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
+            hexFilter: typing.Optional[HexFilterInterface] = None,
+            includeDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -163,7 +182,8 @@ class RoutePlanner(object):
                 shipFuelPerParsec=shipFuelPerParsec,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                worldFilterCallback=worldFilterCallback,
+                hexFilter=hexFilter,
+                includeDeadSpace=includeDeadSpace,
                 progressCallback=progressCallback,
                 isCancelledCallback=isCancelledCallback)
             if not worldList:
@@ -201,17 +221,17 @@ class RoutePlanner(object):
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
             shipCurrentFuel: typing.Union[float, common.ScalarCalculation],
-            # TODO: The cost calculator will need updated to deal with nodes rather than worlds
-            # It might make sense for them to take either and handle the difference internally
             jumpCostCalculator: JumpCostCalculatorInterface,
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
-            # TODO: The world filter will need updated to deal with nodes rather than worlds.
-            # It might make sense for them to take either and handle the difference internally
-            worldFilterCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
+            hexFilter: typing.Optional[HexFilterInterface] = None,
+            includeDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[typing.List[traveller.World]]:
+        # TODO: This hack shouldn't be needed when I switch to having a list of positions as the input
+        hexSequence = [world.hexPosition() for world in worldSequence]
+
         # If the jump rating is a calculation covert it to it's raw value as we don't need to
         # track calculations here
         if isinstance(shipJumpRating, common.ScalarCalculation):
@@ -234,31 +254,37 @@ class RoutePlanner(object):
         if shipParsecsWithoutRefuelling < 1:
             raise ValueError('Ship\'s fuel capacity doesn\'t allow for jump-1')
 
-        sequenceLength = len(worldSequence)
+        # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
+        worldManager = traveller.WorldManager.instance()
+
+        sequenceLength = len(hexSequence)
         assert(sequenceLength >= 2)
         finishWorldIndex = sequenceLength - 1
-        startWorld = worldSequence[0]
-        finishWorld = worldSequence[finishWorldIndex]
 
+        startHex = hexSequence[0]
+        startWorld = worldManager.worldByPosition(pos=startHex)
+
+        finishHex = hexSequence[finishWorldIndex]
+        finishWorld = worldManager.worldByPosition(pos=finishHex)
+
+        startWorldFuelType = None
         if pitCostCalculator:
-            # TODO: This will need updated to only check for fuel type if
-            # the start node contains a world. The rest of the code is still
-            # valid
-            startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
+            if startWorld:
+                startWorldFuelType = pitCostCalculator.refuellingType(world=startWorld)
             isCurrentFuelWorld = startWorldFuelType != None
             maxStartingFuel = shipFuelCapacity if isCurrentFuelWorld else shipCurrentFuel
         else:
             # Fuel based route calculation is disabled so use the max capacity as the max starting
             # fuel. The intended effect is to have it possible to jump to any world within jump
             # range (fuel capacity allowing).
-            startWorldFuelType = None
             isCurrentFuelWorld = False
             maxStartingFuel = shipFuelCapacity
 
         # Handle early outs when dealing with direct world to world routes
         if sequenceLength == 2:
             # Handle corner case where the start and finish are the same world
-            if startWorld == finishWorld:
+            if startHex == finishHex:
+                # TODO: This should return a hex position
                 return [startWorld]
 
             # A _LOT_ of the time we're asked to calculate a route the finish
@@ -275,7 +301,7 @@ class RoutePlanner(object):
             # be better to jump to a world where fuel is cheaper to first,
             # whereas adding an extra jump will never result in a shorter
             # distance or time.
-            distance = startWorld.parsecsTo(finishWorld)
+            distance = startHex.parsecsTo(finishHex)
             if distance <= shipJumpRating:
                 if not pitCostCalculator:
                     # Fuel based routing is disabled so use ships fuel capacity
@@ -298,54 +324,55 @@ class RoutePlanner(object):
                     # TODO: This will need updated to return a list of 2 nodes
                     return [startWorld, finishWorld]
 
-        # TODO: This typing stuff will need updated to deal with nodes
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
             typing.Tuple[
-                typing.Set[traveller.World], # Closed worlds
-                typing.Dict[traveller.World, typing.Tuple[
-                    float, # Best gScore for a route reaching this world
-                    int, # Best remaining fuel for a route reaching this world
-                    int]], # Parsecs from world to target (note target not necessarily finish)
+                typing.Set[travellermap.HexPosition], # Closed hexes
+                typing.Dict[
+                    travellermap.HexPosition,
+                    typing.Tuple[
+                        float, # Best gScore for a route reaching this hex
+                        int, # Best remaining fuel for a route reaching this hex
+                        int # Parsecs from hex to target (note target not necessarily finish)
+                    ]],
                 int # Min parsecs from target to finish (going via all waypoints)
                 ]] = []
-        # TODO: This will need updated to be a set of nodes
-        excludedWorlds: typing.Set[traveller.World] = set()
+        excludedHexes: typing.Set[travellermap.HexPosition] = set()
 
         minRouteParsecs = 0
         for index in range(sequenceLength - 1):
-            currentWorld = worldSequence[index]
-            targetWorld = worldSequence[index + 1]
-            minRouteParsecs += currentWorld.parsecsTo(targetWorld)
+            currentHex = hexSequence[index]
+            targetHex = hexSequence[index + 1]
+            minRouteParsecs += currentHex.parsecsTo(targetHex)
 
         startToCurrentParsecs = 0
         for index in range(sequenceLength):
             targetStates.append((set(), dict(), minRouteParsecs - startToCurrentParsecs))
 
             if index != finishWorldIndex:
-                currentWorld = worldSequence[index]
-                targetWorld = worldSequence[index + 1]
-                startToCurrentParsecs += currentWorld.parsecsTo(targetWorld)
+                currentHex = hexSequence[index]
+                targetHex = hexSequence[index + 1]
+                startToCurrentParsecs += currentHex.parsecsTo(targetHex)
 
         # Add the starting node to the open list
         fuelParsecs = math.floor(maxStartingFuel / shipFuelPerParsec)
         startNode = _RouteNode(
             targetIndex=1,
+            hex=startHex,
             world=startWorld,
             gScore=0,
             fScore=0,
             isFuelWorld=isCurrentFuelWorld,
             fuelParsecs=fuelParsecs,
-            costContext=jumpCostCalculator.initialise(startWorld=startWorld),
+            costContext=jumpCostCalculator.initialise(
+                startHex=startHex,
+                startWorld=startWorld),
             parent=None)
         heapq.heappush(openQueue, startNode)
 
-        targetWorld = worldSequence[1]
-        currentToTargetParsecs = startWorld.parsecsTo(targetWorld)
-        targetStates[1][1][startWorld] = (0, fuelParsecs, currentToTargetParsecs)
-
-        # Take a local reference to the WorldManager singleton to avoid repeated calls to instance()
-        worldManager = traveller.WorldManager.instance()
+        targetHex = hexSequence[1]
+        currentToTargetParsecs = startHex.parsecsTo(targetHex)
+        targetStates[1][1][startHex] = (0, fuelParsecs, currentToTargetParsecs)
 
         # Process nodes while the open list is not empty
         closedRoutes = 0
@@ -355,15 +382,15 @@ class RoutePlanner(object):
 
             # current node = node from open list with the lowest cost
             currentNode: _RouteNode = heapq.heappop(openQueue)
-            currentWorld = currentNode.world()
+            currentHex = currentNode.hex()
             targetIndex = currentNode.targetIndex()
-            targetWorld = worldSequence[targetIndex]
+            targetHex = hexSequence[targetIndex]
 
-            targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
-            targetClosedSet.add(currentWorld)
+            targetClosedSet, targetHexData, targetToFinishMinParsecs = targetStates[targetIndex]
+            targetClosedSet.add(currentHex)
 
             # if current node = goal node then path complete
-            if currentWorld == targetWorld:
+            if currentHex == targetHex:
                 # We've reached the target world for this segment of the jump route
                 if targetIndex == finishWorldIndex:
                     # We've found the lowest cost route that goes through all the worlds in the sequence.
@@ -378,9 +405,9 @@ class RoutePlanner(object):
                 # world, then continue to processing this node.
                 while True:
                     targetIndex += 1
-                    newTargetWorld = worldSequence[targetIndex]
-                    if newTargetWorld != targetWorld:
-                        targetWorld = newTargetWorld
+                    newTargetHex = hexSequence[targetIndex]
+                    if newTargetHex != targetHex:
+                        targetHex = newTargetHex
                         break
 
                     # There is a run of waypoints for the target world. If we've reached the end
@@ -395,23 +422,23 @@ class RoutePlanner(object):
 
                 # Update the best scores for entry for the current world
                 # NOTE: It's important to get the state for the new target
-                targetClosedSet, targetWorldData, targetToFinishMinParsecs = targetStates[targetIndex]
-                currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs = \
-                    targetWorldData.get(currentWorld, (None, None, None))
+                targetClosedSet, targetHexData, targetToFinishMinParsecs = targetStates[targetIndex]
+                currentHexBestScore, currentHexBestFuelParsecs, currentToTargetParsecs = \
+                    targetHexData.get(currentHex, (None, None, None))
 
-                currentWorldBestScore = currentNode.gScore() \
-                    if currentWorldBestScore == None else \
-                    min(currentNode.gScore(), currentWorldBestScore)
+                currentHexBestScore = currentNode.gScore() \
+                    if currentHexBestScore == None else \
+                    min(currentNode.gScore(), currentHexBestScore)
 
-                currentWorldBestFuelParsecs = currentNode.fuelParsecs() \
-                    if currentWorldBestFuelParsecs == None else \
-                    max(currentNode.fuelParsecs(), currentWorldBestFuelParsecs)
+                currentHexBestFuelParsecs = currentNode.fuelParsecs() \
+                    if currentHexBestFuelParsecs == None else \
+                    max(currentNode.fuelParsecs(), currentHexBestFuelParsecs)
 
                 if currentToTargetParsecs == None:
-                    currentToTargetParsecs = currentWorld.parsecsTo(targetWorld)
+                    currentToTargetParsecs = currentHex.parsecsTo(targetHex)
 
-                targetWorldData[currentWorld] = \
-                    (currentWorldBestScore, currentWorldBestFuelParsecs, currentToTargetParsecs)
+                targetHexData[currentHex] = \
+                    (currentHexBestScore, currentHexBestFuelParsecs, currentToTargetParsecs)
 
             if progressCallback:
                 progressCallback(closedRoutes, False) # Search isn't finished
@@ -438,47 +465,50 @@ class RoutePlanner(object):
                 # rating
                 searchRadius = shipJumpRating
 
-            adjacentIterator = self._yieldNearbyHexes(
-                centerPos=currentWorld.hexPosition(),
+            nearbyIterator = self._yieldNearbyHexes(
+                centerHex=currentHex,
                 radius=searchRadius,
                 worldManager=worldManager,
-                includeDeadSpace=False)
+                includeDeadSpace=includeDeadSpace)
             possibleRoutes = 0
             addedRoutes = 0
-            for hexPos, adjacentWorld in adjacentIterator:
+            for nearbyHex, nearbyWorld in nearbyIterator:
                 possibleRoutes += 1
 
-                adjacentParsecs = currentWorld.parsecsTo(adjacentWorld)
+                nearbyParsecs = currentHex.parsecsTo(nearbyHex)
 
                 # Work out the max amount of fuel the ship can have in the tank after completing
                 # the jump from the current world to the adjacent world.
                 if pitCostCalculator:
-                    isAdjacentFuelWorld = pitCostCalculator.refuellingType(
-                        world=adjacentWorld) != None
+                    nearbyRefuellingType = None
+                    if nearbyWorld:
+                        nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld)
+                    isNearbyFuelWorld = nearbyRefuellingType != None
+
                     if currentNode.isFuelWorld():
-                        fuelParsecs = shipParsecsWithoutRefuelling - adjacentParsecs
+                        fuelParsecs = shipParsecsWithoutRefuelling - nearbyParsecs
                     else:
-                        fuelParsecs = currentNode.fuelParsecs() - adjacentParsecs
+                        fuelParsecs = currentNode.fuelParsecs() - nearbyParsecs
 
                     if fuelParsecs < 0:
                         # If the fuel parsecs is negative it means, when following this route, there
                         # is no way to take on enough fuel to reach the adjacent world
                         continue
 
-                    if (not isAdjacentFuelWorld) and (fuelParsecs < 1) and (adjacentWorld != finishWorld):
+                    if (not isNearbyFuelWorld) and (fuelParsecs < 1) and (nearbyHex != finishHex):
                         # The adjacent world isn't a fuel world and the ship won't have enough
                         # fuel to jump on so there is no point continuing the route
                         continue
                 else:
-                    isAdjacentFuelWorld = False
+                    isNearbyFuelWorld = False
                     # Fuel based route calculation is disabled. These values have no effect but
                     # must be set to something
                     fuelParsecs = shipJumpRating
 
-                adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs = \
-                    targetWorldData.get(adjacentWorld, (None, None, None))
+                nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs = \
+                    targetHexData.get(nearbyHex, (None, None, None))
 
-                # Skip worlds that have already been reached with a BETTER cost unless they this
+                # Skip worlds that have already been reached with a BETTER cost unless this
                 # route means the ship will have have more fuel for the onward journey. If the
                 # adjacent world is a previously processed world but we've found a route with
                 # better fuelling potential, the adjacent world will be added to queue with
@@ -489,62 +519,67 @@ class RoutePlanner(object):
                 # In the case that fuel based routing is disabled, the new fuel parsecs and best
                 # fuel parsecs will always be the ship jump rating (i.e. the same) so the closed
                 # worlds set will always be checked.
-                if (adjacentWorldBestFuelParsecs != None) and (fuelParsecs <= adjacentWorldBestFuelParsecs) and \
-                        (adjacentWorld in targetClosedSet):
+                if (nearbyHexBestFuelParsecs != None) and \
+                        (fuelParsecs <= nearbyHexBestFuelParsecs) and \
+                        (nearbyHex in targetClosedSet):
                     continue
 
                 # If the adjacent world isn't the current target world, check if it's been excluded
-                if worldFilterCallback and (adjacentWorld != targetWorld):
-                    if adjacentWorld in excludedWorlds:
+                if hexFilter and (nearbyHex != targetHex):
+                    if nearbyHex in excludedHexes:
                         continue # World has already been excluded
 
                     # Apply custom world filter. This may be expensive so should be applied after lower
                     # cost filters.
-                    if not worldFilterCallback(adjacentWorld):
-                        excludedWorlds.add(adjacentWorld)
+                    if not hexFilter.match(hex=nearbyHex, world=nearbyWorld):
+                        # Hex should be ignored
+                        excludedHexes.add(nearbyHex)
                         continue
 
                 # Calculate the cost of jumping to the adjacent world
                 jumpCost, costContext = jumpCostCalculator.calculate(
-                    currentWorld,
-                    adjacentWorld,
-                    adjacentParsecs,
-                    currentNode.costContext())
+                    currentHex=currentHex,
+                    currentWorld=currentNode.world(),
+                    nextHex=nearbyHex,
+                    nextWorld=nearbyWorld,
+                    jumpParsecs=nearbyParsecs,
+                    costContext=currentNode.costContext())
                 if jumpCost == None:
                     continue
 
                 tentativeScore = currentNode.gScore() + jumpCost
-                isBetter = (adjacentWorldBestScore == None) or \
-                    (tentativeScore < adjacentWorldBestScore) or \
-                    (fuelParsecs > adjacentWorldBestFuelParsecs)
+                isBetter = (nearbyHexBestScore == None) or \
+                    (tentativeScore < nearbyHexBestScore) or \
+                    (fuelParsecs > nearbyHexBestFuelParsecs)
 
                 if isBetter:
-                    adjacentWorldBestScore = tentativeScore \
-                        if adjacentWorldBestScore == None else \
-                        min(tentativeScore, adjacentWorldBestScore)
+                    nearbyHexBestScore = tentativeScore \
+                        if nearbyHexBestScore == None else \
+                        min(tentativeScore, nearbyHexBestScore)
 
-                    adjacentWorldBestFuelParsecs = fuelParsecs \
-                        if adjacentWorldBestFuelParsecs == None else \
-                        max(fuelParsecs, adjacentWorldBestFuelParsecs)
+                    nearbyHexBestFuelParsecs = fuelParsecs \
+                        if nearbyHexBestFuelParsecs == None else \
+                        max(fuelParsecs, nearbyHexBestFuelParsecs)
 
-                    if adjacentToTargetMinParsecs == None:
-                        adjacentToTargetMinParsecs = adjacentWorld.parsecsTo(targetWorld)
+                    if nearbyToTargetMinParsecs == None:
+                        nearbyToTargetMinParsecs = nearbyHex.parsecsTo(targetHex)
 
-                    targetWorldData[adjacentWorld] = \
-                        (adjacentWorldBestScore, adjacentWorldBestFuelParsecs, adjacentToTargetMinParsecs)
+                    targetHexData[nearbyHex] = \
+                        (nearbyHexBestScore, nearbyHexBestFuelParsecs, nearbyToTargetMinParsecs)
 
                     # For estimating the cost of the remaining portion of the
                     # route, use min distance from the adjacent world to the
                     # finish going via all remaining waypoints
                     remainingEstimate = jumpCostCalculator.estimate(
-                        parsecsToFinish=adjacentToTargetMinParsecs + targetToFinishMinParsecs)
+                        parsecsToFinish=nearbyToTargetMinParsecs + targetToFinishMinParsecs)
 
                     newNode = _RouteNode(
                         targetIndex=targetIndex,
-                        world=adjacentWorld,
+                        hex=nearbyHex,
+                        world=nearbyWorld,
                         gScore=tentativeScore,
                         fScore=tentativeScore + remainingEstimate,
-                        isFuelWorld=isAdjacentFuelWorld,
+                        isFuelWorld=isNearbyFuelWorld,
                         fuelParsecs=fuelParsecs,
                         costContext=costContext,
                         parent=currentNode)
@@ -557,7 +592,7 @@ class RoutePlanner(object):
 
     def _yieldNearbyHexes(
             self,
-            centerPos: travellermap.HexPosition,
+            centerHex: travellermap.HexPosition,
             radius: int,
             worldManager: traveller.WorldManager,
             includeDeadSpace: bool = False
@@ -569,12 +604,12 @@ class RoutePlanner(object):
                 None,
                 None]:
         if includeDeadSpace:
-            for hexPos in centerPos.yieldRadiusHexes(radius=radius):
-                world = worldManager.worldByPosition(hexPos=hexPos)
-                yield (hexPos, world)
+            for nearbyHex in centerHex.yieldRadiusHexes(radius=radius):
+                world = worldManager.worldByPosition(pos=nearbyHex)
+                yield (nearbyHex, world)
         else:
-            for world in worldManager.yieldWorldsInArea(centerPos=centerPos, searchRadius=radius):
-                yield (world.hexPosition(), world)
+            for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
+                yield (nearbyWorld.hexPosition(), nearbyWorld)
 
     # TODO: This will need updated to return a list of nodes rather than worlds
     def _finaliseRoute(

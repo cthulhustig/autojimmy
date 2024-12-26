@@ -22,14 +22,18 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startWorld: traveller.World
+            startHex: travellermap.HexPosition,
+            startWorld: typing.Optional[traveller.World]
             ) -> typing.Any:
         return None
 
+    # TODO: This might need updated for dead space routing
     def calculate(
             self,
-            currentWorld: traveller.World,
-            nextWorld: traveller.World,
+            currentHex: travellermap.HexPosition,
+            currentWorld: typing.Optional[traveller.World],
+            nextHex: travellermap.HexPosition,
+            nextWorld: typing.Optional[traveller.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -58,14 +62,18 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startWorld: traveller.World
+            startHex: travellermap.HexPosition,
+            startWorld: typing.Optional[traveller.World]
             ) -> typing.Any:
         return None
 
+    # TODO: This might need updated for dead space routing
     def calculate(
             self,
-            currentWorld: traveller.World,
-            nextWorld: traveller.World,
+            currentHex: travellermap.HexPosition,
+            currentWorld: typing.Optional[traveller.World],
+            nextHex: travellermap.HexPosition,
+            nextWorld: typing.Optional[traveller.World],
             jumpParsecs: int, # Distance from current to next world
             costContext: typing.Any
             ) -> typing.Tuple[
@@ -145,15 +153,17 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
     def initialise(
             self,
-            startWorld: traveller.World
+            startHex: travellermap.HexPosition,
+            startWorld: typing.Optional[traveller.World]
             ) -> typing.Any:
         if not self._pitCostCalculator:
             # Fuel based route calculation is disabled so the context isn't used
             return None
 
-        refuellingType = self._pitCostCalculator.refuellingType(world=startWorld)
-        fuelCostPerTon = self._pitCostCalculator.fuelCost(world=startWorld)
-        berthingCost = self._pitCostCalculator.berthingCost(world=startWorld)
+        if startWorld:
+            refuellingType = self._pitCostCalculator.refuellingType(world=startWorld)
+            fuelCostPerTon = self._pitCostCalculator.fuelCost(world=startWorld)
+            berthingCost = self._pitCostCalculator.berthingCost(world=startWorld)
 
         costContext = CheapestRouteCostCalculator._CostContext(
             currentFuel=self._shipCurrentFuel,
@@ -165,10 +175,13 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         return costContext
 
+    # TODO: This might need updated for dead space routing
     def calculate(
             self,
-            currentWorld: traveller.World,
-            nextWorld: traveller.World,
+            currentHex: travellermap.HexPosition,
+            currentWorld: typing.Optional[traveller.World],
+            nextHex: travellermap.HexPosition,
+            nextWorld: typing.Optional[traveller.World],
             jumpParsecs: int,
             costContext: typing.Optional[_CostContext]
             ) -> typing.Tuple[

@@ -229,7 +229,7 @@ class WorldSelectComboBox(gui.ComboBoxEx):
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
             try:
-                world = traveller.WorldManager.instance().worldByPosition(hexPos=hexPos)
+                world = traveller.WorldManager.instance().worldByPosition(pos=hexPos)
             except Exception as ex:
                 logging.error(
                     'Failed to restore WorldSearchComboBox selected world',

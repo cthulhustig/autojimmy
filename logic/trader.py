@@ -389,7 +389,7 @@ class Trader(object):
                 shipCurrentFuel=shipStartingFuel,
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
-                worldFilterCallback=None,
+                hexFilter=None,
                 isCancelledCallback=self._isCancelledCallback)
             if not jumpRoute:
                 if self._isCancelledCallback and self._isCancelledCallback():

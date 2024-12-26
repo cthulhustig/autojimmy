@@ -79,7 +79,7 @@ class PitStopCostCalculator(object):
     def refuellingType(
             self,
             world: traveller.World
-            ) -> RefuellingType:
+            ) -> typing.Optional[RefuellingType]:
         if world in self._worldFuelTypes:
             return self._worldFuelTypes[world]
 

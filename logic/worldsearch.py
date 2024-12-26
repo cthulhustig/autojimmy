@@ -884,7 +884,7 @@ class WorldSearch(object):
     def checkWorld(
             self,
             world: traveller.World
-            ) -> bool:
+            ) -> bool: # # True if matched, False if ignored
         if not self._filters:
             return True # No filter always matches the world
 
@@ -942,7 +942,7 @@ class WorldSearch(object):
             searchRadius: int
             ) -> typing.Iterable[traveller.World]:
         return traveller.WorldManager.instance().worldsInArea(
-            centerPos=centerPos,
+            center=centerPos,
             searchRadius=searchRadius,
             worldFilterCallback=self.checkWorld)
 
