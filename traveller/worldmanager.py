@@ -220,6 +220,19 @@ class WorldManager(object):
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
+    def positionToSectorHex(
+            self,
+            pos: travellermap.HexPosition
+            ) -> str:
+        sectorX, sectorY, offsetX, offsetY = pos.relative()
+        sector = self._sectorPositionMap.get((sectorX, sectorY))
+        if not sector:
+            raise RuntimeError('No sector located at {sectorX}, {sectorY}')
+        return traveller.formatSectorHex(
+            sectorName=sector.name(),
+            worldX=offsetX,
+            worldY=offsetY)
+
     def yieldWorldsInArea(
             self,
             center: travellermap.HexPosition,

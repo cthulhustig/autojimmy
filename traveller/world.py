@@ -65,6 +65,8 @@ class World(object):
     def hex(self) -> str:
         return self._hex
 
+    # TODO: I don't like the fact it's easy to accidentally use hex instead
+    # of hexPosition due to autocomplete. Possibly rename this to position?
     def hexPosition(self) -> travellermap.HexPosition:
         return self._hexPosition
 

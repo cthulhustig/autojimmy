@@ -17,7 +17,7 @@ class RoutePlannerJob(QtCore.QThread):
     def __init__(
             self,
             parent: QtCore.QObject,
-            worldSequence: typing.List[traveller.World],
+            hexSequence: typing.Sequence[traveller.World],
             shipTonnage: int,
             shipJumpRating: int,
             shipFuelCapacity: int,
@@ -35,7 +35,7 @@ class RoutePlannerJob(QtCore.QThread):
         # to prevent issues if they are modified while the thread is running. The
         # exception to this is world objects as they are thread safe (although lists
         # holding them do need to be copied)
-        self._worldSequence = worldSequence.copy()
+        self._hexSequence = list(hexSequence)
         self._shipTonnage = shipTonnage
         self._shipJumpRating = shipJumpRating
         self._shipFuelCapacity = shipFuelCapacity
@@ -77,7 +77,7 @@ class RoutePlannerJob(QtCore.QThread):
     def run(self) -> None:
         try:
             jumpRoute = self._planner.calculateSequenceRoute(
-                worldSequence=self._worldSequence,
+                hexSequence=self._hexSequence,
                 shipTonnage=self._shipTonnage,
                 shipJumpRating=self._shipJumpRating,
                 shipFuelCapacity=self._shipFuelCapacity,

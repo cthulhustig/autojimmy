@@ -203,7 +203,7 @@ class Simulator(object):
                     self._actualLogisticsCost += fuelCost
 
             self._jumpRouteIndex += 1
-            if self._jumpRouteIndex < jumpRoute.worldCount():
+            if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 # TODO: This will need updating as indexing into a jump route will return a
                 # node rather than a world

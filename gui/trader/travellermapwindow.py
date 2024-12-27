@@ -64,10 +64,9 @@ class TravellerMapWindow(gui.WindowWidget):
             highlightHex=highlightHex,
             highlightRadius=highlightRadius)
 
-    # TODO: This will need updated to allow jump routes to contain dead space.
     def showJumpRoute(
             self,
-            jumpRoute: typing.Iterable[traveller.World],
+            jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
             zoomToArea: bool = True,
             clearOverlays: bool = True,

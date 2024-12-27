@@ -229,6 +229,10 @@ class _RefuellingPlanTable(gui.WorldTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
+# TODO: This will need updated to allow you to select dead space hexes as the start/finish
+# but only if dead space routing is enabled. This leads to the gotcha of what to do if you have
+# a dead space node selected and turn of dead space routing. I think it should set the start and
+# finish selection to empty
 class _StartFinishWorldsSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showWorldRequested = QtCore.pyqtSignal(traveller.World)
@@ -990,9 +994,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
-        worldList = [startWorld]
-        worldList.extend(self._waypointWorldsWidget.worlds())
-        worldList.append(finishWorld)
+        # TODO: This will need updated to account for start/finish/waypoints
+        # being in dead space
+        hexSequence = [startWorld.hexPosition()]
+        hexSequence.extend([world.hexPosition() for world in self._waypointWorldsWidget.worlds()])
+        hexSequence.append(finishWorld.hexPosition())
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
@@ -1020,7 +1026,7 @@ class JumpRouteWindow(gui.WindowWidget):
         try:
             self._jumpRouteJob = jobs.RoutePlannerJob(
                 parent=self,
-                worldSequence=worldList,
+                hexSequence=hexSequence,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -1252,7 +1258,7 @@ class JumpRouteWindow(gui.WindowWidget):
         action.triggered.connect(lambda: self._showWorldInTravellerMap(finishWorld))
         action.setEnabled(finishWorld != None)
         action = menu.addAction('Jump Route')
-        action.triggered.connect(lambda: self._showWorldsInTravellerMap(self._jumpRoute))
+        action.triggered.connect(lambda: self._showJumpRouteInTravellerMap())
         action.setEnabled(self._jumpRoute != None)
 
         menu = QtWidgets.QMenu('Export', self)
@@ -1297,12 +1303,10 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
             return None
 
-        # TODO: This will need updated to get the world for the node
-        # and use it for the comparison
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
-        for node in range(self._jumpRoute.worldCount()):
-            if self._jumpRoute[node] == hoverWorld:
-                jumpNodes[node] = None
+        for nodeIndex in range(self._jumpRoute.nodeCount()):
+            if self._jumpRoute.world(nodeIndex) == hoverWorld:
+                jumpNodes[nodeIndex] = None
 
         if self._routeLogistics:
             refuellingPlan = self._routeLogistics.refuellingPlan()
@@ -1312,12 +1316,12 @@ class JumpRouteWindow(gui.WindowWidget):
                         jumpNodes[pitStop.jumpIndex()] = pitStop
 
         toolTip = ''
-        for node, pitStop in jumpNodes.items():
-            toolTip += f'<li><nobr>Route World: {node + 1}</nobr></li>'
+        for nodeIndex, pitStop in jumpNodes.items():
+            toolTip += f'<li><nobr>Route World: {nodeIndex + 1}</nobr></li>'
 
-            if node != 0:
+            if nodeIndex != 0:
                 toolTip += '<li><nobr>Route Distance: {} parsecs</nobr></li>'.format(
-                    self._jumpRoute.nodeParsecs(node=node))
+                    self._jumpRoute.nodeParsecs(index=nodeIndex))
 
             if not pitStop:
                 continue # Nothing mor to do
@@ -1477,6 +1481,13 @@ class JumpRouteWindow(gui.WindowWidget):
                 parent=self,
                 text=message,
                 exception=ex)
+
+    def _showJumpRouteInTravellerMap(self) -> None:
+        if not self._jumpRoute:
+            return
+
+        worlds = [world for _, world in self._jumpRoute if world]
+        self._showWorldsInTravellerMap(worlds=worlds)
 
     def _showWorldsInTravellerMap(
             self,
@@ -1662,7 +1673,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # TODO: This will need updated as the jump route table will be dealing
         # with nodes
-        self._jumpRouteTable.addWorlds(worlds=self._jumpRoute)
+        self._jumpRouteTable.addWorlds(
+            worlds=[world for _, world in self._jumpRoute if world])
         self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
         self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
 
@@ -1693,13 +1705,19 @@ class JumpRouteWindow(gui.WindowWidget):
                         parent=self,
                         text='Unable to calculate logistics for jump route')
             except Exception as ex:
-                # TODO: This will need updated to account for the fact the start/finish world
-                # could be dead space
-                startWorld = self._jumpRoute.startWorld()
-                finishWorld = self._jumpRoute.finishWorld()
+                startHex, startWorld = self._jumpRoute.startNode()
+                finishHex, finishWorld = self._jumpRoute.finishNode()
+                startString = \
+                    startWorld.name(includeSubsector=True) \
+                    if startWorld else \
+                    traveller.WorldManager.instance().positionToSectorHex(pos=startHex)
+                finishString = \
+                    finishWorld.name(includeSubsector=True) \
+                    if finishWorld else \
+                    traveller.WorldManager.instance().positionToSectorHex(pos=finishHex)
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                    start=startWorld.name(includeSubsector=True),
-                    finish=finishWorld.name(includeSubsector=True))
+                    start=startString,
+                    finish=finishString)
                 logging.error(message, exc_info=ex)
                 gui.MessageBoxEx.critical(
                     parent=self,
@@ -1728,7 +1746,7 @@ class JumpRouteWindow(gui.WindowWidget):
         self._zoomToJumpRoute = False
 
     def _generateRequiredBerthingIndices(self) -> typing.Optional[typing.Set[int]]:
-        if not self._jumpRoute or self._jumpRoute.worldCount() < 1:
+        if not self._jumpRoute or self._jumpRoute.nodeCount() < 1:
             return None
 
         # The jump route planner will reduce sequences of the same waypoint world to a single
@@ -1737,35 +1755,46 @@ class JumpRouteWindow(gui.WindowWidget):
         # waypoint list match the start world and/or worlds at the end of the list match the
         # finish world.
 
-        waypoints = []
+        waypoints: typing.List[typing.Tuple[
+            travellermap.HexPosition,
+            bool # Mandatory berthing required
+            ]] = []
 
-        # TODO: This will need updated to account for the fact the start/finish world
-        # could be in dead space
-        waypoints.append((self._jumpRoute.startWorld(), self._includeStartWorldBerthingCheckBox.isChecked()))
+        startHex, startWorld = self._jumpRoute.startNode()
+        waypoints.append((
+            startHex,
+            startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
 
+        # TODO: This will need updated to account for the waypoint table can contain dead
+        # space hexes
         for row in range(self._waypointWorldTable.rowCount()):
-            world = self._waypointWorldTable.world(row)
-            berthingRequired = self._waypointWorldTable.isBerthingChecked(row)
-            waypoints.append((world, berthingRequired))
+            waypointWorld = self._waypointWorldTable.world(row)
+            waypoints.append((
+                waypointWorld.hexPosition(),
+                waypointWorld and self._waypointWorldTable.isBerthingChecked(row)))
 
-        waypoints.append((self._jumpRoute.finishWorld(), self._includeFinishWorldBerthingCheckBox.isChecked()))
+        finishHex, finishWorld = self._jumpRoute.finishNode()
+        waypoints.append((
+            finishHex,
+            finishWorld and self._includeFinishWorldBerthingCheckBox.isChecked()))
 
         requiredBerthingIndices = set()
 
         for waypointIndex in range(len(waypoints) - 1, 0, -1):
             if waypoints[waypointIndex][0] == waypoints[waypointIndex - 1][0]:
-                # This is a sequence of the same world so remove the last instance in the sequence
+                # This is a sequence of the same hex so remove the last instance in the sequence
                 if waypoints[waypointIndex][1]:
                     # Berthing is required if any of the instances of the world in the sequence are
                     # marked as requiring berthing
+                    # TODO: This doesn't feel right, should probably check it
                     waypoints[waypointIndex - 1] = waypoints[waypointIndex]
                 waypoints.pop(waypointIndex)
 
         waypointIndex = 0
-        for jumpIndex in range(self._jumpRoute.worldCount()):
+        for jumpIndex in range(self._jumpRoute.nodeCount()):
             # TODO: This will need updated to account for the fact indexing
             # the jump route will get a node not a world
-            if self._jumpRoute[jumpIndex] == waypoints[waypointIndex][0]:
+            if self._jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
                 # We've found the current waypoint on the jump route
                 if waypoints[waypointIndex][1]:
                     requiredBerthingIndices.add(jumpIndex)

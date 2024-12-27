@@ -380,8 +380,8 @@ class Trader(object):
 
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
-                startWorld=purchaseWorld,
-                finishWorld=saleWorld,
+                startHex=purchaseWorld.hexPosition(),
+                finishHex=saleWorld.hexPosition(),
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
                 shipFuelCapacity=shipFuelCapacity,
@@ -412,7 +412,7 @@ class Trader(object):
                 if includePurchaseWorldBerthing:
                     requiredBerthingIndices.add(0)
                 if includeSaleWorldBerthing:
-                    requiredBerthingIndices.add(jumpRoute.worldCount() - 1)
+                    requiredBerthingIndices.add(jumpRoute.nodeCount() - 1)
 
             routeLogistics = logic.calculateRouteLogistics(
                 jumpRoute=jumpRoute,

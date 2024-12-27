@@ -570,15 +570,23 @@ def createWorldToolTip(
 
 def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     jumpRoute = routeLogistics.jumpRoute()
-    startWorld = jumpRoute.startWorld()
-    finishWorld = jumpRoute.finishWorld()
+    startHex, startWorld = jumpRoute.startNode()
+    finishHex, finishWorld = jumpRoute.finishNode()
+    startString = html.escape(
+        startWorld.name(includeSubsector=True)
+        if startWorld else
+        traveller.WorldManager.instance().positionToSectorHex(pos=startHex))
+    finishString = html.escape(
+        finishWorld.name(includeSubsector=True)
+        if finishWorld else
+        traveller.WorldManager.instance().positionToSectorHex(pos=finishHex))
 
     toolTip = '<html>'
 
-    if startWorld != finishWorld:
-        toolTip += f'<b>{html.escape(startWorld.name())} ({html.escape(startWorld.subsectorName())}) to {html.escape(finishWorld.name())} ({html.escape(finishWorld.subsectorName())})</b>'
+    if startHex != finishHex:
+        toolTip += f'<b>{startString} to {finishString})</b>'
     else:
-        toolTip += f'<b>{html.escape(startWorld.name())} ({html.escape(startWorld.subsectorName())})</b>'
+        toolTip += f'<b>{startString})</b>'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0;">'
 
     toolTip += '<li>Distance:</li>'
@@ -632,14 +640,20 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
         for pitStop in refuellingPlan:
             pitStopMap[pitStop.jumpIndex()] = pitStop
 
-    # TODO: This will need updated to account for the fact the jump route
-    # will contain nodes not worlds
-    for index, world in enumerate(jumpRoute):
-        tagColour = app.tagColour(app.calculateWorldTagLevel(world))
+    for index, (nodeHex, world) in enumerate(jumpRoute):
+        hexString = html.escape(
+            f'World: {world.name(includeSubsector=True)}'
+            if world else
+            f'Dead Space: {traveller.WorldManager.instance().positionToSectorHex(pos=nodeHex)}')
+
+        tagColour = app.tagColour(
+            app.calculateWorldTagLevel(world)
+            if world else
+            app.TagLevel.Danger) # Dead space is tagged as danger
         style = ""
         if tagColour:
             style = f'background-color:#{tagColour}'
-        toolTip += f'<li><span style="{style}">{html.escape(world.name(includeSubsector=True))}<span></li>'
+        toolTip += f'<li><span style="{style}">{hexString}<span></li>'
 
         if index in pitStopMap:
             pitStop: logic.PitStop = pitStopMap[index]

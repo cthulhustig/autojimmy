@@ -6,8 +6,6 @@ import traveller
 import travellermap
 import typing
 
-# TODO: This will need updated to allow jump routes to pass through
-# dead space.
 class _RouteNode(object):
     def __init__(
             self,
@@ -118,8 +116,8 @@ class HexFilterInterface(object):
 class RoutePlanner(object):
     def calculateDirectRoute(
             self,
-            startWorld: traveller.World,
-            finishWorld: traveller.World,
+            startHex: travellermap.HexPosition,
+            finishHex: travellermap.HexPosition,
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -132,8 +130,8 @@ class RoutePlanner(object):
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
-        worldList = self._calculateRoute(
-            worldSequence=[startWorld, finishWorld],
+        return self._calculateRoute(
+            hexSequence=[startHex, finishHex],
             shipTonnage=shipTonnage,
             shipJumpRating=shipJumpRating,
             shipFuelCapacity=shipFuelCapacity,
@@ -145,14 +143,10 @@ class RoutePlanner(object):
             includeDeadSpace=includeDeadSpace,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
-        if not worldList:
-            return None # No route found
-
-        return logic.JumpRoute(worldList)
 
     def calculateSequenceRoute(
             self,
-            worldSequence: typing.List[traveller.World],
+            hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -165,16 +159,10 @@ class RoutePlanner(object):
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
-        if not worldSequence:
-            None
-        if len(worldSequence) < 2:
-            # The world sequence is a single world so it's the "jump route"
-            return worldSequence
-
         # TODO: Remove debug timer
         with common.DebugTimer('calculateSequenceRoute'):
-            worldList = self._calculateRoute(
-                worldSequence=worldSequence,
+            return self._calculateRoute(
+                hexSequence=hexSequence,
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
                 shipFuelCapacity=shipFuelCapacity,
@@ -186,10 +174,6 @@ class RoutePlanner(object):
                 includeDeadSpace=includeDeadSpace,
                 progressCallback=progressCallback,
                 isCancelledCallback=isCancelledCallback)
-            if not worldList:
-                return None # No route found
-
-        return logic.JumpRoute(worldList)
 
     # Reimplementation of code from Traveller Map source code (FindPath in PathFinder.cs). This in
     # turn was based on code from AI for Game Developers, Bourg & Seemann, O'Reilly Media, Inc.,
@@ -200,23 +184,9 @@ class RoutePlanner(object):
     # specified refuelling strategy. Not that this on it's own doesn't make any claims about how
     # cost effective the route will be (compared to other possible routes), that will be determined
     # by the supplied jump cost calculator.
-    # TODO: Algorithm wise I think jumping through dead space should be _relatively_ simple. If
-    # dead space routing is enabled, whenever yieldWorldsInArea is currently being called I need
-    # to also process the hexes that form a ring round the current position with a radius of the
-    # ship jump rating (limited by available fuel and distance to target world). The thinking
-    # being there is no reason to jump less than that.
-    # - IMPORTANT: This ring logic is slightly flawed. The one reason there could be a benefit
-    #   for looking at dead space that is closer than this outer ring is if I allow the user
-    #   to specify dead space hexes to avoid and one of those hexes is on the ring. In that case
-    #   we may need to check closer dead space hexes as they may give a better route
-    # - IMPORTANT: This thinking may be even more flawed. If I'm saying the costing function will
-    #   be passed nodes rather than worlds and can return whatever cost it wants then it could
-    #   return different costs for different dead space hexes
     def _calculateRoute(
             self,
-            # TODO: This will need updated to take a list of nodes. It should probably also be
-            # be an abstract type rather than a List
-            worldSequence: typing.List[traveller.World],
+            hexSequence: typing.Sequence[travellermap.HexPosition],
             shipTonnage: typing.Union[int, common.ScalarCalculation],
             shipJumpRating: typing.Union[int, common.ScalarCalculation],
             shipFuelCapacity: typing.Union[int, common.ScalarCalculation],
@@ -228,10 +198,7 @@ class RoutePlanner(object):
             includeDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
-            ) -> typing.Optional[typing.List[traveller.World]]:
-        # TODO: This hack shouldn't be needed when I switch to having a list of positions as the input
-        hexSequence = [world.hexPosition() for world in worldSequence]
-
+            ) -> typing.Optional[logic.JumpRoute]:
         # If the jump rating is a calculation covert it to it's raw value as we don't need to
         # track calculations here
         if isinstance(shipJumpRating, common.ScalarCalculation):
@@ -284,8 +251,7 @@ class RoutePlanner(object):
         if sequenceLength == 2:
             # Handle corner case where the start and finish are the same world
             if startHex == finishHex:
-                # TODO: This should return a hex position
-                return [startWorld]
+                return logic.JumpRoute([(startHex, startWorld)])
 
             # A _LOT_ of the time we're asked to calculate a route the finish
             # world is actually within one jump of the start world (as finished
@@ -321,8 +287,9 @@ class RoutePlanner(object):
 
                 fuelToFinish = distance * shipFuelPerParsec
                 if fuelToFinish <= availableFuel:
-                    # TODO: This will need updated to return a list of 2 nodes
-                    return [startWorld, finishWorld]
+                    return logic.JumpRoute([
+                        (startHex, startWorld),
+                        (finishHex, finishWorld)])
 
         openQueue: typing.List[_RouteNode] = []
         targetStates: typing.List[
@@ -480,9 +447,11 @@ class RoutePlanner(object):
                 # Work out the max amount of fuel the ship can have in the tank after completing
                 # the jump from the current world to the adjacent world.
                 if pitCostCalculator:
-                    nearbyRefuellingType = None
-                    if nearbyWorld:
-                        nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld)
+                    nearbyRefuellingType = \
+                        nearbyRefuellingType = pitCostCalculator.refuellingType(world=nearbyWorld) \
+                        if nearbyWorld else \
+                        None
+
                     isNearbyFuelWorld = nearbyRefuellingType != None
 
                     if currentNode.isFuelWorld():
@@ -604,33 +573,88 @@ class RoutePlanner(object):
                 None,
                 None]:
         if includeDeadSpace:
-            for nearbyHex in centerHex.yieldRadiusHexes(radius=radius):
+            # TODO: There might be an optimisation here. Generally it only makes sense
+            # to jump into dead space if the target world is in dead space or if it's a
+            # direct line to the target world or a potential next world. This means it
+            # only makes sense to jump as far as possible due to the fact there is no
+            # (reliable) refuelling in dead space so there would be no benefit from
+            # jumping less than the max distance as it makes the most efficient
+            # progress to the destination.
+            # In theory this could be achieved using the world manager yieldWorldsInArea
+            # to find the worlds in the area then just processing the ring of hexes
+            # defined by the max distance the current fuel will allow the ship to jump,
+            # limited by the current distance to the target world (which I think is
+            # just the passed in radius), with any hexes that have already been processed
+            # by the yieldWorldsInArea call being ignoring.
+            # The advantage of this is empty hexes within the jump radius won't have any
+            # further processing.
+            # The downside is there is one situation where the general rule doesn't apply
+            # and that's if the user has set an avoid hex (or hexes) that is on the ring
+            # defined by the jump rating. In that situation it may be possible to find
+            # a better route by 'jumping short' so that you can jump over this avoid hex.
+            # I think it would be possible to handle this case if I moved checking for
+            # avoid worlds/hexes into this function. If I did that it should just be a case
+            # of doing the yieldWorldsInArea call, then using yieldRadiusHexes with include
+            # interior set to False to get the ring. Ignoring hexes that were already
+            # processed due to the yieldRadiusHexes _and_ doing the avoid world/hex for
+            # the hex. Any hex that passed these checks would be yielded to the caller. After
+            # the hexes in the ring have been processed it would check if any hexes in the
+            # ring were ignored due to the avoid check, if none were then it's finished
+            # processing, if there were any hexes ignored then it would repeat the ring
+            # processing for jump rating - 1, this would repeat until the jump route rating
+            # was 0 or no hexes in the ring were skipped due to the avoid check.
+            # When it comes to the yieldWorldsInArea call I would also have to do avoid
+            # world filtering there before yielding the hex/world to the caller.
+            # Importantly when later processing rings and checking if a hex was avoided due
+            # to the yieldWorldsInArea check, it should only ignore the hex if it was NOT
+            # avoided (i.e. it has already been yielded to the caller). If it contained
+            # a world that was avoided it should still be counted as avoided when when
+            # checking if any hexes in the ring were avoided. This may mean ding the avoid
+            # check twice for those hexes, once when it was found by yieldWorldsInArea and
+            # once when it was found in the ring, there should be ways to avoid this but
+            # it may not be worth it (would require testing)
+            # When it comes to all this checking I think I want to check if the hex was
+            # already processed by the yieldWorldsInArea call first then the avoid check.
+            # This should allow the ring check to maintain a flag which is initialised to
+            # false and set to true if the ring hex is no yielded to the caller.
+            #
+            # This whole thing might be simpler (and even more optimised) if I move worlds
+            # completely out of the core route planning logic and just having them in the
+            # jump/pitstop cost calculators and hex filter. They would just be passed hex
+            # positions and do the lookups as needed.
+            # There would probably still need to be some world logic as I think I'd still
+            # want the JumpRoute to be be passed the worlds at construction but it should
+            # be possible to leave that until the end when turning the final route into
+            # a jump route
+            # The advantage to this is it should remove a load of code handling worlds.
+            # The downside of his approach is it _might_ increase the number of worldByPosition
+            # calls that get made by the calculators and filter.
+            for nearbyHex in centerHex.yieldRadiusHexes(radius=radius, includeInterior=True):
                 world = worldManager.worldByPosition(pos=nearbyHex)
                 yield (nearbyHex, world)
         else:
             for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
                 yield (nearbyWorld.hexPosition(), nearbyWorld)
 
-    # TODO: This will need updated to return a list of nodes rather than worlds
     def _finaliseRoute(
             self,
             finishNode: _RouteNode,
             progressCount: int,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
-            ) -> typing.List[traveller.World]:
+            ) -> logic.JumpRoute:
         # We've found the lowest cost route that goes through all the worlds in the sequence.
         # Process it to generate the final list of route worlds then bail
         path = []
 
         node = finishNode
-        path.append(node.world())
+        path.append((node.hex(), node.world()))
 
         while node.parent():
             node = node.parent()
-            path.append(node.world())
+            path.append((node.hex(), node.world()))
         path.reverse()
 
         if progressCallback:
             progressCallback(progressCount, True) # Search is finished
 
-        return path
+        return logic.JumpRoute(path)

@@ -216,7 +216,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         self._loadMap()
 
-    # TODO: Will probably need a centerOnHexes variant
     def centerOnWorld(
             self,
             world: traveller.World,
@@ -236,59 +235,18 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def centerOnWorlds(
             self,
-            worlds: typing.Iterable[traveller.World],
+            worlds: typing.Collection[traveller.World],
             clearOverlays: bool = False,
             highlightWorlds: bool = False,
             highlightRadius: float = 0.5,
             highlightColour: str = '#8080FF'
             ) -> None:
-        if not worlds:
-            # Nothing to display but clear the overlays if requested
-            if clearOverlays:
-                self.clearOverlays()
-            return
-        if len(worlds) == 1:
-            # If there is just one world in the list so just show use centerOnWorld. This avoids
-            # zooming to far because the bounding box surrounding the worlds has no size
-            self.centerOnWorld(
-                world=next(iter(worlds)),
-                clearOverlays=clearOverlays,
-                highlightWorld=highlightWorlds,
-                highlightRadius=highlightRadius,
-                highlightColour=highlightColour)
-            return
-
-        minX = maxX = minY = maxY = None
-        for world in worlds:
-            worldPos = world.hexPosition()
-            worldX, worldY = worldPos.absolute()
-            if minX == None or worldX < minX:
-                minX = worldX
-            if maxX == None or worldX > maxX:
-                maxX = worldX
-            if minY == None or worldY < minY:
-                minY = worldY
-            if maxY == None or worldY > maxY:
-                maxY = worldY
-
-        # Increase the bounding box to avoid zooming in to much with just a small number of close together
-        # worlds
-        minX -= 1
-        maxX += 1
-        minY -= 1
-        maxY += 1
-
-        script = f'map.CenterOnArea({minX}, {minY}, {maxX}, {maxY});'
-        self._runScript(script=script)
-
-        if clearOverlays:
-            self.clearOverlays()
-        if highlightWorlds:
-            for world in worlds:
-                self.highlightWorld(
-                    world=world,
-                    radius=highlightRadius,
-                    colour=highlightColour)
+        self.centerOnHexes(
+            hexes=[world.hexPosition() for world in worlds],
+            clearOverlays=clearOverlays,
+            highlightHexes=highlightWorlds,
+            highlightRadius=highlightRadius,
+            highlightColour=highlightColour)
 
     def centerOnHex(
             self,
@@ -320,12 +278,64 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 radius=highlightRadius,
                 colour=highlightColour)
 
-    # TODO: This will need updated to allow jump routes to contain dead space.
-    # Based on how other function world it probably makes sense for it to be
-    # a list of tuples containing sector x/y & world x/y integer positions
+    def centerOnHexes(
+            self,
+            hexes: typing.Collection[travellermap.HexPosition],
+            clearOverlays: bool = False,
+            highlightWorlds: bool = False,
+            highlightRadius: float = 0.5,
+            highlightColour: str = '#8080FF'
+            ) -> None:
+        if not hexes:
+            # Nothing to display but clear the overlays if requested
+            if clearOverlays:
+                self.clearOverlays()
+            return
+        if len(hexes) == 1:
+            # If there is just one world in the list so just show use centerOnWorld. This avoids
+            # zooming to far because the bounding box surrounding the worlds has no size
+            self.centerOnWorld(
+                world=next(iter(hexes)),
+                clearOverlays=clearOverlays,
+                highlightWorld=highlightWorlds,
+                highlightRadius=highlightRadius,
+                highlightColour=highlightColour)
+            return
+
+        minX = maxX = minY = maxY = None
+        for hexPos in hexes:
+            absoluteX, absoluteY = hexPos.absolute()
+            if minX == None or absoluteX < minX:
+                minX = absoluteX
+            if maxX == None or absoluteX > maxX:
+                maxX = absoluteX
+            if minY == None or absoluteY < minY:
+                minY = absoluteY
+            if maxY == None or absoluteY > maxY:
+                maxY = absoluteY
+
+        # Increase the bounding box to avoid zooming in to much with just a small number of close together
+        # worlds
+        minX -= 1
+        maxX += 1
+        minY -= 1
+        maxY += 1
+
+        script = f'map.CenterOnArea({minX}, {minY}, {maxX}, {maxY});'
+        self._runScript(script=script)
+
+        if clearOverlays:
+            self.clearOverlays()
+        if highlightWorlds:
+            for hexPos in hexes:
+                self.highlightHex(
+                    hexPos=hexPos,
+                    radius=highlightRadius,
+                    colour=highlightColour)
+
     def showJumpRoute(
             self,
-            jumpRoute: typing.Iterable[traveller.World],
+            jumpRoute: logic.JumpRoute,
             refuellingPlan: typing.Optional[typing.Iterable[logic.PitStop]] = None,
             zoomToArea: bool = True,
             clearOverlays: bool = True,
@@ -337,7 +347,6 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             # jump route overlay (otherwise that will be cleared as well)
             self.clearOverlays()
 
-        # TODO: This should probably be making a copy of the route
         self._jumpRoute = jumpRoute
         if self._loaded:
             self._runJumpRouteScript(jumpRoute)
@@ -350,7 +359,8 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                     colour=pitStopColour)
 
         if zoomToArea:
-            self.centerOnWorlds(jumpRoute)
+            hexes = [nodeHex for nodeHex, _ in jumpRoute]
+            self.centerOnHexes(hexes=hexes)
 
     def highlightWorlds(
             self,
@@ -652,15 +662,14 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         self._mapWidget.load(url)
 
-    # TODO: This will need updated to allow jump routes to contain dead space
     def _runJumpRouteScript(
             self,
-            jumpRoute: typing.Iterable[traveller.World],
+            jumpRoute: logic.JumpRoute,
             ) -> None:
         script = 'map.SetRoute(['
-        for world in jumpRoute:
-            hexPos = world.hexPosition()
-            sectorX, sectorY, offsetX, offsetY = hexPos.relative()
+        for index in range(jumpRoute.nodeCount()):
+            hex = jumpRoute.hex(index)
+            sectorX, sectorY, offsetX, offsetY = hex.relative()
             script += f'{{hx:{offsetX}, hy:{offsetY}, sx:{sectorX}, sy:{sectorY}}},'
         script = script.strip(',')
         script += ']);'

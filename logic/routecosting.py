@@ -160,6 +160,7 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
             # Fuel based route calculation is disabled so the context isn't used
             return None
 
+        refuellingType = fuelCostPerTon = berthingCost = None
         if startWorld:
             refuellingType = self._pitCostCalculator.refuellingType(world=startWorld)
             fuelCostPerTon = self._pitCostCalculator.fuelCost(world=startWorld)
@@ -209,7 +210,10 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
         jumpFuel = jumpParsecs * self._shipFuelPerParsec
         fuelDeficit = 0 if (jumpFuel <= currentFuel) else (jumpFuel - currentFuel)
 
-        refuellingType = self._pitCostCalculator.refuellingType(world=currentWorld)
+        refuellingType = \
+            self._pitCostCalculator.refuellingType(world=currentWorld) \
+            if currentWorld else \
+            None
         if refuellingType == None:
             # The current world doesn't meet the refuelling requirements so use
             # the last refuelling type
