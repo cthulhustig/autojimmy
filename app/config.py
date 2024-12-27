@@ -59,6 +59,7 @@ class Config(object):
     _SaleBrokerDmBonusKeyName = 'Game/SaleBrokerDmBonus'
     _RouteOptimisationKeyName = 'Game/RouteOptimisation'
     _FuelBasedRoutingKeyName = 'Game/FuelBasedRouting'
+    _DeadSpaceRouting = 'Game/DeadSpaceRouting'
     _RefuellingStrategyKeyName = 'Game/RefuellingStrategy'
     _UseFuelCachesKeyName = 'Game/UseFuelCaches'
     _UseAnomalyRefuellingKeyName = 'Game/UseAnomalyRefuelling'
@@ -533,6 +534,18 @@ class Config(object):
 
     def fuelBasedRouting(self) -> bool:
         return self._fuelBasedRouting
+
+    def setDeadSpaceRouting(self, enabled: bool) -> bool:
+        self._deadSpaceRouting = enabled
+        self._settings.setValue(Config._DeadSpaceRouting, enabled)
+        return False # No restart required
+
+    # TODO: It might be better to combine fuel based routing and dead space routing
+    # into an enum. It would mean I could switch 2 check boxes for a single combo
+    # box in the UI but it would mean hacky code to handle reading the old style
+    # fuelBasedRouting from the config file and converting it to the new enum
+    def deadSpaceRouting(self) -> bool:
+        return self._deadSpaceRouting
 
     def setFuelBasedRouting(self, enable: bool) -> None:
         # This setting can be modified live so update the internal and disk copy
@@ -1278,6 +1291,9 @@ class Config(object):
         self._fuelBasedRouting = self._loadBoolSetting(
             key=Config._FuelBasedRoutingKeyName,
             default=True)
+        self._deadSpaceRouting = self._loadBoolSetting(
+            key=Config._DeadSpaceRouting,
+            default=False)
         self._refuellingStrategy = self._loadEnumSetting(
             key=Config._RefuellingStrategyKeyName,
             default=logic.RefuellingStrategy.WildernessPreferred,

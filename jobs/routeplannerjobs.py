@@ -26,6 +26,7 @@ class RoutePlannerJob(QtCore.QThread):
             jumpCostCalculator: logic.JumpCostCalculatorInterface, # This will be called from the worker thread
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator], # This will be called from the worker thread
             hexFilter: typing.Optional[logic.HexFilterInterface] = None, # This will be called from the worker thread
+            useDeadSpace: bool = False,
             progressCallback: typing.Callable[[int, bool], typing.Any] = None,
             finishedCallback: typing.Callable[[typing.Union[logic.JumpRoute, Exception]], typing.Any] = None
             ) -> None:
@@ -43,6 +44,7 @@ class RoutePlannerJob(QtCore.QThread):
         self._shipFuelPerParsec = shipFuelPerParsec
         self._jumpCostCalculator = jumpCostCalculator
         self._pitCostCalculator = pitCostCalculator
+        self._useDeadSpace = useDeadSpace
         self._hexFilter = hexFilter
 
         self._planner = logic.RoutePlanner()
@@ -86,6 +88,7 @@ class RoutePlannerJob(QtCore.QThread):
                 jumpCostCalculator=self._jumpCostCalculator,
                 pitCostCalculator=self._pitCostCalculator,
                 hexFilter=self._hexFilter,
+                useDeadSpace=self._useDeadSpace,
                 progressCallback=self._handleProgress,
                 isCancelledCallback=self.isCancelled)
 

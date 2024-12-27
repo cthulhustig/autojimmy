@@ -126,7 +126,7 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            includeDeadSpace: bool = False,
+            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -140,7 +140,7 @@ class RoutePlanner(object):
             jumpCostCalculator=jumpCostCalculator,
             pitCostCalculator=pitCostCalculator,
             hexFilter=hexFilter,
-            includeDeadSpace=includeDeadSpace,
+            useDeadSpace=useDeadSpace,
             progressCallback=progressCallback,
             isCancelledCallback=isCancelledCallback)
 
@@ -155,7 +155,7 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            includeDeadSpace: bool = False,
+            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -171,7 +171,7 @@ class RoutePlanner(object):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
-                includeDeadSpace=includeDeadSpace,
+                useDeadSpace=useDeadSpace,
                 progressCallback=progressCallback,
                 isCancelledCallback=isCancelledCallback)
 
@@ -195,7 +195,7 @@ class RoutePlanner(object):
             pitCostCalculator: typing.Optional[logic.PitStopCostCalculator] = None, # None disables fuel based route calculation
             shipFuelPerParsec: typing.Optional[typing.Union[float, common.ScalarCalculation]] = None,
             hexFilter: typing.Optional[HexFilterInterface] = None,
-            includeDeadSpace: bool = False,
+            useDeadSpace: bool = False,
             progressCallback: typing.Optional[typing.Callable[[int, bool], typing.Any]] = None,
             isCancelledCallback: typing.Optional[typing.Callable[[], bool]] = None
             ) -> typing.Optional[logic.JumpRoute]:
@@ -436,7 +436,7 @@ class RoutePlanner(object):
                 centerHex=currentHex,
                 radius=searchRadius,
                 worldManager=worldManager,
-                includeDeadSpace=includeDeadSpace)
+                includeDeadSpace=useDeadSpace)
             possibleRoutes = 0
             addedRoutes = 0
             for nearbyHex, nearbyWorld in nearbyIterator:

@@ -571,6 +571,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         super().saveSettings()
 
+    # TODO: Does this style function still make sense now I've switched to better shared
+    # controls
     def configureControls(
             self,
             startWorld: typing.Optional[traveller.World] = None,
@@ -669,6 +671,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._fuelBasedRoutingCheckBox.stateChanged.connect(
             self._fuelBasedRoutingToggled)
 
+        self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
+        self._deadSpaceRoutingCheckBox.setEnabled(
+            self._fuelBasedRoutingCheckBox.isChecked())
+
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._refuellingStrategyComboBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
@@ -701,6 +707,7 @@ class JumpRouteWindow(gui.WindowWidget):
         leftLayout.setContentsMargins(0, 0, 0, 0)
         leftLayout.addRow('Route Optimisation:', self._routeOptimisationComboBox)
         leftLayout.addRow('Fuel Based Routing:', self._fuelBasedRoutingCheckBox)
+        leftLayout.addRow('Dead Space Routing:', self._deadSpaceRoutingCheckBox)
         leftLayout.addRow('Per Jump Overheads:', self._perJumpOverheadsSpinBox)
         leftLayout.addRow('Start World Berthing:', self._includeStartWorldBerthingCheckBox)
         leftLayout.addRow('Finish World Berthing:', self._includeFinishWorldBerthingCheckBox)
@@ -944,7 +951,10 @@ class JumpRouteWindow(gui.WindowWidget):
 
         # Fuel based route calculation
         pitCostCalculator = None
+        deadSpaceRouting = False
         if self._fuelBasedRoutingCheckBox.isChecked():
+            deadSpaceRouting = self._deadSpaceRoutingCheckBox.isChecked()
+
             useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
             pitCostCalculator = logic.PitStopCostCalculator(
                 refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
@@ -1035,6 +1045,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 jumpCostCalculator=jumpCostCalculator,
                 pitCostCalculator=pitCostCalculator,
                 hexFilter=hexFilter,
+                useDeadSpace=deadSpaceRouting,
                 progressCallback=self._jumpRouteJobProgressUpdate,
                 finishedCallback=self._jumpRouteJobFinished)
         except Exception as ex:
@@ -1635,6 +1646,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         fuelBasedRouting = self._fuelBasedRoutingCheckBox.isChecked()
         anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        self._deadSpaceRoutingCheckBox.setEnabled(fuelBasedRouting)
         self._refuellingStrategyComboBox.setEnabled(fuelBasedRouting)
         self._useFuelCachesCheckBox.setEnabled(fuelBasedRouting)
         self._useAnomalyRefuellingCheckBox.setEnabled(fuelBasedRouting)

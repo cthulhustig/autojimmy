@@ -562,6 +562,21 @@ class SharedFuelBasedRoutingCheckBox(_SharedCheckBox):
             toolTip=gui.FuelBasedRoutingToolTip,
             parent=parent)
 
+# TODO: This might need adding to other windows (trader maybe??)
+class SharedDeadSpaceRoutingCheckBox(_SharedCheckBox):
+    class _SettingUpdater(_CheckBoxUpdater):
+        def _loadValue(self) -> bool:
+            return app.Config.instance().deadSpaceRouting()
+
+        def _saveValue(self, value: bool) -> None:
+            return app.Config.instance().setDeadSpaceRouting(value)
+
+    def __init__(self, parent: typing.Optional[QtWidgets.QWidget] = None) -> None:
+        super().__init__(
+            updaterType=SharedDeadSpaceRoutingCheckBox._SettingUpdater,
+            toolTip='TODO', # TODO: Dead space routing tooltip
+            parent=parent)
+
 class SharedRefuellingStrategyComboBox(_SharedEnumComboBox):
     class _SettingUpdater(_EnumComboBoxUpdater):
         def _loadValue(self) -> logic.RefuellingStrategy:
