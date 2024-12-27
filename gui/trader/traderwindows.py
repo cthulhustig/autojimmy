@@ -1287,7 +1287,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
         purchaseWorld = self._purchaseWorldWidget.world()
         if purchaseWorld:
-            self._saleWorldsWidget.setRelativeHex(world=purchaseWorld.hexPosition())
+            self._saleWorldsWidget.setRelativeHex(pos=purchaseWorld.hexPosition())
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():

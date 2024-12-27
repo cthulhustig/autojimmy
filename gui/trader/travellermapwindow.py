@@ -58,7 +58,7 @@ class TravellerMapWindow(gui.WindowWidget):
             highlightRadius: float = 0.5
             ) -> None:
         self._mapWidget.centerOnHex(
-            hexPos=hexPos,
+            pos=hexPos,
             linearScale=linearScale,
             clearOverlays=clearOverlays,
             highlightHex=highlightHex,
@@ -94,7 +94,7 @@ class TravellerMapWindow(gui.WindowWidget):
             radius: float = 0.5
             ) -> None:
         self._mapWidget.highlightHex(
-            hexPos=hexPos,
+            pos=hexPos,
             radius=radius)
 
     def clearWorldHighlight(
@@ -107,7 +107,7 @@ class TravellerMapWindow(gui.WindowWidget):
             self,
             hexPos: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.clearHexHighlight(hexPos=hexPos)
+        self._mapWidget.clearHexHighlight(pos=hexPos)
 
     def clearOverlays(self) -> None:
         self._mapWidget.clearOverlays()
