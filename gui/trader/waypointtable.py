@@ -70,7 +70,7 @@ class WaypointTable(gui.HexTable):
     # box widget callbacks can be configured to update the object so they
     # don't need updated if the associated row changes
     class _BerthingState(object):
-        def __init__(self, checked: bool):
+        def __init__(self):
             self.checked = False
 
     def __init__(
