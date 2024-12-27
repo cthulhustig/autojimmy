@@ -282,7 +282,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             hexes: typing.Collection[travellermap.HexPosition],
             clearOverlays: bool = False,
-            highlightWorlds: bool = False,
+            highlightHexes: bool = False,
             highlightRadius: float = 0.5,
             highlightColour: str = '#8080FF'
             ) -> None:
@@ -297,7 +297,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self.centerOnWorld(
                 world=next(iter(hexes)),
                 clearOverlays=clearOverlays,
-                highlightWorld=highlightWorlds,
+                highlightHex=highlightHexes,
                 highlightRadius=highlightRadius,
                 highlightColour=highlightColour)
             return
@@ -326,7 +326,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
         if clearOverlays:
             self.clearOverlays()
-        if highlightWorlds:
+        if highlightHexes:
             for hexPos in hexes:
                 self.highlightHex(
                     hexPos=hexPos,
