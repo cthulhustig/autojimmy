@@ -501,7 +501,7 @@ class WorldSearchWindow(gui.WindowWidget):
 
         self._resultsCountLabel = gui.PrefixLabel(prefix='Results Count: ')
 
-        self._worldTableDisplayModeTabs = gui.WorldTableTabBar()
+        self._worldTableDisplayModeTabs = gui.HexTableTabBar()
         self._worldTableDisplayModeTabs.currentChanged.connect(self._updateWorldTableColumns)
 
         self._worldTable = gui.WorldTradeScoreTable()
@@ -545,19 +545,19 @@ class WorldSearchWindow(gui.WindowWidget):
             self._travellerMapWidget.resize(size)
             self._travellerMapWidget.show()
 
-    def _worldColumns(self) -> typing.List[gui.WorldTable.ColumnType]:
+    def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldTableDisplayModeTabs.currentDisplayMode()
-        if displayMode == gui.WorldTableTabBar.DisplayMode.AllColumns:
+        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
             return gui.WorldTradeScoreTable.AllColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.SystemColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
             return gui.WorldTradeScoreTable.SystemColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.UWPColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
             return gui.WorldTradeScoreTable.UWPColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.EconomicsColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
             return gui.WorldTradeScoreTable.EconomicsColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.CultureColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
             return gui.WorldTradeScoreTable.CultureColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.RefuellingColumns:
+        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
             return gui.WorldTradeScoreTable.RefuellingColumns
         else:
             assert(False) # I missed a case

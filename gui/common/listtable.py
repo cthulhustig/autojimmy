@@ -839,8 +839,8 @@ class FrozenColumnListTable(ListTable):
     # To use cell widgets the derived class will need to override setFrozenColumnVisualIndex
     # so it can remove the old cell widgets before the update and add new ones after the update.
     # This is necessary as there is no way to detach a cell widget from one table and move it to
-    # another table (removeCellWidget causes the widget to be destroyed). See WorldBerthingTable
-    # for an example
+    # another table (removeCellWidget causes the widget to be destroyed). See WaypointTable for
+    # an example
     def setCellWidget(self, row: int, column: int, widget: QtWidgets.QWidget) -> None:
         if self._frozenColumnVisualIndex != None:
             visualIndex = self.visualColumn(column)

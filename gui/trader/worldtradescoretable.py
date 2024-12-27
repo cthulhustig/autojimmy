@@ -3,6 +3,7 @@ import enum
 import gui
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -11,28 +12,28 @@ class WorldTradeScoreTableColumnType(enum.Enum):
     SaleScore = 'Sale Score'
 
 def _customWorldTableColumns(
-        originalColumns: typing.List[gui.WorldTable.ColumnType]
-        ) -> typing.List[typing.Union[WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]]:
+        originalColumns: typing.List[gui.HexTable.ColumnType]
+        ) -> typing.List[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]]:
     columns = originalColumns.copy()
     try:
-        index = columns.index(gui.WorldTable.ColumnType.Sector) + 1
+        index = columns.index(gui.HexTable.ColumnType.Sector) + 1
     except ValueError:
         index = len(columns)
     columns.insert(index, WorldTradeScoreTableColumnType.SaleScore)
     columns.insert(index, WorldTradeScoreTableColumnType.PurchaseScore)
     return columns
 
-class WorldTradeScoreTable(gui.WorldTable):
-    AllColumns = _customWorldTableColumns(gui.WorldTable.AllColumns)
-    SystemColumns = _customWorldTableColumns(gui.WorldTable.SystemColumns)
-    UWPColumns = _customWorldTableColumns(gui.WorldTable.UWPColumns)
-    EconomicsColumns = _customWorldTableColumns(gui.WorldTable.EconomicsColumns)
-    CultureColumns = _customWorldTableColumns(gui.WorldTable.CultureColumns)
-    RefuellingColumns = _customWorldTableColumns(gui.WorldTable.RefuellingColumns)
+class WorldTradeScoreTable(gui.HexTable):
+    AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
+    SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
+    UWPColumns = _customWorldTableColumns(gui.HexTable.UWPColumns)
+    EconomicsColumns = _customWorldTableColumns(gui.HexTable.EconomicsColumns)
+    CultureColumns = _customWorldTableColumns(gui.HexTable.CultureColumns)
+    RefuellingColumns = _customWorldTableColumns(gui.HexTable.RefuellingColumns)
 
     def __init__(
             self,
-            columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.WorldTable.ColumnType]] = AllColumns
+            columns: typing.Iterable[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(columns=columns)
 
@@ -79,26 +80,25 @@ class WorldTradeScoreTable(gui.WorldTable):
             item: QtWidgets.QTableWidgetItem
             ) -> typing.Optional[str]:
         world = self.world(item.row())
-        if not world:
-            return None
 
-        columnType = self.columnHeader(item.column())
-
-        if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-            return gui.createPurchaseTradeScoreToolTip(self.tradeScore(world))
-        elif columnType == WorldTradeScoreTableColumnType.SaleScore:
-            return gui.createSaleTradeScoreToolTip(self.tradeScore(world))
+        if world:
+            columnType = self.columnHeader(item.column())
+            if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
+                return gui.createPurchaseTradeScoreToolTip(self.tradeScore(world))
+            elif columnType == WorldTradeScoreTableColumnType.SaleScore:
+                return gui.createSaleTradeScoreToolTip(self.tradeScore(world))
 
         return super()._createToolTip(item=item)
 
     def _fillRow(
             self,
             row: int,
-            world: traveller.World
+            pos: travellermap.HexPosition,
+            world: typing.Optional[traveller.World]
             ) -> int:
         # Always generate the trade score for a world if they aren't in the maps, even if those
         # columns aren't being displayed. We want them to be available if the get function is called
-        if world not in self._tradeScoreMap:
+        if world and (world not in self._tradeScoreMap):
             self._tradeScoreMap[world] = logic.TradeScore(
                 rules=app.Config.instance().rules(),
                 world=world,
@@ -110,32 +110,33 @@ class WorldTradeScoreTable(gui.WorldTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, world)
+            super()._fillRow(row, pos, world)
 
-            for column in range(self.columnCount()):
-                columnType = self.columnHeader(column)
-                tableItem = None
-                if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
-                        columnType == WorldTradeScoreTableColumnType.SaleScore:
-                    tradeScore: logic.TradeScore = self._tradeScoreMap[world]
-                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
-                        tradeScore = tradeScore.totalPurchaseScore()
-                    else:
-                        tradeScore = tradeScore.totalSaleScore()
-                    tableItem = gui.FormattedNumberTableWidgetItem(
-                        value=tradeScore,
-                        alwaysIncludeSign=True)
-                    scoreValue = tradeScore.value()
-                    if scoreValue > 0:
-                        tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Desirable)))
-                    """
-                    elif scoreValue < 0:
-                        tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Warning)))
-                    """
+            if world:
+                for column in range(self.columnCount()):
+                    columnType = self.columnHeader(column)
+                    tableItem = None
+                    if columnType == WorldTradeScoreTableColumnType.PurchaseScore or \
+                            columnType == WorldTradeScoreTableColumnType.SaleScore:
+                        tradeScore: logic.TradeScore = self._tradeScoreMap[world]
+                        if columnType == WorldTradeScoreTableColumnType.PurchaseScore:
+                            tradeScore = tradeScore.totalPurchaseScore()
+                        else:
+                            tradeScore = tradeScore.totalSaleScore()
+                        tableItem = gui.FormattedNumberTableWidgetItem(
+                            value=tradeScore,
+                            alwaysIncludeSign=True)
+                        scoreValue = tradeScore.value()
+                        if scoreValue > 0:
+                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Desirable)))
+                        """
+                        elif scoreValue < 0:
+                            tableItem.setBackground(QtGui.QColor(app.Config.instance().tagColour(app.TagLevel.Warning)))
+                        """
 
-                if tableItem:
-                    self.setItem(row, column, tableItem)
-                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, world)
+                    if tableItem:
+                        self.setItem(row, column, tableItem)
+                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted

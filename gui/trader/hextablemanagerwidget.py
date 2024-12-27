@@ -1,30 +1,40 @@
 import gui
 import logging
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-class WorldTableManagerWidget(QtWidgets.QWidget):
+# TODO: This needs to be able to handle (optionally) selecting dead space
+# TODO: Pretty much all the logic about removing world versions of functions
+# in HexTable apply here as well
+# TODO: I've never liked the name of this class, possibly a good time to
+# rename it. It's more about letting the user select a group of hexes than
+# manage them
+class HexTableManagerWidget(QtWidgets.QWidget):
     contentChanged = QtCore.pyqtSignal()
     contextMenuRequested = QtCore.pyqtSignal(QtCore.QPoint)
-    displayModeChanged = QtCore.pyqtSignal(gui.WorldTableTabBar.DisplayMode)
+    displayModeChanged = QtCore.pyqtSignal(gui.HexTableTabBar.DisplayMode)
     showInTravellerMap = QtCore.pyqtSignal([list])
 
-    _StateVersion = 'WorldTableManagerWidget_v1'
+    # TODO: I might need to leave this as the old 'WorldTableManagerWidget_v1'
+    # for backwards compatibility
+    _StateVersion = 'HexTableManagerWidget_v1'
 
     def __init__(
             self,
-            allowWorldCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
+            # TODO: This should be updated to an allowed hex callback
+            allowHexCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
             isOrderedList: bool = False,
             showAddNearbyWorldsButton: bool = True,
             showSelectInTravellerMapButton: bool = True,
-            worldTable: typing.Optional[gui.WorldTable] = None,
-            displayModeTabs: typing.Optional[gui.WorldTableTabBar] = None
+            hexTable: typing.Optional[gui.HexTable] = None,
+            displayModeTabs: typing.Optional[gui.HexTableTabBar] = None
             ) -> None:
         super().__init__()
 
-        self._allowWorldCallback = allowWorldCallback
-        self._relativeWorld = None
+        self._allowHexCallback = allowHexCallback
+        self._relativeHex = None
         self._enableContextMenuEvent = False
         self._enableDisplayModeChangedEvent = False
         self._enableShowInTravellerMapEvent = False
@@ -38,26 +48,26 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
-            self._displayModeTabs = gui.WorldTableTabBar()
+            self._displayModeTabs = gui.HexTableTabBar()
         self._displayModeTabs.currentChanged.connect(self._displayModeChanged)
 
-        self._worldTable = worldTable
-        if not self._worldTable:
-            self._worldTable = gui.WorldTable()
-        self._worldTable.setVisibleColumns(self._displayColumns())
-        self._worldTable.setMinimumHeight(100)
-        self._worldTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._worldTable.customContextMenuRequested.connect(self._showWorldTableContextMenu)
-        self._worldTable.keyPressed.connect(self._worldTableKeyPressed)
+        self._hexTable = hexTable
+        if not self._hexTable:
+            self._hexTable = gui.HexTable()
+        self._hexTable.setVisibleColumns(self._displayColumns())
+        self._hexTable.setMinimumHeight(100)
+        self._hexTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._hexTable.customContextMenuRequested.connect(self._showHexTableContextMenu)
+        self._hexTable.keyPressed.connect(self._hexTableKeyPressed)
         if isOrderedList:
             # Disable sorting on if the list is to be ordered
-            self._worldTable.setSortingEnabled(False)
+            self._hexTable.setSortingEnabled(False)
 
         tableLayout = QtWidgets.QVBoxLayout()
         tableLayout.setContentsMargins(0, 0, 0 , 0)
         tableLayout.setSpacing(0) # No gap between tabs and table
         tableLayout.addWidget(self._displayModeTabs)
-        tableLayout.addWidget(self._worldTable)
+        tableLayout.addWidget(self._hexTable)
 
         self._moveSelectionUpButton = None
         self._moveSelectionDownButton = None
@@ -67,14 +77,14 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self._moveSelectionUpButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._moveSelectionUpButton.clicked.connect(self._worldTable.moveSelectionUp)
+            self._moveSelectionUpButton.clicked.connect(self._hexTable.moveSelectionUp)
 
             self._moveSelectionDownButton = QtWidgets.QToolButton()
             self._moveSelectionDownButton.setArrowType(QtCore.Qt.ArrowType.DownArrow)
             self._moveSelectionDownButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._moveSelectionDownButton.clicked.connect(self._worldTable.moveSelectionDown)
+            self._moveSelectionDownButton.clicked.connect(self._hexTable.moveSelectionDown)
 
             moveButtonLayout = QtWidgets.QVBoxLayout()
             moveButtonLayout.setContentsMargins(0, 0, 0 , 0)
@@ -88,13 +98,13 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
 
             tableLayout = orderedTableLayout
 
-        self._addNearbyWorldsButton = None
+        self._addNearbyButton = None
         if showAddNearbyWorldsButton:
-            self._addNearbyWorldsButton = QtWidgets.QPushButton('Add Nearby Worlds...')
-            self._addNearbyWorldsButton.setSizePolicy(
+            self._addNearbyButton = QtWidgets.QPushButton('Add Nearby...')
+            self._addNearbyButton.setSizePolicy(
                 QtWidgets.QSizePolicy.Policy.Minimum,
                 QtWidgets.QSizePolicy.Policy.Minimum)
-            self._addNearbyWorldsButton.clicked.connect(self.promptAddNearbyWorlds)
+            self._addNearbyButton.clicked.connect(self.promptAddNearbyWorlds)
 
         self._selectWithTravellerMapButton = None
         if showSelectInTravellerMapButton:
@@ -104,34 +114,34 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
                 QtWidgets.QSizePolicy.Policy.Minimum)
             self._selectWithTravellerMapButton.clicked.connect(self.promptSelectWithTravellerMap)
 
-        self._addWorldButton = QtWidgets.QPushButton('Add...')
-        self._addWorldButton.setSizePolicy(
+        self._addButton = QtWidgets.QPushButton('Add...')
+        self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addWorldButton.clicked.connect(self.promptAddWorld)
+        self._addButton.clicked.connect(self.promptAddWorld)
 
-        self._removeWorldButton = QtWidgets.QPushButton('Remove')
-        self._removeWorldButton.setSizePolicy(
+        self._removeButton = QtWidgets.QPushButton('Remove')
+        self._removeButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeWorldButton.clicked.connect(self.removeSelectedWorlds)
+        self._removeButton.clicked.connect(self.removeSelectedRows)
 
-        self._removeAllWorldButton = QtWidgets.QPushButton('Remove All')
-        self._removeAllWorldButton.setSizePolicy(
+        self._removeAllButton = QtWidgets.QPushButton('Remove All')
+        self._removeAllButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._removeAllWorldButton.clicked.connect(self.removeAllWorlds)
+        self._removeAllButton.clicked.connect(self.removeAllRows)
 
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
-        if self._addNearbyWorldsButton:
-            buttonLayout.addWidget(self._addNearbyWorldsButton)
+        if self._addNearbyButton:
+            buttonLayout.addWidget(self._addNearbyButton)
         if self._selectWithTravellerMapButton:
             buttonLayout.addWidget(self._selectWithTravellerMapButton)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._addWorldButton)
-        buttonLayout.addWidget(self._removeWorldButton)
-        buttonLayout.addWidget(self._removeAllWorldButton)
+        buttonLayout.addWidget(self._addButton)
+        buttonLayout.addWidget(self._removeButton)
+        buttonLayout.addWidget(self._removeAllButton)
 
         widgetLayout = QtWidgets.QVBoxLayout()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
@@ -140,95 +150,141 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
 
         self.setLayout(widgetLayout)
 
+    def addHex(
+            self,
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> None:
+        if isinstance(pos, traveller.World):
+            pos = pos.hexPosition()
+        if self._allowHexCallback:
+            if not self._allowHexCallback(pos):
+                return
+        self._hexTable.addHex(pos)
+        self.contentChanged.emit()
+
     def addWorld(self, world: traveller.World) -> None:
-        if self._allowWorldCallback and not self._allowWorldCallback(world):
-            return
-        self._worldTable.addWorld(world=world)
+        self.addHex(world)
+
+    def addHexes(
+            self,
+            positions: typing.Iterable[
+                typing.Union[travellermap.HexPosition, traveller.World]
+                ]) -> None:
+        if self._allowHexCallback:
+            filteredPositions = []
+            for pos in positions:
+                if isinstance(pos, traveller.World):
+                    pos = pos.hexPosition()
+                if not self._allowHexCallback(pos):
+                    continue
+                filteredPositions.append(pos)
+            if not filteredPositions:
+                return # Nothing to do
+            self._hexTable.addHexes(positions=filteredPositions)
+        else:
+            self._hexTable.addHexes(positions=positions)
+
         self.contentChanged.emit()
 
     def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        if self._allowWorldCallback:
-            filteredWorlds = []
-            for world in worlds:
-                if not self._allowWorldCallback(world):
-                    continue
-                filteredWorlds.append(world)
-            if not filteredWorlds:
-                return # Nothing to do
-            self._worldTable.addWorlds(worlds=filteredWorlds)
-        else:
-            self._worldTable.addWorlds(worlds=worlds)
+        self.addHexes(positions=worlds)
 
-        self.contentChanged.emit()
-
-    def removeWorld(self, world: traveller.World) -> bool:
-        removed = self._worldTable.removeWorld(world=world)
+    def removeHex(
+            self,
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> bool:
+        removed = self._hexTable.removeHex(pos)
         if removed:
             self.contentChanged.emit()
         return removed
 
-    def removeAllWorlds(self) -> None:
-        if not self._worldTable.isEmpty():
-            self._worldTable.removeAllRows()
+    def removeWorld(self, world: traveller.World) -> bool:
+        return self.removeHex(world)
+
+    def removeAllRows(self) -> None:
+        if not self._hexTable.isEmpty():
+            self._hexTable.removeAllRows()
             self.contentChanged.emit()
 
     def isEmpty(self) -> bool:
-        return self._worldTable.isEmpty()
+        return self._hexTable.isEmpty()
+
+    def containsHex(
+            self,
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> bool:
+        return self._hexTable.containsHex(pos)
 
     def containsWorld(self, world: traveller.World) -> bool:
-        return self._worldTable.containsWorld(world)
+        return self.containsHex(world)
 
-    def worldCount(self) -> int:
-        return self._worldTable.rowCount()
+    def rowCount(self) -> int:
+        return self._hexTable.rowCount()
 
-    def world(self, row) -> typing.Optional[traveller.World]:
-        return self._worldTable.world(row)
+    def hex(self, row: int) -> typing.Optional[travellermap.HexPosition]:
+        return self._hexTable.hex(row=row)
+
+    def world(self, row: int) -> typing.Optional[traveller.World]:
+        return self._hexTable.world(row)
+
+    def hexes(self) -> typing.List[travellermap.HexPosition]:
+        return self._hexTable.hexes()
 
     def worlds(self) -> typing.List[traveller.World]:
-        return self._worldTable.worlds()
+        return self._hexTable.worlds()
+
+    def hexAt(self, position: QtCore.QPoint) -> typing.List[travellermap.HexPosition]:
+        translated = self.mapToGlobal(position)
+        translated = self._hexTable.viewport().mapFromGlobal(translated)
+        return self._hexTable.hexAt(position=translated)
 
     def worldAt(self, position: QtCore.QPoint) -> typing.Optional[traveller.World]:
         translated = self.mapToGlobal(position)
-        translated = self._worldTable.viewport().mapFromGlobal(translated)
-        return self._worldTable.worldAt(position=translated)
+        translated = self._hexTable.viewport().mapFromGlobal(translated)
+        return self._hexTable.worldAt(position=translated)
 
     def hasSelection(self) -> bool:
-        return self._worldTable.hasSelection()
+        return self._hexTable.hasSelection()
+
+    def selectedHexes(self) -> typing.List[travellermap.HexPosition]:
+        return self._hexTable.selectedHexes()
 
     def selectedWorlds(self) -> typing.List[traveller.World]:
-        return self._worldTable.selectedWorlds()
+        return self._hexTable.selectedWorlds()
 
-    def removeSelectedWorlds(self) -> None:
-        if self._worldTable.hasSelection():
-            self._worldTable.removeSelectedRows()
+    def removeSelectedRows(self) -> None:
+        if self._hexTable.hasSelection():
+            self._hexTable.removeSelectedRows()
             self.contentChanged.emit()
 
-    def setRelativeWorld(
+    def setRelativeHex(
             self,
-            world: typing.Optional[traveller.World]
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
-        self._relativeWorld = world
+        if isinstance(pos, traveller.World):
+            pos = pos.hexPosition()
+        self._relativeHex = pos
 
-    def displayMode(self) -> gui.WorldTableTabBar.DisplayMode:
+    def displayMode(self) -> gui.HexTableTabBar.DisplayMode:
         return self._displayModeTabs.currentDisplayMode()
 
     def setVisibleColumns(
             self,
-            columns: typing.List[gui.WorldTable.ColumnType]
+            columns: typing.List[gui.HexTable.ColumnType]
             ) -> None:
-        self._worldTable.setVisibleColumns(columns=columns)
+        self._hexTable.setVisibleColumns(columns=columns)
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldTableManagerWidget._StateVersion)
+        stream.writeQString(HexTableManagerWidget._StateVersion)
 
         tabState = self._displayModeTabs.saveState()
         stream.writeUInt32(tabState.count() if tabState else 0)
         if tabState:
             stream.writeRawData(tabState.data())
 
-        tableState = self._worldTable.saveState()
+        tableState = self._hexTable.saveState()
         stream.writeUInt32(tableState.count() if tableState else 0)
         if tableState:
             stream.writeRawData(tableState.data())
@@ -241,9 +297,9 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldTableManagerWidget._StateVersion:
+        if version != HexTableManagerWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore WorldTableManagerWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore HexTableManagerWidget state (Incorrect version)')
             return False
 
         result = True
@@ -257,19 +313,19 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
         count = stream.readUInt32()
         if count > 0:
             tableState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._worldTable.restoreState(tableState):
+            if not self._hexTable.restoreState(tableState):
                 result = False
 
         return result
 
     def saveContent(self) -> QtCore.QByteArray:
-        return self._worldTable.saveContent()
+        return self._hexTable.saveContent()
 
     def restoreContent(
             self,
             state: QtCore.QByteArray
             ) -> bool:
-        return self._worldTable.restoreContent(state=state)
+        return self._hexTable.restoreContent(state=state)
 
     def enableContextMenuEvent(self, enable: bool = True) -> None:
         self._enableContextMenuEvent = enable
@@ -284,8 +340,14 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self,
             initialWorld: typing.Optional[traveller.World] = None
             ) -> None:
+        # TODO: Need to switch this to use hexes
+        gui.MessageBoxEx.critical(
+            parent=self,
+            text='Implement me!')
+        return
+
         dlg = gui.NearbyWorldsDialog(parent=self)
-        dlg.setWorld(world=initialWorld if initialWorld else self._relativeWorld)
+        dlg.setWorld(world=initialWorld if initialWorld else self._relativeHex)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -309,12 +371,18 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             gui.AutoSelectMessageBox.information(
                 parent=self,
                 text='No nearby worlds found.',
-                stateKey='WorldTableNoNearbyWorldsFound')
+                stateKey='HexTableNoNearbyWorldsFound')
             return
 
         self.addWorlds(worlds=worlds)
 
     def promptSelectWithTravellerMap(self) -> None:
+        # TODO: Need to switch this to use hexes
+        gui.MessageBoxEx.critical(
+            parent=self,
+            text='Implement me!')
+        return
+
         currentWorlds = self.worlds()
         if not self._worldSelectDialog:
             self._worldSelectDialog = gui.TravellerMapSelectDialog(parent=self)
@@ -326,51 +394,57 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
         newWorlds = self._worldSelectDialog.selectedWorlds()
         updated = False
 
-        sortingEnabled = self._worldTable.isSortingEnabled()
-        self._worldTable.setSortingEnabled(False)
+        sortingEnabled = self._hexTable.isSortingEnabled()
+        self._hexTable.setSortingEnabled(False)
 
         try:
             # Remove worlds that are no longer selected
             for world in currentWorlds:
                 if world not in newWorlds:
-                    self._worldTable.removeWorld(world=world)
+                    self._hexTable.removeWorld(world=world)
                     updated = True
 
             # Add newly selected worlds
             for world in newWorlds:
                 if world not in currentWorlds:
-                    if self._allowWorldCallback and not self._allowWorldCallback(world):
+                    if self._allowHexCallback and not self._allowHexCallback(world):
                         # Silently ignore worlds that are filtered out
                         continue
 
-                    self._worldTable.addWorld(world=world)
+                    self._hexTable.addWorld(world=world)
                     updated = True
         finally:
-            self._worldTable.setSortingEnabled(sortingEnabled)
+            self._hexTable.setSortingEnabled(sortingEnabled)
 
         if updated:
             self.contentChanged.emit()
 
     def promptAddWorld(self) -> None:
+        # TODO: Need to switch this to use hexes
+        gui.MessageBoxEx.critical(
+            parent=self,
+            text='Implement me!')
+        return
+
         dlg = gui.WorldSearchDialog(parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         self.addWorld(dlg.world())
 
-    def _displayColumns(self) -> typing.List[gui.WorldTable.ColumnType]:
+    def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
-        if displayMode == gui.WorldTableTabBar.DisplayMode.AllColumns:
-            return self._worldTable.AllColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.SystemColumns:
-            return self._worldTable.SystemColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.UWPColumns:
-            return self._worldTable.UWPColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.EconomicsColumns:
-            return self._worldTable.EconomicsColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.CultureColumns:
-            return self._worldTable.CultureColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.RefuellingColumns:
-            return self._worldTable.RefuellingColumns
+        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
+            return self._hexTable.AllColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
+            return self._hexTable.SystemColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
+            return self._hexTable.UWPColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
+            return self._hexTable.EconomicsColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
+            return self._hexTable.CultureColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
+            return self._hexTable.RefuellingColumns
         else:
             assert(False) # I missed a case
 
@@ -378,6 +452,12 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        # TODO: Need to switch this to use hexes
+        gui.MessageBoxEx.critical(
+            parent=self,
+            text='Implement me!')
+        return
+
         detailsWindow = gui.WindowManager.instance().showWorldDetailsWindow()
         detailsWindow.addWorlds(worlds=worlds)
 
@@ -385,6 +465,12 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
             self,
             worlds: typing.Iterable[traveller.World]
             ) -> None:
+        # TODO: Need to switch this to use hexes
+        gui.MessageBoxEx.critical(
+            parent=self,
+            text='Implement me!')
+        return
+
         if self._enableShowInTravellerMapEvent:
             self.showInTravellerMap.emit(worlds)
             return
@@ -403,14 +489,14 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
-    def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
+    def _showHexTableContextMenu(self, position: QtCore.QPoint) -> None:
         if self._enableContextMenuEvent:
-            translated = self._worldTable.viewport().mapToGlobal(position)
+            translated = self._hexTable.viewport().mapToGlobal(position)
             translated = self.mapFromGlobal(translated)
             self.contextMenuRequested.emit(translated)
             return
 
-        world = self._worldTable.worldAt(position=position)
+        world = self._hexTable.worldAt(position=position)
 
         menuItems = [
             gui.MenuItem(
@@ -428,55 +514,55 @@ class WorldTableManagerWidget(QtWidgets.QWidget):
                 text='Add Nearby Worlds...',
                 callback=lambda: self.promptAddNearbyWorlds(initialWorld=world),
                 enabled=True,
-                displayed=self._addNearbyWorldsButton != None
+                displayed=self._addNearbyButton != None
             ),
             gui.MenuItem(
                 text='Remove Selected Worlds',
-                callback=lambda: self.removeSelectedWorlds(),
-                enabled=self._worldTable.hasSelection()
+                callback=lambda: self.removeSelectedRows(),
+                enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Remove All Worlds',
-                callback=lambda: self.removeAllWorlds(),
-                enabled=not self._worldTable.isEmpty()
+                callback=lambda: self.removeAllRows(),
+                enabled=not self._hexTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(self._worldTable.selectedWorlds()),
-                enabled=self._worldTable.hasSelection()
+                callback=lambda: self._showWorldDetails(self._hexTable.selectedWorlds()),
+                enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._worldTable.worlds()),
-                enabled=not self._worldTable.isEmpty()
+                callback=lambda: self._showWorldDetails(self._hexTable.worlds()),
+                enabled=not self._hexTable.isEmpty()
             ),
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldTable.selectedWorlds()),
-                enabled=self._worldTable.hasSelection()
+                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.selectedWorlds()),
+                enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._worldTable.worlds()),
-                enabled=not self._worldTable.isEmpty()
+                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.worlds()),
+                enabled=not self._hexTable.isEmpty()
             )
         ]
 
         gui.displayMenu(
             self,
             menuItems,
-            self._worldTable.viewport().mapToGlobal(position)
+            self._hexTable.viewport().mapToGlobal(position)
         )
 
-    def _worldTableKeyPressed(self, key: int) -> None:
+    def _hexTableKeyPressed(self, key: int) -> None:
         if key == QtCore.Qt.Key.Key_Delete:
-            self.removeSelectedWorlds()
+            self.removeSelectedRows()
 
     def _displayModeChanged(self, index: int) -> None:
         if self._enableDisplayModeChangedEvent:
             self.displayModeChanged.emit(self._displayModeTabs.currentDisplayMode())
             return
 
-        self._worldTable.setVisibleColumns(self._displayColumns())
+        self._hexTable.setVisibleColumns(self._displayColumns())

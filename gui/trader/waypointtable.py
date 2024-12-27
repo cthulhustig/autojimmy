@@ -4,6 +4,7 @@ import json
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -39,44 +40,45 @@ class _CentredCheckBoxWidget(QtWidgets.QWidget):
     def checkState(self) -> QtCore.Qt.CheckState:
         return self._checkBox.checkState()
 
-class WorldBerthingTableColumnType(enum.Enum):
+class WaypointTableColumnType(enum.Enum):
     BerthingRequired = 'Berthing'
 
 def _customWorldTableColumns(
-        originalColumns: typing.List[gui.WorldTable.ColumnType]
-        ) -> typing.List[typing.Union[WorldBerthingTableColumnType, gui.WorldTable.ColumnType]]:
+        originalColumns: typing.List[gui.HexTable.ColumnType]
+        ) -> typing.List[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]]:
     columns = originalColumns.copy()
     try:
-        index = columns.index(gui.WorldTable.ColumnType.Sector) + 1
+        index = columns.index(gui.HexTable.ColumnType.Sector) + 1
     except ValueError:
         index = len(columns)
-    columns.insert(index, WorldBerthingTableColumnType.BerthingRequired)
+    columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
-class WorldBerthingTable(gui.WorldTable):
-    AllColumns = _customWorldTableColumns(gui.WorldTable.AllColumns)
-    SystemColumns = _customWorldTableColumns(gui.WorldTable.SystemColumns)
-    UWPColumns = _customWorldTableColumns(gui.WorldTable.UWPColumns)
-    EconomicsColumns = _customWorldTableColumns(gui.WorldTable.EconomicsColumns)
-    CultureColumns = _customWorldTableColumns(gui.WorldTable.CultureColumns)
-    RefuellingColumns = _customWorldTableColumns(gui.WorldTable.RefuellingColumns)
+# TODO: This needs updated to (optionally) support selecting dead space waypoints
+# TODO: The check boxes should be disabled if the row is for dead space
+class WaypointTable(gui.HexTable):
+    AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
+    SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)
+    UWPColumns = _customWorldTableColumns(gui.HexTable.UWPColumns)
+    EconomicsColumns = _customWorldTableColumns(gui.HexTable.EconomicsColumns)
+    CultureColumns = _customWorldTableColumns(gui.HexTable.CultureColumns)
+    RefuellingColumns = _customWorldTableColumns(gui.HexTable.RefuellingColumns)
 
     _ContentVersion = 'v1'
 
+    # Store checked state as an object rather than just a bool so the check
+    # box widget callbacks can be configured to update the object so they
+    # don't need updated if the associated row changes
     class _BerthingState(object):
-        def __init__(
-                self,
-                world: int
-                ) -> None:
-            self.world = world
+        def __init__(self, checked: bool):
             self.checked = False
 
     def __init__(
             self,
-            columns: typing.Iterable[typing.Union[WorldBerthingTableColumnType, gui.WorldTable.ColumnType]] = AllColumns
+            columns: typing.Iterable[typing.Union[WaypointTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(columns=columns)
-        self._berthingStates: typing.List[WorldBerthingTable._BerthingState] = []
+        self._berthingStates: typing.List[WaypointTable._BerthingState] = []
 
     def isBerthingChecked(self, row: int) -> bool:
         return self._berthingStates[row].checked
@@ -86,22 +88,29 @@ class WorldBerthingTable(gui.WorldTable):
             row: int,
             checked: bool
             ) -> None:
-        berthingState = self._berthingStates[row]
-        berthingState.checked = checked
+        self._berthingStates[row].checked = checked
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
-            if columnType == WorldBerthingTableColumnType.BerthingRequired:
+            if columnType == WaypointTableColumnType.BerthingRequired:
                 widget = self.cellWidget(row, column)
                 assert(isinstance(widget, _CentredCheckBoxWidget))
-                widget.setCheckState(QtCore.Qt.CheckState.Checked if berthingState.checked else QtCore.Qt.CheckState.Unchecked)
+                widget.setCheckState(QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
 
-    def insertWorld(self, row: int, world: traveller.World) -> int:
-        self._berthingStates.insert(row, WorldBerthingTable._BerthingState(world))
-        return super().insertWorld(row, world)
+    def insertHex(
+            self,
+            row: int,
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> int:
+        self._berthingStates.insert(row, WaypointTable._BerthingState())
+        return super().insertHex(row, pos)
 
-    def setWorld(self, row: int, world: traveller.World) -> int:
+    def setHex(
+            self,
+            row: int,
+            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            ) -> int:
         self._berthingStates[row].checked = False
-        return super().setWorld(row, world)
+        return super().setHex(row, pos)
 
     def removeRow(self, row: int) -> None:
         self._berthingStates.pop(row)
@@ -133,15 +142,16 @@ class WorldBerthingTable(gui.WorldTable):
     def saveContent(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldBerthingTable._ContentVersion)
+        stream.writeQString(WaypointTable._ContentVersion)
 
-        items = []
-        for row in range(self.rowCount()):
-            world = self.world(row)
-            worldData = logic.serialiseWorld(world=world)
-            worldData['berthing'] = self.isBerthingChecked(row)
-            items.append(worldData)
-        stream.writeQString(json.dumps({'worlds': items}))
+        # TODO: Disabled until I update serialisation
+        #items = []
+        #for row in range(self.rowCount()):
+        #    world = self.world(row)
+        #    worldData = logic.serialiseWorld(world=world)
+        #    worldData['berthing'] = self.isBerthingChecked(row)
+        #    items.append(worldData)
+        #stream.writeQString(json.dumps({'worlds': items}))
 
         return state
 
@@ -151,37 +161,39 @@ class WorldBerthingTable(gui.WorldTable):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldBerthingTable._ContentVersion:
+        if version != WaypointTable._ContentVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore WorldBerthingTable content (Incorrect version)')
+            logging.debug(f'Failed to restore WaypointTable content (Incorrect version)')
             return False
 
-        try:
-            data = json.loads(stream.readQString())
-            items = data.get('worlds')
-            if items == None:
-                raise RuntimeError('WorldBerthingTable world list is missing worlds element')
-
-            for item in items:
-                world = logic.deserialiseWorld(data=item)
-                if not world:
-                    continue
-                berthing = item.get('berthing')
-                if berthing == None:
-                    raise RuntimeError('WorldBerthingTable world list item is missing berthing element')
-
-                row = self.addWorld(world)
-                self.setBerthingChecked(row=row, checked=berthing)
-        except Exception as ex:
-            logging.warning(f'Failed to deserialise WorldTable world list', exc_info=ex)
-            return False
+        # TODO: Disabled until I update serialisation
+        #try:
+        #    data = json.loads(stream.readQString())
+        #    items = data.get('worlds')
+        #    if items == None:
+        #        raise RuntimeError('WaypointTable world list is missing worlds element')
+        #
+        #    for item in items:
+        #        world = logic.deserialiseWorld(data=item)
+        #        if not world:
+        #            continue
+        #        berthing = item.get('berthing')
+        #        if berthing == None:
+        #            raise RuntimeError('WaypointTable world list item is missing berthing element')
+        #
+        #        row = self.addWorld(world)
+        #        self.setBerthingChecked(row=row, checked=berthing)
+        #except Exception as ex:
+        #    logging.warning(f'Failed to deserialise WorldTable world list', exc_info=ex)
+        #    return False
 
         return True
 
     def _fillRow(
             self,
             row: int,
-            world: traveller.World
+            pos: travellermap.HexPosition,
+            world: typing.Optional[traveller.World]
             ) -> int:
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
         # have been updated
@@ -189,15 +201,16 @@ class WorldBerthingTable(gui.WorldTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, world)
+            super()._fillRow(row, pos, world)
 
-            for column in range(self.columnCount()):
-                columnType = self.columnHeader(column)
-                if columnType == WorldBerthingTableColumnType.BerthingRequired:
-                    tableItem = QtWidgets.QTableWidgetItem()
-                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, world)
-                    self.setItem(row, column, tableItem)
-                    self._createBerthingCheckBox(row=row, column=column)
+            if world:
+                for column in range(self.columnCount()):
+                    columnType = self.columnHeader(column)
+                    if columnType == WaypointTableColumnType.BerthingRequired:
+                        tableItem = QtWidgets.QTableWidgetItem()
+                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
+                        self.setItem(row, column, tableItem)
+                        self._createBerthingCheckBox(row=row, column=column)
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -212,16 +225,15 @@ class WorldBerthingTable(gui.WorldTable):
 
     def _createToolTip(self, item: QtWidgets.QTableWidgetItem) -> typing.Optional[str]:
         world = self.world(item.row())
-        if not world:
-            return None
 
-        columnType = self.columnHeader(item.column())
+        if world:
+            columnType = self.columnHeader(item.column())
+            if columnType == WaypointTableColumnType.BerthingRequired:
+                return gui.createStringToolTip(
+                    '<p>Specify if you plan to berth at this waypoint</p>' \
+                    '<p>This information is used when calculating the logistics costs of the route</p>',
+                    escape=False)
 
-        if columnType == WorldBerthingTableColumnType.BerthingRequired:
-            return gui.createStringToolTip(
-                '<p>Specify if you plan to berth at this waypoint</p>' \
-                '<p>This information is used when calculating the logistics costs of the route</p>',
-                escape=False)
         return super()._createToolTip(item)
 
     def _createBerthingCheckBox(
@@ -238,19 +250,19 @@ class WorldBerthingTable(gui.WorldTable):
     def _removeBerthingCheckBoxes(self) -> None:
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
-            if columnType == WorldBerthingTableColumnType.BerthingRequired:
+            if columnType == WaypointTableColumnType.BerthingRequired:
                 for row in range(self.rowCount()):
                     self.removeCellWidget(row, column)
 
     def _restoreBerthingCheckBoxes(self) -> None:
         for column in range(self.columnCount()):
             columnType = self.columnHeader(column)
-            if columnType == WorldBerthingTableColumnType.BerthingRequired:
+            if columnType == WaypointTableColumnType.BerthingRequired:
                 for row in range(self.rowCount()):
                     self._createBerthingCheckBox(row=row, column=column)
 
     def _swapBerthingChecks(self, swappedRows: typing.Iterable[typing.Tuple[int, int]]) -> None:
-        berthingColumn = self.columnHeaderIndex(WorldBerthingTableColumnType.BerthingRequired)
+        berthingColumn = self.columnHeaderIndex(WaypointTableColumnType.BerthingRequired)
         if berthingColumn < 0:
             return
 
@@ -266,7 +278,7 @@ class WorldBerthingTable(gui.WorldTable):
 
     def _berthingCheckChanged(
             self,
-            berthingState: 'WorldBerthingTable._BerthingState',
+            berthingState: 'WaypointTable._BerthingState',
             checkedState: int
             ) -> None:
         berthingState.checked = QtCore.Qt.CheckState(checkedState) == QtCore.Qt.CheckState.Checked

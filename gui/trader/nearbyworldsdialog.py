@@ -4,6 +4,8 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This will need updated to (optionally) allow dead space
+# to be selected as it's used by HexTableManagerWidget
 class NearbyWorldsDialog(gui.DialogEx):
     def __init__(
             self,

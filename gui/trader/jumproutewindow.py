@@ -131,10 +131,10 @@ class _RefuellingPlanTableColumnType(enum.Enum):
     WorstCaseBerthingCost = 'Worst Berthing Cost\n(Cr)'
     BestCaseBerthingCost = 'Best Berthing Cost\n(Cr)'
 
-class _RefuellingPlanTable(gui.WorldTable):
+class _RefuellingPlanTable(gui.HexTable):
     AllColumns = [
-        gui.WorldTable.ColumnType.World,
-        gui.WorldTable.ColumnType.Sector,
+        gui.HexTable.ColumnType.Name,
+        gui.HexTable.ColumnType.Sector,
         _RefuellingPlanTableColumnType.RefuellingType,
         _RefuellingPlanTableColumnType.FuelTons,
         _RefuellingPlanTableColumnType.FuelCost,
@@ -142,14 +142,14 @@ class _RefuellingPlanTable(gui.WorldTable):
         _RefuellingPlanTableColumnType.AverageCaseBerthingCost,
         _RefuellingPlanTableColumnType.WorstCaseBerthingCost,
         _RefuellingPlanTableColumnType.BestCaseBerthingCost,
-        gui.WorldTable.ColumnType.StarPort,
-        gui.WorldTable.ColumnType.GasGiantCount,
-        gui.WorldTable.ColumnType.Hydrographics
+        gui.HexTable.ColumnType.StarPort,
+        gui.HexTable.ColumnType.GasGiantCount,
+        gui.HexTable.ColumnType.Hydrographics
     ]
 
     def __init__(
             self,
-            columns: typing.Iterable[typing.Union[_RefuellingPlanTableColumnType, gui.WorldTable.ColumnType]] = AllColumns
+            columns: typing.Iterable[typing.Union[_RefuellingPlanTableColumnType, gui.HexTable.ColumnType]] = AllColumns
             ) -> None:
         super().__init__(columns=columns)
         self.setSortingEnabled(False)
@@ -166,7 +166,7 @@ class _RefuellingPlanTable(gui.WorldTable):
             self._pitStops.clear()
 
         for pitStop in self._pitStops:
-            self.addWorld(world=pitStop.world())
+            self.addHex(pos=pitStop.world())
 
     def pitStopAt(self, position: QtCore.QPoint) -> typing.Optional[logic.PitStop]:
         item = self.itemAt(position)
@@ -179,15 +179,18 @@ class _RefuellingPlanTable(gui.WorldTable):
     def _fillRow(
             self,
             row: int,
-            world: traveller.World
+            pos: travellermap.HexPosition,
+            world: typing.Optional[traveller.World]
             ) -> int:
+        assert(world) # Pitstops should always have a world
+
         # Disable sorting while updating a row. We don't want any sorting to occur
         # until all columns have been updated
         sortingEnabled = self.isSortingEnabled()
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, world)
+            super()._fillRow(row, pos, world)
 
             pitStop = self._pitStops[row]
             for column in range(self.columnCount()):
@@ -216,7 +219,7 @@ class _RefuellingPlanTable(gui.WorldTable):
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
-                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, world)
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -548,6 +551,9 @@ class JumpRouteWindow(gui.WindowWidget):
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
+        # TODO: The names of some of the elements here use world
+        # when they actually refer to hex tables. I think I'll need
+        # to leave them as is if I want backward compatibility
         self._settings.setValue('StartFinishWorldsState', self._startFinishWorldsWidget.saveState())
         self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
         self._settings.setValue('WaypointWorldTableState', self._waypointWorldsWidget.saveState())
@@ -764,9 +770,9 @@ class JumpRouteWindow(gui.WindowWidget):
         # TODO: This will need updated to handle waypoints in dead space
         # - IMPORTANT: Need to handle the case where users have waypoint lists already
         #   configured
-        self._waypointWorldTable = gui.WorldBerthingTable()
-        self._waypointWorldsWidget = gui.WorldTableManagerWidget(
-            worldTable=self._waypointWorldTable,
+        self._waypointWorldTable = gui.WaypointTable()
+        self._waypointWorldsWidget = gui.HexTableManagerWidget(
+            hexTable=self._waypointWorldTable,
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
@@ -784,8 +790,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupAvoidWorldsControls(self) -> None:
         # TODO: Not sure if it make sense to allow avoiding dead space hexes
-        self._avoidWorldsWidget = gui.WorldTableManagerWidget(
-            allowWorldCallback=self._allowAvoidWorld,
+        self._avoidWorldsWidget = gui.HexTableManagerWidget(
+            allowHexCallback=self._allowAvoidHex,
             showSelectInTravellerMapButton=False) # The windows Traveller Map widget should be used to select worlds
         self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._avoidWorldsWidget.enableShowInTravellerMapEvent(enable=True)
@@ -828,16 +834,15 @@ class JumpRouteWindow(gui.WindowWidget):
         labelLayout.addWidget(self._minRouteCostLabel)
         labelLayout.addWidget(self._maxRouteCostLabel)
 
-        self._jumpRouteDisplayModeTabBar = gui.WorldTableTabBar()
-        self._jumpRouteDisplayModeTabBar.currentChanged.connect(self._updateWorldTableColumns)
+        self._jumpRouteDisplayModeTabBar = gui.HexTableTabBar()
+        self._jumpRouteDisplayModeTabBar.currentChanged.connect(self._updateJumpRouteTableColumns)
 
-        # TODO: This will need a new table type that deals with nodes instead of worlds
-        self._jumpRouteTable = gui.WorldTable()
+        self._jumpRouteTable = gui.HexTable()
         self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
-        self._jumpRouteTable.setMinimumHeight(100)
+        self._jumpRouteTable.setMinimumHeight(100) # TODO: Should this have interface scaling applied?
         self._jumpRouteTable.setSortingEnabled(False) # Disable sorting as we only want to display in jump route order
         self._jumpRouteTable.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self._jumpRouteTable.customContextMenuRequested.connect(self._showJumpWorldsTableContextMenu)
+        self._jumpRouteTable.customContextMenuRequested.connect(self._showJumpRouteTableContextMenu)
 
         jumpRouteLayout = QtWidgets.QVBoxLayout()
         jumpRouteLayout.setContentsMargins(0, 0, 0, 0)
@@ -910,20 +915,20 @@ class JumpRouteWindow(gui.WindowWidget):
         # something like adding a waypoint world
         self._zoomToJumpRoute = True
 
-    def _waypointsTableDisplayModeChanged(self, displayMode: gui.WorldTableTabBar.DisplayMode) -> None:
+    def _waypointsTableDisplayModeChanged(self, displayMode: gui.HexTableTabBar.DisplayMode) -> None:
         columns = None
-        if displayMode == gui.WorldTableTabBar.DisplayMode.AllColumns:
-            columns = gui.WorldBerthingTable.AllColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.SystemColumns:
-            columns = gui.WorldBerthingTable.SystemColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.UWPColumns:
-            columns = gui.WorldBerthingTable.UWPColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.EconomicsColumns:
-            columns = gui.WorldBerthingTable.EconomicsColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.CultureColumns:
-            columns = gui.WorldBerthingTable.CultureColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.RefuellingColumns:
-            columns = gui.WorldBerthingTable.RefuellingColumns
+        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
+            columns = gui.WaypointTable.AllColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
+            columns = gui.WaypointTable.SystemColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
+            columns = gui.WaypointTable.UWPColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
+            columns = gui.WaypointTable.EconomicsColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
+            columns = gui.WaypointTable.CultureColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
+            columns = gui.WaypointTable.RefuellingColumns
         else:
             assert(False) # I missed a case
         self._waypointWorldsWidget.setVisibleColumns(columns)
@@ -1083,30 +1088,31 @@ class JumpRouteWindow(gui.WindowWidget):
         self._calculateRouteButton.showPrimaryText()
         self._enableDisableControls()
 
-    def _updateWorldTableColumns(self, index: int) -> None:
+    def _updateJumpRouteTableColumns(self, index: int) -> None:
         self._jumpRouteTable.setVisibleColumns(self._jumpRouteColumns())
 
-    def _jumpRouteColumns(self) -> typing.List[gui.WorldTable.ColumnType]:
+    def _jumpRouteColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._jumpRouteDisplayModeTabBar.currentDisplayMode()
-        if displayMode == gui.WorldTableTabBar.DisplayMode.AllColumns:
-            return gui.WorldTable.AllColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.SystemColumns:
-            return gui.WorldTable.SystemColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.UWPColumns:
-            return gui.WorldTable.UWPColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.EconomicsColumns:
-            return gui.WorldTable.EconomicsColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.CultureColumns:
-            return gui.WorldTable.CultureColumns
-        elif displayMode == gui.WorldTableTabBar.DisplayMode.RefuellingColumns:
-            return gui.WorldTable.RefuellingColumns
+        if displayMode == gui.HexTableTabBar.DisplayMode.AllColumns:
+            return gui.HexTable.AllColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.SystemColumns:
+            return gui.HexTable.SystemColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.UWPColumns:
+            return gui.HexTable.UWPColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.EconomicsColumns:
+            return gui.HexTable.EconomicsColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.CultureColumns:
+            return gui.HexTable.CultureColumns
+        elif displayMode == gui.HexTableTabBar.DisplayMode.RefuellingColumns:
+            return gui.HexTable.RefuellingColumns
         else:
             assert(False) # I missed a case
 
     # TODO: This will need updated to account for the fact the "jump worlds table"
     # will actually be dealing with nodes so some options might not apply (e.g.
     # show world details only makes sense if a world node is selected)
-    def _showJumpWorldsTableContextMenu(self, position: QtCore.QPoint) -> None:
+    # TODO: Remember to update the text strings
+    def _showJumpRouteTableContextMenu(self, position: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
                 text='Add Selected Worlds to Waypoints',
@@ -1659,8 +1665,8 @@ class JumpRouteWindow(gui.WindowWidget):
             return None
         return dlg.world()
 
-    def _allowAvoidWorld(self, world: traveller.World) -> bool:
-        if self._avoidWorldsWidget.containsWorld(world):
+    def _allowAvoidHex(self, pos: travellermap.HexPosition) -> bool:
+        if self._avoidWorldsWidget.containsHex(pos):
             # Silently ignore worlds that are already in the table
             return False
         return True
@@ -1683,10 +1689,8 @@ class JumpRouteWindow(gui.WindowWidget):
                 text='Ship\'s current fuel can\'t be larger than its fuel capacity')
             return
 
-        # TODO: This will need updated as the jump route table will be dealing
-        # with nodes
-        self._jumpRouteTable.addWorlds(
-            worlds=[world for _, world in self._jumpRoute if world])
+        self._jumpRouteTable.setHexes(
+            positions=[pos for pos, _ in self._jumpRoute])
         self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
         self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
 

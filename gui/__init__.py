@@ -60,8 +60,8 @@ from .trader.scalarcargodetailsdialog import *
 from .trader.cargorecordtable import *
 from .trader.tradeoptiontable import *
 from .trader.cargomanifesttable import *
-from .trader.worldtable import *
-from .trader.worldberthingtable import *
+from .trader.hextable import *
+from .trader.waypointtable import *
 from .trader.worldtradescoretable import *
 from .trader.dicerolltable import *
 from .trader.sharedconfigwidgets import *
@@ -69,7 +69,7 @@ from .trader.travellermapwidgetbase import *
 from .trader.travellermapwidget import *
 from .trader.calculationmodetabbar import *
 from .trader.travellermapselectdialog import *
-from .trader.worldtablemanagerwidget import *
+from .trader.hextablemanagerwidget import *
 from .trader.worlddetailswindow import *
 from .trader.travellermapwindow import *
 from .trader.worldcomparisonwindow import *

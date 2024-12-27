@@ -209,6 +209,12 @@ class WorldManager(object):
             ) -> typing.Optional[traveller.World]:
         return self._absoluteWorldMap.get(pos.absolute())
 
+    def sectorByPosition(
+            self,
+            pos: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Sector]:
+        return self._sectorPositionMap.get((pos.sectorX(), pos.sectorY()))
+
     def worldsInArea(
             self,
             center: travellermap.HexPosition,
