@@ -1211,16 +1211,18 @@ class JumpRouteWindow(gui.WindowWidget):
     # to dead space
     def _showTravellerMapContextMenu(
             self,
-            sectorHex: str
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
         clickedWorld = None
         try:
-            if sectorHex:
-                clickedWorld = traveller.WorldManager.instance().world(sectorHex=sectorHex)
+            if pos:
+                clickedWorld = traveller.WorldManager.instance().worldByPosition(pos=pos)
         except Exception as ex:
+            absoluteX, absoluteY = pos.absolute()
             logging.warning(
-                f'An exception occurred while resolving sector hex "{sectorHex}" to world for context menu',
+                f'An exception occurred while resolving hex {absoluteX}, {absoluteY} to a world for context menu',
                 exc_info=ex)
+            # Continue as if no world was clicked
 
         startWorld, finishWorld = self._startFinishWorldsWidget.worlds()
 
@@ -1294,12 +1296,12 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _formatMapToolTip(
             self,
-            sectorHex: typing.Optional[str]
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> typing.Optional[str]:
-        if not sectorHex:
+        if not pos:
             return None
 
-        hoverWorld = traveller.WorldManager.instance().world(sectorHex=sectorHex)
+        hoverWorld = traveller.WorldManager.instance().worldByPosition(pos=pos)
         if not hoverWorld:
             return None
 

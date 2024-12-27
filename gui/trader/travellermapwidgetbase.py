@@ -128,8 +128,10 @@ class _OverlayGroups(object):
 
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor
-    leftClicked = QtCore.pyqtSignal([str], [type(None)])
-    rightClicked = QtCore.pyqtSignal([str], [type(None)])
+    # TODO: Is this the pattern to allow signals to pass optional values? If so I
+    # should port it to other code (in a separate PR)
+    leftClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
+    rightClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
 
     # Number of pixels of movement we allow between the left mouse button down and up events for
     # the action to be counted as a click. I found that forcing no movement caused clicks to be
@@ -541,7 +543,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def setToolTipCallback(
             self,
-            callback: typing.Optional[typing.Callable[[str], typing.Optional[str]]],
+            callback: typing.Optional[typing.Callable[[typing.Optional[travellermap.HexPosition]], typing.Optional[str]]],
             ) -> None:
         self._toolTipCallback = callback
 
@@ -758,10 +760,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
                 group=group.handle())
         self._runScript(script)
 
-    def _sectorHexAt(
+    def _hexAt(
             self,
             position: QtCore.QPoint,
-            callback: typing.Callable[[typing.Optional[traveller.World]], None]
+            callback: typing.Callable[[typing.Optional[travellermap.HexPosition]], None]
             ) -> None:
         script = """
             var mapPos = map.pixelToMap({x}, {y});
@@ -774,19 +776,10 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             script=script,
             resultsCallback=lambda results: callback(self._parseCursorHexResult(results)))
 
-    def _worldAt(
-            self,
-            position: QtCore.QPoint,
-            callback: typing.Callable[[typing.Optional[traveller.World]], None]
-            ) -> None:
-        self._sectorHexAt(
-            position=position,
-            callback=lambda sectorHex: callback(self._sectorHexToWorld(sectorHex=sectorHex)))
-
     def _parseCursorHexResult(
             self,
             returnValue: str
-            ) -> typing.Optional[traveller.World]:
+            ) -> typing.Optional[travellermap.HexPosition]:
         if not returnValue or type(returnValue) != str:
             logging.error(f'Failed to parse TravellerMapWidget click result (Incorrect result type)')
             return None
@@ -796,37 +789,28 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             return None
 
         try:
-            sectorX = int(result.group(1))
-            sectorY = int(result.group(2))
-            sectorName = traveller.WorldManager.instance().sectorName(sectorX=sectorX, sectorY=sectorY)
-            if not sectorName:
-                # This is only logged at debug as it legitimately occurs if the user clicks
-                # on an area which has no sector data
-                logging.debug(f'Failed to parse TravellerMapWidget click result (No sector at {sectorX}, {sectorY})')
-                return None
-
-            worldX = int(result.group(3))
-            worldY = int(result.group(4))
-            return traveller.formatSectorHex(
-                sectorName=sectorName,
-                worldX=worldX,
-                worldY=worldY)
+            return travellermap.HexPosition(
+                sectorX=int(result.group(1)),
+                sectorY=int(result.group(2)),
+                offsetX=int(result.group(3)),
+                offsetY=int(result.group(4)))
         except Exception as ex:
             logging.error(f'Failed to parse TravellerMapWidget click result (Unexpected exception)', exc_info=ex)
             return None
 
-    def _sectorHexToWorld(
+    def _hexToWorld(
             self,
-            sectorHex: str
+            pos: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        if not sectorHex:
+        if not pos:
             # This can happen if the cursor is outside the known universe
             return None
 
         try:
-            return traveller.WorldManager.instance().world(sectorHex=sectorHex)
+            return traveller.WorldManager.instance().worldByPosition(pos=pos)
         except Exception as ex:
-            logging.error(f'Exception occurred while resolving sector hex "{sectorHex}" to world', exc_info=ex)
+            absoluteX, absoluteY = pos.absolute()
+            logging.error(f'Exception occurred while resolving hex {absoluteX},{absoluteY} to a world', exc_info=ex)
             return None
 
     def _updateToolTip(
@@ -871,7 +855,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             position: QtCore.QPoint
             ) -> None:
-        self._sectorHexAt(
+        self._hexAt(
             position=position,
             callback=self._handleLeftClickEvent)
 
@@ -879,35 +863,35 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             position: QtCore.QPoint
             ) -> None:
-        self._sectorHexAt(
+        self._hexAt(
             position=position,
             callback=self._handleRightClickEvent)
 
     def _handleLeftClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._emitLeftClickEvent(sectorHex=sectorHex)
+        self._emitLeftClickEvent(pos=pos)
 
     def _handleRightClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: travellermap.HexPosition
             ) -> None:
-        self._emitRightClickEvent(sectorHex=sectorHex)
+        self._emitRightClickEvent(pos=pos)
 
     def _emitLeftClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: travellermap.HexPosition
             ) -> None:
         if self.isEnabled():
-            self.leftClicked.emit(sectorHex)
+            self.leftClicked.emit(pos)
 
     def _emitRightClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: travellermap.HexPosition
             ) -> None:
         if self.isEnabled():
-            self.rightClicked.emit(sectorHex)
+            self.rightClicked.emit(pos)
 
     def _toolTipTimerFired(self) -> None:
         cursorPos = self.mapFromGlobal(QtGui.QCursor.pos())
@@ -921,15 +905,15 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._toolTipDisplayPos = cursorPos
             self._toolTipQueuePos = None
             self._toolTipScriptRunning = True
-            self._sectorHexAt(
+            self._hexAt(
                 position=cursorPos,
-                callback=self._handleToolTipSectorHex)
+                callback=self._handleToolTipEvent)
         else:
             self._toolTipQueuePos = cursorPos
 
-    def _handleToolTipSectorHex(
+    def _handleToolTipEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if not self._toolTipScriptRunning:
             # Tool tip has been cancelled. Don't call _hideToolTip here as the tool
@@ -950,7 +934,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self._hideToolTip()
             return
 
-        toolTip = self._toolTipCallback(sectorHex)
+        toolTip = self._toolTipCallback(pos)
         if not toolTip:
             self._hideToolTip()
             return

@@ -897,6 +897,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             for action in TravellerMapWidget._sharedOverlayGroup.actions():
                 action.triggered.disconnect(self._displayOptionChanged)
 
+    # TODO: Selection needs updated to work with hexes
+    # TODO: Selecting dead space should be optional
     def selectedWorlds(self) -> typing.Iterable[traveller.World]:
         return self._selectedWorlds
 
@@ -1193,14 +1195,18 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
     def _handleLeftClickEvent(
             self,
-            sectorHex: typing.Optional[str]
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
         world = None
-        if sectorHex:
-            try:
-                world = traveller.WorldManager.instance().world(sectorHex=sectorHex)
-            except Exception:
-                pass
+        try:
+            if pos:
+                world = traveller.WorldManager.instance().worldByPosition(pos=pos)
+        except Exception as ex:
+            absoluteX, absoluteY = pos.absolute()
+            logging.warning(
+                f'An exception occurred while resolving hex {absoluteX}, {absoluteY} to a world for context menu',
+                exc_info=ex)
+            # Continue as if no world was clicked
 
         # Show info for the world the user clicked on or hide any current world info if there
         # is no world in the hex the user clicked
@@ -1219,7 +1225,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 self.deselectWorld(world=world)
 
         # Call base implementation to generate left click event
-        super()._handleLeftClickEvent(sectorHex=sectorHex)
+        super()._handleLeftClickEvent(pos=pos)
 
     def _displayOptionChanged(self) -> None:
         self._legendWidget.syncContent()
