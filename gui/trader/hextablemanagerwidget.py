@@ -5,7 +5,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This needs to be able to handle (optionally) selecting dead space
 # TODO: Pretty much all the logic about removing world versions of functions
 # in HexTable apply here as well
 # TODO: I've never liked the name of this class, possibly a good time to
@@ -118,7 +117,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._addButton.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Minimum,
             QtWidgets.QSizePolicy.Policy.Minimum)
-        self._addButton.clicked.connect(self.promptAddWorld)
+        self._addButton.clicked.connect(self.promptAddHex)
 
         self._removeButton = QtWidgets.QPushButton('Remove')
         self._removeButton.setSizePolicy(
@@ -419,17 +418,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         if updated:
             self.contentChanged.emit()
 
-    def promptAddWorld(self) -> None:
-        # TODO: Need to switch this to use hexes
-        gui.MessageBoxEx.critical(
-            parent=self,
-            text='Implement me!')
-        return
-
+    def promptAddHex(self) -> None:
         dlg = gui.WorldSearchDialog(parent=self)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        self.addWorld(dlg.world())
+        self.addHex(dlg.world().hexPosition()) # TODO: This is a hack needed until WorldSearchDialog supports hexes
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()
@@ -489,6 +482,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
                 text=message,
                 exception=ex)
 
+    # TODO: The menu option text for this menu need updated
     def _showHexTableContextMenu(self, position: QtCore.QPoint) -> None:
         if self._enableContextMenuEvent:
             translated = self._hexTable.viewport().mapToGlobal(position)
@@ -507,7 +501,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self.promptAddWorld(),
+                callback=lambda: self.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(

@@ -16,7 +16,7 @@ class NearbyWorldsDialog(gui.DialogEx):
             configSection='NearbyWorldDialog',
             parent=parent)
 
-        self._selectWorldWidget = gui.WorldSearchWidget()
+        self._selectWorldWidget = gui.HexSearchWidget()
         self._selectWorldWidget.selectionChanged.connect(self._selectionChanged)
 
         self._selectRadiusSpinBox = gui.SpinBoxEx()
@@ -29,7 +29,7 @@ class NearbyWorldsDialog(gui.DialogEx):
         selectionRadiusLayout.addWidget(self._selectRadiusSpinBox)
 
         self._okButton = QtWidgets.QPushButton('OK')
-        self._okButton.setDisabled(not self._selectWorldWidget.world())
+        self._okButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
         self._okButton.setDefault(True)
         self._okButton.clicked.connect(self.accept)
 
@@ -72,10 +72,11 @@ class NearbyWorldsDialog(gui.DialogEx):
         self._settings.endGroup()
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._selectWorldWidget.world()
+        return self._selectWorldWidget.hackSelectedWorld()
 
     def setWorld(self, world: typing.Optional[traveller.World]) -> None:
-        self._selectWorldWidget.setWorld(world)
+        # TODO: This is a hack until this widget us updated to use hexes
+        self._selectWorldWidget.setSelectedHex(pos=world.hexPosition() if world else None)
 
     def searchRadius(self) -> int:
         return self._selectRadiusSpinBox.value()
@@ -96,4 +97,4 @@ class NearbyWorldsDialog(gui.DialogEx):
         super().accept()
 
     def _selectionChanged(self) -> None:
-        self._okButton.setDisabled(not self._selectWorldWidget.world())
+        self._okButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())

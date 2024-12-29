@@ -917,8 +917,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     def selectHex(
             self,
             pos: travellermap.HexPosition,
-            centerOnWorld: bool = True,
-            setInfoWorld: bool = True
+            centerOnHex: bool = True,
+            setInfoHex: bool = True
             ) -> None:
         world = traveller.WorldManager.instance().worldByPosition(pos=pos)
         if not world and not self._allowDeadSpaceSelection:
@@ -940,10 +940,10 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
         self.highlightHex(pos=pos)
 
-        if centerOnWorld:
+        if centerOnHex:
             self.centerOnHex(pos=pos)
 
-        if setInfoWorld:
+        if setInfoHex:
             self.setInfoHex(pos=pos)
 
         self.selectionChanged.emit()
@@ -1246,8 +1246,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             if pos not in self._selectedHexes:
                 self.selectHex(
                     pos=pos,
-                    centerOnWorld=False, # Don't center as user is interacting with map
-                    setInfoWorld=False) # Updating info world has already been handled
+                    centerOnHex=False, # Don't center as user is interacting with map
+                    setInfoHex=False) # Updating info world has already been handled
             else:
                 # Clicking a selected worlds deselects it
                 self.deselectHex(pos=pos)
@@ -1375,8 +1375,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
                 self.selectHex(
                     pos=pos,
-                    centerOnWorld=False, # Centring on the world has already been handled
-                    setInfoWorld=False) # Updating info world has already been handled
+                    centerOnHex=False, # Centring on the world has already been handled
+                    setInfoHex=False) # Updating info world has already been handled
 
         self._searchButton.setEnabled(pos != None)
 

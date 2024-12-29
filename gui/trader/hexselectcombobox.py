@@ -90,8 +90,6 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
-# TODO: This will need updating to (optionally) allow the user to select
-# dead space hexes
 class HexSelectComboBox(gui.ComboBoxEx):
     hexChanged = QtCore.pyqtSignal(object)
 
@@ -455,7 +453,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def _findCompletionMatches(self) -> typing.Collection[travellermap.HexPosition]:
         searchString = self.currentText().strip()
-        matches = []
+        matches: typing.List[travellermap.HexPosition] = []
 
         if searchString:
             # NOTE: For sorting to make sense it's important that the world
@@ -483,7 +481,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                     pos = traveller.WorldManager.instance().sectorHexToPosition(
                         sectorHex=searchString)
                     isDuplicate = False
-                    for other, _ in matches:
+                    for other in matches:
                         if pos == other:
                             isDuplicate = True
                             break

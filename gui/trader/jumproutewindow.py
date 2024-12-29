@@ -1657,12 +1657,6 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
 
-    def _selectWorld(self) -> typing.Optional[traveller.World]:
-        dlg = gui.WorldSearchDialog(parent=self)
-        if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return None
-        return dlg.world()
-
     def _allowAvoidHex(self, pos: travellermap.HexPosition) -> bool:
         if self._avoidWorldsWidget.containsHex(pos):
             # Silently ignore worlds that are already in the table

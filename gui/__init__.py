@@ -53,7 +53,7 @@ from .trader.tradegoodmultiselectdialog import *
 from .trader.worldfilterdialog import *
 from .trader.worldfiltertable import *
 from .trader.worldfiltertablemanagerwidget import *
-from .trader.worldsearchwidget import *
+from .trader.hexsearchwidget import *
 from .trader.worldsearchdialog import *
 from .trader.worldselectwidget import *
 from .trader.scalarcargodetailsdialog import *

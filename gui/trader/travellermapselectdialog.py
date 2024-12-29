@@ -55,8 +55,8 @@ class TravellerMapSelectDialog(gui.DialogEx):
             ) -> None:
         self._mapWidget.selectHex(
             pos=pos,
-            centerOnWorld=centerOnWorld,
-            setInfoWorld=setInfoWorld)
+            centerOnHex=centerOnWorld,
+            setInfoHex=setInfoWorld)
 
     def deselectHex(
             self,

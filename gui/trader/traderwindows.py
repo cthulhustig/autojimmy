@@ -2251,7 +2251,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._purchaseWorldsWidget.promptAddWorld(),
+                callback=lambda: self._purchaseWorldsWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(
@@ -2317,7 +2317,7 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._saleWorldsWidget.promptAddWorld(),
+                callback=lambda: self._saleWorldsWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(

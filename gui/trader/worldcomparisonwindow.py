@@ -242,8 +242,8 @@ class WorldComparisonWindow(gui.WindowWidget):
             for world in self._worldTable.worlds():
                 self._travellerMapWidget.selectHex(
                     pos=world.hexPosition(),
-                    centerOnWorld=False,
-                    setInfoWorld=False)
+                    centerOnHex=False,
+                    setInfoHex=False)
 
     def _mapSelectionChanged(self) -> None:
         with gui.SignalBlocker(widget=self._worldManagementWidget):
@@ -269,7 +269,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Add World...',
-                callback=lambda: self._worldManagementWidget.promptAddWorld(),
+                callback=lambda: self._worldManagementWidget.promptAddHex(),
                 enabled=True
             ),
             gui.MenuItem(

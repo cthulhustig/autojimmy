@@ -4,6 +4,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This will probably need updated to support hexes
 class WorldSearchDialog(gui.DialogEx):
     def __init__(
             self,
@@ -14,11 +15,11 @@ class WorldSearchDialog(gui.DialogEx):
             configSection='WorldSearchDialog',
             parent=parent)
 
-        self._selectWorldWidget = gui.WorldSearchWidget()
+        self._selectWorldWidget = gui.HexSearchWidget()
         self._selectWorldWidget.selectionChanged.connect(self._selectionChanged)
 
         self._selectButton = QtWidgets.QPushButton('Select')
-        self._selectButton.setDisabled(not self._selectWorldWidget.world())
+        self._selectButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
         self._selectButton.setDefault(True)
         self._selectButton.clicked.connect(self.accept)
 
@@ -38,10 +39,11 @@ class WorldSearchDialog(gui.DialogEx):
         self.setLayout(windowLayout)
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._selectWorldWidget.world()
+        return self._selectWorldWidget.hackSelectedWorld()
 
     def setWorld(self, world: typing.Optional[traveller.World]) -> None:
-        self._selectWorldWidget.setWorld(world)
+        # TODO: This is a hack until this widget us updated to use hexes
+        self._selectWorldWidget.setSelectedHex(pos=world.hexPosition() if world else None)
 
     # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
     def loadSettings(self) -> None:
@@ -71,4 +73,4 @@ class WorldSearchDialog(gui.DialogEx):
         super().accept()
 
     def _selectionChanged(self) -> None:
-        self._selectButton.setDisabled(not self._selectWorldWidget.world())
+        self._selectButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
