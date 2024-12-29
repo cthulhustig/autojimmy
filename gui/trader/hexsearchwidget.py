@@ -5,6 +5,12 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: There is some unpleasant behaviour here but it's not a regression due
+# to the dead space stuff. If using the offline search you type a string that
+# matches multiple hexes, when you then click one in the results list it
+# updates the results list to only contain that item. Ideally it would leave
+# the results as they were but that probably means not updating the combo box
+# to have the text for the selected entry
 class HexSearchWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
 
