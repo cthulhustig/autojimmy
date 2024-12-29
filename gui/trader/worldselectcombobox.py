@@ -261,7 +261,12 @@ class WorldSelectComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
 
-            for world in app.RecentWorlds.instance().worlds():
+            for pos in app.HexHistory.instance().hexes():
+                # TODO: This is a hack until this widget is updated to use hexes
+                world = traveller.WorldManager.instance().worldByPosition(pos)
+                if not world:
+                    continue
+
                 self.addItem(world.name(includeSubsector=True), world)
 
                 displayHtml = _formatWorldHtml(world)
@@ -376,7 +381,7 @@ class WorldSelectComboBox(gui.ComboBoxEx):
 
         self._selectedWorld = world
         if world and updateRecentWorlds:
-            app.RecentWorlds.instance().addWorld(world)
+            app.HexHistory.instance().addHex(pos=world.hexPosition()) # TODO: This is a hack until this widget is updated to use hexes
 
         # Notify observers that the selected world has changed. This is done even
         # if it's actually the same world to allow for the case where the user

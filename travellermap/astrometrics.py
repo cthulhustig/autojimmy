@@ -333,6 +333,10 @@ class HexPosition(object):
     def __hash__(self) -> int:
         return hash(self.absolute())
 
+    def __str__(self) -> str:
+        absoluteX, absoluteY = self.absolute()
+        return f'({absoluteX}, {absoluteY})'
+
     def absoluteX(self) -> int:
         if not self._absolute:
             self._calculateAbsolute()

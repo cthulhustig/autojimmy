@@ -1372,7 +1372,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self.centerOnHex(pos=world.hexPosition())
 
         # Add the selected world to the recently used list
-        app.RecentWorlds.instance().addWorld(world)
+        app.HexHistory.instance().addHex(pos=world.hexPosition())
 
         if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
             self.selectHex(

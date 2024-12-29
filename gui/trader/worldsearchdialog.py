@@ -62,7 +62,7 @@ class WorldSearchDialog(gui.DialogEx):
             return # A valid world must be selected to accept
 
         # Add the selected world to the recently used list
-        app.RecentWorlds.instance().addWorld(world)
+        app.HexHistory.instance().addHex(pos=world.hexPosition()) # TODO: This is temporary until this widget is updated to uses hexes
 
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('SelectWorldState', self._selectWorldWidget.saveState())

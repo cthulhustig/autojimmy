@@ -32,6 +32,7 @@ class WorldManager(object):
     _alternateNameMap: typing.Dict[str, typing.List[traveller.Sector]] = {}
     _sectorPositionMap: typing.Dict[typing.Tuple[int, int], traveller.Sector] = {}
     _subsectorNameMap: typing.Dict[str, typing.List[traveller.Subsector]] = {}
+    _subsectorSectorMap: typing.Dict[traveller.Subsector, traveller.Sector] = {}
     _absoluteWorldMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
 
     def __init__(self) -> None:
@@ -134,6 +135,8 @@ class WorldManager(object):
                         self._subsectorNameMap[subsectorName] = subsectorList
                     subsectorList.append(subsector)
 
+                    self._subsectorSectorMap[subsector] = sector
+
                 for world in sector.worlds():
                     hexPos = world.hexPosition()
                     self._absoluteWorldMap[(hexPos.absoluteX(), hexPos.absoluteY())] = world
@@ -167,41 +170,11 @@ class WorldManager(object):
             self,
             sectorHex: str,
             ) -> typing.Optional[traveller.World]:
-        sectorName, worldX, worldY = traveller.splitSectorHex(sectorHex=sectorHex)
-
-        # Sector name lookup is case insensitive. The sector name map stores sector names in lower
-        # so search name should be converted to lower case before searching
-        sectorName = sectorName.lower()
-
-        # Check to see if the sector name is a canonical sector name
-        sector = self._canonicalNameMap.get(sectorName)
-        if sector:
-            world = sector.worldByPosition(x=worldX, y=worldY)
-            if world:
-                return world
-
-        # Make a best effort attempt to find the world by looking at abbreviations/alternate names
-        # and subsector names. This is important as in some places the official data does ths for
-        # things like owner/colony worlds sector hexes. These names are not guaranteed to be unique
-        # so the first found world will be returned
-
-        # Check to see if the sector name is as a alternate name
-        sectors = self._alternateNameMap.get(sectorName)
-        if sectors:
-            for sector in sectors:
-                world = sector.worldByPosition(x=worldX, y=worldY)
-                if world:
-                    return world
-
-        # Check to see if the sector name is as actually a subsector name
-        subsectors = self._subsectorNameMap.get(sectorName)
-        if subsectors:
-            for subsector in subsectors:
-                world = subsector.worldByPosition(x=worldX, y=worldY)
-                if world:
-                    return world
-
-        return None
+        try:
+            pos = self.sectorHexToPosition(sectorHex=sectorHex)
+        except Exception as ex:
+            return None
+        return self.worldByPosition(pos=pos)
 
     def worldByPosition(
             self,
@@ -238,6 +211,45 @@ class WorldManager(object):
             sectorName=sector.name(),
             worldX=offsetX,
             worldY=offsetY)
+
+    def sectorHexToPosition(
+            self,
+            sectorHex: str,
+            ) -> travellermap.HexPosition:
+        sectorName, offsetX, offsetY = traveller.splitSectorHex(
+            sectorHex=sectorHex)
+
+        # Sector name lookup is case insensitive. The sector name map stores
+        # sector names in lower so search name should be converted to lower case
+        # before searching
+        sectorName = sectorName.lower()
+
+        # Check to see if the sector name is a canonical sector name
+        sector = self._canonicalNameMap.get(sectorName)
+        if not sector:
+            # Make a best effort attempt to find the sector by looking at
+            # abbreviations/alternate names and subsector names. This is
+            # important as in some places the official data does ths for things
+            # like owner/colony worlds sector hexes. These matches are not
+            # always unique so just use the first if more than one is found
+            sectors = self._alternateNameMap.get(sectorName)
+            if sectors:
+               # Alternate sector name match
+               sector = sectors[0]
+            else:
+                subsectors = self._subsectorNameMap.get(sectorName)
+                if subsectors:
+                    # Subsector name match
+                    sector = self._subsectorSectorMap.get(subsectors[0])
+
+        if not sector:
+            raise RuntimeError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
+
+        return travellermap.HexPosition(
+            sectorX=sector.x(),
+            sectorY=sector.y(),
+            offsetX=offsetX,
+            offsetY=offsetY)
 
     def yieldWorldsInArea(
             self,
