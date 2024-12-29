@@ -6,6 +6,7 @@ import traveller
 import typing
 from PyQt5 import QtCore
 
+# TODO: This needs updated to allow dead space sector hexes to be stored
 class RecentWorlds(object):
     _SearchFileName = 'recentworlds.ini'
     _MaxCount = 50

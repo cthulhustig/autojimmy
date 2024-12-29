@@ -4,6 +4,7 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: This will probably need updated to allow (optionally) selecting dead space
 class WorldSearchWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
 
@@ -39,6 +40,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
 
         self._mapWidget = gui.TravellerMapWidget()
         self._mapWidget.setSelectionMode(gui.TravellerMapWidget.SelectionMode.SingleSelect)
+        self._mapWidget.enableDeadSpaceSelection(False) # TODO: This needs to be configurable
         self._mapWidget.setInfoEnabled(False) # Disabled by default
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
 
@@ -67,7 +69,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
                 return None
             return selectedItems[0].data(QtCore.Qt.ItemDataRole.UserRole)
         elif currentWidget == self._onlineWidget:
-            selection = self._mapWidget.selectedWorlds()
+            selection = self._mapWidget.hackSelectedWorlds()
             return selection[0] if selection else None
         return None
 
@@ -83,12 +85,12 @@ class WorldSearchWidget(QtWidgets.QWidget):
 
         with gui.SignalBlocker(widget=self._mapWidget):
             if world:
-                self._mapWidget.selectWorld(
-                    world=world,
+                self._mapWidget.selectHex(
+                    pos=world.hexPosition(), # TODO: This is a hack until this widget supports hexes
                     centerOnWorld=True,
                     setInfoWorld=True)
             else:
-                self._mapWidget.clearSelectedWorlds()
+                self._mapWidget.clearSelectedHexes()
 
         self.selectionChanged.emit()
 
@@ -239,12 +241,12 @@ class WorldSearchWidget(QtWidgets.QWidget):
 
         with gui.SignalBlocker(widget=self._mapWidget):
             if world:
-                self._mapWidget.selectWorld(
-                    world,
+                self._mapWidget.selectHex(
+                    pos=world.hexPosition(), # TODO: This is a hack until this widget supports hexes
                     centerOnWorld=True,
                     setInfoWorld=True)
             else:
-                self._mapWidget.clearSelectedWorlds()
+                self._mapWidget.clearSelectedHexes()
 
         self.selectionChanged.emit()
 

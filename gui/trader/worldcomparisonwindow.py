@@ -238,24 +238,24 @@ class WorldComparisonWindow(gui.WindowWidget):
 
     def _tableContentsChanged(self) -> None:
         with gui.SignalBlocker(widget=self._travellerMapWidget):
-            self._travellerMapWidget.clearSelectedWorlds()
+            self._travellerMapWidget.clearSelectedHexes()
             for world in self._worldTable.worlds():
-                self._travellerMapWidget.selectWorld(
-                    world=world,
+                self._travellerMapWidget.selectHex(
+                    pos=world.hexPosition(),
                     centerOnWorld=False,
                     setInfoWorld=False)
 
     def _mapSelectionChanged(self) -> None:
         with gui.SignalBlocker(widget=self._worldManagementWidget):
             oldSelection = set(self._worldManagementWidget.worlds())
-            newSelection = set(self._travellerMapWidget.selectedWorlds())
+            newSelection = set(self._travellerMapWidget.hackSelectedWorlds())
 
             for world in oldSelection:
-                if world not in newSelection:
+                if world and world not in newSelection:
                     self._worldManagementWidget.removeWorld(world)
 
             for world in newSelection:
-                if world not in oldSelection:
+                if world and world not in oldSelection:
                     self._worldManagementWidget.addWorld(world)
 
     def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:

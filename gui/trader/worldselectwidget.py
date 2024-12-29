@@ -5,10 +5,13 @@ import traveller
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: This will probably need updated to (optionally) support dead space selection
 class WorldSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showWorld = QtCore.pyqtSignal(traveller.World)
 
+    # TODO: I suspect this class will be renamed to HexSelectWidget but I might need
+    # to keep this state so users don't loose the last selected world
     _StateVersion = 'WorldSelectWidget_v1'
 
     # The world select combo box has a minimum width applied to stop it
@@ -151,17 +154,26 @@ class WorldSelectWidget(QtWidgets.QWidget):
     def _mapSelectClicked(self) -> None:
         if not self._mapSelectDialog:
             self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
-            self._mapSelectDialog.setSingleSelect(True)
+            self._mapSelectDialog.configureSelection(
+                singleSelect=True,
+                allowDeadSpace=False) # TODO: This needs to be configurable
 
-        currentSelection = [self.world()] if self.hasSelection() else []
-        self._mapSelectDialog.setSelectedWorlds(currentSelection)
+        world = self.world()
+        if world:
+            self._mapSelectDialog.selectHex(pos=world.hexPosition())
+        else:
+            self._mapSelectDialog.clearSelectedHexes()
         if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        newSelection = self._mapSelectDialog.selectedWorlds()
+        newSelection = self._mapSelectDialog.selectedHexes()
         if len(newSelection) != 1:
             return
 
-        self._worldComboBox.setCurrentWorld(world=newSelection[0])
+        world = traveller.WorldManager.instance().worldByPosition(pos=newSelection[0])
+        if not world:
+            return
+
+        self._worldComboBox.setCurrentWorld(world=world)
 
     def _showWorldClicked(self) -> None:
         world = self.world()
