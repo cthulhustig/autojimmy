@@ -1304,12 +1304,14 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not self._jumpRoute:
             toolTip = ''
-            if pos == self._startFinishWorldsWidget.startWorld().hexPosition() and \
-                    pos == self._startFinishWorldsWidget.finishWorld().hexPosition():
+            startWorld = self._startFinishWorldsWidget.startWorld()
+            finishWorld = self._startFinishWorldsWidget.finishWorld()
+            if (startWorld and pos == startWorld.hexPosition()) and \
+                (finishWorld and pos == finishWorld.hexPosition()):
                 return gui.createStringToolTip('<nobr>Start &amp; Destination Hex</nobr>', escape=False)
-            elif pos == self._startFinishWorldsWidget.startWorld().hexPosition():
+            elif (startWorld and pos == startWorld.hexPosition()):
                 return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
-            elif pos == self._startFinishWorldsWidget.finishWorld().hexPosition():
+            elif (finishWorld and pos == finishWorld.hexPosition()):
                 return gui.createStringToolTip('<nobr>Destination Hex</nobr>', escape=False)
             elif self._waypointWorldsWidget.containsHex(pos):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
