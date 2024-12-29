@@ -1154,6 +1154,7 @@ class JumpRouteWindow(gui.WindowWidget):
             self._jumpRouteTable.viewport().mapToGlobal(position)
         )
 
+    # TODO: This at a minimum will need some rewording as waypoints could be hexes
     def _showRefuellingPlanTableContextMenu(self, position: QtCore.QPoint) -> None:
         menuItems = [
             gui.MenuItem(
@@ -1301,30 +1302,26 @@ class JumpRouteWindow(gui.WindowWidget):
         if not pos:
             return None
 
-        hoverWorld = traveller.WorldManager.instance().worldByPosition(pos=pos)
-        if not hoverWorld:
-            return None
-
-        # TODO: This will need updated to account for the fact start/finish/waypoints
-        # can be in dead space
+        # TODO: This will need updated when _startFinishWorldsWidget is updated to
+        # deal with hexes
         if not self._jumpRoute:
             toolTip = ''
-            if hoverWorld == self._startFinishWorldsWidget.startWorld() and \
-                    hoverWorld == self._startFinishWorldsWidget.finishWorld():
-                return gui.createStringToolTip('<nobr>Start &amp; Finish World</nobr>', escape=False)
-            elif hoverWorld == self._startFinishWorldsWidget.startWorld():
-                return gui.createStringToolTip('<nobr>Start World</nobr>', escape=False)
-            elif hoverWorld == self._startFinishWorldsWidget.finishWorld():
-                return gui.createStringToolTip('<nobr>Finish World</nobr>', escape=False)
-            elif self._waypointWorldsWidget.containsWorld(hoverWorld):
-                return gui.createStringToolTip('<nobr>Waypoint World</nobr>', escape=False)
-            elif self._avoidWorldsWidget.containsWorld(hoverWorld):
-                return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
+            if pos == self._startFinishWorldsWidget.startWorld().hexPosition() and \
+                    pos == self._startFinishWorldsWidget.finishWorld().hexPosition():
+                return gui.createStringToolTip('<nobr>Start &amp; Destination Hex</nobr>', escape=False)
+            elif pos == self._startFinishWorldsWidget.startWorld().hexPosition():
+                return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
+            elif pos == self._startFinishWorldsWidget.finishWorld().hexPosition():
+                return gui.createStringToolTip('<nobr>Destination Hex</nobr>', escape=False)
+            elif self._waypointWorldsWidget.containsHex(pos):
+                return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
+            elif self._avoidWorldsWidget.contains(pos):
+                return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
             return None
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
         for nodeIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.world(nodeIndex) == hoverWorld:
+            if self._jumpRoute.hex(nodeIndex) == pos:
                 jumpNodes[nodeIndex] = None
 
         if self._routeLogistics:
@@ -1336,7 +1333,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
         toolTip = ''
         for nodeIndex, pitStop in jumpNodes.items():
-            toolTip += f'<li><nobr>Route World: {nodeIndex + 1}</nobr></li>'
+            toolTip += f'<li><nobr>Route Node: {nodeIndex + 1}</nobr></li>'
 
             if nodeIndex != 0:
                 toolTip += '<li><nobr>Route Distance: {} parsecs</nobr></li>'.format(
@@ -1376,14 +1373,14 @@ class JumpRouteWindow(gui.WindowWidget):
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
             # TODO: This will need updated to account for the fact waypoints can be dead space
-            if self._waypointWorldsWidget.containsWorld(hoverWorld):
-                return gui.createStringToolTip('<nobr>Waypoint World</nobr>', escape=False)
+            if self._waypointWorldsWidget.containsHex(pos):
+                return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
 
             # Check for the world being an avoid world. This is done last as
             # start/finish/waypoint worlds can be on the avoid list but we
             # don't want to flag them as such here
-            if self._avoidWorldsWidget.containsWorld(hoverWorld):
-                return gui.createStringToolTip('<nobr>Avoid World</nobr>', escape=False)
+            if self._avoidWorldsWidget.containsHex(pos):
+                return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
 
             return None
 

@@ -622,7 +622,7 @@ def _processRoute(
     fuelToFinish = jumpRoute.totalParsecs() * shipFuelPerParsec
 
     nodeContexts: typing.List[_NodeContext] = []
-    for nodeIndex in range(len(jumpRoute)):
+    for nodeIndex in range(jumpNodeCount):
         # Find the worlds that match the refuelling requirements (i.e. have a
         # refuelling type) and are reachable from the current world without
         # refuelling. Worlds that don't match the refuelling requirements are
