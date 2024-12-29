@@ -1302,8 +1302,6 @@ class JumpRouteWindow(gui.WindowWidget):
         if not pos:
             return None
 
-        # TODO: This will need updated when _startFinishWorldsWidget is updated to
-        # deal with hexes
         if not self._jumpRoute:
             toolTip = ''
             if pos == self._startFinishWorldsWidget.startWorld().hexPosition() and \
@@ -1315,7 +1313,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Destination Hex</nobr>', escape=False)
             elif self._waypointWorldsWidget.containsHex(pos):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
-            elif self._avoidWorldsWidget.contains(pos):
+            elif self._avoidWorldsWidget.containsHex(pos):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
             return None
 
@@ -1372,7 +1370,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
-            # TODO: This will need updated to account for the fact waypoints can be dead space
             if self._waypointWorldsWidget.containsHex(pos):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
 
