@@ -199,6 +199,7 @@ class WorldManager(object):
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
+    # TODO: I suspect there are calls to this that aren't handling the fact it can throw
     def positionToSectorHex(
             self,
             pos: travellermap.HexPosition
@@ -212,6 +213,7 @@ class WorldManager(object):
             worldX=offsetX,
             worldY=offsetY)
 
+    # TODO: I suspect there are calls to this that aren't handling the fact it can throw
     def sectorHexToPosition(
             self,
             sectorHex: str,

@@ -129,7 +129,10 @@ class _OverlayGroups(object):
 class TravellerMapWidgetBase(QtWidgets.QWidget):
     # These signals will pass the sector hex string for the hex under the cursor
     # TODO: Is this the pattern to allow signals to pass optional values? If so I
-    # should port it to other code (in a separate PR)
+    # should port it to other code (in a separate PR).
+    # Update: I don't think it is as I tried it somewhere else and I still got
+    # an exception about sending an unexpected NoneType. So the begs the question,
+    # what does it do?
     leftClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
     rightClicked = QtCore.pyqtSignal([travellermap.HexPosition], [type(None)])
 

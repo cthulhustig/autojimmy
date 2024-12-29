@@ -97,7 +97,7 @@ class _MapOptionToggleAction(QtWidgets.QAction):
             option=self._option,
             enabled=self.isChecked())
 
-class _SearchComboBox(gui.WorldSelectComboBox):
+class _SearchComboBox(gui.HexSelectComboBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -818,8 +818,8 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._searchWidget = _SearchComboBox(self)
         self._searchWidget.setFixedSize(searchWidth, controlHeights)
         self._searchWidget.installEventFilter(self)
-        self._searchWidget.editTextChanged.connect(self._searchWorldTextEdited)
-        self._searchWidget.worldChanged.connect(self._searchWorldSelected)
+        self._searchWidget.editTextChanged.connect(self._searchHexTextEdited)
+        self._searchWidget.hexChanged.connect(self._searchHexSelected)
 
         self._searchButton = _CustomIconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
@@ -936,7 +936,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._selectedHexes.append(pos)
 
         with gui.SignalBlocker(widget=self._searchWidget):
-            self._searchWidget.setCurrentWorld(world=world)
+            self._searchWidget.setCurrentHex(pos=pos)
 
         self.highlightHex(pos=pos)
 
@@ -1353,42 +1353,41 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                             configSize.width()),
             vertOffset)
 
-    def _searchWorldTextEdited(self) -> None:
+    def _searchHexTextEdited(self) -> None:
         # Clear the current info hex (and hide the widget) as soon as the user starts editing the
         # search hex text. This is done to prevent the selection drop down from being hard to read
         # due to it overlapping the info widget. This behaviour is consistent with Traveller Map
         self.setInfoHex(pos=None)
 
-    def _searchWorldSelected(
+    def _searchHexSelected(
             self,
-            world: typing.Optional[traveller.World]
+            pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
         if self._infoButton.isChecked():
-            self.setInfoHex(pos=world.hexPosition() if world else None)
+            self.setInfoHex(pos=pos)
 
-        if not world:
-            return # Nothing more to do
+        if pos:
+            self.centerOnHex(pos=pos)
 
-        self.centerOnHex(pos=world.hexPosition())
+            # Add the selected world to the recently used list
+            app.HexHistory.instance().addHex(pos=pos)
 
-        # Add the selected world to the recently used list
-        app.HexHistory.instance().addHex(pos=world.hexPosition())
+            if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
+                self.selectHex(
+                    pos=pos,
+                    centerOnWorld=False, # Centring on the world has already been handled
+                    setInfoWorld=False) # Updating info world has already been handled
 
-        if self._selectionMode == TravellerMapWidget.SelectionMode.SingleSelect:
-            self.selectHex(
-                pos=world.hexPosition(), # TODO: This is a hack until searching supports hexes
-                centerOnWorld=False, # Centring on the world has already been handled
-                setInfoWorld=False) # Updating info world has already been handled
+        self._searchButton.setEnabled(pos != None)
 
     def _searchButtonClicked(self) -> None:
-        world = self._searchWidget.currentWorld()
-        if not world:
-            worlds = traveller.WorldManager.instance().searchForWorlds(
-                searchString=self._searchWidget.currentText())
-            if worlds:
-                worlds.sort(key=lambda x: x.name(includeSubsector=True))
-                world = worlds[0]
-        self._searchWorldSelected(world=world)
+        # TODO: This function has changed a lot. I think the old implementation
+        # might have been left over from before I did the last big update to
+        # world selection but it might have actually been there for a reason. In
+        # fact it seems to have some undesirable behaviour in it causes the map
+        # to jump to an unexpected location if you type a name that doesn't match
+        # anything and click the search button
+        self._searchHexSelected(pos=self._searchWidget.currentHex())
 
     def _showInfoToggled(self) -> None:
         # Update info widget directly rather than calling setInfoWorld. This is done as we don't

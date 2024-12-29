@@ -2,6 +2,7 @@ import app
 import gui
 import logging
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
@@ -32,14 +33,14 @@ class WorldSelectWidget(QtWidgets.QWidget):
         self._enableShowInfoButton = False
         self._mapSelectDialog = None
 
-        self._worldComboBox = gui.WorldSelectComboBox()
+        self._searchComboBox = gui.HexSelectComboBox()
         if world:
-            self._worldComboBox.setCurrentWorld(world=world)
-        self._worldComboBox.enableAutoComplete(True)
-        self._worldComboBox.setMinimumWidth(int(
+            self._searchComboBox.setCurrentHex(pos=world.hexPosition()) # TODO: This is a hack until this widget supports hexes
+        self._searchComboBox.enableAutoComplete(True)
+        self._searchComboBox.setMinimumWidth(int(
             WorldSelectWidget._MinWoldSelectWidth *
             app.Config.instance().interfaceScale()))
-        self._worldComboBox.worldChanged.connect(self._selectionChanged)
+        self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
         self._mapSelectButton = gui.IconButton(
             icon=gui.loadIcon(id=gui.Icon.Map),
@@ -69,7 +70,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         if text:
             layout.addWidget(QtWidgets.QLabel(text))
-        layout.addWidget(self._worldComboBox, 1)
+        layout.addWidget(self._searchComboBox, 1)
         layout.addWidget(self._mapSelectButton)
         layout.addWidget(self._showWorldButton)
         layout.addWidget(self._showInfoButton)
@@ -79,12 +80,14 @@ class WorldSelectWidget(QtWidgets.QWidget):
         # I'm not sure why I need to explicitly set tab order here but I don't
         # elsewhere. If it's not done then the default tab order has the buttons
         # before the combo box
-        QtWidgets.QWidget.setTabOrder(self._worldComboBox, self._mapSelectButton)
+        QtWidgets.QWidget.setTabOrder(self._searchComboBox, self._mapSelectButton)
         QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showWorldButton)
         QtWidgets.QWidget.setTabOrder(self._showWorldButton, self._showInfoButton)
 
     def world(self) -> typing.Optional[traveller.World]:
-        return self._worldComboBox.currentWorld()
+        pos = self._searchComboBox.currentHex()
+        # TODO: This is a hack until this widget supports hexes
+        return traveller.WorldManager.instance().worldByPosition(pos=pos) if pos else None
 
     def setWorld(
             self,
@@ -92,13 +95,13 @@ class WorldSelectWidget(QtWidgets.QWidget):
             updateRecentWorlds: bool = True
             ) -> None:
         if world != self.world():
-            self._worldComboBox.setCurrentWorld(
-                world=world,
-                updateRecentWorlds=updateRecentWorlds)
+            self._searchComboBox.setCurrentHex(
+                pos=world.hexPosition() if world else None, # TODO: This is a hack until this widget supports hexes
+                updateHistory=updateRecentWorlds)
             self.selectionChanged.emit()
 
     def hasSelection(self) -> bool:
-        return self._worldComboBox.currentWorld() != None
+        return self._searchComboBox.currentHex() != None
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -145,10 +148,12 @@ class WorldSelectWidget(QtWidgets.QWidget):
             updateRecentWorlds=False)
         return True
 
-    def _selectionChanged(self) -> None:
-        world = self.world()
-        self._showWorldButton.setEnabled(world != None)
-        self._showInfoButton.setEnabled(world != None)
+    def _selectionChanged(
+            self,
+            pos: typing.Optional[travellermap.HexPosition]
+            ) -> None:
+        self._showWorldButton.setEnabled(pos != None)
+        self._showInfoButton.setEnabled(pos != None)
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
@@ -173,7 +178,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
         if not world:
             return
 
-        self._worldComboBox.setCurrentWorld(world=world)
+        self._searchComboBox.setCurrentHex(pos=world.hexPosition()) # TODO: This is a hack until this widget supports hexes
 
     def _showWorldClicked(self) -> None:
         world = self.world()

@@ -18,7 +18,7 @@ class WorldSearchWidget(QtWidgets.QWidget):
         self._searchTimer.setSingleShot(True)
         self._searchTimer.timeout.connect(self._performSearch)
 
-        self._searchComboBox = gui.WorldSelectComboBox()
+        self._searchComboBox = gui.HexSelectComboBox()
         self._searchComboBox.enableAutoComplete(False)
         self._searchComboBox.installEventFilter(self)
         self._searchComboBox.currentTextChanged.connect(self._primeSearch)
@@ -75,7 +75,8 @@ class WorldSearchWidget(QtWidgets.QWidget):
 
     def setWorld(self, world: typing.Optional[traveller.World]) -> None:
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setCurrentWorld(world)
+            self._searchComboBox.setCurrentHex(
+                pos=world.hexPosition() if world else None) # TODO: This is a hack until this widget supports hexes
 
         with gui.SignalBlocker(widget=self._worldList):
             self._worldList.clear()
@@ -222,7 +223,8 @@ class WorldSearchWidget(QtWidgets.QWidget):
             for world in worlds:
                 item = self._createListItem(world)
                 self._worldList.addItem(item)
-                if world == self._searchComboBox.currentWorld():
+                # TODO: The use of hexPosition is a hack until this widget supports hexes
+                if world.hexPosition() == self._searchComboBox.currentHex():
                     selectItem = item
 
             if selectItem:
@@ -254,7 +256,8 @@ class WorldSearchWidget(QtWidgets.QWidget):
         world = self.world()
 
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setCurrentWorld(world)
+            self._searchComboBox.setCurrentHex(
+                pos=world.hexPosition() if world else None) # TODO: This is a hack until this widget supports hexes
 
         with gui.SignalBlocker(widget=self._worldList):
             self._worldList.clear()
