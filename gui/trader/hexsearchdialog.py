@@ -49,7 +49,7 @@ class HexSearchDialog(gui.DialogEx):
         self._searchWidget.setSelectedHex(pos=pos)
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        self._searchWidget.enableDeadSpaceSelection()
+        self._searchWidget.enableDeadSpaceSelection(enable=enable)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._searchWidget.isDeadSpaceSelectionEnabled()
