@@ -419,10 +419,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self.contentChanged.emit()
 
     def promptAddHex(self) -> None:
-        dlg = gui.WorldSearchDialog(parent=self)
+        dlg = gui.HexSearchDialog(parent=self)
+        dlg.enableDeadSpaceSelection(enable=False) # TODO: This should be configurable
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
-        self.addHex(dlg.world().hexPosition()) # TODO: This is a hack needed until WorldSearchDialog supports hexes
+        self.addHex(dlg.selectedHex())
 
     def _displayColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._displayModeTabs.currentDisplayMode()

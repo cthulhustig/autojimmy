@@ -1,25 +1,26 @@
 import app
 import gui
-import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This will probably need updated to support hexes
-class WorldSearchDialog(gui.DialogEx):
+class HexSearchDialog(gui.DialogEx):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='World Search',
+            title='World/Hex Search',
+            # TODO: I probably want to leave this config item as it is to save backward
+            # comparability
             configSection='WorldSearchDialog',
             parent=parent)
 
-        self._selectWorldWidget = gui.HexSearchWidget()
-        self._selectWorldWidget.selectionChanged.connect(self._selectionChanged)
+        self._searchWidget = gui.HexSearchWidget()
+        self._searchWidget.selectionChanged.connect(self._selectionChanged)
 
         self._selectButton = QtWidgets.QPushButton('Select')
-        self._selectButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
+        self._selectButton.setDisabled(not self._searchWidget.selectedHex())
         self._selectButton.setDefault(True)
         self._selectButton.clicked.connect(self.accept)
 
@@ -33,17 +34,25 @@ class WorldSearchDialog(gui.DialogEx):
         buttonLayout.addWidget(self._cancelButton)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._selectWorldWidget)
+        windowLayout.addWidget(self._searchWidget)
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
 
-    def world(self) -> typing.Optional[traveller.World]:
-        return self._selectWorldWidget.hackSelectedWorld()
+    def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
+        return self._searchWidget.selectedHex()
 
-    def setWorld(self, world: typing.Optional[traveller.World]) -> None:
-        # TODO: This is a hack until this widget us updated to use hexes
-        self._selectWorldWidget.setSelectedHex(pos=world.hexPosition() if world else None)
+    def setSelectedHex(
+            self,
+            pos: typing.Optional[travellermap.HexPosition]
+            ) -> None:
+        self._searchWidget.setSelectedHex(pos=pos)
+
+    def enableDeadSpaceSelection(self, enable: bool) -> None:
+        self._searchWidget.enableDeadSpaceSelection()
+
+    def isDeadSpaceSelectionEnabled(self) -> bool:
+        return self._searchWidget.isDeadSpaceSelectionEnabled()
 
     # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
     def loadSettings(self) -> None:
@@ -55,22 +64,22 @@ class WorldSearchDialog(gui.DialogEx):
             key='SelectWorldState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._selectWorldWidget.restoreState(storedValue)
+            self._searchWidget.restoreState(storedValue)
         self._settings.endGroup()
 
     def accept(self) -> None:
-        world = self.world()
-        if not world:
-            return # A valid world must be selected to accept
+        pos = self.selectedHex()
+        if not pos:
+            return # A valid hex must be selected to accept
 
-        # Add the selected world to the recently used list
-        app.HexHistory.instance().addHex(pos=world.hexPosition()) # TODO: This is temporary until this widget is updated to uses hexes
+        # Add the selected hex to the selection history
+        app.HexHistory.instance().addHex(pos=pos)
 
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('SelectWorldState', self._selectWorldWidget.saveState())
+        self._settings.setValue('SelectWorldState', self._searchWidget.saveState())
         self._settings.endGroup()
 
         super().accept()
 
     def _selectionChanged(self) -> None:
-        self._selectButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
+        self._selectButton.setDisabled(not self._searchWidget.hackSelectedWorld())

@@ -54,7 +54,7 @@ from .trader.worldfilterdialog import *
 from .trader.worldfiltertable import *
 from .trader.worldfiltertablemanagerwidget import *
 from .trader.hexsearchwidget import *
-from .trader.worldsearchdialog import *
+from .trader.hexsearchdialog import *
 from .trader.worldselectwidget import *
 from .trader.scalarcargodetailsdialog import *
 from .trader.cargorecordtable import *
