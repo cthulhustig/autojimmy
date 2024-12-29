@@ -115,9 +115,8 @@ class SimulatorWindow(gui.WindowWidget):
             title='Trade Simulator',
             configSection='SimulatorWindow')
 
-        self._currentWorld = None
+        self._currentHex = None
         self._parsecsTravelled = 0
-        self._jumpRoute = []
         self._simulatorJob = None
 
         self._setupConfigControls()
@@ -636,9 +635,8 @@ class SimulatorWindow(gui.WindowWidget):
         else:
             assert(False) # I've missed an enum
 
-        self._currentWorld = None
+        self._currentHex = None
         self._parsecsTravelled = 0
-        self._jumpRoute.clear()
         self._simInfoEditBox.clear()
 
         self._simulationDayLabel.setText('Day:')
@@ -692,20 +690,20 @@ class SimulatorWindow(gui.WindowWidget):
             availableFunds: int = event.data()
             self._simulationFundsLabel.setText(f'Funds: Cr{common.formatNumber(availableFunds)}')
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: Available funds = Cr{common.formatNumber(availableFunds)}')
-        elif event.type() == logic.Simulator.Event.Type.WorldUpdate:
+        elif event.type() == logic.Simulator.Event.Type.HexUpdate:
             # Data is the new world object
-            world: traveller.World = event.data()
-            if self._currentWorld and self._currentWorld != world:
-                self._parsecsTravelled += self._currentWorld.parsecsTo(world)
-            self._currentWorld = world
-            self._jumpRoute.append(world)
-            self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
-            self._mapWidget.centerOnWorld(
-                world=world,
+            currentHex: travellermap.HexPosition = event.data()
+            currentWorld = traveller.WorldManager.instance().worldByPosition(currentHex)
+            if self._currentHex and self._currentHex != currentHex:
+                self._parsecsTravelled += self._currentHex.parsecsTo(currentHex)
+                self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
+                self._currentHex = currentHex
+            self._mapWidget.centerOnHex(
+                pos=currentHex,
                 clearOverlays=True,
-                highlightWorld=True,
+                highlightHex=True,
                 linearScale=None) # Keep current scale
-            self._mapWidget.setInfoWorld(world=world)
+            self._mapWidget.setInfoWorld(world=currentWorld if currentWorld else None)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
