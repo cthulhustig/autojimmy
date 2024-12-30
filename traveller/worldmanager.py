@@ -199,7 +199,6 @@ class WorldManager(object):
             searchRadius=searchRadius,
             worldFilterCallback=worldFilterCallback))
 
-    # TODO: I suspect there are calls to this that aren't handling the fact it can throw
     def positionToSectorHex(
             self,
             pos: travellermap.HexPosition
@@ -213,7 +212,6 @@ class WorldManager(object):
             worldX=offsetX,
             worldY=offsetY)
 
-    # TODO: I suspect there are calls to this that aren't handling the fact it can throw
     def sectorHexToPosition(
             self,
             sectorHex: str,
@@ -252,6 +250,18 @@ class WorldManager(object):
             sectorY=sector.y(),
             offsetX=offsetX,
             offsetY=offsetY)
+
+    def canonicalHexName(
+            self,
+            pos: travellermap.HexPosition
+            ) -> str:
+        world = self.worldByPosition(pos=pos)
+        if world:
+            return world.name(includeSubsector=True)
+        try:
+            return self.positionToSectorHex(pos=pos)
+        except ValueError:
+            return str(pos)
 
     def yieldWorldsInArea(
             self,

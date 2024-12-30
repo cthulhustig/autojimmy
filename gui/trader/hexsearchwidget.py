@@ -241,15 +241,7 @@ class HexSearchWidget(QtWidgets.QWidget):
             self,
             pos: travellermap.HexPosition
             ) -> QtWidgets.QListWidgetItem:
-        world = traveller.WorldManager.instance().worldByPosition(pos=pos)
-        text = ''
-        if world:
-            text = world.name(includeSubsector=True)
-        else:
-            try:
-                text = traveller.WorldManager.instance().positionToSectorHex(pos=pos)
-            except:
-                pass
+        text = traveller.WorldManager.instance().canonicalHexName(pos=pos)
         item = QtWidgets.QListWidgetItem(text)
         item.setData(QtCore.Qt.ItemDataRole.UserRole, pos)
         return item

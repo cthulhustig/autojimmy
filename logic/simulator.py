@@ -216,14 +216,8 @@ class Simulator(object):
                 # TODO: This will need updating as indexing into a jump route will return a
                 # node rather than a world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
-                currentString = \
-                    currentWorld.name(includeSubsector=True) \
-                    if currentWorld else \
-                    traveller.WorldManager.instance().positionToSectorHex(self._currentHex)
-                nextString = \
-                    nextWorld.name(includeSubsector=True) \
-                    if nextWorld else \
-                    traveller.WorldManager.instance().positionToSectorHex(nextHex)
+                currentString = traveller.WorldManager.instance().canonicalHexName(pos=self._currentHex)
+                nextString = traveller.WorldManager.instance().canonicalHexName(pos=nextHex)
                 self._logMessage(
                     f'Travelling from {currentString} to {nextString}')
 

@@ -1063,25 +1063,8 @@ class JumpRouteWindow(gui.WindowWidget):
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):
             startPos, finishPos = self._selectStartFinishWidget.hexes()
-            startWorld = traveller.WorldManager.instance().worldByPosition(pos=startPos)
-            # TODO: This pattern happens a lot, should add a helper to world manager
-            if startWorld:
-                startString = startWorld.name(includeSubsector=True)
-            else:
-                try:
-                    startString = traveller.WorldManager.instance().positionToSectorHex(pos=startPos)
-                except:
-                    startString = str(startPos)
-            finishWorld = traveller.WorldManager.instance().worldByPosition(pos=finishPos)
-            if finishWorld:
-                finishString = finishWorld.name(includeSubsector=True)
-            else:
-                try:
-                    finishString = traveller.WorldManager.instance().positionToSectorHex(pos=finishPos)
-                except:
-                    finishString = str(finishPos)
-
-
+            startString = traveller.WorldManager.instance().canonicalHexName(pos=startPos)
+            finishString = traveller.WorldManager.instance().canonicalHexName(pos=finishPos)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1560,15 +1543,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     center=startPos,
                     searchRadius=jumpRating)
             except Exception as ex:
-                startWorld = traveller.WorldManager.instance().worldByPosition(pos=startPos)
-                if startWorld:
-                    startString = startWorld.name(includeSubsector=True)
-                else:
-                    try:
-                        startString = traveller.WorldManager.instance().positionToSectorHex(
-                            pos=startPos)
-                    except:
-                        startString = str(startPos)
+                startString = traveller.WorldManager.instance().canonicalHexName(pos=startPos)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -1726,16 +1701,10 @@ class JumpRouteWindow(gui.WindowWidget):
                         parent=self,
                         text='Unable to calculate logistics for jump route')
             except Exception as ex:
-                startHex, startWorld = self._jumpRoute.startNode()
-                finishHex, finishWorld = self._jumpRoute.finishNode()
-                startString = \
-                    startWorld.name(includeSubsector=True) \
-                    if startWorld else \
-                    traveller.WorldManager.instance().positionToSectorHex(pos=startHex)
-                finishString = \
-                    finishWorld.name(includeSubsector=True) \
-                    if finishWorld else \
-                    traveller.WorldManager.instance().positionToSectorHex(pos=finishHex)
+                startHex, _ = self._jumpRoute.startNode()
+                finishHex, _ = self._jumpRoute.finishNode()
+                startString = traveller.WorldManager.instance().canonicalHexName(pos=startHex)
+                finishString = traveller.WorldManager.instance().canonicalHexName(pos=finishHex)
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                     start=startString,
                     finish=finishString)
