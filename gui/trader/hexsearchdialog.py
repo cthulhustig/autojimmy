@@ -16,13 +16,13 @@ class HexSearchDialog(gui.DialogEx):
             configSection='WorldSearchDialog',
             parent=parent)
 
-        self._searchWidget = gui.HexSearchWidget()
-        self._searchWidget.selectionChanged.connect(self._selectionChanged)
+        self._hexSelectWidget = gui.HexSearchWidget()
+        self._hexSelectWidget.selectionChanged.connect(self._selectionChanged)
 
-        self._selectButton = QtWidgets.QPushButton('Select')
-        self._selectButton.setDisabled(not self._searchWidget.selectedHex())
-        self._selectButton.setDefault(True)
-        self._selectButton.clicked.connect(self.accept)
+        self._okButton = QtWidgets.QPushButton('OK')
+        self._okButton.setDisabled(not self._hexSelectWidget.selectedHex())
+        self._okButton.setDefault(True)
+        self._okButton.clicked.connect(self.accept)
 
         self._cancelButton = QtWidgets.QPushButton('Cancel')
         self._cancelButton.clicked.connect(self.reject)
@@ -30,29 +30,29 @@ class HexSearchDialog(gui.DialogEx):
         buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self._selectButton)
+        buttonLayout.addWidget(self._okButton)
         buttonLayout.addWidget(self._cancelButton)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._searchWidget)
+        windowLayout.addWidget(self._hexSelectWidget)
         windowLayout.addLayout(buttonLayout)
 
         self.setLayout(windowLayout)
 
     def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
-        return self._searchWidget.selectedHex()
+        return self._hexSelectWidget.selectedHex()
 
     def setSelectedHex(
             self,
             pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._searchWidget.setSelectedHex(pos=pos)
+        self._hexSelectWidget.setSelectedHex(pos=pos)
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        self._searchWidget.enableDeadSpaceSelection(enable=enable)
+        self._hexSelectWidget.enableDeadSpaceSelection(enable=enable)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
-        return self._searchWidget.isDeadSpaceSelectionEnabled()
+        return self._hexSelectWidget.isDeadSpaceSelectionEnabled()
 
     # There is intentionally no saveSettings implementation as saving is only done if the user clicks ok
     def loadSettings(self) -> None:
@@ -64,7 +64,7 @@ class HexSearchDialog(gui.DialogEx):
             key='SelectWorldState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._searchWidget.restoreState(storedValue)
+            self._hexSelectWidget.restoreState(storedValue)
         self._settings.endGroup()
 
     def accept(self) -> None:
@@ -76,10 +76,10 @@ class HexSearchDialog(gui.DialogEx):
         app.HexHistory.instance().addHex(pos=pos)
 
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('SelectWorldState', self._searchWidget.saveState())
+        self._settings.setValue('SelectWorldState', self._hexSelectWidget.saveState())
         self._settings.endGroup()
 
         super().accept()
 
     def _selectionChanged(self) -> None:
-        self._selectButton.setDisabled(not self._searchWidget.hackSelectedWorld())
+        self._okButton.setDisabled(not self._hexSelectWidget.selectedHex())

@@ -903,17 +903,6 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
     def selectedHexes(self) -> typing.Iterable[travellermap.HexPosition]:
         return list(self._selectedHexes)
 
-    # TODO: It should be possible to remove this when the various consumers have
-    # been updated to deal with hexes. We don't want to have it as it makes things
-    # like hasSelection ambiguous
-    def hackSelectedWorlds(self) -> typing.Iterable[traveller.World]:
-        worlds = []
-        for pos in self._selectedHexes:
-            world = traveller.WorldManager.instance().worldByPosition(pos=pos)
-            if world:
-                worlds.append(world)
-        return worlds
-
     def selectHex(
             self,
             pos: travellermap.HexPosition,

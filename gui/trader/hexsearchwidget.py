@@ -78,14 +78,6 @@ class HexSearchWidget(QtWidgets.QWidget):
             return selection[0] if selection else None
         return None
 
-    # TODO: I should be able to remove this when the caller has been updated to
-    # handle hexes
-    def hackSelectedWorld(self) -> typing.Optional[traveller.World]:
-        pos = self.selectedHex()
-        if not pos:
-            return None
-        return traveller.WorldManager.instance().worldByPosition(pos=pos)
-
     def setSelectedHex(
             self,
             pos: typing.Optional[travellermap.HexPosition]

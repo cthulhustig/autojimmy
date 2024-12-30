@@ -339,24 +339,15 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             self,
             initialWorld: typing.Optional[traveller.World] = None
             ) -> None:
-        # TODO: Need to switch this to use hexes
-        gui.MessageBoxEx.critical(
-            parent=self,
-            text='Implement me!')
-        return
-
-        dlg = gui.NearbyWorldsDialog(parent=self)
-        dlg.setWorld(world=initialWorld if initialWorld else self._relativeHex)
+        dlg = gui.HexSearchRadiusDialog(parent=self)
+        dlg.setCenterHex(pos=initialWorld.hexPosition() if initialWorld else self._relativeHex)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        searchWorld = dlg.world()
-        searchRadius = dlg.searchRadius()
-
         try:
             worlds = traveller.WorldManager.instance().worldsInArea(
-                center=searchWorld.hexPosition(),
-                searchRadius=searchRadius)
+                center=dlg.centerHex(),
+                searchRadius=dlg.searchRadius())
         except Exception as ex:
             message = 'Failed to find nearby worlds'
             logging.error(message, exc_info=ex)

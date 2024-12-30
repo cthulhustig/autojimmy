@@ -47,7 +47,7 @@ from .trader.probabilitycasecombobox import *
 from .trader.worldlabel import *
 from .trader.localbrokerwidget import *
 from .trader.tradegoodtable import *
-from .trader.nearbyworldsdialog import *
+from .trader.hexsearchradiusdialog import *
 from .trader.tradegoodquantitydialog import *
 from .trader.tradegoodmultiselectdialog import *
 from .trader.worldfilterdialog import *

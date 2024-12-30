@@ -1,35 +1,34 @@
 import app
 import gui
-import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This will need updated to (optionally) allow dead space
-# to be selected as it's used by HexTableManagerWidget
-class NearbyWorldsDialog(gui.DialogEx):
+class HexSearchRadiusDialog(gui.DialogEx):
     def __init__(
             self,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='Nearby World Search',
-            configSection='NearbyWorldDialog',
+            title='Search Radius',
+            configSection='HexSearchRadiusDialog',
             parent=parent)
 
-        self._selectWorldWidget = gui.HexSearchWidget()
-        self._selectWorldWidget.selectionChanged.connect(self._selectionChanged)
+        self._hexWidget = gui.HexSearchWidget()
+        self._hexWidget.enableDeadSpaceSelection(enable=True)
+        self._hexWidget.selectionChanged.connect(self._selectionChanged)
 
-        self._selectRadiusSpinBox = gui.SpinBoxEx()
-        self._selectRadiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
-        self._selectRadiusSpinBox.setValue(2)
+        self._radiusSpinBox = gui.SpinBoxEx()
+        self._radiusSpinBox.setRange(app.MinPossibleJumpRating, app.MaxSearchRadius)
+        self._radiusSpinBox.setValue(2)
 
         selectionRadiusLayout = QtWidgets.QHBoxLayout()
         selectionRadiusLayout.setContentsMargins(0, 0, 0, 0)
         selectionRadiusLayout.addWidget(QtWidgets.QLabel('Selection Radius (Parsecs): '))
-        selectionRadiusLayout.addWidget(self._selectRadiusSpinBox)
+        selectionRadiusLayout.addWidget(self._radiusSpinBox)
 
         self._okButton = QtWidgets.QPushButton('OK')
-        self._okButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
+        self._okButton.setDisabled(not self._hexWidget.selectedHex())
         self._okButton.setDefault(True)
         self._okButton.clicked.connect(self.accept)
 
@@ -43,7 +42,7 @@ class NearbyWorldsDialog(gui.DialogEx):
         buttonLayout.addWidget(self._cancelButton)
 
         windowLayout = QtWidgets.QVBoxLayout()
-        windowLayout.addWidget(self._selectWorldWidget)
+        windowLayout.addWidget(self._hexWidget)
         windowLayout.addLayout(selectionRadiusLayout)
         windowLayout.addLayout(buttonLayout)
 
@@ -56,10 +55,10 @@ class NearbyWorldsDialog(gui.DialogEx):
         self._settings.beginGroup(self._configSection)
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
-            key='SelectWorldState',
+            key='SelectHexState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._selectWorldWidget.restoreState(storedValue)
+            self._hexWidget.restoreState(storedValue)
         self._settings.endGroup()
 
         self._settings.beginGroup(self._configSection)
@@ -68,33 +67,35 @@ class NearbyWorldsDialog(gui.DialogEx):
             key='SelectRadiusState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._selectRadiusSpinBox.restoreState(storedValue)
+            self._radiusSpinBox.restoreState(storedValue)
         self._settings.endGroup()
 
-    def world(self) -> typing.Optional[traveller.World]:
-        return self._selectWorldWidget.hackSelectedWorld()
+    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
+        return self._hexWidget.selectedHex()
 
-    def setWorld(self, world: typing.Optional[traveller.World]) -> None:
-        # TODO: This is a hack until this widget us updated to use hexes
-        self._selectWorldWidget.setSelectedHex(pos=world.hexPosition() if world else None)
+    def setCenterHex(self, pos: typing.Optional[travellermap.HexPosition]) -> None:
+        self._hexWidget.setSelectedHex(pos=pos)
 
     def searchRadius(self) -> int:
-        return self._selectRadiusSpinBox.value()
+        return self._radiusSpinBox.value()
+
+    def setSearchRadius(self, radius: int) -> None:
+        self._radiusSpinBox.setValue(radius)
 
     def accept(self) -> None:
-        world = self.world()
-        if not world:
-            return # A valid world must be selected to accept
+        pos = self.centerHex()
+        if not pos:
+            return # A valid hex must be selected to accept
 
-        # Add the selected world to the recently used list
-        app.HexHistory.instance().addHex(pos=world.hexPosition()) # TODO: This is temporary until this widget is updated to uses hexes
+        # Add the selected hex to the selection history
+        app.HexHistory.instance().addHex(pos=pos)
 
         self._settings.beginGroup(self._configSection)
-        self._settings.setValue('SelectWorldState', self._selectWorldWidget.saveState())
-        self._settings.setValue('SelectRadiusState', self._selectRadiusSpinBox.saveState())
+        self._settings.setValue('SelectHexState', self._hexWidget.saveState())
+        self._settings.setValue('SelectRadiusState', self._radiusSpinBox.saveState())
         self._settings.endGroup()
 
         super().accept()
 
     def _selectionChanged(self) -> None:
-        self._okButton.setDisabled(not self._selectWorldWidget.hackSelectedWorld())
+        self._okButton.setDisabled(not self._hexWidget.selectedHex())
