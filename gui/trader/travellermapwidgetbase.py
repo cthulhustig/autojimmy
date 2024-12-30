@@ -405,6 +405,18 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         if self._loaded:
             self._runAddHexOverlayScript(overlay=overlay)
 
+    def highlightHexes(
+            self,
+            positions: typing.Iterable[travellermap.HexPosition],
+            radius: float = 0.5,
+            colour: str = '#8080FF'
+            ) -> None:
+        for pos in positions:
+            self.highlightHex(
+                pos=pos,
+                radius=radius,
+                colour=colour)
+
     def clearWorldHighlight(
             self,
             world: traveller.World
@@ -482,13 +494,13 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
 
     def createHexRadiusOverlayGroup(
             self,
-            centerPos: travellermap.HexPosition,
+            center: travellermap.HexPosition,
             radius: int,
             fillColour: typing.Optional[str] = None,
             lineColour: typing.Optional[str] = None,
             lineWidth: typing.Optional[int] = None
             ) -> str:
-        radiusHexes = list(centerPos.yieldRadiusHexes(
+        radiusHexes = list(center.yieldRadiusHexes(
             radius=radius,
             includeInterior=False))
         return self.createHexBorderOverlayGroup(
@@ -506,7 +518,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             lineWidth: typing.Optional[int] = None
             ) -> str:
         return self.createHexRadiusOverlayGroup(
-            centerPos=centerWorld.hexPosition(),
+            center=centerWorld.hexPosition(),
             radius=radius,
             fillColour=fillColour,
             lineColour=lineColour,

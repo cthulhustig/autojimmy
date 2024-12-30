@@ -365,12 +365,12 @@ class SimulatorWindow(gui.WindowWidget):
         return super().closeEvent(e)
 
     def _setupConfigControls(self) -> None:
-        self._startWorldWidget = gui.WorldSelectWidget(
+        self._startWorldWidget = gui.WorldSelectToolWidget(
             text='Start World:')
-        self._startWorldWidget.enableShowWorldButton(True)
+        self._startWorldWidget.enableShowHexButton(True)
         self._startWorldWidget.enableShowInfoButton(True)
         self._startWorldWidget.selectionChanged.connect(self._startWorldChanged)
-        self._startWorldWidget.showWorld.connect(self._showWorldOnMap)
+        self._startWorldWidget.showHex.connect(self._showOnMap)
 
         self._randomSeedWidget = _RandomSeedWidget(
             maxDigits=SimulatorWindow._RandomSeedMaxDigits)
@@ -552,19 +552,19 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulationGroupBox.setDisabled(False)
         else:
             self._configGroupBox.setDisabled(False)
-            self._simulationGroupBox.setDisabled(not self._startWorldWidget.hasSelection())
+            self._simulationGroupBox.setDisabled(not self._startWorldWidget.selectedWorld())
 
         anomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
         self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
     def _startWorldChanged(self) -> None:
-        world = self._startWorldWidget.world()
-        if world:
-            self._mapWidget.centerOnWorld(
-                world=world,
+        startWorld = self._startWorldWidget.selectedWorld()
+        if startWorld:
+            self._mapWidget.centerOnHex(
+                pos=startWorld.hexPosition(),
                 clearOverlays=True,
-                highlightWorld=True)
+                highlightHex=True)
 
         self._enableDisableControls()
 
@@ -574,10 +574,11 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob.cancel()
             return
 
-        if not self._startWorldWidget.hasSelection():
+        startWorld = self._startWorldWidget.selectedWorld()
+        if not startWorld:
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Select a start world')
+                text='Select a starting location')
             return
 
         if self._startingFundsSpinBox.value() <= 0:
@@ -610,8 +611,7 @@ class SimulatorWindow(gui.WindowWidget):
             anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
             anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
             rules=app.Config.instance().rules())
-        if not pitCostCalculator.refuellingType(
-                world=self._startWorldWidget.world()):
+        if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
             gui.MessageBoxEx.information(
                 parent=self,
                 text='The start world must allow the selected refuelling strategy')
@@ -647,7 +647,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                startingWorld=self._startWorldWidget.world(),
+                startPos=startWorld.hexPosition(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -724,17 +724,17 @@ class SimulatorWindow(gui.WindowWidget):
         self._runSimulationButton.setText('Run simulation')
         self._enableDisableControls()
 
-    def _showWorldOnMap(
+    def _showOnMap(
             self,
-            world: traveller.World
+            pos: travellermap.HexPosition
             ) -> None:
         try:
-            self._mapWidget.centerOnWorld(
-                world=world,
+            self._mapWidget.centerOnHex(
+                pos=pos,
                 clearOverlays=False,
-                highlightWorld=False)
+                highlightHex=False)
         except Exception as ex:
-            message = 'Failed to show world(s) in Traveller Map'
+            message = 'Failed to show location in Traveller Map'
             logging.error(message, exc_info=ex)
             gui.MessageBoxEx.critical(
                 parent=self,

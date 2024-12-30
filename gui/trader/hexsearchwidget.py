@@ -103,6 +103,14 @@ class HexSearchWidget(QtWidgets.QWidget):
 
         self.selectionChanged.emit()
 
+    # Helper to get the selected world if a world is selected. Useful for code
+    # that never enables dead space selection
+    def selectedWorld(self) -> typing.Optional[traveller.World]:
+        pos = self.selectedHex()
+        if not pos:
+            return None
+        return traveller.WorldManager.instance().worldByPosition(pos=pos)
+
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._searchComboBox.enableDeadSpaceSelection(enable=enable)
         self._mapWidget.enableDeadSpaceSelection(enable=enable)

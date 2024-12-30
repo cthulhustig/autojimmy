@@ -298,6 +298,11 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self.clear()
 
             for pos in app.HexHistory.instance().hexes():
+                if not self._enableDeadSpaceSelection and \
+                    not traveller.WorldManager.instance().worldByPosition(pos):
+                    # Ignore dead space in history
+                    continue
+
                 self.addItem(_formatHexName(pos=pos), pos)
 
                 html = _formatHexHtml(pos=pos)
@@ -402,22 +407,19 @@ class HexSelectComboBox(gui.ComboBoxEx):
         # else without them having to delete the current search text
         self.selectAll()
 
+    # TODO: This function used to generate a hex changed event even if the hex
+    # hadn't changed, need to check I've not introduced a regression
     def _updateSelectedHex(
             self,
             pos: typing.Optional[travellermap.HexPosition],
             updateHistory: bool = True
             ) -> None:
-        if pos == self._selectedHex:
-            return
-
-        self._selectedHex = pos
         if pos and updateHistory:
             app.HexHistory.instance().addHex(pos=pos)
 
-        # Notify observers that the selected hex has changed. This is done even
-        # if it's actually the same hex to allow for the case where the user
-        # reselects the same hex to cause the map to jump back to it's location
-        self.hexChanged.emit(self._selectedHex)
+        if pos != self._selectedHex:
+            self._selectedHex = pos
+            self.hexChanged.emit(self._selectedHex)
 
     # https://forum.qt.io/topic/123909/how-to-override-paste-or-catch-the-moment-before-paste-happens-in-qlineedit/10
     # NOTE: I suspect this might not work with RTL languages

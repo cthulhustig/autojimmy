@@ -1,5 +1,6 @@
 import app
 import gui
+import traveller
 import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
@@ -47,6 +48,11 @@ class HexSearchDialog(gui.DialogEx):
             pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
         self._hexSelectWidget.setSelectedHex(pos=pos)
+
+    # Helper to get the selected world if a world is selected. Useful for code
+    # that never enables dead space selection
+    def selectedWorld(self) -> typing.Optional[traveller.World]:
+        return self._hexSelectWidget.selectedWorld()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._hexSelectWidget.enableDeadSpaceSelection(enable=enable)

@@ -253,7 +253,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         super().saveSettings()
 
     def _setupWorldSelectControls(self) -> None:
-        self._saleWorldWidget = gui.WorldSelectWidget()
+        self._saleWorldWidget = gui.WorldSelectToolWidget()
         self._saleWorldWidget.enableMapSelectButton(True)
         self._saleWorldWidget.enableShowInfoButton(True)
         self._saleWorldWidget.selectionChanged.connect(self._saleWorldChanged)
@@ -265,8 +265,6 @@ class SaleCalculatorWindow(gui.WindowWidget):
         self._worldGroupBox.setLayout(layout)
 
     def _setupConfigurationControls(self) -> None:
-        mainLayout = QtWidgets.QHBoxLayout()
-
         self._playerBrokerDmSpinBox = gui.SpinBoxEx()
         self._playerBrokerDmSpinBox.setRange(app.MinPossibleDm, app.MaxPossibleDm)
         self._playerBrokerDmSpinBox.setValue(1)
@@ -470,7 +468,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         return cargoRecords
 
     def _saleWorldChanged(self) -> None:
-        disable = not self._saleWorldWidget.hasSelection()
+        disable = not self._saleWorldWidget.selectedWorld()
         self._configurationGroupBox.setDisabled(disable)
         self._cargoGroupBox.setDisabled(disable)
         self._salePriceGroupBox.setDisabled(disable)
@@ -633,6 +631,10 @@ class SaleCalculatorWindow(gui.WindowWidget):
             self._cargoTable.removeSelectedRows()
 
     def _generateSalePrices(self) -> None:
+        saleWorld = self._saleWorldWidget.selectedWorld()
+        if not saleWorld:
+            return
+
         self._salePricesTable.removeAllRows()
 
         blackMarket = self._blackMarketCheckBox.isChecked()
@@ -642,7 +644,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
             if tradeGood.id() != traveller.TradeGoodIds.Exotics:
                 # Only generate prices for goods that match the selected legality
-                isIllegal = tradeGood.isIllegal(world=self._saleWorldWidget.world())
+                isIllegal = tradeGood.isIllegal(world=saleWorld)
                 if blackMarket == isIllegal:
                     cargoRecords.append(cargoRecord)
             else:
@@ -662,7 +664,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
 
         saleCargo, localBrokerIsInformant = logic.generateRandomSaleCargo(
             rules=app.Config.instance().rules(),
-            world=self._saleWorldWidget.world(),
+            world=saleWorld,
             currentCargo=cargoRecords,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerWidget.isChecked(),
@@ -703,6 +705,10 @@ class SaleCalculatorWindow(gui.WindowWidget):
                 text=f'The local black market fixer that was hired is an informant')
 
     def _editSalePrice(self) -> None:
+        saleWorld = self._saleWorldWidget.selectedWorld()
+        if not saleWorld:
+            return
+
         row = self._salePricesTable.currentRow()
         if row < 0:
             gui.MessageBoxEx.information(
@@ -721,7 +727,7 @@ class SaleCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Sale Details',
-            world=self._saleWorldWidget.world(),
+            world=saleWorld,
             editTradeGood=salePrice.tradeGood(),
             editPricePerTon=salePrice.pricePerTon(),
             editQuantity=salePrice.quantity(),

@@ -298,11 +298,16 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             tradeOption: logic.TradeOption
             ) -> None:
+        purchaseWorld = tradeOption.purchaseWorld()
+        saleWorld = tradeOption.saleWorld()
         try:
+            # TODO: This should really pass the jump route that was created for
+            # the trade option. Probably something to fix when I make an effort
+            # to remove these horrible configureControls functions
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
             jumpRouteWindow.configureControls(
-                startWorld=tradeOption.purchaseWorld(),
-                finishWorld=tradeOption.saleWorld(),
+                startPos=purchaseWorld.hexPosition() if purchaseWorld else None,
+                finishPos=saleWorld.hexPosition() if saleWorld else None,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -661,7 +666,8 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._saleWorldsWidget.removeAllRows()
 
         if purchaseWorld != None:
-            self._purchaseWorldWidget.setWorld(world=purchaseWorld)
+            self._purchaseWorldWidget.setSelectedHex(
+                pos=purchaseWorld.hexPosition() if purchaseWorld else None)
         if playerBrokerDm != None:
             self._playerBrokerDmSpinBox.setValue(int(playerBrokerDm))
         if minSellerDm != None:
@@ -834,7 +840,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         super().saveSettings()
 
     def _setupPurchaseWorldControls(self) -> None:
-        self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget = gui.WorldSelectToolWidget()
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -1092,7 +1098,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._purchaseWorldGroupBox.setDisabled(False)
 
             # Disable all other controls until purchase world is selected
-            disable = not self._purchaseWorldWidget.hasSelection()
+            disable = not self._purchaseWorldWidget.selectedWorld()
             self._configurationGroupBox.setDisabled(disable)
             self._cargoGroupBox.setDisabled(disable)
             self._saleWorldsGroupBox.setDisabled(disable)
@@ -1174,7 +1180,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._updateSaleWorldTradeScores()
 
     def _regenerateSpeculativeCargo(self):
-        world = self._purchaseWorldWidget.world()
+        world = self._purchaseWorldWidget.selectedWorld()
         if not world:
             self._removeAllSpeculativeCargo()
             return
@@ -1285,7 +1291,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
     def _purchaseWorldChanged(self) -> None:
         self._enableDisableControls()
-        purchaseWorld = self._purchaseWorldWidget.world()
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if purchaseWorld:
             self._saleWorldsWidget.setRelativeHex(pos=purchaseWorld.hexPosition())
 
@@ -1306,7 +1312,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1349,7 +1355,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         cargoRecords = logic.generateSpeculativePurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localPurchaseBrokerWidget.isChecked(),
             localBrokerDm=self._localPurchaseBrokerWidget.value(),
@@ -1451,7 +1457,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -1480,7 +1486,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1522,7 +1528,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         dlg = gui.PurchaseCargoDialog(
             parent=self,
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             availableCargo=affordableCargo,
             availableFunds=self._availableFundsSpinBox.value(),
             freeCargoCapacity=self._freeCargoSpaceSpinBox.value())
@@ -1659,7 +1665,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Current Cargo',
-            world=self._purchaseWorldWidget.world())
+            world=self._purchaseWorldWidget.selectedWorld())
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -1687,7 +1693,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Current Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=self._purchaseWorldWidget.selectedWorld(),
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=pricePerTon,
             editQuantity=quantity)
@@ -1808,7 +1814,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         # strategy. No options will be generated unless the ship has enough
         #current fuel
         if not pitCostCalculator.refuellingType(
-                world=self._purchaseWorldWidget.world()):
+                world=self._purchaseWorldWidget.selectedWorld()):
             message = \
                 'The purchase world doesn\'t support the selected refuelling ' \
                 'strategy. It will only be possibly to generate trade ' \
@@ -1852,7 +1858,7 @@ class WorldTraderWindow(_BaseTraderWindow):
             self._traderJob = jobs.SingleWorldTraderJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                purchaseWorld=self._purchaseWorldWidget.world(),
+                purchaseWorld=self._purchaseWorldWidget.selectedWorld(),
                 saleWorlds=self._saleWorldsWidget.worlds(),
                 currentCargo=self._currentCargoTable.cargoRecords(),
                 possibleCargo=self._speculativeCargoTable.cargoRecords() + self._availableCargoTable.cargoRecords(),

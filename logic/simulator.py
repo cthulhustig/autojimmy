@@ -68,7 +68,7 @@ class Simulator(object):
 
     def run(
             self,
-            startingWorld: traveller.World,
+            startPos: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -118,7 +118,7 @@ class Simulator(object):
 
         # Set the funds and world like this to trigger callbacks. Note
         # that this MUST be done AFTER the simulation time is reset
-        self._setCurrentHex(pos=startingWorld.hexPosition())
+        self._setCurrentHex(pos=startPos)
         self._setAvailableFunds(startingFunds)
 
         while self._availableFunds > 0:

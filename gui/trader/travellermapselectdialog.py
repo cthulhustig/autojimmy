@@ -70,13 +70,13 @@ class TravellerMapSelectDialog(gui.DialogEx):
     def configureSelection(
             self,
             singleSelect: bool,
-            allowDeadSpace: bool = False
+            includeDeadSpace: bool = False
             ) -> None:
         self._mapWidget.setSelectionMode(
             gui.TravellerMapWidget.SelectionMode.SingleSelect \
             if singleSelect else \
             gui.TravellerMapWidget.SelectionMode.MultiSelect)
-        self._mapWidget.enableDeadSpaceSelection(enable=allowDeadSpace)
+        self._mapWidget.enableDeadSpaceSelection(enable=includeDeadSpace)
         self._updateLabel()
 
     def loadSettings(self) -> None:

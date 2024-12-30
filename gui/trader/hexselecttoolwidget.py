@@ -6,18 +6,19 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
-# TODO: This will probably need updated to (optionally) support dead space selection
-class WorldSelectWidget(QtWidgets.QWidget):
+# TODO: The tooltips of widgets should update to say world/hex depending on if dead
+# space selection is enabled
+class WorldSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
-    showWorld = QtCore.pyqtSignal(traveller.World)
+    showHex = QtCore.pyqtSignal(travellermap.HexPosition)
 
     # TODO: I suspect this class will be renamed to HexSelectWidget but I might need
     # to keep this state so users don't loose the last selected world
     _StateVersion = 'WorldSelectWidget_v1'
 
-    # The world select combo box has a minimum width applied to stop it
-    # becoming stupidly small. This min size isn't expected to be big enough
-    # for all world names
+    # The hex select combo box has a minimum width applied to stop it becoming
+    # stupidly small. This min size isn't expected to be big enough for all
+    # world names
     _MinWoldSelectWidth = 150
 
     def __init__(
@@ -29,7 +30,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._enableMapSelectButton = False
-        self._enableShowWorldButton = False
+        self._enableShowHexButton = False
         self._enableShowInfoButton = False
         self._mapSelectDialog = None
 
@@ -38,7 +39,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
             self._searchComboBox.setCurrentHex(pos=world.hexPosition()) # TODO: This is a hack until this widget supports hexes
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(int(
-            WorldSelectWidget._MinWoldSelectWidth *
+            WorldSelectToolWidget._MinWoldSelectWidth *
             app.Config.instance().interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
@@ -50,13 +51,13 @@ class WorldSelectWidget(QtWidgets.QWidget):
         self._mapSelectButton.setHidden(True)
         self._mapSelectButton.clicked.connect(self._mapSelectClicked)
 
-        self._showWorldButton = gui.IconButton(
+        self._showHexButton = gui.IconButton(
             icon=gui.loadIcon(id=gui.Icon.Search),
             parent=self)
-        self._showWorldButton.setToolTip(gui.createStringToolTip(
+        self._showHexButton.setToolTip(gui.createStringToolTip(
             'Show world in Traveller Map.'))
-        self._showWorldButton.setHidden(True)
-        self._showWorldButton.clicked.connect(self._showWorldClicked)
+        self._showHexButton.setHidden(True)
+        self._showHexButton.clicked.connect(self._showHexClicked)
 
         self._showInfoButton = gui.IconButton(
             icon=gui.loadIcon(id=gui.Icon.Info),
@@ -72,7 +73,7 @@ class WorldSelectWidget(QtWidgets.QWidget):
             layout.addWidget(QtWidgets.QLabel(text))
         layout.addWidget(self._searchComboBox, 1)
         layout.addWidget(self._mapSelectButton)
-        layout.addWidget(self._showWorldButton)
+        layout.addWidget(self._showHexButton)
         layout.addWidget(self._showInfoButton)
 
         self.setLayout(layout)
@@ -81,46 +82,76 @@ class WorldSelectWidget(QtWidgets.QWidget):
         # elsewhere. If it's not done then the default tab order has the buttons
         # before the combo box
         QtWidgets.QWidget.setTabOrder(self._searchComboBox, self._mapSelectButton)
-        QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showWorldButton)
-        QtWidgets.QWidget.setTabOrder(self._showWorldButton, self._showInfoButton)
+        QtWidgets.QWidget.setTabOrder(self._mapSelectButton, self._showHexButton)
+        QtWidgets.QWidget.setTabOrder(self._showHexButton, self._showInfoButton)
 
-    def world(self) -> typing.Optional[traveller.World]:
-        pos = self._searchComboBox.currentHex()
-        # TODO: This is a hack until this widget supports hexes
-        return traveller.WorldManager.instance().worldByPosition(pos=pos) if pos else None
+    def selectedHex(self) -> typing.Optional[travellermap.HexPosition]:
+        return self._searchComboBox.currentHex()
 
-    def setWorld(
+    def setSelectedHex(
             self,
-            world: typing.Optional[traveller.World],
-            updateRecentWorlds: bool = True
+            pos: typing.Optional[travellermap.HexPosition],
+            updateHistory: bool = True
             ) -> None:
-        if world != self.world():
-            self._searchComboBox.setCurrentHex(
-                pos=world.hexPosition() if world else None, # TODO: This is a hack until this widget supports hexes
-                updateHistory=updateRecentWorlds)
-            self.selectionChanged.emit()
+        self._searchComboBox.setCurrentHex(
+            pos=pos,
+            updateHistory=updateHistory)
 
-    def hasSelection(self) -> bool:
-        return self._searchComboBox.currentHex() != None
+    # Helper to get the selected world if a world is selected. Useful for code
+    # that never enables dead space selection
+    def selectedWorld(self) -> typing.Optional[traveller.World]:
+        pos = self.selectedHex()
+        if not pos:
+            return None
+        return traveller.WorldManager.instance().worldByPosition(pos=pos) if pos else None
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
         self._mapSelectButton.setHidden(not self._enableMapSelectButton)
 
-    def enableShowWorldButton(self, enable: bool) -> None:
-        self._enableShowWorldButton = enable
-        self._showWorldButton.setHidden(not self._enableShowWorldButton)
+    def isMapSelectButtonEnabled(self) -> bool:
+        return self._enableMapSelectButton
+
+    def enableShowHexButton(self, enable: bool) -> None:
+        self._enableShowHexButton = enable
+        self._showHexButton.setHidden(not self._enableShowHexButton)
+
+    def isShowHexButtonEnabled(self) -> bool:
+        return self._enableShowHexButton
 
     def enableShowInfoButton(self, enable: bool) -> None:
         self._enableShowInfoButton = enable
         self._showInfoButton.setHidden(not self._enableShowInfoButton)
 
+    def isShowInfoButtonEnabled(self) -> bool:
+        return self._enableShowInfoButton
+
+    def enableDeadSpaceSelection(self, enable: bool) -> None:
+        self._searchComboBox.enableDeadSpaceSelection(enable=enable)
+        if self._mapSelectDialog:
+            self._mapSelectDialog.configureSelection(
+                singleSelect=True,
+                includeDeadSpace=enable)
+
+    def isDeadSpaceSelectionEnabled(self) -> bool:
+        return self._searchComboBox.isDeadSpaceSelectionEnabled()
+
     def saveState(self) -> QtCore.QByteArray:
-        world = self.world()
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldSelectWidget._StateVersion)
-        stream.writeQString(world.sectorHex() if world else '')
+        stream.writeQString(WorldSelectToolWidget._StateVersion)
+
+        pos = self.selectedHex()
+        sectorHex = ''
+        if pos:
+            try:
+                sectorHex = traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+            except Exception as ex:
+                logging.error(
+                    f'Failed to resolve hex {pos} to sector hex when saving HexSelectToolWidget state',
+                    exc_info=ex)
+        stream.writeQString(sectorHex)
+
         return state
 
     def restoreState(
@@ -129,30 +160,29 @@ class WorldSelectWidget(QtWidgets.QWidget):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldSelectWidget._StateVersion:
+        if version != WorldSelectToolWidget._StateVersion:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore WorldSelectWidget state (Incorrect version)')
+            logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False
 
         sectorHex = stream.readQString()
-        world = None
+        pos = None
         if sectorHex:
             try:
-                world = traveller.WorldManager.instance().world(sectorHex=sectorHex)
+                pos = traveller.WorldManager.instance().sectorHexToPosition(
+                    sectorHex=sectorHex)
             except Exception as ex:
-                logging.error(f'Failed to restore WorldSelectWidget state', exc_info=ex)
+                logging.error(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
                 return False
 
-        self.setWorld(
-            world=world,
-            updateRecentWorlds=False)
+        self.setSelectedHex(pos=pos, updateHistory=False)
         return True
 
     def _selectionChanged(
             self,
             pos: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._showWorldButton.setEnabled(pos != None)
+        self._showHexButton.setEnabled(pos != None)
         self._showInfoButton.setEnabled(pos != None)
         self.selectionChanged.emit()
 
@@ -161,11 +191,11 @@ class WorldSelectWidget(QtWidgets.QWidget):
             self._mapSelectDialog = gui.TravellerMapSelectDialog(parent=self)
             self._mapSelectDialog.configureSelection(
                 singleSelect=True,
-                allowDeadSpace=False) # TODO: This needs to be configurable
+                includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
 
-        world = self.world()
-        if world:
-            self._mapSelectDialog.selectHex(pos=world.hexPosition())
+        pos = self.selectedHex()
+        if pos:
+            self._mapSelectDialog.selectHex(pos=pos)
         else:
             self._mapSelectDialog.clearSelectedHexes()
         if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -174,19 +204,21 @@ class WorldSelectWidget(QtWidgets.QWidget):
         if len(newSelection) != 1:
             return
 
-        world = traveller.WorldManager.instance().worldByPosition(pos=newSelection[0])
-        if not world:
-            return
+        self._searchComboBox.setCurrentHex(pos=newSelection[0])
 
-        self._searchComboBox.setCurrentHex(pos=world.hexPosition()) # TODO: This is a hack until this widget supports hexes
-
-    def _showWorldClicked(self) -> None:
-        world = self.world()
-        if world:
-            self.showWorld.emit(world)
+    def _showHexClicked(self) -> None:
+        pos = self.selectedHex()
+        if pos:
+            self.showHex.emit(pos)
 
     def _showInfoClicked(self) -> None:
-        world = self.world()
-        if world:
-            infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-            infoWindow.addWorld(world=world)
+        # TODO: This is a hack needed until the world details widget is updated to
+        # show details of dead space
+        pos = self.selectedHex()
+        if not pos:
+            return
+        world = traveller.WorldManager.instance().worldByPosition(pos=pos)
+        if not world:
+            return
+        infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
+        infoWindow.addWorld(world=world)

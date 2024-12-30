@@ -54,8 +54,127 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         QtCore.QTimer.singleShot(0, self._showWelcomeMessage)
         return super().firstShowEvent(e)
 
+    def loadSettings(self) -> None:
+        super().loadSettings()
+
+        self._settings.beginGroup(self._configSection)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='PurchaseWorldState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._purchaseWorldWidget.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='PlayerBrokerDMState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._playerBrokerDmSpinBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='LocalBrokerState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._localBrokerWidget.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='SellerDmState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._sellerDmSpinBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='PriceScaleState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._priceScaleSpinBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='AvailabilityScaleState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._availabilityScaleSpinBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='BlackMarketState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._blackMarketCheckBox.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='CargoTableState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._cargoTable.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='CargoTableContent',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._cargoTable.restoreContent(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='DiceRollTableState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._diceRollTable.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='DiceRollTableContent',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._diceRollTable.restoreContent(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='ResultsSplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._resultsSplitter.restoreState(storedValue)
+
+        storedValue = gui.safeLoadSetting(
+            settings=self._settings,
+            key='HorizontalSplitterState',
+            type=QtCore.QByteArray)
+        if storedValue:
+            self._horizontalSplitter.restoreState(storedValue)
+
+        self._settings.endGroup()
+
+    def saveSettings(self) -> None:
+        self._settings.beginGroup(self._configSection)
+
+        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
+        self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
+        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
+        self._settings.setValue('SellerDmState', self._sellerDmSpinBox.saveState())
+        self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
+        self._settings.setValue('AvailabilityScaleState', self._availabilityScaleSpinBox.saveState())
+        self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
+        self._settings.setValue('CargoTableState', self._cargoTable.saveState())
+        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
+        self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
+        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
+        self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
+        self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
+
+        self._settings.endGroup()
+
+        super().saveSettings()
+
     def _setupWorldSelectControls(self) -> None:
-        self._purchaseWorldWidget = gui.WorldSelectWidget()
+        self._purchaseWorldWidget = gui.WorldSelectToolWidget()
         self._purchaseWorldWidget.enableMapSelectButton(True)
         self._purchaseWorldWidget.enableShowInfoButton(True)
         self._purchaseWorldWidget.selectionChanged.connect(self._purchaseWorldChanged)
@@ -179,132 +298,17 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         self._diceRollGroupBox.setDisabled(True)
         self._diceRollGroupBox.setLayout(layout)
 
-    def loadSettings(self) -> None:
-        super().loadSettings()
-
-        self._settings.beginGroup(self._configSection)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='PurchaseWorldState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._purchaseWorldWidget.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='PlayerBrokerDMState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._playerBrokerDmSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='LocalBrokerState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._localBrokerWidget.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='SellerDmState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._sellerDmSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='PriceScaleState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._priceScaleSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='AvailabilityScaleState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._availabilityScaleSpinBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='BlackMarketState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._blackMarketCheckBox.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='CargoTableState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._cargoTable.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='CargoTableContent',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._cargoTable.restoreContent(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='DiceRollTableState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._diceRollTable.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='DiceRollTableContent',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._diceRollTable.restoreContent(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='ResultsSplitterState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._resultsSplitter.restoreState(storedValue)
-
-        storedValue = gui.safeLoadSetting(
-            settings=self._settings,
-            key='HorizontalSplitterState',
-            type=QtCore.QByteArray)
-        if storedValue:
-            self._horizontalSplitter.restoreState(storedValue)
-
-        self._settings.endGroup()
-
-    def saveSettings(self) -> None:
-        self._settings.beginGroup(self._configSection)
-
-        self._settings.setValue('PurchaseWorldState', self._purchaseWorldWidget.saveState())
-        self._settings.setValue('PlayerBrokerDMState', self._playerBrokerDmSpinBox.saveState())
-        self._settings.setValue('LocalBrokerState', self._localBrokerWidget.saveState())
-        self._settings.setValue('SellerDmState', self._sellerDmSpinBox.saveState())
-        self._settings.setValue('PriceScaleState', self._priceScaleSpinBox.saveState())
-        self._settings.setValue('AvailabilityScaleState', self._availabilityScaleSpinBox.saveState())
-        self._settings.setValue('BlackMarketState', self._blackMarketCheckBox.saveState())
-        self._settings.setValue('CargoTableState', self._cargoTable.saveState())
-        self._settings.setValue('CargoTableContent', self._cargoTable.saveContent())
-        self._settings.setValue('DiceRollTableState', self._diceRollTable.saveState())
-        self._settings.setValue('DiceRollTableContent', self._diceRollTable.saveContent())
-        self._settings.setValue('ResultsSplitterState', self._resultsSplitter.saveState())
-        self._settings.setValue('HorizontalSplitterState', self._horizontalSplitter.saveState())
-
-        self._settings.endGroup()
-
-        super().saveSettings()
-
     def _purchaseWorldChanged(self) -> None:
-        disable = not self._purchaseWorldWidget.hasSelection()
+        disable = not self._purchaseWorldWidget.selectedWorld()
         self._configurationGroupBox.setDisabled(disable)
         self._cargoGroupBox.setDisabled(disable)
         self._diceRollGroupBox.setDisabled(disable)
 
     def _generateAvailableCargo(self) -> None:
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if not purchaseWorld:
+            return
+
         self._cargoTable.removeAllRows()
 
         diceRoller = common.DiceRoller(
@@ -312,7 +316,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
 
         cargoRecords, localBrokerIsInformant = logic.generateRandomPurchaseCargo(
             rules=app.Config.instance().rules(),
-            world=self._purchaseWorldWidget.world(),
+            world=purchaseWorld,
             playerBrokerDm=self._playerBrokerDmSpinBox.value(),
             useLocalBroker=self._localBrokerWidget.isChecked(),
             localBrokerDm=self._localBrokerWidget.value(),
@@ -374,6 +378,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 text=f'The seller has no goods available at this time.\nThis can happen due to world specific modifiers (e.g. for low population worlds).')
 
     def _addCargo(self) -> None:
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if not purchaseWorld:
+            return
+
         # Ignore trade goods that have already been added from the list
         ignoreTradeGoods = []
         for row in range(self._cargoTable.rowCount()):
@@ -393,7 +401,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Add Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=purchaseWorld,
             selectableTradeGoods=tradeGoods)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
@@ -405,6 +413,10 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
                 quantity=dlg.quantity()))
 
     def _editCargo(self) -> None:
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if not purchaseWorld:
+            return
+
         row = self._cargoTable.currentRow()
         if row < 0:
             gui.MessageBoxEx.information(
@@ -417,7 +429,7 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
         dlg = gui.ScalarCargoDetailsDialog(
             parent=self,
             title='Edit Available Cargo',
-            world=self._purchaseWorldWidget.world(),
+            world=purchaseWorld,
             editTradeGood=cargoRecord.tradeGood(),
             editPricePerTon=cargoRecord.pricePerTon(),
             editQuantity=cargoRecord.quantity())
@@ -435,10 +447,14 @@ class PurchaseCalculatorWindow(gui.WindowWidget):
             self,
             cargoRecords: typing.Iterable[logic.CargoRecord]
             ) -> None:
+        purchaseWorld = self._purchaseWorldWidget.selectedWorld()
+        if not purchaseWorld:
+            return
+
         try:
             traderWindow = gui.WindowManager.instance().showWorldTradeOptionsWindow()
             traderWindow.configureControls(
-                purchaseWorld=self._purchaseWorldWidget.world(),
+                purchaseWorld=purchaseWorld,
                 availableCargo=cargoRecords,
                 playerBrokerDm=self._playerBrokerDmSpinBox.value(),
                 minSellerDm=self._sellerDmSpinBox.value(),
