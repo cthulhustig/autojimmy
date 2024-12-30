@@ -108,7 +108,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._allowDeadSpaceSelection = False
+        self._enableDeadSpaceSelection = False
         self._selectedHex = None
 
         self._completer = None
@@ -172,9 +172,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self._enableWorldToolTips = enabled
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        self._allowDeadSpaceSelection = enable
+        self._enableDeadSpaceSelection = enable
 
-        if not self._allowDeadSpaceSelection:
+        if not self._enableDeadSpaceSelection:
             # Dead space selection has been disabled so clear the current selection
             # if it's a dead space hex
             pos = self.currentHex()
@@ -182,7 +182,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 self.setCurrentHex(pos=None)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
-        return self._allowDeadSpaceSelection
+        return self._enableDeadSpaceSelection
 
     def eventFilter(self, object: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if object == self:
@@ -197,20 +197,21 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
                     QtCore.QTimer.singleShot(0, self.selectAll)
             elif event.type() == QtCore.QEvent.Type.FocusOut:
-                # The widget has lost focus. Sync the selected hex and current
-                # text as long as focus isn't being lost to the widgets completer
-                # popup. If there is a currently selected hex then force the
-                # text to be the full canonical name for that hex. If there is
-                # no selected hex then get the list of the matches for the
-                # current text, if there are matches then select the first one.
-                # This should effectively be as if the user had selected the first
-                # completer option. This is a usability thing as, if a user gets
-                # it down to the point the hex they want is the first in the
-                # completer list, it might not be obvious to them that they need
-                # select it. It should be obvious if it's not the first in the
-                # list but it's less obvious if it was the first.
+                # The widget has lost focus. If the completer is enabled sync
+                # the selected hex and current text as long as focus isn't
+                # being lost to the widgets completer popup. If there is a
+                # currently selected hex then force the text to be the full
+                # canonical name for that hex. If there is no selected hex then
+                # get the list of the matches for the current text, if there are
+                # matches then select the first one. This should effectively be
+                # as if the user had selected the first completer option. This
+                # is a usability thing as, if a user gets it down to the point
+                # the hex they want is the first in the completer list, it might
+                # not be obvious to them that they need select it. It should be
+                # obvious if it's not the first in the list but it's less
+                # obvious if it was the first.
                 assert(isinstance(event, QtGui.QFocusEvent))
-                if event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
+                if self._completer and event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
                     pos = self.currentHex()
                     if pos:
                         newText = _formatHexName(pos)
@@ -471,7 +472,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             except:
                 pass
 
-            if self._allowDeadSpaceSelection:
+            if self._enableDeadSpaceSelection:
                 # TODO: I'm not sure about this being added at the end of the list as
                 # it's after the sorting of worlds
                 # TODO: This probably needs something similar to searchForWorlds except

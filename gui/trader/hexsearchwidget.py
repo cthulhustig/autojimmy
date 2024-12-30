@@ -5,12 +5,6 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-# TODO: There is some unpleasant behaviour here but it's not a regression due
-# to the dead space stuff. If using the offline search you type a string that
-# matches multiple hexes, when you then click one in the results list it
-# updates the results list to only contain that item. Ideally it would leave
-# the results as they were but that probably means not updating the combo box
-# to have the text for the selected entry
 class HexSearchWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
 
@@ -263,65 +257,75 @@ class HexSearchWidget(QtWidgets.QWidget):
     def _primeSearch(self) -> None:
         self._searchTimer.start()
 
+    # TODO: How controls are updated by this function has changed quite
+    # a bit so I need to make sure there are no regressions
     def _performSearch(self) -> None:
-        self._resultsList.clear()
+        oldSelection = self.selectedHex()
 
         searchString = self._searchComboBox.currentText()
-        if not searchString:
-            return
-
         matches: typing.List[travellermap.HexPosition] = []
-        try:
-            worlds = traveller.WorldManager.instance().searchForWorlds(
-                searchString=searchString)
-            for world in worlds:
-                matches.append(world.hexPosition())
-        except:
-            logging.error(
-                f'Search for "{searchString}" failed',
-                exc_info=ex)
-
-        if self._searchComboBox.isDeadSpaceSelectionEnabled():
-            # TODO: I'm not sure about this being added at the end of the list as
-            # it's after the sorting of worlds
-            # TODO: This probably needs something similar to searchForWorlds except
-            # for hexes that would do partial matches (e.g. if you type just a sector
-            # or subsector name it returns all hexes in the sector/subsector)
-            # TODO: This is also a duplicate of the code that is in HexSelectComboBox.
+        if searchString:
             try:
-                pos = traveller.WorldManager.instance().sectorHexToPosition(
-                    sectorHex=searchString)
-                isDuplicate = False
-                for other in matches:
-                    if pos == other:
-                        isDuplicate = True
-                        break
-                if not isDuplicate:
-                    matches.append(pos)
-            except ValueError:
-                pass # The search string isn't a a sector hex so ignore it
-            except Exception as ex:
+                worlds = traveller.WorldManager.instance().searchForWorlds(
+                    searchString=searchString)
+                for world in worlds:
+                    matches.append(world.hexPosition())
+            except:
                 logging.error(
-                    f'Search for sector hex "{searchString}" failed',
+                    f'Search for "{searchString}" failed',
                     exc_info=ex)
 
-        if not matches:
-            return
+            if self._searchComboBox.isDeadSpaceSelectionEnabled():
+                # TODO: I'm not sure about this being added at the end of the list as
+                # it's after the sorting of worlds
+                # TODO: This probably needs something similar to searchForWorlds except
+                # for hexes that would do partial matches (e.g. if you type just a sector
+                # or subsector name it returns all hexes in the sector/subsector)
+                # TODO: This is also a duplicate of the code that is in HexSelectComboBox.
+                try:
+                    pos = traveller.WorldManager.instance().sectorHexToPosition(
+                        sectorHex=searchString)
+                    isDuplicate = False
+                    for other in matches:
+                        if pos == other:
+                            isDuplicate = True
+                            break
+                    if not isDuplicate:
+                        matches.append(pos)
+                except ValueError:
+                    pass # The search string isn't a a sector hex so ignore it
+                except Exception as ex:
+                    logging.error(
+                        f'Search for sector hex "{searchString}" failed',
+                        exc_info=ex)
 
-        selectItem = None
-        for pos in matches:
-            item = self._createListItem(pos)
-            self._resultsList.addItem(item)
-            if pos == self._searchComboBox.currentHex():
-                selectItem = item
+        newSelection = None
+        with gui.SignalBlocker(self._resultsList):
+            self._resultsList.clear()
 
-        self._resultsList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
+            for pos in matches:
+                item = self._createListItem(pos)
+                self._resultsList.addItem(item)
+                if pos == oldSelection:
+                    item.setSelected(True)
 
-        if selectItem:
-            # TODO: Do I need to set selection here or does setting the
-            # current item automatically do it?
-            selectItem.setSelected(True)
-            self._resultsList.setCurrentItem(selectItem)
+            selection = self._resultsList.selectedItems()
+            if selection:
+                newSelection = selection[0].data(QtCore.Qt.ItemDataRole.UserRole)
+
+            self._resultsList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
+
+        with gui.SignalBlocker(self._mapWidget):
+            if newSelection:
+                self._mapWidget.selectHex(
+                    pos=newSelection,
+                    centerOnHex=True,
+                    setInfoHex=True)
+            else:
+                self._mapWidget.clearSelectedHexes()
+
+        if oldSelection != newSelection:
+            self.selectionChanged.emit()
 
     def _tabBarChanged(self, index: int) -> None:
         self.selectionChanged.emit()
@@ -349,7 +353,8 @@ class HexSearchWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(widget=self._resultsList):
             self._resultsList.clear()
             if pos:
-                self._resultsList.addItem(self._createListItem(pos))
-                self._resultsList.setCurrentRow(0)
+                item = self._createListItem(pos)
+                self._resultsList.addItem(item)
+                item.setSelected(True)
 
         self.selectionChanged.emit()

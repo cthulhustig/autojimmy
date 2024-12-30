@@ -802,7 +802,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
         self._initOptionActions()
 
         self._selectionMode = TravellerMapWidget.SelectionMode.NoSelect
-        self._allowDeadSpaceSelection = False
+        self._enableDeadSpaceSelection = False
         self._selectedHexes: typing.List[travellermap.HexPosition] = []
 
         self._infoHex = None
@@ -921,7 +921,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
             setInfoHex: bool = True
             ) -> None:
         world = traveller.WorldManager.instance().worldByPosition(pos=pos)
-        if not world and not self._allowDeadSpaceSelection:
+        if not world and not self._enableDeadSpaceSelection:
             return
 
         if self._selectionMode == TravellerMapWidget.SelectionMode.NoSelect or \
@@ -995,9 +995,9 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 self.selectionChanged.emit()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        self._allowDeadSpaceSelection = enable
+        self._enableDeadSpaceSelection = enable
 
-        if not self._allowDeadSpaceSelection:
+        if not self._enableDeadSpaceSelection:
             # Deselect any dead space
             selectionChanged = False
             for index in range(len(self._selectedHexes) - 1, -1, -1):
@@ -1012,7 +1012,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
                 self.selectionChanged.emit()
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
-        return self._allowDeadSpaceSelection
+        return self._enableDeadSpaceSelection
 
     def setInfoHex(
             self,
