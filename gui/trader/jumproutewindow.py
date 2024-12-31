@@ -1129,12 +1129,12 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.selectedWorlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.worlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             )
         ]
@@ -1172,12 +1172,12 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.selectedWorlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map',
-                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.worlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
             None, # Separator
@@ -1489,19 +1489,19 @@ class JumpRouteWindow(gui.WindowWidget):
         if not self._jumpRoute:
             return
 
-        worlds = [world for _, world in self._jumpRoute if world]
-        self._showWorldsInTravellerMap(worlds=worlds)
+        self._showWorldsInTravellerMap(
+            positions=[pos for pos, _ in self._jumpRoute])
 
     def _showWorldsInTravellerMap(
             self,
-            worlds: typing.Iterable[traveller.World]
+            positions: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
-            self._travellerMapWidget.centerOnWorlds(
-                worlds=worlds,
+            self._travellerMapWidget.centerOnHexes(
+                positions=positions,
                 clearOverlays=False,
-                highlightWorlds=False)
+                highlightHexes=False)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)

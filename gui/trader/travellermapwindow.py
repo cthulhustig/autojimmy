@@ -64,6 +64,19 @@ class TravellerMapWindow(gui.WindowWidget):
             highlightHex=highlightHex,
             highlightRadius=highlightRadius)
 
+    def centerOnHexes(
+            self,
+            positions: travellermap.HexPosition,
+            clearOverlays: bool = False,
+            highlightHexes: bool = False,
+            highlightRadius: float = 0.5
+            ) -> None:
+        self._mapWidget.centerOnHexes(
+            positions=positions,
+            clearOverlays=clearOverlays,
+            highlightHexes=highlightHexes,
+            highlightRadius=highlightRadius)
+
     def showJumpRoute(
             self,
             jumpRoute: logic.JumpRoute,

@@ -448,24 +448,18 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def _showWorldsInTravellerMap(
             self,
-            worlds: typing.Iterable[traveller.World]
+            positions: typing.Iterable[travellermap.HexPosition]
             ) -> None:
-        # TODO: Need to switch this to use hexes
-        gui.MessageBoxEx.critical(
-            parent=self,
-            text='Implement me!')
-        return
-
         if self._enableShowInTravellerMapEvent:
-            self.showInTravellerMap.emit(worlds)
+            self.showInTravellerMap.emit(positions)
             return
 
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
-            mapWindow.centerOnWorlds(
-                worlds=worlds,
+            mapWindow.centerOnHexes(
+                positions=positions,
                 clearOverlays=True,
-                highlightWorlds=True)
+                highlightHexes=True)
         except Exception as ex:
             message = 'Failed to show world(s) in Traveller Map'
             logging.error(message, exc_info=ex)
@@ -526,12 +520,12 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.selectedWorlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.selectedHexes()),
                 enabled=self._hexTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All Worlds in Traveller Map...',
-                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.worlds()),
+                callback=lambda: self._showWorldsInTravellerMap(self._hexTable.hexes()),
                 enabled=not self._hexTable.isEmpty()
             )
         ]
