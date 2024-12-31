@@ -213,8 +213,6 @@ class Simulator(object):
             self._jumpRouteIndex += 1
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
-                # TODO: This will need updating as indexing into a jump route will return a
-                # node rather than a world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
                 currentString = traveller.WorldManager.instance().canonicalHexName(pos=self._currentHex)
                 nextString = traveller.WorldManager.instance().canonicalHexName(pos=nextHex)

@@ -54,8 +54,6 @@ def _customWorldTableColumns(
     columns.insert(index, WaypointTableColumnType.BerthingRequired)
     return columns
 
-# TODO: This needs updated to (optionally) support selecting dead space waypoints
-# TODO: The check boxes should be disabled if the row is for dead space
 class WaypointTable(gui.HexTable):
     AllColumns = _customWorldTableColumns(gui.HexTable.AllColumns)
     SystemColumns = _customWorldTableColumns(gui.HexTable.SystemColumns)

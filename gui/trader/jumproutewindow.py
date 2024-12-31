@@ -924,8 +924,6 @@ class JumpRouteWindow(gui.WindowWidget):
             assert(False) # I missed a case
         self._waypointWorldsWidget.setVisibleColumns(columns)
 
-    # TODO: This will need various updates to allow the start/finish/waypoints to be
-    # in dead space
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
             # A trade option job is already running so cancel it
@@ -1778,8 +1776,6 @@ class JumpRouteWindow(gui.WindowWidget):
 
         waypointIndex = 0
         for jumpIndex in range(self._jumpRoute.nodeCount()):
-            # TODO: This will need updated to account for the fact indexing
-            # the jump route will get a node not a world
             if self._jumpRoute.hex(jumpIndex) == waypoints[waypointIndex][0]:
                 # We've found the current waypoint on the jump route
                 if waypoints[waypointIndex][1]:
