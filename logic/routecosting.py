@@ -27,7 +27,6 @@ class ShortestTimeCostCalculator(logic.JumpCostCalculatorInterface):
             ) -> typing.Any:
         return None
 
-    # TODO: This might need updated for dead space routing
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
@@ -67,7 +66,6 @@ class ShortestDistanceCostCalculator(logic.JumpCostCalculatorInterface):
             ) -> typing.Any:
         return None
 
-    # TODO: This might need updated for dead space routing
     def calculate(
             self,
             currentHex: travellermap.HexPosition,
@@ -176,7 +174,6 @@ class CheapestRouteCostCalculator(logic.JumpCostCalculatorInterface):
 
         return costContext
 
-    # TODO: This might need updated for dead space routing
     def calculate(
             self,
             currentHex: travellermap.HexPosition,

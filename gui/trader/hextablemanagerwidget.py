@@ -22,8 +22,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            # TODO: This should be updated to an allowed hex callback
-            allowHexCallback: typing.Optional[typing.Callable[[traveller.World], bool]] = None,
+            allowHexCallback: typing.Optional[typing.Callable[[travellermap.HexPosition], bool]] = None,
             isOrderedList: bool = False,
             showAddNearbyWorldsButton: bool = True,
             showSelectInTravellerMapButton: bool = True,

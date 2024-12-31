@@ -75,6 +75,9 @@ class HexTableTabBar(gui.TabBarEx):
         return True
 
 class HexTable(gui.FrozenColumnListTable):
+    # TODO: It might be worth adding a SectorHex column. If this happens then
+    # the Name should be set to 'Dead Space' if it's a dead space hex and there
+    # would be no need to set the zone to dead space
     class ColumnType(enum.Enum):
         Name = 'Name'
         Sector = 'Sector'

@@ -44,7 +44,7 @@ class HexSearchWidget(QtWidgets.QWidget):
 
         self._mapWidget = gui.TravellerMapWidget()
         self._mapWidget.setSelectionMode(gui.TravellerMapWidget.SelectionMode.SingleSelect)
-        self._mapWidget.enableDeadSpaceSelection(False) # TODO: This needs to be configurable
+        self._mapWidget.enableDeadSpaceSelection(False)
         self._mapWidget.setInfoEnabled(False) # Disabled by default
         self._mapWidget.selectionChanged.connect(self._mapSelectionChanged)
 
@@ -269,12 +269,6 @@ class HexSearchWidget(QtWidgets.QWidget):
                     exc_info=ex)
 
             if self._searchComboBox.isDeadSpaceSelectionEnabled():
-                # TODO: I'm not sure about this being added at the end of the list as
-                # it's after the sorting of worlds
-                # TODO: This probably needs something similar to searchForWorlds except
-                # for hexes that would do partial matches (e.g. if you type just a sector
-                # or subsector name it returns all hexes in the sector/subsector)
-                # TODO: This is also a duplicate of the code that is in HexSelectComboBox.
                 try:
                     pos = traveller.WorldManager.instance().sectorHexToPosition(
                         sectorHex=searchString)
