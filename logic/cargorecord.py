@@ -1,4 +1,6 @@
 import common
+import json
+import logic
 import traveller
 import typing
 
@@ -400,3 +402,78 @@ def _rollRandomTradeGood(
     return traveller.tradeGoodFromId(
         rules=rules,
         tradeGoodId=tradeGoodId)
+
+
+#
+# Serialisation
+#
+def serialiseCargoRecord(
+        cargoRecord: CargoRecord
+        ) -> typing.Mapping[str, typing.Any]:
+    return {
+        'tradeGoodId': cargoRecord.tradeGood().id(),
+        'quantity': logic.serialiseCalculation(cargoRecord.quantity()),
+        'pricePerTon': logic.serialiseCalculation(cargoRecord.pricePerTon())}
+
+def deserialiseCargoRecord(
+        rules: traveller.Rules,
+        data: typing.Mapping[str, typing.Any]
+        ) -> CargoRecord:
+    tradeGoodId = data.get('tradeGoodId')
+    if tradeGoodId == None:
+        raise RuntimeError('Cargo record data is missing the tradeGoodId property')
+
+    quantity = data.get('quantity')
+    if quantity == None:
+        raise RuntimeError('Cargo record data is missing the quantity property')
+
+    pricePerTon = data.get('pricePerTon')
+    if pricePerTon == None:
+        raise RuntimeError('Cargo record data is missing the pricePerTon property')
+
+    return CargoRecord(
+        tradeGood=traveller.tradeGoodFromId(
+            rules=rules,
+            tradeGoodId=tradeGoodId),
+        quantity=logic.deserialiseCalculation(quantity),
+        pricePerTon=logic.deserialiseCalculation(pricePerTon))
+
+def serialiseCargoRecordList(
+        cargoRecords: typing.Iterable[CargoRecord]
+        ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
+    items = []
+    for cargoRecord in cargoRecords:
+        items.append(serialiseCargoRecord(cargoRecord=cargoRecord))
+    return {'cargoRecords': items}
+
+def deserialiseCargoRecordList(
+        rules: traveller.Rules,
+        data: typing.Mapping[str, typing.Any]
+        ) -> typing.Iterable[CargoRecord]:
+    items = data.get('cargoRecords')
+    if items == None:
+        raise RuntimeError('Cargo record list is missing the cargoRecords property')
+
+    cargoRecords = []
+    for item in items:
+        cargoRecords.append(deserialiseCargoRecord(
+            rules=rules,
+            data=item))
+    return cargoRecords
+
+def writeCargoRecordList(
+        cargoRecords: typing.Iterable[CargoRecord],
+        filePath: str
+        ) -> None:
+    data = serialiseCargoRecordList(cargoRecords=cargoRecords)
+    with open(filePath, 'w', encoding='UTF8') as file:
+        json.dump(data, file, indent=4)
+
+def readCargoRecordList(
+        rules: traveller.Rules,
+        filePath: str,
+        ) -> typing.Iterable[CargoRecord]:
+    with open(filePath, 'r') as file:
+        return deserialiseCargoRecordList(
+            rules=rules,
+            data=json.load(file))

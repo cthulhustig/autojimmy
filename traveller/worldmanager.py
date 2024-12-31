@@ -166,6 +166,7 @@ class WorldManager(object):
     def sectors(self) -> typing.Iterable[traveller.Sector]:
         return self._sectorList
 
+    # TODO: Should probably rename this to worldBySectorHex
     def world(
             self,
             sectorHex: str,
@@ -303,6 +304,8 @@ class WorldManager(object):
                 if world and ((not worldFilterCallback) or worldFilterCallback(world)):
                     yield world
 
+    # TODO: It would be good if this could also handle a string that specified absolute or
+    # relative coordinates as a comma separated pair or quad respectively
     def searchForWorlds(
             self,
             searchString: str,

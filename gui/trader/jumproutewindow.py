@@ -982,8 +982,9 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
             fuelIssueWorldStrings = []
-            for waypointWorld in self._waypointWorldsWidget.worlds():
-                if not pitCostCalculator.refuellingType(world=waypointWorld):
+            for waypointPos in self._waypointWorldsWidget.hexes():
+                waypointWorld = traveller.WorldManager.instance().worldByPosition(pos=waypointPos)
+                if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
             if fuelIssueWorldStrings:
@@ -1589,8 +1590,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         waypointHexes = self._waypointWorldsWidget.hexes()
         if waypointHexes:
-            self._travellerMapWidget.highlightHex(
-                hexes=waypointHexes,
+            self._travellerMapWidget.highlightHexes(
+                positions=waypointHexes,
                 colour='#0066FF',
                 radius=0.3)
 
@@ -1600,13 +1601,11 @@ class JumpRouteWindow(gui.WindowWidget):
                 filteredAvoidHexes.append(pos)
         if filteredAvoidHexes:
             self._travellerMapWidget.highlightHexes(
-                hexes=filteredAvoidHexes,
+                positions=filteredAvoidHexes,
                 colour='#FF0000',
                 radius=0.3)
 
         if self._jumpRoute:
-            # TODO: The showJumpRoute method will need updated to take a list of nodes
-            # rather than a list of worlds
             self._travellerMapWidget.showJumpRoute(
                 jumpRoute=self._jumpRoute,
                 refuellingPlan=self._routeLogistics.refuellingPlan() if self._routeLogistics else None,
@@ -1755,13 +1754,10 @@ class JumpRouteWindow(gui.WindowWidget):
             startHex,
             startWorld and self._includeStartWorldBerthingCheckBox.isChecked()))
 
-        # TODO: This will need updated to account for the waypoint table can contain dead
-        # space hexes
         for row in range(self._waypointWorldTable.rowCount()):
-            waypointWorld = self._waypointWorldTable.world(row)
             waypoints.append((
-                waypointWorld.hexPosition(),
-                waypointWorld and self._waypointWorldTable.isBerthingChecked(row)))
+                self._waypointWorldTable.hex(row),
+                self._waypointWorldTable.isBerthingChecked(row)))
 
         finishHex, finishWorld = self._jumpRoute.finishNode()
         waypoints.append((

@@ -231,10 +231,14 @@ class HexTable(gui.FrozenColumnListTable):
         ColumnType.Atmosphere,
     ]
 
-    # TODO: For reason I can't remember I had this just as 'v1' when
-    # it was WorldTable. I might need to leave it as that for backwards
-    # compatibility
-    _ContentVersion = 'HexTable_v1'
+    # Version 1 format used a world list rather than a hex list. I can't
+    # remember why this was just 'v1' rather than 'WorldTable_v1' as would
+    # be consistent with other widgets, possibly just because this was pretty
+    # much the first table I created way back when
+    _LegacyContentV1 = 'v1'
+    # Version 2 format was added when the table was switched from using worlds
+    # to hexes as part of support for dead space routing
+    _ContentVersion = 'HexTable_v2'
 
     def __init__(
             self,
@@ -476,9 +480,12 @@ class HexTable(gui.FrozenColumnListTable):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(HexTable._ContentVersion)
 
-        # TODO: Disabled until I update serialisation
-        #data = logic.serialiseWorldList(worldList=self.worlds())
-        #stream.writeQString(json.dumps(data))
+        count = self.rowCount()
+        stream.writeUInt32(count)
+        for row in range(self.rowCount()):
+            pos = self.hex(row)
+            stream.writeInt32(pos.absoluteX())
+            stream.writeInt32(pos.absoluteY())
 
         return state
 
@@ -488,19 +495,26 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != HexTable._ContentVersion:
+        if version == HexTable._LegacyContentV1:
+            # TODO: Need to test this works ok
+            try:
+                data = json.loads(stream.readQString())
+                worlds = logic.deserialiseWorldList(data=data)
+                self.setHexes(positions=[world.hexPosition() for world in worlds])
+            except Exception as ex:
+                logging.warning(f'Failed to deserialise v1 HexTable content', exc_info=ex)
+        elif version == HexTable._ContentVersion:
+            count = stream.readUInt32()
+            positions = []
+            for _ in range(count):
+                positions.append(travellermap.HexPosition(
+                    absoluteX=stream.readInt32(),
+                    absoluteY=stream.readInt32()))
+            self.setHexes(positions=positions)
+        else:
             # Wrong version so unable to restore state safely
-            logging.debug(f'Failed to restore HexTable content (Incorrect version)')
+            logging.debug(f'Failed to restore HexTable content (Unsupported version)')
             return False
-
-        # TODO: Disabled until I update serialisation
-        #try:
-        #    data = json.loads(stream.readQString())
-        #    worldList = logic.deserialiseWorldList(data=data)
-        #    self.addWorlds(worlds=worldList)
-        #except Exception as ex:
-        #    logging.warning(f'Failed to deserialise WorldTable content', exc_info=ex)
-        #    return False
 
         return True
 

@@ -1,7 +1,6 @@
 import app
 import common
 import enum
-import json
 import logic
 import traveller
 import typing
@@ -13,17 +12,20 @@ def serialiseWorld(
 
 def deserialiseWorld(
         data: typing.Mapping[str, typing.Any]
-        ) -> logic.JumpRoute:
+        ) -> traveller.World:
     sectorHex = data.get('sectorHex')
     if sectorHex == None:
-        raise RuntimeError('World data is missing the sectorHex element')
-    return traveller.WorldManager.instance().world(sectorHex=sectorHex)
+        raise RuntimeError('World data is missing the sectorHex property')
+    world = traveller.WorldManager.instance().world(sectorHex=sectorHex)
+    if not world:
+        raise RuntimeError(f'Unable to resolve sector hex {sectorHex} to world')
+    return world
 
 def serialiseWorldList(
-        worldList: typing.Iterable[traveller.World]
+        worlds: typing.Iterable[traveller.World]
         ) -> typing.Mapping[str, typing.Any]:
     items = []
-    for world in worldList:
+    for world in worlds:
         items.append(serialiseWorld(world=world))
     return {'worlds': items}
 
@@ -32,29 +34,12 @@ def deserialiseWorldList(
         ) -> typing.Iterable[traveller.World]:
     items = data.get('worlds')
     if items == None:
-        raise RuntimeError('World list is missing the worlds element')
+        raise RuntimeError('World list is missing the worlds property')
 
     worlds = []
     for item in items:
         worlds.append(deserialiseWorld(data=item))
     return worlds
-
-# TODO: This is going to be a bit of a pain to update as I need to keep
-# backwards compatibility with routes users may have already saved. I
-# suspect this is going to need a new v2 format with version checked on
-# load.
-# - IMPORTANT: I only need to keep the v1 read code going forward. After
-#   the v2 format is added there shouldn't be any need to write the V1
-#   format
-def serialiseJumpRoute(
-        jumpRoute: logic.JumpRoute
-        ) -> typing.Mapping[str, typing.Any]:
-    return serialiseWorldList(worldList=jumpRoute)
-
-def deserialiseJumpRoute(
-        data: typing.Mapping[str, typing.Any]
-        ) -> logic.JumpRoute:
-    return logic.JumpRoute(worldList=deserialiseWorldList(data))
 
 def serialiseCalculation(
         calculation: common.Calculation
@@ -143,7 +128,7 @@ def serialiseDiceRollList(
 
 def deserialiseDiceRollResultList(
         data: typing.Mapping[str, typing.Any]
-        ) -> typing.Iterable[logic.CargoRecord]:
+        ) -> typing.Iterable[common.DiceRoller]:
     items = data.get('diceRollResults')
     if items == None:
         raise RuntimeError('Dice roll results list is missing the diceRollResults element')
@@ -152,60 +137,6 @@ def deserialiseDiceRollResultList(
     for item in items:
         diceRolls.append(deserialiseDiceRollResults(data=item))
     return diceRolls
-
-def serialiseCargoRecord(
-        cargoRecord: logic.CargoRecord
-        ) -> typing.Mapping[str, typing.Any]:
-    return {
-        'tradeGoodId': cargoRecord.tradeGood().id(),
-        'quantity': serialiseCalculation(cargoRecord.quantity()),
-        'pricePerTon': serialiseCalculation(cargoRecord.pricePerTon())}
-
-def deserialiseCargoRecord(
-        rules: traveller.Rules,
-        data: typing.Mapping[str, typing.Any]
-        ) -> logic.CargoRecord:
-    tradeGoodId = data.get('tradeGoodId')
-    if tradeGoodId == None:
-        raise RuntimeError('Cargo record data is missing the tradeGoodId element')
-
-    quantity = data.get('quantity')
-    if quantity == None:
-        raise RuntimeError('Cargo record data is missing the quantity element')
-
-    pricePerTon = data.get('pricePerTon')
-    if pricePerTon == None:
-        raise RuntimeError('Cargo record data is missing the pricePerTon element')
-
-    return logic.CargoRecord(
-        tradeGood=traveller.tradeGoodFromId(
-            rules=rules,
-            tradeGoodId=tradeGoodId),
-        quantity=deserialiseCalculation(quantity),
-        pricePerTon=deserialiseCalculation(pricePerTon))
-
-def serialiseCargoRecordList(
-        cargoRecords: typing.Iterable[logic.CargoRecord]
-        ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
-    items = []
-    for cargoRecord in cargoRecords:
-        items.append(serialiseCargoRecord(cargoRecord=cargoRecord))
-    return {'cargoRecords': items}
-
-def deserialiseCargoRecordList(
-        rules: traveller.Rules,
-        data: typing.Mapping[str, typing.Any]
-        ) -> typing.Iterable[logic.CargoRecord]:
-    items = data.get('cargoRecords')
-    if items == None:
-        raise RuntimeError('Cargo record list is missing the cargoRecords element')
-
-    cargoRecords = []
-    for item in items:
-        cargoRecords.append(deserialiseCargoRecord(
-            rules=rules,
-            data=item))
-    return cargoRecords
 
 def serialiseEnum(
         enumValue: enum.Enum
@@ -329,7 +260,7 @@ def serialiseWorldFilter(
 def deserialiseWorldFilter(
         data: typing.Mapping[str, typing.Any],
         rules: traveller.Rules
-        ) -> logic.CargoRecord:
+        ) -> logic.WorldFilter:
     filterType = data.get('filterType')
     if filterType == None:
         raise RuntimeError('World filter is missing the filterType element')
@@ -532,7 +463,7 @@ def deserialiseWorldFilter(
     raise RuntimeError('Unknown world filter type')
 
 def serialiseWorldFilterList(
-        worldFilters: typing.Iterable[logic.CargoRecord]
+        worldFilters: typing.Iterable[logic.WorldFilter]
         ) -> typing.Iterable[typing.Mapping[str, typing.Any]]:
     items = []
     for worldFilter in worldFilters:
@@ -542,7 +473,7 @@ def serialiseWorldFilterList(
 def deserialiseWorldFiltersList(
         data: typing.Mapping[str, typing.Any],
         rules: traveller.Rules
-        ) -> typing.Iterable[logic.CargoRecord]:
+        ) -> typing.Iterable[logic.WorldFilter]:
     items = data.get('worldFilters')
     if items == None:
         raise RuntimeError('World filter list is missing the worldFilters element')
@@ -551,32 +482,3 @@ def deserialiseWorldFiltersList(
     for item in items:
         worldFilters.append(deserialiseWorldFilter(data=item, rules=rules))
     return worldFilters
-
-def writeJumpRoute(
-        jumpRoute: logic.JumpRoute,
-        filePath: str
-        ) -> None:
-    data = serialiseJumpRoute(jumpRoute=jumpRoute)
-    with open(filePath, 'w', encoding='UTF8') as file:
-        json.dump(data, file, indent=4)
-
-def readJumpRoute(filePath: str) -> logic.JumpRoute:
-    with open(filePath, 'r') as file:
-        return deserialiseJumpRoute(data=json.load(file))
-
-def writeCargoRecordList(
-        cargoRecords: typing.Iterable[logic.CargoRecord],
-        filePath: str
-        ) -> None:
-    data = serialiseCargoRecordList(cargoRecords=cargoRecords)
-    with open(filePath, 'w', encoding='UTF8') as file:
-        json.dump(data, file, indent=4)
-
-def readCargoRecordList(
-        rules: traveller.Rules,
-        filePath: str,
-        ) -> typing.Iterable[logic.CargoRecord]:
-    with open(filePath, 'r') as file:
-        return deserialiseCargoRecordList(
-            rules=rules,
-            data=json.load(file))
