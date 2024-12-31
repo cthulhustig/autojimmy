@@ -11,7 +11,8 @@ import typing
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
     _SectorSearchHintPattern = re.compile(r'^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
-    _SectorHexPattern = re.compile(r'^(.*) (\d{4})$')
+    _AbsoluteHexPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
+    _RelativeHexPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -304,13 +305,49 @@ class WorldManager(object):
                 if world and ((not worldFilterCallback) or worldFilterCallback(world)):
                     yield world
 
-    # TODO: It would be good if this could also handle a string that specified absolute or
-    # relative coordinates as a comma separated pair or quad respectively
     def searchForWorlds(
             self,
             searchString: str,
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
+        searchString = searchString.strip()
+
+        # If the search string matches the sector hex format or either the
+        # absolute or relative coordinate formats then try to a world at the
+        # specified location. If a world is found then it's our only result
+        try:
+            foundWorld = self.world(sectorHex=searchString)
+            if foundWorld:
+                return [foundWorld]
+        except:
+            pass # Search string is not a sector hex
+
+        result = self._AbsoluteHexPattern.match(searchString)
+        if result:
+            pos = travellermap.HexPosition(
+                absoluteX=int(result.group(1)),
+                absoluteY=int(result.group(2)))
+            foundWorld = self.worldByPosition(pos=pos)
+            if foundWorld:
+                return [foundWorld]
+
+        result = self._RelativeHexPattern.match(searchString)
+        if result:
+            sectorX = int(result.group(1))
+            sectorY = int(result.group(2))
+            offsetX = int(result.group(3))
+            offsetY = int(result.group(4))
+            if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
+                (offsetY >= 0 and offsetY < travellermap.SectorHeight):
+                pos = travellermap.HexPosition(
+                    sectorX=sectorX,
+                    sectorY=sectorY,
+                    offsetX=offsetX,
+                    offsetY=offsetY)
+                foundWorld = self.worldByPosition(pos=pos)
+                if foundWorld:
+                    return [foundWorld]
+
         searchWorldLists = None
         result = self._SectorSearchHintPattern.match(searchString)
         filterString = searchString
@@ -322,49 +359,12 @@ class WorldManager(object):
             worldString = result.group(1)
             hintString = result.group(2)
 
-            hintExpression = re.compile(
-                fnmatch.translate(hintString),
-                re.IGNORECASE)
+            searchWorldLists = self.searchForSectors(searchString=hintString)
+            for subsector in self.searchForSubsectors(searchString=hintString):
+                sector = self._subsectorSectorMap.get(subsector)
+                if sector not in searchWorldLists:
+                    searchWorldLists.append(subsector)
 
-            canonicalMatches = []
-            alternateMatches = []
-            subsectorMatches = []
-
-            for sector in self._canonicalNameMap.values():
-                if hintExpression.match(sector.name()):
-                    # The hint matched the canonical sector name so search the whole sector for
-                    # worlds
-                    canonicalMatches.append(sector)
-
-                    # The sector has been added to the list of worlds to search so no need to check
-                    # alternate names or subsectors
-                    continue
-
-                alternateNames = sector.alternateNames()
-                if alternateNames:
-                    matched = False
-                    for alternateName in sector.alternateNames():
-                        if hintExpression.match(alternateName):
-                            matched = True
-                            break
-                    if matched:
-                        # The hint matched an alternate name or abbreviations so search the whole
-                        # sector for worlds
-                        alternateMatches.append(sector)
-
-                        # The sector has been added to the list of worlds to search so no need to
-                        # check subsectors
-                        continue
-
-                for subsector in sector.subsectors():
-                    if hintExpression.match(subsector.name()):
-                        # The hint matched a subsector name so search that subsector for worlds
-                        subsectorMatches.append(subsector)
-
-            # Order the matched world lists so all canonical matches are before all alternate matches
-            # then finally any subsector matches. Doing this means the final found world list will be
-            # in a consistent order
-            searchWorldLists = canonicalMatches + alternateMatches + subsectorMatches
             if searchWorldLists:
                 filterString = worldString
 
@@ -373,34 +373,144 @@ class WorldManager(object):
             # _or_ if the specified sector/subsector is unknown
             searchWorldLists = self._sectorList
 
-        # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
-        # will match the world without needing to specify wild cards
-        if filterString[-1:] != '*':
-            filterString += '*'
-        worldExpression = re.compile(
+        strictExpression = re.compile(
             fnmatch.translate(filterString),
             re.IGNORECASE)
+        wildExpression = None
+        if filterString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a world name
+            # will match the world without needing to specify wild cards
+            wildExpression = re.compile(
+                fnmatch.translate(filterString + '*'),
+                re.IGNORECASE)
 
-        # IMPORTANT: In order for the list of found worlds to contain no duplicates this assumes
-        # that sectors will never appear on the list of world lists multiple times and a subsector
-        # will never be on the list if its sector is on the list
-        foundWorlds = []
+        matches: typing.List[traveller.World] = []
         for worldList in searchWorldLists:
             for world in worldList:
-                if worldExpression.match(world.name()):
-                    foundWorlds.append(world)
-                    if maxResults and len(foundWorlds) >= maxResults:
-                        return foundWorlds
+                if strictExpression.match(world.name()):
+                    matches.append(world)
+                elif wildExpression and wildExpression.match(world.name()):
+                    matches.append(world)
 
-        # If the search string matches the sector hex format try to look up the world and add it
-        # to the list
-        result = self._SectorHexPattern.match(searchString)
-        if result:
-            foundWorld = self.world(sectorHex=searchString)
-            if foundWorld and (foundWorld not in foundWorlds):
-                foundWorlds.append(foundWorld)
+        matches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        if maxResults and len(matches) >= maxResults:
+            return matches[:maxResults]
+        seen = set(matches)
 
-        return foundWorlds
+        # If the search string matches any sub sectors add any worlds that
+        # we've not already seen. Ordering of this relative to sectors
+        # matches is important as sub sectors are more specific so matches
+        # should be listed first in results
+        subsectorMatches: typing.List[traveller.World] = []
+        for subsector in self.searchForSubsectors(searchString=searchString):
+            for world in subsector:
+                if world not in seen:
+                    subsectorMatches.append(world)
+
+        subsectorMatches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        for world in subsectorMatches:
+            matches.append(world)
+            if maxResults and len(matches) >= maxResults:
+                return matches
+            seen.add(world)
+
+        # If the search string matches any sectors add any worlds that
+        # we've not already seen
+        sectorMatches: typing.List[traveller.World] = []
+        for sector in self.searchForSectors(searchString=searchString):
+            for world in sector:
+                if world not in seen:
+                    sectorMatches.append(world)
+
+        sectorMatches.sort(
+            key=lambda world: f'{world.name()}/{world.subsectorName()}/{world.sectorName()}'.casefold())
+        for world in sectorMatches:
+            matches.append(world)
+            if maxResults and len(matches) >= maxResults:
+                return matches
+            seen.add(world)
+
+        return matches
+
+    def searchForSubsectors(
+            self,
+            searchString: str,
+            maxResults: int = 0 # 0 means unlimited
+            ) -> typing.List[traveller.Subsector]:
+        searchString = searchString.strip()
+        strictExpression = re.compile(
+            fnmatch.translate(searchString),
+            re.IGNORECASE)
+        wildExpression = None
+        if searchString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a name
+            # will match the without needing to specify wild cards.
+            wildExpression = re.compile(
+                fnmatch.translate(searchString + '*'),
+                re.IGNORECASE)
+
+        matches: typing.List[traveller.Subsector] = []
+        for sector in self._sectorList:
+            for subsector in sector.subsectors():
+                if strictExpression.match(subsector.name()):
+                    matches.append(subsector)
+                elif wildExpression and wildExpression.match(subsector.name()):
+                    matches.append(subsector)
+
+        matches.sort(
+            key=lambda subsector: f'{subsector.name()}/{subsector.sectorName()}'.casefold())
+        if maxResults and len(matches) > maxResults:
+            return matches[:maxResults]
+
+        return matches
+
+    def searchForSectors(
+            self,
+            searchString: str,
+            maxResults: int = 0 # 0 means unlimited
+            ) -> typing.List[traveller.Sector]:
+        searchString = searchString.strip()
+        strictExpression = re.compile(
+            fnmatch.translate(searchString),
+            re.IGNORECASE)
+        wildExpression = None
+        if searchString[-1:] != '*':
+            # Try to mimic the behaviour of Traveller Map where just typing the start of a name
+            # will match the without needing to specify wild cards.
+            wildExpression = re.compile(
+                fnmatch.translate(searchString + '*'),
+                re.IGNORECASE)
+
+        matches: typing.List[traveller.Sector] = []
+        for sector in self._sectorList:
+            if strictExpression.match(sector.name()):
+                matches.append(sector)
+                continue
+            elif wildExpression and wildExpression.match(sector.name()):
+                matches.append(sector)
+                continue
+
+            alternateNames = sector.alternateNames()
+            if alternateNames:
+                matched = False
+                for alternateName in alternateNames:
+                    if strictExpression.match(alternateName):
+                        matched = True
+                        break
+                    elif wildExpression and wildExpression.match(sector.name()):
+                        matched = True
+                        break
+                if matched:
+                    matches.append(sector)
+                    continue
+
+        matches.sort(key=lambda sector: sector.name().casefold())
+        if maxResults and len(matches) > maxResults:
+            return matches[:maxResults]
+
+        return matches
 
     @staticmethod
     def _loadSector(

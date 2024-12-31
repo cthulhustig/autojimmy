@@ -5,9 +5,11 @@ class Subsector(object):
     def __init__(
             self,
             name: str,
+            sectorName: str,
             worlds: typing.Iterable[traveller.World],
             ) -> None:
         self._name = name
+        self._sectorName = sectorName
         self._worlds = worlds
 
         # TODO: This map should probably use HexPosition as the key
@@ -19,6 +21,9 @@ class Subsector(object):
 
     def name(self) -> str:
         return self._name
+
+    def sectorName(self) -> str:
+        return self._sectorName
 
     def worldCount(self) -> int:
         return len(self._worlds)
@@ -61,23 +66,24 @@ class Sector(object):
         self._worldPositionMap: typing.Dict[typing.Tuple[int, int], traveller.World] = {}
         self._subsectorMap: typing.Dict[str, Subsector] = {}
 
-        subsectorWorlds: typing.Dict[str, typing.List[traveller.World]] = {}
+        subsectorWorldsMap: typing.Dict[str, typing.List[traveller.World]] = {}
         for subsectorName in subsectorNames:
-            subsectorWorlds[subsectorName] = []
+            subsectorWorldsMap[subsectorName] = []
 
         for world in self._worlds:
             hexPos = world.hexPosition()
             _, _, offsetX, offsetY = hexPos.relative()
             self._worldPositionMap[(offsetX, offsetY)] = world
 
-            assert(world.subsectorName() in subsectorWorlds)
-            worldList = subsectorWorlds[world.subsectorName()]
-            worldList.append(world)
+            assert(world.subsectorName() in subsectorWorldsMap)
+            subsectorWorlds = subsectorWorldsMap[world.subsectorName()]
+            subsectorWorlds.append(world)
 
-        for subsectorName, worldList in subsectorWorlds.items():
+        for subsectorName, subsectorWorlds in subsectorWorldsMap.items():
             self._subsectorMap[subsectorName] = Subsector(
                 name=subsectorName,
-                worlds=worldList)
+                sectorName=self._name,
+                worlds=subsectorWorlds)
 
     def name(self) -> str:
         return self._name

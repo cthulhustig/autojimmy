@@ -262,8 +262,9 @@ class HexSearchWidget(QtWidgets.QWidget):
                     searchString=searchString)
                 for world in worlds:
                     matches.append(world.hexPosition())
-            except:
-                logging.error(
+            except Exception as ex:
+                # Log this at debug as it could get very spammy as the user types
+                logging.debug(
                     f'Search for "{searchString}" failed',
                     exc_info=ex)
 
@@ -287,7 +288,8 @@ class HexSearchWidget(QtWidgets.QWidget):
                 except ValueError:
                     pass # The search string isn't a a sector hex so ignore it
                 except Exception as ex:
-                    logging.error(
+                    # Log this at debug as it could get very spammy as the user types
+                    logging.debug(
                         f'Search for sector hex "{searchString}" failed',
                         exc_info=ex)
 

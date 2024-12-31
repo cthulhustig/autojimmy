@@ -466,20 +466,15 @@ class HexSelectComboBox(gui.ComboBoxEx):
             try:
                 worlds = traveller.WorldManager.instance().searchForWorlds(
                     searchString=searchString)
-                worlds = sorted(
-                    worlds,
-                    key=lambda world: world.name(includeSubsector=True).casefold())
                 for world in worlds:
                     matches.append(world.hexPosition())
-            except:
-                pass
+            except Exception as ex:
+                # Log this at debug as it could get very spammy as the user types
+                logging.debug(
+                    f'Search for "{searchString}" failed',
+                    exc_info=ex)
 
             if self._enableDeadSpaceSelection:
-                # TODO: I'm not sure about this being added at the end of the list as
-                # it's after the sorting of worlds
-                # TODO: This probably needs something similar to searchForWorlds except
-                # for hexes that would do partial matches (e.g. if you type just a sector
-                # or subsector name it returns all hexes in the sector/subsector)
                 try:
                     pos = traveller.WorldManager.instance().sectorHexToPosition(
                         sectorHex=searchString)
@@ -490,8 +485,19 @@ class HexSelectComboBox(gui.ComboBoxEx):
                             break
                     if not isDuplicate:
                         matches.append(pos)
-                except:
-                    pass
+                except ValueError:
+                    pass # The search string isn't a a sector hex so ignore it
+                except Exception as ex:
+                    # Log this at debug as it could get very spammy as the user types
+                    logging.debug(
+                        f'Search for sector hex "{searchString}" failed',
+                        exc_info=ex)
+
+            # If the currently selected hex is in the list of matched hexes, make sure
+            # it's the first option in the list
+            if self._selectedHex and self._selectedHex in matches:
+                matches.remove(self._selectedHex)
+                matches.insert(0, self._selectedHex)
 
         if len(matches) > HexSelectComboBox._MaxCompleterResults:
             matches = matches[:HexSelectComboBox._MaxCompleterResults]
