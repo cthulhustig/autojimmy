@@ -37,13 +37,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
         self._enableContextMenuEvent = False
         self._enableDisplayModeChangedEvent = False
         self._enableShowInTravellerMapEvent = False
+        self._enableDeadSpace = False
 
         self._showInTravellerMap = None
 
         # An instance of TravellerMapWorldSelectDialog is created on demand then maintained. This
         # is done to prevent the web widget being recreated and data being re-requested from
         # Traveller Map
-        self._worldSelectDialog = None
+        self._worldSelectDialog: typing.Optional[gui.TravellerMapSelectDialog] = None
 
         self._displayModeTabs = displayModeTabs
         if not self._displayModeTabs:
@@ -329,11 +330,40 @@ class HexTableManagerWidget(QtWidgets.QWidget):
     def enableContextMenuEvent(self, enable: bool = True) -> None:
         self._enableContextMenuEvent = enable
 
+    def isContextMenuEventEnabled(self) -> bool:
+        return self._enableContextMenuEvent
+
     def enableDisplayModeChangedEvent(self, enable: bool = True) -> None:
         self._enableDisplayModeChangedEvent = enable
 
+    def isDisplayModeChangedEventEnabled(self) -> bool:
+        return self._enableDisplayModeChangedEvent
+
     def enableShowInTravellerMapEvent(self, enable: bool = True) -> None:
         self._enableShowInTravellerMapEvent = enable
+
+    def isShowInTravellerMapEventEnabled(self) -> bool:
+        return self._enableShowInTravellerMapEvent
+
+    def enableDeadSpace(self, enable: bool) -> None:
+        self._enableDeadSpace = enable
+
+        if self._worldSelectDialog:
+            self._worldSelectDialog.configureSelection(
+                singleSelect=False,
+                includeDeadSpace=enable)
+
+        if not enable:
+            # Dead space hexes are not allowed so remove any that are already in
+            # the table
+            for row in range(self._hexTable.rowCount() - 1, -1, -1):
+                world = traveller.WorldManager.instance().worldByPosition(
+                    pos=self.hex(row=row))
+                if not world:
+                    self._hexTable.removeRow(row=row)
+
+    def isDeadSpaceEnabled(self) -> bool:
+        return self._enableDeadSpace
 
     def promptAddNearbyWorlds(
             self,
@@ -411,7 +441,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def promptAddHex(self) -> None:
         dlg = gui.HexSearchDialog(parent=self)
-        dlg.enableDeadSpaceSelection(enable=False) # TODO: This should be configurable
+        dlg.enableDeadSpaceSelection(enable=self._enableDeadSpace)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
         self.addHex(dlg.selectedHex())

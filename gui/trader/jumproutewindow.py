@@ -641,6 +641,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupJumpWorldsControls(self) -> None:
         self._selectStartFinishWidget = _StartFinishSelectWidget()
+        self._selectStartFinishWidget.enableDeadSpaceSelection(
+            enable=app.Config.instance().deadSpaceRouting())
         self._selectStartFinishWidget.selectionChanged.connect(self._startFinishChanged)
         self._selectStartFinishWidget.showHexRequested.connect(self._showHexInTravellerMap)
 
@@ -661,20 +663,10 @@ class JumpRouteWindow(gui.WindowWidget):
         self._fuelBasedRoutingCheckBox.stateChanged.connect(
             self._fuelBasedRoutingToggled)
 
-        # TODO: I need a handler that is triggered when the checked state changes.
-        # With it doing the following
-        # - Turning on/off dead space selection on the start/finish widget
-        # - Turning on/off dead space selection on the map widget
-        # - If dead space selection is turned off, remove dead space from waypoint widget
-        # - If dead space selection is turned off, remove dead space from avoid widget
-        #   - I'm not sure about this, could just leave it in as it will have no effect
-        #     I think this will basically mean dead space selection will always be on for
-        #     the avoid list
-        # - Possibly clearing any current jump route, will need to see what other
-        #   config controls do when they change
         self._deadSpaceRoutingCheckBox = gui.SharedDeadSpaceRoutingCheckBox()
         self._deadSpaceRoutingCheckBox.setEnabled(
             self._fuelBasedRoutingCheckBox.isChecked())
+        self._deadSpaceRoutingCheckBox.stateChanged.connect(self._deadSpaceRoutingToggled)
 
         self._refuellingStrategyComboBox = gui.SharedRefuellingStrategyComboBox()
         self._refuellingStrategyComboBox.setEnabled(
@@ -768,6 +760,8 @@ class JumpRouteWindow(gui.WindowWidget):
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
+        self._waypointWorldsWidget.enableDeadSpace(
+            enable=app.Config.instance().deadSpaceRouting())
         self._waypointWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._waypointWorldsWidget.enableDisplayModeChangedEvent(enable=True)
         self._waypointWorldsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
@@ -783,7 +777,9 @@ class JumpRouteWindow(gui.WindowWidget):
     def _setupAvoidWorldsControls(self) -> None:
         self._avoidWorldsWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowAvoidHex,
-            showSelectInTravellerMapButton=False) # The windows Traveller Map widget should be used to select worlds
+            showSelectInTravellerMapButton=False) # This windows Traveller Map widget should be used to select worlds
+        self._avoidWorldsWidget.enableDeadSpace(
+            enable=True) # Always allow dead space on avoid list
         self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
         self._avoidWorldsWidget.enableShowInTravellerMapEvent(enable=True)
         self._avoidWorldsWidget.showInTravellerMap.connect(self._showWorldsInTravellerMap)
@@ -850,6 +846,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._travellerMapWidget = gui.TravellerMapWidget()
         self._travellerMapWidget.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self._travellerMapWidget.setToolTipCallback(self._formatMapToolTip)
+        self._travellerMapWidget.enableDeadSpaceSelection(
+            enable=app.Config.instance().deadSpaceRouting())
         self._travellerMapWidget.rightClicked.connect(self._showTravellerMapContextMenu)
 
         self._jumpRatingOverlayAction = QtWidgets.QAction('Jump Rating', self)
@@ -1620,6 +1618,13 @@ class JumpRouteWindow(gui.WindowWidget):
         self._updateJumpOverlays()
 
     def _fuelBasedRoutingToggled(self) -> None:
+        self._enableDisableControls()
+
+    def _deadSpaceRoutingToggled(self) ->None:
+        isEnabled = self._deadSpaceRoutingCheckBox.isChecked()
+        self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isEnabled)
+        self._waypointWorldsWidget.enableDeadSpace(enable=isEnabled)
+        self._travellerMapWidget.enableDeadSpaceSelection(enable=isEnabled)
         self._enableDisableControls()
 
     def _anomalyRefuellingToggled(self) -> None:
