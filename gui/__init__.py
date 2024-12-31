@@ -60,7 +60,7 @@ from .trader.scalarcargodetailsdialog import *
 from .trader.cargorecordtable import *
 from .trader.tradeoptiontable import *
 from .trader.cargomanifesttable import *
-from .trader.worldtable import *
+from .trader.hextable import *
 from .trader.waypointtable import *
 from .trader.worldtradescoretable import *
 from .trader.dicerolltable import *
