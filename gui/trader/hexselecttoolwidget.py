@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets, QtCore
 
 # TODO: The tooltips of widgets should update to say world/hex depending on if dead
 # space selection is enabled
-class WorldSelectToolWidget(QtWidgets.QWidget):
+class HexSelectToolWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHex = QtCore.pyqtSignal(travellermap.HexPosition)
 
@@ -24,7 +24,6 @@ class WorldSelectToolWidget(QtWidgets.QWidget):
     def __init__(
             self,
             text: typing.Optional[str] = 'Select World:',
-            world: typing.Optional[traveller.World] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -35,11 +34,9 @@ class WorldSelectToolWidget(QtWidgets.QWidget):
         self._mapSelectDialog = None
 
         self._searchComboBox = gui.HexSelectComboBox()
-        if world:
-            self._searchComboBox.setCurrentHex(pos=world.hexPosition()) # TODO: This is a hack until this widget supports hexes
         self._searchComboBox.enableAutoComplete(True)
         self._searchComboBox.setMinimumWidth(int(
-            WorldSelectToolWidget._MinWoldSelectWidth *
+            HexSelectToolWidget._MinWoldSelectWidth *
             app.Config.instance().interfaceScale()))
         self._searchComboBox.hexChanged.connect(self._selectionChanged)
 
@@ -139,7 +136,7 @@ class WorldSelectToolWidget(QtWidgets.QWidget):
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
-        stream.writeQString(WorldSelectToolWidget._StateVersion)
+        stream.writeQString(HexSelectToolWidget._StateVersion)
 
         pos = self.selectedHex()
         sectorHex = ''
@@ -160,7 +157,7 @@ class WorldSelectToolWidget(QtWidgets.QWidget):
             ) -> bool:
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.ReadOnly)
         version = stream.readQString()
-        if version != WorldSelectToolWidget._StateVersion:
+        if version != HexSelectToolWidget._StateVersion:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore HexSelectToolWidget state (Incorrect version)')
             return False

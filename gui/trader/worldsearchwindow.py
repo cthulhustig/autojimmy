@@ -147,7 +147,8 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
             ) -> None:
         super().__init__(parent)
 
-        self._hexWidget = gui.WorldSelectToolWidget('Origin World:')
+        self._hexWidget = gui.HexSelectToolWidget(
+            text='Origin World:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
         # Setting this to a fixed size is horrible, but no mater what I try I
