@@ -380,8 +380,8 @@ class Trader(object):
 
         for saleWorld in saleWorlds:
             jumpRoute = routePlanner.calculateDirectRoute(
-                startHex=purchaseWorld.hexPosition(),
-                finishHex=saleWorld.hexPosition(),
+                startHex=purchaseWorld.hex(),
+                finishHex=saleWorld.hex(),
                 shipTonnage=shipTonnage,
                 shipJumpRating=shipJumpRating,
                 shipFuelCapacity=shipFuelCapacity,

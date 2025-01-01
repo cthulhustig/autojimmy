@@ -154,7 +154,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             pos: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
         if isinstance(pos, traveller.World):
-            pos = pos.hexPosition()
+            pos = pos.hex()
         if self._allowHexCallback:
             if not self._allowHexCallback(pos):
                 return
@@ -173,7 +173,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             filteredPositions = []
             for pos in positions:
                 if isinstance(pos, traveller.World):
-                    pos = pos.hexPosition()
+                    pos = pos.hex()
                 if not self._allowHexCallback(pos):
                     continue
                 filteredPositions.append(pos)
@@ -261,7 +261,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             pos: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
         if isinstance(pos, traveller.World):
-            pos = pos.hexPosition()
+            pos = pos.hex()
         self._relativeHex = pos
 
     def displayMode(self) -> gui.HexTableTabBar.DisplayMode:
@@ -369,7 +369,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             initialWorld: typing.Optional[traveller.World] = None
             ) -> None:
         dlg = gui.HexSearchRadiusDialog(parent=self)
-        dlg.setCenterHex(pos=initialWorld.hexPosition() if initialWorld else self._relativeHex)
+        dlg.setCenterHex(pos=initialWorld.hex() if initialWorld else self._relativeHex)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 

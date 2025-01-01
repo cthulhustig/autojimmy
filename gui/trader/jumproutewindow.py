@@ -123,6 +123,7 @@ class _RefuellingPlanTable(gui.HexTable):
     AllColumns = [
         gui.HexTable.ColumnType.Name,
         gui.HexTable.ColumnType.Sector,
+        gui.HexTable.ColumnType.Subsector,
         _RefuellingPlanTableColumnType.RefuellingType,
         _RefuellingPlanTableColumnType.FuelTons,
         _RefuellingPlanTableColumnType.FuelCost,
@@ -353,6 +354,8 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         if pos:
             self.showHexRequested.emit(pos)
 
+# TODO: In all the new code I've done I want to change all pos variables
+# to hex and all positions to hexes
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
     _JumpRatingOverlayLightStyleColour = '#4A03FC'
@@ -1548,7 +1551,7 @@ class JumpRouteWindow(gui.WindowWidget):
 
             taggedWorlds = []
             for world in worlds:
-                worldPos = world.hexPosition()
+                worldPos = world.hex()
                 if (worldPos == startPos) or (worldPos == finishPos):
                     continue # Don't highlight start/finish worlds
                 tagLevel = app.calculateWorldTagLevel(world=world)

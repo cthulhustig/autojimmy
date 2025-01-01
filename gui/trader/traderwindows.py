@@ -306,8 +306,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             # to remove these horrible configureControls functions
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
             jumpRouteWindow.configureControls(
-                startPos=purchaseWorld.hexPosition() if purchaseWorld else None,
-                finishPos=saleWorld.hexPosition() if saleWorld else None,
+                startPos=purchaseWorld.hex() if purchaseWorld else None,
+                finishPos=saleWorld.hex() if saleWorld else None,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -667,7 +667,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         if purchaseWorld != None:
             self._purchaseWorldWidget.setSelectedHex(
-                pos=purchaseWorld.hexPosition() if purchaseWorld else None)
+                pos=purchaseWorld.hex() if purchaseWorld else None)
         if playerBrokerDm != None:
             self._playerBrokerDmSpinBox.setValue(int(playerBrokerDm))
         if minSellerDm != None:
@@ -1293,7 +1293,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if purchaseWorld:
-            self._saleWorldsWidget.setRelativeHex(pos=purchaseWorld.hexPosition())
+            self._saleWorldsWidget.setRelativeHex(pos=purchaseWorld.hex())
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():

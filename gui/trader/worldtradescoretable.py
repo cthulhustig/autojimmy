@@ -16,7 +16,7 @@ def _customWorldTableColumns(
         ) -> typing.List[typing.Union[WorldTradeScoreTableColumnType, gui.HexTable.ColumnType]]:
     columns = originalColumns.copy()
     try:
-        index = columns.index(gui.HexTable.ColumnType.Sector) + 1
+        index = columns.index(gui.HexTable.ColumnType.Subsector) + 1
     except ValueError:
         index = len(columns)
     columns.insert(index, WorldTradeScoreTableColumnType.SaleScore)

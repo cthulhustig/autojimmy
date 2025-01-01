@@ -634,7 +634,7 @@ class RoutePlanner(object):
                 yield (nearbyHex, world)
         else:
             for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):
-                yield (nearbyWorld.hexPosition(), nearbyWorld)
+                yield (nearbyWorld.hex(), nearbyWorld)
 
     def _finaliseRoute(
             self,

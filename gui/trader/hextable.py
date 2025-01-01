@@ -75,12 +75,10 @@ class HexTableTabBar(gui.TabBarEx):
         return True
 
 class HexTable(gui.FrozenColumnListTable):
-    # TODO: It might be worth adding a SectorHex column. If this happens then
-    # the Name should be set to 'Dead Space' if it's a dead space hex and there
-    # would be no need to set the zone to dead space
     class ColumnType(enum.Enum):
         Name = 'Name'
         Sector = 'Sector'
+        Subsector = 'Subsector'
         Zone = 'Zone'
         Allegiance = 'Allegiance'
         PopulationCount = 'Population\n(Count)'
@@ -123,6 +121,7 @@ class HexTable(gui.FrozenColumnListTable):
     AllColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.Zone,
         ColumnType.Allegiance,
         ColumnType.PopulationCount,
@@ -166,6 +165,7 @@ class HexTable(gui.FrozenColumnListTable):
     SystemColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.Zone,
         ColumnType.Allegiance,
         ColumnType.PopulationCount,
@@ -187,6 +187,7 @@ class HexTable(gui.FrozenColumnListTable):
     UWPColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.StarPort,
         ColumnType.WorldSize,
         ColumnType.Atmosphere,
@@ -200,6 +201,7 @@ class HexTable(gui.FrozenColumnListTable):
     EconomicsColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.Resources,
         ColumnType.Labour,
         ColumnType.Infrastructure,
@@ -209,6 +211,7 @@ class HexTable(gui.FrozenColumnListTable):
     CultureColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.Heterogeneity,
         ColumnType.Acceptance,
         ColumnType.Strangeness,
@@ -224,6 +227,7 @@ class HexTable(gui.FrozenColumnListTable):
     RefuellingColumns = [
         ColumnType.Name,
         ColumnType.Sector,
+        ColumnType.Subsector,
         ColumnType.StarPortRefuelling,
         ColumnType.GasGiantRefuelling,
         ColumnType.WaterRefuelling,
@@ -255,7 +259,9 @@ class HexTable(gui.FrozenColumnListTable):
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
 
         for index, column in enumerate(columns):
-            if column == self.ColumnType.Name or column == self.ColumnType.Sector:
+            if column == self.ColumnType.Name or \
+                column == self.ColumnType.Sector or \
+                column == self.ColumnType.Subsector:
                 self.setColumnWidth(index, 100)
 
     # TODO: It would be nice to get rid of the world versions of all these
@@ -304,7 +310,7 @@ class HexTable(gui.FrozenColumnListTable):
         self.insertRow(row)
         if isinstance(pos, traveller.World):
             world = pos
-            pos = world.hexPosition()
+            pos = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(pos=pos)
         return self._fillRow(row, pos, world)
@@ -323,7 +329,7 @@ class HexTable(gui.FrozenColumnListTable):
             ) -> int:
         if isinstance(pos, traveller.World):
             world = pos
-            pos = world.hexPosition()
+            pos = world.hex()
         else:
             world = traveller.WorldManager.instance().worldByPosition(pos=pos)
         return self._fillRow(row, pos, world)
@@ -388,14 +394,14 @@ class HexTable(gui.FrozenColumnListTable):
     # - IMPORTANT: Remember to update the variable name used in calls
     #   from worlds to positions
     def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes([world.hexPosition() for world in worlds])
+        self.addHexes([world.hex() for world in worlds])
 
     def removeHex(
             self,
             pos: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
         if isinstance(pos, traveller.World):
-            pos = pos.hexPosition()
+            pos = pos.hex()
         removed = False
         for row in range(self.rowCount() - 1, -1, -1):
             if pos == self.hex(row):
@@ -436,7 +442,7 @@ class HexTable(gui.FrozenColumnListTable):
             pos: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
         if isinstance(pos, traveller.World):
-            pos = pos.hexPosition()
+            pos = pos.hex()
         for row in range(self.rowCount()):
             if pos == self.hex(row):
                 return True
@@ -503,7 +509,7 @@ class HexTable(gui.FrozenColumnListTable):
             try:
                 data = json.loads(stream.readQString())
                 worlds = logic.deserialiseWorldList(data=data)
-                self.setHexes(positions=[world.hexPosition() for world in worlds])
+                self.setHexes(positions=[world.hex() for world in worlds])
             except Exception as ex:
                 logging.warning(f'Failed to deserialise v1 HexTable content', exc_info=ex)
         elif version == HexTable._ContentVersion:
@@ -547,35 +553,44 @@ class HexTable(gui.FrozenColumnListTable):
                 tableItem = None
                 tagColour = None
                 if columnType == self.ColumnType.Name:
-                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem = gui.TableWidgetItemEx()
                     if world:
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.name())
                         tagColour = worldTagColour
                     else:
-                        hexString = f'{pos.offsetX():02d}{pos.offsetY():02d}'
+                        hexString = f'Dead Space {pos.offsetX():02d}{pos.offsetY():02d}'
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, hexString)
+                        tableItem.setItalic(enable=True)
                         tagColour = app.tagColour(app.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Sector:
-                    tableItem = QtWidgets.QTableWidgetItem()
+                    tableItem = gui.TableWidgetItemEx()
                     if world:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, f'{world.subsectorName()} ({world.sectorName()})')
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.sectorName())
                         tagColour = worldTagColour
                     else:
-                        # TODO: This should include the subsector name in the same way as when there
-                        # is a world but I don't think I have code yet that can get a subsector from
-                        # a position
                         sector = traveller.WorldManager.instance().sectorByPosition(pos=pos)
-                        sectorString = sector.name() if sector else 'Unknown Sector'
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, sectorString)
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole,
+                            sector.name() if sector else 'Unknown')
+                        tableItem.setItalic(enable=not sector)
+                        tagColour = app.tagColour(app.TagLevel.Danger) # Tag dead space as danger level
+                elif columnType == self.ColumnType.Subsector:
+                    tableItem = gui.TableWidgetItemEx()
+                    if world:
+                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.subsectorName())
+                        tagColour = worldTagColour
+                    else:
+                        subsector = traveller.WorldManager.instance().subsectorByPosition(pos=pos)
+                        tableItem.setData(
+                            QtCore.Qt.ItemDataRole.DisplayRole,
+                            subsector.name() if subsector else 'Unknown')
+                        tableItem.setItalic(enable=not sector)
                         tagColour = app.tagColour(app.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.Zone:
                     tableItem = QtWidgets.QTableWidgetItem()
                     if world:
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, traveller.zoneTypeCode(world.zone()))
                         tagColour = app.tagColour(app.calculateZoneTagLevel(world))
-                    else:
-                        tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, 'Dead Space')
-                        tagColour = app.tagColour(app.TagLevel.Danger) # Tag dead space as danger level
                 elif columnType == self.ColumnType.StarPort:
                     if world:
                         tableItem = QtWidgets.QTableWidgetItem()
@@ -871,7 +886,9 @@ class HexTable(gui.FrozenColumnListTable):
 
         columnType = self.columnHeader(item.column())
 
-        if columnType == self.ColumnType.Name or columnType == self.ColumnType.Sector:
+        if columnType == self.ColumnType.Name or \
+            columnType == self.ColumnType.Sector or \
+            columnType == self.ColumnType.Subsector:
             return gui.createWorldToolTip(world)
         elif columnType == self.ColumnType.Zone:
             zone = world.zone()

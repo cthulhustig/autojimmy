@@ -231,7 +231,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             highlightColour: str = '#8080FF'
             ) -> None:
         self.centerOnHex(
-            pos=world.hexPosition(),
+            pos=world.hex(),
             linearScale=linearScale,
             clearOverlays=clearOverlays,
             highlightHex=highlightWorld,
@@ -247,7 +247,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             highlightColour: str = '#8080FF'
             ) -> None:
         self.centerOnHexes(
-            positions=[world.hexPosition() for world in worlds],
+            positions=[world.hex() for world in worlds],
             clearOverlays=clearOverlays,
             highlightHexes=highlightWorlds,
             highlightRadius=highlightRadius,
@@ -386,7 +386,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             colour: str = '#8080FF'
             ) -> None:
         self.highlightHex(
-            pos=world.hexPosition(),
+            pos=world.hex(),
             radius=radius,
             colour=colour)
 
@@ -421,7 +421,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             self,
             world: traveller.World
             ) -> None:
-        self.clearHexHighlight(pos=world.hexPosition())
+        self.clearHexHighlight(pos=world.hex())
 
     def clearHexHighlight(
             self,
@@ -452,7 +452,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
         group = _OverlayGroups()
         for world, colour in worlds:
             overlay = _HexOverlay(
-                hexPos=world.hexPosition(),
+                hexPos=world.hex(),
                 radius=radius,
                 colour=colour)
             group.addOverlay(overlay)
@@ -518,7 +518,7 @@ class TravellerMapWidgetBase(QtWidgets.QWidget):
             lineWidth: typing.Optional[int] = None
             ) -> str:
         return self.createHexRadiusOverlayGroup(
-            center=centerWorld.hexPosition(),
+            center=centerWorld.hex(),
             radius=radius,
             fillColour=fillColour,
             lineColour=lineColour,

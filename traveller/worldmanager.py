@@ -139,7 +139,7 @@ class WorldManager(object):
                     self._subsectorSectorMap[subsector] = sector
 
                 for world in sector.worlds():
-                    hexPos = world.hexPosition()
+                    hexPos = world.hex()
                     self._absoluteWorldMap[(hexPos.absoluteX(), hexPos.absoluteY())] = world
 
     def sectorName(
@@ -189,6 +189,23 @@ class WorldManager(object):
             pos: travellermap.HexPosition
             ) -> typing.Optional[traveller.Sector]:
         return self._sectorPositionMap.get((pos.sectorX(), pos.sectorY()))
+
+    def subsectorByPosition(
+            self,
+            pos: travellermap.HexPosition
+            ) -> typing.Optional[traveller.Subsector]:
+        sector = self.sectorByPosition(pos=pos)
+        subsectors = sector.subsectors()
+        assert(len(subsectors) == 16)
+
+        _, _, offsetX, offsetY = pos.relative()
+        subsectorX = (offsetX - 1) // WorldManager._SubsectorHexWidth
+        subsectorY = (offsetY - 1) // WorldManager._SubsectorHexHeight
+        index = (subsectorY * WorldManager._SubsectorPerSectorX) + subsectorX
+        if index < 0 or index >= 16:
+            return None
+
+        return subsectors[index]
 
     def worldsInArea(
             self,
@@ -579,7 +596,11 @@ class WorldManager(object):
                     name=worldName,
                     sectorName=sectorName,
                     subsectorName=subsectorName,
-                    hex=hex,
+                    hex=travellermap.HexPosition(
+                        sectorX=sectorX,
+                        sectorY=sectorY,
+                        offsetX=int(hex[:2]),
+                        offsetY=int(hex[-2:])),
                     allegiance=rawWorld.attribute(travellermap.WorldAttribute.Allegiance),
                     uwp=rawWorld.attribute(travellermap.WorldAttribute.UWP),
                     economics=rawWorld.attribute(travellermap.WorldAttribute.Economics),
@@ -590,9 +611,7 @@ class WorldManager(object):
                     stellar=rawWorld.attribute(travellermap.WorldAttribute.Stellar),
                     pbg=rawWorld.attribute(travellermap.WorldAttribute.PBG),
                     systemWorlds=rawWorld.attribute(travellermap.WorldAttribute.SystemWorlds),
-                    bases=rawWorld.attribute(travellermap.WorldAttribute.Bases),
-                    sectorX=sectorX,
-                    sectorY=sectorY)
+                    bases=rawWorld.attribute(travellermap.WorldAttribute.Bases))
                 worlds.append(world)
             except Exception as ex:
                 logging.warning(

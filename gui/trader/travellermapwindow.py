@@ -98,7 +98,7 @@ class TravellerMapWindow(gui.WindowWidget):
             radius: float = 0.5
             ) -> None:
         self.highlightHex(
-            hexPos=world.hexPosition(),
+            hexPos=world.hex(),
             radius=radius)
 
     def highlightHex(

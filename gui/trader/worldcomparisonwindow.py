@@ -241,7 +241,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._travellerMapWidget.clearSelectedHexes()
             for world in self._worldTable.worlds():
                 self._travellerMapWidget.selectHex(
-                    pos=world.hexPosition(),
+                    pos=world.hex(),
                     centerOnHex=False,
                     setInfoHex=False)
 

@@ -180,7 +180,7 @@ def deserialiseJumpRoute(
 
     if version.major == 1:
         worlds = logic.deserialiseWorldList(data)
-        nodes = [(world.hexPosition(), world) for world in worlds]
+        nodes = [(world.hex(), world) for world in worlds]
     elif version.major == 2:
         hexes = data.get('hexes')
         if hexes == None:

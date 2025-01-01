@@ -261,7 +261,7 @@ class HexSearchWidget(QtWidgets.QWidget):
                 worlds = traveller.WorldManager.instance().searchForWorlds(
                     searchString=searchString)
                 for world in worlds:
-                    matches.append(world.hexPosition())
+                    matches.append(world.hex())
             except Exception as ex:
                 # Log this at debug as it could get very spammy as the user types
                 logging.debug(

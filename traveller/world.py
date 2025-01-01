@@ -9,7 +9,7 @@ class World(object):
             name: str,
             sectorName: str,
             subsectorName: str,
-            hex: str,
+            hex: travellermap.HexPosition,
             allegiance: str,
             uwp: str,
             economics: str,
@@ -20,9 +20,7 @@ class World(object):
             stellar: str,
             pbg: str,
             systemWorlds: str,
-            bases: str,
-            sectorX: int,
-            sectorY: int
+            bases: str
             ) -> None:
         self._name = name
         self._sectorName = sectorName
@@ -45,11 +43,6 @@ class World(object):
         # There is always 1 system world (the main world)
         self._systemWorlds = int(systemWorlds) if systemWorlds else 1
         self._bases = traveller.Bases(bases)
-        self._hexPosition = travellermap.HexPosition(
-            sectorX=sectorX,
-            sectorY=sectorY,
-            offsetX=int(self._hex[:2]),
-            offsetY=int(self._hex[-2:]))
 
     def name(self, includeSubsector: bool = False) -> str:
         if includeSubsector:
@@ -62,16 +55,12 @@ class World(object):
     def subsectorName(self) -> str:
         return self._subsectorName
 
-    def hex(self) -> str:
+    def hex(self) -> travellermap.HexPosition:
         return self._hex
 
-    # TODO: I don't like the fact it's easy to accidentally use hex instead
-    # of hexPosition due to autocomplete. Possibly rename this to position?
-    def hexPosition(self) -> travellermap.HexPosition:
-        return self._hexPosition
-
     def sectorHex(self) -> str:
-        return f'{self._sectorName} {self._hex}'
+        _, _, offsetX, offsetY = self._hex.relative()
+        return f'{self._sectorName} {int(offsetX):02d}{int(offsetY):02d}'
 
     def allegiance(self) -> str:
         return self._allegiance
@@ -241,7 +230,7 @@ class World(object):
             ]
             ) -> int:
         return self._hexPosition.parsecsTo(
-            dest.hexPosition() if isinstance(dest, World) else dest)
+            dest.hex() if isinstance(dest, World) else dest)
 
     # Prevent deep and shallow copies of world objects some code
     # (specifically the jump route calculations) expect there to

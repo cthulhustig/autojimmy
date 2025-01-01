@@ -295,7 +295,7 @@ def createWorldToolTip(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                hexPos=world.hexPosition(),
+                hexPos=world.hex(),
                 width=256,
                 height=256,
                 timeout=3)
@@ -318,7 +318,7 @@ def createWorldToolTip(
     #
     # World
     #
-    hexPos = world.hexPosition()
+    hexPos = world.hex()
     toolTip += f'<h1>{html.escape(world.name())}</h1>'
 
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'

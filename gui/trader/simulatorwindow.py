@@ -562,7 +562,7 @@ class SimulatorWindow(gui.WindowWidget):
         startWorld = self._startWorldWidget.selectedWorld()
         if startWorld:
             self._mapWidget.centerOnHex(
-                pos=startWorld.hexPosition(),
+                pos=startWorld.hex(),
                 clearOverlays=True,
                 highlightHex=True)
 
@@ -647,7 +647,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                startPos=startWorld.hexPosition(),
+                startPos=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -704,7 +704,7 @@ class SimulatorWindow(gui.WindowWidget):
                 highlightHex=True,
                 linearScale=None) # Keep current scale
             self._mapWidget.setInfoHex(
-                pos=currentWorld.hexPosition() if currentWorld else None)
+                pos=currentWorld.hex() if currentWorld else None)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
