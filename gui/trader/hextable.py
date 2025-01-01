@@ -416,12 +416,6 @@ class HexTable(gui.FrozenColumnListTable):
     def removeWorld(self, world: traveller.World) -> bool:
         return self.removeHex(world)
 
-    def currentWorld(self) -> typing.Optional[traveller.World]:
-        row = self.currentRow()
-        if row < 0:
-            return None
-        return self.world(row)
-
     def currentHex(self) -> typing.Optional[travellermap.HexPosition]:
         row = self.currentRow()
         if row < 0:
