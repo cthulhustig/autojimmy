@@ -279,8 +279,12 @@ class WorldManager(object):
         if world:
             return world.name(includeSubsector=True)
         try:
-            return self.positionToSectorHex(hex=hex)
-        except ValueError:
+            name = self.positionToSectorHex(hex=hex)
+            subsector = self.sectorByPosition(hex=hex)
+            if subsector:
+                name += f' ({subsector.name()})'
+            return name
+        except KeyError:
             return str(hex)
 
     def yieldWorldsInArea(
