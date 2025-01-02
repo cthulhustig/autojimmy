@@ -985,6 +985,7 @@ class TravellerMapWidget(gui.TravellerMapWidgetBase):
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._enableDeadSpaceSelection = enable
+        self._searchWidget.enableDeadSpaceSelection(enable=enable)
 
         if not self._enableDeadSpaceSelection:
             # Deselect any dead space
