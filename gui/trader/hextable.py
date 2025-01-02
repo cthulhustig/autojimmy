@@ -874,17 +874,18 @@ class HexTable(gui.FrozenColumnListTable):
         if not hex:
             return None
         world = self.world(item.row())
-        if not world:
-            # TODO: Better tool tip, should include sector hex
-            return gui.createStringToolTip('Dead Space')
 
         columnType = self.columnHeader(item.column())
 
         if columnType == self.ColumnType.Name or \
             columnType == self.ColumnType.Sector or \
             columnType == self.ColumnType.Subsector:
-            return gui.createWorldToolTip(world)
-        elif columnType == self.ColumnType.Zone:
+            return gui.createHexToolTip(hex=hex)
+
+        if world == None:
+            return gui.createStringToolTip('Dead Space')
+
+        if columnType == self.ColumnType.Zone:
             zone = world.zone()
             if not zone:
                 return None
@@ -1029,7 +1030,7 @@ class HexTable(gui.FrozenColumnListTable):
                     ownerWorld = None
 
                 if ownerWorld:
-                    return gui.createWorldToolTip(world=ownerWorld)
+                    return gui.createHexToolTip(hex=ownerWorld)
                 else:
                     return gui.createStringToolTip(f'Unknown world at {world.ownerSectorHex()}')
         elif columnType == self.ColumnType.ColonyWorlds:

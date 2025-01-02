@@ -426,11 +426,11 @@ class TradeOptionsTable(gui.FrozenColumnListTable):
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector:
             purchaseWorld = tradeOption.purchaseWorld()
-            return gui.createWorldToolTip(purchaseWorld)
+            return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector:
             saleWorld = tradeOption.saleWorld()
-            return gui.createWorldToolTip(saleWorld)
+            return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Notes:
             notes = tradeOption.tradeNotes()
             if notes:

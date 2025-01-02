@@ -209,13 +209,8 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             self.showHex.emit(hex)
 
     def _showInfoClicked(self) -> None:
-        # TODO: This is a hack needed until the world details widget is updated to
-        # show details of dead space
         hex = self.selectedHex()
         if not hex:
             return
-        world = traveller.WorldManager.instance().worldByPosition(hex=hex)
-        if not world:
-            return
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorld(world=world)
+        infoWindow.addHex(hex=hex)

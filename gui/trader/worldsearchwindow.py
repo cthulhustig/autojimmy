@@ -733,7 +733,7 @@ class WorldSearchWindow(gui.WindowWidget):
             worlds: typing.Iterable[traveller.World]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorlds(worlds=worlds)
+        infoWindow.addHexes(hexes=worlds)
 
     def _showTradeScoreCalculations(
             self,

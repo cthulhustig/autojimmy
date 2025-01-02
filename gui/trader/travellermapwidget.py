@@ -345,8 +345,8 @@ class _InfoWidget(QtWidgets.QWidget):
         self._label.setFixedWidth(width)
 
         if self._world:
-            text = gui.createWorldToolTip(
-                world=self._world,
+            text = gui.createHexToolTip(
+                hex=self._world,
                 # Don't display the thumbnail as the the user is already looking at the map so no point
                 noThumbnail=True,
                 width=width - _InfoWidget._ContentRightMargin)

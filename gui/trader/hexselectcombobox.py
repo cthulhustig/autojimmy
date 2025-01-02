@@ -230,10 +230,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 assert(isinstance(event, QtGui.QHelpEvent))
                 toolTip = ''
                 if self._enableWorldToolTips and self._selectedHex:
-                    world = traveller.WorldManager.instance().worldByPosition(self._selectedHex)
-                    # TODO: Should probably display some form of tool tip if it's dead space
-                    if world:
-                        toolTip =  gui.createWorldToolTip(self._selectedHex)
+                    toolTip =  gui.createHexToolTip(hex=self._selectedHex)
                 if toolTip != self.toolTip():
                     self.setToolTip(toolTip)
 

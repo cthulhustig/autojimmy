@@ -1119,12 +1119,12 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected World Details...',
-                callback=lambda: self._showWorldDetails(self._jumpRouteTable.selectedWorlds()),
+                callback=lambda: self._showHexDetails(self._jumpRouteTable.selectedHexes()),
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._jumpRouteTable.worlds()),
+                callback=lambda: self._showHexDetails(self._jumpRouteTable.hexes()),
                 enabled=not self._jumpRouteTable.isEmpty()
             ),
             None, # Separator
@@ -1162,12 +1162,12 @@ class JumpRouteWindow(gui.WindowWidget):
             None, # Separator
             gui.MenuItem(
                 text='Show Selected world details...',
-                callback=lambda: self._showWorldDetails(self._refuellingPlanTable.selectedWorlds()),
+                callback=lambda: self._showHexDetails(self._refuellingPlanTable.selectedHexes()),
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Show All World Details...',
-                callback=lambda: self._showWorldDetails(self._refuellingPlanTable.worlds()),
+                callback=lambda: self._showHexDetails(self._refuellingPlanTable.hexes()),
                 enabled=not self._refuellingPlanTable.isEmpty()
             ),
             None, # Separator
@@ -1206,17 +1206,6 @@ class JumpRouteWindow(gui.WindowWidget):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        clickedWorld = None
-        try:
-            if hex:
-                clickedWorld = traveller.WorldManager.instance().worldByPosition(hex=hex)
-        except Exception as ex:
-            absoluteX, absoluteY = hex.absolute()
-            logging.warning(
-                f'An exception occurred while resolving hex {absoluteX}, {absoluteY} to a world for context menu',
-                exc_info=ex)
-            # Continue as if no world was clicked
-
         startHex, finishHex = self._selectStartFinishWidget.hexes()
         menuItems = []
 
@@ -1227,8 +1216,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
         action = QtWidgets.QAction('Show World Details...', self)
         menuItems.append(action)
-        action.triggered.connect(lambda: self._showWorldDetails([clickedWorld]))
-        action.setEnabled(clickedWorld != None)
+        action.triggered.connect(lambda: self._showHexDetails([hex]))
+        action.setEnabled(hex != None)
 
         menu = QtWidgets.QMenu('Start/Finish Worlds', self)
         menuItems.append(menu)
@@ -1446,12 +1435,12 @@ class JumpRouteWindow(gui.WindowWidget):
                 text=message,
                 exception=ex)
 
-    def _showWorldDetails(
+    def _showHexDetails(
             self,
-            worlds: typing.Iterable[traveller.World]
+            hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()
-        infoWindow.addWorlds(worlds=worlds)
+        infoWindow.addHexes(hexes=hexes)
 
     def _showCalculations(
             self,

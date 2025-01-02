@@ -70,7 +70,7 @@ from .trader.travellermapwidget import *
 from .trader.calculationmodetabbar import *
 from .trader.travellermapselectdialog import *
 from .trader.hextablemanagerwidget import *
-from .trader.worlddetailswindow import *
+from .trader.hexdetailswindow import *
 from .trader.travellermapwindow import *
 from .trader.worldcomparisonwindow import *
 from .trader.worldsearchwindow import *

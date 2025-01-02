@@ -178,6 +178,7 @@ class WorldManager(object):
             return None
         return self.worldByPosition(hex=hex)
 
+    # TODO: Rename these to worldByHex etc???????
     def worldByPosition(
             self,
             hex: travellermap.HexPosition

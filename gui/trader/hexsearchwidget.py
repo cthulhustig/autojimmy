@@ -171,13 +171,8 @@ class HexSearchWidget(QtWidgets.QWidget):
                 item = self._resultsList.itemAt(position)
 
                 if item and not item.data(QtCore.Qt.ItemDataRole.ToolTipRole):
-                    pos: traveller.World = item.data(QtCore.Qt.ItemDataRole.UserRole)
-
-                    # TODO: This should show something for dead space
-                    world = traveller.WorldManager.instance().worldByPosition(pos)
-                    toolTip = ''
-                    if world:
-                        toolTip = gui.createWorldToolTip(world=world)
+                    hex: traveller.World = item.data(QtCore.Qt.ItemDataRole.UserRole)
+                    toolTip = gui.createHexToolTip(hex=hex)
 
                     # Set the items tooltip text so it will be displayed in
                     # the future (we'll no longer get tool tip events for

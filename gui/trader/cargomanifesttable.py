@@ -289,11 +289,11 @@ class CargoManifestTable(gui.FrozenColumnListTable):
         if columnType == self.ColumnType.PurchaseWorld or \
                 columnType == self.ColumnType.PurchaseSector:
             purchaseWorld = cargoManifest.purchaseWorld()
-            return gui.createWorldToolTip(purchaseWorld)
+            return gui.createHexToolTip(purchaseWorld)
         elif columnType == self.ColumnType.SaleWorld or \
                 columnType == self.ColumnType.SaleSector:
             saleWorld = cargoManifest.saleWorld()
-            return gui.createWorldToolTip(saleWorld)
+            return gui.createHexToolTip(saleWorld)
         elif columnType == self.ColumnType.Logistics:
             return gui.createLogisticsToolTip(routeLogistics=cargoManifest.routeLogistics())
 
