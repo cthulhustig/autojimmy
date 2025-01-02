@@ -298,8 +298,6 @@ class HexSearchWidget(QtWidgets.QWidget):
             if selection:
                 newSelection = selection[0].data(QtCore.Qt.ItemDataRole.UserRole)
 
-            self._resultsList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
-
         with gui.SignalBlocker(self._mapWidget):
             if newSelection:
                 self._mapWidget.selectHex(
