@@ -334,7 +334,10 @@ def createHexToolTip(
         sectorHex = world.sectorHex()
         subsectorName = world.subsectorName()
     else:
-        sectorHex = worldManager.positionToSectorHex(hex=hex)
+        try:
+            sectorHex = worldManager.positionToSectorHex(hex=hex)
+        except:
+            sectorHex = 'Unknown'
         subsector = worldManager.subsectorByPosition(hex=hex)
         subsectorName = subsector.name() if subsector else 'Unknown'
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
