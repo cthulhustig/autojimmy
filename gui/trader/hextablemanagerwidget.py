@@ -151,14 +151,14 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def addHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
-        if isinstance(pos, traveller.World):
-            pos = pos.hex()
+        if isinstance(hex, traveller.World):
+            hex = hex.hex()
         if self._allowHexCallback:
-            if not self._allowHexCallback(pos):
+            if not self._allowHexCallback(hex):
                 return
-        self._hexTable.addHex(pos)
+        self._hexTable.addHex(hex)
         self.contentChanged.emit()
 
     def addWorld(self, world: traveller.World) -> None:
@@ -166,33 +166,33 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def addHexes(
             self,
-            positions: typing.Iterable[
+            hexes: typing.Iterable[
                 typing.Union[travellermap.HexPosition, traveller.World]
                 ]) -> None:
         if self._allowHexCallback:
-            filteredPositions = []
-            for pos in positions:
-                if isinstance(pos, traveller.World):
-                    pos = pos.hex()
-                if not self._allowHexCallback(pos):
+            filteredHexes = []
+            for hex in hexes:
+                if isinstance(hex, traveller.World):
+                    hex = hex.hex()
+                if not self._allowHexCallback(hex):
                     continue
-                filteredPositions.append(pos)
-            if not filteredPositions:
+                filteredHexes.append(hex)
+            if not filteredHexes:
                 return # Nothing to do
-            self._hexTable.addHexes(positions=filteredPositions)
+            self._hexTable.addHexes(hexes=filteredHexes)
         else:
-            self._hexTable.addHexes(positions=positions)
+            self._hexTable.addHexes(hexes=hexes)
 
         self.contentChanged.emit()
 
     def addWorlds(self, worlds: typing.Iterable[traveller.World]) -> None:
-        self.addHexes(positions=worlds)
+        self.addHexes(hexes=worlds)
 
     def removeHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
-        removed = self._hexTable.removeHex(pos)
+        removed = self._hexTable.removeHex(hex)
         if removed:
             self.contentChanged.emit()
         return removed
@@ -210,9 +210,9 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def containsHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
-        return self._hexTable.containsHex(pos)
+        return self._hexTable.containsHex(hex)
 
     def containsWorld(self, world: traveller.World) -> bool:
         return self.containsHex(world)
@@ -258,11 +258,11 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def setRelativeHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> None:
-        if isinstance(pos, traveller.World):
-            pos = pos.hex()
-        self._relativeHex = pos
+        if isinstance(hex, traveller.World):
+            hex = hex.hex()
+        self._relativeHex = hex
 
     def displayMode(self) -> gui.HexTableTabBar.DisplayMode:
         return self._displayModeTabs.currentDisplayMode()
@@ -357,7 +357,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             # the table
             for row in range(self._hexTable.rowCount() - 1, -1, -1):
                 world = traveller.WorldManager.instance().worldByPosition(
-                    pos=self.hex(row=row))
+                    hex=self.hex(row=row))
                 if not world:
                     self._hexTable.removeRow(row=row)
 
@@ -369,7 +369,7 @@ class HexTableManagerWidget(QtWidgets.QWidget):
             initialWorld: typing.Optional[traveller.World] = None
             ) -> None:
         dlg = gui.HexSearchRadiusDialog(parent=self)
-        dlg.setCenterHex(pos=initialWorld.hex() if initialWorld else self._relativeHex)
+        dlg.setCenterHex(hex=initialWorld.hex() if initialWorld else self._relativeHex)
         if dlg.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
@@ -477,16 +477,16 @@ class HexTableManagerWidget(QtWidgets.QWidget):
 
     def _showWorldsInTravellerMap(
             self,
-            positions: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         if self._enableShowInTravellerMapEvent:
-            self.showInTravellerMap.emit(positions)
+            self.showInTravellerMap.emit(hexes)
             return
 
         try:
             mapWindow = gui.WindowManager.instance().showTravellerMapWindow()
             mapWindow.centerOnHexes(
-                positions=positions,
+                hexes=hexes,
                 clearOverlays=True,
                 highlightHexes=True)
         except Exception as ex:

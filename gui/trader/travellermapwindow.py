@@ -51,14 +51,14 @@ class TravellerMapWindow(gui.WindowWidget):
 
     def centerOnHex(
             self,
-            hexPos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             linearScale: typing.Optional[float] = 64, # None keeps current scale
             clearOverlays: bool = False,
             highlightHex: bool = False,
             highlightRadius: float = 0.5
             ) -> None:
         self._mapWidget.centerOnHex(
-            pos=hexPos,
+            hex=hex,
             linearScale=linearScale,
             clearOverlays=clearOverlays,
             highlightHex=highlightHex,
@@ -66,13 +66,13 @@ class TravellerMapWindow(gui.WindowWidget):
 
     def centerOnHexes(
             self,
-            positions: travellermap.HexPosition,
+            hexes: travellermap.HexPosition,
             clearOverlays: bool = False,
             highlightHexes: bool = False,
             highlightRadius: float = 0.5
             ) -> None:
         self._mapWidget.centerOnHexes(
-            positions=positions,
+            hexes=hexes,
             clearOverlays=clearOverlays,
             highlightHexes=highlightHexes,
             highlightRadius=highlightRadius)
@@ -98,16 +98,16 @@ class TravellerMapWindow(gui.WindowWidget):
             radius: float = 0.5
             ) -> None:
         self.highlightHex(
-            hexPos=world.hex(),
+            hex=world.hex(),
             radius=radius)
 
     def highlightHex(
             self,
-            hexPos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             radius: float = 0.5
             ) -> None:
         self._mapWidget.highlightHex(
-            pos=hexPos,
+            hex=hex,
             radius=radius)
 
     def clearWorldHighlight(
@@ -118,9 +118,9 @@ class TravellerMapWindow(gui.WindowWidget):
 
     def clearHexHighlight(
             self,
-            hexPos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.clearHexHighlight(pos=hexPos)
+        self._mapWidget.clearHexHighlight(hex=hex)
 
     def clearOverlays(self) -> None:
         self._mapWidget.clearOverlays()

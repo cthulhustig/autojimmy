@@ -11,13 +11,13 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 def _formatWorldName(world: traveller.World) -> str:
     return world.name(includeSubsector=True)
 
-def _formatHexName(pos: travellermap.HexPosition) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(pos=pos)
+def _formatHexName(hex: travellermap.HexPosition) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
     if world:
         return _formatWorldName(world=world)
 
     try:
-        return traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+        return traveller.WorldManager.instance().positionToSectorHex(hex=hex)
     except:
         return ''
 
@@ -27,12 +27,12 @@ def _formatWorldHtml(world: traveller.World) -> str:
         sectorHex=html.escape(world.sectorHex()),
         uwp=html.escape(world.uwp().string()))
 
-def _formatHexHtml(pos: travellermap.HexPosition) -> str:
-    world = traveller.WorldManager.instance().worldByPosition(pos=pos)
+def _formatHexHtml(hex: travellermap.HexPosition) -> str:
+    world = traveller.WorldManager.instance().worldByPosition(hex=hex)
     if world:
         return _formatWorldHtml(world=world)
     try:
-        return traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+        return traveller.WorldManager.instance().positionToSectorHex(hex=hex)
     except:
         return html.escape('')
 
@@ -56,9 +56,9 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         else:
             style = QtWidgets.QApplication.style()
 
-        pos = index.data(QtCore.Qt.ItemDataRole.UserRole)
-        if pos:
-            self._document.setHtml(_formatHexHtml(pos=pos))
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        if hex:
+            self._document.setHtml(_formatHexHtml(hex=hex))
         else:
             self._document.clear()
 
@@ -83,10 +83,10 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
             option: QtWidgets.QStyleOptionViewItem,
             index: QtCore.QModelIndex
             ) -> QtCore.QSize:
-        pos = index.data(QtCore.Qt.ItemDataRole.UserRole)
-        if not pos:
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        if not hex:
             return super().sizeHint(option, index)
-        self._document.setHtml(_formatHexHtml(pos=pos))
+        self._document.setHtml(_formatHexHtml(hex=hex))
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
@@ -134,12 +134,12 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
     def setCurrentHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[travellermap.HexPosition],
             updateHistory: bool = True
             ) -> None:
-        self.setCurrentText(_formatHexName(pos=pos) if pos else '')
+        self.setCurrentText(_formatHexName(hex=hex) if hex else '')
         self._updateSelectedHex(
-            pos=pos,
+            hex=hex,
             updateHistory=updateHistory)
 
     def enableAutoComplete(self, enable: bool) -> None:
@@ -177,9 +177,9 @@ class HexSelectComboBox(gui.ComboBoxEx):
         if not self._enableDeadSpaceSelection:
             # Dead space selection has been disabled so clear the current selection
             # if it's a dead space hex
-            pos = self.currentHex()
-            if pos and not traveller.WorldManager.instance().worldByPosition(pos=pos):
-                self.setCurrentHex(pos=None)
+            hex = self.currentHex()
+            if hex and not traveller.WorldManager.instance().worldByPosition(hex=hex):
+                self.setCurrentHex(hex=None)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
         return self._enableDeadSpaceSelection
@@ -212,14 +212,14 @@ class HexSelectComboBox(gui.ComboBoxEx):
                 # obvious if it was the first.
                 assert(isinstance(event, QtGui.QFocusEvent))
                 if self._completer and event.reason() != QtCore.Qt.FocusReason.PopupFocusReason:
-                    pos = self.currentHex()
-                    if pos:
-                        newText = _formatHexName(pos)
+                    hex = self.currentHex()
+                    if hex:
+                        newText = _formatHexName(hex)
                         if newText != self.currentText():
                             self.setCurrentText(newText)
                     else:
                         matches = self._findCompletionMatches()
-                        self.setCurrentHex(pos=matches[0] if matches else None)
+                        self.setCurrentHex(hex=matches[0] if matches else None)
             elif event.type() == QtCore.QEvent.Type.KeyPress:
                 assert(isinstance(event, QtGui.QKeyEvent))
                 if event.matches(QtGui.QKeySequence.StandardKey.Paste):
@@ -268,11 +268,11 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return False
 
         if stream.readBool():
-            pos = travellermap.HexPosition(
+            hex = travellermap.HexPosition(
                 absoluteX=stream.readInt32(),
                 absoluteY=stream.readInt32())
             self.setCurrentHex(
-                pos=pos,
+                hex=hex,
                 updateHistory=False)
 
         return True
@@ -297,15 +297,15 @@ class HexSelectComboBox(gui.ComboBoxEx):
         with gui.SignalBlocker(widget=self):
             self.clear()
 
-            for pos in app.HexHistory.instance().hexes():
+            for hex in app.HexHistory.instance().hexes():
                 if not self._enableDeadSpaceSelection and \
-                    not traveller.WorldManager.instance().worldByPosition(pos):
+                    not traveller.WorldManager.instance().worldByPosition(hex):
                     # Ignore dead space in history
                     continue
 
-                self.addItem(_formatHexName(pos=pos), pos)
+                self.addItem(_formatHexName(hex=hex), hex)
 
-                html = _formatHexHtml(pos=pos)
+                html = _formatHexHtml(hex=hex)
                 itemWidth = self._calculateIdealHtmlWidth(html)
                 if itemWidth > contentWidth:
                     contentWidth = itemWidth
@@ -328,7 +328,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
             return
 
         # Clear the selected hex when the user starts typing
-        self._updateSelectedHex(pos=None)
+        self._updateSelectedHex(hex=None)
 
         matches = self._findCompletionMatches()
         self._completerModel.clear()
@@ -338,18 +338,18 @@ class HexSelectComboBox(gui.ComboBoxEx):
         self._completerModel.setColumnCount(1)
         self._completerModel.setRowCount(len(matches))
         contentWidth = 0
-        for index, pos in enumerate(matches):
+        for index, hex in enumerate(matches):
             modelIndex = self._completerModel.index(index, 0)
             self._completerModel.setData(
                 modelIndex,
-                _formatHexName(pos=pos),
+                _formatHexName(hex=hex),
                 QtCore.Qt.ItemDataRole.DisplayRole)
             self._completerModel.setData(
                 modelIndex,
-                pos,
+                hex,
                 QtCore.Qt.ItemDataRole.UserRole)
 
-            html = _formatHexHtml(pos=pos)
+            html = _formatHexHtml(hex=hex)
             idealWidth = self._calculateIdealHtmlWidth(html)
             if idealWidth > contentWidth:
                 contentWidth = idealWidth
@@ -381,27 +381,27 @@ class HexSelectComboBox(gui.ComboBoxEx):
             self,
             index: QtCore.QModelIndex
             ) -> None:
-        pos = index.data(QtCore.Qt.ItemDataRole.UserRole)
+        hex = index.data(QtCore.Qt.ItemDataRole.UserRole)
 
         # The completer hasn't actually set the combo box text yet so defer
         # handling the hex update until after that's done. This is done to make
         # sure the state is always consistent when the hex changed event is
         # generated
-        QtCore.QTimer.singleShot(0, lambda: self._delayedCompleterHandler(pos=pos))
+        QtCore.QTimer.singleShot(0, lambda: self._delayedCompleterHandler(hex=hex))
 
     def _delayedCompleterHandler(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._updateSelectedHex(pos=pos)
+        self._updateSelectedHex(hex=hex)
         self.selectAll()
 
     def _dropDownSelected(
             self,
             index: int
             ) -> None:
-        pos = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
-        self._updateSelectedHex(pos=pos)
+        hex = self.itemData(index, QtCore.Qt.ItemDataRole.UserRole)
+        self._updateSelectedHex(hex=hex)
 
         # Select all the current text so the control is ready for the user to search for something
         # else without them having to delete the current search text
@@ -411,14 +411,14 @@ class HexSelectComboBox(gui.ComboBoxEx):
     # hadn't changed, need to check I've not introduced a regression
     def _updateSelectedHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[travellermap.HexPosition],
             updateHistory: bool = True
             ) -> None:
-        if pos and updateHistory:
-            app.HexHistory.instance().addHex(pos=pos)
+        if hex and updateHistory:
+            app.HexHistory.instance().addHex(hex=hex)
 
-        if pos != self._selectedHex:
-            self._selectedHex = pos
+        if hex != self._selectedHex:
+            self._selectedHex = hex
             self.hexChanged.emit(self._selectedHex)
 
     # https://forum.qt.io/topic/123909/how-to-override-paste-or-catch-the-moment-before-paste-happens-in-qlineedit/10
@@ -476,15 +476,15 @@ class HexSelectComboBox(gui.ComboBoxEx):
 
             if self._enableDeadSpaceSelection:
                 try:
-                    pos = traveller.WorldManager.instance().sectorHexToPosition(
+                    hex = traveller.WorldManager.instance().sectorHexToPosition(
                         sectorHex=searchString)
                     isDuplicate = False
                     for other in matches:
-                        if pos == other:
+                        if hex == other:
                             isDuplicate = True
                             break
                     if not isDuplicate:
-                        matches.append(pos)
+                        matches.append(hex)
                 except ValueError:
                     pass # The search string isn't a a sector hex so ignore it
                 except Exception as ex:

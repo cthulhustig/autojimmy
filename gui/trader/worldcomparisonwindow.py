@@ -191,8 +191,8 @@ class WorldComparisonWindow(gui.WindowWidget):
         self._worldsGroupBox = QtWidgets.QGroupBox('Worlds')
         self._worldsGroupBox.setLayout(groupLayout)
 
-    def _allowWorld(self, pos: travellermap.HexPosition) -> bool:
-        return not self._worldManagementWidget.containsHex(pos)
+    def _allowWorld(self, hex: travellermap.HexPosition) -> bool:
+        return not self._worldManagementWidget.containsHex(hex)
 
     def _worldColumns(self) -> typing.List[gui.HexTable.ColumnType]:
         displayMode = self._worldManagementWidget.displayMode()
@@ -241,7 +241,7 @@ class WorldComparisonWindow(gui.WindowWidget):
             self._travellerMapWidget.clearSelectedHexes()
             for world in self._worldTable.worlds():
                 self._travellerMapWidget.selectHex(
-                    pos=world.hex(),
+                    hex=world.hex(),
                     centerOnHex=False,
                     setInfoHex=False)
 
@@ -250,13 +250,13 @@ class WorldComparisonWindow(gui.WindowWidget):
         newSelection = set(self._travellerMapWidget.selectedHexes())
 
         with gui.SignalBlocker(widget=self._worldManagementWidget):
-            for pos in oldSelection:
-                if pos not in newSelection:
-                    self._worldManagementWidget.removeHex(pos=pos)
+            for hex in oldSelection:
+                if hex not in newSelection:
+                    self._worldManagementWidget.removeHex(hex=hex)
 
-            for pos in newSelection:
-                if pos not in oldSelection:
-                    self._worldManagementWidget.addHex(pos=pos)
+            for hex in newSelection:
+                if hex not in oldSelection:
+                    self._worldManagementWidget.addHex(hex=hex)
 
     def _showWorldTableContextMenu(self, position: QtCore.QPoint) -> None:
         world = self._worldManagementWidget.worldAt(position=position)

@@ -155,7 +155,7 @@ class _RefuellingPlanTable(gui.HexTable):
             self._pitStops.clear()
 
         for pitStop in self._pitStops:
-            self.addHex(pos=pitStop.world())
+            self.addHex(hex=pitStop.world())
 
     def pitStopAt(self, position: QtCore.QPoint) -> typing.Optional[logic.PitStop]:
         item = self.itemAt(position)
@@ -168,7 +168,7 @@ class _RefuellingPlanTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            pos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             world: typing.Optional[traveller.World]
             ) -> int:
         assert(world) # Pitstops should always have a world
@@ -179,7 +179,7 @@ class _RefuellingPlanTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, pos, world)
+            super()._fillRow(row, hex, world)
 
             pitStop = self._pitStops[row]
             for column in range(self.columnCount()):
@@ -208,7 +208,7 @@ class _RefuellingPlanTable(gui.HexTable):
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
-                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted
@@ -266,20 +266,20 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def setStartHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._startWorldWidget.setSelectedHex(pos=pos)
+        self._startWorldWidget.setSelectedHex(hex=hex)
 
     def setFinishHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._finishWorldWidget.setSelectedHex(pos=pos)
+        self._finishWorldWidget.setSelectedHex(hex=hex)
 
     def setHexes(
             self,
-            startPos: typing.Optional[travellermap.HexPosition],
-            finishPos: typing.Optional[travellermap.HexPosition]
+            startHex: typing.Optional[travellermap.HexPosition],
+            finishHex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         selectionChanged = False
 
@@ -287,12 +287,12 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         # event.
         with gui.SignalBlocker(widget=self._startWorldWidget) and \
                 gui.SignalBlocker(widget=self._finishWorldWidget):
-            if startPos != self._startWorldWidget.selectedHex():
-                self._startWorldWidget.setSelectedHex(pos=startPos)
+            if startHex != self._startWorldWidget.selectedHex():
+                self._startWorldWidget.setSelectedHex(hex=startHex)
                 selectionChanged = True
 
-            if finishPos != self._finishWorldWidget.selectedHex():
-                self._finishWorldWidget.setSelectedHex(pos=finishPos)
+            if finishHex != self._finishWorldWidget.selectedHex():
+                self._finishWorldWidget.setSelectedHex(hex=finishHex)
                 selectionChanged = True
 
         if selectionChanged:
@@ -349,10 +349,10 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
     def _handleShowHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        if pos:
-            self.showHexRequested.emit(pos)
+        if hex:
+            self.showHexRequested.emit(hex)
 
 # TODO: In all the new code I've done I want to change all pos variables
 # to hex and all positions to hexes
@@ -569,8 +569,8 @@ class JumpRouteWindow(gui.WindowWidget):
     # controls
     def configureControls(
             self,
-            startPos: typing.Optional[travellermap.HexPosition] = None,
-            finishPos: typing.Optional[travellermap.HexPosition] = None,
+            startHex: typing.Optional[travellermap.HexPosition] = None,
+            finishHex: typing.Optional[travellermap.HexPosition] = None,
             shipTonnage: typing.Optional[int] = None,
             shipJumpRating: typing.Optional[int] = None,
             shipFuelCapacity: typing.Optional[int] = None,
@@ -584,18 +584,18 @@ class JumpRouteWindow(gui.WindowWidget):
         if self._jumpRouteJob:
             raise RuntimeError('Unable to setup jump route window while a jump route job is in progress')
 
-        if (startPos != None) and (finishPos != None):
+        if (startHex != None) and (finishHex != None):
             # Set the start and finish worlds at the same time. If either of them
             # is None then the current world will be kept. This is done so that the
             # user doesn't get prompted twice about clearing the waypoint and avoid
             # worlds if both the start and finish worlds have changed
             self._selectStartFinishWidget.setHexes(
-                startPos=startPos,
-                finishPos=finishPos)
-        elif startPos != None:
-            self._selectStartFinishWidget.setStartHex(pos=startPos)
-        elif finishPos != None:
-            self._selectStartFinishWidget.setFinishHex(pos=finishPos)
+                startHex=startHex,
+                finishHex=finishHex)
+        elif startHex != None:
+            self._selectStartFinishWidget.setStartHex(hex=startHex)
+        elif finishHex != None:
+            self._selectStartFinishWidget.setFinishHex(hex=finishHex)
 
         if shipTonnage != None:
             self._shipTonnageSpinBox.setValue(int(shipTonnage))
@@ -933,11 +933,11 @@ class JumpRouteWindow(gui.WindowWidget):
 
         self._clearJumpRoute()
 
-        startPos, finishPos = self._selectStartFinishWidget.hexes()
-        if not startPos or not finishPos:
-            if not startPos and not finishPos:
+        startHex, finishHex = self._selectStartFinishWidget.hexes()
+        if not startHex or not finishHex:
+            if not startHex and not finishHex:
                 message = 'You need to select a start and finish world before calculating a route.'
-            elif not startPos:
+            elif not startHex:
                 message = 'You need to select a start world before calculating a route.'
             else:
                 message = 'You need to select a finish world before calculating a route.'
@@ -962,7 +962,7 @@ class JumpRouteWindow(gui.WindowWidget):
             # refuelling strategy
             # TODO: This should also highlight the case where the ship has no fuel
             # and the start world is dead space
-            startWorld = traveller.WorldManager.instance().worldByPosition(pos=startPos)
+            startWorld = traveller.WorldManager.instance().worldByPosition(hex=startHex)
             if startWorld and not pitCostCalculator.refuellingType(world=startWorld):
                 message = 'Fuel based route calculation is enabled but the start world doesn\'t support the selected refuelling strategy.'
                 if self._shipCurrentFuelSpinBox.value() <= 0:
@@ -981,8 +981,8 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
             fuelIssueWorldStrings = []
-            for waypointPos in self._waypointWorldsWidget.hexes():
-                waypointWorld = traveller.WorldManager.instance().worldByPosition(pos=waypointPos)
+            for waypointHex in self._waypointWorldsWidget.hexes():
+                waypointWorld = traveller.WorldManager.instance().worldByPosition(hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
 
@@ -1003,9 +1003,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 if answer == QtWidgets.QMessageBox.StandardButton.No:
                     return
 
-        hexSequence = [startPos]
+        hexSequence = [startHex]
         hexSequence.extend(self._waypointWorldsWidget.hexes())
-        hexSequence.append(finishPos)
+        hexSequence.append(finishHex)
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
         if routeOptimisation == logic.RouteOptimisation.ShortestDistance:
@@ -1062,9 +1062,9 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _jumpRouteJobFinished(self, result: typing.Union[typing.Optional[logic.JumpRoute], Exception]) -> None:
         if isinstance(result, Exception):
-            startPos, finishPos = self._selectStartFinishWidget.hexes()
-            startString = traveller.WorldManager.instance().canonicalHexName(pos=startPos)
-            finishString = traveller.WorldManager.instance().canonicalHexName(pos=finishPos)
+            startHex, finishHex = self._selectStartFinishWidget.hexes()
+            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
+            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
             message = f'Failed to calculate jump route between {startString} and {finishString}'
             logging.error(message, exc_info=result)
             gui.MessageBoxEx.critical(
@@ -1204,26 +1204,26 @@ class JumpRouteWindow(gui.WindowWidget):
     # to dead space
     def _showTravellerMapContextMenu(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         clickedWorld = None
         try:
-            if pos:
-                clickedWorld = traveller.WorldManager.instance().worldByPosition(pos=pos)
+            if hex:
+                clickedWorld = traveller.WorldManager.instance().worldByPosition(hex=hex)
         except Exception as ex:
-            absoluteX, absoluteY = pos.absolute()
+            absoluteX, absoluteY = hex.absolute()
             logging.warning(
                 f'An exception occurred while resolving hex {absoluteX}, {absoluteY} to a world for context menu',
                 exc_info=ex)
             # Continue as if no world was clicked
 
-        startPos, finishPos = self._selectStartFinishWidget.hexes()
+        startHex, finishHex = self._selectStartFinishWidget.hexes()
         menuItems = []
 
         action = QtWidgets.QAction('Recalculate Jump Route', self)
         menuItems.append(action)
         action.triggered.connect(self._calculateJumpRoute)
-        action.setEnabled(startPos != None and finishPos != None)
+        action.setEnabled(startHex != None and finishHex != None)
 
         action = QtWidgets.QAction('Show World Details...', self)
         menuItems.append(action)
@@ -1233,42 +1233,42 @@ class JumpRouteWindow(gui.WindowWidget):
         menu = QtWidgets.QMenu('Start/Finish Worlds', self)
         menuItems.append(menu)
         action = menu.addAction('Set Start World')
-        action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(pos=pos))
-        action.setEnabled(pos != None)
+        action.triggered.connect(lambda: self._selectStartFinishWidget.setStartHex(hex=hex))
+        action.setEnabled(hex != None)
         action = menu.addAction('Set Finish World')
-        action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(pos=pos))
-        action.setEnabled(pos != None)
+        action.triggered.connect(lambda: self._selectStartFinishWidget.setFinishHex(hex=hex))
+        action.setEnabled(hex != None)
         action = menu.addAction('Swap Start && Finish Worlds')
         action.triggered.connect(
-            lambda: self._selectStartFinishWidget.setHexes(startPos=finishPos, finishPos=startPos))
-        action.setEnabled(startPos != None and finishPos != None)
+            lambda: self._selectStartFinishWidget.setHexes(startHex=finishHex, finishHex=startHex))
+        action.setEnabled(startHex != None and finishHex != None)
 
         menu = QtWidgets.QMenu('Waypoint Worlds', self)
         menuItems.append(menu)
         action = menu.addAction('Add World')
-        action.triggered.connect(lambda: self._waypointWorldsWidget.addHex(pos=pos))
-        action.setEnabled(pos != None and not self._waypointWorldsWidget.containsHex(pos=pos))
+        action.triggered.connect(lambda: self._waypointWorldsWidget.addHex(hex=hex))
+        action.setEnabled(hex != None and not self._waypointWorldsWidget.containsHex(hex=hex))
         action = menu.addAction('Remove World')
-        action.triggered.connect(lambda: self._waypointWorldsWidget.removeHex(pos=pos))
-        action.setEnabled(pos != None and self._waypointWorldsWidget.containsHex(pos=pos))
+        action.triggered.connect(lambda: self._waypointWorldsWidget.removeHex(hex=hex))
+        action.setEnabled(hex != None and self._waypointWorldsWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Avoid Worlds', self)
         menuItems.append(menu)
         action = menu.addAction('Add World')
-        action.triggered.connect(lambda: self._avoidWorldsWidget.addHex(pos=pos))
-        action.setEnabled(pos != None and not self._avoidWorldsWidget.containsHex(pos=pos))
+        action.triggered.connect(lambda: self._avoidWorldsWidget.addHex(hex=hex))
+        action.setEnabled(hex != None and not self._avoidWorldsWidget.containsHex(hex=hex))
         action = menu.addAction('Remove World')
-        action.triggered.connect(lambda: self._avoidWorldsWidget.removeHex(pos=pos))
-        action.setEnabled(pos != None and self._avoidWorldsWidget.containsHex(pos=pos))
+        action.triggered.connect(lambda: self._avoidWorldsWidget.removeHex(hex=hex))
+        action.setEnabled(hex != None and self._avoidWorldsWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Zoom To', self)
         menuItems.append(menu)
         action = menu.addAction('Start World')
-        action.triggered.connect(lambda: self._showHexInTravellerMap(pos=startPos))
-        action.setEnabled(startPos != None)
+        action.triggered.connect(lambda: self._showHexInTravellerMap(hex=startHex))
+        action.setEnabled(startHex != None)
         action = menu.addAction('Finish World')
-        action.triggered.connect(lambda: self._showHexInTravellerMap(pos=finishPos))
-        action.setEnabled(finishPos != None)
+        action.triggered.connect(lambda: self._showHexInTravellerMap(hex=finishHex))
+        action.setEnabled(finishHex != None)
         action = menu.addAction('Jump Route')
         action.triggered.connect(lambda: self._showJumpRouteInTravellerMap())
         action.setEnabled(self._jumpRoute != None)
@@ -1289,28 +1289,28 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _formatMapToolTip(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> typing.Optional[str]:
-        if not pos:
+        if not hex:
             return None
 
         if not self._jumpRoute:
-            startPos, finishPos = self._selectStartFinishWidget.hexes()
-            if (startPos and pos == startPos) and (finishPos and pos == finishPos):
+            startHex, finishHex = self._selectStartFinishWidget.hexes()
+            if (startHex and hex == startHex) and (finishHex and hex == finishHex):
                 return gui.createStringToolTip('<nobr>Start &amp; Finish Hex</nobr>', escape=False)
-            elif (startPos and pos == startPos):
+            elif (startHex and hex == startHex):
                 return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
-            elif (finishPos and pos == finishPos):
+            elif (finishHex and hex == finishHex):
                 return gui.createStringToolTip('<nobr>Finish Hex</nobr>', escape=False)
-            elif self._waypointWorldsWidget.containsHex(pos):
+            elif self._waypointWorldsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
-            elif self._avoidWorldsWidget.containsHex(pos):
+            elif self._avoidWorldsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
             return None
 
         jumpNodes: typing.Dict[int, typing.Optional[logic.PitStop]] = {}
         for nodeIndex in range(self._jumpRoute.nodeCount()):
-            if self._jumpRoute.hex(nodeIndex) == pos:
+            if self._jumpRoute.hex(nodeIndex) == hex:
                 jumpNodes[nodeIndex] = None
 
         if self._routeLogistics:
@@ -1361,13 +1361,13 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
-            if self._waypointWorldsWidget.containsHex(pos):
+            if self._waypointWorldsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
 
             # Check for the world being an avoid world. This is done last as
             # start/finish/waypoint worlds can be on the avoid list but we
             # don't want to flag them as such here
-            if self._avoidWorldsWidget.containsHex(pos):
+            if self._avoidWorldsWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
 
             return None
@@ -1470,12 +1470,12 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _showHexInTravellerMap(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
             self._travellerMapWidget.centerOnHex(
-                pos=pos,
+                hex=hex,
                 clearOverlays=False,
                 highlightHex=False)
         except Exception as ex:
@@ -1491,16 +1491,16 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         self._showWorldsInTravellerMap(
-            positions=[pos for pos, _ in self._jumpRoute])
+            hexes=[hex for hex, _ in self._jumpRoute])
 
     def _showWorldsInTravellerMap(
             self,
-            positions: typing.Iterable[travellermap.HexPosition]
+            hexes: typing.Iterable[travellermap.HexPosition]
             ) -> None:
         try:
             self._resultsDisplayModeTabView.setCurrentWidget(self._travellerMapWidget)
             self._travellerMapWidget.centerOnHexes(
-                positions=positions,
+                hexes=hexes,
                 clearOverlays=False,
                 highlightHexes=False)
         except Exception as ex:
@@ -1521,7 +1521,7 @@ class JumpRouteWindow(gui.WindowWidget):
         if not (showJumpRatingOverlay or showWorldTaggingOverlay):
             return # Nothing more to do
 
-        startPos, finishPos = self._selectStartFinishWidget.hexes()
+        startHex, finishHex = self._selectStartFinishWidget.hexes()
         jumpRating = self._shipJumpRatingSpinBox.value()
 
         if showJumpRatingOverlay:
@@ -1531,7 +1531,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 if isDarkMapStyle else \
                 self._JumpRatingOverlayLightStyleColour
             handle = self._travellerMapWidget.createHexRadiusOverlayGroup(
-                center=startPos,
+                center=startHex,
                 radius=jumpRating,
                 lineColour=colour,
                 lineWidth=self._JumpRatingOverlayLineWidth)
@@ -1540,10 +1540,10 @@ class JumpRouteWindow(gui.WindowWidget):
         if showWorldTaggingOverlay:
             try:
                 worlds = traveller.WorldManager.instance().worldsInArea(
-                    center=startPos,
+                    center=startHex,
                     searchRadius=jumpRating)
             except Exception as ex:
-                startString = traveller.WorldManager.instance().canonicalHexName(pos=startPos)
+                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
                 logging.warning(
                     f'An exception occurred while finding worlds reachable from {startString}',
                     exc_info=ex)
@@ -1551,8 +1551,8 @@ class JumpRouteWindow(gui.WindowWidget):
 
             taggedWorlds = []
             for world in worlds:
-                worldPos = world.hex()
-                if (worldPos == startPos) or (worldPos == finishPos):
+                worldHex = world.hex()
+                if (worldHex == startHex) or (worldHex == finishHex):
                     continue # Don't highlight start/finish worlds
                 tagLevel = app.calculateWorldTagLevel(world=world)
                 if not tagLevel:
@@ -1575,32 +1575,32 @@ class JumpRouteWindow(gui.WindowWidget):
         self._jumpRatingOverlayHandle = None
         self._reachableWorldsOverlayHandle = None
 
-        startPos, finishPos = self._selectStartFinishWidget.hexes()
-        if startPos:
+        startHex, finishHex = self._selectStartFinishWidget.hexes()
+        if startHex:
             self._travellerMapWidget.highlightHex(
-                pos=startPos,
+                hex=startHex,
                 colour='#00FF00',
                 radius=0.5)
-        if finishPos:
+        if finishHex:
             self._travellerMapWidget.highlightHex(
-                pos=finishPos,
+                hex=finishHex,
                 colour='#00FF00',
                 radius=0.5)
 
         waypointHexes = self._waypointWorldsWidget.hexes()
         if waypointHexes:
             self._travellerMapWidget.highlightHexes(
-                positions=waypointHexes,
+                hexes=waypointHexes,
                 colour='#0066FF',
                 radius=0.3)
 
         filteredAvoidHexes = []
-        for pos in self._avoidWorldsWidget.hexes():
-            if (pos != startPos) and (pos != finishPos) and (pos not in waypointHexes):
-                filteredAvoidHexes.append(pos)
+        for hex in self._avoidWorldsWidget.hexes():
+            if (hex != startHex) and (hex != finishHex) and (hex not in waypointHexes):
+                filteredAvoidHexes.append(hex)
         if filteredAvoidHexes:
             self._travellerMapWidget.highlightHexes(
-                positions=filteredAvoidHexes,
+                hexes=filteredAvoidHexes,
                 colour='#FF0000',
                 radius=0.3)
 
@@ -1650,8 +1650,8 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyFuelCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
 
-    def _allowAvoidHex(self, pos: travellermap.HexPosition) -> bool:
-        if self._avoidWorldsWidget.containsHex(pos):
+    def _allowAvoidHex(self, hex: travellermap.HexPosition) -> bool:
+        if self._avoidWorldsWidget.containsHex(hex):
             # Silently ignore worlds that are already in the table
             return False
         return True
@@ -1675,7 +1675,7 @@ class JumpRouteWindow(gui.WindowWidget):
             return
 
         self._jumpRouteTable.setHexes(
-            positions=[pos for pos, _ in self._jumpRoute])
+            hexes=[hex for hex, _ in self._jumpRoute])
         self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
         self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
 
@@ -1708,8 +1708,8 @@ class JumpRouteWindow(gui.WindowWidget):
             except Exception as ex:
                 startHex, _ = self._jumpRoute.startNode()
                 finishHex, _ = self._jumpRoute.finishNode()
-                startString = traveller.WorldManager.instance().canonicalHexName(pos=startHex)
-                finishString = traveller.WorldManager.instance().canonicalHexName(pos=finishHex)
+                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
+                finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
                 message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
                     start=startString,
                     finish=finishString)

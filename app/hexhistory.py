@@ -55,13 +55,13 @@ class HexHistory(object):
     def hexes(self) -> typing.Iterable[travellermap.HexPosition]:
         return list(HexHistory._history)
 
-    def addHex(self, pos: travellermap.HexPosition) -> None:
-        if pos in HexHistory._history:
+    def addHex(self, hex: travellermap.HexPosition) -> None:
+        if hex in HexHistory._history:
             # Remove the hex from the history so it can be re-added as the first entry
-            HexHistory._history.remove(pos)
+            HexHistory._history.remove(hex)
 
         # Prepend items so the history is stored in order from most recent to oldest
-        HexHistory._history.insert(0, pos)
+        HexHistory._history.insert(0, hex)
 
         # Clamp history to max length
         HexHistory._history = HexHistory._history[:self._MaxCount]
@@ -93,8 +93,8 @@ class HexHistory(object):
 
         for sectorHex in sectorHexes:
             try:
-                pos = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
-                HexHistory._history.append(pos)
+                hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
+                HexHistory._history.append(hex)
             except Exception as ex:
                 logging.error(
                     f'Failed to resolve sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
@@ -103,8 +103,8 @@ class HexHistory(object):
         if not HexHistory._history:
             for sectorHex in HexHistory._DefaultSectorHexes:
                 try:
-                    pos = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
-                    HexHistory._history.append(pos)
+                    hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex)
+                    HexHistory._history.append(hex)
                 except Exception as ex:
                     logging.error(
                         f'Failed to resolve default sector hex "{sectorHex}" when reading "{self._settings.fileName()}"',
@@ -113,12 +113,12 @@ class HexHistory(object):
     def save(self):
         self._settings.beginWriteArray('RecentWorlds')
         index = 0
-        for pos in HexHistory._history:
+        for hex in HexHistory._history:
             try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
             except Exception as ex:
                 logging.error(
-                    f'Failed to determine sector hex for position {pos} when saving "{self._settings.fileName()}"',
+                    f'Failed to determine sector hex for position {hex} when saving "{self._settings.fileName()}"',
                     exc_info=ex)
                 continue
 

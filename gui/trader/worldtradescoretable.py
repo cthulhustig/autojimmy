@@ -93,7 +93,7 @@ class WorldTradeScoreTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            pos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             world: typing.Optional[traveller.World]
             ) -> int:
         # Always generate the trade score for a world if they aren't in the maps, even if those
@@ -110,7 +110,7 @@ class WorldTradeScoreTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, pos, world)
+            super()._fillRow(row, hex, world)
 
             if world:
                 for column in range(self.columnCount()):
@@ -136,7 +136,7 @@ class WorldTradeScoreTable(gui.HexTable):
 
                     if tableItem:
                         self.setItem(row, column, tableItem)
-                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
 
             # Take note of the sort column item so we can determine which row index after the table
             # has been sorted

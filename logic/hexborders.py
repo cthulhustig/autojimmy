@@ -26,14 +26,14 @@ def _findStartingHex(
     # works we know that there can only be adjacent hexes along the upper,
     # upper right and lower right edges. If this wasn't true then this
     # wouldn't be the hex with the lowest x value and largest y value.
-    pos = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.LowerRight)
-    if pos in hexes:
+    hex = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.LowerRight)
+    if hex in hexes:
         return (bestHex, travellermap.NeighbourDirection.Lower)
-    pos = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.UpperRight)
-    if pos in hexes:
+    hex = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.UpperRight)
+    if hex in hexes:
         return (bestHex, travellermap.NeighbourDirection.LowerRight)
-    pos = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.Upper)
-    if pos in hexes:
+    hex = bestHex.neighbourHex(direction=travellermap.NeighbourDirection.Upper)
+    if hex in hexes:
         return (bestHex, travellermap.NeighbourDirection.UpperRight)
     return (bestHex, None) # This hex has no adjacent hexes so it's outline is the outline
 

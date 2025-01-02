@@ -45,9 +45,9 @@ class HexSearchDialog(gui.DialogEx):
 
     def setSelectedHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._hexSelectWidget.setSelectedHex(pos=pos)
+        self._hexSelectWidget.setSelectedHex(hex=hex)
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
@@ -74,12 +74,12 @@ class HexSearchDialog(gui.DialogEx):
         self._settings.endGroup()
 
     def accept(self) -> None:
-        pos = self.selectedHex()
-        if not pos:
+        hex = self.selectedHex()
+        if not hex:
             return # A valid hex must be selected to accept
 
         # Add the selected hex to the selection history
-        app.HexHistory.instance().addHex(pos=pos)
+        app.HexHistory.instance().addHex(hex=hex)
 
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('SelectWorldState', self._hexSelectWidget.saveState())

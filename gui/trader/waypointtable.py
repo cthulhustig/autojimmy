@@ -106,18 +106,18 @@ class WaypointTable(gui.HexTable):
     def insertHex(
             self,
             row: int,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
         self._berthingStates.insert(row, WaypointTable._BerthingState())
-        return super().insertHex(row, pos)
+        return super().insertHex(row, hex)
 
     def setHex(
             self,
             row: int,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
         self._berthingStates[row].checked = False
-        return super().setHex(row, pos)
+        return super().setHex(row, hex)
 
     def removeRow(self, row: int) -> None:
         self._berthingStates.pop(row)
@@ -209,7 +209,7 @@ class WaypointTable(gui.HexTable):
     def _fillRow(
             self,
             row: int,
-            pos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             world: typing.Optional[traveller.World]
             ) -> int:
         # Disable sorting while updating a row. We don't want any sorting to occur until all columns
@@ -218,14 +218,14 @@ class WaypointTable(gui.HexTable):
         self.setSortingEnabled(False)
 
         try:
-            super()._fillRow(row, pos, world)
+            super()._fillRow(row, hex, world)
 
             if world:
                 for column in range(self.columnCount()):
                     columnType = self.columnHeader(column)
                     if columnType == WaypointTableColumnType.BerthingRequired:
                         tableItem = QtWidgets.QTableWidgetItem()
-                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
+                        tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
                         self.setItem(row, column, tableItem)
                         self._createBerthingCheckBox(row=row, column=column)
 

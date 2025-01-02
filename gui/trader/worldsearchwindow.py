@@ -4,6 +4,7 @@ import gui
 import logging
 import logic
 import traveller
+import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -180,7 +181,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def centerHex(self) -> typing.Optional[traveller.World]:
+    def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._hexWidget.selectedHex()
 
     def searchRadius(self) -> int:
@@ -619,14 +620,14 @@ class WorldSearchWindow(gui.WindowWidget):
                     subsectorName=self._regionSearchSelectWidget.subsectorName(),
                     maxResults=self._MaxSearchResults)
             elif self._worldRadiusSearchRadioButton.isChecked():
-                pos = self._worldRadiusSearchWidget.centerHex()
-                if not pos:
+                hex = self._worldRadiusSearchWidget.centerHex()
+                if not hex:
                     gui.MessageBoxEx.information(
                         parent=self,
                         text='Select a hex to center the search radius around')
                     return
                 foundWorlds = worldFilter.searchArea(
-                    centerPos=pos,
+                    centerHex=hex,
                     searchRadius=self._worldRadiusSearchWidget.searchRadius())
         except Exception as ex:
             message = 'Failed to find nearby worlds'

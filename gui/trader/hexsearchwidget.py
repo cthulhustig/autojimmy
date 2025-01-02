@@ -80,22 +80,22 @@ class HexSearchWidget(QtWidgets.QWidget):
 
     def setSelectedHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setCurrentHex(pos=pos)
+            self._searchComboBox.setCurrentHex(hex=hex)
 
         with gui.SignalBlocker(widget=self._resultsList):
             self._resultsList.clear()
-            if pos:
-                item = self._createListItem(pos=pos)
+            if hex:
+                item = self._createListItem(hex=hex)
                 item.setSelected(True)
                 self._resultsList.setCurrentItem(item)
 
         with gui.SignalBlocker(widget=self._mapWidget):
-            if pos:
+            if hex:
                 self._mapWidget.selectHex(
-                    pos=pos,
+                    hex=hex,
                     centerOnHex=True,
                     setInfoHex=True)
             else:
@@ -106,10 +106,10 @@ class HexSearchWidget(QtWidgets.QWidget):
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
     def selectedWorld(self) -> typing.Optional[traveller.World]:
-        pos = self.selectedHex()
-        if not pos:
+        hex = self.selectedHex()
+        if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(pos=pos)
+        return traveller.WorldManager.instance().worldByPosition(hex=hex)
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
         self._searchComboBox.enableDeadSpaceSelection(enable=enable)
@@ -124,7 +124,7 @@ class HexSearchWidget(QtWidgets.QWidget):
                 for index in range(self._resultsList.count() - 1, -1, -1):
                     item = self._resultsList.item(index)
                     world = traveller.WorldManager.instance().worldByPosition(
-                        pos=item.data(QtCore.Qt.ItemDataRole.UserRole))
+                        hex=item.data(QtCore.Qt.ItemDataRole.UserRole))
                     if not world:
                         if item.isSelected():
                             selectionChanged = True
@@ -239,11 +239,11 @@ class HexSearchWidget(QtWidgets.QWidget):
 
     def _createListItem(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> QtWidgets.QListWidgetItem:
-        text = traveller.WorldManager.instance().canonicalHexName(pos=pos)
+        text = traveller.WorldManager.instance().canonicalHexName(hex=hex)
         item = QtWidgets.QListWidgetItem(text)
-        item.setData(QtCore.Qt.ItemDataRole.UserRole, pos)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, hex)
         return item
 
     def _primeSearch(self) -> None:
@@ -270,15 +270,15 @@ class HexSearchWidget(QtWidgets.QWidget):
 
             if self._searchComboBox.isDeadSpaceSelectionEnabled():
                 try:
-                    pos = traveller.WorldManager.instance().sectorHexToPosition(
+                    hex = traveller.WorldManager.instance().sectorHexToPosition(
                         sectorHex=searchString)
                     isDuplicate = False
                     for other in matches:
-                        if pos == other:
+                        if hex == other:
                             isDuplicate = True
                             break
                     if not isDuplicate:
-                        matches.append(pos)
+                        matches.append(hex)
                 except ValueError:
                     pass # The search string isn't a a sector hex so ignore it
                 except Exception as ex:
@@ -291,10 +291,10 @@ class HexSearchWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._resultsList):
             self._resultsList.clear()
 
-            for pos in matches:
-                item = self._createListItem(pos)
+            for hex in matches:
+                item = self._createListItem(hex)
                 self._resultsList.addItem(item)
-                if pos == oldSelection:
+                if hex == oldSelection:
                     item.setSelected(True)
 
             selection = self._resultsList.selectedItems()
@@ -306,7 +306,7 @@ class HexSearchWidget(QtWidgets.QWidget):
         with gui.SignalBlocker(self._mapWidget):
             if newSelection:
                 self._mapWidget.selectHex(
-                    pos=newSelection,
+                    hex=newSelection,
                     centerOnHex=True,
                     setInfoHex=True)
             else:
@@ -319,12 +319,12 @@ class HexSearchWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _listSelectionChanged(self) -> None:
-        pos = self.selectedHex()
+        hex = self.selectedHex()
 
         with gui.SignalBlocker(widget=self._mapWidget):
-            if pos:
+            if hex:
                 self._mapWidget.selectHex(
-                    pos=pos,
+                    hex=hex,
                     centerOnHex=True,
                     setInfoHex=True)
             else:
@@ -333,15 +333,15 @@ class HexSearchWidget(QtWidgets.QWidget):
         self.selectionChanged.emit()
 
     def _mapSelectionChanged(self) -> None:
-        pos = self.selectedHex()
+        hex = self.selectedHex()
 
         with gui.SignalBlocker(widget=self._searchComboBox):
-            self._searchComboBox.setCurrentHex(pos=pos)
+            self._searchComboBox.setCurrentHex(hex=hex)
 
         with gui.SignalBlocker(widget=self._resultsList):
             self._resultsList.clear()
-            if pos:
-                item = self._createListItem(pos)
+            if hex:
+                item = self._createListItem(hex)
                 self._resultsList.addItem(item)
                 item.setSelected(True)
 

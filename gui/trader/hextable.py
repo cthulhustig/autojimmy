@@ -305,15 +305,15 @@ class HexTable(gui.FrozenColumnListTable):
     def insertHex(
             self,
             row: int,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
         self.insertRow(row)
-        if isinstance(pos, traveller.World):
-            world = pos
-            pos = world.hex()
+        if isinstance(hex, traveller.World):
+            world = hex
+            hex = world.hex()
         else:
-            world = traveller.WorldManager.instance().worldByPosition(pos=pos)
-        return self._fillRow(row, pos, world)
+            world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+        return self._fillRow(row, hex, world)
 
     # TODO: This feels a little pointless. I could switch calls
     # to it for calls to insertHex.
@@ -325,14 +325,14 @@ class HexTable(gui.FrozenColumnListTable):
     def setHex(
             self,
             row: int,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
-        if isinstance(pos, traveller.World):
-            world = pos
-            pos = world.hex()
+        if isinstance(hex, traveller.World):
+            world = hex
+            hex = world.hex()
         else:
-            world = traveller.WorldManager.instance().worldByPosition(pos=pos)
-        return self._fillRow(row, pos, world)
+            world = traveller.WorldManager.instance().worldByPosition(hex=hex)
+        return self._fillRow(row, hex, world)
 
     # TODO: This feels a little pointless. I could switch calls
     # to it for calls to setHex.
@@ -343,12 +343,12 @@ class HexTable(gui.FrozenColumnListTable):
 
     def setHexes(
             self,
-            positions: typing.Iterator[
+            hexes: typing.Iterator[
                 typing.Union[travellermap.HexPosition, traveller.World]
             ]) -> None:
         self.removeAllRows()
-        for pos in positions:
-            self.addHex(pos)
+        for hex in hexes:
+            self.addHex(hex)
 
     # TODO: This feels a little pointless. I could switch calls
     # to it for calls to setHexes.
@@ -356,15 +356,15 @@ class HexTable(gui.FrozenColumnListTable):
     #   from world to pos
     def setWorlds(
             self,
-            positions: typing.Iterator[traveller.World]
+            worlds: typing.Iterator[traveller.World]
             ) -> None:
-        self.setHexes(positions)
+        self.setHexes(worlds)
 
     def addHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> int:
-        return self.insertHex(self.rowCount(), pos)
+        return self.insertHex(self.rowCount(), hex)
 
     # TODO: This feels a little pointless. I could switch calls
     # to it for calls to addHex.
@@ -375,7 +375,7 @@ class HexTable(gui.FrozenColumnListTable):
 
     def addHexes(
             self,
-            positions: typing.Iterable[
+            hexes: typing.Iterable[
                 typing.Union[travellermap.HexPosition, traveller.World]
                 ]) -> None:
         # Disable sorting while inserting multiple rows then sort once after they've
@@ -384,8 +384,8 @@ class HexTable(gui.FrozenColumnListTable):
         self.setSortingEnabled(False)
 
         try:
-            for pos in positions:
-                self.insertHex(self.rowCount(), pos)
+            for hex in hexes:
+                self.insertHex(self.rowCount(), hex)
         finally:
             self.setSortingEnabled(sortingEnabled)
 
@@ -398,13 +398,13 @@ class HexTable(gui.FrozenColumnListTable):
 
     def removeHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
-        if isinstance(pos, traveller.World):
-            pos = pos.hex()
+        if isinstance(hex, traveller.World):
+            hex = hex.hex()
         removed = False
         for row in range(self.rowCount() - 1, -1, -1):
-            if pos == self.hex(row):
+            if hex == self.hex(row):
                 self.removeRow(row)
                 removed = True
         return removed
@@ -433,12 +433,12 @@ class HexTable(gui.FrozenColumnListTable):
 
     def containsHex(
             self,
-            pos: typing.Union[travellermap.HexPosition, traveller.World]
+            hex: typing.Union[travellermap.HexPosition, traveller.World]
             ) -> bool:
-        if isinstance(pos, traveller.World):
-            pos = pos.hex()
+        if isinstance(hex, traveller.World):
+            hex = hex.hex()
         for row in range(self.rowCount()):
-            if pos == self.hex(row):
+            if hex == self.hex(row):
                 return True
         return False
 
@@ -486,9 +486,9 @@ class HexTable(gui.FrozenColumnListTable):
         count = self.rowCount()
         stream.writeUInt32(count)
         for row in range(self.rowCount()):
-            pos = self.hex(row)
-            stream.writeInt32(pos.absoluteX())
-            stream.writeInt32(pos.absoluteY())
+            hex = self.hex(row)
+            stream.writeInt32(hex.absoluteX())
+            stream.writeInt32(hex.absoluteY())
 
         return state
 
@@ -503,17 +503,17 @@ class HexTable(gui.FrozenColumnListTable):
             try:
                 data = json.loads(stream.readQString())
                 worlds = logic.deserialiseWorldList(data=data)
-                self.setHexes(positions=[world.hex() for world in worlds])
+                self.setHexes(hexes=[world.hex() for world in worlds])
             except Exception as ex:
                 logging.warning(f'Failed to deserialise v1 HexTable content', exc_info=ex)
         elif version == HexTable._ContentVersion:
             count = stream.readUInt32()
-            positions = []
+            hexes = []
             for _ in range(count):
-                positions.append(travellermap.HexPosition(
+                hexes.append(travellermap.HexPosition(
                     absoluteX=stream.readInt32(),
                     absoluteY=stream.readInt32()))
-            self.setHexes(positions=positions)
+            self.setHexes(hexes=hexes)
         else:
             # Wrong version so unable to restore state safely
             logging.debug(f'Failed to restore HexTable content (Unsupported version)')
@@ -524,7 +524,7 @@ class HexTable(gui.FrozenColumnListTable):
     def _fillRow(
             self,
             row: int,
-            pos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             world: typing.Optional[traveller.World]
             ) -> int:
         # Workaround for the issue covered here, re-enabled after setting items
@@ -552,7 +552,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.name())
                         tagColour = worldTagColour
                     else:
-                        hexString = f'Dead Space {pos.offsetX():02d}{pos.offsetY():02d}'
+                        hexString = f'Dead Space {hex.offsetX():02d}{hex.offsetY():02d}'
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, hexString)
                         tableItem.setItalic(enable=True)
                         tagColour = app.tagColour(app.TagLevel.Danger) # Tag dead space as danger level
@@ -562,7 +562,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.sectorName())
                         tagColour = worldTagColour
                     else:
-                        sector = traveller.WorldManager.instance().sectorByPosition(pos=pos)
+                        sector = traveller.WorldManager.instance().sectorByPosition(hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             sector.name() if sector else 'Unknown')
@@ -574,7 +574,7 @@ class HexTable(gui.FrozenColumnListTable):
                         tableItem.setData(QtCore.Qt.ItemDataRole.DisplayRole, world.subsectorName())
                         tagColour = worldTagColour
                     else:
-                        subsector = traveller.WorldManager.instance().subsectorByPosition(pos=pos)
+                        subsector = traveller.WorldManager.instance().subsectorByPosition(hex=hex)
                         tableItem.setData(
                             QtCore.Qt.ItemDataRole.DisplayRole,
                             subsector.name() if subsector else 'Unknown')
@@ -854,7 +854,7 @@ class HexTable(gui.FrozenColumnListTable):
 
                 if tableItem:
                     self.setItem(row, column, tableItem)
-                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (pos, world))
+                    tableItem.setData(QtCore.Qt.ItemDataRole.UserRole, (hex, world))
                     if tagColour:
                         tableItem.setBackground(QtGui.QColor(tagColour))
 
@@ -870,8 +870,8 @@ class HexTable(gui.FrozenColumnListTable):
         return sortItem.row() if sortItem else row
 
     def _createToolTip(self, item: QtWidgets.QTableWidgetItem) -> typing.Optional[str]:
-        pos = self.hex(item.row())
-        if not pos:
+        hex = self.hex(item.row())
+        if not hex:
             return None
         world = self.world(item.row())
         if not world:

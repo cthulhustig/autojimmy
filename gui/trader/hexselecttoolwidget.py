@@ -87,20 +87,20 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def setSelectedHex(
             self,
-            pos: typing.Optional[travellermap.HexPosition],
+            hex: typing.Optional[travellermap.HexPosition],
             updateHistory: bool = True
             ) -> None:
         self._searchComboBox.setCurrentHex(
-            pos=pos,
+            hex=hex,
             updateHistory=updateHistory)
 
     # Helper to get the selected world if a world is selected. Useful for code
     # that never enables dead space selection
     def selectedWorld(self) -> typing.Optional[traveller.World]:
-        pos = self.selectedHex()
-        if not pos:
+        hex = self.selectedHex()
+        if not hex:
             return None
-        return traveller.WorldManager.instance().worldByPosition(pos=pos) if pos else None
+        return traveller.WorldManager.instance().worldByPosition(hex=hex) if hex else None
 
     def enableMapSelectButton(self, enable: bool) -> None:
         self._enableMapSelectButton = enable
@@ -138,14 +138,14 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(HexSelectToolWidget._StateVersion)
 
-        pos = self.selectedHex()
+        hex = self.selectedHex()
         sectorHex = ''
-        if pos:
+        if hex:
             try:
-                sectorHex = traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+                sectorHex = traveller.WorldManager.instance().positionToSectorHex(hex=hex)
             except Exception as ex:
                 logging.error(
-                    f'Failed to resolve hex {pos} to sector hex when saving HexSelectToolWidget state',
+                    f'Failed to resolve hex {hex} to sector hex when saving HexSelectToolWidget state',
                     exc_info=ex)
         stream.writeQString(sectorHex)
 
@@ -163,24 +163,24 @@ class HexSelectToolWidget(QtWidgets.QWidget):
             return False
 
         sectorHex = stream.readQString()
-        pos = None
+        hex = None
         if sectorHex:
             try:
-                pos = traveller.WorldManager.instance().sectorHexToPosition(
+                hex = traveller.WorldManager.instance().sectorHexToPosition(
                     sectorHex=sectorHex)
             except Exception as ex:
                 logging.error(f'Failed to restore HexSelectToolWidget state', exc_info=ex)
                 return False
 
-        self.setSelectedHex(pos=pos, updateHistory=False)
+        self.setSelectedHex(hex=hex, updateHistory=False)
         return True
 
     def _selectionChanged(
             self,
-            pos: typing.Optional[travellermap.HexPosition]
+            hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._showHexButton.setEnabled(pos != None)
-        self._showInfoButton.setEnabled(pos != None)
+        self._showHexButton.setEnabled(hex != None)
+        self._showInfoButton.setEnabled(hex != None)
         self.selectionChanged.emit()
 
     def _mapSelectClicked(self) -> None:
@@ -190,9 +190,9 @@ class HexSelectToolWidget(QtWidgets.QWidget):
                 singleSelect=True,
                 includeDeadSpace=self._searchComboBox.isDeadSpaceSelectionEnabled())
 
-        pos = self.selectedHex()
-        if pos:
-            self._mapSelectDialog.selectHex(pos=pos)
+        hex = self.selectedHex()
+        if hex:
+            self._mapSelectDialog.selectHex(hex=hex)
         else:
             self._mapSelectDialog.clearSelectedHexes()
         if self._mapSelectDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
@@ -201,20 +201,20 @@ class HexSelectToolWidget(QtWidgets.QWidget):
         if len(newSelection) != 1:
             return
 
-        self._searchComboBox.setCurrentHex(pos=newSelection[0])
+        self._searchComboBox.setCurrentHex(hex=newSelection[0])
 
     def _showHexClicked(self) -> None:
-        pos = self.selectedHex()
-        if pos:
-            self.showHex.emit(pos)
+        hex = self.selectedHex()
+        if hex:
+            self.showHex.emit(hex)
 
     def _showInfoClicked(self) -> None:
         # TODO: This is a hack needed until the world details widget is updated to
         # show details of dead space
-        pos = self.selectedHex()
-        if not pos:
+        hex = self.selectedHex()
+        if not hex:
             return
-        world = traveller.WorldManager.instance().worldByPosition(pos=pos)
+        world = traveller.WorldManager.instance().worldByPosition(hex=hex)
         if not world:
             return
         infoWindow = gui.WindowManager.instance().showWorldDetailsWindow()

@@ -229,10 +229,10 @@ class RoutePlanner(object):
         finishWorldIndex = sequenceLength - 1
 
         startHex = hexSequence[0]
-        startWorld = worldManager.worldByPosition(pos=startHex)
+        startWorld = worldManager.worldByPosition(hex=startHex)
 
         finishHex = hexSequence[finishWorldIndex]
-        finishWorld = worldManager.worldByPosition(pos=finishHex)
+        finishWorld = worldManager.worldByPosition(hex=finishHex)
 
         startWorldFuelType = None
         if pitCostCalculator:
@@ -630,7 +630,7 @@ class RoutePlanner(object):
             # The downside of his approach is it _might_ increase the number of worldByPosition
             # calls that get made by the calculators and filter.
             for nearbyHex in centerHex.yieldRadiusHexes(radius=radius, includeInterior=True):
-                world = worldManager.worldByPosition(pos=nearbyHex)
+                world = worldManager.worldByPosition(hex=nearbyHex)
                 yield (nearbyHex, world)
         else:
             for nearbyWorld in worldManager.yieldWorldsInArea(center=centerHex, searchRadius=radius):

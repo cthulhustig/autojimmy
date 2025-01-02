@@ -139,8 +139,8 @@ class WorldManager(object):
                     self._subsectorSectorMap[subsector] = sector
 
                 for world in sector.worlds():
-                    hexPos = world.hex()
-                    self._absoluteWorldMap[(hexPos.absoluteX(), hexPos.absoluteY())] = world
+                    hex = world.hex()
+                    self._absoluteWorldMap[(hex.absoluteX(), hex.absoluteY())] = world
 
     def sectorName(
             self,
@@ -173,32 +173,32 @@ class WorldManager(object):
             sectorHex: str,
             ) -> typing.Optional[traveller.World]:
         try:
-            pos = self.sectorHexToPosition(sectorHex=sectorHex)
+            hex = self.sectorHexToPosition(sectorHex=sectorHex)
         except Exception as ex:
             return None
-        return self.worldByPosition(pos=pos)
+        return self.worldByPosition(hex=hex)
 
     def worldByPosition(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.World]:
-        return self._absoluteWorldMap.get(pos.absolute())
+        return self._absoluteWorldMap.get(hex.absolute())
 
     def sectorByPosition(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.Sector]:
-        return self._sectorPositionMap.get((pos.sectorX(), pos.sectorY()))
+        return self._sectorPositionMap.get((hex.sectorX(), hex.sectorY()))
 
     def subsectorByPosition(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> typing.Optional[traveller.Subsector]:
-        sector = self.sectorByPosition(pos=pos)
+        sector = self.sectorByPosition(hex=hex)
         subsectors = sector.subsectors()
         assert(len(subsectors) == 16)
 
-        _, _, offsetX, offsetY = pos.relative()
+        _, _, offsetX, offsetY = hex.relative()
         subsectorX = (offsetX - 1) // WorldManager._SubsectorHexWidth
         subsectorY = (offsetY - 1) // WorldManager._SubsectorHexHeight
         index = (subsectorY * WorldManager._SubsectorPerSectorX) + subsectorX
@@ -220,9 +220,9 @@ class WorldManager(object):
 
     def positionToSectorHex(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> str:
-        sectorX, sectorY, offsetX, offsetY = pos.relative()
+        sectorX, sectorY, offsetX, offsetY = hex.relative()
         sector = self._sectorPositionMap.get((sectorX, sectorY))
         if not sector:
             raise RuntimeError('No sector located at {sectorX}, {sectorY}')
@@ -272,15 +272,15 @@ class WorldManager(object):
 
     def canonicalHexName(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> str:
-        world = self.worldByPosition(pos=pos)
+        world = self.worldByPosition(hex=hex)
         if world:
             return world.name(includeSubsector=True)
         try:
-            return self.positionToSectorHex(pos=pos)
+            return self.positionToSectorHex(hex=hex)
         except ValueError:
-            return str(pos)
+            return str(hex)
 
     def yieldWorldsInArea(
             self,
@@ -341,10 +341,10 @@ class WorldManager(object):
 
         result = self._AbsoluteHexPattern.match(searchString)
         if result:
-            pos = travellermap.HexPosition(
+            hex = travellermap.HexPosition(
                 absoluteX=int(result.group(1)),
                 absoluteY=int(result.group(2)))
-            foundWorld = self.worldByPosition(pos=pos)
+            foundWorld = self.worldByPosition(hex=hex)
             if foundWorld:
                 return [foundWorld]
 
@@ -356,12 +356,12 @@ class WorldManager(object):
             offsetY = int(result.group(4))
             if (offsetX >= 0  and offsetX < travellermap.SectorWidth) and \
                 (offsetY >= 0 and offsetY < travellermap.SectorHeight):
-                pos = travellermap.HexPosition(
+                hex = travellermap.HexPosition(
                     sectorX=sectorX,
                     sectorY=sectorY,
                     offsetX=offsetX,
                     offsetY=offsetY)
-                foundWorld = self.worldByPosition(pos=pos)
+                foundWorld = self.worldByPosition(hex=hex)
                 if foundWorld:
                     return [foundWorld]
 

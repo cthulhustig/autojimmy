@@ -47,20 +47,20 @@ class TravellerMapSelectDialog(gui.DialogEx):
 
     def selectHex(
             self,
-            pos: travellermap.HexPosition,
+            hex: travellermap.HexPosition,
             centerOnWorld: bool = True,
             setInfoWorld: bool = True
             ) -> None:
         self._mapWidget.selectHex(
-            pos=pos,
+            hex=hex,
             centerOnHex=centerOnWorld,
             setInfoHex=setInfoWorld)
 
     def deselectHex(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> None:
-        self._mapWidget.deselectHex(pos=pos)
+        self._mapWidget.deselectHex(hex=hex)
 
     def clearSelectedHexes(self) -> None:
         self._mapWidget.clearSelectedHexes()

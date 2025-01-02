@@ -295,7 +295,7 @@ def createWorldToolTip(
                 milieu=app.Config.instance().milieu(),
                 style=app.Config.instance().mapStyle(),
                 options=app.Config.instance().mapOptions(),
-                hexPos=world.hex(),
+                hex=world.hex(),
                 width=256,
                 height=256,
                 timeout=3)
@@ -318,13 +318,13 @@ def createWorldToolTip(
     #
     # World
     #
-    hexPos = world.hex()
+    worldHex = world.hex()
     toolTip += f'<h1>{html.escape(world.name())}</h1>'
 
     toolTip += '<ul style="list-style-type:none; margin-left:0px; -qt-list-indent:0">'
     toolTip += f'<li>Subsector: {html.escape(world.subsectorName())}<li>'
     toolTip += f'<li>Sector Hex: {html.escape(world.sectorHex())}<li>'
-    toolTip += f'<li>Sector Position: ({hexPos.sectorX()}, {hexPos.sectorY()})<li>'
+    toolTip += f'<li>Sector Position: ({worldHex.sectorX()}, {worldHex.sectorY()})<li>'
 
     allegianceString = traveller.AllegianceManager.instance().formatAllegianceString(world)
     tagLevel = app.calculateAllegianceTagLevel(world)
@@ -572,8 +572,8 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     jumpRoute = routeLogistics.jumpRoute()
     startHex, _ = jumpRoute.startNode()
     finishHex, _ = jumpRoute.finishNode()
-    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(pos=startHex))
-    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(pos=finishHex))
+    startString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=startHex))
+    finishString = html.escape(traveller.WorldManager.instance().canonicalHexName(hex=finishHex))
 
     toolTip = '<html>'
 
@@ -637,7 +637,7 @@ def createLogisticsToolTip(routeLogistics: logic.RouteLogistics) -> str:
     for index, (nodeHex, world) in enumerate(jumpRoute):
         hexString = html.escape('{type}: {name}'.format(
             type='World' if world else 'Dead Space',
-            name=traveller.WorldManager.instance().canonicalHexName(pos=nodeHex)))
+            name=traveller.WorldManager.instance().canonicalHexName(hex=nodeHex)))
         tagColour = app.tagColour(
             app.calculateWorldTagLevel(world)
             if world else

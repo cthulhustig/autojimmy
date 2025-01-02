@@ -68,7 +68,7 @@ class Simulator(object):
 
     def run(
             self,
-            startPos: travellermap.HexPosition,
+            startHex: travellermap.HexPosition,
             startingFunds: int,
             shipTonnage: int,
             shipJumpRating: int,
@@ -118,7 +118,7 @@ class Simulator(object):
 
         # Set the funds and world like this to trigger callbacks. Note
         # that this MUST be done AFTER the simulation time is reset
-        self._setCurrentHex(pos=startPos)
+        self._setCurrentHex(hex=startHex)
         self._setAvailableFunds(startingFunds)
 
         while self._availableFunds > 0:
@@ -134,7 +134,7 @@ class Simulator(object):
         self._logMessage(f'You went bankrupt!')
 
     def _stepSimulation(self) -> None:
-        currentWorld = traveller.WorldManager.instance().worldByPosition(pos=self._currentHex)
+        currentWorld = traveller.WorldManager.instance().worldByPosition(hex=self._currentHex)
 
         if not self._cargoManifest:
             # No current cargo manifest so buy something on the current world
@@ -214,14 +214,14 @@ class Simulator(object):
             if self._jumpRouteIndex < jumpRoute.nodeCount():
                 # Not reached the end of the jump route yet so move on to the next world
                 nextHex, nextWorld = jumpRoute[self._jumpRouteIndex]
-                currentString = traveller.WorldManager.instance().canonicalHexName(pos=self._currentHex)
-                nextString = traveller.WorldManager.instance().canonicalHexName(pos=nextHex)
+                currentString = traveller.WorldManager.instance().canonicalHexName(hex=self._currentHex)
+                nextString = traveller.WorldManager.instance().canonicalHexName(hex=nextHex)
                 self._logMessage(
                     f'Travelling from {currentString} to {nextString}')
 
                 self._simulationTime += self._calculateTravelHours(1)
 
-                self._setCurrentHex(pos=nextHex)
+                self._setCurrentHex(hex=nextHex)
                 self._logMessage(f'Arrived on {nextWorld.name(includeSubsector=True)}')
                 return
 
@@ -258,8 +258,8 @@ class Simulator(object):
                 self._availableFunds,
                 self._simulationTime))
 
-    def _setCurrentHex(self, pos: travellermap.HexPosition) -> None:
-        self._currentHex = pos
+    def _setCurrentHex(self, hex: travellermap.HexPosition) -> None:
+        self._currentHex = hex
         if self._eventCallback:
             self._eventCallback(Simulator.Event(
                 Simulator.Event.Type.HexUpdate,

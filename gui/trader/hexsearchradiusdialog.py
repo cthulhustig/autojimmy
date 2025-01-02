@@ -73,8 +73,8 @@ class HexSearchRadiusDialog(gui.DialogEx):
     def centerHex(self) -> typing.Optional[travellermap.HexPosition]:
         return self._hexWidget.selectedHex()
 
-    def setCenterHex(self, pos: typing.Optional[travellermap.HexPosition]) -> None:
-        self._hexWidget.setSelectedHex(pos=pos)
+    def setCenterHex(self, hex: typing.Optional[travellermap.HexPosition]) -> None:
+        self._hexWidget.setSelectedHex(hex=hex)
 
     def searchRadius(self) -> int:
         return self._radiusSpinBox.value()
@@ -83,12 +83,12 @@ class HexSearchRadiusDialog(gui.DialogEx):
         self._radiusSpinBox.setValue(radius)
 
     def accept(self) -> None:
-        pos = self.centerHex()
-        if not pos:
+        hex = self.centerHex()
+        if not hex:
             return # A valid hex must be selected to accept
 
         # Add the selected hex to the selection history
-        app.HexHistory.instance().addHex(pos=pos)
+        app.HexHistory.instance().addHex(hex=hex)
 
         self._settings.beginGroup(self._configSection)
         self._settings.setValue('SelectHexState', self._hexWidget.saveState())

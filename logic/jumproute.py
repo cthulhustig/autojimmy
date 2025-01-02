@@ -105,10 +105,10 @@ def _serialiseNode(
             travellermap.HexPosition,
             typing.Optional[traveller.World]]
         ) -> typing.Mapping[str, typing.Any]:
-    pos, world = node
+    hex, world = node
 
-    data = {'absoluteX': pos.absoluteX(),
-            'absoluteY': pos.absoluteY()}
+    data = {'absoluteX': hex.absoluteX(),
+            'absoluteY': hex.absoluteY()}
 
     # Include the sector hex as it could be useful to users. It's a best effort
     # thing, if the hex can't be resolved to a sector hex we don't barf
@@ -116,7 +116,7 @@ def _serialiseNode(
         data['sectorHex'] = \
             world.sectorHex() \
             if world else \
-            traveller.WorldManager.instance().positionToSectorHex(pos=pos)
+            traveller.WorldManager.instance().positionToSectorHex(hex=hex)
     except:
         pass
 
@@ -141,17 +141,17 @@ def _deserialiseNode(
             raise RuntimeError('Node absoluteX property is not a integer')
         return (
             travellermap.HexPosition(absoluteX=absoluteX, absoluteY=absoluteY),
-            traveller.WorldManager.instance().worldByPosition(pos=pos))
+            traveller.WorldManager.instance().worldByPosition(hex=hex))
 
     sectorHex = data.get('sectorHex')
     if sectorHex != None:
         if not isinstance(sectorHex, str):
             raise RuntimeError('Node sectorHex property is not a string')
         try:
-            pos = traveller.WorldManager.instance().sectorHexToPosition(sectorHex=sectorHex)
+            hex = traveller.WorldManager.instance().sectorHexToPosition(sectorHex=sectorHex)
             return (
-                pos,
-                traveller.WorldManager.instance().worldByPosition(pos=pos))
+                hex,
+                traveller.WorldManager.instance().worldByPosition(hex=hex))
         except:
             raise RuntimeError(f'Node sector hex "{sectorHex}" couldn\'t be resolved to a hex')
 

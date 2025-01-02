@@ -306,8 +306,8 @@ class _BaseTraderWindow(gui.WindowWidget):
             # to remove these horrible configureControls functions
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
             jumpRouteWindow.configureControls(
-                startPos=purchaseWorld.hex() if purchaseWorld else None,
-                finishPos=saleWorld.hex() if saleWorld else None,
+                startHex=purchaseWorld.hex() if purchaseWorld else None,
+                finishHex=saleWorld.hex() if saleWorld else None,
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
                 shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
@@ -667,7 +667,7 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         if purchaseWorld != None:
             self._purchaseWorldWidget.setSelectedHex(
-                pos=purchaseWorld.hex() if purchaseWorld else None)
+                hex=purchaseWorld.hex() if purchaseWorld else None)
         if playerBrokerDm != None:
             self._playerBrokerDmSpinBox.setValue(int(playerBrokerDm))
         if minSellerDm != None:
@@ -1253,9 +1253,9 @@ class WorldTraderWindow(_BaseTraderWindow):
 
         return cargoRecords
 
-    def _allowSaleWorld(self, pos: travellermap.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsHex(pos)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _updateSaleWorldTradeScores(self) -> None:
         tradeGoods = set()
@@ -1293,7 +1293,7 @@ class WorldTraderWindow(_BaseTraderWindow):
         self._enableDisableControls()
         purchaseWorld = self._purchaseWorldWidget.selectedWorld()
         if purchaseWorld:
-            self._saleWorldsWidget.setRelativeHex(pos=purchaseWorld.hex())
+            self._saleWorldsWidget.setRelativeHex(hex=purchaseWorld.hex())
 
     def _generateSpeculativeCargoForWorld(self) -> None:
         if not self._speculativeCargoTable.isEmpty():
@@ -2224,13 +2224,13 @@ class MultiWorldTraderWindow(_BaseTraderWindow):
         self._anomalyFuelCostSpinBox.setEnabled(anomalyRefuelling)
         self._anomalyBerthingCostSpinBox.setEnabled(anomalyRefuelling)
 
-    def _allowPurchaseWorld(self, pos: travellermap.HexPosition) -> bool:
+    def _allowPurchaseWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._purchaseWorldsWidget.containsHex(pos)
+        return not self._purchaseWorldsWidget.containsHex(hex)
 
-    def _allowSaleWorld(self, pos: travellermap.HexPosition) -> bool:
+    def _allowSaleWorld(self, hex: travellermap.HexPosition) -> bool:
         # Silently ignore worlds that are already in the table
-        return not self._saleWorldsWidget.containsHex(pos)
+        return not self._saleWorldsWidget.containsHex(hex)
 
     def _copyBetweenWorldWidgets(
             self,

@@ -562,7 +562,7 @@ class SimulatorWindow(gui.WindowWidget):
         startWorld = self._startWorldWidget.selectedWorld()
         if startWorld:
             self._mapWidget.centerOnHex(
-                pos=startWorld.hex(),
+                hex=startWorld.hex(),
                 clearOverlays=True,
                 highlightHex=True)
 
@@ -647,7 +647,7 @@ class SimulatorWindow(gui.WindowWidget):
             self._simulatorJob = jobs.SimulatorJob(
                 parent=self,
                 rules=app.Config.instance().rules(),
-                startPos=startWorld.hex(),
+                startHex=startWorld.hex(),
                 startingFunds=self._startingFundsSpinBox.value(),
                 shipTonnage=self._shipTonnageSpinBox.value(),
                 shipJumpRating=self._shipJumpRatingSpinBox.value(),
@@ -699,12 +699,12 @@ class SimulatorWindow(gui.WindowWidget):
                 self._simulationTravelledLabel.setText(f'Travelled: {common.formatNumber(self._parsecsTravelled)} parsecs')
                 self._currentHex = currentHex
             self._mapWidget.centerOnHex(
-                pos=currentHex,
+                hex=currentHex,
                 clearOverlays=True,
                 highlightHex=True,
                 linearScale=None) # Keep current scale
             self._mapWidget.setInfoHex(
-                pos=currentWorld.hex() if currentWorld else None)
+                hex=currentWorld.hex() if currentWorld else None)
         elif event.type() == logic.Simulator.Event.Type.InfoMessage:
             # Data is a string containing the message
             self._simInfoEditBox.appendPlainText(f'Day {common.formatNumber(day)}: {event.data()}')
@@ -726,11 +726,11 @@ class SimulatorWindow(gui.WindowWidget):
 
     def _showOnMap(
             self,
-            pos: travellermap.HexPosition
+            hex: travellermap.HexPosition
             ) -> None:
         try:
             self._mapWidget.centerOnHex(
-                pos=pos,
+                hex=hex,
                 clearOverlays=False,
                 highlightHex=False)
         except Exception as ex:
