@@ -89,6 +89,7 @@ class _ListItemDelegate(QtWidgets.QStyledItemDelegate):
         return QtCore.QSize(int(self._document.idealWidth()),
                             int(self._document.size().height()))
 
+# TODO: Rename this to HexChooserComboBox
 class HexSelectComboBox(gui.ComboBoxEx):
     hexChanged = QtCore.pyqtSignal(object)
 

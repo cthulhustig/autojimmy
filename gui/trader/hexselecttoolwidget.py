@@ -6,6 +6,7 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: Rename this to HexChooserToolWidget
 # TODO: The tooltips of widgets should update to say world/hex depending on if dead
 # space selection is enabled
 class HexSelectToolWidget(QtWidgets.QWidget):

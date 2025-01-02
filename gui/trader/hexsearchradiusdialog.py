@@ -4,6 +4,13 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore
 
+# TODO: Rename this to HexRadiusSelectDialog
+# - Do this after I've renamed what is currently HexSelectComboBox & HexSelectToolWidget
+# TODO: This dialog should work differently
+# - When you select a hex in traveller map it should show you the world in the current radius
+#   - This would mean logically the radius should be above the map widget
+#   - When you click ok it should be possible to pull back the selected hexes from the dialog
+# - I'm not sure if the offline mode actually makes sense
 class HexSearchRadiusDialog(gui.DialogEx):
     def __init__(
             self,

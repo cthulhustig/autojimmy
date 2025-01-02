@@ -5,6 +5,8 @@ import travellermap
 import typing
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+# TODO: Rename this to HexSelectWidget
+# - Do this after I've renamed what is currently HexSelectComboBox & HexSelectToolWidget
 class HexSearchWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
 
