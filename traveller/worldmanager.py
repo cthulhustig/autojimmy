@@ -226,7 +226,7 @@ class WorldManager(object):
         sectorX, sectorY, offsetX, offsetY = hex.relative()
         sector = self._sectorPositionMap.get((sectorX, sectorY))
         if not sector:
-            raise RuntimeError('No sector located at {sectorX}, {sectorY}')
+            raise KeyError('No sector located at {sectorX}, {sectorY}')
         return traveller.formatSectorHex(
             sectorName=sector.name(),
             worldX=offsetX,
@@ -263,7 +263,7 @@ class WorldManager(object):
                     sector = self._subsectorSectorMap.get(subsectors[0])
 
         if not sector:
-            raise RuntimeError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
+            raise KeyError(f'Failed to resolve sector {sectorName} for sector hex {sectorHex}')
 
         return travellermap.HexPosition(
             sectorX=sector.x(),

@@ -482,7 +482,7 @@ class HexSelectComboBox(gui.ComboBoxEx):
                             break
                     if not isDuplicate:
                         matches.append(hex)
-                except ValueError:
+                except KeyError:
                     pass # The search string isn't a a sector hex so ignore it
                 except Exception as ex:
                     # Log this at debug as it could get very spammy as the user types
