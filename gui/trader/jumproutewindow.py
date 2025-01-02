@@ -219,7 +219,6 @@ class _RefuellingPlanTable(gui.HexTable):
         # the derived class will be handling working out the post sort row index.
         return sortItem.row() if sortItem else row
 
-# TODO: The label used for widgets should reflect if dead space selection is enabled or not
 class _StartFinishSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHexRequested = QtCore.pyqtSignal(travellermap.HexPosition)
@@ -231,30 +230,30 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self._startWorldWidget = gui.HexSelectToolWidget(text=None)
-        self._startWorldWidget.enableShowHexButton(True)
-        self._startWorldWidget.enableShowInfoButton(True)
-        self._startWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
-        self._startWorldWidget.showHex.connect(self._handleShowHex)
+        self._startWidget = gui.HexSelectToolWidget()
+        self._startWidget.enableShowHexButton(True)
+        self._startWidget.enableShowInfoButton(True)
+        self._startWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._startWidget.showHex.connect(self._handleShowHex)
 
-        self._finishWorldWidget = gui.HexSelectToolWidget(text=None)
-        self._finishWorldWidget.enableShowHexButton(True)
-        self._finishWorldWidget.enableShowInfoButton(True)
-        self._finishWorldWidget.selectionChanged.connect(self.selectionChanged.emit)
-        self._finishWorldWidget.showHex.connect(self._handleShowHex)
+        self._finishWidget = gui.HexSelectToolWidget()
+        self._finishWidget.enableShowHexButton(True)
+        self._finishWidget.enableShowInfoButton(True)
+        self._finishWidget.selectionChanged.connect(self.selectionChanged.emit)
+        self._finishWidget.showHex.connect(self._handleShowHex)
 
         widgetLayout = gui.FormLayoutEx()
         widgetLayout.setContentsMargins(0, 0, 0, 0)
-        widgetLayout.addRow('Start World:', self._startWorldWidget)
-        widgetLayout.addRow('Finish World:', self._finishWorldWidget)
+        widgetLayout.addRow('Start:', self._startWidget)
+        widgetLayout.addRow('Finish:', self._finishWidget)
 
         self.setLayout(widgetLayout)
 
     def startHex(self) -> typing.Optional[travellermap.HexPosition]:
-        return self._startWorldWidget.selectedHex()
+        return self._startWidget.selectedHex()
 
     def finishHex(self) -> typing.Optional[travellermap.HexPosition]:
-        return self._finishWorldWidget.selectedHex()
+        return self._finishWidget.selectedHex()
 
     def hexes(self) -> typing.Tuple[
             typing.Optional[travellermap.HexPosition],
@@ -266,13 +265,13 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._startWorldWidget.setSelectedHex(hex=hex)
+        self._startWidget.setSelectedHex(hex=hex)
 
     def setFinishHex(
             self,
             hex: typing.Optional[travellermap.HexPosition]
             ) -> None:
-        self._finishWorldWidget.setSelectedHex(hex=hex)
+        self._finishWidget.setSelectedHex(hex=hex)
 
     def setHexes(
             self,
@@ -283,37 +282,37 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
 
         # Block signals so we can manually generate a single selection changed
         # event.
-        with gui.SignalBlocker(widget=self._startWorldWidget) and \
-                gui.SignalBlocker(widget=self._finishWorldWidget):
-            if startHex != self._startWorldWidget.selectedHex():
-                self._startWorldWidget.setSelectedHex(hex=startHex)
+        with gui.SignalBlocker(widget=self._startWidget) and \
+                gui.SignalBlocker(widget=self._finishWidget):
+            if startHex != self._startWidget.selectedHex():
+                self._startWidget.setSelectedHex(hex=startHex)
                 selectionChanged = True
 
-            if finishHex != self._finishWorldWidget.selectedHex():
-                self._finishWorldWidget.setSelectedHex(hex=finishHex)
+            if finishHex != self._finishWidget.selectedHex():
+                self._finishWidget.setSelectedHex(hex=finishHex)
                 selectionChanged = True
 
         if selectionChanged:
             self.selectionChanged.emit()
 
     def enableDeadSpaceSelection(self, enable: bool) -> None:
-        self._startWorldWidget.enableDeadSpaceSelection(enable=enable)
-        self._finishWorldWidget.enableDeadSpaceSelection(enable=enable)
+        self._startWidget.enableDeadSpaceSelection(enable=enable)
+        self._finishWidget.enableDeadSpaceSelection(enable=enable)
 
     def isDeadSpaceSelectionEnabled(self) -> bool:
-        return self._startWorldWidget.isDeadSpaceSelectionEnabled()
+        return self._startWidget.isDeadSpaceSelectionEnabled()
 
     def saveState(self) -> QtCore.QByteArray:
         state = QtCore.QByteArray()
         stream = QtCore.QDataStream(state, QtCore.QIODevice.OpenModeFlag.WriteOnly)
         stream.writeQString(_StartFinishSelectWidget._StateVersion)
 
-        childState = self._startWorldWidget.saveState()
+        childState = self._startWidget.saveState()
         stream.writeUInt32(childState.count() if childState else 0)
         if childState:
             stream.writeRawData(childState.data())
 
-        childState = self._finishWorldWidget.saveState()
+        childState = self._finishWidget.saveState()
         stream.writeUInt32(childState.count() if childState else 0)
         if childState:
             stream.writeRawData(childState.data())
@@ -334,13 +333,13 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         count = stream.readUInt32()
         if count > 0:
             childState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._startWorldWidget.restoreState(childState):
+            if not self._startWidget.restoreState(childState):
                 return False
 
         count = stream.readUInt32()
         if count > 0:
             childState = QtCore.QByteArray(stream.readRawData(count))
-            if not self._finishWorldWidget.restoreState(childState):
+            if not self._finishWidget.restoreState(childState):
                 return False
 
         return True

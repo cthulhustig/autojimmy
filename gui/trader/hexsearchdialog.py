@@ -11,10 +11,8 @@ class HexSearchDialog(gui.DialogEx):
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(
-            title='World/Hex Search',
-            # TODO: I probably want to leave this config item as it is to save backward
-            # comparability
-            configSection='WorldSearchDialog',
+            title='Search',
+            configSection='HexSearchDialog',
             parent=parent)
 
         self._hexSelectWidget = gui.HexSearchWidget()

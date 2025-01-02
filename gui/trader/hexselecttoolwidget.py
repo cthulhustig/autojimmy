@@ -23,7 +23,7 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
     def __init__(
             self,
-            text: typing.Optional[str] = 'Select World:',
+            labelText: typing.Optional[str] = None,
             parent: typing.Optional[QtWidgets.QWidget] = None
             ) -> None:
         super().__init__(parent)
@@ -66,8 +66,8 @@ class HexSelectToolWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        if text:
-            layout.addWidget(QtWidgets.QLabel(text))
+        if labelText:
+            layout.addWidget(QtWidgets.QLabel(labelText))
         layout.addWidget(self._searchComboBox, 1)
         layout.addWidget(self._mapSelectButton)
         layout.addWidget(self._showHexButton)

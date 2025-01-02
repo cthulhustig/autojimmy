@@ -149,7 +149,7 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._hexWidget = gui.HexSelectToolWidget(
-            text='Origin World:')
+            labelText='Center Hex:')
         self._hexWidget.enableMapSelectButton(True)
         self._hexWidget.enableShowInfoButton(True)
         # Setting this to a fixed size is horrible, but no mater what I try I
@@ -165,6 +165,9 @@ class _HexSearchRadiusWidget(QtWidgets.QWidget):
         self._hexWidget.setMinimumWidth(
             int(_HexSearchRadiusWidget._MinWorldWidgetWidth *
                 app.Config.instance().interfaceScale()))
+        # Enable dead space selection so the user can find things centred around
+        # a dead space hex
+        self._hexWidget.enableDeadSpaceSelection(enable=True)
 
         self._radiusSpinBox = gui.SpinBoxEx()
         self._radiusSpinBox.setRange(1, 32)
@@ -524,6 +527,7 @@ class WorldSearchWindow(gui.WindowWidget):
         tableLayoutWidget.setLayout(tableLayout)
 
         self._travellerMapWidget = gui.TravellerMapWidget()
+        self._travellerMapWidget.enableDeadSpaceSelection(enable=True)
 
         self._resultsDisplayModeTabView = gui.TabWidgetEx()
         self._resultsDisplayModeTabView.setTabPosition(QtWidgets.QTabWidget.TabPosition.East)
