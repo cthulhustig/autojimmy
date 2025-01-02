@@ -346,6 +346,9 @@ class WorldManager(object):
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.World]:
         searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
 
         # If the search string matches the sector hex format or either the
         # absolute or relative coordinate formats then try to a world at the
@@ -480,6 +483,10 @@ class WorldManager(object):
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.Subsector]:
         searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
+
         strictExpression = re.compile(
             fnmatch.translate(searchString),
             re.IGNORECASE)
@@ -512,6 +519,10 @@ class WorldManager(object):
             maxResults: int = 0 # 0 means unlimited
             ) -> typing.List[traveller.Sector]:
         searchString = searchString.strip()
+        if not searchString:
+            # No matches if search string is empty after white space stripped
+            return []
+
         strictExpression = re.compile(
             fnmatch.translate(searchString),
             re.IGNORECASE)
