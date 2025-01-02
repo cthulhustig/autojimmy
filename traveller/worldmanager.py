@@ -280,7 +280,7 @@ class WorldManager(object):
             return world.name(includeSubsector=True)
         try:
             name = self.positionToSectorHex(hex=hex)
-            subsector = self.sectorByPosition(hex=hex)
+            subsector = self.subsectorByPosition(hex=hex)
             if subsector:
                 name += f' ({subsector.name()})'
             return name
