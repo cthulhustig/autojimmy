@@ -223,8 +223,10 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
     selectionChanged = QtCore.pyqtSignal()
     showHexRequested = QtCore.pyqtSignal(travellermap.HexPosition)
 
-    # TODO: I suspect I'll have to leave this as is to avoid users losing the
-    # previously selected start/finish world
+    # The state version doesn't match the current class name for backwards
+    # compatibility. The class name was changed when adding dead space routing
+    # but changing the state version would have meant the user would loose
+    # any previous configured start/finish world when they upgrade
     _StateVersion = '_StartFinishWorldsSelectWidget_v1'
 
     def __init__(self):
@@ -351,8 +353,6 @@ class _StartFinishSelectWidget(QtWidgets.QWidget):
         if hex:
             self.showHexRequested.emit(hex)
 
-# TODO: In all the new code I've done I want to change all pos variables
-# to hex and all positions to hexes
 class JumpRouteWindow(gui.WindowWidget):
     _JumpRatingOverlayDarkStyleColour = '#9D03FC'
     _JumpRatingOverlayLightStyleColour = '#4A03FC'
@@ -422,28 +422,28 @@ class JumpRouteWindow(gui.WindowWidget):
             key='WaypointWorldTableState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._waypointWorldsWidget.restoreState(storedValue)
+            self._waypointHexesWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='WaypointWorldTableContent',
             type=QtCore.QByteArray)
         if storedValue:
-            self._waypointWorldsWidget.restoreContent(storedValue)
+            self._waypointHexesWidget.restoreContent(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='AvoidWorldTableState',
             type=QtCore.QByteArray)
         if storedValue:
-            self._avoidWorldsWidget.restoreState(storedValue)
+            self._avoidHexesWidget.restoreState(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
             key='AvoidWorldTableContent',
             type=QtCore.QByteArray)
         if storedValue:
-            self._avoidWorldsWidget.restoreContent(storedValue)
+            self._avoidHexesWidget.restoreContent(storedValue)
 
         storedValue = gui.safeLoadSetting(
             settings=self._settings,
@@ -536,15 +536,17 @@ class JumpRouteWindow(gui.WindowWidget):
     def saveSettings(self) -> None:
         self._settings.beginGroup(self._configSection)
 
-        # TODO: The names of some of the elements here use world
-        # when they actually refer to hex tables. I think I'll need
-        # to leave them as is if I want backward compatibility
+        # NOTE: The name of the settings for the waypoint and avoid hex tables
+        # states are *WorldTableState for backwards compatibility. The tables
+        # were switched to using hexes when adding support for dead space
+        # routing but changing the setting name would mean users would lose
+        # any previously configured waypoints and avoid worlds
         self._settings.setValue('StartFinishWorldsState', self._selectStartFinishWidget.saveState())
         self._settings.setValue('ConfigurationTabBarState', self._configurationStack.saveState())
-        self._settings.setValue('WaypointWorldTableState', self._waypointWorldsWidget.saveState())
-        self._settings.setValue('WaypointWorldTableContent', self._waypointWorldsWidget.saveContent())
-        self._settings.setValue('AvoidWorldTableState', self._avoidWorldsWidget.saveState())
-        self._settings.setValue('AvoidWorldTableContent', self._avoidWorldsWidget.saveContent())
+        self._settings.setValue('WaypointWorldTableState', self._waypointHexesWidget.saveState())
+        self._settings.setValue('WaypointWorldTableContent', self._waypointHexesWidget.saveContent())
+        self._settings.setValue('AvoidWorldTableState', self._avoidHexesWidget.saveState())
+        self._settings.setValue('AvoidWorldTableContent', self._avoidHexesWidget.saveContent())
         self._settings.setValue('AvoidFilterTableState', self._avoidWorldsFilterWidget.saveState())
         self._settings.setValue('AvoidFilterTableContent', self._avoidWorldsFilterWidget.saveContent())
         self._settings.setValue('AvoidTabBarState', self._avoidWorldsTabWidget.saveState())
@@ -562,56 +564,29 @@ class JumpRouteWindow(gui.WindowWidget):
 
         super().saveSettings()
 
-    # TODO: Does this style function still make sense now I've switched to better shared
-    # controls
-    def configureControls(
+    def setRoute(
             self,
-            startHex: typing.Optional[travellermap.HexPosition] = None,
-            finishHex: typing.Optional[travellermap.HexPosition] = None,
-            shipTonnage: typing.Optional[int] = None,
-            shipJumpRating: typing.Optional[int] = None,
-            shipFuelCapacity: typing.Optional[int] = None,
-            shipCurrentFuel: typing.Optional[float] = None,
-            routeOptimisation: typing.Optional[logic.RouteOptimisation] = None,
-            perJumpOverheads: typing.Optional[int] = None,
-            refuellingStrategy: typing.Optional[logic.RefuellingStrategy] = None,
-            includeStartWorldBerthingCosts: typing.Optional[bool] = None,
-            includeFinishWorldBerthingCosts: typing.Optional[bool] = None,
+            route: logic.JumpRoute,
+            logistics: typing.Optional[logic.RouteLogistics]
             ) -> None:
         if self._jumpRouteJob:
-            raise RuntimeError('Unable to setup jump route window while a jump route job is in progress')
+            raise RuntimeError('Unable to set jump route while a jump route job is in progress')
 
-        if (startHex != None) and (finishHex != None):
-            # Set the start and finish worlds at the same time. If either of them
-            # is None then the current world will be kept. This is done so that the
-            # user doesn't get prompted twice about clearing the waypoint and avoid
-            # worlds if both the start and finish worlds have changed
-            self._selectStartFinishWidget.setHexes(
-                startHex=startHex,
-                finishHex=finishHex)
-        elif startHex != None:
-            self._selectStartFinishWidget.setStartHex(hex=startHex)
-        elif finishHex != None:
-            self._selectStartFinishWidget.setFinishHex(hex=finishHex)
+        self._jumpRoute = route
+        self._jumpRouteTable.setHexes(
+            hexes=[hex for hex, _ in self._jumpRoute])
 
-        if shipTonnage != None:
-            self._shipTonnageSpinBox.setValue(int(shipTonnage))
-        if shipJumpRating != None:
-            self._shipJumpRatingSpinBox.setValue(int(shipJumpRating))
-        if shipFuelCapacity != None:
-            self._shipFuelCapacitySpinBox.setValue(int(shipFuelCapacity))
-        if shipCurrentFuel != None:
-            self._shipCurrentFuelSpinBox.setValue(float(shipCurrentFuel))
-        if refuellingStrategy != None:
-            self._refuellingStrategyComboBox.setCurrentEnum(refuellingStrategy)
-        if routeOptimisation != None:
-            self._routeOptimisationComboBox.setCurrentEnum(routeOptimisation)
-        if perJumpOverheads != None:
-            self._perJumpOverheadsSpinBox.setValue(int(perJumpOverheads))
-        if includeStartWorldBerthingCosts != None:
-            self._includeStartWorldBerthingCheckBox.setChecked(includeStartWorldBerthingCosts)
-        if includeFinishWorldBerthingCosts != None:
-            self._includeFinishWorldBerthingCheckBox.setChecked(includeFinishWorldBerthingCosts)
+        self._routeLogistics = logistics
+        self._refuellingPlanTable.setPitStops(
+            pitStops=self._routeLogistics.refuellingPlan() if self._routeLogistics else None)
+
+        self._selectStartFinishWidget.setHexes(
+            startHex=route.startHex(),
+            finishHex=route.finishHex())
+        self._waypointWorldTable.removeAllRows()
+
+        self._updateRouteLabels()
+        self._updateTravellerMapOverlays()
 
     def firstShowEvent(self, e: QtGui.QShowEvent) -> None:
         # Schedule the Traveller Map init fix to be run shortly after the window is displayed. We
@@ -755,40 +730,40 @@ class JumpRouteWindow(gui.WindowWidget):
 
     def _setupWaypointWorldsControls(self) -> None:
         self._waypointWorldTable = gui.WaypointTable()
-        self._waypointWorldsWidget = gui.HexTableManagerWidget(
+        self._waypointHexesWidget = gui.HexTableManagerWidget(
             hexTable=self._waypointWorldTable,
             isOrderedList=True, # List order determines order waypoints are to be travelled to
             showSelectInTravellerMapButton=False, # The windows Traveller Map widget should be used to select worlds
             showAddNearbyWorldsButton=False) # Adding nearby worlds doesn't make sense for waypoints
-        self._waypointWorldsWidget.enableDeadSpace(
+        self._waypointHexesWidget.enableDeadSpace(
             enable=app.Config.instance().deadSpaceRouting())
-        self._waypointWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._waypointWorldsWidget.enableDisplayModeChangedEvent(enable=True)
-        self._waypointWorldsWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
-        self._waypointWorldsWidget.enableShowInTravellerMapEvent(enable=True)
-        self._waypointWorldsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._waypointHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
+        self._waypointHexesWidget.enableDisplayModeChangedEvent(enable=True)
+        self._waypointHexesWidget.displayModeChanged.connect(self._waypointsTableDisplayModeChanged)
+        self._waypointHexesWidget.enableShowInTravellerMapEvent(enable=True)
+        self._waypointHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self._waypointWorldsWidget)
+        layout.addWidget(self._waypointHexesWidget)
 
         self._waypointWorldsGroupBox = QtWidgets.QGroupBox('Waypoint Worlds')
         self._waypointWorldsGroupBox.setLayout(layout)
 
     def _setupAvoidWorldsControls(self) -> None:
-        self._avoidWorldsWidget = gui.HexTableManagerWidget(
+        self._avoidHexesWidget = gui.HexTableManagerWidget(
             allowHexCallback=self._allowAvoidHex,
             showSelectInTravellerMapButton=False) # This windows Traveller Map widget should be used to select worlds
-        self._avoidWorldsWidget.enableDeadSpace(
+        self._avoidHexesWidget.enableDeadSpace(
             enable=True) # Always allow dead space on avoid list
-        self._avoidWorldsWidget.contentChanged.connect(self._updateTravellerMapOverlays)
-        self._avoidWorldsWidget.enableShowInTravellerMapEvent(enable=True)
-        self._avoidWorldsWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
+        self._avoidHexesWidget.contentChanged.connect(self._updateTravellerMapOverlays)
+        self._avoidHexesWidget.enableShowInTravellerMapEvent(enable=True)
+        self._avoidHexesWidget.showInTravellerMap.connect(self._showHexesInTravellerMap)
 
         self._avoidWorldsFilterWidget = gui.WorldFilterTableManagerWidget()
 
         self._avoidWorldsTabWidget = gui.TabWidgetEx()
         self._avoidWorldsTabWidget.setTabPosition(QtWidgets.QTabWidget.TabPosition.West)
-        self._avoidWorldsTabWidget.addTab(self._avoidWorldsWidget, 'Worlds')
+        self._avoidWorldsTabWidget.addTab(self._avoidHexesWidget, 'Worlds')
         self._avoidWorldsTabWidget.addTab(self._avoidWorldsFilterWidget, 'Filters')
 
         layout = QtWidgets.QVBoxLayout()
@@ -920,7 +895,7 @@ class JumpRouteWindow(gui.WindowWidget):
             columns = gui.WaypointTable.RefuellingColumns
         else:
             assert(False) # I missed a case
-        self._waypointWorldsWidget.setVisibleColumns(columns)
+        self._waypointHexesWidget.setVisibleColumns(columns)
 
     def _calculateJumpRoute(self) -> None:
         if self._jumpRouteJob:
@@ -978,7 +953,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
             fuelIssueWorldStrings = []
-            for waypointHex in self._waypointWorldsWidget.hexes():
+            for waypointHex in self._waypointHexesWidget.hexes():
                 waypointWorld = traveller.WorldManager.instance().worldByPosition(hex=waypointHex)
                 if waypointWorld and not pitCostCalculator.refuellingType(world=waypointWorld):
                     fuelIssueWorldStrings.append(waypointWorld.name())
@@ -1001,7 +976,7 @@ class JumpRouteWindow(gui.WindowWidget):
                     return
 
         hexSequence = [startHex]
-        hexSequence.extend(self._waypointWorldsWidget.hexes())
+        hexSequence.extend(self._waypointHexesWidget.hexes())
         hexSequence.append(finishHex)
 
         routeOptimisation = self._routeOptimisationComboBox.currentEnum()
@@ -1023,7 +998,7 @@ class JumpRouteWindow(gui.WindowWidget):
             assert(False) # I've missed an enum
 
         hexFilter = _HexFilter(
-            avoidHexes=self._avoidWorldsWidget.hexes(),
+            avoidHexes=self._avoidHexesWidget.hexes(),
             avoidFilters=self._avoidWorldsFilterWidget.filters(),
             avoidFilterLogic=self._avoidWorldsFilterWidget.filterLogic())
 
@@ -1070,8 +1045,25 @@ class JumpRouteWindow(gui.WindowWidget):
                 exception=result)
         elif self._jumpRouteJob and self._jumpRouteJob.isCancelled():
             pass
-        else:
-            self._setJumpRoute(result)
+        elif isinstance(result, logic.JumpRoute):
+            self._jumpRoute = result
+            self._jumpRouteTable.setHexes(
+                hexes=[hex for hex, _ in self._jumpRoute])
+
+            # Only calculate logistics if fuel based routing is enabled. If it's
+            # disabled the route will most likely contain worlds that don't
+            # match the refuelling strategy
+            if self._fuelBasedRoutingCheckBox.isChecked():
+                self._generateLogistics()
+
+            self._updateRouteLabels()
+            self._updateTravellerMapOverlays()
+
+            # We've calculated a new jump route so prevent future recalculations
+            # from zooming out to show the full jump route. Zooming will be
+            # re-enabled if we start calculating a "new" jump route (i.e the
+            # start/finish world changes)
+            self._zoomToJumpRoute = False
 
         self._jumpRouteJob = None
         self._calculateRouteButton.showPrimaryText()
@@ -1105,12 +1097,12 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems = [
             gui.MenuItem(
                 text='Add Selected Worlds to Waypoints',
-                callback=lambda: [self._waypointWorldsWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
+                callback=lambda: [self._waypointHexesWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Add Selected Worlds to Avoid Worlds',
-                callback=lambda: [self._avoidWorldsWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
+                callback=lambda: [self._avoidHexesWidget.addWorld(world) for world in self._jumpRouteTable.selectedWorlds()],
                 enabled=self._jumpRouteTable.hasSelection()
             ),
             None, # Separator
@@ -1150,12 +1142,12 @@ class JumpRouteWindow(gui.WindowWidget):
         menuItems = [
             gui.MenuItem(
                 text='Add Selected Worlds to Waypoints',
-                callback=lambda: [self._waypointWorldsWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
+                callback=lambda: [self._waypointHexesWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             gui.MenuItem(
                 text='Add Selected Worlds to Avoid Worlds',
-                callback=lambda: [self._avoidWorldsWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
+                callback=lambda: [self._avoidHexesWidget.addWorld(world) for world in self._refuellingPlanTable.selectedWorlds()],
                 enabled=self._refuellingPlanTable.hasSelection()
             ),
             None, # Separator
@@ -1234,20 +1226,20 @@ class JumpRouteWindow(gui.WindowWidget):
         menu = QtWidgets.QMenu('Waypoint Worlds', self)
         menuItems.append(menu)
         action = menu.addAction('Add World')
-        action.triggered.connect(lambda: self._waypointWorldsWidget.addHex(hex=hex))
-        action.setEnabled(hex != None and not self._waypointWorldsWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._waypointHexesWidget.addHex(hex=hex))
+        action.setEnabled(hex != None and not self._waypointHexesWidget.containsHex(hex=hex))
         action = menu.addAction('Remove World')
-        action.triggered.connect(lambda: self._waypointWorldsWidget.removeHex(hex=hex))
-        action.setEnabled(hex != None and self._waypointWorldsWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._waypointHexesWidget.removeHex(hex=hex))
+        action.setEnabled(hex != None and self._waypointHexesWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Avoid Worlds', self)
         menuItems.append(menu)
         action = menu.addAction('Add World')
-        action.triggered.connect(lambda: self._avoidWorldsWidget.addHex(hex=hex))
-        action.setEnabled(hex != None and not self._avoidWorldsWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._avoidHexesWidget.addHex(hex=hex))
+        action.setEnabled(hex != None and not self._avoidHexesWidget.containsHex(hex=hex))
         action = menu.addAction('Remove World')
-        action.triggered.connect(lambda: self._avoidWorldsWidget.removeHex(hex=hex))
-        action.setEnabled(hex != None and self._avoidWorldsWidget.containsHex(hex=hex))
+        action.triggered.connect(lambda: self._avoidHexesWidget.removeHex(hex=hex))
+        action.setEnabled(hex != None and self._avoidHexesWidget.containsHex(hex=hex))
 
         menu = QtWidgets.QMenu('Zoom To', self)
         menuItems.append(menu)
@@ -1290,9 +1282,9 @@ class JumpRouteWindow(gui.WindowWidget):
                 return gui.createStringToolTip('<nobr>Start Hex</nobr>', escape=False)
             elif (finishHex and hex == finishHex):
                 return gui.createStringToolTip('<nobr>Finish Hex</nobr>', escape=False)
-            elif self._waypointWorldsWidget.containsHex(hex):
+            elif self._waypointHexesWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
-            elif self._avoidWorldsWidget.containsHex(hex):
+            elif self._avoidHexesWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
             return None
 
@@ -1349,13 +1341,13 @@ class JumpRouteWindow(gui.WindowWidget):
 
         if not toolTip:
             # Check for waypoints that have been added since the route was last regenerated
-            if self._waypointWorldsWidget.containsHex(hex):
+            if self._waypointHexesWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Waypoint Hex</nobr>', escape=False)
 
             # Check for the world being an avoid world. This is done last as
             # start/finish/waypoint worlds can be on the avoid list but we
             # don't want to flag them as such here
-            if self._avoidWorldsWidget.containsHex(hex):
+            if self._avoidHexesWidget.containsHex(hex):
                 return gui.createStringToolTip('<nobr>Avoid Hex</nobr>', escape=False)
 
             return None
@@ -1558,6 +1550,30 @@ class JumpRouteWindow(gui.WindowWidget):
                     worlds=taggedWorlds)
                 self._jumpOverlayHandles.add(handle)
 
+    def _updateRouteLabels(self) -> None:
+        if self._jumpRoute:
+            self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
+            self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
+        else:
+            self._jumpCountLabel.clear()
+            self._routeLengthLabel.clear()
+
+        if self._routeLogistics:
+            routeCost = self._routeLogistics.totalCosts()
+            self._avgRouteCostLabel.setText(common.formatNumber(
+                number=routeCost.averageCaseValue(),
+                infix='Cr'))
+            self._minRouteCostLabel.setText(common.formatNumber(
+                number=routeCost.bestCaseValue(),
+                infix='Cr'))
+            self._maxRouteCostLabel.setText(common.formatNumber(
+                number=routeCost.worstCaseValue(),
+                infix='Cr'))
+        else:
+            self._avgRouteCostLabel.clear()
+            self._minRouteCostLabel.clear()
+            self._maxRouteCostLabel.clear()
+
     def _updateTravellerMapOverlays(self) -> None:
         self._travellerMapWidget.clearOverlays()
         self._jumpRatingOverlayHandle = None
@@ -1575,7 +1591,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 colour='#00FF00',
                 radius=0.5)
 
-        waypointHexes = self._waypointWorldsWidget.hexes()
+        waypointHexes = self._waypointHexesWidget.hexes()
         if waypointHexes:
             self._travellerMapWidget.highlightHexes(
                 hexes=waypointHexes,
@@ -1583,7 +1599,7 @@ class JumpRouteWindow(gui.WindowWidget):
                 radius=0.3)
 
         filteredAvoidHexes = []
-        for hex in self._avoidWorldsWidget.hexes():
+        for hex in self._avoidHexesWidget.hexes():
             if (hex != startHex) and (hex != finishHex) and (hex not in waypointHexes):
                 filteredAvoidHexes.append(hex)
         if filteredAvoidHexes:
@@ -1614,7 +1630,7 @@ class JumpRouteWindow(gui.WindowWidget):
     def _deadSpaceRoutingToggled(self) ->None:
         isEnabled = self._deadSpaceRoutingCheckBox.isChecked()
         self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isEnabled)
-        self._waypointWorldsWidget.enableDeadSpace(enable=isEnabled)
+        self._waypointHexesWidget.enableDeadSpace(enable=isEnabled)
         self._travellerMapWidget.enableDeadSpaceSelection(enable=isEnabled)
         self._enableDisableControls()
 
@@ -1639,94 +1655,73 @@ class JumpRouteWindow(gui.WindowWidget):
         self._anomalyBerthingCostSpinBox.setEnabled(fuelBasedRouting and anomalyRefuelling)
 
     def _allowAvoidHex(self, hex: travellermap.HexPosition) -> bool:
-        if self._avoidWorldsWidget.containsHex(hex):
+        if self._avoidHexesWidget.containsHex(hex):
             # Silently ignore worlds that are already in the table
             return False
         return True
 
-    def _setJumpRoute(self, jumpRoute: logic.JumpRoute) -> None:
-        self._jumpRoute = jumpRoute
-        if not self._jumpRoute:
-            gui.MessageBoxEx.information(
-                parent=self,
-                text='No jump route found')
-            return
+    def _generateLogistics(self) -> None:
+        self._routeLogistics = None
+        self._refuellingPlanTable.removeAllRows()
+        self._avgRouteCostLabel.setText('')
+        self._minRouteCostLabel.setText('')
+        self._maxRouteCostLabel.setText('')
+
+        invalidConfigReason = None
         if self._shipFuelCapacitySpinBox.value() > self._shipTonnageSpinBox.value():
+            invalidConfigReason = 'The ship\'s fuel capacity can\'t be larger than its total tonnage'
+        elif self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
+            invalidConfigReason = 'The ship\'s current fuel can\'t be larger than its fuel capacity'
+
+        if invalidConfigReason:
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s fuel capacity can\'t be larger than its total tonnage')
+                text=f'Unable to calculate logistics for route. {invalidConfigReason}.')
             return
-        if self._shipCurrentFuelSpinBox.value() > self._shipFuelCapacitySpinBox.value():
+
+        useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
+        pitCostCalculator = logic.PitStopCostCalculator(
+            refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
+            useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
+            anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
+            anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
+            rules=app.Config.instance().rules())
+
+        try:
+            self._routeLogistics = logic.calculateRouteLogistics(
+                jumpRoute=self._jumpRoute,
+                shipTonnage=self._shipTonnageSpinBox.value(),
+                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
+                shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
+                shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
+                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
+                pitCostCalculator=pitCostCalculator,
+                requiredBerthingIndices=self._generateRequiredBerthingIndices(),
+                includeLogisticsCosts=True) # Always include logistics costs
+        except Exception as ex:
+            startHex, _ = self._jumpRoute.startNode()
+            finishHex, _ = self._jumpRoute.finishNode()
+            startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
+            finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
+            message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
+                start=startString,
+                finish=finishString)
+            logging.error(message, exc_info=ex)
+            gui.MessageBoxEx.critical(
+                parent=self,
+                text=message,
+                exception=ex)
+            return
+
+        if self._routeLogistics:
+            self._refuellingPlanTable.setPitStops(
+                pitStops=self._routeLogistics.refuellingPlan())
+        else:
             gui.MessageBoxEx.information(
                 parent=self,
-                text='Ship\'s current fuel can\'t be larger than its fuel capacity')
-            return
+                text='Unable to calculate logistics for route. This can happen if it\'s not possible to generate a refuelling plan for the route due to waypoints not matching the specified refuelling strategy.')
 
-        self._jumpRouteTable.setHexes(
-            hexes=[hex for hex, _ in self._jumpRoute])
-        self._jumpCountLabel.setNum(self._jumpRoute.jumpCount())
-        self._routeLengthLabel.setNum(self._jumpRoute.totalParsecs())
-
-        # Only calculate logistics if fuel based routing is enabled. If it's disabled the route will
-        # most likely contain worlds that don't match the refuelling strategy
-        if self._fuelBasedRoutingCheckBox.isChecked():
-            useAnomalyRefuelling = self._useAnomalyRefuellingCheckBox.isChecked()
-            pitCostCalculator = logic.PitStopCostCalculator(
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                useFuelCaches=self._useFuelCachesCheckBox.isChecked(),
-                anomalyFuelCost=self._anomalyFuelCostSpinBox.value() if useAnomalyRefuelling else None,
-                anomalyBerthingCost=self._anomalyBerthingCostSpinBox.value() if useAnomalyRefuelling else None,
-                rules=app.Config.instance().rules())
-
-            try:
-                self._routeLogistics = logic.calculateRouteLogistics(
-                    jumpRoute=self._jumpRoute,
-                    shipTonnage=self._shipTonnageSpinBox.value(),
-                    shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                    shipStartingFuel=self._shipCurrentFuelSpinBox.value(),
-                    shipFuelPerParsec=self._shipFuelPerParsecSpinBox.value(),
-                    perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                    pitCostCalculator=pitCostCalculator,
-                    requiredBerthingIndices=self._generateRequiredBerthingIndices(),
-                    includeLogisticsCosts=True) # Always include logistics costs
-                if not self._routeLogistics:
-                    gui.MessageBoxEx.information(
-                        parent=self,
-                        text='Unable to calculate logistics for jump route')
-            except Exception as ex:
-                startHex, _ = self._jumpRoute.startNode()
-                finishHex, _ = self._jumpRoute.finishNode()
-                startString = traveller.WorldManager.instance().canonicalHexName(hex=startHex)
-                finishString = traveller.WorldManager.instance().canonicalHexName(hex=finishHex)
-                message = 'Failed to calculate jump route logistics between {start} and {finish}'.format(
-                    start=startString,
-                    finish=finishString)
-                logging.error(message, exc_info=ex)
-                gui.MessageBoxEx.critical(
-                    parent=self,
-                    text=message,
-                    exception=ex)
-
-            if self._routeLogistics:
-                self._refuellingPlanTable.setPitStops(
-                    pitStops=self._routeLogistics.refuellingPlan())
-                routeCost = self._routeLogistics.totalCosts()
-                self._avgRouteCostLabel.setText(common.formatNumber(
-                    number=routeCost.averageCaseValue(),
-                    infix='Cr'))
-                self._minRouteCostLabel.setText(common.formatNumber(
-                    number=routeCost.bestCaseValue(),
-                    infix='Cr'))
-                self._maxRouteCostLabel.setText(common.formatNumber(
-                    number=routeCost.worstCaseValue(),
-                    infix='Cr'))
-
-        self._updateTravellerMapOverlays()
-
-        # We've calculated a new jump route so prevent further recalculations of this route from
-        # zooming out to show the full jump route. Zooming will be re-enabled if we start
-        # calculating a "new" jump route (i.e the start/finish world changes)
-        self._zoomToJumpRoute = False
+        self._updateRouteLabels()
 
     def _generateRequiredBerthingIndices(self) -> typing.Optional[typing.Set[int]]:
         if not self._jumpRoute or self._jumpRoute.nodeCount() < 1:

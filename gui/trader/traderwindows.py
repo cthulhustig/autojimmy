@@ -298,25 +298,11 @@ class _BaseTraderWindow(gui.WindowWidget):
             self,
             tradeOption: logic.TradeOption
             ) -> None:
-        purchaseWorld = tradeOption.purchaseWorld()
-        saleWorld = tradeOption.saleWorld()
         try:
-            # TODO: This should really pass the jump route that was created for
-            # the trade option. Probably something to fix when I make an effort
-            # to remove these horrible configureControls functions
             jumpRouteWindow = gui.WindowManager.instance().showJumpRouteWindow()
-            jumpRouteWindow.configureControls(
-                startHex=purchaseWorld.hex() if purchaseWorld else None,
-                finishHex=saleWorld.hex() if saleWorld else None,
-                shipTonnage=self._shipTonnageSpinBox.value(),
-                shipJumpRating=self._shipJumpRatingSpinBox.value(),
-                shipFuelCapacity=self._shipFuelCapacitySpinBox.value(),
-                shipCurrentFuel=self._shipCurrentFuelSpinBox.value(),
-                perJumpOverheads=self._perJumpOverheadsSpinBox.value(),
-                refuellingStrategy=self._refuellingStrategyComboBox.currentEnum(),
-                routeOptimisation=self._routeOptimisationComboBox.currentEnum(),
-                includeStartWorldBerthingCosts=self._includeStartWorldBerthingCheckBox.isChecked(),
-                includeFinishWorldBerthingCosts=self._includeFinishWorldBerthingCheckBox.isChecked())
+            jumpRouteWindow.setRoute(
+                route=tradeOption.jumpRoute(),
+                logistics=tradeOption.routeLogistics())
         except Exception as ex:
             message = 'Failed to show jump route window'
             logging.error(message, exc_info=ex)
