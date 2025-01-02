@@ -1638,7 +1638,17 @@ class JumpRouteWindow(gui.WindowWidget):
         self._enableDisableControls()
 
     def _deadSpaceRoutingToggled(self) ->None:
-        isEnabled = self._deadSpaceRoutingCheckBox.isChecked()
+        # TODO: This is a potential source of bugs. Just having dead space routing
+        # checked isn't enough, fuel based routing also needs to be enabled. It
+        # would be better dead space routing was always forced off if fuel based
+        # routing is disabled.
+        # - IMPORTANT: Doing this has problems though as the dead space routing
+        #   is shown on the trader window but the fuel based routing check isn't
+        #   as fuel based routing is always on for the trader. As shared controls
+        #   are used checking the box there will cause it to become checked on the
+        #   jump route window even if fuel based routing is off
+        isEnabled = self._deadSpaceRoutingCheckBox.isEnabled() and \
+              self._deadSpaceRoutingCheckBox.isChecked()
         self._selectStartFinishWidget.enableDeadSpaceSelection(enable=isEnabled)
         self._waypointHexesWidget.enableDeadSpace(enable=isEnabled)
         self._travellerMapWidget.enableDeadSpaceSelection(enable=isEnabled)
