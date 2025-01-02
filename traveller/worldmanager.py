@@ -10,9 +10,22 @@ import typing
 # This object is thread safe, however the world objects are only thread safe
 # as they are currently read only (i.e. once loaded they never change).
 class WorldManager(object):
-    _SectorSearchHintPattern = re.compile(r'^(\(?.+?\)?)\s*\(\s*(.*)\s*\)\s*$')
-    _AbsoluteHexPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
-    _RelativeHexPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
+    # The absolute and relative hex patterns match search strings formatted
+    # as 2 or 4 comma separated signed integers respectively, optionally
+    # surrounded by brackets. All integer values are extracted.
+    _AbsoluteHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+)\)?$')
+    _RelativeHexSearchPattern = re.compile(r'^\(?(-?\d+),\s*(-?\d+),\s*(-?\d+),\s*(-?\d+)\)?$')
+    # The sector hex search pattern matches a search string with the format
+    # of a sector hex string optionally with the subsector in brackets
+    # following it (i.e. the canonical name format used for a dead space
+    # hex). The sector hex string is extracted but any subsector is discarded
+    # as the sector hex uniquely identifies the world
+    _SectorHexSearchPattern = re.compile(r'^(.+\s[0-9]{4})(?:\s+\(\s*.+\s*\))?$')
+    # The world search pattern matches a search string with the format of
+    # a world name followed by its subsector in brackets. Both the world name
+    # and subsector name are extracted
+    _WorldSearchPattern = re.compile(r'^(.+)\s+\(\s*(.+)\s*\)$')
+
 
     _SubsectorHexWidth = 8
     _SubsectorHexHeight = 10
@@ -337,14 +350,19 @@ class WorldManager(object):
         # If the search string matches the sector hex format or either the
         # absolute or relative coordinate formats then try to a world at the
         # specified location. If a world is found then it's our only result
-        try:
-            foundWorld = self.world(sectorHex=searchString)
-            if foundWorld:
-                return [foundWorld]
-        except:
-            pass # Search string is not a sector hex
+        result = self._SectorHexSearchPattern.match(searchString)
+        if result:
+            try:
+                foundWorld = self.world(sectorHex=result.group(1))
+                if foundWorld:
+                    return [foundWorld]
+            except:
+                # Search string is not a valid sector hex. The search pattern
+                # regex was matched so it should have the correct format, most
+                # likely the sector name doesn't match a known sector
+                pass
 
-        result = self._AbsoluteHexPattern.match(searchString)
+        result = self._AbsoluteHexSearchPattern.match(searchString)
         if result:
             hex = travellermap.HexPosition(
                 absoluteX=int(result.group(1)),
@@ -353,7 +371,7 @@ class WorldManager(object):
             if foundWorld:
                 return [foundWorld]
 
-        result = self._RelativeHexPattern.match(searchString)
+        result = self._RelativeHexSearchPattern.match(searchString)
         if result:
             sectorX = int(result.group(1))
             sectorY = int(result.group(2))
@@ -371,7 +389,7 @@ class WorldManager(object):
                     return [foundWorld]
 
         searchWorldLists = None
-        result = self._SectorSearchHintPattern.match(searchString)
+        result = self._WorldSearchPattern.match(searchString)
         filterString = searchString
         if result:
             # We've matched the sector search hint pattern so check to see if the hint is actually
