@@ -155,7 +155,7 @@ def _deserialiseNode(
         except:
             raise RuntimeError(f'Node sector hex "{sectorHex}" couldn\'t be resolved to a hex')
 
-    raise RecursionError('Node as no absoluteX/absoluteY or sectorHex properties')
+    raise RuntimeError('Node as no absoluteX/absoluteY or sectorHex properties')
 
 def serialiseJumpRoute(
         jumpRoute: JumpRoute
